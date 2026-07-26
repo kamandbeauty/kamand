@@ -1,0 +1,121 @@
+# Havato Persian Translation
+# Copyright (C) 2026 Havato
+# This file is distributed under the same license as the Havato package.
+msgid ""
+msgstr ""
+"Project-Id-Version: Havato 1.0.0\n"
+"Report-Msgid-Bugs-To: https://havato.app\n"
+"POT-Creation-Date: 2026-07-26 15:00+0330\n"
+"PO-Revision-Date: 2026-07-26 15:00+0330\n"
+"Last-Translator: Havato Team <dev@havato.app>\n"
+"Language-Team: Persian <fa@havato.app>\n"
+"Language: fa_IR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Havato"
+msgstr "هاواتو"
+
+msgid "Connect over coffee"
+msgstr "ارتباط از طریق قهوه"
+
+msgid "Continue with Google"
+msgstr "ادامه با گوگل"
+
+msgid "Cafe Owner Login"
+msgstr "ورود صاحب کافه"
+
+msgid "Cafe Registration"
+msgstr "ثبت‌نام کافه"
+
+msgid "Explore"
+msgstr "اکتشاف"
+
+msgid "Map"
+msgstr "نقشه"
+
+msgid "Chats"
+msgstr "چت‌ها"
+
+msgid "Profile"
+msgstr "پروفایل"
+
+msgid "Start 30 Second Personality Test"
+msgstr "شروع تست شخصیت ۳۰ ثانیه‌ای"
+
+msgid "Complete Your Profile"
+msgstr "پروفایل خود را تکمیل کنید"
+
+msgid "No open events right now."
+msgstr "در حال حاضر رویداد بازی وجود ندارد."
+
+msgid "Join Event"
+msgstr "پیوستن به رویداد"
+
+msgid "Registration successful. Proceeding to payment..."
+msgstr "ثبت‌نام موفق بود. در حال انتقال به پرداخت..."
+
+msgid "Message sent"
+msgstr "پیام ارسال شد"
+
+msgid "Personality test completed"
+msgstr "تست شخصیت تکمیل شد"
+
+msgid "Venue settings saved"
+msgstr "تنظیمات مکان ذخیره شد"
+
+msgid "Gatherer"
+msgstr "گردآورنده"
+
+msgid "Cafe Owner"
+msgstr "صاحب کافه"
+
+msgid "Approved"
+msgstr "تأیید شده"
+
+msgid "Pending Verification"
+msgstr "در انتظار تأیید"
+
+msgid "Rejected"
+msgstr "رد شده"
+
+msgid "All Havato Roles"
+msgstr "همه نقش‌های هاواتو"
+
+msgid "All Cafe Statuses"
+msgstr "همه وضعیت‌های کافه"
+
+msgid "Google Login Settings"
+msgstr "تنظیمات ورود با گوگل"
+
+msgid "Client ID"
+msgstr "شناسه کلاینت"
+
+msgid "Client Secret"
+msgstr "راز کلاینت"
+
+msgid "Redirect URI"
+msgstr "آدرس بازگشت"
+
+msgid "Configure Google OAuth credentials for user authentication."
+msgstr "اعتبارنامه‌های Google OAuth را برای احراز هویت کاربران پیکربندی کنید."
+
+msgid "Your venue is pending verification. You will be notified once approved."
+msgstr "مکان شما در انتظار تأیید است. پس از تأیید به شما اطلاع داده خواهد شد."
+
+msgid "Dashboard"
+msgstr "داشبورد"
+
+msgid "Events"
+msgstr "رویدادها"
+
+msgid "Menu"
+msgstr "منو"
+
+msgid "Venue"
+msgstr "مکان"
+
+msgid "Access denied."
+msgstr "دسترسی ممنوع."
