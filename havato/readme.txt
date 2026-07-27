@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,17 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fix: the Map tab was unusable — a giant green pin covered the map. icon()
+  injects a bare <svg> with no width/height, and an unsized inline SVG falls
+  back to the browser default of 300x150. Added a global fallback size for
+  every sprite icon plus explicit sizes for the map pills and the gallery
+  upload tile, so this cannot happen again anywhere.
+* Fix: the sign-in screen showed two "continue with Google" buttons. The
+  custom button is only a fallback for when the Google SDK is blocked, so it
+  now stays hidden and appears only if the official button fails to load,
+  throws, or silently fails to paint.
 
 = 1.1.0 =
 * A café name is now entered once. The separate Persian name field is gone —

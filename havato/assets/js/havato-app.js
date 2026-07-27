@@ -653,9 +653,14 @@
 		var googleBlock;
 
 		if (BOOT.googleReady) {
+			// The official Google Identity button renders into the slot. The
+			// custom button is only a FALLBACK for when the SDK is blocked or
+			// slow (common in Iran), so it stays hidden until initGoogle()
+			// decides it is needed — otherwise the user sees two sign-in
+			// buttons stacked on top of each other.
 			googleBlock =
 				'<div class="hv-google-slot" id="hv-google-slot"></div>' +
-				'<button type="button" class="hv-btn hv-btn-google hv-btn-block" id="hv-google-fallback">' +
+				'<button type="button" class="hv-btn hv-btn-google hv-btn-block" id="hv-google-fallback" hidden>' +
 					icon('google') + '<span>' + esc(t('login_google')) + '</span>' +
 				'</button>';
 		} else {
@@ -791,6 +796,15 @@
 		if (BOOT.googleReady) { initGoogle(); }
 	}
 
+	/**
+	 * Reveal the custom Google button. Only called when the official Identity
+	 * Services button could not be rendered, so the two never appear together.
+	 */
+	function showGoogleFallback() {
+		var fallback = $('#hv-google-fallback');
+		if (fallback) { fallback.hidden = false; }
+	}
+
 	function initGoogle() {
 		var tries = 0;
 		(function wait() {
@@ -803,19 +817,35 @@
 						auto_select: false
 					});
 					var slot = $('#hv-google-slot');
-					if (slot) {
-						window.google.accounts.id.renderButton(slot, {
-							theme: 'filled_blue',
-							size: 'large',
-							shape: 'pill',
-							width: Math.min(340, Math.floor(slot.getBoundingClientRect().width || 300)),
-							locale: S.lang === 'fa' ? 'fa' : 'en'
-						});
-					}
-				} catch (e) { /* ignore */ }
+					if (!slot) { return; }
+
+					window.google.accounts.id.renderButton(slot, {
+						theme: 'filled_blue',
+						size: 'large',
+						shape: 'pill',
+						width: Math.min(340, Math.floor(slot.getBoundingClientRect().width || 300)),
+						locale: S.lang === 'fa' ? 'fa' : 'en'
+					});
+
+					// renderButton() is asynchronous and fails silently when the
+					// iframe is blocked, so confirm something was actually
+					// painted before trusting it.
+					setTimeout(function () {
+						if (!slot.firstChild || slot.getBoundingClientRect().height < 10) {
+							showGoogleFallback();
+						}
+					}, 1200);
+				} catch (e) {
+					showGoogleFallback();
+				}
 				return;
 			}
-			if (tries++ < 40) { setTimeout(wait, 150); }
+			// SDK never loaded (blocked / offline): offer the manual button.
+			if (tries++ < 40) {
+				setTimeout(wait, 150);
+			} else {
+				showGoogleFallback();
+			}
 		})();
 	}
 

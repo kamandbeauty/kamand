@@ -146,6 +146,18 @@ body.havato-standalone #havato-app { border-radius: 0; }
 
 .hv-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 
+/* SAFETY NET: icon() injects a bare <svg><use/></svg> with no width/height
+   attributes. An unsized inline SVG is a replaced element, so the browser
+   falls back to its default 300x150 — which once blew the little map pill up
+   into a giant pin covering the whole map. Give every sprite icon a sane
+   default size; the specific rules below (.hv-tab svg, .hv-stat-icon svg, …)
+   still override it wherever a different size is wanted. */
+#havato-app svg:not(.hv-sprite):not(.hv-wave) {
+	inline-size: 1.25em;
+	block-size: 1.25em;
+	flex: 0 0 auto;
+}
+
 /* =========================================================================
    2. Header — deep indigo gradient (mockup "Dashboard" header)
    ====================================================================== */
@@ -792,6 +804,13 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	display: flex;
 	gap: 8px;
 	pointer-events: none;
+	/* Pills must never grow to fill the map or push each other out of view. */
+	align-items: flex-start;
+	flex-wrap: wrap;
+}
+.hv-map-pill {
+	min-inline-size: 0;
+	max-inline-size: 100%;
 }
 .hv-map-pill {
 	display: inline-flex;
@@ -804,6 +823,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	color: #fff;
 	box-shadow: 0 8px 18px rgba(20, 26, 110, 0.24);
 }
+.hv-map-pill svg { inline-size: 16px; block-size: 16px; flex: 0 0 auto; }
 .hv-map-pill.is-green  { background: linear-gradient(120deg, #34d399, #12b981); }
 .hv-map-pill.is-orange { background: linear-gradient(120deg, #fb923c, #f97316); }
 
@@ -1027,6 +1047,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	font-weight: 700;
 	cursor: pointer;
 }
+.hv-photo-upload svg { inline-size: 22px; block-size: 22px; }
 
 /* Personality stepper */
 .hv-stepper-dots { display: flex; gap: 5px; margin-block-end: 14px; }
