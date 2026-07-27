@@ -14,14 +14,21 @@ t('event_tables table', /CREATE TABLE \{\$p\}event_tables/.test(db));
 t('seats + quantity per row', /seats int\(11\)/.test(db) && /quantity int\(11\)/.test(db));
 t('both self-heal', /'venue_tables',/.test(db) && /'event_tables',/.test(db));
 t('events gained theme + image', /theme varchar\(191\)/.test(db) && /image varchar\(255\)/.test(db));
-t('DB version bumped', /HAVATO_DB_VERSION', '1\.4\.0'/.test(main));
+{
+  const v=/HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  t('DB version bumped (>=1.4.0), got '+v[1]+'.'+v[2]+'.'+v[3],
+    (+v[1])*10000+(+v[2])*100+(+v[3]) >= 10400);
+}
 
 console.log('\n--- owner defines the furniture ---');
 t('"My tables" page', /function page_tables/.test(oa));
 t('submenu registered', /'havato-venue-tables'/.test(oa));
 t('GET + SAVE endpoints', /'owner\/tables'/.test(rest) && /'owner\/tables\/save'/.test(rest));
 t('seats clamped 2..20', /max\( 2, min\( 20,/.test(rest));
-t('quantity clamped 1..50', /max\( 1, min\( 50,/.test(rest));
+// Each row is now ONE numbered physical table, so quantity is fixed at 1
+// and the table NUMBER is what gets clamped instead.
+t('quantity fixed at 1 per row', /'quantity'\s*=> 1,/.test(rest));
+t('table number clamped 1..999', /max\( 1, min\( 999,/.test(rest));
 t('removed tables soft-deleted, not dropped', /SET active = 0 WHERE venue_id = %s AND id NOT IN/.test(rest));
 t('reason: past events keep resolving', /past events that referenced the table still resolve/.test(rest));
 t('editor UI', /function initTables/.test(oj));

@@ -494,7 +494,9 @@ class Havato_Admin {
 		// Show the physical layout so the admin knows this is 3x4, not one 12.
 		$layout = array();
 		foreach ( Havato_REST::event_tables( $row['id'] ) as $tbl ) {
-			$layout[] = $tbl['quantity'] . '×' . $tbl['seats'];
+			$layout[] = $tbl['table_number']
+				? sprintf( '#%d (%d)', $tbl['table_number'], $tbl['seats'] )
+				: $tbl['quantity'] . '×' . $tbl['seats'];
 		}
 		if ( ! empty( $layout ) ) {
 			echo '<span class="hv-adm-badge is-gray">' . esc_html( implode( ' + ', $layout ) ) . '</span>';

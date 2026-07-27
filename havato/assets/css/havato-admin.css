@@ -814,3 +814,10 @@
 	object-fit: cover;
 	border: 1px solid var(--hv-line);
 }
+.hv-adm-tnum { max-width: 90px; font-weight: 700; }
+.hv-adm-tnum.is-dupe {
+	border-color: #dc2626 !important;
+	background: #fee2e2 !important;
+}
+.hv-adm-locklist { margin: 8px 0 8px 18px; font-size: 13px; }
+.hv-adm-locklist li { margin: 2px 0; list-style: disc; }

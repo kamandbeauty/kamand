@@ -526,9 +526,10 @@ class Havato_Owner_Admin {
 			echo '<div class="hv-adm-tablepick-grid">';
 
 			foreach ( $tables as $i => $row ) {
-				$name = '' !== $row['label']
-					? $row['label']
-					: sprintf( '%d %s', $row['seats'], Havato_I18N::t( 'seats_left' ) );
+				$name = sprintf( Havato_I18N::t( 'table_number_label' ), $row['table_number'] );
+				if ( '' !== $row['label'] ) {
+					$name .= ' — ' . $row['label'];
+				}
 
 				echo '<label class="hv-adm-tablepick-item">';
 				printf(
@@ -538,13 +539,10 @@ class Havato_Owner_Admin {
 				);
 				printf( '<input type="hidden" name="tables[%d][table_id]" value="%d">', (int) $i, (int) $row['id'] );
 				echo '<span class="hv-adm-tablepick-name">' . esc_html( $name ) . '</span>';
-				echo '<span class="hv-adm-muted">' . esc_html( sprintf( '%d×%d', $row['quantity'], $row['seats'] ) ) . '</span>';
-				printf(
-					'<input type="number" class="hv-adm-tablepick-qty" name="tables[%d][quantity]" min="1" max="%d" value="%d">',
-					(int) $i,
-					(int) $row['quantity'],
-					(int) $row['quantity']
-				);
+				echo '<span class="hv-adm-muted">' .
+					esc_html( sprintf( '%d %s', $row['seats'], Havato_I18N::t( 'table_seats' ) ) ) . '</span>';
+				// Each row is now one physical table, so the quantity is always 1.
+				printf( '<input type="hidden" name="tables[%d][quantity]" value="1">', (int) $i );
 				echo '</label>';
 			}
 
@@ -730,12 +728,26 @@ class Havato_Owner_Admin {
 		}
 
 		$tables = Havato_REST::venue_tables( $venue['id'] );
+		$locked = Havato_REST::tables_locked_by( $venue['id'] );
 		$seats  = 0;
 		foreach ( $tables as $row ) {
 			$seats += $row['seats'] * $row['quantity'];
 		}
 
 		echo '<div class="hv-adm-alert is-blue">' . esc_html( Havato_I18N::t( 'tables_hint' ) ) . '</div>';
+
+		// Editing is blocked while an event still depends on this furniture.
+		if ( ! empty( $locked ) ) {
+			echo '<div class="hv-adm-alert is-orange">';
+			echo '<strong>' . esc_html( sprintf( Havato_I18N::t( 'tables_locked' ), count( $locked ) ) ) . '</strong>';
+			echo '<ul class="hv-adm-locklist">';
+			foreach ( $locked as $ev ) {
+				echo '<li>' . esc_html( $ev['label'] ) . '</li>';
+			}
+			echo '</ul>';
+			echo '<span class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'tables_locked_hint' ) ) . '</span>';
+			echo '</div>';
+		}
 
 		echo '<div class="hv-adm-card">';
 		printf(
@@ -744,10 +756,11 @@ class Havato_Owner_Admin {
 			esc_html( sprintf( '%d %s', $seats, Havato_I18N::t( 'seats_left' ) ) )
 		);
 		printf(
-			'<div id="hv-owner-tables" data-tables="%s" data-nonce="%s" data-action="%s"></div>',
+			'<div id="hv-owner-tables" data-tables="%s" data-nonce="%s" data-action="%s" data-locked="%s"></div>',
 			esc_attr( wp_json_encode( $tables ) ),
 			esc_attr( wp_create_nonce( 'havato_owner' ) ),
-			esc_url( admin_url( 'admin-post.php' ) )
+			esc_url( admin_url( 'admin-post.php' ) ),
+			empty( $locked ) ? '0' : '1'
 		);
 		echo '</div>';
 

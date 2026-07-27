@@ -216,58 +216,90 @@
 		var rows = [];
 		try { rows = JSON.parse(host.dataset.tables || '[]') || []; } catch (e) { rows = []; }
 
+		// Furniture is frozen while an event still depends on it.
+		var locked = host.dataset.locked === '1';
+
 		function totalSeats() {
-			return rows.reduce(function (n, r) {
-				return n + (parseInt(r.seats, 10) || 0) * (parseInt(r.quantity, 10) || 0);
-			}, 0);
+			return rows.reduce(function (n, r) { return n + (parseInt(r.seats, 10) || 0); }, 0);
+		}
+
+		/** Lowest unused table number, so adding never collides. */
+		function nextNumber() {
+			var used = {};
+			rows.forEach(function (r) { used[parseInt(r.table_number, 10) || 0] = true; });
+			var n = 1;
+			while (used[n]) { n++; }
+			return n;
+		}
+
+		/** Duplicate numbers make check-in ambiguous — flag them before saving. */
+		function duplicates() {
+			var seen = {}, dupes = [];
+			rows.forEach(function (r) {
+				var n = parseInt(r.table_number, 10) || 0;
+				if (seen[n]) { dupes.push(n); }
+				seen[n] = true;
+			});
+			return dupes;
 		}
 
 		function render() {
+			var dupes = duplicates();
+			var dis = locked ? ' disabled' : '';
+
 			var body = rows.map(function (r, i) {
+				var num = parseInt(r.table_number, 10) || 0;
+				var bad = dupes.indexOf(num) !== -1 ? ' is-dupe' : '';
 				return '' +
 					'<tr>' +
+						'<td><input type="number" class="hv-adm-input hv-adm-tnum' + bad + '" data-num="' + i + '" value="' +
+							num + '" min="1" max="999"' + dis + '></td>' +
 						'<td><input type="text" class="hv-adm-input" data-label="' + i + '" value="' + esc(r.label || '') +
-							'" placeholder="' + esc(t('table_label_hint')) + '"></td>' +
+							'" placeholder="' + esc(t('table_label_hint')) + '"' + dis + '></td>' +
 						'<td><input type="number" class="hv-adm-input" data-seats="' + i + '" value="' +
-							(parseInt(r.seats, 10) || 4) + '" min="2" max="20"></td>' +
-						'<td><input type="number" class="hv-adm-input" data-qty="' + i + '" value="' +
-							(parseInt(r.quantity, 10) || 1) + '" min="1" max="50"></td>' +
-						'<td class="hv-adm-muted">' +
-							((parseInt(r.seats, 10) || 0) * (parseInt(r.quantity, 10) || 0)) +
-						'</td>' +
+							(parseInt(r.seats, 10) || 4) + '" min="2" max="20"' + dis + '></td>' +
 						'<td class="hv-adm-actions">' +
-							'<button type="button" class="hv-adm-btn hv-adm-btn-danger" data-del="' + i + '">✕</button>' +
+							'<button type="button" class="hv-adm-btn hv-adm-btn-danger" data-del="' + i + '"' + dis + '>✕</button>' +
 						'</td>' +
 					'</tr>';
 			}).join('');
 
 			host.innerHTML =
 				'<table class="hv-adm-table"><thead><tr>' +
+					'<th>' + esc(t('table_number_col')) + '</th>' +
 					'<th>' + esc(t('table_label')) + '</th>' +
 					'<th>' + esc(t('table_seats')) + '</th>' +
-					'<th>' + esc(t('table_quantity')) + '</th>' +
-					'<th>' + esc(t('seats_left')) + '</th>' +
 					'<th></th>' +
 				'</tr></thead><tbody>' +
-					(body || '<tr><td colspan="5" class="hv-adm-muted">' + esc(t('empty_state')) + '</td></tr>') +
+					(body || '<tr><td colspan="4" class="hv-adm-muted">' + esc(t('empty_state')) + '</td></tr>') +
 				'</tbody></table>' +
+				(dupes.length
+					? '<p class="hv-adm-alert is-orange">' +
+						esc(t('table_number_duplicate').replace('%d', dupes[0])) + '</p>'
+					: '') +
 				'<p class="hv-adm-menu-actions">' +
-					'<button type="button" class="hv-adm-btn hv-adm-btn-ghost" id="hv-tables-add">＋ ' + esc(t('add_item')) + '</button> ' +
-					'<button type="button" class="hv-adm-btn hv-adm-btn-blue" id="hv-tables-save">' + esc(t('save')) + '</button> ' +
-					'<span class="hv-adm-muted">' + esc(t('seats_left')) + ': <strong>' + totalSeats() + '</strong></span>' +
+					'<button type="button" class="hv-adm-btn hv-adm-btn-ghost" id="hv-tables-add"' +
+						(locked ? ' disabled' : '') + '>＋ ' + esc(t('add_item')) + '</button> ' +
+					'<button type="button" class="hv-adm-btn hv-adm-btn-blue" id="hv-tables-save"' +
+						(locked || dupes.length ? ' disabled' : '') + '>' + esc(t('save')) + '</button> ' +
+					'<span class="hv-adm-muted">' + esc(t('table_quantity')) + ': <strong>' + rows.length +
+					'</strong> · ' + esc(t('seats_left')) + ': <strong>' + totalSeats() + '</strong></span>' +
 				'</p>';
 
 			bind();
 		}
 
 		function bind() {
-			[['label', 'label'], ['seats', 'seats'], ['qty', 'quantity']].forEach(function (pair) {
+			if (locked) { return; }
+
+			[['label', 'label'], ['seats', 'seats'], ['num', 'table_number']].forEach(function (pair) {
 				Array.prototype.forEach.call(host.querySelectorAll('[data-' + pair[0] + ']'), function (el) {
 					el.oninput = function () {
-						var i = +el.dataset[pair[0] === 'qty' ? 'qty' : pair[0]];
+						var i = +el.dataset[pair[0]];
 						rows[i][pair[1]] = (pair[0] === 'label') ? el.value : (parseInt(el.value, 10) || 0);
-						// Re-render only for numbers, so the seat total stays live
-						// without stealing focus from the text field.
+						// Re-render for numbers so the totals and duplicate
+						// warning stay live, but not while typing a label —
+						// that would steal focus mid-word.
 						if (pair[0] !== 'label') { render(); }
 					};
 				});
@@ -278,13 +310,14 @@
 			});
 
 			$('#hv-tables-add').onclick = function () {
-				rows.push({ id: 0, label: '', seats: 4, quantity: 1 });
+				rows.push({ id: 0, table_number: nextNumber(), label: '', seats: 4, quantity: 1 });
 				render();
 			};
 
 			$('#hv-tables-save').onclick = function () {
+				if (duplicates().length) { return; }
 				var clean = rows.filter(function (r) {
-					return (parseInt(r.seats, 10) || 0) >= 2 && (parseInt(r.quantity, 10) || 0) >= 1;
+					return (parseInt(r.seats, 10) || 0) >= 2 && (parseInt(r.table_number, 10) || 0) >= 1;
 				});
 				postJson(host, 'save_tables', 'tables_json', clean);
 			};

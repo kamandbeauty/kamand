@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,18 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.7.0 =
+* Every table now has its own number ("Table #6"), so a café lists its real
+  furniture one row per table instead of "3 of this kind". Numbers must be
+  unique and the next free one is suggested automatically.
+* Tables can be edited, added or removed at any time — unless an active event
+  is still using them. The screen names the events that are holding the lock,
+  and the tables unlock once those finish or are cancelled.
+* Table numbers appear on the event picker and in the admin event list, so it
+  is clear which physical table a group was seated at.
+* Existing furniture is migrated automatically: a legacy "3 tables of 4" row
+  becomes three individually numbered tables with the same total capacity.
 
 = 1.6.0 =
 * Cafés can now describe their real furniture once — "3 tables of 4, 2 tables

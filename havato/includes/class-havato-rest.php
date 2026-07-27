@@ -1672,7 +1672,12 @@ class Havato_REST {
 			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
 		}
 
-		return self::ok( array( 'tables' => self::venue_tables( $venue['id'] ) ) );
+		return self::ok(
+			array(
+				'tables' => self::venue_tables( $venue['id'] ),
+				'locked' => self::tables_locked_by( $venue['id'] ),
+			)
+		);
 	}
 
 	/**
@@ -1693,38 +1698,63 @@ class Havato_REST {
 			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
 		}
 
+		// HARD CONSTRAINT: the furniture cannot change while an event is still
+		// running on it, otherwise a seated group could lose its table or the
+		// capacity of a live event would silently shift under the guests.
+		$locked = self::tables_locked_by( $venue['id'] );
+		if ( ! empty( $locked ) ) {
+			return new WP_Error(
+				'havato_tables_locked',
+				sprintf( Havato_I18N::t( 'tables_locked' ), count( $locked ) ),
+				array( 'status' => 409, 'events' => $locked )
+			);
+		}
+
 		$items = $req->get_param( 'tables' );
 		$items = is_array( $items ) ? $items : havato_json( $items );
 		$table = Havato_DB::table( 'venue_tables' );
 
-		$keep = array();
+		$keep  = array();
+		$seen  = array();
 
 		foreach ( $items as $item ) {
 			if ( ! is_array( $item ) ) {
 				continue;
 			}
 
-			$seats = max( 2, min( 20, isset( $item['seats'] ) ? (int) $item['seats'] : 4 ) );
-			$qty   = max( 1, min( 50, isset( $item['quantity'] ) ? (int) $item['quantity'] : 1 ) );
-			$label = isset( $item['label'] ) ? sanitize_text_field( $item['label'] ) : '';
-			$id    = isset( $item['id'] ) ? (int) $item['id'] : 0;
+			$seats  = max( 2, min( 20, isset( $item['seats'] ) ? (int) $item['seats'] : 4 ) );
+			$number = max( 1, min( 999, isset( $item['table_number'] ) ? (int) $item['table_number'] : 0 ) );
+			$label  = isset( $item['label'] ) ? sanitize_text_field( $item['label'] ) : '';
+			$id     = isset( $item['id'] ) ? (int) $item['id'] : 0;
+
+			// Table numbers identify a physical table, so they must be unique
+			// within the café; a duplicate would make check-in ambiguous.
+			if ( isset( $seen[ $number ] ) ) {
+				return new WP_Error(
+					'havato_duplicate_number',
+					sprintf( Havato_I18N::t( 'table_number_duplicate' ), $number ),
+					array( 'status' => 400 )
+				);
+			}
+			$seen[ $number ] = true;
 
 			$data = array(
-				'venue_id' => $venue['id'],
-				'label'    => $label,
-				'seats'    => $seats,
-				'quantity' => $qty,
-				'active'   => 1,
+				'venue_id'     => $venue['id'],
+				'table_number' => $number,
+				'label'        => $label,
+				'seats'        => $seats,
+				'quantity'     => 1,
+				'active'       => 1,
 			);
 
 			if ( $id ) {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->update( $table, $data, array( 'id' => $id, 'venue_id' => $venue['id'] ), array( '%s', '%s', '%d', '%d', '%d' ), array( '%d', '%s' ) );
+				$wpdb->update( $table, $data, array( 'id' => $id, 'venue_id' => $venue['id'] ), array( '%s', '%d', '%s', '%d', '%d', '%d' ), array( '%d', '%s' ) );
 				$keep[] = $id;
 			} else {
 				$data['created_at'] = havato_now();
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->insert( $table, $data, array( '%s', '%s', '%d', '%d', '%d', '%s' ) );
+				$wpdb->insert( $table, $data, array( '%s', '%d', '%s', '%d', '%d', '%d', '%s' ) );
 				$keep[] = (int) $wpdb->insert_id;
 			}
 		}
@@ -1748,6 +1778,51 @@ class Havato_REST {
 		return self::ok( array( 'tables' => self::venue_tables( $venue['id'] ) ) );
 	}
 
+
+	/**
+	 * Events that currently hold this café's tables.
+	 *
+	 * "Active" means an event that has not happened yet or is still being
+	 * matched: open, matched, or pending_admin with a future date. Completed
+	 * events are historical, so they never block editing.
+	 *
+	 * @param string $venue_id Venue id.
+	 * @return array Blocking events (id + label), empty when editing is safe.
+	 */
+	public static function tables_locked_by( $venue_id ) {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		$events = Havato_DB::table( 'events' );
+		$lang   = Havato_I18N::current_lang();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, title, event_date, event_time
+				 FROM $events
+				 WHERE venue_id = %s
+				   AND status IN ('open','matched','pending_admin')
+				   AND TIMESTAMP(event_date, event_time) >= DATE_SUB(NOW(), INTERVAL 6 HOUR)
+				 ORDER BY event_date ASC",
+				$venue_id
+			),
+			ARRAY_A
+		);
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$out[] = array(
+				'id'    => $row['id'],
+				'label' => ( '' !== trim( (string) $row['title'] ) ? $row['title'] . ' — ' : '' )
+					. Havato_Jalali::format( $row['event_date'], $lang )
+					. ' ' . substr( $row['event_time'], 0, 5 ),
+			);
+		}
+
+		return $out;
+	}
+
 	/**
 	 * Active tables of a venue.
 	 *
@@ -1762,17 +1837,18 @@ class Havato_REST {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
-			$wpdb->prepare( "SELECT * FROM $table WHERE venue_id = %s AND active = 1 ORDER BY seats ASC, id ASC", $venue_id ),
+			$wpdb->prepare( "SELECT * FROM $table WHERE venue_id = %s AND active = 1 ORDER BY table_number ASC, id ASC", $venue_id ),
 			ARRAY_A
 		);
 
 		return array_map(
 			function ( $row ) {
 				return array(
-					'id'       => (int) $row['id'],
-					'label'    => $row['label'],
-					'seats'    => (int) $row['seats'],
-					'quantity' => (int) $row['quantity'],
+					'id'           => (int) $row['id'],
+					'table_number' => (int) $row['table_number'],
+					'label'        => $row['label'],
+					'seats'        => (int) $row['seats'],
+					'quantity'     => (int) $row['quantity'],
 				);
 			},
 			(array) $rows
@@ -1795,9 +1871,9 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT et.*, vt.label FROM $et et
+				"SELECT et.*, vt.label, vt.table_number FROM $et et
 				 LEFT JOIN $vt vt ON vt.id = et.table_id
-				 WHERE et.event_id = %s ORDER BY et.seats ASC",
+				 WHERE et.event_id = %s ORDER BY vt.table_number ASC",
 				$event_id
 			),
 			ARRAY_A
@@ -1806,10 +1882,11 @@ class Havato_REST {
 		return array_map(
 			function ( $row ) {
 				return array(
-					'table_id' => (int) $row['table_id'],
-					'label'    => $row['label'],
-					'seats'    => (int) $row['seats'],
-					'quantity' => (int) $row['quantity'],
+					'table_id'     => (int) $row['table_id'],
+					'table_number' => (int) $row['table_number'],
+					'label'        => $row['label'],
+					'seats'        => (int) $row['seats'],
+					'quantity'     => (int) $row['quantity'],
 				);
 			},
 			(array) $rows

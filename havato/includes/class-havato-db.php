@@ -311,13 +311,15 @@ class Havato_DB {
 		$queries[] = "CREATE TABLE {$p}venue_tables (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			venue_id varchar(64) NOT NULL DEFAULT '',
+			table_number int(11) NOT NULL DEFAULT 0,
 			label varchar(191) NOT NULL DEFAULT '',
 			seats int(11) NOT NULL DEFAULT 4,
 			quantity int(11) NOT NULL DEFAULT 1,
 			active tinyint(1) NOT NULL DEFAULT 1,
 			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			PRIMARY KEY  (id),
-			KEY venue_id (venue_id)
+			KEY venue_id (venue_id),
+			KEY table_number (venue_id,table_number)
 		) $charset;";
 
 		// 16. Which tables an event uses, and how many of each.
@@ -366,6 +368,73 @@ class Havato_DB {
 		if ( HAVATO_DB_VERSION !== $installed ) {
 			self::install();
 			self::migrate_name_fa_to_manager();
+			self::migrate_tables_to_numbered();
+		}
+	}
+
+	/**
+	 * Migration: tables used to be stored as "a type with a quantity"
+	 * (3 x 4-seater in one row). Cafés now number each physical table, so any
+	 * legacy row with quantity > 1 is expanded into that many numbered rows.
+	 *
+	 * Safe to re-run: it only touches rows that still have quantity > 1 or no
+	 * number yet.
+	 */
+	public static function migrate_tables_to_numbered() {
+		global $wpdb;
+
+		$table = self::table( 'venue_tables' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$columns = $wpdb->get_col( "DESC `$table`", 0 );
+		if ( ! is_array( $columns ) || ! in_array( 'table_number', $columns, true ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$venues = $wpdb->get_col( "SELECT DISTINCT venue_id FROM `$table`" );
+
+		foreach ( (array) $venues as $venue_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $wpdb->get_results(
+				$wpdb->prepare( "SELECT * FROM `$table` WHERE venue_id = %s ORDER BY id ASC", $venue_id ),
+				ARRAY_A
+			);
+
+			$next = 1;
+			foreach ( (array) $rows as $row ) {
+				$qty = max( 1, (int) $row['quantity'] );
+
+				// The original row becomes table #next.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->update(
+					$table,
+					array( 'table_number' => $next, 'quantity' => 1 ),
+					array( 'id' => (int) $row['id'] ),
+					array( '%d', '%d' ),
+					array( '%d' )
+				);
+				$next++;
+
+				// Any extra copies become their own numbered rows.
+				for ( $i = 1; $i < $qty; $i++ ) {
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->insert(
+						$table,
+						array(
+							'venue_id'     => $venue_id,
+							'table_number' => $next,
+							'label'        => $row['label'],
+							'seats'        => (int) $row['seats'],
+							'quantity'     => 1,
+							'active'       => (int) $row['active'],
+							'created_at'   => havato_now(),
+						),
+						array( '%s', '%d', '%s', '%d', '%d', '%d', '%s' )
+					);
+					$next++;
+				}
+			}
 		}
 	}
 
