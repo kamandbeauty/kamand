@@ -1964,11 +1964,11 @@
 	function menuRowMarkup(item, index) {
 		return '' +
 			'<div class="hv-card" data-menu-row="' + index + '">' +
-				'<div class="hv-row">' +
-					'<div class="hv-field" style="flex:0 0 auto">' +
-						'<label>' + esc(t('menu_item_image')) + '</label>' +
+				'<div class="hv-row" style="align-items:flex-start;flex-wrap:nowrap">' +
+					'<div class="hv-field" style="flex:0 0 auto;align-items:center">' +
+						'<label style="white-space:nowrap">' + esc(t('menu_item_image')) + '</label>' +
 						'<button type="button" class="hv-menu-thumb" data-menu-img="' + index + '" title="' + esc(t('menu_item_image')) + '">' +
-							(item.image ? '<img src="' + esc(item.image) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:14px">' : icon('cup')) +
+							(item.image ? '<img src="' + esc(item.image) + '" alt="">' : icon('cup')) +
 						'</button>' +
 					'</div>' +
 					'<div style="flex:1 1 auto;min-width:0">' +

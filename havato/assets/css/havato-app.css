@@ -53,6 +53,7 @@
 
 	--hv-header-h: clamp(104px, 20dvh, 168px);
 	--hv-nav-h: clamp(72px, 11dvh, 92px);
+	--hv-fab-size: clamp(56px, 15vw, 64px);
 	--hv-gutter: clamp(14px, 4.2vw, 22px);
 
 	--hv-font-fa: "Vazirmatn", "Vazir", "IRANSans", system-ui, sans-serif;
@@ -286,7 +287,11 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	overflow-x: hidden;
 	-webkit-overflow-scrolling: touch;
 	overscroll-behavior: contain;
-	padding: 26px var(--hv-gutter) calc(var(--hv-nav-h) + env(safe-area-inset-bottom) + 24px);
+	/* Bottom padding must clear the nav AND the floating action button, which
+	   rises ~34% of the nav height above it. Without the FAB allowance the
+	   last form field ends up underneath the circular button. */
+	padding: 26px var(--hv-gutter)
+		calc(var(--hv-nav-h) + (var(--hv-fab-size) * 0.6) + env(safe-area-inset-bottom) + 16px);
 	scrollbar-width: thin;
 }
 .hv-main::-webkit-scrollbar { inline-size: 4px; }
@@ -699,14 +704,27 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	padding: 4px 2px;
 	background: none;
 	border: 0;
-	color: rgba(255, 255, 255, 0.62);
+	color: rgba(255, 255, 255, 0.72);
 	font-size: 0.62rem;
 	font-weight: 600;
 	cursor: pointer;
 	transition: color 0.18s ease, transform 0.18s ease;
 }
 .hv-tab svg { inline-size: 24px; block-size: 24px; }
+
+/* The sprite icons are built for white cards, so their indigo layer
+   (#1B1FBF) disappears against the dark indigo nav bar. Inside the nav we
+   drop the gradient fills and paint the icon with currentColor instead, so
+   inactive tabs read as translucent white and the active tab is solid white. */
+.hv-tab svg * {
+	fill: currentColor !important;
+	stroke: currentColor !important;
+	opacity: 1 !important;
+}
+.hv-tab:not(.is-active) svg { opacity: 0.72; }
+
 .hv-tab.is-active { color: #fff; transform: translateY(-2px); }
+.hv-tab.is-active svg { opacity: 1; filter: drop-shadow(0 2px 6px rgba(127, 180, 255, 0.55)); }
 .hv-tab.is-active::after {
 	content: "";
 	position: absolute;
@@ -725,8 +743,8 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	inset-block-start: calc(var(--hv-nav-h) * -0.34);
 	inset-inline-start: 50%;
 	transform: translateX(-50%);
-	inline-size: clamp(56px, 15vw, 64px);
-	block-size: clamp(56px, 15vw, 64px);
+	inline-size: var(--hv-fab-size);
+	block-size: var(--hv-fab-size);
 	border-radius: 50%;
 	border: 4px solid rgba(255, 255, 255, 0.9);
 	background: linear-gradient(140deg, #6bb3ff, var(--hv-blue));
@@ -1156,16 +1174,34 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	margin-block-end: 10px;
 }
 .hv-menu-thumb {
-	inline-size: 52px;
-	block-size: 52px;
+	/* Fixed square thumbnail. min/max are pinned too: as a flex/grid child
+	   (e.g. inside a column .hv-field) `block-size` alone gets stretched by
+	   align-items:stretch, which turned the button into a tall pill. */
+	inline-size: 56px;
+	block-size: 56px;
+	min-inline-size: 56px;
+	min-block-size: 56px;
+	max-inline-size: 56px;
+	max-block-size: 56px;
+	padding: 0;
+	border: 1px solid rgba(27, 31, 191, 0.14);
 	border-radius: 14px;
 	object-fit: cover;
+	overflow: hidden;
 	background: var(--hv-card-2);
 	flex: 0 0 auto;
+	align-self: center;
 	display: grid;
 	place-items: center;
+	cursor: pointer;
 }
 .hv-menu-thumb svg { inline-size: 24px; block-size: 24px; }
+.hv-menu-thumb img {
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+	display: block;
+}
 .hv-menu-body { flex: 1 1 auto; min-inline-size: 0; }
 .hv-menu-name { font-weight: 700; font-size: 0.9rem; }
 .hv-menu-desc { font-size: 0.75rem; color: var(--hv-text-soft); }

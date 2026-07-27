@@ -423,15 +423,32 @@ class Havato_Admin {
 			echo '</ul>';
 
 			echo '<div class="hv-adm-actions">';
-			foreach ( array( '1' => 'hv-adm-btn-green', '0' => 'hv-adm-btn-ghost' ) as $approve => $class ) {
+			// NOTE: PHP casts numeric string array keys to integers, so a
+			// `'1' => …` key arrives here as int(1). Comparing it with the
+			// string '1' via === is always false, which previously labelled the
+			// green approve button "reject". Use an explicit list instead.
+			$menu_actions = array(
+				array(
+					'approve' => 1,
+					'class'   => 'hv-adm-btn-green',
+					'label'   => Havato_I18N::t( 'verify_action' ),
+				),
+				array(
+					'approve' => 0,
+					'class'   => 'hv-adm-btn-ghost',
+					'label'   => Havato_I18N::t( 'reject' ),
+				),
+			);
+
+			foreach ( $menu_actions as $menu_action ) {
 				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 				self::form_fields( 'menu' );
 				echo '<input type="hidden" name="venue_id" value="' . esc_attr( $row['id'] ) . '">';
-				echo '<input type="hidden" name="approve" value="' . esc_attr( $approve ) . '">';
+				echo '<input type="hidden" name="approve" value="' . esc_attr( $menu_action['approve'] ) . '">';
 				printf(
 					'<button type="submit" class="hv-adm-btn %s">%s</button>',
-					esc_attr( $class ),
-					esc_html( '1' === $approve ? Havato_I18N::t( 'verify_action' ) : Havato_I18N::t( 'reject' ) )
+					esc_attr( $menu_action['class'] ),
+					esc_html( $menu_action['label'] )
 				);
 				echo '</form>';
 			}

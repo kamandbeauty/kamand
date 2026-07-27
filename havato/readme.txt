@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,19 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.0.2 =
+* Fix: the "approve menu" button in wp-admin was labelled "reject". PHP casts
+  numeric string array keys to integers, so `'1' === $approve` was always
+  false. Both buttons now come from an explicit action list.
+* Fix: bottom-navigation icons were nearly invisible. The sprite's indigo
+  layer (#1B1FBF) was being drawn on the dark indigo nav bar; inside the nav
+  the icons are now painted with currentColor.
+* Fix: the Menu Builder image button stretched into a tall pill because a
+  column flex parent stretched it. The thumbnail is now pinned to 56x56.
+* Fix: the last form field could sit underneath the floating action button.
+  The scroll area's bottom padding now allows for the FAB overhang via a new
+  --hv-fab-size token shared with the button itself.
 
 = 1.0.1 =
 * Fix: the checkout-redirect and modal overlays stayed on screen permanently,
