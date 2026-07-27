@@ -114,6 +114,7 @@ class Havato_DB {
 			lng double NOT NULL DEFAULT 0,
 			image varchar(255) NOT NULL DEFAULT '',
 			storefront_photo varchar(255) NOT NULL DEFAULT '',
+			is_demo tinyint(1) NOT NULL DEFAULT 0,
 			utilization int(11) NOT NULL DEFAULT 0,
 			guests_routed int(11) NOT NULL DEFAULT 0,
 			budget_tier varchar(20) NOT NULL DEFAULT 'medium',
@@ -126,7 +127,8 @@ class Havato_DB {
 			PRIMARY KEY  (id),
 			KEY manager_id (manager_id),
 			KEY verified (verified),
-			KEY city (city)
+			KEY city (city),
+			KEY is_demo (is_demo)
 		) $charset;";
 
 		// 2. Events.
@@ -142,11 +144,13 @@ class Havato_DB {
 			price int(11) NOT NULL DEFAULT 0,
 			max_capacity int(11) NOT NULL DEFAULT 6,
 			status varchar(24) NOT NULL DEFAULT 'open',
+			is_demo tinyint(1) NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			PRIMARY KEY  (id),
 			KEY venue_id (venue_id),
 			KEY status (status),
-			KEY event_date (event_date)
+			KEY event_date (event_date),
+			KEY is_demo (is_demo)
 		) $charset;";
 
 		// 3. User personality profiles.

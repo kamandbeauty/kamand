@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,17 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.9.0 =
+* Demo content now ships a full sample directory: 30 cafés across Tehran,
+  Isfahan and Istanbul, each with tables and two upcoming events.
+* Everything the seeder creates is flagged as demo, and a new "Delete demo
+  content" button removes exactly that — real cafés, including ones in the
+  same city and ones added through the bulk importer, are never touched.
+* The dashboard shows how much demo content currently exists, and deletion
+  asks for confirmation first.
+* Removing demo content also cleans up the rows that hang off it (tables,
+  registrations, groups, memberships and chat), so no orphans are left behind.
 
 = 1.8.0 =
 * New admin screen "Bulk import cafés": paste a JSON list and create many

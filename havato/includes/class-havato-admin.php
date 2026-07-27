@@ -302,15 +302,53 @@ class Havato_Admin {
 
 		echo '</div>';
 
-		// Quick demo seeder — keeps a fresh install from looking broken.
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="hv-adm-card">';
-		self::form_fields( 'seed' );
-		echo '<h2 class="hv-adm-card-title">Demo data</h2>';
-		echo '<p class="hv-adm-muted">Create sample cafés, events and a matched table so you can walk through the whole flow immediately.</p>';
-		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">Generate demo content</button>';
-		echo '</form>';
+		self::render_demo_card();
 
 		self::foot();
+	}
+
+	/**
+	 * Demo content: create the sample directory, or remove it again.
+	 *
+	 * The removal only ever touches rows flagged is_demo, so real cafés are
+	 * safe even when they sit in the same city as the samples.
+	 */
+	private static function render_demo_card() {
+		require_once HAVATO_PATH . 'includes/class-havato-seeder.php';
+
+		$stats = Havato_Seeder::stats();
+		$has   = ( $stats['venues'] > 0 || $stats['events'] > 0 );
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'demo_title' ) ) . '</h2>';
+
+		if ( $has ) {
+			printf(
+				'<p><span class="hv-adm-badge is-blue">%s</span></p>',
+				esc_html( sprintf( Havato_I18N::t( 'demo_present' ), $stats['venues'], $stats['events'] ) )
+			);
+		}
+
+		echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'demo_hint' ) ) . '</p>';
+
+		echo '<div class="hv-adm-actions">';
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		self::form_fields( 'seed' );
+		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' .
+			esc_html( Havato_I18N::t( 'demo_create' ) ) . '</button>';
+		echo '</form>';
+
+		if ( $has ) {
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" ' .
+				'onsubmit="return confirm(' . esc_attr( wp_json_encode( Havato_I18N::t( 'demo_confirm' ) ) ) . ');">';
+			self::form_fields( 'purge_demo' );
+			echo '<button type="submit" class="hv-adm-btn hv-adm-btn-danger">' .
+				esc_html( Havato_I18N::t( 'demo_remove' ) ) . '</button>';
+			echo '</form>';
+		}
+
+		echo '</div></div>';
 	}
 
 	/* =====================================================================
@@ -912,9 +950,12 @@ class Havato_Admin {
 					'verified'     => $verified ? 1 : 0,
 					'manager_id'   => 0,
 					'menu_json'    => '[]',
+					// Imported venues are real data: never flagged as demo, so
+					// "delete demo content" can never remove them.
+					'is_demo'      => 0,
 					'created_at'   => havato_now(),
 				),
-				array( '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%d', '%d', '%s', '%s' )
+				array( '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%d', '%d', '%s', '%d', '%s' )
 			);
 
 			$created++;
@@ -1818,6 +1859,12 @@ class Havato_Admin {
 					)
 				);
 				$page = 'havato-locale';
+				break;
+
+			case 'purge_demo':
+				require_once HAVATO_PATH . 'includes/class-havato-seeder.php';
+				$result  = Havato_Seeder::purge();
+				$message = $result['message'];
 				break;
 
 			case 'seed':

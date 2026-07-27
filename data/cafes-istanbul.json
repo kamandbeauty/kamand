@@ -1,0 +1,12 @@
+[
+  { "name": "Petra Roasting Co. Gayrettepe", "city": "Istanbul", "latitude": 41.0679, "longitude": 29.0067, "address": "Gayrettepe, Istanbul" },
+  { "name": "Karabatak",                     "city": "Istanbul", "latitude": 41.0258, "longitude": 28.9768, "address": "Karaköy, Istanbul" },
+  { "name": "Mandabatmaz",                   "city": "Istanbul", "latitude": 41.0338, "longitude": 28.9773, "address": "Beyoğlu, Istanbul" },
+  { "name": "Walter's Coffee Roastery",      "city": "Istanbul", "latitude": 40.9908, "longitude": 29.0304, "address": "Moda, Kadıköy, Istanbul" },
+  { "name": "Kronotrop",                     "city": "Istanbul", "latitude": 41.0332, "longitude": 28.9779, "address": "Beyoğlu, Istanbul" },
+  { "name": "Journey",                       "city": "Istanbul", "latitude": 41.0311, "longitude": 28.9828, "address": "Cihangir, Istanbul" },
+  { "name": "MOC Istanbul",                  "city": "Istanbul", "latitude": 41.0828, "longitude": 29.0126, "address": "Nişantaşı, Istanbul" },
+  { "name": "Fazıl Bey'in Türk Kahvesi",     "city": "Istanbul", "latitude": 40.9899, "longitude": 29.0262, "address": "Kadıköy, Istanbul" },
+  { "name": "Pierre Loti Cafe",              "city": "Istanbul", "latitude": 41.0534, "longitude": 28.9339, "address": "Eyüpsultan, Istanbul" },
+  { "name": "Cafe Privato",                  "city": "Istanbul", "latitude": 41.0250, "longitude": 28.9736, "address": "Galata, Istanbul" }
+]

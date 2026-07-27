@@ -11,7 +11,11 @@ let f=0; const t=(n,c)=>{console.log((c?'✓ ':'❌ ')+n);if(!c)f++;};
 console.log('--- numbering ---');
 t('table_number column', /table_number int\(11\)/.test(db));
 t('indexed per venue', /KEY table_number \(venue_id,table_number\)/.test(db));
-t('DB version bumped', /HAVATO_DB_VERSION', '1\.5\.0'/.test(main));
+{
+  const v=/HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  t('DB version bumped (>=1.5.0), got '+v[1]+'.'+v[2]+'.'+v[3],
+    (+v[1])*10000+(+v[2])*100+(+v[3]) >= 10500);
+}
 // Stricter now: an out-of-range or missing number is REJECTED rather than
 // silently clamped, because we must never invent a number for the café.
 t('number required, 1..999 enforced', /\$number < 1 \|\| \$number > 999/.test(rest));
