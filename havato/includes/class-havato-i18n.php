@@ -338,6 +338,7 @@ class Havato_I18N {
 
 			// Owner portal.
 			'owner_login_title'     => array( 'fa' => 'پورتال صاحبان کافه', 'en' => 'Café owner portal' ),
+			'owner_panel'           => array( 'fa' => 'پنل کافه', 'en' => 'Café panel' ),
 			'owner_signin'          => array( 'fa' => 'ورود', 'en' => 'Sign in' ),
 			'owner_signup'          => array( 'fa' => 'ثبت‌نام کافه', 'en' => 'Register café' ),
 			'email'                 => array( 'fa' => 'ایمیل', 'en' => 'Email' ),

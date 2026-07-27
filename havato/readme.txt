@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,20 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.3.0 =
+* The café owner panel moved into wp-admin as a proper desktop interface:
+  dashboard, events with check-in, menu builder, venue settings (media library
+  + draggable pin) and payout status. It reuses the same REST endpoints, so
+  business rules live in exactly one place.
+* The mobile owner portal was removed from the web-app, which is now guests
+  only. Its four owner tabs and ~540 lines of code are gone.
+* Café owners are locked to their own panel plus their profile: every other
+  wp-admin menu is hidden, the dashboard and post editor redirect back, and
+  the admin bar is trimmed. Uploads keep working. Gatherers are redirected out
+  of wp-admin to the web-app entirely.
+* Cafés are now onboarded by the administrator from Havato -> Approvals, since
+  public owner signup was removed with the mobile portal.
 
 = 1.2.0 =
 * The personality test now asks for country and city first. Supported:

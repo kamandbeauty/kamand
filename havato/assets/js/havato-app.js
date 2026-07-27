@@ -8,7 +8,7 @@
  *   • Instant bilingual switch: all strings live in HAVATO_BOOT.i18n, dates and
  *     prices are pre-rendered by PHP in both calendars, so switching language
  *     only re-renders the current view.
- *   • Two completely separate portals: gatherer (client) and cafe_owner.
+ *   • Guests only. The cafe owner panel now lives in wp-admin.
  */
 (function () {
 	'use strict';
@@ -33,7 +33,7 @@
 		tab: null,
 		tabs: [],
 		data: {},
-		authView: 'wall', // wall | owner-login | owner-register
+		authView: 'wall',
 		chatMode: 'groups',
 		chatRoom: null, // {type:'group'|'private', id}
 		viewingUser: 0, // >0 while looking at somebody else's public profile
@@ -46,9 +46,6 @@
 		ownerMap: null,
 		testStep: 0,
 		testData: { age: 27, gender: '', extroversion: 5, talkative: 5, vibe: 'fun', interests: [], neighborhood: '', country: '', city: '' },
-		menuDraft: [],
-		menuOpenRow: -1,
-		menuHasPending: false,
 		booted: false
 	};
 
@@ -464,14 +461,6 @@
 		// nav-* icons are the monochrome variants: they paint with
 		// currentColor so the tab state (translucent vs solid white) actually
 		// drives them on the dark indigo bar.
-		if (role === 'cafe_owner') {
-			return [
-				{ id: 'dashboard', label: 'tab_dashboard', icon: 'nav-dashboard' },
-				{ id: 'venue-events', label: 'tab_venue_events', icon: 'nav-calendar' },
-				{ id: 'menu', label: 'tab_menu_builder', icon: 'nav-menu' },
-				{ id: 'venue-settings', label: 'tab_venue_settings', icon: 'nav-settings' }
-			];
-		}
 		return [
 			{ id: 'explore', label: 'tab_explore', icon: 'nav-explore' },
 			{ id: 'map', label: 'tab_map', icon: 'nav-map' },
@@ -555,10 +544,6 @@
 			map: { icon: 'map', action: locateMe },
 			chats: { icon: 'chat', action: function () { S.chatRoom = null; render(); } },
 			profile: { icon: 'plus', action: pickGalleryPhoto },
-			dashboard: { icon: 'filter', action: function () { loadTab(true); } },
-			'venue-events': { icon: 'plus', action: openCreateEvent },
-			menu: { icon: 'plus', action: addMenuRow },
-			'venue-settings': { icon: 'check', action: saveVenueForm }
 		}[S.tab] || { icon: 'filter', action: function () { loadTab(true); } };
 
 		el.fab.querySelector('use').setAttribute('href', '#hv-i-' + conf.icon);
@@ -609,11 +594,7 @@
 			explore: viewExplore,
 			map: viewMap,
 			chats: viewChats,
-			profile: viewProfile,
-			dashboard: viewOwnerDashboard,
-			'venue-events': viewOwnerEvents,
-			menu: viewMenuBuilder,
-			'venue-settings': viewVenueSettings
+			profile: viewProfile
 		};
 
 		var fn = loaders[tab] || viewExplore;
@@ -637,13 +618,7 @@
 		}
 
 		var body;
-		if (S.authView === 'owner-login') {
-			body = ownerLoginMarkup();
-		} else if (S.authView === 'owner-register') {
-			body = ownerRegisterMarkup();
-		} else {
-			body = authWallMarkup();
-		}
+		body = authWallMarkup();
 
 		el.authwall.innerHTML =
 			'<button type="button" class="hv-lang-btn hv-auth-lang" id="hv-auth-lang">' +
@@ -682,93 +657,14 @@
 				'<p class="hv-auth-sub">' + esc(t('auth_sub')) + '</p>' +
 				googleBlock +
 				'<div class="hv-auth-foot">' +
-					'<button type="button" data-auth="owner-login">' + esc(t('login_owner')) + '</button>' +
-					'<button type="button" data-auth="owner-register">' + esc(t('register_partner')) + '</button>' +
+					'<a href="' + esc(BOOT.ownerPanelUrl) + '">' + esc(t('login_owner')) + '</a>' +
 				'</div>' +
 			'</div>';
 	}
 
-	function ownerLoginMarkup() {
-		return '' +
-			'<div class="hv-auth-card hv-glass">' +
-				'<div class="hv-auth-logo">' + icon('cup') + '</div>' +
-				'<h2 class="hv-auth-title">' + esc(t('owner_login_title')) + '</h2>' +
-				'<div class="hv-field"><label>' + esc(t('email')) + '</label>' +
-					'<input type="email" class="hv-input" id="hv-owner-email" autocomplete="username"></div>' +
-				'<div class="hv-field"><label>' + esc(t('password')) + '</label>' +
-					'<input type="password" class="hv-input" id="hv-owner-pass" autocomplete="current-password"></div>' +
-				'<button type="button" class="hv-btn hv-btn-blue hv-btn-block" id="hv-owner-login-btn">' + esc(t('owner_signin')) + '</button>' +
-				'<div class="hv-auth-foot">' +
-					'<button type="button" data-auth="owner-register">' + esc(t('register_partner')) + '</button>' +
-					'<button type="button" data-auth="wall">' + esc(t('back')) + '</button>' +
-				'</div>' +
-			'</div>';
-	}
 
-	function ownerRegisterMarkup() {
-		return '' +
-			'<div class="hv-auth-card hv-glass">' +
-				'<div class="hv-auth-logo">' + icon('cup') + '</div>' +
-				'<h2 class="hv-auth-title">' + esc(t('owner_signup')) + '</h2>' +
-				'<div class="hv-field"><label>' + esc(t('venue_name')) + '</label>' +
-					'<input type="text" class="hv-input" id="hv-reg-name"></div>' +
-				'<div class="hv-field"><label>' + esc(t('manager_name')) + '</label>' +
-					'<input type="text" class="hv-input" id="hv-reg-manager"></div>' +
-				locationSelects('hv-reg', '', '') +
-				'<div class="hv-field"><label>' + esc(t('venue_address')) + '</label>' +
-					'<textarea class="hv-textarea" id="hv-reg-addr"></textarea></div>' +
-				'<div class="hv-field"><label>' + esc(t('email')) + '</label>' +
-					'<input type="email" class="hv-input" id="hv-reg-email" autocomplete="email"></div>' +
-				'<div class="hv-field"><label>' + esc(t('password')) + '</label>' +
-					'<input type="password" class="hv-input" id="hv-reg-pass" autocomplete="new-password"></div>' +
-				'<button type="button" class="hv-btn hv-btn-green hv-btn-block" id="hv-owner-reg-btn">' + esc(t('owner_signup')) + '</button>' +
-				'<div class="hv-auth-foot">' +
-					'<button type="button" data-auth="owner-login">' + esc(t('owner_signin')) + '</button>' +
-					'<button type="button" data-auth="wall">' + esc(t('back')) + '</button>' +
-				'</div>' +
-			'</div>';
-	}
 
-	/**
-	 * Country + city <select> pair for the owner forms. Changing the country
-	 * repopulates the cities, so an invalid pair cannot be submitted.
-	 */
-	function locationSelects(idPrefix, country, city) {
-		var locations = BOOT.locations || {};
-		var countries = Object.keys(locations);
-		if (!country || !locations[country]) { country = countries[0]; }
-		var cities = Object.keys((locations[country] || {}).cities || {});
-		if (cities.indexOf(city) === -1) { city = cities[0]; }
 
-		return '<div class="hv-field"><label>' + esc(t('q_country')) + '</label>' +
-				'<select class="hv-select" id="' + idPrefix + '-country">' +
-					countries.map(function (k) {
-						return '<option value="' + esc(k) + '"' + (k === country ? ' selected' : '') + '>' +
-							esc(pick(locations[k].label)) + '</option>';
-					}).join('') +
-				'</select></div>' +
-			'<div class="hv-field hv-mt"><label>' + esc(t('q_city_select')) + '</label>' +
-				'<select class="hv-select" id="' + idPrefix + '-city">' +
-					cities.map(function (k) {
-						return '<option value="' + esc(k) + '"' + (k === city ? ' selected' : '') + '>' +
-							esc(pick(locations[country].cities[k])) + '</option>';
-					}).join('') +
-				'</select></div>';
-	}
-
-	/** Keep the city list in sync with the chosen country. */
-	function bindLocationSelects(idPrefix) {
-		var cSel = $('#' + idPrefix + '-country');
-		var sSel = $('#' + idPrefix + '-city');
-		if (!cSel || !sSel) { return; }
-
-		cSel.onchange = function () {
-			var cities = ((BOOT.locations || {})[cSel.value] || {}).cities || {};
-			sSel.innerHTML = Object.keys(cities).map(function (k) {
-				return '<option value="' + esc(k) + '">' + esc(pick(cities[k])) + '</option>';
-			}).join('');
-		};
-	}
 
 	function bindAuthEvents() {
 		$$('[data-auth]', el.authwall).forEach(function (btn) {
@@ -777,61 +673,6 @@
 				renderAuthWall();
 			};
 		});
-
-		var loginBtn = $('#hv-owner-login-btn');
-		if (loginBtn) {
-			loginBtn.onclick = function () {
-				var email = $('#hv-owner-email').value.trim();
-				var pass = $('#hv-owner-pass').value;
-				if (!email || !pass) { toast(t('error_generic'), 'error'); return; }
-				loginBtn.disabled = true;
-				api('owner/login', { method: 'POST', body: { email: email, password: pass } })
-					.then(function (res) {
-						S.loggedIn = true;
-						S.role = res.role || 'cafe_owner';
-						S.user = res.user;
-						S.venue = res.venue;
-						S.tab = null;
-						buildTabs();
-						render();
-					})
-					.catch(function (err) { toast(err.message, 'error'); loginBtn.disabled = false; });
-			};
-		}
-
-		var regBtn = $('#hv-owner-reg-btn');
-		if (regBtn) {
-			regBtn.onclick = function () {
-				var payload = {
-					venue_name: $('#hv-reg-name').value.trim(),
-					manager_name: $('#hv-reg-manager').value.trim(),
-					country: $('#hv-reg-country').value,
-					city: $('#hv-reg-city').value,
-					address: $('#hv-reg-addr').value.trim(),
-					email: $('#hv-reg-email').value.trim(),
-					password: $('#hv-reg-pass').value
-				};
-				if (!payload.venue_name || !payload.manager_name || !payload.email || payload.password.length < 6) {
-					toast(t('error_generic'), 'error');
-					return;
-				}
-				regBtn.disabled = true;
-				api('owner/register', { method: 'POST', body: payload })
-					.then(function (res) {
-						S.loggedIn = true;
-						S.role = 'cafe_owner';
-						S.user = res.user;
-						S.venue = res.venue;
-						S.tab = null;
-						buildTabs();
-						render();
-						toast(t('owner_pending_notice'), 'info');
-					})
-					.catch(function (err) { toast(err.message, 'error'); regBtn.disabled = false; });
-			};
-		}
-
-		bindLocationSelects('hv-reg');
 
 		var fallback = $('#hv-google-fallback');
 		if (fallback) {
@@ -1897,7 +1738,6 @@
 	}
 
 	function pickGalleryPhoto() {
-		if (S.role === 'cafe_owner') { return; }
 		pickFile(function (file) {
 			uploadWithProgress('photos/upload', file, t('uploading_photo'))
 				.then(function () { progress.done(t('saved')); viewProfile(); })
@@ -2131,432 +1971,22 @@
 	}
 
 	/* =====================================================================
-	 * OWNER: dashboard
-	 * ================================================================== */
-	function viewOwnerDashboard() {
-		setHeader(t('tab_dashboard'), t('owner_login_title'));
 
-		return api('owner/dashboard').then(function (res) {
-			S.venue = res.venue;
-			var stats = res.stats;
-
-			if (!res.venue.verified) {
-				setStatusStrip(t('owner_pending_notice'), 'orange');
-			} else {
-				setStatusStrip(t('verified_venue'), 'green');
-			}
-
-			var payouts = (res.payouts || []).length
-				? (res.payouts || []).map(function (row) {
-					// The café only ever sees its OWN settlement amount.
-					// Platform ticket revenue and the commission split are
-					// admin-only figures and are deliberately not exposed here.
-					return '<div class="hv-payout-row">' +
-						'<div><strong>' + esc(pick(row.period_label)) + '</strong>' +
-							'<div class="hv-muted">' + esc(t('payout_share')) + '</div></div>' +
-						'<div style="text-align:end">' +
-							'<div class="hv-menu-price">' + esc(pick(row.share_label)) + '</div>' +
-							'<span class="hv-badge hv-badge-' + (row.status === 'paid' ? 'green' : 'orange') + '">' +
-								esc(row.status === 'paid' ? t('payout_paid') : t('payout_due')) + '</span>' +
-						'</div>' +
-					'</div>';
-				}).join('')
-				: '<p class="hv-muted">' + esc(t('empty_state')) + '</p>';
-
-			el.main.innerHTML =
-				(!res.venue.verified ? '<div class="hv-alert hv-alert-orange">' + esc(t('owner_pending_notice')) + '</div>' : '') +
-				'<div class="hv-kpi-grid">' +
-					kpiCard('utilization', stats.utilization + '%', 'blue', 'dashboard', stats.utilization) +
-					kpiCard('guests_routed', num(stats.guests_routed), 'green', 'users') +
-					kpiCard('tab_venue_events', num(stats.upcoming), 'orange', 'calendar') +
-					kpiCard('check_in', num(stats.checked_in), 'pink', 'check') +
-				'</div>' +
-				'<div class="hv-card hv-mt">' +
-					'<h3 class="hv-section-title">' + esc(t('payout_status')) + '</h3>' +
-					payouts +
-				'</div>';
-		});
-	}
-
-	function kpiCard(labelKey, value, color, iconId, progress) {
-		return '' +
-			'<div class="hv-kpi">' +
-				'<div class="hv-kpi-top">' +
-					'<span class="hv-stat-icon is-' + color + '">' + icon(iconId) + '</span>' +
-					'<span class="hv-kpi-label">' + esc(t(labelKey)) + '</span>' +
-				'</div>' +
-				'<div class="hv-kpi-value">' + esc(value) + '</div>' +
-				(progress !== undefined ? '<div class="hv-progress"><span style="width:' + Math.min(100, progress) + '%"></span></div>' : '') +
-			'</div>';
-	}
 
 	/* =====================================================================
-	 * OWNER: venue events + check-in
-	 * ================================================================== */
-	function viewOwnerEvents() {
-		setHeader(t('tab_venue_events'), t('owner_login_title'));
 
-		return api('owner/events').then(function (res) {
-			var events = res.events || [];
 
-			var createBtn = '<button type="button" class="hv-btn hv-btn-primary hv-btn-block" id="hv-create-event">' +
-				esc(t('add_item')) + '</button>';
-
-			if (!events.length) {
-				el.main.innerHTML = emptyState(t('empty_state'), 'calendar') + createBtn;
-				$('#hv-create-event').onclick = openCreateEvent;
-				return;
-			}
-
-			el.main.innerHTML = createBtn + '<div class="hv-mt"></div>' + events.map(function (event) {
-				return '<button type="button" class="hv-list-card" data-owner-event="' + esc(event.id) + '">' +
-					'<span class="hv-list-thumb">' + icon('calendar') + '</span>' +
-					'<span class="hv-list-body">' +
-						'<span class="hv-list-title">' + esc(pick(event.date)) + ' · ' + num(event.time) + '</span>' +
-						'<span class="hv-list-sub">' + num(event.taken) + '/' + num(event.capacity) + ' · ' +
-							esc(budgetLabel(event.budget_tier)) + '</span>' +
-					'</span>' +
-					'<span class="hv-list-meta">' + statusBadge(event.status) + '</span>' +
-				'</button>';
-			}).join('');
-
-			$('#hv-create-event').onclick = openCreateEvent;
-			$$('[data-owner-event]').forEach(function (btn) {
-				btn.onclick = function () { openOwnerEvent(btn.dataset.ownerEvent); };
-			});
-		});
-	}
-
-	function openCreateEvent() {
-		if (S.role !== 'cafe_owner') { return; }
-
-		var today = new Date();
-		today.setDate(today.getDate() + 1);
-		var iso = today.toISOString().slice(0, 10);
-
-		openModal(
-			'<h3 class="hv-modal-title">' + esc(t('tab_venue_events')) + '</h3>' +
-			'<div class="hv-field"><label>' + esc(t('payout_period')) + '</label>' +
-				'<input type="date" class="hv-input" id="hv-ev-date" value="' + iso + '"></div>' +
-			'<div class="hv-field hv-mt"><label>' + esc(t('quiet_hours')) + '</label>' +
-				'<input type="time" class="hv-input" id="hv-ev-time" value="19:00"></div>' +
-			'<div class="hv-field hv-mt"><label>' + esc(t('seats_left')) + '</label>' +
-				'<input type="number" class="hv-input" id="hv-ev-cap" value="6" min="2" max="12"></div>' +
-			'<div class="hv-field hv-mt"><label>' + esc(t('menu_item_price')) + '</label>' +
-				'<input type="number" class="hv-input" id="hv-ev-price" value="75000" min="0" step="5000"></div>' +
-			'<div class="hv-field hv-mt"><label>' + esc(t('filter')) + '</label>' +
-				'<select class="hv-select" id="hv-ev-tier">' +
-					'<option value="low">' + esc(t('budget_low')) + '</option>' +
-					'<option value="medium" selected>' + esc(t('budget_medium')) + '</option>' +
-					'<option value="high">' + esc(t('budget_high')) + '</option>' +
-				'</select></div>' +
-			'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-ev-save">' + esc(t('save')) + '</button>'
-		);
-
-		$('#hv-ev-save').onclick = function () {
-			var btn = $('#hv-ev-save');
-			btn.disabled = true;
-			api('owner/event/create', {
-				method: 'POST',
-				body: {
-					event_date: $('#hv-ev-date').value,
-					event_time: $('#hv-ev-time').value,
-					max_capacity: parseInt($('#hv-ev-cap').value, 10),
-					price: parseInt($('#hv-ev-price').value, 10),
-					budget_tier: $('#hv-ev-tier').value
-				}
-			}).then(function () {
-				closeModal();
-				toast(t('saved'), 'ok');
-				viewOwnerEvents();
-			}).catch(function (err) { btn.disabled = false; toast(err.message, 'error'); });
-		};
-	}
-
-	function openOwnerEvent(eventId) {
-		api('owner/event', { params: { event_id: eventId } }).then(function (res) {
-			var members = res.members || [];
-
-			openModal(
-				'<h3 class="hv-modal-title">' + esc(pick(res.event.date)) + ' · ' + num(res.event.time) + '</h3>' +
-				'<div class="hv-row" style="margin-bottom:12px">' +
-					statusBadge(res.event.status) +
-					'<span class="hv-badge hv-badge-indigo">' + num(res.event.taken) + '/' + num(res.event.capacity) + '</span>' +
-				'</div>' +
-				(members.length === 0 && res.event.status !== 'completed'
-					? '<button type="button" class="hv-btn hv-btn-danger hv-btn-block" data-cancel-event="' + esc(eventId) + '">' +
-						esc(t('delete')) + '</button><div class="hv-mt"></div>'
-					: '') +
-				'<h4 class="hv-section-title">' + esc(t('members_at_table')) + '</h4>' +
-				(members.length ? members.map(function (member) {
-					return '<div class="hv-list-card" style="cursor:default">' +
-						'<span class="hv-list-thumb"><img src="' + esc(member.user.avatar) + '" alt=""></span>' +
-						'<span class="hv-list-body">' +
-							'<span class="hv-list-title">' + esc(member.user.name) + '</span>' +
-							'<span class="hv-list-sub">★ ' + num(member.rating) + '</span>' +
-						'</span>' +
-						'<span class="hv-list-meta">' +
-							'<button type="button" class="hv-btn hv-btn-sm ' +
-								(member.checked_in ? 'hv-btn-green' : 'hv-btn-outline') + '" ' +
-								'data-checkin="' + eventId + '|' + member.user.id + '|' + (member.checked_in ? '0' : '1') + '">' +
-								esc(member.checked_in ? t('check_in') : t('not_checked_in')) +
-							'</button>' +
-						'</span>' +
-					'</div>';
-				}).join('') : emptyState(t('empty_state'), 'users'))
-			);
-
-			var cancelBtn = $('[data-cancel-event]');
-			if (cancelBtn) {
-				cancelBtn.onclick = function () {
-					cancelBtn.disabled = true;
-					api('owner/event/cancel', { method: 'POST', body: { event_id: eventId } })
-						.then(function () { closeModal(); toast(t('saved'), 'ok'); viewOwnerEvents(); })
-						.catch(function (err) { cancelBtn.disabled = false; toast(err.message, 'error'); });
-				};
-			}
-
-			$$('[data-checkin]').forEach(function (btn) {
-				btn.onclick = function () {
-					var parts = btn.dataset.checkin.split('|');
-					btn.disabled = true;
-					api('owner/checkin', {
-						method: 'POST',
-						body: { event_id: parts[0], user_id: parseInt(parts[1], 10), checked_in: parts[2] === '1' }
-					}).then(function () {
-						closeModal();
-						openOwnerEvent(eventId);
-					}).catch(function (err) { btn.disabled = false; toast(err.message, 'error'); });
-				};
-			});
-		}).catch(function (err) { toast(err.message, 'error'); });
-	}
 
 	/* =====================================================================
-	 * OWNER: menu builder (display-only menu, no ordering)
-	 * ================================================================== */
-	function viewMenuBuilder() {
-		setHeader(t('tab_menu_builder'), t('owner_login_title'));
 
-		return api('owner/dashboard').then(function (res) {
-			S.venue = res.venue;
-			var pending = (res.venue.pending_menu || []);
-			S.menuDraft = (pending.length ? pending : (res.venue.menu || [])).map(function (item) {
-				return { name: item.name, price: item.price, desc: item.desc || '', image: item.image || '' };
-			});
 
-			renderMenuDraft(pending.length > 0);
-		});
-	}
 
-	function renderMenuDraft(hasPending) {
-		S.menuHasPending = !!hasPending;
-		el.main.innerHTML =
-			(hasPending ? '<div class="hv-alert hv-alert-orange">' + esc(t('menu_pending_badge')) + '</div>' : '') +
-			'<div class="hv-alert hv-alert-blue">' + esc(t('menu_display_only')) + '</div>' +
-			'<div id="hv-menu-list">' + S.menuDraft.map(menuRowMarkup).join('') + '</div>' +
-			'<button type="button" class="hv-btn hv-btn-outline hv-btn-block hv-mt" id="hv-menu-add">' + esc(t('add_item')) + '</button>' +
-			'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-menu-save">' + esc(t('save')) + '</button>';
 
-		$('#hv-menu-add').onclick = addMenuRow;
-		$('#hv-menu-save').onclick = saveMenu;
-		bindMenuRows();
-	}
 
-	function menuRowMarkup(item, index) {
-		// Compact restaurant-style row: square photo | name + price | actions.
-		// The description is collapsed behind a toggle so a long menu stays
-		// scannable instead of turning into a wall of tall forms.
-		var open = S.menuOpenRow === index;
-
-		return '' +
-			'<div class="hv-menu-edit" data-menu-row="' + index + '">' +
-				'<div class="hv-menu-edit-main">' +
-					'<button type="button" class="hv-menu-thumb" data-menu-img="' + index + '" title="' + esc(t('menu_item_image')) + '">' +
-						(item.image ? '<img src="' + esc(item.image) + '" alt="">' : icon('cup')) +
-					'</button>' +
-					'<div class="hv-menu-edit-fields">' +
-						'<input type="text" class="hv-input hv-input-flush" data-menu-name ' +
-							'placeholder="' + esc(t('menu_item_name')) + '" value="' + esc(item.name) + '">' +
-						'<div class="hv-menu-edit-price">' +
-							'<input type="number" class="hv-input hv-input-flush" data-menu-price ' +
-								'placeholder="' + esc(t('menu_item_price')) + '" value="' + (parseInt(item.price, 10) || 0) + '" min="0" step="1000">' +
-							'<span class="hv-muted">' + esc(t('toman')) + '</span>' +
-						'</div>' +
-					'</div>' +
-					'<div class="hv-menu-edit-actions">' +
-						'<button type="button" class="hv-icon-btn" data-menu-toggle="' + index + '" ' +
-							'title="' + esc(t('menu_item_desc')) + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
-							(open ? '▲' : '▼') +
-						'</button>' +
-						'<button type="button" class="hv-icon-btn is-danger" data-menu-del="' + index + '" ' +
-							'title="' + esc(t('delete')) + '">✕</button>' +
-					'</div>' +
-				'</div>' +
-				(open
-					? '<div class="hv-menu-edit-desc">' +
-						'<label>' + esc(t('menu_item_desc')) + '</label>' +
-						'<textarea class="hv-textarea" data-menu-desc rows="2">' + esc(item.desc) + '</textarea>' +
-					'</div>'
-					: (item.desc ? '<p class="hv-menu-edit-hint">' + esc(item.desc) + '</p>' : '')) +
-			'</div>';
-	}
-
-	function bindMenuRows() {
-		$$('[data-menu-row]').forEach(function (row) {
-			var index = parseInt(row.dataset.menuRow, 10);
-
-			$('[data-menu-name]', row).oninput = function (e) { S.menuDraft[index].name = e.target.value; };
-			$('[data-menu-price]', row).oninput = function (e) { S.menuDraft[index].price = parseInt(e.target.value, 10) || 0; };
-
-			$('[data-menu-img]', row).onclick = function () {
-				pickFile(function (file) {
-					uploadWithProgress('owner/upload', file, t('uploading_photo')).then(function (res) {
-						S.menuDraft[index].image = res.url;
-						progress.done(t('saved'));
-						// Keep the pending banner state; passing false here used
-						// to make the "awaiting approval" notice vanish.
-						renderMenuDraft(S.menuHasPending);
-					}).catch(function (err) { uploadFailed(err); });
-				});
-			};
-
-			var descBox = $('[data-menu-desc]', row);
-			if (descBox) {
-				descBox.oninput = function (e) { S.menuDraft[index].desc = e.target.value; };
-			}
-
-			var toggle = $('[data-menu-toggle]', row);
-			if (toggle) {
-				toggle.onclick = function () {
-					S.menuOpenRow = (S.menuOpenRow === index) ? -1 : index;
-					renderMenuDraft(S.menuHasPending);
-				};
-			}
-
-			$('[data-menu-del]', row).onclick = function () {
-				S.menuDraft.splice(index, 1);
-				if (S.menuOpenRow === index) { S.menuOpenRow = -1; }
-				renderMenuDraft(S.menuHasPending);
-			};
-		});
-	}
-
-	function addMenuRow() {
-		if (S.role !== 'cafe_owner') { return; }
-		S.menuDraft.push({ name: '', price: 0, desc: '', image: '' });
-		S.menuOpenRow = S.menuDraft.length - 1;
-		renderMenuDraft(S.menuHasPending);
-		el.main.scrollTop = el.main.scrollHeight;
-	}
-
-	function saveMenu() {
-		var items = S.menuDraft.filter(function (item) { return item.name.trim() !== ''; });
-		saveWithProgress(
-			api('owner/menu', { method: 'POST', body: { items: items } }),
-			t('saving')
-		).then(function (res) {
-			if (res && res.message) { toast(res.message, 'ok'); }
-			viewMenuBuilder();
-		}).catch(function () { /* progress bar already reported it */ });
-	}
 
 	/* =====================================================================
-	 * OWNER: venue settings (auto-saving map pin)
-	 * ================================================================== */
-	function viewVenueSettings() {
-		setHeader(t('tab_venue_settings'), t('owner_login_title'));
 
-		return api('owner/dashboard').then(function (res) {
-			var venue = res.venue;
-			S.venue = venue;
 
-			el.main.innerHTML =
-				'<div class="hv-card">' +
-					'<div class="hv-field"><label>' + esc(t('venue_name')) + '</label>' +
-						'<input type="text" class="hv-input" id="hv-v-name" value="' + esc(venue.name || '') + '"></div>' +
-					'<div class="hv-field hv-mt"><label>' + esc(t('manager_name')) + '</label>' +
-						'<input type="text" class="hv-input" id="hv-v-manager" value="' + esc(venue.manager_name || '') + '"></div>' +
-					'<div class="hv-mt">' + locationSelects('hv-v', venue.country, venue.city) + '</div>' +
-					'<div class="hv-field hv-mt"><label>' + esc(t('venue_address')) + '</label>' +
-						'<textarea class="hv-textarea" id="hv-v-addr">' + esc(venue.address || '') + '</textarea></div>' +
-					'<div class="hv-field hv-mt"><label>' + esc(t('quiet_hours')) + '</label>' +
-						'<input type="text" class="hv-input" id="hv-v-quiet" value="' + esc(venue.quiet_hours || '') + '" placeholder="10:00 - 16:00"></div>' +
-					'<div class="hv-field hv-mt"><label>' + esc(t('cover_image')) + '</label>' +
-						'<button type="button" class="hv-btn hv-btn-outline hv-btn-block" id="hv-v-cover">' +
-							(venue.image ? esc(t('edit')) : esc(t('upload_photo'))) + '</button></div>' +
-					(venue.image ? '<img class="hv-modal-hero hv-mt" src="' + esc(venue.image) + '" alt="">' : '') +
-					'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-v-save">' + esc(t('save')) + '</button>' +
-				'</div>' +
-				'<div class="hv-card">' +
-					'<h3 class="hv-section-title">' + esc(t('col_location')) + '</h3>' +
-					'<p class="hv-muted">' + esc(t('drag_pin')) + '</p>' +
-					'<div class="hv-owner-map hv-mt" id="hv-owner-map"></div>' +
-				'</div>';
-
-			bindLocationSelects('hv-v');
-			$('#hv-v-save').onclick = saveVenueForm;
-			$('#hv-v-cover').onclick = function () {
-				pickFile(function (file) {
-					uploadWithProgress('owner/upload', file, t('uploading_cover')).then(function (up) {
-						// Bytes are in; now persist the URL on the venue.
-						progress.set(null);
-						return api('owner/venue', { method: 'POST', body: { image: up.url } });
-					}).then(function () {
-						progress.done(t('saved'));
-						viewVenueSettings();
-					}).catch(function (err) { uploadFailed(err); });
-				});
-			};
-
-			initOwnerMap(venue);
-		});
-	}
-
-	function initOwnerMap(venue) {
-		if (typeof window.L === 'undefined') { return; }
-		var node = $('#hv-owner-map');
-		if (!node) { return; }
-
-		var lat = venue.lat || BOOT.map.lat;
-		var lng = venue.lng || BOOT.map.lng;
-
-		S.ownerMap = window.L.map(node, { zoomControl: false, attributionControl: false }).setView([lat, lng], 15);
-		window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(S.ownerMap);
-
-		var marker = window.L.marker([lat, lng], {
-			draggable: true,
-			icon: window.L.divIcon({ className: '', html: '<div class="hv-pin"></div>', iconSize: [34, 34], iconAnchor: [17, 32] })
-		}).addTo(S.ownerMap);
-
-		// Auto-save on drag end, exactly as specified.
-		marker.on('dragend', function () {
-			var pos = marker.getLatLng();
-			saveWithProgress(
-				api('owner/venue', { method: 'POST', body: { lat: pos.lat, lng: pos.lng } })
-			).catch(function () { /* reported by the progress bar */ });
-		});
-
-		setTimeout(function () { if (S.ownerMap) { S.ownerMap.invalidateSize(); } }, 220);
-	}
-
-	function saveVenueForm() {
-		if (S.role !== 'cafe_owner') { return; }
-		var nameField = $('#hv-v-name');
-		if (!nameField) { return; }
-
-		saveWithProgress(api('owner/venue', {
-			method: 'POST',
-			body: {
-				name: nameField.value,
-				manager_name: $('#hv-v-manager').value,
-				country: $('#hv-v-country').value,
-				city: $('#hv-v-city').value,
-				address: $('#hv-v-addr').value,
-				quiet_hours: $('#hv-v-quiet').value
-			}
-		})).catch(function () { /* reported by the progress bar */ });
-	}
 
 	/* =====================================================================
 	 * Boot
@@ -2590,7 +2020,7 @@
 		$('#hv-lang-btn').onclick = toggleLang;
 		$('#hv-avatar-btn').onclick = function () {
 			if (!S.loggedIn) { return; }
-			setTab(S.role === 'cafe_owner' ? 'venue-settings' : 'profile');
+			setTab('profile');
 		};
 
 		el.modalHost.addEventListener('click', function (event) {

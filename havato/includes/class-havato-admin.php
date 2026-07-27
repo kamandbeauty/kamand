@@ -175,15 +175,7 @@ class Havato_Admin {
 	 * @param string $growth Growth badge text (optional).
 	 */
 	private static function stat_card( $label, $value, $color, $icon, $growth = '' ) {
-		echo '<div class="hv-adm-stat">';
-		echo '<div class="hv-adm-stat-icon is-' . esc_attr( $color ) . '"><span class="dashicons dashicons-' . esc_attr( $icon ) . '"></span></div>';
-		echo '<div class="hv-adm-stat-body">';
-		echo '<span class="hv-adm-stat-label">' . esc_html( $label ) . '</span>';
-		if ( '' !== $growth ) {
-			echo '<span class="hv-adm-growth">' . esc_html( $growth ) . '</span>';
-		}
-		echo '<span class="hv-adm-stat-value">' . esc_html( $value ) . '</span>';
-		echo '</div></div>';
+		Havato_Admin_UI::stat_card( $label, $value, $color, $icon, $growth );
 	}
 
 	/**
@@ -321,6 +313,8 @@ class Havato_Admin {
 		Havato_DB::ensure_tables();
 		self::head( Havato_I18N::t( 'admin_approvals' ), Havato_I18N::t( 'verify_action' ) );
 
+		self::render_new_venue_form();
+
 		echo '<div class="hv-adm-card">';
 		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'stat_venues' ) ) . '</h2>';
 		self::render_pending_table( 50 );
@@ -447,6 +441,69 @@ class Havato_Admin {
 		}
 
 		echo '</tbody></table>';
+	}
+
+	/**
+	 * Onboard a café.
+	 *
+	 * Public owner signup was removed with the mobile portal, so the platform
+	 * admin creates the account here; the owner then manages everything from
+	 * their own wp-admin panel.
+	 */
+	private static function render_new_venue_form() {
+		$lang      = Havato_I18N::current_lang();
+		$locations = havato_locations();
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="hv-adm-card">';
+		self::form_fields( 'new_venue' );
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'owner_signup' ) ) . '</h2>';
+
+		echo '<div class="hv-adm-fields">';
+		printf(
+			'<label>%s<input type="text" name="venue_name" required></label>',
+			esc_html( Havato_I18N::t( 'venue_name' ) )
+		);
+		printf(
+			'<label>%s<input type="text" name="manager_name" required></label>',
+			esc_html( Havato_I18N::t( 'manager_name' ) )
+		);
+		printf(
+			'<label>%s<input type="email" name="email" required></label>',
+			esc_html( Havato_I18N::t( 'email' ) )
+		);
+		printf(
+			'<label>%s<input type="text" name="password" required minlength="6"></label>',
+			esc_html( Havato_I18N::t( 'password' ) )
+		);
+
+		echo '<label>' . esc_html( Havato_I18N::t( 'q_country' ) ) . '<select name="country">';
+		foreach ( $locations as $code => $info ) {
+			printf( '<option value="%s">%s</option>', esc_attr( $code ), esc_html( $info['label'][ $lang ] ) );
+		}
+		echo '</select></label>';
+
+		echo '<label>' . esc_html( Havato_I18N::t( 'q_city_select' ) ) . '<select name="city">';
+		foreach ( $locations as $info ) {
+			foreach ( $info['cities'] as $code => $label ) {
+				printf(
+					'<option value="%s">%s — %s</option>',
+					esc_attr( $code ),
+					esc_html( $label[ $lang ] ),
+					esc_html( $info['label'][ $lang ] )
+				);
+			}
+		}
+		echo '</select></label>';
+
+		printf(
+			'<label>%s<input type="text" name="address"></label>',
+			esc_html( Havato_I18N::t( 'venue_address' ) )
+		);
+		echo '</div>';
+
+		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-green">' .
+			esc_html( Havato_I18N::t( 'owner_signup' ) ) . '</button>';
+		echo '</form>';
 	}
 
 	/**
@@ -1014,6 +1071,26 @@ class Havato_Admin {
 		$page    = 'havato';
 
 		switch ( $action ) {
+			case 'new_venue':
+				$req = new WP_REST_Request( 'POST' );
+				foreach ( array( 'venue_name', 'manager_name', 'email', 'country', 'city' ) as $key ) {
+					$req->set_param( $key, isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '' );
+				}
+				$req->set_param( 'address', isset( $_POST['address'] ) ? sanitize_textarea_field( wp_unslash( $_POST['address'] ) ) : '' );
+				// Not sanitised: a password must survive verbatim.
+				$req->set_param( 'password', isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : '' );
+
+				// owner_register() logs the new user in, which would kick the
+				// administrator out of their own session — capture and restore.
+				$admin_id = get_current_user_id();
+				$result   = Havato_REST::owner_register( $req );
+				wp_set_current_user( $admin_id );
+				wp_set_auth_cookie( $admin_id, true );
+
+				$message = is_wp_error( $result ) ? $result->get_error_message() : Havato_I18N::t( 'saved' );
+				$page    = 'havato-approvals';
+				break;
+
 			case 'verify':
 				$venue_id = isset( $_POST['venue_id'] ) ? sanitize_text_field( wp_unslash( $_POST['venue_id'] ) ) : '';
 				$verified = isset( $_POST['verified'] ) ? (int) $_POST['verified'] : 1;

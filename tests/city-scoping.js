@@ -7,6 +7,7 @@ const fn=rd('includes/functions.php'), rest=rd('includes/class-havato-rest.php')
 const db=rd('includes/class-havato-db.php'), js=rd('assets/js/havato-app.js');
 const css=rd('assets/css/havato-app.css'), i18n=rd('includes/class-havato-i18n.php');
 const adm=rd('includes/class-havato-admin.php'), seed=rd('includes/class-havato-seeder.php');
+const oa=rd('includes/class-havato-owner-admin.php'), oj=rd('assets/js/havato-owner-admin.js');
 const noC=css.replace(/\/\*[\s\S]*?\*\//g,'');
 let f=0; const t=(n,c)=>{console.log((c?'✓ ':'❌ ')+n);if(!c)f++;};
 
@@ -67,11 +68,12 @@ t('empty state explains the scoping', /city_empty/.test(js) && /'city_empty'/.te
 }
 
 console.log('\n--- cafés declare their city ---');
-t('signup asks for it', /locationSelects\('hv-reg'/.test(js));
-t('signup sends it', /country: \$\('#hv-reg-country'\)\.value/.test(js));
+// Café onboarding moved to wp-admin (public owner signup was removed).
+t('admin onboarding asks for it', /name="country"/.test(adm) && /name="city"/.test(adm));
+t('onboarding validated server-side', /havato_valid_city\( \$country, \$city \)/.test(rest));
 t('signup requires a valid pair', /! havato_valid_city\( \$country, \$city \)/.test(rest));
-t('venue settings can change it', /locationSelects\('hv-v', venue\.country, venue\.city\)/.test(js));
-t('city list follows the country', /function bindLocationSelects/.test(js));
+t('venue settings can change it', /id="hv-owner-country"/.test(oa) && /id="hv-owner-city"/.test(oa));
+t('city list follows the country', /function initLocationSelects/.test(oj));
 t('invalid pair dropped on save', /if \( ! havato_valid_city\( \$c, \$city \) \) \{[\s\S]{0,80}continue;/.test(rest));
 t('admin table shows the city', /Havato_I18N::t\( 'q_city_select' \)/.test(adm));
 t('demo venues have cities', /'city'\s*=>\s*'isfahan'/.test(seed) && /'city'\s*=>\s*'tehran'/.test(seed));

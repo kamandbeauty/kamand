@@ -28,13 +28,12 @@ for (const n of navIcons)
 t('colourful sprite kept for cards elsewhere', /url\(#hvGradPink\)/.test(ico));
 
 console.log('\n--- tabs actually reference them ---');
+// Only guest tabs remain in the web app; the café owner panel is in wp-admin.
 for (const [tab,icon] of [['explore','nav-explore'],['map','nav-map'],['chats','nav-chat'],
-                          ['profile','nav-profile'],['dashboard','nav-dashboard'],
-                          ['venue-events','nav-calendar'],['menu','nav-menu'],
-                          ['venue-settings','nav-settings']])
+                          ['profile','nav-profile']])
   t(`${tab} -> ${icon}`, new RegExp(`id: '${tab}'[^}]*icon: '${icon}'`).test(js));
 t('no tab still points at a gradient icon',
-  !/id: '(explore|map|chats|profile|dashboard|venue-events|menu|venue-settings)'[^}]*icon: '(explore|map|chat|profile|dashboard|calendar|menu|settings)'/.test(js));
+  !/id: '(explore|map|chats|profile)'[^}]*icon: '(explore|map|chat|profile)'/.test(js));
 
 console.log('\n--- computed contrast on the nav gradient ---');
 const lum=([r,g,b])=>{const a=[r,g,b].map(v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});

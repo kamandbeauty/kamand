@@ -16,6 +16,7 @@ class Havato_Roles {
 	 * Hook up the users.php columns.
 	 */
 	public static function init() {
+		add_action( 'admin_init', array( __CLASS__, 'block_gatherers' ) );
 		add_filter( 'manage_users_columns', array( __CLASS__, 'user_columns' ) );
 		add_filter( 'manage_users_custom_column', array( __CLASS__, 'user_column_content' ), 10, 3 );
 	}
@@ -57,6 +58,32 @@ class Havato_Roles {
 			$admin->add_cap( 'havato_manage_venue' );
 			$admin->add_cap( 'havato_manage_platform' );
 		}
+	}
+
+	/**
+	 * Gatherers have no business in wp-admin: their whole experience is the
+	 * [havato_app] web-app. Bounce them back to it rather than showing a bare
+	 * WordPress dashboard. (Café owners keep access — that is their panel now.)
+	 */
+	public static function block_gatherers() {
+		if ( ! is_user_logged_in() || wp_doing_ajax() ) {
+			return;
+		}
+
+		$user = wp_get_current_user();
+		if ( ! in_array( 'gatherer', (array) $user->roles, true ) || user_can( $user, 'manage_options' ) ) {
+			return;
+		}
+
+		// Media endpoints must stay reachable so gallery uploads keep working.
+		global $pagenow;
+		if ( in_array( (string) $pagenow, array( 'admin-post.php', 'admin-ajax.php', 'async-upload.php', 'media-upload.php', 'profile.php' ), true ) ) {
+			return;
+		}
+
+		$page_id = (int) get_option( 'havato_app_page_id' );
+		wp_safe_redirect( $page_id ? get_permalink( $page_id ) : home_url( '/' ) );
+		exit;
 	}
 
 	/**
