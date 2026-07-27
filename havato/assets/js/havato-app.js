@@ -1325,6 +1325,18 @@
 	}
 
 	function galleryMarkup(profile) {
+		// Section 4.5: somebody else's gallery stays locked until the
+		// friendship is accepted — show why instead of an empty grid.
+		if (!profile.is_self && !profile.gallery_open) {
+			return '' +
+				'<div class="hv-card">' +
+					'<h3 class="hv-section-title">' + esc(t('gallery')) + '</h3>' +
+					'<div class="hv-empty">' + icon('profile') +
+						'<p>' + esc(t('gallery_locked')) + '</p>' +
+					'</div>' +
+				'</div>';
+		}
+
 		var photos = (profile.photos || []).map(function (photo) {
 			var pending = photo.status === 'pending'
 				? '<span class="hv-photo-badge hv-badge hv-badge-orange">' + esc(t('photo_pending')) + '</span>'

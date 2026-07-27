@@ -292,6 +292,7 @@ class Havato_I18N {
 			'behaviour_id'          => array( 'fa' => 'شناسنامه رفتاری', 'en' => 'Behaviour profile' ),
 			'test_done'             => array( 'fa' => 'تست شخصیت‌شناسی شما ثبت شد.', 'en' => 'Your personality profile has been saved.' ),
 			'gallery'               => array( 'fa' => 'گالری عکس', 'en' => 'Photo gallery' ),
+			'gallery_locked'        => array( 'fa' => 'گالری عکس فقط برای دوستان تاییدشده قابل مشاهده است.', 'en' => 'The photo gallery is only visible to accepted friends.' ),
 			'upload_photo'          => array( 'fa' => '＋ آپلود عکس', 'en' => '＋ Upload photo' ),
 			'like'                  => array( 'fa' => 'لایک', 'en' => 'Like' ),
 			'report'                => array( 'fa' => 'گزارش تخلف', 'en' => 'Report' ),

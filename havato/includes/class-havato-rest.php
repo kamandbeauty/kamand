@@ -84,10 +84,35 @@ class Havato_REST {
 	 */
 	private static function boot( $req ) {
 		Havato_DB::ensure_tables();
+		self::expire_stale_holds();
 		$lang = $req->get_param( 'lang' );
 		if ( $lang ) {
 			Havato_I18N::set_lang( $lang );
 		}
+	}
+
+	/**
+	 * Release abandoned checkout seat-holds.
+	 *
+	 * A paid seat is reserved as `pending_payment` the moment the guest is sent
+	 * to the gateway, so a 6-seat table can never be oversold by concurrent
+	 * checkouts. If the payment never completes, the hold expires and the seat
+	 * returns to the pool.
+	 */
+	public static function expire_stale_holds() {
+		global $wpdb;
+
+		$regs    = Havato_DB::table( 'event_registrations' );
+		$minutes = (int) apply_filters( 'havato_seat_hold_minutes', 30 );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE $regs SET status='cancelled'
+				 WHERE status='pending_payment' AND created_at < DATE_SUB(NOW(), INTERVAL %d MINUTE)",
+				max( 5, $minutes )
+			)
+		);
 	}
 
 	/* =====================================================================
@@ -370,7 +395,9 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$mine = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND user_id=%d", $event_id, $user_id ), ARRAY_A );
 
-		if ( $mine && 'cancelled' !== $mine['status'] ) {
+		// An in-flight checkout hold is not a confirmed seat: let the guest
+		// resume payment instead of blocking them with "already joined".
+		if ( $mine && ! in_array( $mine['status'], array( 'cancelled', 'pending_payment' ), true ) ) {
 			return self::ok( array( 'already' => true ) );
 		}
 
@@ -382,8 +409,22 @@ class Havato_REST {
 
 		// Paid event → real WooCommerce checkout, never a simulated wallet.
 		if ( $price > 0 && havato_woo_active() ) {
+			// Reserve the seat BEFORE sending the guest to the gateway,
+			// otherwise concurrent checkouts could oversell the table. The
+			// hold expires automatically if the payment is abandoned.
+			self::queue_user( $event_id, $user_id, 0, 0, 'pending_payment' );
+
 			$checkout = Havato_Woo::create_checkout( $event, $user_id );
 			if ( ! $checkout['ok'] ) {
+				// Release the hold again if the cart could not be built.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->update(
+					$regs,
+					array( 'status' => 'cancelled' ),
+					array( 'event_id' => $event_id, 'user_id' => $user_id, 'status' => 'pending_payment' ),
+					array( '%s' ),
+					array( '%s', '%d', '%s' )
+				);
 				return new WP_Error( 'havato_checkout', $checkout['message'], array( 'status' => 500 ) );
 			}
 			Havato_Logger::log( sprintf( 'Checkout session opened for user %d on event %s.', $user_id, $event_id ), 'info' );
@@ -435,7 +476,7 @@ class Havato_REST {
 				 FROM $regs r
 				 INNER JOIN $events e ON e.id = r.event_id
 				 LEFT JOIN $venues v ON v.id = e.venue_id
-				 WHERE r.user_id = %d AND r.status <> 'cancelled'
+				 WHERE r.user_id = %d AND r.status NOT IN ('cancelled','pending_payment')
 				 ORDER BY e.event_date DESC LIMIT 40",
 				$user_id
 			),
@@ -797,6 +838,7 @@ class Havato_REST {
 			'attended'      => (int) $profile['attended_count'],
 			'photos'        => self::user_photos( $target, $viewer, $is_self ),
 			'friend_status' => $is_self ? 'self' : havato_friend_status( $viewer, $target ),
+			'gallery_open'  => $is_self ? true : self::can_view_gallery( $viewer, $target ),
 		);
 
 		if ( $is_self ) {
@@ -954,7 +996,9 @@ class Havato_REST {
 		if ( ! $owner ) {
 			return new WP_Error( 'havato_no_photo', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
 		}
-		if ( havato_is_blocked( $user_id, $owner ) ) {
+		// Same gallery visibility rule as user_photos(): you can only like a
+		// photo you are actually allowed to see (own photo or accepted friend).
+		if ( ! self::can_view_gallery( $user_id, $owner ) ) {
 			return new WP_Error( 'havato_blocked', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
 		}
 
@@ -998,6 +1042,18 @@ class Havato_REST {
 		$user_id  = get_current_user_id();
 		$photo_id = (int) $req->get_param( 'photo_id' );
 		$reason   = sanitize_text_field( (string) $req->get_param( 'reason' ) );
+
+		$photos_t = Havato_DB::table( 'user_photos' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$owner = (int) $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $photos_t WHERE id=%d", $photo_id ) );
+
+		if ( ! $owner ) {
+			return new WP_Error( 'havato_no_photo', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+		// Only a viewer who can legitimately see the photo may report it.
+		if ( ! self::can_view_gallery( $user_id, $owner ) ) {
+			return new WP_Error( 'havato_blocked', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+		}
 
 		$table = Havato_DB::table( 'photo_reports' );
 
@@ -1442,7 +1498,7 @@ class Havato_REST {
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND status<>'cancelled' ORDER BY id ASC", $event_id ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND status NOT IN ('cancelled','pending_payment') ORDER BY id ASC", $event_id ), ARRAY_A );
 
 		$members = array();
 		foreach ( (array) $rows as $row ) {
@@ -1976,7 +2032,7 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$venue_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $venues" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$revenue = (int) $wpdb->get_var( "SELECT COALESCE(SUM(amount),0) FROM $regs WHERE status<>'cancelled'" );
+		$revenue = (int) $wpdb->get_var( "SELECT COALESCE(SUM(amount),0) FROM $regs WHERE status NOT IN ('cancelled','pending_payment')" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$last_week = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM $regs WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -2255,6 +2311,13 @@ class Havato_REST {
 	private static function user_photos( $target, $viewer, $is_self ) {
 		global $wpdb;
 
+		// HARD CONSTRAINT (section 4.5): the gallery of another member only
+		// unlocks once the friendship is `accepted`. Blocked pairs and mere
+		// table-mates never see each other's photos.
+		if ( ! $is_self && ! havato_are_friends( $viewer, $target ) ) {
+			return array();
+		}
+
 		$photos = Havato_DB::table( 'user_photos' );
 		$likes  = Havato_DB::table( 'photo_likes' );
 
@@ -2296,9 +2359,9 @@ class Havato_REST {
 		$regs = Havato_DB::table( 'event_registrations' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$spent = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(amount),0) FROM $regs WHERE user_id=%d AND status<>'cancelled'", $user_id ) );
+		$spent = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(amount),0) FROM $regs WHERE user_id=%d AND status NOT IN ('cancelled','pending_payment')", $user_id ) );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$tickets = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE user_id=%d AND status<>'cancelled'", $user_id ) );
+		$tickets = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE user_id=%d AND status NOT IN ('cancelled','pending_payment')", $user_id ) );
 
 		return array(
 			'spent'       => $spent,
@@ -2388,8 +2451,9 @@ class Havato_REST {
 	 * @param int    $user_id  User id.
 	 * @param int    $order_id Woo order id.
 	 * @param int    $amount   Paid amount.
+	 * @param string $status   'queued' (free/paid) or 'pending_payment' (hold).
 	 */
-	private static function queue_user( $event_id, $user_id, $order_id = 0, $amount = 0 ) {
+	private static function queue_user( $event_id, $user_id, $order_id = 0, $amount = 0, $status = 'queued' ) {
 		global $wpdb;
 		$regs = Havato_DB::table( 'event_registrations' );
 
@@ -2399,7 +2463,7 @@ class Havato_REST {
 			array(
 				'event_id'   => $event_id,
 				'user_id'    => (int) $user_id,
-				'status'     => 'queued',
+				'status'     => $status,
 				'checked_in' => 0,
 				'order_id'   => (int) $order_id,
 				'amount'     => (int) $amount,
@@ -2407,6 +2471,29 @@ class Havato_REST {
 			),
 			array( '%s', '%d', '%s', '%d', '%d', '%d', '%s' )
 		);
+	}
+
+	/**
+	 * May a viewer see (and therefore like / report) another member's gallery?
+	 *
+	 * Section 4.5: photos unlock only for `accepted` friends, and a block in
+	 * either direction closes everything again.
+	 *
+	 * @param int $viewer Viewer id.
+	 * @param int $owner  Gallery owner id.
+	 * @return bool
+	 */
+	private static function can_view_gallery( $viewer, $owner ) {
+		$viewer = (int) $viewer;
+		$owner  = (int) $owner;
+
+		if ( $viewer === $owner ) {
+			return true;
+		}
+		if ( havato_is_blocked( $viewer, $owner ) ) {
+			return false;
+		}
+		return havato_are_friends( $viewer, $owner );
 	}
 
 	/**

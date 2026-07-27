@@ -216,7 +216,13 @@ class Havato_Woo {
 				continue;
 			}
 
-			$amount = (int) $order->get_total();
+			// Use this line's own total, not the order total: an order could
+			// in theory carry other products, and the payout ledger must only
+			// ever be credited with the actual ticket revenue.
+			$amount = (int) round( (float) $order->get_line_total( $item, true ) );
+			if ( $amount <= 0 ) {
+				$amount = (int) round( (float) $order->get_total() );
+			}
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $regs WHERE event_id=%s AND user_id=%d", $event_id, $user_id ) );

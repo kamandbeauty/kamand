@@ -159,6 +159,9 @@ class Havato_DB {
 		) $charset;";
 
 		// 4. Event registrations (the queue).
+		// `status`: queued | matched | cancelled, plus `pending_payment` — a
+		// short-lived seat hold placed while the guest is at the WooCommerce
+		// gateway so concurrent checkouts can never oversell a table.
 		$queries[] = "CREATE TABLE {$p}event_registrations (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			event_id varchar(64) NOT NULL DEFAULT '',

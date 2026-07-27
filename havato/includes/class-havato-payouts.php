@@ -39,7 +39,8 @@ class Havato_Payouts {
 				"SELECT DATE_FORMAT(e.event_date, '%%Y-%%m') AS period, SUM(r.amount) AS gross
 				 FROM $regs r
 				 INNER JOIN $events e ON e.id = r.event_id
-				 WHERE e.venue_id = %s AND r.amount > 0 AND r.status <> 'cancelled'
+				 WHERE e.venue_id = %s AND r.amount > 0
+				   AND r.status NOT IN ('cancelled','pending_payment')
 				 GROUP BY period",
 				$venue_id
 			),
