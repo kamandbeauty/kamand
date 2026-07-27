@@ -41,7 +41,7 @@ class Havato_Matcher {
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$queued = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE event_id=%s AND status='queued'", $event_id ) );
+		$queued = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(seats),0) FROM $regs WHERE event_id=%s AND status='queued'", $event_id ) );
 
 		if ( $queued < (int) $event['max_capacity'] ) {
 			return false;
@@ -80,10 +80,22 @@ class Havato_Matcher {
 		Havato_Logger::log( sprintf( 'Matching engine activated for event %s.', $event_id ), 'success' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT user_id FROM $regs WHERE event_id=%s AND status='queued' ORDER BY id ASC", $event_id ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT user_id, seats FROM $regs WHERE event_id=%s AND status='queued' ORDER BY id ASC", $event_id ), ARRAY_A );
 
 		$user_ids = array_map( 'intval', wp_list_pluck( (array) $rows, 'user_id' ) );
 		$user_ids = array_values( array_unique( array_filter( $user_ids ) ) );
+
+		// A booking can cover more than one chair. The companions are not
+		// separate accounts, so they are not matched individually — they are
+		// simply seated with whoever booked them, which means the party's
+		// size has to be charged against the table's capacity.
+		$party = array();
+		foreach ( (array) $rows as $row ) {
+			$uid = (int) $row['user_id'];
+			if ( $uid ) {
+				$party[ $uid ] = max( 1, (int) $row['seats'] );
+			}
+		}
 
 		if ( empty( $user_ids ) ) {
 			Havato_Logger::log( sprintf( 'No queued guests for event %s — nothing to seat.', $event_id ), 'warn' );
@@ -112,7 +124,7 @@ class Havato_Matcher {
 		);
 
 		$profiles = self::load_profiles( $user_ids );
-		$tables   = self::build_tables( $user_ids, $profiles, $seat_plan, $relaxed );
+		$tables   = self::build_tables( $user_ids, $profiles, $seat_plan, $relaxed, $party );
 
 		if ( empty( $tables ) ) {
 			Havato_Logger::log( 'Engine could not seat anyone (all pairs blocked).', 'error' );
@@ -268,9 +280,22 @@ class Havato_Matcher {
 	 * @param array $profiles  user_id => profile row.
 	 * @param array $seat_plan Seats of each physical table, biggest first.
 	 * @param bool  $relaxed   Relaxed mode.
+	 * @param array $party     user_id => chairs that booking occupies.
 	 * @return array List of ['members'=>[], 'score'=>float]
 	 */
-	private static function build_tables( $user_ids, $profiles, $seat_plan, $relaxed ) {
+	private static function build_tables( $user_ids, $profiles, $seat_plan, $relaxed, $party = array() ) {
+		// How many chairs a guest brings with them (themselves included).
+		$chairs = function ( $uid ) use ( $party ) {
+			return isset( $party[ $uid ] ) ? max( 1, (int) $party[ $uid ] ) : 1;
+		};
+		// Chairs a seated group currently occupies.
+		$occupied = function ( $members ) use ( $chairs ) {
+			$n = 0;
+			foreach ( (array) $members as $m ) {
+				$n += $chairs( $m );
+			}
+			return $n;
+		};
 		// Each pass fills the next physical table; $capacity changes per table.
 		$plan     = array_values( (array) $seat_plan );
 		$plan_i   = 0;
@@ -329,11 +354,16 @@ class Havato_Matcher {
 				continue;
 			}
 
+			// A seed of two parties can already exceed a small table.
+			if ( $occupied( $seed ) > $capacity ) {
+				$seed = array( $seed[0] );
+			}
+
 			$table = $seed;
 			$pool  = array_values( array_diff( $pool, $table ) );
 
 			// --- Step 3: greedy growth --------------------------------------
-			while ( count( $table ) < $capacity && ! empty( $pool ) ) {
+			while ( $occupied( $table ) < $capacity && ! empty( $pool ) ) {
 				$best      = null;
 				$best_gain = null;
 
@@ -341,6 +371,11 @@ class Havato_Matcher {
 					$sum   = 0;
 					$count = 0;
 					$ok    = true;
+
+					// Never overfill a physical table with a large party.
+					if ( $occupied( $table ) + $chairs( $cand ) > $capacity ) {
+						continue;
+					}
 
 					foreach ( $table as $member ) {
 						$key = self::pair_key( $cand, $member );
@@ -380,7 +415,7 @@ class Havato_Matcher {
 			// --- Step 4: local search improvement ---------------------------
 			// $pool is passed by reference so swapped-out guests go back into
 			// the pool instead of silently disappearing.
-			$table = self::local_search( $table, $pool, $pairs, $profiles, $capacity, $relaxed );
+			$table = self::local_search( $table, $pool, $pairs, $profiles, $capacity, $relaxed, $party );
 			$pool  = array_values( array_diff( $pool, $table ) );
 
 			$tables[] = array(
@@ -408,12 +443,23 @@ class Havato_Matcher {
 	 * @param array $profiles Profiles.
 	 * @param int   $capacity Capacity.
 	 * @param bool  $relaxed  Relaxed mode.
+	 * @param array $party    user_id => chairs that booking occupies.
 	 * @return array Possibly improved table.
 	 */
-	private static function local_search( $table, &$pool, $pairs, $profiles, $capacity, $relaxed ) {
+	private static function local_search( $table, &$pool, $pairs, $profiles, $capacity, $relaxed, $party = array() ) {
 		if ( count( $table ) < 3 || empty( $pool ) ) {
 			return $table;
 		}
+
+		// Swapping a single guest for a party of three can overfill the table,
+		// so every candidate swap is checked against the chair count too.
+		$occupied = function ( $members ) use ( $party ) {
+			$n = 0;
+			foreach ( (array) $members as $m ) {
+				$n += isset( $party[ $m ] ) ? max( 1, (int) $party[ $m ] ) : 1;
+			}
+			return $n;
+		};
 
 		$improved = true;
 		$rounds   = 0;
@@ -430,6 +476,10 @@ class Havato_Matcher {
 					$candidate_table[ $ti ] = $cand;
 
 					if ( ! self::table_allowed( $candidate_table, $pairs ) ) {
+						continue;
+					}
+
+					if ( $occupied( $candidate_table ) > $capacity ) {
 						continue;
 					}
 

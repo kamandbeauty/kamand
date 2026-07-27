@@ -122,6 +122,16 @@
 #havato-app .hv-profile-head :not(.hv-badge):not(.hv-btn):not(.hv-badge *):not(.hv-btn *),
 #havato-app .hv-glass,
 #havato-app .hv-glass :not(.hv-badge):not(.hv-chip):not(.hv-btn):not(.hv-input):not(.hv-select):not(.hv-textarea):not(.hv-alert):not(.hv-badge *):not(.hv-chip *):not(.hv-btn *):not(.hv-alert *),
+#havato-app .hv-bottom-nav,
+#havato-app .hv-bottom-nav *,
+#havato-app .hv-tab,
+#havato-app .hv-tab span,
+#havato-app .hv-btn-primary,
+#havato-app .hv-btn-primary *,
+#havato-app .hv-btn-blue,
+#havato-app .hv-btn-blue *,
+#havato-app .hv-btn-green,
+#havato-app .hv-btn-green *,
 #havato-app .hv-status-strip,
 #havato-app .hv-status-strip *,
 #havato-app .hv-map-pill,
@@ -150,6 +160,44 @@
 }
 
 body.havato-page { overflow: hidden; }
+
+/* =========================================================================
+   0.2 TAP / FOCUS BEHAVIOUR
+   =========================================================================
+   Tapping a nav item left a grey square behind it: the UA focus ring plus a
+   default button background. `-webkit-tap-highlight-color` alone does not
+   cover it, because the ring is painted on :focus AFTER the touch ends.
+   Keyboard users must still get a visible ring, so only the pointer-driven
+   ring is removed (:focus-visible keeps it). */
+#havato-app button,
+#havato-app [role="button"] {
+	-webkit-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+#havato-app button:focus:not(:focus-visible),
+#havato-app a:focus:not(:focus-visible) {
+	outline: none;
+	box-shadow: none;
+}
+#havato-app .hv-tab,
+#havato-app .hv-tab:focus,
+#havato-app .hv-tab:active,
+#havato-app .hv-fab:focus:not(:focus-visible) {
+	outline: none;
+	background-color: transparent;
+	border: 0;
+	box-shadow: none;
+}
+/* Keyboard focus stays clearly visible. */
+#havato-app button:focus-visible,
+#havato-app a:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 2px;
+}
+
 body.havato-standalone #havato-app { border-radius: 0; }
 
 /* Ambient light-blue / indigo glow orbs (mockup background) */
@@ -487,6 +535,16 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
+/* The gathering's own title, under the café name. */
+.hv-event-title {
+	margin: 2px 0 0;
+	font-size: 0.86rem;
+	font-weight: 700;
+	color: var(--hv-indigo);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 .hv-event-when { margin: 3px 0 0; font-size: 0.79rem; color: var(--hv-text-soft); }
 /* Everything is free; this replaces where a price used to be shown. */
 .hv-free { font-weight: 800; color: var(--hv-green); font-size: 0.82rem; margin-block-start: 2px; }
@@ -810,6 +868,13 @@ body.havato-standalone #havato-app { border-radius: 0; }
    screens where the icons render at 22px. */
 .hv-tab svg { filter: drop-shadow(0 1px 2px rgba(10, 14, 48, 0.45)); }
 .hv-tab span { text-shadow: 0 1px 2px rgba(10, 14, 48, 0.5); }
+/* Same treatment for solid buttons: white text on a mid-tone gradient needs a
+   soft dark halo, otherwise it washes out on the lighter end of the ramp. */
+#havato-app .hv-btn-primary,
+#havato-app .hv-btn-blue,
+#havato-app .hv-btn-green {
+	text-shadow: 0 1px 2px rgba(10, 14, 48, 0.55);
+}
 .hv-tab.is-active::after {
 	content: "";
 	position: absolute;

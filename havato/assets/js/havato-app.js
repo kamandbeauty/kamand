@@ -790,7 +790,7 @@
 				'</div>';
 
 			$$('[data-event-join]').forEach(function (btn) {
-				btn.onclick = function () { joinEvent(btn.dataset.eventJoin, btn); };
+				btn.onclick = function () { openReserve(btn.dataset.eventJoin, parseInt(btn.dataset.seatsLeft, 10)); };
 			});
 			$$('[data-venue-open]').forEach(function (node) {
 				node.onclick = function () { openVenue(node.dataset.venueOpen); };
@@ -808,7 +808,8 @@
 		} else if (full || event.status !== 'open') {
 			action = '<button class="hv-btn hv-btn-ghost hv-btn-sm" disabled>' + esc(t('event_full')) + '</button>';
 		} else {
-			action = '<button class="hv-btn hv-btn-primary hv-btn-sm" data-event-join="' + esc(event.id) + '">' +
+			action = '<button class="hv-btn hv-btn-primary hv-btn-sm" data-event-join="' + esc(event.id) +
+				'" data-seats-left="' + (parseInt(event.seats_left, 10) || 0) + '">' +
 				esc(t('join_event')) + '</button>';
 		}
 
@@ -822,9 +823,11 @@
 					'<div class="hv-event-thumb" data-venue-open="' + esc(event.venue_id) + '">' + thumb + '</div>' +
 					'<div class="hv-event-info">' +
 						'<h3 class="hv-event-name" data-venue-open="' + esc(event.venue_id) + '">' + esc(pick(event.venue)) + '</h3>' +
+						(event.title ? '<p class="hv-event-title">' + esc(event.title) + '</p>' : '') +
 						'<p class="hv-event-when">' + esc(pick(event.weekday)) + ' · ' + esc(pick(event.date)) + ' · ' + num(event.time) + '</p>' +
 						'<div class="hv-row" style="margin-top:7px">' +
 							statusBadge(event.status) +
+							(event.theme ? '<span class="hv-badge hv-badge-pink">' + esc(event.theme) + '</span>' : '') +
 							'<span class="hv-badge hv-badge-indigo">' + esc(budgetLabel(event.budget_tier)) + '</span>' +
 						'</div>' +
 					'</div>' +
@@ -840,23 +843,64 @@
 			'</article>';
 	}
 
-	function joinEvent(eventId, btn) {
-		btn.disabled = true;
-		api('events/join', { method: 'POST', body: { event_id: eventId } })
+	/**
+	 * Ask how many seats before booking. A guest may bring companions, so the
+	 * count is chosen here and charged against the table's capacity server-side.
+	 */
+	function openReserve(eventId, seatsLeft) {
+		var max = Math.max(1, Math.min(BOOT.maxSeats || 3, seatsLeft || 1));
+		var choice = 1;
+
+		var options = '';
+		for (var n = 1; n <= max; n++) {
+			options += '<button type="button" class="hv-choice' + (n === 1 ? ' is-active' : '') +
+				'" data-seats="' + n + '">' +
+				esc(n === 1 ? t('seat_one') : t('seat_n').replace('%s', num(n))) +
+			'</button>';
+		}
+
+		openModal(
+			'<h3 class="hv-modal-title">' + esc(t('reserve_title')) + '</h3>' +
+			'<div class="hv-step-q">' + esc(t('how_many_seats')) + '</div>' +
+			'<div class="hv-choice-grid">' + options + '</div>' +
+			'<p class="hv-muted hv-mt">' + esc(t('seats_hint').replace('%s', num(max))) + '</p>' +
+			'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-reserve-go">' +
+				esc(t('confirm_reserve')) + '</button>'
+		);
+
+		$$('[data-seats]').forEach(function (b) {
+			b.onclick = function () {
+				choice = parseInt(b.dataset.seats, 10);
+				$$('[data-seats]').forEach(function (o) { o.classList.toggle('is-active', o === b); });
+			};
+		});
+
+		$('#hv-reserve-go').onclick = function () {
+			var go = $('#hv-reserve-go');
+			go.disabled = true;
+			submitJoin(eventId, choice, function () { go.disabled = false; });
+		};
+	}
+
+	function submitJoin(eventId, seats, onFail) {
+		api('events/join', { method: 'POST', body: { event_id: eventId, seats: seats } })
 			.then(function (res) {
-				toast(res.matched ? t('status_matched') : t('joined_event'), 'ok');
+				closeModal();
+				var msg = res.matched ? t('status_matched')
+					: (seats > 1 ? t('seats_booked').replace('%s', num(seats)) : t('joined_event'));
+				toast(msg, 'ok');
 				viewExplore();
 			})
 			.catch(function (err) {
-				btn.disabled = false;
+				if (onFail) { onFail(); }
 				toast(err.message, 'error');
-				// Both halves of the profile are required to take a seat, so
-				// send the guest to the screen that can fix it.
 				if (err.data && (err.data.code === 'havato_no_profile' || err.data.code === 'havato_no_details')) {
+					closeModal();
 					setTab('profile');
 				}
 			});
 	}
+
 
 	function showFilters() {
 		var options = [

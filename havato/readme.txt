@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.12.0
+Stable tag: 1.13.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,31 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.13.0 =
+* Fixed the grey square left behind after tapping a bottom-nav item. It was
+  the UA focus ring, which -webkit-tap-highlight-color does not cover because
+  it is painted on :focus after the touch ends. Only the pointer-driven ring
+  is suppressed; :focus-visible still shows one for keyboard users.
+* Bottom-nav labels and solid buttons are now white with a dark halo in every
+  theme. Their rules were single-class selectors, so a theme rule targeting
+  the bare tag could out-rank them; they are now inside the id-scoped
+  dark-surface guard, same as the profile card fixed in 1.9.1.
+* "Request a themed seat" is now simply "Reserve a seat".
+* A guest can reserve up to 3 seats and bring companions. Tapping the button
+  opens a small picker, capped by both HAVATO_MAX_SEATS (filterable via
+  havato_max_seats) and the seats actually left.
+  - Capacity is now counted in SEATS rather than rows everywhere: explore,
+    map, my-events, the admin and owner listings, the matcher's trigger and
+    the sign-up stat. One booking is no longer one person.
+  - The matcher seats a party together and charges its chairs against the
+    table, so a large booking can never overfill a table or be split up.
+  - A party bigger than the café's largest single table is refused with a
+    clear message, and asking for more seats than remain reports how many
+    are left instead of silently seating fewer people.
+* Event cards now show the gathering's own title and its theme. The server
+  was already sending both; only the card was not rendering them.
+* Schema 1.9.0 adds event_registrations.seats.
 
 = 1.12.0 =
 * Money is gone from the plugin entirely. Every gathering is free to join and

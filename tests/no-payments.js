@@ -41,7 +41,12 @@ t('registrations.order_id dropped', !/order_id bigint/.test(db));
 t('uninstall no longer drops a payouts table', !/'payouts',/.test(uninst));
 t('table comments renumbered with no gap',
   /\/\/ 14\. Venue tables/.test(db) && /\/\/ 15\. Which tables/.test(db) && !/\/\/ 16\./.test(db));
-t('schema version bumped', /HAVATO_DB_VERSION', '1\.8\.0'/.test(db + main));
+t('schema version is at or past the money-removal bump', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) return false;
+  const [maj, min] = [Number(m[1]), Number(m[2])];
+  return maj > 1 || (maj === 1 && min >= 8);
+})());
 
 console.log('\n--- 3. no money endpoints, settings or pages ---');
 t('owner/payouts route gone', !/'owner\/payouts'/.test(rest));

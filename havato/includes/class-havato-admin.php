@@ -414,7 +414,7 @@ class Havato_Admin {
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT e.*, v.name AS venue_name, v.city AS venue_city,
-						(SELECT COUNT(*) FROM $regs r WHERE r.event_id = e.id
+						(SELECT COALESCE(SUM(r.seats),0) FROM $regs r WHERE r.event_id = e.id
 						 AND r.status <> 'cancelled') AS taken
 				 FROM $events e
 				 LEFT JOIN $venues v ON v.id = e.venue_id
@@ -1273,7 +1273,7 @@ class Havato_Admin {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			"SELECT e.*, v.name AS venue_name,
-					(SELECT COUNT(*) FROM $regs r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
+					(SELECT COALESCE(SUM(r.seats),0) FROM $regs r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
 			 FROM $events e LEFT JOIN $venues v ON v.id = e.venue_id
 			 ORDER BY e.event_date ASC LIMIT 40",
 			ARRAY_A

@@ -270,7 +270,26 @@ class Havato_I18N {
 			'explore_title'         => array( 'fa' => 'دورهمی‌های این هفته', 'en' => 'This week’s tables' ),
 			'explore_empty'         => array( 'fa' => 'فعلاً دورهمی بازی ثبت نشده است.', 'en' => 'No open tables right now.' ),
 			'seats_left'            => array( 'fa' => 'صندلی خالی', 'en' => 'seats left' ),
-			'join_event'            => array( 'fa' => 'درخواست هم‌نشینی موضوعی', 'en' => 'Request a seat' ),
+			'join_event'            => array( 'fa' => 'رزرو صندلی', 'en' => 'Reserve a seat' ),
+			'reserve_title'         => array( 'fa' => 'رزرو صندلی', 'en' => 'Reserve a seat' ),
+			'how_many_seats'        => array( 'fa' => 'چند صندلی رزرو می‌کنید؟', 'en' => 'How many seats?' ),
+			'seats_hint'            => array(
+				'fa' => 'می‌توانید تا %s صندلی رزرو کنید. همراهان شما کنار خودتان می‌نشینند.',
+				'en' => 'You can reserve up to %s seats. Your companions are seated with you.',
+			),
+			'seat_one'              => array( 'fa' => 'فقط خودم', 'en' => 'Just me' ),
+			'seat_n'                => array( 'fa' => '%s نفر', 'en' => '%s people' ),
+			'confirm_reserve'       => array( 'fa' => 'تایید رزرو', 'en' => 'Confirm' ),
+			'only_n_seats_left'     => array(
+				'fa' => 'فقط %s صندلی خالی مانده است.',
+				'en' => 'Only %s seat(s) left.',
+			),
+			'party_max_seats'       => array(
+				'fa' => 'بزرگ‌ترین میز این دورهمی %s صندلی دارد و همراهان باید کنار هم بنشینند.',
+				'en' => 'The largest table here seats %s, and a party is always seated together.',
+			),
+			'seats_booked'          => array( 'fa' => '%s صندلی رزرو شد', 'en' => '%s seats reserved' ),
+			'event_theme'           => array( 'fa' => 'موضوع', 'en' => 'Theme' ),
 			'joined_event'          => array( 'fa' => 'در صف این میز هستید', 'en' => 'You are in the queue' ),
 			'event_full'            => array( 'fa' => 'ظرفیت تکمیل است', 'en' => 'Table is full' ),
 			// Atmosphere, not price. The plugin never handles money, so these

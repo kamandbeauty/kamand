@@ -181,12 +181,16 @@ class Havato_DB {
 		// 4. Event registrations (the queue).
 		// `status`: queued | matched | cancelled. Joining is free, so a seat
 		// is simply taken or not — there is no reservation/hold state.
+		// `seats`: 1..HAVATO_MAX_SEATS. One row per booking, not per chair:
+		// the UNIQUE(event_id,user_id) key means a guest bringing friends is
+		// still a single row, with the party size stored here.
 		$queries[] = "CREATE TABLE {$p}event_registrations (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			event_id varchar(64) NOT NULL DEFAULT '',
 			user_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			status varchar(20) NOT NULL DEFAULT 'queued',
 			checked_in tinyint(1) NOT NULL DEFAULT 0,
+			seats int(11) NOT NULL DEFAULT 1,
 			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			PRIMARY KEY  (id),
 			UNIQUE KEY event_user (event_id,user_id),

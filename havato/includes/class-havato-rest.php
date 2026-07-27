@@ -216,6 +216,7 @@ class Havato_REST {
 				'lng'  => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
 				'zoom' => (int) Havato_Settings::get( 'map_zoom', 12 ),
 			),
+			'max_seats'     => havato_max_seats(),
 			'interests'     => havato_interest_tags(),
 			'locations'     => havato_locations(),
 			'city'          => self::viewer_city(),
@@ -343,7 +344,7 @@ class Havato_REST {
 		$rows = $wpdb->get_results(
 			"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
 					v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
-					(SELECT COUNT(*) FROM $regs r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
+					(SELECT COALESCE(SUM(r.seats),0) FROM $regs r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
 			 FROM $events e
 			 INNER JOIN $venues v ON v.id = e.venue_id
 			 WHERE $where
@@ -395,8 +396,28 @@ class Havato_REST {
 			return new WP_Error( 'havato_no_details', Havato_I18N::t( 'need_details_first' ), array( 'status' => 400 ) );
 		}
 
+		// A guest may bring companions. One row still represents the whole
+		// party (UNIQUE event_id+user_id); `seats` carries the size.
+		$seats = (int) $req->get_param( 'seats' );
+		$seats = $seats > 0 ? $seats : 1;
+		$seats = min( havato_max_seats(), $seats );
+
+		// A party is always seated together, so it can never be larger than
+		// the biggest single table the café assigned to this event —
+		// otherwise the matcher would have nowhere to put them.
+		$biggest = self::largest_table_seats( $event );
+		if ( $seats > $biggest ) {
+			return new WP_Error(
+				'havato_party_too_big',
+				sprintf( Havato_I18N::t( 'party_max_seats' ), number_format_i18n( $biggest ) ),
+				array( 'status' => 409, 'max_seats' => $biggest )
+			);
+		}
+
+		// Seats already taken, counting parties rather than rows — otherwise
+		// a 6-seat table could be "3 rows = 3 people" while 7 guests attend.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$taken = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE event_id=%s AND status<>'cancelled'", $event_id ) );
+		$taken = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(seats),0) FROM $regs WHERE event_id=%s AND status<>'cancelled'", $event_id ) );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$mine = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND user_id=%d", $event_id, $user_id ), ARRAY_A );
 
@@ -404,12 +425,25 @@ class Havato_REST {
 			return self::ok( array( 'already' => true ) );
 		}
 
-		if ( $taken >= (int) $event['max_capacity'] ) {
+		$free = (int) $event['max_capacity'] - $taken;
+
+		if ( $free <= 0 ) {
 			return new WP_Error( 'havato_full', Havato_I18N::t( 'event_full' ), array( 'status' => 409 ) );
 		}
 
-		self::queue_user( $event_id, $user_id );
-		Havato_Logger::log( sprintf( 'User request received: guest %d queued for event %s.', $user_id, $event_id ), 'info' );
+		// Asking for more seats than are left is a partial-availability case,
+		// not a hard failure: say how many remain instead of silently seating
+		// fewer people than the guest expects to bring.
+		if ( $seats > $free ) {
+			return new WP_Error(
+				'havato_not_enough_seats',
+				sprintf( Havato_I18N::t( 'only_n_seats_left' ), number_format_i18n( $free ) ),
+				array( 'status' => 409, 'seats_left' => $free )
+			);
+		}
+
+		self::queue_user( $event_id, $user_id, 'queued', $seats );
+		Havato_Logger::log( sprintf( 'User request received: guest %d queued for event %s (%d seat(s)).', $user_id, $event_id, $seats ), 'info' );
 
 		$match = Havato_Matcher::maybe_run_on_full( $event_id );
 
@@ -443,7 +477,7 @@ class Havato_REST {
 				"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
 						v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
 						r.status AS my_status, r.checked_in,
-						(SELECT COUNT(*) FROM $regs r2 WHERE r2.event_id = e.id AND r2.status <> 'cancelled') AS taken
+						(SELECT COALESCE(SUM(r2.seats),0) FROM $regs r2 WHERE r2.event_id = e.id AND r2.status <> 'cancelled') AS taken
 				 FROM $regs r
 				 INNER JOIN $events e ON e.id = r.event_id
 				 LEFT JOIN $venues v ON v.id = e.venue_id
@@ -1627,7 +1661,7 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT e.*, (SELECT COUNT(*) FROM $regs r WHERE r.event_id=e.id AND r.status<>'cancelled') AS taken
+				"SELECT e.*, (SELECT COALESCE(SUM(r.seats),0) FROM $regs r WHERE r.event_id=e.id AND r.status<>'cancelled') AS taken
 				 FROM $events e WHERE e.venue_id=%s ORDER BY e.event_date DESC LIMIT 60",
 				$venue['id']
 			),
@@ -1908,6 +1942,26 @@ class Havato_REST {
 	 * @param string $event_id Event id.
 	 * @return array
 	 */
+	/**
+	 * Seats of the largest single table assigned to an event.
+	 *
+	 * A booking is seated as one group, so this is the ceiling on a party.
+	 *
+	 * @param array $event Event row.
+	 * @return int
+	 */
+	public static function largest_table_seats( $event ) {
+		$max = 0;
+		foreach ( self::event_tables( $event['id'] ) as $row ) {
+			$max = max( $max, (int) $row['seats'] );
+		}
+		// Legacy events carry no furniture: fall back to the stated capacity.
+		if ( $max <= 0 ) {
+			$max = (int) $event['max_capacity'];
+		}
+		return max( 1, $max );
+	}
+
 	public static function event_tables( $event_id ) {
 		global $wpdb;
 		Havato_DB::ensure_tables();
@@ -2090,8 +2144,8 @@ class Havato_REST {
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$paid = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE event_id=%s AND amount > 0 AND status<>'cancelled'", $event_id ) );
-		if ( $paid > 0 ) {
+		$booked = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE event_id=%s AND status<>'cancelled'", $event_id ) );
+		if ( $booked > 0 ) {
 			return new WP_Error( 'havato_has_guests', Havato_I18N::t( 'error_generic' ), array( 'status' => 409 ) );
 		}
 
@@ -2497,7 +2551,7 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$venue_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $venues" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$signups = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $regs WHERE status <> 'cancelled'" );
+		$signups = (int) $wpdb->get_var( "SELECT COALESCE(SUM(seats),0) FROM $regs WHERE status <> 'cancelled'" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$last_week = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM $regs WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -2889,8 +2943,9 @@ class Havato_REST {
 	 * @param string $event_id Event id.
 	 * @param int    $user_id  User id.
 	 * @param string $status   Registration status, normally 'queued'.
+	 * @param int    $seats    Party size (the booker plus their companions).
 	 */
-	private static function queue_user( $event_id, $user_id, $status = 'queued' ) {
+	private static function queue_user( $event_id, $user_id, $status = 'queued', $seats = 1 ) {
 		global $wpdb;
 		$regs = Havato_DB::table( 'event_registrations' );
 
@@ -2902,9 +2957,10 @@ class Havato_REST {
 				'user_id'    => (int) $user_id,
 				'status'     => $status,
 				'checked_in' => 0,
+				'seats'      => max( 1, min( havato_max_seats(), (int) $seats ) ),
 				'created_at' => havato_now(),
 			),
-			array( '%s', '%d', '%s', '%d', '%s' )
+			array( '%s', '%d', '%s', '%d', '%d', '%s' )
 		);
 	}
 

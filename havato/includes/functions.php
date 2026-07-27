@@ -310,6 +310,16 @@ function havato_get_profile( $user_id ) {
 }
 
 /**
+ * Most seats one guest may book for a single gathering.
+ *
+ * @return int
+ */
+function havato_max_seats() {
+	$max = (int) apply_filters( 'havato_max_seats', defined( 'HAVATO_MAX_SEATS' ) ? HAVATO_MAX_SEATS : 3 );
+	return max( 1, $max );
+}
+
+/**
  * Predefined interest tags (bilingual).
  *
  * @return array

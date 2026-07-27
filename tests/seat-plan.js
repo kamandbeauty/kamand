@@ -10,7 +10,7 @@ t('reads the event_tables rows', /Havato_REST::event_tables\( \$event\['id'\] \)
 t('expands quantity into individual tables', /for \( \$i = 0; \$i < max\( 1, \(int\) \$row\['quantity'\] \)/.test(M));
 t('biggest table first', /usort\(/.test(M) && /\$b\['seats'\] - \$a\['seats'\]/.test(M));
 t('legacy events still work', /'seats'  => max\( 2, \(int\) \$event\['max_capacity'\] \)/.test(M));
-t('build_tables takes the plan', /function build_tables\( \$user_ids, \$profiles, \$seat_plan, \$relaxed \)/.test(M));
+t('build_tables takes the plan', /function build_tables\( \$user_ids, \$profiles, \$seat_plan, \$relaxed/.test(M));
 t('capacity advances per table', /\$plan_i\+\+;/.test(M));
 t('total capacity = sum of seats',
   /array_sum\( wp_list_pluck\( \$seat_plan, 'seats' \) \)/.test(M));

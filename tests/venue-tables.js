@@ -48,7 +48,7 @@ t('live capacity preview', /event_capacity_preview/.test(oj));
 console.log('\n--- matcher seats one group PER TABLE ---');
 const M=rd('includes/class-havato-matcher.php');
 t('seat_plan() built from furniture', /function seat_plan/.test(M));
-t('build_tables consumes the plan', /build_tables\( \$user_ids, \$profiles, \$seat_plan, \$relaxed \)/.test(M));
+t('build_tables consumes the plan', /build_tables\( \$user_ids, \$profiles, \$seat_plan, \$relaxed/.test(M));
 t('capacity advances per physical table', /\$plan_i\+\+;/.test(M));
 {
   const plan=(tables,legacy)=>{let p=[];for(const r of tables)for(let i=0;i<r.quantity;i++)p.push(r.seats);

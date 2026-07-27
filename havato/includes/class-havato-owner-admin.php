@@ -382,7 +382,7 @@ class Havato_Owner_Admin {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT e.*, (SELECT COUNT(*) FROM $regs r WHERE r.event_id=e.id AND r.status <> 'cancelled') AS taken
+				"SELECT e.*, (SELECT COALESCE(SUM(r.seats),0) FROM $regs r WHERE r.event_id=e.id AND r.status <> 'cancelled') AS taken
 				 FROM $events e WHERE e.venue_id=%s AND e.event_date >= CURDATE()
 				 ORDER BY e.event_date ASC LIMIT 10",
 				$venue['id']
@@ -554,7 +554,7 @@ class Havato_Owner_Admin {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT e.*, (SELECT COUNT(*) FROM $regs r WHERE r.event_id=e.id AND r.status <> 'cancelled') AS taken
+				"SELECT e.*, (SELECT COALESCE(SUM(r.seats),0) FROM $regs r WHERE r.event_id=e.id AND r.status <> 'cancelled') AS taken
 				 FROM $events e WHERE e.venue_id=%s ORDER BY e.event_date DESC LIMIT 60",
 				$venue['id']
 			),
