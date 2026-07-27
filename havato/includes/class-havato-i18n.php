@@ -356,6 +356,8 @@ class Havato_I18N {
 			'admin_dashboard'       => array( 'fa' => 'داشبورد آمار', 'en' => 'Statistics dashboard' ),
 			'admin_approvals'       => array( 'fa' => 'تایید صلاحیت و منوها', 'en' => 'Approvals & menus' ),
 			'admin_matcher'         => array( 'fa' => 'اجرای تطابق هوشمند', 'en' => 'Run smart matching' ),
+			'admin_revenue'         => array( 'fa' => 'درآمد و تسویه', 'en' => 'Revenue & settlements' ),
+			'revenue_by_event'      => array( 'fa' => 'درآمد رویدادها', 'en' => 'Revenue by event' ),
 			'admin_weights'         => array( 'fa' => 'تنظیم ضرایب فرمول', 'en' => 'Formula weights' ),
 			'admin_google'          => array( 'fa' => 'تنظیمات ورود با گوگل', 'en' => 'Google sign-in' ),
 			'admin_locale'          => array( 'fa' => 'تنظیمات زبان و منطقه', 'en' => 'Language & region' ),

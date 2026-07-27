@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,22 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.0.3 =
+* Menu Builder: each product is now a single compact restaurant-style row
+  (square photo | name + price | actions) instead of a tall stacked form.
+  The description collapses behind a toggle.
+* Fix: product photos rendered as a stretched "capsule". `.hv-menu-thumb` is
+  used both on a wrapper and directly on an <img>; in the latter case
+  `display: grid` made the browser ignore object-fit. Added an
+  `img.hv-menu-thumb` rule so photos always crop to a square.
+* Admin approvals: pending menus are now listed as restaurant-style rows with
+  the product photo, name, description and price.
+* Revenue is administrator-only. Added a dedicated "Revenue & settlements"
+  sub-menu with per-event ticket income, the commission split and the payout
+  ledger. Café owners now only ever see their own share: gross revenue and the
+  platform commission are stripped from the owner API response, not just
+  hidden in the UI.
 
 = 1.0.2 =
 * Fix: the "approve menu" button in wp-admin was labelled "reject". PHP casts

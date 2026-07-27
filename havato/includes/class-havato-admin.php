@@ -47,6 +47,7 @@ class Havato_Admin {
 		$pages = array(
 			'havato'            => array( 'admin_dashboard', 'page_dashboard' ),
 			'havato-approvals'  => array( 'admin_approvals', 'page_approvals' ),
+			'havato-revenue'    => array( 'admin_revenue', 'page_revenue' ),
 			'havato-matcher'    => array( 'admin_matcher', 'page_matcher' ),
 			'havato-weights'    => array( 'admin_weights', 'page_weights' ),
 			'havato-google'     => array( 'admin_google', 'page_google' ),
@@ -128,6 +129,7 @@ class Havato_Admin {
 		$tabs = array(
 			'havato'           => Havato_I18N::t( 'admin_dashboard' ),
 			'havato-approvals' => Havato_I18N::t( 'admin_approvals' ),
+			'havato-revenue'   => Havato_I18N::t( 'admin_revenue' ),
 			'havato-matcher'   => Havato_I18N::t( 'admin_matcher' ),
 			'havato-weights'   => Havato_I18N::t( 'admin_weights' ),
 			'havato-google'    => Havato_I18N::t( 'admin_google' ),
@@ -326,9 +328,125 @@ class Havato_Admin {
 
 		self::render_menu_queue();
 		self::render_photo_reports();
+
+		self::foot();
+	}
+
+	/* =====================================================================
+	 * Page — revenue & settlements (administrator only)
+	 * ================================================================== */
+
+	/**
+	 * Platform revenue page.
+	 *
+	 * Ticket income belongs to the platform, so gross revenue, the commission
+	 * cut and every café's outstanding balance live here — never in the café
+	 * owner portal, which only ever shows that café's own share.
+	 */
+	public static function page_revenue() {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		// Refresh the ledger so the figures are always current.
+		Havato_Payouts::rebuild_all();
+
+		$lang = Havato_I18N::current_lang();
+		$rows = Havato_Payouts::all();
+
+		$gross      = 0;
+		$commission = 0;
+		$due        = 0;
+		$paid       = 0;
+
+		foreach ( $rows as $row ) {
+			$gross      += (int) $row['gross_amount'];
+			$commission += (int) $row['commission_amount'];
+			if ( 'paid' === $row['status'] ) {
+				$paid += (int) $row['venue_amount'];
+			} else {
+				$due += (int) $row['venue_amount'];
+			}
+		}
+
+		self::head( Havato_I18N::t( 'admin_revenue' ), Havato_I18N::t( 'payout_status' ) );
+
+		echo '<div class="hv-adm-stats">';
+		self::stat_card( Havato_I18N::t( 'stat_revenue' ), havato_price( $gross, $lang ), 'blue', 'chart-line' );
+		self::stat_card( Havato_I18N::t( 'payout_commission' ), havato_price( $commission, $lang ), 'green', 'chart-pie' );
+		self::stat_card( Havato_I18N::t( 'payout_due' ), havato_price( $due, $lang ), 'orange', 'clock' );
+		self::stat_card( Havato_I18N::t( 'payout_paid' ), havato_price( $paid, $lang ), 'pink', 'yes-alt' );
+		echo '</div>';
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'revenue_by_event' ) ) . '</h2>';
+		self::render_event_revenue();
+		echo '</div>';
+
 		self::render_payout_ledger();
 
 		self::foot();
+	}
+
+	/**
+	 * Per-event ticket income (administrator only).
+	 */
+	private static function render_event_revenue() {
+		global $wpdb;
+
+		$events = Havato_DB::table( 'events' );
+		$venues = Havato_DB::table( 'venues' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+		$lang   = Havato_I18N::current_lang();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT e.id, e.event_date, e.event_time, e.status, e.max_capacity,
+					v.name AS venue_name, v.name_fa AS venue_name_fa,
+					COUNT(r.id) AS guests,
+					COALESCE(SUM(r.amount),0) AS income
+			 FROM $events e
+			 LEFT JOIN $venues v ON v.id = e.venue_id
+			 LEFT JOIN $regs r ON r.event_id = e.id
+					AND r.status NOT IN ('cancelled','pending_payment')
+			 GROUP BY e.id
+			 HAVING income > 0
+			 ORDER BY e.event_date DESC
+			 LIMIT 50",
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) ) {
+			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p>';
+			return;
+		}
+
+		$percent = max( 0, min( 100, (int) Havato_Settings::get( 'commission_percent', 20 ) ) );
+
+		echo '<table class="hv-adm-table"><thead><tr>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'venue_name' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'payout_period' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'guests_routed' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'stat_revenue' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'payout_commission' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'payout_share' ) ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $rows as $row ) {
+			$name   = $row['venue_name_fa'] ? $row['venue_name_fa'] : $row['venue_name'];
+			$income = (int) $row['income'];
+			$cut    = (int) round( $income * $percent / 100 );
+
+			echo '<tr>';
+			echo '<td><strong>' . esc_html( $name ) . '</strong></td>';
+			echo '<td>' . esc_html( Havato_Jalali::format( $row['event_date'], $lang ) . ' — ' . substr( $row['event_time'], 0, 5 ) ) . '</td>';
+			echo '<td>' . esc_html( $row['guests'] . ' / ' . $row['max_capacity'] ) . '</td>';
+			echo '<td><strong>' . esc_html( havato_price( $income, $lang ) ) . '</strong></td>';
+			echo '<td>' . esc_html( havato_price( $cut, $lang ) ) . '</td>';
+			echo '<td>' . esc_html( havato_price( $income - $cut, $lang ) ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
 	}
 
 	/**
@@ -415,10 +533,34 @@ class Havato_Admin {
 			echo '<div class="hv-adm-row-between"><strong>' . esc_html( $name ) . '</strong>';
 			echo '<span class="hv-adm-badge is-yellow">' . esc_html( count( $items ) ) . '</span></div>';
 
+			// Restaurant-style rows: photo | name + description | price.
 			echo '<ul class="hv-adm-menu-list">';
 			foreach ( $items as $item ) {
-				echo '<li><span>' . esc_html( $item['name'] ) . '</span><b>' .
-					esc_html( havato_price( isset( $item['price'] ) ? $item['price'] : 0 ) ) . '</b></li>';
+				$img   = isset( $item['image'] ) ? trim( (string) $item['image'] ) : '';
+				$desc  = isset( $item['desc'] ) ? trim( (string) $item['desc'] ) : '';
+				$price = isset( $item['price'] ) ? (int) $item['price'] : 0;
+
+				echo '<li class="hv-adm-menu-row">';
+
+				if ( $img ) {
+					printf(
+						'<img class="hv-adm-menu-thumb" src="%s" alt="%s" loading="lazy">',
+						esc_url( $img ),
+						esc_attr( $item['name'] )
+					);
+				} else {
+					echo '<span class="hv-adm-menu-thumb is-empty"><span class="dashicons dashicons-food"></span></span>';
+				}
+
+				echo '<span class="hv-adm-menu-info">';
+				echo '<strong>' . esc_html( $item['name'] ) . '</strong>';
+				if ( '' !== $desc ) {
+					echo '<span class="hv-adm-muted">' . esc_html( $desc ) . '</span>';
+				}
+				echo '</span>';
+
+				echo '<b class="hv-adm-menu-price">' . esc_html( havato_price( $price ) ) . '</b>';
+				echo '</li>';
 			}
 			echo '</ul>';
 
@@ -897,7 +1039,7 @@ class Havato_Admin {
 
 			case 'payout':
 				Havato_Payouts::mark_paid( isset( $_POST['payout_id'] ) ? (int) $_POST['payout_id'] : 0 );
-				$page = 'havato-approvals';
+				$page = 'havato-revenue';
 				break;
 
 			case 'weights':

@@ -45,6 +45,8 @@
 		testStep: 0,
 		testData: { age: 27, gender: '', extroversion: 5, talkative: 5, vibe: 'fun', interests: [], neighborhood: '' },
 		menuDraft: [],
+		menuOpenRow: -1,
+		menuHasPending: false,
 		booted: false
 	};
 
@@ -1750,9 +1752,12 @@
 
 			var payouts = (res.payouts || []).length
 				? (res.payouts || []).map(function (row) {
+					// The café only ever sees its OWN settlement amount.
+					// Platform ticket revenue and the commission split are
+					// admin-only figures and are deliberately not exposed here.
 					return '<div class="hv-payout-row">' +
 						'<div><strong>' + esc(pick(row.period_label)) + '</strong>' +
-							'<div class="hv-muted">' + esc(t('payout_gross')) + ': ' + esc(pick(row.gross_label)) + '</div></div>' +
+							'<div class="hv-muted">' + esc(t('payout_share')) + '</div></div>' +
 						'<div style="text-align:end">' +
 							'<div class="hv-menu-price">' + esc(pick(row.share_label)) + '</div>' +
 							'<span class="hv-badge hv-badge-' + (row.status === 'paid' ? 'green' : 'orange') + '">' +
@@ -1949,6 +1954,7 @@
 	}
 
 	function renderMenuDraft(hasPending) {
+		S.menuHasPending = !!hasPending;
 		el.main.innerHTML =
 			(hasPending ? '<div class="hv-alert hv-alert-orange">' + esc(t('menu_pending_badge')) + '</div>' : '') +
 			'<div class="hv-alert hv-alert-blue">' + esc(t('menu_display_only')) + '</div>' +
@@ -1962,25 +1968,41 @@
 	}
 
 	function menuRowMarkup(item, index) {
+		// Compact restaurant-style row: square photo | name + price | actions.
+		// The description is collapsed behind a toggle so a long menu stays
+		// scannable instead of turning into a wall of tall forms.
+		var open = S.menuOpenRow === index;
+
 		return '' +
-			'<div class="hv-card" data-menu-row="' + index + '">' +
-				'<div class="hv-row" style="align-items:flex-start;flex-wrap:nowrap">' +
-					'<div class="hv-field" style="flex:0 0 auto;align-items:center">' +
-						'<label style="white-space:nowrap">' + esc(t('menu_item_image')) + '</label>' +
-						'<button type="button" class="hv-menu-thumb" data-menu-img="' + index + '" title="' + esc(t('menu_item_image')) + '">' +
-							(item.image ? '<img src="' + esc(item.image) + '" alt="">' : icon('cup')) +
-						'</button>' +
+			'<div class="hv-menu-edit" data-menu-row="' + index + '">' +
+				'<div class="hv-menu-edit-main">' +
+					'<button type="button" class="hv-menu-thumb" data-menu-img="' + index + '" title="' + esc(t('menu_item_image')) + '">' +
+						(item.image ? '<img src="' + esc(item.image) + '" alt="">' : icon('cup')) +
+					'</button>' +
+					'<div class="hv-menu-edit-fields">' +
+						'<input type="text" class="hv-input hv-input-flush" data-menu-name ' +
+							'placeholder="' + esc(t('menu_item_name')) + '" value="' + esc(item.name) + '">' +
+						'<div class="hv-menu-edit-price">' +
+							'<input type="number" class="hv-input hv-input-flush" data-menu-price ' +
+								'placeholder="' + esc(t('menu_item_price')) + '" value="' + (parseInt(item.price, 10) || 0) + '" min="0" step="1000">' +
+							'<span class="hv-muted">' + esc(t('toman')) + '</span>' +
+						'</div>' +
 					'</div>' +
-					'<div style="flex:1 1 auto;min-width:0">' +
-						'<div class="hv-field"><label>' + esc(t('menu_item_name')) + '</label>' +
-							'<input type="text" class="hv-input" data-menu-name value="' + esc(item.name) + '"></div>' +
+					'<div class="hv-menu-edit-actions">' +
+						'<button type="button" class="hv-icon-btn" data-menu-toggle="' + index + '" ' +
+							'title="' + esc(t('menu_item_desc')) + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+							(open ? '▲' : '▼') +
+						'</button>' +
+						'<button type="button" class="hv-icon-btn is-danger" data-menu-del="' + index + '" ' +
+							'title="' + esc(t('delete')) + '">✕</button>' +
 					'</div>' +
 				'</div>' +
-				'<div class="hv-field hv-mt"><label>' + esc(t('menu_item_price')) + '</label>' +
-					'<input type="number" class="hv-input" data-menu-price value="' + (parseInt(item.price, 10) || 0) + '"></div>' +
-				'<div class="hv-field hv-mt"><label>' + esc(t('menu_item_desc')) + '</label>' +
-					'<textarea class="hv-textarea" data-menu-desc>' + esc(item.desc) + '</textarea></div>' +
-				'<button type="button" class="hv-btn hv-btn-danger hv-btn-sm hv-mt" data-menu-del="' + index + '">' + esc(t('delete')) + '</button>' +
+				(open
+					? '<div class="hv-menu-edit-desc">' +
+						'<label>' + esc(t('menu_item_desc')) + '</label>' +
+						'<textarea class="hv-textarea" data-menu-desc rows="2">' + esc(item.desc) + '</textarea>' +
+					'</div>'
+					: (item.desc ? '<p class="hv-menu-edit-hint">' + esc(item.desc) + '</p>' : '')) +
 			'</div>';
 	}
 
@@ -1990,22 +2012,38 @@
 
 			$('[data-menu-name]', row).oninput = function (e) { S.menuDraft[index].name = e.target.value; };
 			$('[data-menu-price]', row).oninput = function (e) { S.menuDraft[index].price = parseInt(e.target.value, 10) || 0; };
-			$('[data-menu-desc]', row).oninput = function (e) { S.menuDraft[index].desc = e.target.value; };
 
 			$('[data-menu-img]', row).onclick = function () {
 				pickFile(function (file) {
 					var form = new FormData();
 					form.append('file', file);
+					toast(t('loading'), 'info');
 					api('owner/upload', { method: 'POST', body: form }).then(function (res) {
 						S.menuDraft[index].image = res.url;
-						renderMenuDraft(false);
+						// Keep the pending banner state; passing false here used
+						// to make the "awaiting approval" notice vanish.
+						renderMenuDraft(S.menuHasPending);
 					}).catch(function (err) { toast(err.message, 'error'); });
 				});
 			};
 
+			var descBox = $('[data-menu-desc]', row);
+			if (descBox) {
+				descBox.oninput = function (e) { S.menuDraft[index].desc = e.target.value; };
+			}
+
+			var toggle = $('[data-menu-toggle]', row);
+			if (toggle) {
+				toggle.onclick = function () {
+					S.menuOpenRow = (S.menuOpenRow === index) ? -1 : index;
+					renderMenuDraft(S.menuHasPending);
+				};
+			}
+
 			$('[data-menu-del]', row).onclick = function () {
 				S.menuDraft.splice(index, 1);
-				renderMenuDraft(false);
+				if (S.menuOpenRow === index) { S.menuOpenRow = -1; }
+				renderMenuDraft(S.menuHasPending);
 			};
 		});
 	}
@@ -2013,7 +2051,8 @@
 	function addMenuRow() {
 		if (S.role !== 'cafe_owner') { return; }
 		S.menuDraft.push({ name: '', price: 0, desc: '', image: '' });
-		renderMenuDraft(false);
+		S.menuOpenRow = S.menuDraft.length - 1;
+		renderMenuDraft(S.menuHasPending);
 		el.main.scrollTop = el.main.scrollHeight;
 	}
 

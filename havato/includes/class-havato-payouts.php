@@ -20,10 +20,11 @@ class Havato_Payouts {
 	/**
 	 * Recalculate the ledger for one venue (all periods with sales).
 	 *
-	 * @param string $venue_id Venue id.
+	 * @param string $venue_id  Venue id.
+	 * @param bool   $for_admin Include platform-only revenue figures.
 	 * @return array Rows.
 	 */
-	public static function rebuild_venue( $venue_id ) {
+	public static function rebuild_venue( $venue_id, $for_admin = false ) {
 		global $wpdb;
 		Havato_DB::ensure_tables();
 
@@ -91,7 +92,7 @@ class Havato_Payouts {
 			}
 		}
 
-		return self::get_venue_payouts( $venue_id );
+		return self::get_venue_payouts( $venue_id, $for_admin );
 	}
 
 	/**
@@ -112,15 +113,36 @@ class Havato_Payouts {
 	 * Ledger rows for one venue, newest period first.
 	 *
 	 * @param string $venue_id Venue id.
+	 * @param bool   $for_admin Include platform-only figures (gross revenue and
+	 *                          the commission cut). Café owners must never see
+	 *                          these — they only get their own share.
 	 * @return array
 	 */
-	public static function get_venue_payouts( $venue_id ) {
+	public static function get_venue_payouts( $venue_id, $for_admin = false ) {
 		global $wpdb;
 		$payouts = Havato_DB::table( 'payouts' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $payouts WHERE venue_id=%s ORDER BY period DESC", $venue_id ), ARRAY_A );
 
-		return array_map( array( __CLASS__, 'format_row' ), (array) $rows );
+		$rows = array_map( array( __CLASS__, 'format_row' ), (array) $rows );
+
+		if ( $for_admin ) {
+			return $rows;
+		}
+
+		// Strip every platform-revenue field before it reaches the owner app.
+		return array_map(
+			function ( $row ) {
+				unset(
+					$row['gross_amount'],
+					$row['commission_amount'],
+					$row['gross_label'],
+					$row['commission_label']
+				);
+				return $row;
+			},
+			$rows
+		);
 	}
 
 	/**
