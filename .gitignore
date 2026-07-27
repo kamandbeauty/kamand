@@ -1,0 +1,13 @@
+# Build artifacts
+*.zip
+# …except the shippable plugin package (the deliverable, ~160 KB)
+!havato.zip
+node_modules/
+vendor/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

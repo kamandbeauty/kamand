@@ -1,0 +1,85 @@
+# Copyright (C) 2026 Havato Team
+# This file is distributed under the GPL-2.0-or-later license.
+msgid ""
+msgstr ""
+"Project-Id-Version: Havato 1.0.0\n"
+"Report-Msgid-Bugs-To: https://havato.app\n"
+"POT-Creation-Date: 2026-07-26 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: havato\n"
+
+#. NOTE: All in-app (front-end) strings live in includes/class-havato-i18n.php
+#. so that the language switch can happen instantly on the client without a
+#. page reload. The strings below are the ones rendered outside the web-app
+#. (wp-admin helper texts).
+
+#: includes/class-havato-admin.php
+msgid "The engine runs automatically when the last seat is taken, and a cron job forces it a few hours before each event. This button is only a manual backup."
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Take table gender balance into account"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Force matching N hours before the event"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Mark the event completed N hours after start"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Platform commission (%)"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Default ticket price (Toman)"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Authorized JavaScript origin"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Authorized redirect URI"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Create the credentials in Google Cloud Console → APIs & Services → Credentials → OAuth client ID (Web application)."
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Map center latitude"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Map center longitude"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Default map zoom"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Show the in-app language switcher"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Auto-approve gallery photos"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "Shortcode & app URLs"
+msgstr ""
+
+#: includes/class-havato-admin.php
+msgid "place it on any page."
+msgstr ""

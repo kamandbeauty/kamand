@@ -1,0 +1,2586 @@
+<?php
+/**
+ * REST API — every screen of the SPA talks to these endpoints.
+ *
+ * Namespace: havato/v1
+ *
+ * @package Havato
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Endpoint registry & controllers.
+ */
+class Havato_REST {
+
+	const NS = 'havato/v1';
+
+	/**
+	 * Register the routes.
+	 */
+	public static function init() {
+		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
+	}
+
+	/* =====================================================================
+	 * Permission helpers
+	 * ================================================================== */
+
+	/**
+	 * Anyone (guests included).
+	 *
+	 * @return bool
+	 */
+	public static function public_perm() {
+		return true;
+	}
+
+	/**
+	 * Logged-in users only.
+	 *
+	 * @return bool|WP_Error
+	 */
+	public static function auth_perm() {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error( 'havato_auth', Havato_I18N::t( 'auth_title' ), array( 'status' => 401 ) );
+		}
+		return true;
+	}
+
+	/**
+	 * Café owners (and admins).
+	 *
+	 * @return bool|WP_Error
+	 */
+	public static function owner_perm() {
+		$auth = self::auth_perm();
+		if ( is_wp_error( $auth ) ) {
+			return $auth;
+		}
+		$role = havato_user_role();
+		if ( 'cafe_owner' !== $role && 'admin' !== $role ) {
+			return new WP_Error( 'havato_forbidden', 'Café owners only.', array( 'status' => 403 ) );
+		}
+		return true;
+	}
+
+	/**
+	 * Administrators only.
+	 *
+	 * @return bool|WP_Error
+	 */
+	public static function admin_perm() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return new WP_Error( 'havato_forbidden', 'Administrators only.', array( 'status' => 403 ) );
+		}
+		return true;
+	}
+
+	/**
+	 * Boot every request: self-heal tables + resolve language.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 */
+	private static function boot( $req ) {
+		Havato_DB::ensure_tables();
+		$lang = $req->get_param( 'lang' );
+		if ( $lang ) {
+			Havato_I18N::set_lang( $lang );
+		}
+	}
+
+	/* =====================================================================
+	 * Routes
+	 * ================================================================== */
+
+	/**
+	 * Register all REST routes.
+	 */
+	public static function register_routes() {
+		$auth   = array( __CLASS__, 'auth_perm' );
+		$pub    = array( __CLASS__, 'public_perm' );
+		$owner  = array( __CLASS__, 'owner_perm' );
+		$admin  = array( __CLASS__, 'admin_perm' );
+
+		$routes = array(
+			// Bootstrap & auth.
+			'bootstrap'          => array( 'GET', 'bootstrap', $pub ),
+			'auth/google'        => array( 'POST', 'auth_google', $pub ),
+			'auth/logout'        => array( 'POST', 'auth_logout', $auth ),
+			'lang'               => array( 'POST', 'set_lang', $pub ),
+
+			// Explore / events.
+			'events'             => array( 'GET', 'get_events', $pub ),
+			'events/join'        => array( 'POST', 'join_event', $auth ),
+			'events/mine'        => array( 'GET', 'my_events', $auth ),
+
+			// Venues & map.
+			'venues'             => array( 'GET', 'get_venues', $pub ),
+			'venue'              => array( 'GET', 'get_venue', $pub ),
+
+			// Chats.
+			'chat/threads'       => array( 'GET', 'chat_threads', $auth ),
+			'chat/group'         => array( 'GET', 'chat_group', $auth ),
+			'chat/group/send'    => array( 'POST', 'chat_group_send', $auth ),
+			'chat/private'       => array( 'GET', 'chat_private', $auth ),
+			'chat/private/send'  => array( 'POST', 'chat_private_send', $auth ),
+
+			// Profile.
+			'profile'            => array( 'GET', 'get_profile', $auth ),
+			'profile/test'       => array( 'POST', 'save_test', $auth ),
+			'profile/avatar'     => array( 'POST', 'upload_avatar', $auth ),
+
+			// Photos.
+			'photos/upload'      => array( 'POST', 'upload_photo', $auth ),
+			'photos/like'        => array( 'POST', 'like_photo', $auth ),
+			'photos/report'      => array( 'POST', 'report_photo', $auth ),
+			'photos/delete'      => array( 'POST', 'delete_photo', $auth ),
+
+			// Friends.
+			'friends'            => array( 'GET', 'get_friends', $auth ),
+			'friends/request'    => array( 'POST', 'friend_request', $auth ),
+			'friends/respond'    => array( 'POST', 'friend_respond', $auth ),
+
+			// Feedback.
+			'feedback/pending'   => array( 'GET', 'pending_feedback', $auth ),
+			'feedback/submit'    => array( 'POST', 'submit_feedback', $auth ),
+
+			// Owner portal.
+			'owner/register'     => array( 'POST', 'owner_register', $pub ),
+			'owner/login'        => array( 'POST', 'owner_login', $pub ),
+			'owner/dashboard'    => array( 'GET', 'owner_dashboard', $owner ),
+			'owner/events'       => array( 'GET', 'owner_events', $owner ),
+			'owner/event'        => array( 'GET', 'owner_event', $owner ),
+			'owner/event/create' => array( 'POST', 'owner_create_event', $owner ),
+			'owner/event/cancel' => array( 'POST', 'owner_cancel_event', $owner ),
+			'owner/checkin'      => array( 'POST', 'owner_checkin', $owner ),
+			'owner/menu'         => array( 'POST', 'owner_save_menu', $owner ),
+			'owner/venue'        => array( 'POST', 'owner_save_venue', $owner ),
+			'owner/upload'       => array( 'POST', 'owner_upload', $owner ),
+			'owner/payouts'      => array( 'GET', 'owner_payouts', $owner ),
+
+			// Admin console.
+			'admin/stats'        => array( 'GET', 'admin_stats', $admin ),
+			'admin/log'          => array( 'GET', 'admin_log', $admin ),
+			'admin/verify'       => array( 'POST', 'admin_verify_venue', $admin ),
+			'admin/menu-approve' => array( 'POST', 'admin_menu_approve', $admin ),
+			'admin/run-matcher'  => array( 'POST', 'admin_run_matcher', $admin ),
+			'admin/settings'     => array( 'POST', 'admin_save_settings', $admin ),
+			'admin/payout'       => array( 'POST', 'admin_payout', $admin ),
+			'admin/photo-report' => array( 'POST', 'admin_photo_report', $admin ),
+			'admin/seed'         => array( 'POST', 'admin_seed', $admin ),
+		);
+
+		foreach ( $routes as $path => $conf ) {
+			list( $method, $callback, $permission ) = $conf;
+			register_rest_route(
+				self::NS,
+				'/' . $path,
+				array(
+					'methods'             => $method,
+					'callback'            => array( __CLASS__, $callback ),
+					'permission_callback' => $permission,
+				)
+			);
+		}
+	}
+
+	/* =====================================================================
+	 * Bootstrap & auth
+	 * ================================================================== */
+
+	/**
+	 * Full app state for the current viewer.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function bootstrap( $req ) {
+		self::boot( $req );
+
+		$user_id = get_current_user_id();
+		$role    = havato_user_role();
+		$lang    = Havato_I18N::current_lang();
+
+		$data = array(
+			'logged_in'     => (bool) $user_id,
+			'role'          => $role,
+			'lang'          => $lang,
+			'dir'           => Havato_I18N::dir( $lang ),
+			'google_ready'  => Havato_Google_Auth::is_configured(),
+			'google_client' => Havato_Settings::get( 'google_client_id', '' ),
+			'woo_active'    => havato_woo_active(),
+			'map'           => array(
+				'lat'  => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
+				'lng'  => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
+				'zoom' => (int) Havato_Settings::get( 'map_zoom', 12 ),
+			),
+			'interests'     => havato_interest_tags(),
+		);
+
+		if ( $user_id ) {
+			$data['user'] = self::user_card( $user_id );
+
+			if ( 'cafe_owner' === $role ) {
+				$venue = self::owner_venue( $user_id );
+				$data['venue'] = $venue ? self::venue_payload( $venue, true ) : null;
+			} else {
+				$profile                 = havato_get_profile( $user_id );
+				$data['profile_done']    = (bool) $profile['completed'];
+				$data['pending_feedback'] = count( self::collect_pending_feedback( $user_id ) );
+			}
+		}
+
+		return self::ok( $data );
+	}
+
+	/**
+	 * Google Sign-In.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function auth_google( $req ) {
+		self::boot( $req );
+
+		$result = Havato_Google_Auth::login_with_credential( $req->get_param( 'credential' ) );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return self::ok(
+			array(
+				'user' => self::user_card( $result['user_id'] ),
+				'role' => havato_user_role( $result['user_id'] ),
+			)
+		);
+	}
+
+	/**
+	 * Sign out.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function auth_logout( $req ) {
+		self::boot( $req );
+		wp_logout();
+		return self::ok( array( 'logged_out' => true ) );
+	}
+
+	/**
+	 * Persist the language preference.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function set_lang( $req ) {
+		self::boot( $req );
+		$lang = Havato_I18N::sanitize_lang( $req->get_param( 'value' ) );
+
+		if ( is_user_logged_in() ) {
+			update_user_meta( get_current_user_id(), 'havato_lang', $lang );
+		}
+
+		return self::ok(
+			array(
+				'lang' => $lang,
+				'dir'  => Havato_I18N::dir( $lang ),
+			)
+		);
+	}
+
+	/* =====================================================================
+	 * Explore / events
+	 * ================================================================== */
+
+	/**
+	 * Open events of the coming days.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function get_events( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$events = Havato_DB::table( 'events' );
+		$venues = Havato_DB::table( 'venues' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		$tier = sanitize_text_field( (string) $req->get_param( 'budget' ) );
+		$where = "e.status IN ('open','matched') AND v.verified = 1 AND e.event_date >= CURDATE()";
+		if ( in_array( $tier, array( 'low', 'medium', 'high' ), true ) ) {
+			$where .= $wpdb->prepare( ' AND e.budget_tier = %s', $tier );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT e.*, v.name AS venue_name, v.name_fa AS venue_name_fa, v.image AS venue_image,
+					v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
+					(SELECT COUNT(*) FROM $regs r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
+			 FROM $events e
+			 INNER JOIN $venues v ON v.id = e.venue_id
+			 WHERE $where
+			 ORDER BY e.event_date ASC, e.event_time ASC
+			 LIMIT 60",
+			ARRAY_A
+		);
+
+		$user_id = get_current_user_id();
+		$out     = array();
+
+		foreach ( (array) $rows as $row ) {
+			$out[] = self::event_payload( $row, $user_id );
+		}
+
+		return self::ok( array( 'events' => $out ) );
+	}
+
+	/**
+	 * Join an event → Woo checkout (paid) or direct queue (free).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function join_event( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$event_id = sanitize_text_field( (string) $req->get_param( 'event_id' ) );
+
+		$events = Havato_DB::table( 'events' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$event = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $events WHERE id=%s", $event_id ), ARRAY_A );
+		if ( ! $event ) {
+			return new WP_Error( 'havato_no_event', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$profile = havato_get_profile( $user_id );
+		if ( ! $profile['completed'] ) {
+			return new WP_Error( 'havato_no_profile', Havato_I18N::t( 'need_profile_first' ), array( 'status' => 400 ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$taken = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE event_id=%s AND status<>'cancelled'", $event_id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$mine = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND user_id=%d", $event_id, $user_id ), ARRAY_A );
+
+		if ( $mine && 'cancelled' !== $mine['status'] ) {
+			return self::ok( array( 'already' => true ) );
+		}
+
+		if ( $taken >= (int) $event['max_capacity'] ) {
+			return new WP_Error( 'havato_full', Havato_I18N::t( 'event_full' ), array( 'status' => 409 ) );
+		}
+
+		$price = (int) $event['price'];
+
+		// Paid event → real WooCommerce checkout, never a simulated wallet.
+		if ( $price > 0 && havato_woo_active() ) {
+			$checkout = Havato_Woo::create_checkout( $event, $user_id );
+			if ( ! $checkout['ok'] ) {
+				return new WP_Error( 'havato_checkout', $checkout['message'], array( 'status' => 500 ) );
+			}
+			Havato_Logger::log( sprintf( 'Checkout session opened for user %d on event %s.', $user_id, $event_id ), 'info' );
+			return self::ok(
+				array(
+					'checkout_url' => $checkout['url'],
+					'redirect'     => true,
+				)
+			);
+		}
+
+		// Free event → straight into the queue.
+		self::queue_user( $event_id, $user_id, 0, 0 );
+		Havato_Logger::log( sprintf( 'User request received: guest %d queued for event %s.', $user_id, $event_id ), 'info' );
+
+		$match = Havato_Matcher::maybe_run_on_full( $event_id );
+
+		return self::ok(
+			array(
+				'queued'  => true,
+				'matched' => (bool) ( is_array( $match ) && ! empty( $match['ok'] ) ),
+			)
+		);
+	}
+
+	/**
+	 * The current user's own event history.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function my_events( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+
+		$events = Havato_DB::table( 'events' );
+		$venues = Havato_DB::table( 'venues' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT e.*, v.name AS venue_name, v.name_fa AS venue_name_fa, v.image AS venue_image,
+						v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
+						r.status AS my_status, r.checked_in,
+						(SELECT COUNT(*) FROM $regs r2 WHERE r2.event_id = e.id AND r2.status <> 'cancelled') AS taken
+				 FROM $regs r
+				 INNER JOIN $events e ON e.id = r.event_id
+				 LEFT JOIN $venues v ON v.id = e.venue_id
+				 WHERE r.user_id = %d AND r.status <> 'cancelled'
+				 ORDER BY e.event_date DESC LIMIT 40",
+				$user_id
+			),
+			ARRAY_A
+		);
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$payload               = self::event_payload( $row, $user_id );
+			$payload['checked_in'] = (bool) $row['checked_in'];
+			$out[]                 = $payload;
+		}
+
+		return self::ok( array( 'events' => $out ) );
+	}
+
+	/* =====================================================================
+	 * Venues
+	 * ================================================================== */
+
+	/**
+	 * Verified venues for the map.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function get_venues( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venues = Havato_DB::table( 'venues' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT * FROM $venues WHERE verified = 1 ORDER BY guests_routed DESC LIMIT 200", ARRAY_A );
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$out[] = self::venue_payload( $row, false );
+		}
+
+		return self::ok( array( 'venues' => $out ) );
+	}
+
+	/**
+	 * Public café profile + approved menu.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function get_venue( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venues = Havato_DB::table( 'venues' );
+		$id     = sanitize_text_field( (string) $req->get_param( 'id' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $venues WHERE id=%s", $id ), ARRAY_A );
+		if ( ! $row ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		return self::ok( array( 'venue' => self::venue_payload( $row, false ) ) );
+	}
+
+	/* =====================================================================
+	 * Chats
+	 * ================================================================== */
+
+	/**
+	 * Both chat lists: event tables + accepted friends.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function chat_threads( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+
+		$groups   = Havato_DB::table( 'groups' );
+		$gm       = Havato_DB::table( 'group_members' );
+		$events   = Havato_DB::table( 'events' );
+		$venues   = Havato_DB::table( 'venues' );
+		$chats    = Havato_DB::table( 'chats' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$group_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT g.id, g.name, e.event_date, e.event_time, e.status AS event_status,
+						v.name AS venue_name, v.name_fa AS venue_name_fa, v.image AS venue_image,
+						(SELECT message_text FROM $chats c WHERE c.group_id = g.id ORDER BY c.id DESC LIMIT 1) AS last_message,
+						(SELECT COUNT(*) FROM $gm m2 WHERE m2.group_id = g.id) AS member_count
+				 FROM $gm m
+				 INNER JOIN $groups g ON g.id = m.group_id
+				 LEFT JOIN $events e ON e.id = g.event_id
+				 LEFT JOIN $venues v ON v.id = e.venue_id
+				 WHERE m.user_id = %d
+				 ORDER BY e.event_date DESC",
+				$user_id
+			),
+			ARRAY_A
+		);
+
+		$group_threads = array();
+		foreach ( (array) $group_rows as $row ) {
+			$group_threads[] = array(
+				'id'           => $row['id'],
+				'name'         => array(
+					'fa' => $row['venue_name_fa'] ? $row['venue_name_fa'] : $row['name'],
+					'en' => $row['venue_name'] ? $row['venue_name'] : $row['name'],
+				),
+				'image'        => $row['venue_image'],
+				'date'         => havato_date_pair( $row['event_date'] ),
+				'time'         => substr( (string) $row['event_time'], 0, 5 ),
+				'members'      => (int) $row['member_count'],
+				'last_message' => $row['last_message'] ? wp_trim_words( $row['last_message'], 8, '…' ) : '',
+				'event_status' => $row['event_status'],
+			);
+		}
+
+		return self::ok(
+			array(
+				'groups'  => $group_threads,
+				'friends' => self::friend_threads( $user_id ),
+			)
+		);
+	}
+
+	/**
+	 * Messages of one table chat.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function chat_group( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$group_id = sanitize_text_field( (string) $req->get_param( 'group_id' ) );
+		$since    = (int) $req->get_param( 'since' );
+
+		if ( ! self::is_group_member( $group_id, $user_id ) ) {
+			return new WP_Error( 'havato_forbidden', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+		}
+
+		$chats = Havato_DB::table( 'chats' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM $chats WHERE group_id=%s AND id > %d ORDER BY id ASC LIMIT 200", $group_id, $since ),
+			ARRAY_A
+		);
+
+		$messages = array();
+		foreach ( (array) $rows as $row ) {
+			$messages[] = array(
+				'id'        => (int) $row['id'],
+				'sender_id' => (int) $row['sender_id'],
+				'name'      => $row['sender_name'],
+				'avatar'    => $row['sender_id'] ? havato_avatar( $row['sender_id'] ) : '',
+				'text'      => $row['message_text'],
+				'time'      => substr( (string) $row['message_time'], 11, 5 ),
+				'time_full' => havato_date_pair( $row['message_time'], true ),
+				'is_system' => (bool) $row['is_system'],
+				'mine'      => (int) $row['sender_id'] === $user_id,
+			);
+		}
+
+		return self::ok(
+			array(
+				'messages' => $messages,
+				'members'  => self::group_members( $group_id, $user_id ),
+			)
+		);
+	}
+
+	/**
+	 * Post a message into a table chat.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function chat_group_send( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$group_id = sanitize_text_field( (string) $req->get_param( 'group_id' ) );
+		$text     = sanitize_textarea_field( (string) $req->get_param( 'text' ) );
+
+		if ( '' === trim( $text ) ) {
+			return new WP_Error( 'havato_empty', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+		if ( ! self::is_group_member( $group_id, $user_id ) ) {
+			return new WP_Error( 'havato_forbidden', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+		}
+
+		$chats = Havato_DB::table( 'chats' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$chats,
+			array(
+				'group_id'     => $group_id,
+				'sender_id'    => $user_id,
+				'sender_name'  => havato_display_name( $user_id ),
+				'message_text' => $text,
+				'message_time' => havato_now(),
+				'is_system'    => 0,
+			),
+			array( '%s', '%d', '%s', '%s', '%s', '%d' )
+		);
+
+		return self::ok( array( 'id' => (int) $wpdb->insert_id ) );
+	}
+
+	/**
+	 * Private conversation with one friend.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function chat_private( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$other_id = (int) $req->get_param( 'user_id' );
+		$since    = (int) $req->get_param( 'since' );
+
+		if ( havato_is_blocked( $user_id, $other_id ) || ! havato_are_friends( $user_id, $other_id ) ) {
+			return new WP_Error( 'havato_not_friends', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+		}
+
+		$table  = Havato_DB::table( 'private_chats' );
+		$thread = Havato_DB::thread_id( $user_id, $other_id );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM $table WHERE thread_id=%s AND id > %d ORDER BY id ASC LIMIT 200", $thread, $since ),
+			ARRAY_A
+		);
+
+		// Mark incoming as read.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( "UPDATE $table SET is_read=1 WHERE thread_id=%s AND receiver_id=%d AND is_read=0", $thread, $user_id ) );
+
+		$messages = array();
+		foreach ( (array) $rows as $row ) {
+			$messages[] = array(
+				'id'        => (int) $row['id'],
+				'sender_id' => (int) $row['sender_id'],
+				'text'      => $row['message_text'],
+				'time'      => substr( (string) $row['message_time'], 11, 5 ),
+				'time_full' => havato_date_pair( $row['message_time'], true ),
+				'mine'      => (int) $row['sender_id'] === $user_id,
+			);
+		}
+
+		return self::ok(
+			array(
+				'messages' => $messages,
+				'peer'     => self::user_card( $other_id ),
+			)
+		);
+	}
+
+	/**
+	 * Send a private message.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function chat_private_send( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$other_id = (int) $req->get_param( 'user_id' );
+		$text     = sanitize_textarea_field( (string) $req->get_param( 'text' ) );
+
+		if ( '' === trim( $text ) ) {
+			return new WP_Error( 'havato_empty', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+		if ( havato_is_blocked( $user_id, $other_id ) || ! havato_are_friends( $user_id, $other_id ) ) {
+			return new WP_Error( 'havato_not_friends', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+		}
+
+		$table = Havato_DB::table( 'private_chats' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$table,
+			array(
+				'thread_id'    => Havato_DB::thread_id( $user_id, $other_id ),
+				'sender_id'    => $user_id,
+				'receiver_id'  => $other_id,
+				'message_text' => $text,
+				'message_time' => havato_now(),
+				'is_read'      => 0,
+			),
+			array( '%s', '%d', '%d', '%s', '%s', '%d' )
+		);
+
+		return self::ok( array( 'id' => (int) $wpdb->insert_id ) );
+	}
+
+	/* =====================================================================
+	 * Profile & gallery
+	 * ================================================================== */
+
+	/**
+	 * Own profile, or another user's public profile.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function get_profile( $req ) {
+		self::boot( $req );
+
+		$viewer = get_current_user_id();
+		$target = (int) $req->get_param( 'user_id' );
+		if ( ! $target ) {
+			$target = $viewer;
+		}
+
+		$is_self = ( $target === $viewer );
+
+		if ( ! $is_self && havato_is_blocked( $viewer, $target ) ) {
+			return new WP_Error( 'havato_blocked', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+		}
+
+		$profile = havato_get_profile( $target );
+		$tags    = havato_interest_tags();
+
+		$interests = array();
+		foreach ( $profile['interests'] as $key ) {
+			if ( isset( $tags[ $key ] ) ) {
+				$interests[] = array( 'key' => $key ) + $tags[ $key ];
+			}
+		}
+
+		$data = array(
+			'user'          => self::user_card( $target ),
+			'is_self'       => $is_self,
+			'completed'     => (bool) $profile['completed'],
+			'age'           => (int) $profile['age'],
+			'gender'        => $profile['gender'],
+			'neighborhood'  => $profile['city_neighborhood'],
+			'extroversion'  => (int) $profile['personality_extroversion'],
+			'talkative'     => (int) $profile['personality_talkative'],
+			'vibe'          => $profile['personality_vibe'],
+			'interests'     => $interests,
+			'rating'        => round( (float) $profile['rating_score'], 1 ),
+			'rating_count'  => (int) $profile['rating_count'],
+			'attended'      => (int) $profile['attended_count'],
+			'photos'        => self::user_photos( $target, $viewer, $is_self ),
+			'friend_status' => $is_self ? 'self' : havato_friend_status( $viewer, $target ),
+		);
+
+		if ( $is_self ) {
+			$data['wallet'] = self::wallet_summary( $target );
+		}
+
+		return self::ok( $data );
+	}
+
+	/**
+	 * Save the one-shot personality test.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function save_test( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$table   = Havato_DB::table( 'user_profiles' );
+
+		$age    = max( 18, min( 75, (int) $req->get_param( 'age' ) ) );
+		$gender = sanitize_text_field( (string) $req->get_param( 'gender' ) );
+		$gender = in_array( $gender, array( 'male', 'female', 'other' ), true ) ? $gender : 'other';
+
+		$extro  = max( 1, min( 10, (int) $req->get_param( 'extroversion' ) ) );
+		$talk   = max( 1, min( 10, (int) $req->get_param( 'talkative' ) ) );
+		$vibe   = 'deep' === $req->get_param( 'vibe' ) ? 'deep' : 'fun';
+		$hood   = sanitize_text_field( (string) $req->get_param( 'neighborhood' ) );
+
+		$raw_interests = $req->get_param( 'interests' );
+		$raw_interests = is_array( $raw_interests ) ? $raw_interests : havato_json( $raw_interests );
+		$allowed       = array_keys( havato_interest_tags() );
+		$interests     = array_values( array_intersect( array_map( 'sanitize_key', $raw_interests ), $allowed ) );
+
+		$existing = havato_get_profile( $user_id );
+
+		$data = array(
+			'user_id'                  => $user_id,
+			'age'                      => $age,
+			'gender'                   => $gender,
+			'city_neighborhood'        => $hood,
+			'personality_extroversion' => $extro,
+			'personality_talkative'    => $talk,
+			'personality_vibe'         => $vibe,
+			'personality_interests'    => wp_json_encode( $interests ),
+			'completed'                => 1,
+			'updated_at'               => havato_now(),
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $table WHERE user_id=%d", $user_id ) );
+
+		if ( $exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update( $table, $data, array( 'user_id' => $user_id ) );
+		} else {
+			$data['rating_score']   = 5;
+			$data['blocklist_json'] = '[]';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->insert( $table, $data );
+		}
+
+		unset( $existing );
+
+		Havato_Logger::log( sprintf( 'Personality profile stored for user %d.', $user_id ), 'info' );
+
+		return self::ok( array( 'completed' => true ) );
+	}
+
+	/**
+	 * Upload/replace the avatar.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function upload_avatar( $req ) {
+		self::boot( $req );
+
+		$url = self::handle_upload( 'file' );
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		update_user_meta( get_current_user_id(), 'havato_avatar', $url );
+
+		return self::ok( array( 'url' => $url ) );
+	}
+
+	/**
+	 * Add a photo to the gallery.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function upload_photo( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+
+		$url = self::handle_upload( 'file' );
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		$status = (int) Havato_Settings::get( 'photo_auto_approve', 1 ) ? 'approved' : 'pending';
+		$table  = Havato_DB::table( 'user_photos' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$table,
+			array(
+				'user_id'    => $user_id,
+				'photo_url'  => $url,
+				'status'     => $status,
+				'created_at' => havato_now(),
+			),
+			array( '%d', '%s', '%s', '%s' )
+		);
+
+		return self::ok(
+			array(
+				'photo' => array(
+					'id'     => (int) $wpdb->insert_id,
+					'url'    => $url,
+					'status' => $status,
+					'likes'  => 0,
+					'liked'  => false,
+					'mine'   => true,
+				),
+			)
+		);
+	}
+
+	/**
+	 * Toggle a like (one per user & photo, enforced by a unique index).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function like_photo( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$photo_id = (int) $req->get_param( 'photo_id' );
+
+		$likes  = Havato_DB::table( 'photo_likes' );
+		$photos = Havato_DB::table( 'user_photos' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$owner = (int) $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $photos WHERE id=%d", $photo_id ) );
+		if ( ! $owner ) {
+			return new WP_Error( 'havato_no_photo', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+		if ( havato_is_blocked( $user_id, $owner ) ) {
+			return new WP_Error( 'havato_blocked', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$existing = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $likes WHERE photo_id=%d AND user_id=%d", $photo_id, $user_id ) );
+
+		if ( $existing ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->delete( $likes, array( 'id' => $existing ), array( '%d' ) );
+			$liked = false;
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->insert(
+				$likes,
+				array(
+					'photo_id'   => $photo_id,
+					'user_id'    => $user_id,
+					'created_at' => havato_now(),
+				),
+				array( '%d', '%d', '%s' )
+			);
+			$liked = true;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $likes WHERE photo_id=%d", $photo_id ) );
+
+		return self::ok( array( 'liked' => $liked, 'likes' => $count ) );
+	}
+
+	/**
+	 * Report a photo.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function report_photo( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$photo_id = (int) $req->get_param( 'photo_id' );
+		$reason   = sanitize_text_field( (string) $req->get_param( 'reason' ) );
+
+		$table = Havato_DB::table( 'photo_reports' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$table,
+			array(
+				'photo_id'    => $photo_id,
+				'reporter_id' => $user_id,
+				'reason'      => $reason,
+				'status'      => 'pending',
+				'created_at'  => havato_now(),
+			),
+			array( '%d', '%d', '%s', '%s', '%s' )
+		);
+
+		$photos = Havato_DB::table( 'user_photos' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update( $photos, array( 'status' => 'reported' ), array( 'id' => $photo_id ), array( '%s' ), array( '%d' ) );
+
+		Havato_Logger::log( sprintf( 'Photo #%d reported by user %d (%s).', $photo_id, $user_id, $reason ), 'warn' );
+
+		return self::ok( array( 'reported' => true, 'message' => Havato_I18N::t( 'report_sent' ) ) );
+	}
+
+	/**
+	 * Delete one of your own photos.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function delete_photo( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$photo_id = (int) $req->get_param( 'photo_id' );
+		$photos   = Havato_DB::table( 'user_photos' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $photos, array( 'id' => $photo_id, 'user_id' => $user_id ), array( '%d', '%d' ) );
+
+		return self::ok( array( 'deleted' => true ) );
+	}
+
+	/* =====================================================================
+	 * Friends
+	 * ================================================================== */
+
+	/**
+	 * Friend list + incoming requests.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function get_friends( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$table   = Havato_DB::table( 'friends' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$pending = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table WHERE friend_id=%d AND status='pending'", $user_id ), ARRAY_A );
+
+		$requests = array();
+		foreach ( (array) $pending as $row ) {
+			if ( havato_is_blocked( $user_id, (int) $row['user_id'] ) ) {
+				continue;
+			}
+			$requests[] = array(
+				'id'   => (int) $row['id'],
+				'user' => self::user_card( (int) $row['user_id'] ),
+			);
+		}
+
+		return self::ok(
+			array(
+				'friends'  => self::friend_threads( $user_id ),
+				'requests' => $requests,
+			)
+		);
+	}
+
+	/**
+	 * Send a friend request.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function friend_request( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$target  = (int) $req->get_param( 'user_id' );
+
+		if ( ! $target || $target === $user_id ) {
+			return new WP_Error( 'havato_bad_target', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		// HARD CONSTRAINT: blocked in either direction → no friendship at all.
+		if ( havato_is_blocked( $user_id, $target ) ) {
+			return new WP_Error( 'havato_blocked', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+		}
+
+		$status = havato_friend_status( $user_id, $target );
+		if ( in_array( $status, array( 'accepted', 'pending_out' ), true ) ) {
+			return self::ok( array( 'status' => $status ) );
+		}
+
+		if ( 'pending_in' === $status ) {
+			return self::friend_accept_pair( $target, $user_id );
+		}
+
+		$table = Havato_DB::table( 'friends' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->replace(
+			$table,
+			array(
+				'user_id'    => $user_id,
+				'friend_id'  => $target,
+				'status'     => 'pending',
+				'created_at' => havato_now(),
+			),
+			array( '%d', '%d', '%s', '%s' )
+		);
+
+		return self::ok( array( 'status' => 'pending_out' ) );
+	}
+
+	/**
+	 * Accept / reject an incoming request.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function friend_respond( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$from    = (int) $req->get_param( 'user_id' );
+		$accept  = (bool) $req->get_param( 'accept' );
+
+		$table = Havato_DB::table( 'friends' );
+
+		if ( $accept && ! havato_is_blocked( $user_id, $from ) ) {
+			return self::friend_accept_pair( $from, $user_id );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update(
+			$table,
+			array( 'status' => 'rejected' ),
+			array( 'user_id' => $from, 'friend_id' => $user_id ),
+			array( '%s' ),
+			array( '%d', '%d' )
+		);
+
+		return self::ok( array( 'status' => 'rejected' ) );
+	}
+
+	/* =====================================================================
+	 * Post-event feedback
+	 * ================================================================== */
+
+	/**
+	 * Pending feedback cards for the current user.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function pending_feedback( $req ) {
+		self::boot( $req );
+		return self::ok( array( 'items' => self::collect_pending_feedback( get_current_user_id() ) ) );
+	}
+
+	/**
+	 * Store one feedback entry (rating + comment + optional block).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function submit_feedback( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id  = get_current_user_id();
+		$group_id = sanitize_text_field( (string) $req->get_param( 'group_id' ) );
+		$target   = (int) $req->get_param( 'user_id' );
+		$rating   = max( 1, min( 5, (int) $req->get_param( 'rating' ) ) );
+		$comment  = sanitize_textarea_field( (string) $req->get_param( 'comment' ) );
+		$block    = (bool) $req->get_param( 'block' );
+
+		if ( ! self::is_group_member( $group_id, $user_id ) || ! self::is_group_member( $group_id, $target ) ) {
+			return new WP_Error( 'havato_forbidden', Havato_I18N::t( 'error_generic' ), array( 'status' => 403 ) );
+		}
+
+		$table = Havato_DB::table( 'feedbacks' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->replace(
+			$table,
+			array(
+				'group_id'    => $group_id,
+				'reporter_id' => $user_id,
+				'reported_id' => $target,
+				'rating'      => $rating,
+				'comment'     => $comment,
+				'is_block'    => $block ? 1 : 0,
+				'created_at'  => havato_now(),
+			),
+			array( '%s', '%d', '%d', '%d', '%s', '%d', '%s' )
+		);
+
+		self::recalculate_rating( $target );
+
+		if ( $block ) {
+			self::add_to_blocklist( $user_id, $target );
+		}
+
+		return self::ok( array( 'saved' => true, 'message' => Havato_I18N::t( 'feedback_sent' ) ) );
+	}
+
+	/* =====================================================================
+	 * Owner portal
+	 * ================================================================== */
+
+	/**
+	 * Register a partner café (creates the user + venue and logs in instantly).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_register( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+
+		$email = sanitize_email( (string) $req->get_param( 'email' ) );
+		$pass  = (string) $req->get_param( 'password' );
+		$name  = sanitize_text_field( (string) $req->get_param( 'venue_name' ) );
+		$addr  = sanitize_textarea_field( (string) $req->get_param( 'address' ) );
+
+		if ( ! is_email( $email ) || strlen( $pass ) < 6 || '' === $name ) {
+			return new WP_Error( 'havato_bad_input', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		if ( email_exists( $email ) ) {
+			return new WP_Error( 'havato_email_exists', Havato_I18N::t( 'error_generic' ), array( 'status' => 409 ) );
+		}
+
+		$login = sanitize_user( preg_replace( '/@.*/', '', $email ) . '_cafe', true );
+		$i     = 1;
+		while ( username_exists( $login ) ) {
+			$login = $login . $i;
+			$i++;
+		}
+
+		$uid = wp_insert_user(
+			array(
+				'user_login'   => $login,
+				'user_email'   => $email,
+				'user_pass'    => $pass,
+				'display_name' => $name,
+				'role'         => 'cafe_owner',
+			)
+		);
+
+		if ( is_wp_error( $uid ) ) {
+			return $uid;
+		}
+
+		$venue_id = havato_uid( 'v' );
+		$venues   = Havato_DB::table( 'venues' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$venues,
+			array(
+				'id'          => $venue_id,
+				'name'        => $name,
+				'name_fa'     => $name,
+				'address'     => $addr,
+				'lat'         => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
+				'lng'         => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
+				'budget_tier' => 'medium',
+				'verified'    => 0,
+				'manager_id'  => (int) $uid,
+				'menu_json'   => '[]',
+				'created_at'  => havato_now(),
+			),
+			array( '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%d', '%d', '%s', '%s' )
+		);
+
+		// Instant session — no second login required after a refresh.
+		Havato_Google_Auth::force_login( $uid );
+
+		Havato_Logger::log( sprintf( 'New partner café registered: %s (pending verification).', $name ), 'info' );
+
+		return self::ok(
+			array(
+				'user'  => self::user_card( $uid ),
+				'venue' => self::venue_payload( self::owner_venue( $uid ), true ),
+			)
+		);
+	}
+
+	/**
+	 * Café owner sign-in.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_login( $req ) {
+		self::boot( $req );
+
+		$email = sanitize_text_field( (string) $req->get_param( 'email' ) );
+		$pass  = (string) $req->get_param( 'password' );
+
+		$user = wp_authenticate( $email, $pass );
+		if ( is_wp_error( $user ) ) {
+			return new WP_Error( 'havato_login_failed', Havato_I18N::t( 'error_generic' ), array( 'status' => 401 ) );
+		}
+
+		Havato_Google_Auth::force_login( $user->ID );
+
+		$venue = self::owner_venue( $user->ID );
+
+		return self::ok(
+			array(
+				'user'  => self::user_card( $user->ID ),
+				'role'  => havato_user_role( $user->ID ),
+				'venue' => $venue ? self::venue_payload( $venue, true ) : null,
+			)
+		);
+	}
+
+	/**
+	 * Owner KPI dashboard.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_dashboard( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$events = Havato_DB::table( 'events' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$upcoming = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $events WHERE venue_id=%s AND event_date >= CURDATE()", $venue['id'] ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$checked = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs r INNER JOIN $events e ON e.id=r.event_id WHERE e.venue_id=%s AND r.checked_in=1", $venue['id'] ) );
+
+		Havato_Payouts::rebuild_venue( $venue['id'] );
+
+		return self::ok(
+			array(
+				'venue'    => self::venue_payload( $venue, true ),
+				'stats'    => array(
+					'utilization'   => (int) $venue['utilization'],
+					'guests_routed' => (int) $venue['guests_routed'],
+					'upcoming'      => $upcoming,
+					'checked_in'    => $checked,
+				),
+				'payouts'  => Havato_Payouts::get_venue_payouts( $venue['id'] ),
+			)
+		);
+	}
+
+	/**
+	 * Events of the owner's venue.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_events( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$events = Havato_DB::table( 'events' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT e.*, (SELECT COUNT(*) FROM $regs r WHERE r.event_id=e.id AND r.status<>'cancelled') AS taken
+				 FROM $events e WHERE e.venue_id=%s ORDER BY e.event_date DESC LIMIT 60",
+				$venue['id']
+			),
+			ARRAY_A
+		);
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$row['venue_name']    = $venue['name'];
+			$row['venue_name_fa'] = $venue['name_fa'];
+			$row['venue_image']   = $venue['image'];
+			$out[]                = self::event_payload( $row, 0 );
+		}
+
+		return self::ok( array( 'events' => $out ) );
+	}
+
+	/**
+	 * Members seated at one event of this venue (+ check-in state).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_event( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$event_id = sanitize_text_field( (string) $req->get_param( 'event_id' ) );
+		$events   = Havato_DB::table( 'events' );
+		$regs     = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$event = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $events WHERE id=%s AND venue_id=%s", $event_id, $venue['id'] ), ARRAY_A );
+		if ( ! $event ) {
+			return new WP_Error( 'havato_no_event', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND status<>'cancelled' ORDER BY id ASC", $event_id ), ARRAY_A );
+
+		$members = array();
+		foreach ( (array) $rows as $row ) {
+			$profile   = havato_get_profile( (int) $row['user_id'] );
+			$members[] = array(
+				'user'       => self::user_card( (int) $row['user_id'] ),
+				'status'     => $row['status'],
+				'checked_in' => (bool) $row['checked_in'],
+				'rating'     => round( (float) $profile['rating_score'], 1 ),
+			);
+		}
+
+		$event['venue_name']    = $venue['name'];
+		$event['venue_name_fa'] = $venue['name_fa'];
+		$event['taken']         = count( $members );
+
+		return self::ok(
+			array(
+				'event'   => self::event_payload( $event, 0 ),
+				'members' => $members,
+			)
+		);
+	}
+
+	/**
+	 * Create a new social table for the owner's venue.
+	 *
+	 * Unverified venues can prepare events, but they stay `pending_admin`
+	 * (invisible to guests) until the venue itself is verified.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_create_event( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$date = sanitize_text_field( (string) $req->get_param( 'event_date' ) );
+		$time = sanitize_text_field( (string) $req->get_param( 'event_time' ) );
+
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+			return new WP_Error( 'havato_bad_date', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+		if ( ! preg_match( '/^\d{2}:\d{2}(:\d{2})?$/', $time ) ) {
+			return new WP_Error( 'havato_bad_time', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+		if ( 5 === strlen( $time ) ) {
+			$time .= ':00';
+		}
+
+		$tier = sanitize_text_field( (string) $req->get_param( 'budget_tier' ) );
+		$tier = in_array( $tier, array( 'low', 'medium', 'high' ), true ) ? $tier : $venue['budget_tier'];
+
+		$capacity = max( 2, min( 12, (int) $req->get_param( 'max_capacity' ) ) );
+		$price    = max( 0, (int) $req->get_param( 'price' ) );
+
+		$event_id = havato_uid( 'e' );
+		$events   = Havato_DB::table( 'events' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$events,
+			array(
+				'id'           => $event_id,
+				'venue_id'     => $venue['id'],
+				'title'        => sanitize_text_field( (string) $req->get_param( 'title' ) ),
+				'event_date'   => $date,
+				'event_time'   => $time,
+				'budget_tier'  => $tier,
+				'price'        => $price,
+				'max_capacity' => $capacity,
+				'status'       => $venue['verified'] ? 'open' : 'pending_admin',
+				'created_at'   => havato_now(),
+			),
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s' )
+		);
+
+		Havato_Logger::log( sprintf( 'New table published by venue %s for %s %s.', $venue['id'], $date, $time ), 'info' );
+
+		return self::ok( array( 'event_id' => $event_id ) );
+	}
+
+	/**
+	 * Cancel an event that has no paid guests yet.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_cancel_event( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$event_id = sanitize_text_field( (string) $req->get_param( 'event_id' ) );
+		$events   = Havato_DB::table( 'events' );
+		$regs     = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$owns = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $events WHERE id=%s AND venue_id=%s", $event_id, $venue['id'] ) );
+		if ( ! $owns ) {
+			return new WP_Error( 'havato_forbidden', Havato_I18N::t( 'error_generic' ), array( 'status' => 403 ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$paid = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE event_id=%s AND amount > 0 AND status<>'cancelled'", $event_id ) );
+		if ( $paid > 0 ) {
+			return new WP_Error( 'havato_has_guests', Havato_I18N::t( 'error_generic' ), array( 'status' => 409 ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $regs, array( 'event_id' => $event_id ), array( '%s' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $events, array( 'id' => $event_id ), array( '%s' ) );
+
+		return self::ok( array( 'deleted' => true ) );
+	}
+
+	/**
+	 * Toggle the check-in flag of one guest (section 6.5).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_checkin( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$event_id = sanitize_text_field( (string) $req->get_param( 'event_id' ) );
+		$target   = (int) $req->get_param( 'user_id' );
+		$value    = (bool) $req->get_param( 'checked_in' );
+
+		$events = Havato_DB::table( 'events' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$owns = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $events WHERE id=%s AND venue_id=%s", $event_id, $venue['id'] ) );
+		if ( ! $owns ) {
+			return new WP_Error( 'havato_forbidden', Havato_I18N::t( 'error_generic' ), array( 'status' => 403 ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update(
+			$regs,
+			array( 'checked_in' => $value ? 1 : 0 ),
+			array( 'event_id' => $event_id, 'user_id' => $target ),
+			array( '%d' ),
+			array( '%s', '%d' )
+		);
+
+		$profiles = Havato_DB::table( 'user_profiles' );
+		if ( $value ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( $wpdb->prepare( "UPDATE $profiles SET attended_count = attended_count + 1 WHERE user_id=%d", $target ) );
+		}
+
+		Havato_Logger::log( sprintf( 'Check-in %s for guest %d at event %s.', $value ? 'confirmed' : 'revoked', $target, $event_id ), 'info' );
+
+		return self::ok( array( 'checked_in' => $value ) );
+	}
+
+	/**
+	 * Save the menu (goes to pending_menu_json until admin approval).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_save_menu( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$items  = havato_sanitize_menu( $req->get_param( 'items' ) );
+		$venues = Havato_DB::table( 'venues' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update(
+			$venues,
+			array( 'pending_menu_json' => wp_json_encode( $items ) ),
+			array( 'id' => $venue['id'] ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		Havato_Logger::log( sprintf( 'Menu update submitted for review by venue %s.', $venue['id'] ), 'info' );
+
+		return self::ok(
+			array(
+				'pending' => $items,
+				'message' => Havato_I18N::t( 'menu_saved_pending' ),
+			)
+		);
+	}
+
+	/**
+	 * Save the venue profile (auto-save from the settings tab).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_save_venue( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$fields = array();
+		$format = array();
+
+		$map = array(
+			'name'        => '%s',
+			'name_fa'     => '%s',
+			'address'     => '%s',
+			'image'       => '%s',
+			'quiet_hours' => '%s',
+			'budget_tier' => '%s',
+			'lat'         => '%f',
+			'lng'         => '%f',
+		);
+
+		foreach ( $map as $key => $fmt ) {
+			$value = $req->get_param( $key );
+			if ( null === $value ) {
+				continue;
+			}
+			if ( '%f' === $fmt ) {
+				$fields[ $key ] = (float) $value;
+			} elseif ( 'image' === $key ) {
+				$fields[ $key ] = esc_url_raw( (string) $value );
+			} elseif ( 'address' === $key ) {
+				$fields[ $key ] = sanitize_textarea_field( (string) $value );
+			} elseif ( 'budget_tier' === $key ) {
+				$tier           = sanitize_text_field( (string) $value );
+				$fields[ $key ] = in_array( $tier, array( 'low', 'medium', 'high' ), true ) ? $tier : 'medium';
+			} else {
+				$fields[ $key ] = sanitize_text_field( (string) $value );
+			}
+			$format[] = $fmt;
+		}
+
+		if ( empty( $fields ) ) {
+			return self::ok( array( 'saved' => false ) );
+		}
+
+		$venues = Havato_DB::table( 'venues' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update( $venues, $fields, array( 'id' => $venue['id'] ), $format, array( '%s' ) );
+
+		return self::ok(
+			array(
+				'saved' => true,
+				'venue' => self::venue_payload( self::owner_venue( get_current_user_id() ), true ),
+			)
+		);
+	}
+
+	/**
+	 * Media upload from the owner portal (cover / menu item images).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_upload( $req ) {
+		self::boot( $req );
+		$url = self::handle_upload( 'file' );
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+		return self::ok( array( 'url' => $url ) );
+	}
+
+	/**
+	 * Settlement rows for the owner.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_payouts( $req ) {
+		self::boot( $req );
+
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		return self::ok( array( 'payouts' => Havato_Payouts::rebuild_venue( $venue['id'] ) ) );
+	}
+
+	/* =====================================================================
+	 * Admin console
+	 * ================================================================== */
+
+	/**
+	 * Dashboard statistics.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_stats( $req ) {
+		self::boot( $req );
+		return self::ok( self::stats_payload() );
+	}
+
+	/**
+	 * Live console tail.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_log( $req ) {
+		self::boot( $req );
+		return self::ok( array( 'lines' => Havato_Logger::tail( (int) $req->get_param( 'limit' ) ? (int) $req->get_param( 'limit' ) : 40 ) ) );
+	}
+
+	/**
+	 * Verify (or un-verify) a venue.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_verify_venue( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue_id = sanitize_text_field( (string) $req->get_param( 'venue_id' ) );
+		$value    = null === $req->get_param( 'verified' ) ? 1 : (int) (bool) $req->get_param( 'verified' );
+
+		$venues = Havato_DB::table( 'venues' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update( $venues, array( 'verified' => $value ), array( 'id' => $venue_id ), array( '%d' ), array( '%s' ) );
+
+		self::sync_venue_events( $venue_id, (bool) $value );
+
+		Havato_Logger::log( sprintf( 'Venue %s %s by administrator.', $venue_id, $value ? 'verified' : 'suspended' ), 'success' );
+
+		return self::ok( array( 'verified' => (bool) $value ) );
+	}
+
+	/**
+	 * Approve or reject a pending menu.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_menu_approve( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue_id = sanitize_text_field( (string) $req->get_param( 'venue_id' ) );
+		$approve  = (bool) $req->get_param( 'approve' );
+
+		$venues = Havato_DB::table( 'venues' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $venues WHERE id=%s", $venue_id ), ARRAY_A );
+		if ( ! $row ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		if ( $approve ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update(
+				$venues,
+				array( 'menu_json' => $row['pending_menu_json'], 'pending_menu_json' => '' ),
+				array( 'id' => $venue_id ),
+				array( '%s', '%s' ),
+				array( '%s' )
+			);
+			Havato_Logger::log( sprintf( 'Menu approved and published for venue %s.', $venue_id ), 'success' );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update( $venues, array( 'pending_menu_json' => '' ), array( 'id' => $venue_id ), array( '%s' ), array( '%s' ) );
+			Havato_Logger::log( sprintf( 'Pending menu rejected for venue %s.', $venue_id ), 'warn' );
+		}
+
+		return self::ok( array( 'approved' => $approve ) );
+	}
+
+	/**
+	 * Manually run the matcher (admin backup trigger).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_run_matcher( $req ) {
+		self::boot( $req );
+
+		$event_id = sanitize_text_field( (string) $req->get_param( 'event_id' ) );
+
+		if ( $event_id ) {
+			$result = Havato_Matcher::run( $event_id, true );
+			return self::ok( $result );
+		}
+
+		$count = Havato_Cron::force_match_due_events( true );
+
+		return self::ok(
+			array(
+				'ok'      => true,
+				'message' => sprintf( '%d event(s) processed.', $count ),
+			)
+		);
+	}
+
+	/**
+	 * Save settings from any admin sub-page.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_save_settings( $req ) {
+		self::boot( $req );
+
+		$values = $req->get_param( 'settings' );
+		$values = is_array( $values ) ? $values : havato_json( $values );
+
+		$saved = Havato_Settings::update( $values );
+
+		Havato_Logger::log( 'Platform settings updated by administrator.', 'info' );
+
+		return self::ok( array( 'settings' => $saved ) );
+	}
+
+	/**
+	 * Mark a payout period as settled.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_payout( $req ) {
+		self::boot( $req );
+
+		$id   = (int) $req->get_param( 'payout_id' );
+		$note = sanitize_text_field( (string) $req->get_param( 'note' ) );
+
+		return self::ok( array( 'paid' => Havato_Payouts::mark_paid( $id, $note ) ) );
+	}
+
+	/**
+	 * Moderate a reported photo.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_photo_report( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$report_id = (int) $req->get_param( 'report_id' );
+		$action    = sanitize_text_field( (string) $req->get_param( 'action_type' ) );
+
+		$reports = Havato_DB::table( 'photo_reports' );
+		$photos  = Havato_DB::table( 'user_photos' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$report = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $reports WHERE id=%d", $report_id ), ARRAY_A );
+		if ( ! $report ) {
+			return new WP_Error( 'havato_no_report', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		if ( 'remove' === $action ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update( $photos, array( 'status' => 'removed' ), array( 'id' => (int) $report['photo_id'] ), array( '%s' ), array( '%d' ) );
+			$status = 'actioned';
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update( $photos, array( 'status' => 'approved' ), array( 'id' => (int) $report['photo_id'] ), array( '%s' ), array( '%d' ) );
+			$status = 'reviewed';
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update( $reports, array( 'status' => $status ), array( 'id' => $report_id ), array( '%s' ), array( '%d' ) );
+
+		return self::ok( array( 'status' => $status ) );
+	}
+
+	/**
+	 * Create demo content so a fresh install is never an empty screen.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_seed( $req ) {
+		self::boot( $req );
+		require_once HAVATO_PATH . 'includes/class-havato-seeder.php';
+		$result = Havato_Seeder::run();
+		return self::ok( $result );
+	}
+
+	/* =====================================================================
+	 * Shared payload builders
+	 * ================================================================== */
+
+	/**
+	 * Platform statistics used by the admin dashboard.
+	 *
+	 * @return array
+	 */
+	public static function stats_payload() {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		$venues = Havato_DB::table( 'venues' );
+		$events = Havato_DB::table( 'events' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+		$groups = Havato_DB::table( 'groups' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$active_users = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM $regs" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$matched = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $groups" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$venue_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $venues" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$revenue = (int) $wpdb->get_var( "SELECT COALESCE(SUM(amount),0) FROM $regs WHERE status<>'cancelled'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$last_week = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM $regs WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$prev_week = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM $regs WHERE created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY) AND created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)" );
+
+		$growth = $prev_week > 0 ? round( ( ( $last_week - $prev_week ) / $prev_week ) * 100, 1 ) : ( $last_week > 0 ? 100.0 : 0.0 );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$open_events = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $events WHERE status='open'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$pending_venues = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $venues WHERE verified=0" );
+
+		return array(
+			'active_users'   => $active_users,
+			'matched_tables' => $matched,
+			'venues'         => $venue_count,
+			'revenue'        => $revenue,
+			'revenue_label'  => havato_price_pair( $revenue ),
+			'growth'         => $growth,
+			'open_events'    => $open_events,
+			'pending_venues' => $pending_venues,
+			'log'            => Havato_Logger::tail( 12 ),
+		);
+	}
+
+	/**
+	 * Minimal user card used everywhere in the UI.
+	 *
+	 * @param int $user_id User id.
+	 * @return array
+	 */
+	public static function user_card( $user_id ) {
+		$user_id = (int) $user_id;
+		$profile = havato_get_profile( $user_id );
+
+		return array(
+			'id'     => $user_id,
+			'name'   => havato_display_name( $user_id ),
+			'avatar' => havato_avatar( $user_id ),
+			'role'   => havato_user_role( $user_id ),
+			'rating' => round( (float) $profile['rating_score'], 1 ),
+			'age'    => (int) $profile['age'],
+		);
+	}
+
+	/**
+	 * Event payload (bilingual labels precomputed for instant switching).
+	 *
+	 * @param array $row     Joined event row.
+	 * @param int   $user_id Viewer.
+	 * @return array
+	 */
+	private static function event_payload( $row, $user_id ) {
+		global $wpdb;
+
+		$taken    = isset( $row['taken'] ) ? (int) $row['taken'] : 0;
+		$capacity = (int) $row['max_capacity'];
+		$price    = (int) $row['price'];
+
+		$joined = false;
+		if ( $user_id ) {
+			if ( isset( $row['my_status'] ) ) {
+				$joined = ( 'cancelled' !== $row['my_status'] );
+			} else {
+				$regs = Havato_DB::table( 'event_registrations' );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$joined = (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $regs WHERE event_id=%s AND user_id=%d AND status<>'cancelled'", $row['id'], $user_id ) );
+			}
+		}
+
+		return array(
+			'id'          => $row['id'],
+			'venue_id'    => $row['venue_id'],
+			'venue'       => array(
+				'fa' => isset( $row['venue_name_fa'] ) && $row['venue_name_fa'] ? $row['venue_name_fa'] : ( isset( $row['venue_name'] ) ? $row['venue_name'] : '' ),
+				'en' => isset( $row['venue_name'] ) && $row['venue_name'] ? $row['venue_name'] : ( isset( $row['venue_name_fa'] ) ? $row['venue_name_fa'] : '' ),
+			),
+			'image'       => isset( $row['venue_image'] ) ? $row['venue_image'] : '',
+			'address'     => isset( $row['venue_address'] ) ? $row['venue_address'] : '',
+			'title'       => $row['title'],
+			'date'        => havato_date_pair( $row['event_date'] ),
+			'weekday'     => array(
+				'fa' => Havato_Jalali::week_day( $row['event_date'], 'fa' ),
+				'en' => Havato_Jalali::week_day( $row['event_date'], 'en' ),
+			),
+			'time'        => substr( (string) $row['event_time'], 0, 5 ),
+			'budget_tier' => $row['budget_tier'],
+			'price'       => $price,
+			'price_label' => havato_price_pair( $price ),
+			'capacity'    => $capacity,
+			'taken'       => $taken,
+			'seats_left'  => max( 0, $capacity - $taken ),
+			'status'      => $row['status'],
+			'joined'      => $joined,
+			'lat'         => isset( $row['lat'] ) ? (float) $row['lat'] : 0,
+			'lng'         => isset( $row['lng'] ) ? (float) $row['lng'] : 0,
+		);
+	}
+
+	/**
+	 * Venue payload. `$private` also exposes the pending menu (owner only).
+	 *
+	 * @param array $row     Venue row.
+	 * @param bool  $private Include owner-only fields.
+	 * @return array
+	 */
+	private static function venue_payload( $row, $private = false ) {
+		if ( ! $row ) {
+			return array();
+		}
+
+		$menu = havato_json( $row['menu_json'] );
+		foreach ( $menu as $i => $item ) {
+			$menu[ $i ]['price_label'] = havato_price_pair( isset( $item['price'] ) ? (int) $item['price'] : 0 );
+		}
+
+		$payload = array(
+			'id'            => $row['id'],
+			'name'          => array(
+				'fa' => $row['name_fa'] ? $row['name_fa'] : $row['name'],
+				'en' => $row['name'] ? $row['name'] : $row['name_fa'],
+			),
+			'address'       => $row['address'],
+			'lat'           => (float) $row['lat'],
+			'lng'           => (float) $row['lng'],
+			'image'         => $row['image'],
+			'utilization'   => (int) $row['utilization'],
+			'guests_routed' => (int) $row['guests_routed'],
+			'budget_tier'   => $row['budget_tier'],
+			'verified'      => (bool) (int) $row['verified'],
+			'quiet_hours'   => $row['quiet_hours'],
+			'menu'          => $menu,
+		);
+
+		if ( $private ) {
+			$pending = havato_json( $row['pending_menu_json'] );
+			foreach ( $pending as $i => $item ) {
+				$pending[ $i ]['price_label'] = havato_price_pair( isset( $item['price'] ) ? (int) $item['price'] : 0 );
+			}
+			$payload['pending_menu'] = $pending;
+			$payload['manager_id']   = (int) $row['manager_id'];
+		}
+
+		return $payload;
+	}
+
+	/**
+	 * Keep the events of a venue in sync with its verification state.
+	 *
+	 * Verifying a café publishes every table it prepared while pending;
+	 * suspending it pulls the still-open tables back out of the Explore feed
+	 * (already matched or completed tables are never touched).
+	 *
+	 * @param string $venue_id Venue id.
+	 * @param bool   $verified New verification state.
+	 */
+	public static function sync_venue_events( $venue_id, $verified ) {
+		global $wpdb;
+		$events = Havato_DB::table( 'events' );
+
+		if ( $verified ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$changed = (int) $wpdb->query( $wpdb->prepare( "UPDATE $events SET status='open' WHERE venue_id=%s AND status='pending_admin'", $venue_id ) );
+			if ( $changed > 0 ) {
+				Havato_Logger::log( sprintf( '%d pending table(s) published for venue %s.', $changed, $venue_id ), 'success' );
+			}
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$changed = (int) $wpdb->query( $wpdb->prepare( "UPDATE $events SET status='pending_admin' WHERE venue_id=%s AND status='open'", $venue_id ) );
+		if ( $changed > 0 ) {
+			Havato_Logger::log( sprintf( '%d open table(s) unpublished for venue %s.', $changed, $venue_id ), 'warn' );
+		}
+	}
+
+	/**
+	 * The venue managed by a user.
+	 *
+	 * @param int $user_id User id.
+	 * @return array|null
+	 */
+	public static function owner_venue( $user_id ) {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+		$venues = Havato_DB::table( 'venues' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $venues WHERE manager_id=%d ORDER BY created_at ASC LIMIT 1", (int) $user_id ), ARRAY_A );
+		return $row ? $row : null;
+	}
+
+	/**
+	 * Accepted friends as chat threads.
+	 *
+	 * @param int $user_id User id.
+	 * @return array
+	 */
+	private static function friend_threads( $user_id ) {
+		global $wpdb;
+		$friends = Havato_DB::table( 'friends' );
+		$pc      = Havato_DB::table( 'private_chats' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM $friends WHERE status='accepted' AND (user_id=%d OR friend_id=%d)",
+				$user_id,
+				$user_id
+			),
+			ARRAY_A
+		);
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$other = ( (int) $row['user_id'] === (int) $user_id ) ? (int) $row['friend_id'] : (int) $row['user_id'];
+
+			// Blocked users disappear completely.
+			if ( havato_is_blocked( $user_id, $other ) ) {
+				continue;
+			}
+
+			$thread = Havato_DB::thread_id( $user_id, $other );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$last = $wpdb->get_row( $wpdb->prepare( "SELECT message_text, message_time FROM $pc WHERE thread_id=%s ORDER BY id DESC LIMIT 1", $thread ), ARRAY_A );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$unread = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $pc WHERE thread_id=%s AND receiver_id=%d AND is_read=0", $thread, $user_id ) );
+
+			$out[] = array(
+				'user'         => self::user_card( $other ),
+				'last_message' => $last ? wp_trim_words( $last['message_text'], 8, '…' ) : '',
+				'last_time'    => $last ? substr( (string) $last['message_time'], 11, 5 ) : '',
+				'unread'       => $unread,
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Members of a group with the viewer's friendship state.
+	 *
+	 * @param string $group_id Group id.
+	 * @param int    $viewer   Viewer id.
+	 * @return array
+	 */
+	private static function group_members( $group_id, $viewer ) {
+		global $wpdb;
+		$gm = Havato_DB::table( 'group_members' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT user_id FROM $gm WHERE group_id=%s", $group_id ) );
+
+		$out = array();
+		foreach ( (array) $ids as $uid ) {
+			$uid  = (int) $uid;
+			$card = self::user_card( $uid );
+
+			$card['friend_status'] = ( $uid === (int) $viewer ) ? 'self' : havato_friend_status( $viewer, $uid );
+			$card['blocked']       = ( $uid !== (int) $viewer ) && havato_is_blocked( $viewer, $uid );
+
+			$out[] = $card;
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Photos of a user, respecting privacy & moderation state.
+	 *
+	 * @param int  $target  Owner.
+	 * @param int  $viewer  Viewer.
+	 * @param bool $is_self Viewing your own gallery.
+	 * @return array
+	 */
+	private static function user_photos( $target, $viewer, $is_self ) {
+		global $wpdb;
+
+		$photos = Havato_DB::table( 'user_photos' );
+		$likes  = Havato_DB::table( 'photo_likes' );
+
+		$where = $is_self ? "user_id=%d AND status <> 'removed'" : "user_id=%d AND status IN ('approved','reported')";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $photos WHERE $where ORDER BY id DESC LIMIT 60", (int) $target ), ARRAY_A );
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$pid = (int) $row['id'];
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $likes WHERE photo_id=%d", $pid ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$liked = (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $likes WHERE photo_id=%d AND user_id=%d", $pid, (int) $viewer ) );
+
+			$out[] = array(
+				'id'     => $pid,
+				'url'    => $row['photo_url'],
+				'status' => $row['status'],
+				'likes'  => $count,
+				'liked'  => $liked,
+				'mine'   => $is_self,
+				'date'   => havato_date_pair( $row['created_at'] ),
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Wallet summary (real Woo spending, no simulated balance).
+	 *
+	 * @param int $user_id User id.
+	 * @return array
+	 */
+	private static function wallet_summary( $user_id ) {
+		global $wpdb;
+		$regs = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$spent = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(amount),0) FROM $regs WHERE user_id=%d AND status<>'cancelled'", $user_id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$tickets = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE user_id=%d AND status<>'cancelled'", $user_id ) );
+
+		return array(
+			'spent'       => $spent,
+			'spent_label' => havato_price_pair( $spent ),
+			'tickets'     => $tickets,
+		);
+	}
+
+	/**
+	 * Pending feedback cards (completed events without a submitted review).
+	 *
+	 * @param int $user_id User id.
+	 * @return array
+	 */
+	public static function collect_pending_feedback( $user_id ) {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		$groups    = Havato_DB::table( 'groups' );
+		$gm        = Havato_DB::table( 'group_members' );
+		$events    = Havato_DB::table( 'events' );
+		$venues    = Havato_DB::table( 'venues' );
+		$feedbacks = Havato_DB::table( 'feedbacks' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT g.id, g.event_id, e.event_date, v.name AS venue_name, v.name_fa AS venue_name_fa
+				 FROM $gm m
+				 INNER JOIN $groups g ON g.id = m.group_id
+				 INNER JOIN $events e ON e.id = g.event_id
+				 LEFT JOIN $venues v ON v.id = e.venue_id
+				 WHERE m.user_id = %d AND e.status = 'completed'
+				 ORDER BY e.event_date DESC LIMIT 10",
+				$user_id
+			),
+			ARRAY_A
+		);
+
+		$out = array();
+
+		foreach ( (array) $rows as $row ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$mates = $wpdb->get_col( $wpdb->prepare( "SELECT user_id FROM $gm WHERE group_id=%s AND user_id<>%d", $row['id'], $user_id ) );
+
+			$pending = array();
+			foreach ( (array) $mates as $mate ) {
+				$mate = (int) $mate;
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$done = (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $feedbacks WHERE group_id=%s AND reporter_id=%d AND reported_id=%d", $row['id'], $user_id, $mate ) );
+				if ( $done ) {
+					continue;
+				}
+				$card                  = self::user_card( $mate );
+				$card['friend_status'] = havato_friend_status( $user_id, $mate );
+				$card['blocked']       = havato_is_blocked( $user_id, $mate );
+				$pending[]             = $card;
+			}
+
+			if ( empty( $pending ) ) {
+				continue;
+			}
+
+			$out[] = array(
+				'group_id' => $row['id'],
+				'event_id' => $row['event_id'],
+				'venue'    => array(
+					'fa' => $row['venue_name_fa'] ? $row['venue_name_fa'] : $row['venue_name'],
+					'en' => $row['venue_name'] ? $row['venue_name'] : $row['venue_name_fa'],
+				),
+				'date'     => havato_date_pair( $row['event_date'] ),
+				'mates'    => $pending,
+			);
+		}
+
+		return $out;
+	}
+
+	/* =====================================================================
+	 * Internal helpers
+	 * ================================================================== */
+
+	/**
+	 * Insert a user into an event queue.
+	 *
+	 * @param string $event_id Event id.
+	 * @param int    $user_id  User id.
+	 * @param int    $order_id Woo order id.
+	 * @param int    $amount   Paid amount.
+	 */
+	private static function queue_user( $event_id, $user_id, $order_id = 0, $amount = 0 ) {
+		global $wpdb;
+		$regs = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->replace(
+			$regs,
+			array(
+				'event_id'   => $event_id,
+				'user_id'    => (int) $user_id,
+				'status'     => 'queued',
+				'checked_in' => 0,
+				'order_id'   => (int) $order_id,
+				'amount'     => (int) $amount,
+				'created_at' => havato_now(),
+			),
+			array( '%s', '%d', '%s', '%d', '%d', '%d', '%s' )
+		);
+	}
+
+	/**
+	 * Is a user a member of a group?
+	 *
+	 * @param string $group_id Group.
+	 * @param int    $user_id  User.
+	 * @return bool
+	 */
+	private static function is_group_member( $group_id, $user_id ) {
+		global $wpdb;
+		$gm = Havato_DB::table( 'group_members' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $gm WHERE group_id=%s AND user_id=%d", $group_id, (int) $user_id ) );
+	}
+
+	/**
+	 * Mark a friendship as accepted (both directions normalized to one row).
+	 *
+	 * @param int $requester Requester id.
+	 * @param int $target    Target id.
+	 * @return WP_REST_Response
+	 */
+	private static function friend_accept_pair( $requester, $target ) {
+		global $wpdb;
+		$table = Havato_DB::table( 'friends' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->replace(
+			$table,
+			array(
+				'user_id'    => (int) $requester,
+				'friend_id'  => (int) $target,
+				'status'     => 'accepted',
+				'created_at' => havato_now(),
+			),
+			array( '%d', '%d', '%s', '%s' )
+		);
+
+		// Remove any mirrored pending row so the pair has a single truth.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $table, array( 'user_id' => (int) $target, 'friend_id' => (int) $requester ), array( '%d', '%d' ) );
+
+		return self::ok( array( 'status' => 'accepted' ) );
+	}
+
+	/**
+	 * Recompute a user's average behaviour score from their feedbacks.
+	 *
+	 * @param int $user_id User id.
+	 */
+	private static function recalculate_rating( $user_id ) {
+		global $wpdb;
+		$feedbacks = Havato_DB::table( 'feedbacks' );
+		$profiles  = Havato_DB::table( 'user_profiles' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT AVG(rating) AS avg_rating, COUNT(*) AS c FROM $feedbacks WHERE reported_id=%d", (int) $user_id ), ARRAY_A );
+
+		$avg   = $row && $row['avg_rating'] ? (float) $row['avg_rating'] : 5.0;
+		$count = $row ? (int) $row['c'] : 0;
+
+		// Make sure the profile row exists before updating.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $profiles WHERE user_id=%d", (int) $user_id ) );
+
+		if ( $exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update(
+				$profiles,
+				array( 'rating_score' => $avg, 'rating_count' => $count ),
+				array( 'user_id' => (int) $user_id ),
+				array( '%f', '%d' ),
+				array( '%d' )
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->insert(
+				$profiles,
+				array(
+					'user_id'      => (int) $user_id,
+					'rating_score' => $avg,
+					'rating_count' => $count,
+					'updated_at'   => havato_now(),
+				),
+				array( '%d', '%f', '%d', '%s' )
+			);
+		}
+	}
+
+	/**
+	 * Append a user to another user's blocklist.
+	 *
+	 * @param int $owner  Blocklist owner.
+	 * @param int $target Blocked user.
+	 */
+	private static function add_to_blocklist( $owner, $target ) {
+		global $wpdb;
+		$profiles = Havato_DB::table( 'user_profiles' );
+
+		$profile = havato_get_profile( $owner );
+		$list    = $profile['blocklist'];
+
+		if ( ! in_array( (int) $target, $list, true ) ) {
+			$list[] = (int) $target;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $profiles WHERE user_id=%d", (int) $owner ) );
+
+		if ( $exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update( $profiles, array( 'blocklist_json' => wp_json_encode( $list ) ), array( 'user_id' => (int) $owner ), array( '%s' ), array( '%d' ) );
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->insert(
+				$profiles,
+				array(
+					'user_id'        => (int) $owner,
+					'blocklist_json' => wp_json_encode( $list ),
+					'updated_at'     => havato_now(),
+				),
+				array( '%d', '%s', '%s' )
+			);
+		}
+
+		// A block also tears down the friendship, in both directions.
+		$friends = Havato_DB::table( 'friends' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $friends, array( 'user_id' => (int) $owner, 'friend_id' => (int) $target ), array( '%d', '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $friends, array( 'user_id' => (int) $target, 'friend_id' => (int) $owner ), array( '%d', '%d' ) );
+	}
+
+	/**
+	 * Handle a media upload through the WordPress media library.
+	 *
+	 * @param string $field $_FILES key.
+	 * @return string|WP_Error URL.
+	 */
+	private static function handle_upload( $field ) {
+		if ( empty( $_FILES[ $field ] ) ) {
+			return new WP_Error( 'havato_no_file', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$file = $_FILES[ $field ];
+
+		$allowed = array( 'jpg', 'jpeg', 'png', 'gif', 'webp' );
+		$check   = wp_check_filetype( isset( $file['name'] ) ? $file['name'] : '' );
+		if ( ! $check['ext'] || ! in_array( strtolower( $check['ext'] ), $allowed, true ) ) {
+			return new WP_Error( 'havato_bad_file', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		$attachment_id = media_handle_upload( $field, 0 );
+		if ( is_wp_error( $attachment_id ) ) {
+			return $attachment_id;
+		}
+
+		$url = wp_get_attachment_url( $attachment_id );
+		return $url ? $url : new WP_Error( 'havato_upload_failed', Havato_I18N::t( 'error_generic' ), array( 'status' => 500 ) );
+	}
+
+	/**
+	 * Uniform success envelope.
+	 *
+	 * @param array $data Payload.
+	 * @return WP_REST_Response
+	 */
+	private static function ok( $data ) {
+		return new WP_REST_Response( array_merge( array( 'success' => true ), $data ), 200 );
+	}
+}
