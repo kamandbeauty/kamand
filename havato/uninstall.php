@@ -54,6 +54,9 @@ delete_option( 'havato_default_lang' );
 delete_option( 'havato_app_page_id' );
 delete_option( 'havato_flush_rewrite' );
 delete_option( 'havato_remove_all_data' );
+delete_option( 'havato_theme' );
+delete_option( 'havato_theme_custom' );
+delete_option( 'havato_owner_auth_page_id' );
 
 remove_role( 'gatherer' );
 remove_role( 'cafe_owner' );

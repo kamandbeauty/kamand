@@ -62,10 +62,13 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 	<nav class="hv-bottom-nav" id="hv-bottom-nav" aria-label="main">
 		<svg class="hv-wave" viewBox="0 0 390 84" preserveAspectRatio="none" aria-hidden="true">
 			<defs>
+				<!-- Stops are classed so the active theme can repaint them;
+				     this SVG is the fallback surface on browsers without
+				     mask support, so it must follow the palette too. -->
 				<linearGradient id="hvWaveGrad" x1="0" y1="0" x2="1" y2="1">
-					<stop offset="0%" stop-color="#232AD1"/>
-					<stop offset="55%" stop-color="#1B1FBF"/>
-					<stop offset="100%" stop-color="#141A6E"/>
+					<stop class="hv-wave-1" offset="0%" stop-color="#232AD1"/>
+					<stop class="hv-wave-2" offset="55%" stop-color="#1B1FBF"/>
+					<stop class="hv-wave-3" offset="100%" stop-color="#141A6E"/>
 				</linearGradient>
 			</defs>
 			<!-- The notch is deliberately only slightly wider than the floating

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.9.1
+Stable tag: 1.10.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,23 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.10.0 =
+* New "Appearance & theme" page in the Havato admin menu. Five ready palettes
+  ship with it — Azure Blue, Emerald, Espresso, Midnight & Amber, Sunset
+  Coral — each previewed as a miniature of the real app screen, with its
+  white-on-primary contrast ratio shown on the card.
+* The default palette is no longer violet. Every shipped theme was checked
+  against WCAG 2.1: white text clears AA on the primary colour in all five,
+  and none of them sits in the 230-280 degree hue band that reads as purple.
+* Custom theme: pick a main colour and an accent, every other shade is
+  derived. A colour too light to carry white text is darkened automatically
+  until it passes AA, so the app can never be made unreadable.
+* Themes are extensible. `add_filter( 'havato_themes', ... )` registers a new
+  palette and it appears in the picker with no other change; a theme only has
+  to supply its base colour, the rest is filled in.
+* Switching a theme costs no extra request: the palette is a small block of
+  CSS custom properties inlined onto the stylesheet that is already loaded.
 
 = 1.9.1 =
 * Removed the "Café owner sign-in" button from the guest landing screen. Owners

@@ -834,3 +834,68 @@
 	text-align: left;
 	margin-bottom: 14px;
 }
+
+/* =========================================================================
+   Appearance & theme picker
+   ====================================================================== */
+.hv-theme-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 18px;
+	margin-bottom: 18px;
+}
+.hv-theme-card {
+	background: #fff;
+	border: 2px solid var(--hv-line);
+	border-radius: 18px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	transition: box-shadow 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+.hv-theme-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(16, 24, 40, 0.12); }
+.hv-theme-card.is-active { border-color: #12b981; box-shadow: 0 10px 26px rgba(18, 185, 129, 0.2); }
+
+/* Miniature of the real app screen, drawn with the palette's own gradients
+   so the card previews the result rather than just listing swatches. */
+.hv-theme-preview { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.hv-theme-hdr { block-size: 46px; border-radius: 12px; }
+.hv-theme-row { block-size: 30px; border-radius: 10px; }
+.hv-theme-cards { display: flex; gap: 6px; }
+.hv-theme-cards span {
+	flex: 1 1 0;
+	block-size: 26px;
+	border-radius: 8px;
+	background: #fff;
+	border: 1px solid rgba(16, 24, 40, 0.08);
+}
+.hv-theme-cta { block-size: 22px; border-radius: 8px; }
+.hv-theme-nav {
+	position: relative;
+	block-size: 30px;
+	border-radius: 10px;
+	margin-top: 2px;
+}
+.hv-theme-nav i {
+	position: absolute;
+	inset-block-start: -11px;
+	inset-inline-start: 50%;
+	transform: translateX(-50%);
+	inline-size: 24px;
+	block-size: 24px;
+	border-radius: 50%;
+	border: 3px solid #fff;
+}
+
+.hv-theme-meta { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+.hv-theme-meta h3 { margin: 0; font-size: 15px; font-weight: 800; }
+.hv-theme-meta p { margin: 0; font-size: 12px; line-height: 1.8; color: #64748b; }
+.hv-theme-swatches { display: flex; gap: 5px; }
+.hv-theme-swatches span {
+	inline-size: 26px;
+	block-size: 26px;
+	border-radius: 7px;
+	border: 1px solid rgba(16, 24, 40, 0.1);
+}
+.hv-theme-ratio { font-size: 11px !important; direction: ltr; text-align: start; }
+.hv-theme-meta .hv-adm-btn { margin-top: 2px; justify-content: center; }

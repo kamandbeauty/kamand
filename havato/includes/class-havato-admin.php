@@ -54,6 +54,7 @@ class Havato_Admin {
 			'havato-matcher'    => array( 'admin_matcher', 'page_matcher' ),
 			'havato-weights'    => array( 'admin_weights', 'page_weights' ),
 			'havato-google'     => array( 'admin_google', 'page_google' ),
+			'havato-theme'      => array( 'admin_theme', 'page_theme' ),
 			'havato-locale'     => array( 'admin_locale', 'page_locale' ),
 		);
 
@@ -139,6 +140,7 @@ class Havato_Admin {
 			'havato-matcher'   => Havato_I18N::t( 'admin_matcher' ),
 			'havato-weights'   => Havato_I18N::t( 'admin_weights' ),
 			'havato-google'    => Havato_I18N::t( 'admin_google' ),
+			'havato-theme'     => Havato_I18N::t( 'admin_theme' ),
 			'havato-locale'    => Havato_I18N::t( 'admin_locale' ),
 		);
 
@@ -1639,6 +1641,153 @@ class Havato_Admin {
 	}
 
 	/* =====================================================================
+	 * Page — appearance & theme
+	 * ================================================================== */
+
+	/**
+	 * Theme picker.
+	 *
+	 * Each card is its own form so choosing a theme is a single click; the
+	 * palette is previewed with the real gradients rather than flat chips, so
+	 * what the administrator sees is what the app will look like.
+	 */
+	public static function page_theme() {
+		$active  = Havato_Themes::current_id();
+		$themes  = Havato_Themes::catalogue();
+		$lang    = Havato_I18N::current_lang();
+		$post_to = admin_url( 'admin-post.php' );
+
+		self::head( Havato_I18N::t( 'admin_theme' ), Havato_I18N::t( 'theme_active' ) );
+
+		echo '<div class="hv-adm-card">';
+		echo '<p class="hv-adm-note">' . esc_html( Havato_I18N::t( 'theme_intro' ) ) . '</p>';
+		echo '</div>';
+
+		echo '<div class="hv-theme-grid">';
+
+		foreach ( $themes as $id => $theme ) {
+			$t        = Havato_Themes::normalize( $theme );
+			$is_live  = ( $id === $active );
+			$label    = isset( $t['label'][ $lang ] ) ? $t['label'][ $lang ] : $id;
+			$note     = isset( $t['note'][ $lang ] ) ? $t['note'][ $lang ] : '';
+			$ratio    = Havato_Themes::contrast( '#ffffff', $t['base'] );
+
+			printf(
+				'<form method="post" action="%s" class="hv-theme-card%s">',
+				esc_url( $post_to ),
+				$is_live ? ' is-active' : ''
+			);
+			self::form_fields( 'theme' );
+			echo '<input type="hidden" name="theme_id" value="' . esc_attr( $id ) . '">';
+
+			// Miniature of the real screen.
+			printf(
+				'<div class="hv-theme-preview" style="background:%s">',
+				esc_attr( $t['canvas'] )
+			);
+			printf(
+				'<div class="hv-theme-hdr" style="background:linear-gradient(135deg,%s 0%%,%s 48%%,%s 100%%)"></div>',
+				esc_attr( $t['light'] ),
+				esc_attr( $t['base'] ),
+				esc_attr( $t['deep'] )
+			);
+			printf(
+				'<div class="hv-theme-row" style="background:linear-gradient(135deg,%s,%s 58%%,%s)"></div>',
+				esc_attr( $t['light'] ),
+				esc_attr( $t['base'] ),
+				esc_attr( $t['deep'] )
+			);
+			echo '<div class="hv-theme-cards"><span></span><span></span><span></span></div>';
+			printf(
+				'<div class="hv-theme-cta" style="background:linear-gradient(120deg,%s,%s)"></div>',
+				esc_attr( $t['light'] ),
+				esc_attr( $t['base'] )
+			);
+			printf(
+				'<div class="hv-theme-nav" style="background:linear-gradient(135deg,%s,%s)">'
+					. '<i style="background:linear-gradient(140deg,%s,%s)"></i></div>',
+				esc_attr( $t['base'] ),
+				esc_attr( $t['deep'] ),
+				esc_attr( Havato_Themes::lighten( $t['accent'], 0.2 ) ),
+				esc_attr( $t['accent'] )
+			);
+			echo '</div>';
+
+			echo '<div class="hv-theme-meta">';
+			echo '<h3>' . esc_html( $label );
+			if ( $is_live ) {
+				echo ' <span class="hv-adm-badge is-green">' . esc_html( Havato_I18N::t( 'theme_in_use' ) ) . '</span>';
+			}
+			echo '</h3>';
+
+			if ( $note ) {
+				echo '<p>' . esc_html( $note ) . '</p>';
+			}
+
+			echo '<div class="hv-theme-swatches">';
+			foreach ( Havato_Themes::swatches( $t ) as $hex ) {
+				printf( '<span style="background:%s" title="%s"></span>', esc_attr( $hex ), esc_attr( $hex ) );
+			}
+			echo '</div>';
+
+			printf(
+				'<p class="hv-theme-ratio">%s: <strong>%s:1</strong> — %s</p>',
+				esc_html( Havato_I18N::t( 'theme_contrast' ) ),
+				esc_html( number_format( $ratio, 2 ) ),
+				esc_html( Havato_I18N::t( 'theme_contrast_ok' ) )
+			);
+
+			printf(
+				'<button type="submit" class="hv-adm-btn %s"%s>%s</button>',
+				$is_live ? 'hv-adm-btn-ghost' : 'hv-adm-btn-blue',
+				$is_live ? ' disabled' : '',
+				esc_html( $is_live ? Havato_I18N::t( 'theme_in_use' ) : Havato_I18N::t( 'theme_apply' ) )
+			);
+
+			echo '</div></form>';
+		}
+
+		echo '</div>';
+
+		// ---- custom palette ----
+		$custom = get_option( Havato_Themes::CUSTOM_OPTION, array() );
+		$custom = Havato_Themes::normalize( is_array( $custom ) ? $custom : array() );
+
+		echo '<form method="post" action="' . esc_url( $post_to ) . '" class="hv-adm-card">';
+		self::form_fields( 'theme' );
+		echo '<input type="hidden" name="theme_id" value="custom">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'theme_custom' ) );
+		if ( 'custom' === $active ) {
+			echo ' <span class="hv-adm-badge is-green">' . esc_html( Havato_I18N::t( 'theme_in_use' ) ) . '</span>';
+		}
+		echo '</h2>';
+		echo '<p class="hv-adm-note">' . esc_html( Havato_I18N::t( 'theme_custom_hint' ) ) . '</p>';
+
+		echo '<div class="hv-adm-fields">';
+		printf(
+			'<label>%s<input type="color" name="custom_base" value="%s"></label>',
+			esc_html( Havato_I18N::t( 'theme_base_colour' ) ),
+			esc_attr( $custom['base'] )
+		);
+		printf(
+			'<label>%s<input type="color" name="custom_accent" value="%s"></label>',
+			esc_html( Havato_I18N::t( 'theme_accent_colour' ) ),
+			esc_attr( $custom['accent'] )
+		);
+		echo '</div>';
+
+		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' .
+			esc_html( Havato_I18N::t( 'theme_apply' ) ) . '</button>';
+		echo '</form>';
+
+		echo '<div class="hv-adm-card"><p class="hv-adm-note">' .
+			esc_html( Havato_I18N::t( 'theme_developer_note' ) ) .
+			' <code>add_filter( \'havato_themes\', … )</code></p></div>';
+
+		self::foot();
+	}
+
+	/* =====================================================================
 	 * Page 6 — language & region
 	 * ================================================================== */
 
@@ -1845,6 +1994,26 @@ class Havato_Admin {
 					)
 				);
 				$page = 'havato-google';
+				break;
+
+			case 'theme':
+				$theme_id = isset( $_POST['theme_id'] ) ? sanitize_key( wp_unslash( $_POST['theme_id'] ) ) : '';
+				$custom   = array();
+
+				if ( 'custom' === $theme_id ) {
+					// Only the two colours the picker offers are read; every
+					// other shade is derived, so a malformed value cannot
+					// produce a broken palette.
+					$custom = array(
+						'base'   => isset( $_POST['custom_base'] ) ? sanitize_text_field( wp_unslash( $_POST['custom_base'] ) ) : '',
+						'accent' => isset( $_POST['custom_accent'] ) ? sanitize_text_field( wp_unslash( $_POST['custom_accent'] ) ) : '',
+					);
+				}
+
+				$applied = Havato_Themes::set( $theme_id, $custom );
+				$message = Havato_I18N::t( 'theme_applied' );
+				Havato_Logger::log( sprintf( 'App theme switched to "%s" by administrator.', $applied ), 'success' );
+				$page = 'havato-theme';
 				break;
 
 			case 'locale':
