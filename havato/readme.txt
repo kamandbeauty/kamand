@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,16 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.1.0 =
+* A café name is now entered once. The separate Persian name field is gone —
+  a venue name is a proper noun and does not need translating.
+* That field is replaced by the café/restaurant manager's name, which is shown
+  to the administrator in its own column of the verification table.
+* Database migration: existing installs keep whichever name was filled in (a
+  Persian-only venue is NOT lost), seed the manager name from the linked
+  WordPress account, and then drop the legacy column. The migration is
+  idempotent and safe to run repeatedly.
 
 = 1.0.4 =
 * New: a real progress bar for every photo upload (profile avatar, gallery,

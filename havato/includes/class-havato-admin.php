@@ -401,7 +401,7 @@ class Havato_Admin {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			"SELECT e.id, e.event_date, e.event_time, e.status, e.max_capacity,
-					v.name AS venue_name, v.name_fa AS venue_name_fa,
+					v.name AS venue_name,
 					COUNT(r.id) AS guests,
 					COALESCE(SUM(r.amount),0) AS income
 			 FROM $events e
@@ -432,7 +432,7 @@ class Havato_Admin {
 		echo '</tr></thead><tbody>';
 
 		foreach ( $rows as $row ) {
-			$name   = $row['venue_name_fa'] ? $row['venue_name_fa'] : $row['venue_name'];
+			$name   = $row['venue_name'];
 			$income = (int) $row['income'];
 			$cut    = (int) round( $income * $percent / 100 );
 
@@ -468,6 +468,7 @@ class Havato_Admin {
 
 		echo '<table class="hv-adm-table"><thead><tr>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_order' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'venue_name' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_manager' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_location' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
@@ -475,13 +476,17 @@ class Havato_Admin {
 
 		$i = 1;
 		foreach ( $rows as $row ) {
-			$manager = get_user_by( 'id', (int) $row['manager_id'] );
-			$name    = $row['name_fa'] ? $row['name_fa'] : $row['name'];
+			$account = get_user_by( 'id', (int) $row['manager_id'] );
+			$name    = $row['name'];
+			$manager = '' !== $row['manager_name']
+				? $row['manager_name']
+				: ( $account ? havato_display_name( (int) $row['manager_id'] ) : '—' );
 
 			echo '<tr>';
 			echo '<td><span class="hv-adm-order">' . esc_html( $i ) . '</span></td>';
-			echo '<td><strong>' . esc_html( $name ) . '</strong><br><span class="hv-adm-muted">' .
-				esc_html( $manager ? $manager->user_email : '—' ) . '</span></td>';
+			echo '<td><strong>' . esc_html( $name ) . '</strong></td>';
+			echo '<td>' . esc_html( $manager ) . '<br><span class="hv-adm-muted">' .
+				esc_html( $account ? $account->user_email : '—' ) . '</span></td>';
 			echo '<td>' . esc_html( wp_trim_words( (string) $row['address'], 8, '…' ) ) . '</td>';
 			echo '<td>' . ( $row['verified']
 				? '<span class="hv-adm-badge is-green">✓ ' . esc_html( Havato_I18N::t( 'verified_venue' ) ) . '</span>'
@@ -527,7 +532,7 @@ class Havato_Admin {
 
 		foreach ( $rows as $row ) {
 			$items = havato_json( $row['pending_menu_json'] );
-			$name  = $row['name_fa'] ? $row['name_fa'] : $row['name'];
+			$name  = $row['name'];
 
 			echo '<div class="hv-adm-subcard">';
 			echo '<div class="hv-adm-row-between"><strong>' . esc_html( $name ) . '</strong>';
@@ -680,7 +685,7 @@ class Havato_Admin {
 		echo '<th></th></tr></thead><tbody>';
 
 		foreach ( $rows as $row ) {
-			$name = $row['name_fa'] ? $row['name_fa'] : $row['name'];
+			$name = $row['name'];
 			echo '<tr>';
 			echo '<td><strong>' . esc_html( $name ) . '</strong></td>';
 			echo '<td>' . esc_html( $row['period_label'][ $lang ] ) . '</td>';
@@ -723,7 +728,7 @@ class Havato_Admin {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
-			"SELECT e.*, v.name AS venue_name, v.name_fa AS venue_name_fa,
+			"SELECT e.*, v.name AS venue_name,
 					(SELECT COUNT(*) FROM $regs r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
 			 FROM $events e LEFT JOIN $venues v ON v.id = e.venue_id
 			 ORDER BY e.event_date ASC LIMIT 40",
@@ -754,7 +759,7 @@ class Havato_Admin {
 
 			$i = 1;
 			foreach ( $rows as $row ) {
-				$name = $row['venue_name_fa'] ? $row['venue_name_fa'] : $row['venue_name'];
+				$name = $row['venue_name'];
 
 				echo '<tr>';
 				echo '<td><span class="hv-adm-order">' . esc_html( $i ) . '</span></td>';

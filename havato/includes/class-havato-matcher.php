@@ -651,13 +651,14 @@ class Havato_Matcher {
 		global $wpdb;
 		$venues = Havato_DB::table( 'venues' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT name, name_fa FROM $venues WHERE id=%s", $venue_id ), ARRAY_A );
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM $venues WHERE id=%s", $venue_id ), ARRAY_A );
 		if ( ! $row ) {
 			return array( 'fa' => 'کافه', 'en' => 'Café' );
 		}
+		// One canonical café name, used in both languages.
 		return array(
-			'fa' => $row['name_fa'] ? $row['name_fa'] : $row['name'],
-			'en' => $row['name'] ? $row['name'] : $row['name_fa'],
+			'fa' => $row['name'],
+			'en' => $row['name'],
 		);
 	}
 

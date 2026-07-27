@@ -97,13 +97,13 @@ class Havato_Roles {
 			Havato_DB::ensure_tables();
 			$table = Havato_DB::table( 'venues' );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$venue = $wpdb->get_row( $wpdb->prepare( "SELECT name, name_fa, verified FROM $table WHERE manager_id=%d LIMIT 1", (int) $user_id ), ARRAY_A );
+			$venue = $wpdb->get_row( $wpdb->prepare( "SELECT name, verified FROM $table WHERE manager_id=%d LIMIT 1", (int) $user_id ), ARRAY_A );
 
 			if ( ! $venue ) {
 				return '<span class="hv-user-badge hv-badge-gray">—</span>';
 			}
 
-			$name  = $venue['name_fa'] ? $venue['name_fa'] : $venue['name'];
+			$name  = $venue['name'];
 			$badge = $venue['verified']
 				? '<span class="hv-user-badge hv-badge-green">✓ ' . esc_html( Havato_I18N::t( 'verified_venue' ) ) . '</span>'
 				: '<span class="hv-user-badge hv-badge-orange">' . esc_html( Havato_I18N::t( 'badge_pending' ) ) . '</span>';

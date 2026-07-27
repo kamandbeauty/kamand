@@ -35,7 +35,8 @@ class Havato_Seeder {
 
 		$samples = array(
 			array(
-				'fa'    => 'کافه لمیز',
+				'fa'      => 'کافه لمیز',
+				'manager' => 'سارا محمدی',
 				'en'    => 'Lamiz Coffee',
 				'addr'  => 'تهران، خیابان ولیعصر، نرسیده به پارک ساعی',
 				'lat'   => 35.7448,
@@ -49,7 +50,8 @@ class Havato_Seeder {
 				),
 			),
 			array(
-				'fa'    => 'کافه واوموشن',
+				'fa'      => 'کافه واوموشن',
+				'manager' => 'امیر رضایی',
 				'en'    => 'Wawmotion Café',
 				'addr'  => 'تهران، سعادت‌آباد، بلوار دریا',
 				'lat'   => 35.7796,
@@ -62,7 +64,8 @@ class Havato_Seeder {
 				),
 			),
 			array(
-				'fa'    => 'کافه‌کتاب مانا',
+				'fa'      => 'کافه‌کتاب مانا',
+				'manager' => 'نگار حسینی',
 				'en'    => 'Mana Book Café',
 				'addr'  => 'تهران، انقلاب، خیابان ۱۲ فروردین',
 				'lat'   => 35.7008,
@@ -86,8 +89,8 @@ class Havato_Seeder {
 				$venues_t,
 				array(
 					'id'          => $venue_id,
-					'name'        => $sample['en'],
-					'name_fa'     => $sample['fa'],
+					'name'         => $sample['fa'],
+					'manager_name' => $sample['manager'],
 					'address'     => $sample['addr'],
 					'lat'         => $sample['lat'],
 					'lng'         => $sample['lng'],

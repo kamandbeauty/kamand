@@ -342,7 +342,7 @@ class Havato_REST {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
-			"SELECT e.*, v.name AS venue_name, v.name_fa AS venue_name_fa, v.image AS venue_image,
+			"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
 					v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
 					(SELECT COUNT(*) FROM $regs r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
 			 FROM $events e
@@ -469,7 +469,7 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT e.*, v.name AS venue_name, v.name_fa AS venue_name_fa, v.image AS venue_image,
+				"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
 						v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
 						r.status AS my_status, r.checked_in,
 						(SELECT COUNT(*) FROM $regs r2 WHERE r2.event_id = e.id AND r2.status <> 'cancelled') AS taken
@@ -568,7 +568,7 @@ class Havato_REST {
 		$group_rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT g.id, g.name, e.event_date, e.event_time, e.status AS event_status,
-						v.name AS venue_name, v.name_fa AS venue_name_fa, v.image AS venue_image,
+						v.name AS venue_name, v.image AS venue_image,
 						(SELECT message_text FROM $chats c WHERE c.group_id = g.id ORDER BY c.id DESC LIMIT 1) AS last_message,
 						(SELECT COUNT(*) FROM $gm m2 WHERE m2.group_id = g.id) AS member_count
 				 FROM $gm m
@@ -586,10 +586,7 @@ class Havato_REST {
 		foreach ( (array) $group_rows as $row ) {
 			$group_threads[] = array(
 				'id'           => $row['id'],
-				'name'         => array(
-					'fa' => $row['venue_name_fa'] ? $row['venue_name_fa'] : $row['name'],
-					'en' => $row['venue_name'] ? $row['venue_name'] : $row['name'],
-				),
+				'name'         => $row['venue_name'] ? $row['venue_name'] : $row['name'],
 				'image'        => $row['venue_image'],
 				'date'         => havato_date_pair( $row['event_date'] ),
 				'time'         => substr( (string) $row['event_time'], 0, 5 ),
@@ -1295,12 +1292,13 @@ class Havato_REST {
 
 		global $wpdb;
 
-		$email = sanitize_email( (string) $req->get_param( 'email' ) );
-		$pass  = (string) $req->get_param( 'password' );
-		$name  = sanitize_text_field( (string) $req->get_param( 'venue_name' ) );
-		$addr  = sanitize_textarea_field( (string) $req->get_param( 'address' ) );
+		$email   = sanitize_email( (string) $req->get_param( 'email' ) );
+		$pass    = (string) $req->get_param( 'password' );
+		$name    = sanitize_text_field( (string) $req->get_param( 'venue_name' ) );
+		$manager = sanitize_text_field( (string) $req->get_param( 'manager_name' ) );
+		$addr    = sanitize_textarea_field( (string) $req->get_param( 'address' ) );
 
-		if ( ! is_email( $email ) || strlen( $pass ) < 6 || '' === $name ) {
+		if ( ! is_email( $email ) || strlen( $pass ) < 6 || '' === $name || '' === $manager ) {
 			return new WP_Error( 'havato_bad_input', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
 		}
 
@@ -1320,7 +1318,7 @@ class Havato_REST {
 				'user_login'   => $login,
 				'user_email'   => $email,
 				'user_pass'    => $pass,
-				'display_name' => $name,
+				'display_name' => $manager,
 				'role'         => 'cafe_owner',
 			)
 		);
@@ -1337,8 +1335,8 @@ class Havato_REST {
 			$venues,
 			array(
 				'id'          => $venue_id,
-				'name'        => $name,
-				'name_fa'     => $name,
+				'name'         => $name,
+				'manager_name' => $manager,
 				'address'     => $addr,
 				'lat'         => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
 				'lng'         => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
@@ -1464,7 +1462,6 @@ class Havato_REST {
 		$out = array();
 		foreach ( (array) $rows as $row ) {
 			$row['venue_name']    = $venue['name'];
-			$row['venue_name_fa'] = $venue['name_fa'];
 			$row['venue_image']   = $venue['image'];
 			$out[]                = self::event_payload( $row, 0 );
 		}
@@ -1512,7 +1509,6 @@ class Havato_REST {
 		}
 
 		$event['venue_name']    = $venue['name'];
-		$event['venue_name_fa'] = $venue['name_fa'];
 		$event['taken']         = count( $members );
 
 		return self::ok(
@@ -1729,8 +1725,8 @@ class Havato_REST {
 		$format = array();
 
 		$map = array(
-			'name'        => '%s',
-			'name_fa'     => '%s',
+			'name'         => '%s',
+			'manager_name' => '%s',
 			'address'     => '%s',
 			'image'       => '%s',
 			'quiet_hours' => '%s',
@@ -1750,6 +1746,8 @@ class Havato_REST {
 				$fields[ $key ] = esc_url_raw( (string) $value );
 			} elseif ( 'address' === $key ) {
 				$fields[ $key ] = sanitize_textarea_field( (string) $value );
+			} elseif ( 'manager_name' === $key ) {
+				$fields[ $key ] = sanitize_text_field( (string) $value );
 			} elseif ( 'budget_tier' === $key ) {
 				$tier           = sanitize_text_field( (string) $value );
 				$fields[ $key ] = in_array( $tier, array( 'low', 'medium', 'high' ), true ) ? $tier : 'medium';
@@ -2106,10 +2104,7 @@ class Havato_REST {
 		return array(
 			'id'          => $row['id'],
 			'venue_id'    => $row['venue_id'],
-			'venue'       => array(
-				'fa' => isset( $row['venue_name_fa'] ) && $row['venue_name_fa'] ? $row['venue_name_fa'] : ( isset( $row['venue_name'] ) ? $row['venue_name'] : '' ),
-				'en' => isset( $row['venue_name'] ) && $row['venue_name'] ? $row['venue_name'] : ( isset( $row['venue_name_fa'] ) ? $row['venue_name_fa'] : '' ),
-			),
+			'venue'       => isset( $row['venue_name'] ) ? $row['venue_name'] : '',
 			'image'       => isset( $row['venue_image'] ) ? $row['venue_image'] : '',
 			'address'     => isset( $row['venue_address'] ) ? $row['venue_address'] : '',
 			'title'       => $row['title'],
@@ -2151,10 +2146,10 @@ class Havato_REST {
 
 		$payload = array(
 			'id'            => $row['id'],
-			'name'          => array(
-				'fa' => $row['name_fa'] ? $row['name_fa'] : $row['name'],
-				'en' => $row['name'] ? $row['name'] : $row['name_fa'],
-			),
+			// A café name is a proper noun: stored and shown once, identical
+			// in both languages.
+			'name'          => $row['name'],
+			'manager_name'  => isset( $row['manager_name'] ) ? $row['manager_name'] : '',
 			'address'       => $row['address'],
 			'lat'           => (float) $row['lat'],
 			'lng'           => (float) $row['lng'],
@@ -2389,7 +2384,7 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT g.id, g.event_id, e.event_date, v.name AS venue_name, v.name_fa AS venue_name_fa
+				"SELECT g.id, g.event_id, e.event_date, v.name AS venue_name
 				 FROM $gm m
 				 INNER JOIN $groups g ON g.id = m.group_id
 				 INNER JOIN $events e ON e.id = g.event_id
@@ -2428,10 +2423,7 @@ class Havato_REST {
 			$out[] = array(
 				'group_id' => $row['id'],
 				'event_id' => $row['event_id'],
-				'venue'    => array(
-					'fa' => $row['venue_name_fa'] ? $row['venue_name_fa'] : $row['venue_name'],
-					'en' => $row['venue_name'] ? $row['venue_name'] : $row['venue_name_fa'],
-				),
+				'venue'    => $row['venue_name'],
 				'date'     => havato_date_pair( $row['event_date'] ),
 				'mates'    => $pending,
 			);

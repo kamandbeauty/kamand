@@ -335,6 +335,7 @@ class Havato_I18N {
 			'email'                 => array( 'fa' => 'ایمیل', 'en' => 'Email' ),
 			'password'              => array( 'fa' => 'رمز عبور', 'en' => 'Password' ),
 			'venue_name'            => array( 'fa' => 'نام کافه', 'en' => 'Café name' ),
+			'manager_name'          => array( 'fa' => 'نام مدیر کافه/رستوران', 'en' => 'Café manager name' ),
 			'venue_address'         => array( 'fa' => 'آدرس', 'en' => 'Address' ),
 			'owner_pending_notice'  => array( 'fa' => 'کافه شما در انتظار تایید مدیریت است؛ تا تایید نهایی برای کاربران نمایش داده نمی‌شود.', 'en' => 'Your café is pending administrator approval and is hidden from users until verified.' ),
 			'utilization'           => array( 'fa' => 'بهره‌وری', 'en' => 'Utilization' ),

@@ -98,10 +98,13 @@ class Havato_DB {
 		$queries = array();
 
 		// 1. Venues (cafés / restaurants).
+		// `name` is the single café name (no separate Persian field — the name
+		// of a venue is a proper noun and is written once). `manager_name` is
+		// the person running it, shown to the administrator.
 		$queries[] = "CREATE TABLE {$p}venues (
 			id varchar(64) NOT NULL,
 			name varchar(191) NOT NULL DEFAULT '',
-			name_fa varchar(191) NOT NULL DEFAULT '',
+			manager_name varchar(191) NOT NULL DEFAULT '',
 			address text NULL,
 			lat double NOT NULL DEFAULT 0,
 			lng double NOT NULL DEFAULT 0,
@@ -324,6 +327,54 @@ class Havato_DB {
 		$installed = get_option( 'havato_db_version' );
 		if ( HAVATO_DB_VERSION !== $installed ) {
 			self::install();
+			self::migrate_name_fa_to_manager();
+		}
+	}
+
+	/**
+	 * Migration: the venues table used to carry a second Persian name
+	 * (`name_fa`). A café name is a proper noun and only needs to be entered
+	 * once, so that column is replaced by `manager_name`.
+	 *
+	 * dbDelta never drops columns, so this runs explicitly. It is safe to call
+	 * repeatedly: it exits unless the legacy column is still present.
+	 */
+	public static function migrate_name_fa_to_manager() {
+		global $wpdb;
+
+		$table = self::table( 'venues' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$columns = $wpdb->get_col( "DESC `$table`", 0 );
+		if ( ! is_array( $columns ) || ! in_array( 'name_fa', $columns, true ) ) {
+			return;
+		}
+
+		// Keep whichever name the owner actually filled in: many venues only
+		// ever entered the Persian one, so it must not be thrown away.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "UPDATE `$table` SET name = name_fa WHERE (name = '' OR name IS NULL) AND name_fa <> ''" );
+
+		// Seed the new manager name from the WordPress account behind the venue.
+		if ( in_array( 'manager_name', $columns, true ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $wpdb->get_results( "SELECT id, manager_id FROM `$table` WHERE manager_name = '' AND manager_id > 0", ARRAY_A );
+
+			foreach ( (array) $rows as $row ) {
+				$name = havato_display_name( (int) $row['manager_id'] );
+				if ( '' === $name ) {
+					continue;
+				}
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->update( $table, array( 'manager_name' => $name ), array( 'id' => $row['id'] ), array( '%s' ), array( '%s' ) );
+			}
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "ALTER TABLE `$table` DROP COLUMN `name_fa`" );
+
+		if ( class_exists( 'Havato_Logger' ) ) {
+			Havato_Logger::log( 'Schema migrated: venues.name_fa replaced by venues.manager_name.', 'success' );
 		}
 	}
 

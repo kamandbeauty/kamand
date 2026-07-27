@@ -702,6 +702,8 @@
 				'<h2 class="hv-auth-title">' + esc(t('owner_signup')) + '</h2>' +
 				'<div class="hv-field"><label>' + esc(t('venue_name')) + '</label>' +
 					'<input type="text" class="hv-input" id="hv-reg-name"></div>' +
+				'<div class="hv-field"><label>' + esc(t('manager_name')) + '</label>' +
+					'<input type="text" class="hv-input" id="hv-reg-manager"></div>' +
 				'<div class="hv-field"><label>' + esc(t('venue_address')) + '</label>' +
 					'<textarea class="hv-textarea" id="hv-reg-addr"></textarea></div>' +
 				'<div class="hv-field"><label>' + esc(t('email')) + '</label>' +
@@ -750,11 +752,12 @@
 			regBtn.onclick = function () {
 				var payload = {
 					venue_name: $('#hv-reg-name').value.trim(),
+					manager_name: $('#hv-reg-manager').value.trim(),
 					address: $('#hv-reg-addr').value.trim(),
 					email: $('#hv-reg-email').value.trim(),
 					password: $('#hv-reg-pass').value
 				};
-				if (!payload.venue_name || !payload.email || payload.password.length < 6) {
+				if (!payload.venue_name || !payload.manager_name || !payload.email || payload.password.length < 6) {
 					toast(t('error_generic'), 'error');
 					return;
 				}
@@ -2293,9 +2296,9 @@
 			el.main.innerHTML =
 				'<div class="hv-card">' +
 					'<div class="hv-field"><label>' + esc(t('venue_name')) + '</label>' +
-						'<input type="text" class="hv-input" id="hv-v-name" value="' + esc(venue.name.en || '') + '"></div>' +
-					'<div class="hv-field hv-mt"><label>' + esc(t('venue_name')) + ' (فارسی)</label>' +
-						'<input type="text" class="hv-input" id="hv-v-name-fa" value="' + esc(venue.name.fa || '') + '"></div>' +
+						'<input type="text" class="hv-input" id="hv-v-name" value="' + esc(venue.name || '') + '"></div>' +
+					'<div class="hv-field hv-mt"><label>' + esc(t('manager_name')) + '</label>' +
+						'<input type="text" class="hv-input" id="hv-v-manager" value="' + esc(venue.manager_name || '') + '"></div>' +
 					'<div class="hv-field hv-mt"><label>' + esc(t('venue_address')) + '</label>' +
 						'<textarea class="hv-textarea" id="hv-v-addr">' + esc(venue.address || '') + '</textarea></div>' +
 					'<div class="hv-field hv-mt"><label>' + esc(t('quiet_hours')) + '</label>' +
@@ -2359,14 +2362,14 @@
 
 	function saveVenueForm() {
 		if (S.role !== 'cafe_owner') { return; }
-		var nameEn = $('#hv-v-name');
-		if (!nameEn) { return; }
+		var nameField = $('#hv-v-name');
+		if (!nameField) { return; }
 
 		saveWithProgress(api('owner/venue', {
 			method: 'POST',
 			body: {
-				name: nameEn.value,
-				name_fa: $('#hv-v-name-fa').value,
+				name: nameField.value,
+				manager_name: $('#hv-v-manager').value,
 				address: $('#hv-v-addr').value,
 				quiet_hours: $('#hv-v-quiet').value
 			}

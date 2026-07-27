@@ -159,10 +159,10 @@ class Havato_Payouts {
 
 		if ( $status ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT p.*, v.name, v.name_fa FROM $payouts p LEFT JOIN $venues v ON v.id=p.venue_id WHERE p.status=%s ORDER BY p.period DESC", $status ), ARRAY_A );
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT p.*, v.name FROM $payouts p LEFT JOIN $venues v ON v.id=p.venue_id WHERE p.status=%s ORDER BY p.period DESC", $status ), ARRAY_A );
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$rows = $wpdb->get_results( "SELECT p.*, v.name, v.name_fa FROM $payouts p LEFT JOIN $venues v ON v.id=p.venue_id ORDER BY p.period DESC", ARRAY_A );
+			$rows = $wpdb->get_results( "SELECT p.*, v.name FROM $payouts p LEFT JOIN $venues v ON v.id=p.venue_id ORDER BY p.period DESC", ARRAY_A );
 		}
 
 		return array_map( array( __CLASS__, 'format_row' ), (array) $rows );
