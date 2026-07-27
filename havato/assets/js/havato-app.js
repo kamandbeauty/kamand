@@ -650,6 +650,10 @@
 				'</div>';
 		}
 
+		// NOTE: the auth wall deliberately carries NO café-owner link. Owners
+		// reach their portal directly at the [havato_owner_auth] page (and
+		// wp-login.php redirects them there), so surfacing a second door on
+		// the guest screen only confused gatherers.
 		return '' +
 			'<div class="hv-auth-card hv-glass">' +
 				'<div class="hv-auth-logo">' + icon('cup') + '</div>' +
@@ -657,9 +661,6 @@
 				'<p class="hv-auth-sub">' + esc(t('auth_sub')) + '</p>' +
 				'<h3 class="hv-auth-heading">' + esc(t('user_login_heading')) + '</h3>' +
 				googleBlock +
-				'<div class="hv-auth-foot">' +
-					'<a href="' + esc(BOOT.ownerPanelUrl) + '">' + esc(t('login_owner')) + '</a>' +
-				'</div>' +
 			'</div>';
 	}
 
@@ -1576,13 +1577,8 @@
 		var logout = $('#hv-logout');
 		if (logout) {
 			logout.onclick = function () {
-				api('auth/logout', { method: 'POST' }).then(function () {
-					S.loggedIn = false;
-					S.role = 'guest';
-					S.user = null;
-					S.authView = 'wall';
-					render();
-				});
+				logout.disabled = true;
+				doLogout();
 			};
 		}
 
@@ -2040,6 +2036,85 @@
 			if (S.map) { S.map.invalidateSize(); }
 			if (S.ownerMap) { S.ownerMap.invalidateSize(); }
 		});
+	}
+
+	/* =====================================================================
+	 * LOGOUT
+	 * ================================================================== */
+
+	/**
+	 * Sign out for real.
+	 *
+	 * Re-rendering the SPA is NOT enough: the WordPress session lives in a
+	 * cookie that the rest of the site (theme header, admin bar, other open
+	 * tabs) still sees, and the service worker may hold a cached copy of the
+	 * signed-in HTML/bootstrap. So we
+	 *   1. stop Google from silently signing the user back in,
+	 *   2. drop the server session,
+	 *   3. wipe every cache the worker owns,
+	 *   4. do a real top-level navigation so nothing stale survives.
+	 */
+	function doLogout() {
+		disableGoogleAutoSelect();
+
+		var finish = function () {
+			clearAppCaches().then(hardReload, hardReload);
+		};
+
+		api('auth/logout', { method: 'POST' }).then(finish, function () {
+			// REST unreachable or the nonce expired: fall back to the native
+			// WordPress logout URL so the session always ends.
+			clearAppCaches().then(function () {
+				window.location.replace(BOOT.logoutUrl || BOOT.homeUrl || '/');
+			}, function () {
+				window.location.replace(BOOT.logoutUrl || BOOT.homeUrl || '/');
+			});
+		});
+	}
+
+	function disableGoogleAutoSelect() {
+		try {
+			if (window.google && window.google.accounts && window.google.accounts.id) {
+				window.google.accounts.id.disableAutoSelect();
+			}
+		} catch (e) { /* SDK blocked — nothing to disable */ }
+	}
+
+	/**
+	 * Empty the CacheStorage and tell the active worker to do the same.
+	 * Always resolves: a failure here must never block the sign-out.
+	 */
+	function clearAppCaches() {
+		var jobs = [];
+
+		try {
+			if (window.caches && caches.keys) {
+				jobs.push(caches.keys().then(function (keys) {
+					return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+				}));
+			}
+			if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+				navigator.serviceWorker.controller.postMessage({ type: 'havato-logout' });
+			}
+		} catch (e) { /* private mode / unsupported */ }
+
+		return Promise.all(jobs).catch(function () { return null; });
+	}
+
+	/**
+	 * Full page load (not a history navigation), cache-busted so no
+	 * intermediate proxy can hand back the signed-in document.
+	 */
+	function hardReload() {
+		var base = BOOT.homeUrl || window.location.pathname;
+		try {
+			var u = new URL(window.location.href);
+			u.hash = '';
+			u.searchParams.set('hv', String(Date.now()));
+			window.location.replace(u.toString());
+			return;
+		} catch (e) { /* very old browser */ }
+		window.location.replace(base);
 	}
 
 	function registerServiceWorker() {

@@ -138,31 +138,94 @@ class Havato_PWA {
 		header( 'Content-Type: application/javascript; charset=utf-8' );
 
 		$version = HAVATO_VERSION;
-		$assets  = wp_json_encode(
+
+		// Pre-cache the real enqueued URLs (?ver=…). Without the query string
+		// the entries never match what the page actually requests, so the
+		// pre-cache silently does nothing.
+		$assets = wp_json_encode(
 			array(
-				HAVATO_URL . 'assets/css/havato-app.css',
-				HAVATO_URL . 'assets/js/havato-app.js',
+				add_query_arg( 'ver', HAVATO_VERSION, HAVATO_URL . 'assets/css/havato-app.css' ),
+				add_query_arg( 'ver', HAVATO_VERSION, HAVATO_URL . 'assets/js/havato-app.js' ),
 			)
 		);
+
+		// Only assets that live under the plugin folder may be cached.
+		$scope = wp_json_encode( HAVATO_URL );
 
 		echo "/* Havato service worker v{$version} */\n";
 		echo "const HV_CACHE = 'havato-v{$version}';\n";
 		echo "const HV_ASSETS = {$assets};\n";
+		echo "const HV_ASSET_SCOPE = {$scope};\n";
 		echo <<<'SW'
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(HV_CACHE).then((c) => c.addAll(HV_ASSETS)).then(() => self.skipWaiting()));
+  // Never let one failed asset abort the whole install.
+  e.waitUntil(
+    caches.open(HV_CACHE)
+      .then((c) => Promise.all(HV_ASSETS.map((u) => c.add(u).catch(() => null))))
+      .then(() => self.skipWaiting())
+  );
 });
+
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(
     keys.filter((k) => k !== HV_CACHE).map((k) => caches.delete(k))
   )).then(() => self.clients.claim()));
 });
+
+/**
+ * Anything that can carry a login session must NEVER be served from cache,
+ * otherwise signing out appears to do nothing: the stale cached response still
+ * says `logged_in: true` after the cookie is gone.
+ */
+function hvIsPrivate(url, req) {
+  // REST API, in both permalink shapes:
+  //   /wp-json/…            (pretty permalinks)
+  //   /?rest_route=/havato… (plain permalinks — pathname is just "/")
+  if (url.pathname.indexOf('/wp-json/') !== -1) { return true; }
+  if (url.searchParams.has('rest_route')) { return true; }
+  // Admin, login, AJAX, cron.
+  if (url.pathname.indexOf('/wp-admin') !== -1) { return true; }
+  if (url.pathname.indexOf('wp-login.php') !== -1) { return true; }
+  if (url.pathname.indexOf('admin-ajax.php') !== -1) { return true; }
+  // Any request that carries credentials.
+  if (req.headers.get('Authorization')) { return true; }
+  return false;
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') { return; }
-  const url = new URL(req.url);
-  // Never cache the REST API: the app must always show live data.
-  if (url.pathname.indexOf('/wp-json/') !== -1) { return; }
+
+  let url;
+  try { url = new URL(req.url); } catch (err) { return; }
+
+  // Cross-origin (Google, tiles, CDN fonts): let the network handle it.
+  if (url.origin !== self.location.origin) { return; }
+
+  // Session-bearing requests bypass the service worker completely.
+  if (hvIsPrivate(url, req)) { return; }
+
+  // HTML navigations are NETWORK-FIRST and are never written to the cache.
+  // The document embeds HAVATO_BOOT (login state + a REST nonce); caching it
+  // is what made a signed-out user still look signed in after a refresh, and
+  // what forced a manual cache clear after every plugin update.
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req).catch(() => caches.match('havato-offline').then(
+        (hit) => hit || new Response(
+          '<!doctype html><meta charset="utf-8"><title>Havato</title>' +
+          '<body style="font-family:system-ui;padding:2rem;text-align:center">' +
+          '<h1>Havato</h1><p>offline</p>',
+          { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        )
+      ))
+    );
+    return;
+  }
+
+  // Static plugin assets only: cache-first is safe, they are versioned.
+  if (req.url.indexOf(HV_ASSET_SCOPE) !== 0) { return; }
+
   e.respondWith(
     caches.match(req).then((hit) => hit || fetch(req).then((res) => {
       if (res && res.status === 200 && res.type === 'basic') {
@@ -172,6 +235,12 @@ self.addEventListener('fetch', (e) => {
       return res;
     }).catch(() => caches.match(req)))
   );
+});
+
+// The page asks the worker to wipe everything the moment a user signs out.
+self.addEventListener('message', (e) => {
+  if (!e.data || e.data.type !== 'havato-logout') { return; }
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
 });
 SW;
 		exit;

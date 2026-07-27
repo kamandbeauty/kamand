@@ -102,6 +102,53 @@
 #havato-app select,
 #havato-app textarea { font: inherit; color: inherit; }
 
+/* =========================================================================
+   0.1 DARK-SURFACE TEXT GUARD  (fixes "black text on the blue card")
+   =========================================================================
+   Panels like .hv-profile-head set `color:#fff` on themselves and expect the
+   headings/paragraphs inside to inherit it. Inheritance is the WEAKEST source
+   of a value, so ANY theme rule that targets the element directly —
+   `.entry-content h2 { color:#111 }` is in most WordPress themes — wins, and
+   the text renders near-black on a saturated blue card (exactly the bug in
+   the reported screenshot: the header title stayed white because it has an
+   explicit colour, while .hv-profile-name did not).
+
+   Fixing the elements one at a time is whack-a-mole, so every dark surface
+   forces white on its descendants. Chips, badges, buttons and form controls
+   carry their own palette and are excluded. */
+#havato-app .hv-header,
+#havato-app .hv-header :not(.hv-badge):not(.hv-chip):not(.hv-btn):not(.hv-badge *):not(.hv-chip *):not(.hv-btn *),
+#havato-app .hv-profile-head,
+#havato-app .hv-profile-head :not(.hv-badge):not(.hv-btn):not(.hv-badge *):not(.hv-btn *),
+#havato-app .hv-glass,
+#havato-app .hv-glass :not(.hv-badge):not(.hv-chip):not(.hv-btn):not(.hv-input):not(.hv-select):not(.hv-textarea):not(.hv-alert):not(.hv-badge *):not(.hv-chip *):not(.hv-btn *):not(.hv-alert *),
+#havato-app .hv-status-strip,
+#havato-app .hv-status-strip *,
+#havato-app .hv-map-pill,
+#havato-app .hv-map-pill *,
+#havato-app .hv-msg.is-mine,
+#havato-app .hv-msg.is-mine *,
+#havato-app .hv-toast,
+#havato-app .hv-toast *,
+#havato-app .hv-redirect,
+#havato-app .hv-redirect *,
+.hv-owner-auth .hv-auth-card,
+.hv-owner-auth .hv-auth-card :not(.hv-badge):not(.hv-btn):not(.hv-input):not(.hv-select):not(.hv-textarea):not(.hv-alert):not(.hv-subtab):not(.hv-badge *):not(.hv-btn *):not(.hv-alert *) {
+	color: #fff;
+}
+
+/* Secondary lines stay legible but recede — a translucent white instead of
+   `opacity`, which would wash the glyphs out against a saturated ground. */
+#havato-app .hv-header .hv-header-eyebrow,
+#havato-app .hv-profile-head .hv-profile-meta,
+#havato-app .hv-glass .hv-auth-sub,
+#havato-app .hv-msg.is-mine .hv-msg-name,
+#havato-app .hv-msg.is-mine .hv-msg-time,
+.hv-owner-auth .hv-auth-card .hv-auth-small {
+	color: rgba(255, 255, 255, 0.88);
+	opacity: 1;
+}
+
 body.havato-page { overflow: hidden; }
 body.havato-standalone #havato-app { border-radius: 0; }
 
@@ -208,7 +255,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-header-eyebrow {
 	font-size: 0.72rem;
 	letter-spacing: 0.02em;
-	opacity: 0.78;
+	color: rgba(255, 255, 255, 0.85);
 }
 .hv-header-title {
 	margin: 0;
@@ -603,8 +650,8 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	border: 1px solid rgba(255, 255, 255, 0.36);
 }
 .hv-auth-logo svg { inline-size: 36px; block-size: 36px; }
-.hv-auth-title { margin: 0; font-size: clamp(1.25rem, 6vw, 1.6rem); font-weight: 800; }
-.hv-auth-sub { margin: 0; font-size: 0.88rem; opacity: 0.86; line-height: 1.8; }
+.hv-auth-title { margin: 0; font-size: clamp(1.25rem, 6vw, 1.6rem); font-weight: 800; color: #fff; }
+.hv-auth-sub { margin: 0; font-size: 0.88rem; color: rgba(255, 255, 255, 0.88); line-height: 1.8; }
 .hv-google-slot { display: flex; justify-content: center; min-block-size: 46px; }
 .hv-btn-google {
 	inline-size: 100%;
@@ -613,26 +660,6 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	box-shadow: 0 10px 24px rgba(15, 20, 64, 0.26);
 }
 .hv-btn-google svg { inline-size: 20px; block-size: 20px; }
-.hv-auth-foot {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
-	gap: 8px 14px;
-	margin-block-start: 4px;
-}
-.hv-auth-foot button {
-	background: none;
-	border: 0;
-	color: #fff;
-	opacity: 0.9;
-	font-size: 0.82rem;
-	font-weight: 600;
-	cursor: pointer;
-	padding: 8px 4px;
-	min-block-size: 44px;
-	text-decoration: underline;
-	text-underline-offset: 4px;
-}
 .hv-auth-lang {
 	position: absolute;
 	inset-block-start: max(env(safe-area-inset-top), 14px);
@@ -965,7 +992,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	word-break: break-word;
 }
 .hv-msg-name { display: block; font-size: 0.68rem; font-weight: 700; color: var(--hv-blue); margin-block-end: 2px; }
-.hv-msg-time { display: block; font-size: 0.62rem; opacity: 0.6; margin-block-start: 3px; }
+.hv-msg-time { display: block; font-size: 0.62rem; color: var(--hv-text-soft); margin-block-start: 3px; }
 .hv-msg.is-mine {
 	align-self: flex-end;
 	background: linear-gradient(120deg, var(--hv-indigo-2), var(--hv-indigo));
@@ -1023,8 +1050,12 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	background: rgba(255, 255, 255, 0.18);
 	flex: 0 0 auto;
 }
-.hv-profile-name { margin: 0; font-size: 1.1rem; font-weight: 800; }
-.hv-profile-meta { margin: 3px 0 0; font-size: 0.78rem; opacity: 0.86; }
+/* Explicit colours, never inherited — see the "dark surfaces" guard in §0.1.
+   `opacity` is deliberately avoided on the meta line: it dims the text as a
+   whole and on a saturated background that reads as muddy grey rather than
+   soft white. A translucent white keeps the glyph edges crisp. */
+.hv-profile-name { margin: 0; font-size: 1.1rem; font-weight: 800; color: #fff; }
+.hv-profile-meta { margin: 3px 0 0; font-size: 0.78rem; color: rgba(255, 255, 255, 0.88); }
 
 .hv-stat-grid {
 	display: grid;
@@ -1469,7 +1500,7 @@ img.hv-menu-thumb {
 	cursor: pointer;
 	z-index: 2;
 }
-.hv-modal-title { margin: 0 0 12px; font-size: 1.1rem; font-weight: 800; padding-inline-end: 40px; }
+.hv-modal-title { margin: 0 0 12px; font-size: 1.1rem; font-weight: 800; padding-inline-end: 40px; color: var(--hv-text); }
 .hv-modal-hero {
 	inline-size: 100%;
 	block-size: clamp(120px, 24dvh, 190px);

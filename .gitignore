@@ -13,3 +13,6 @@ Thumbs.db
 .vscode/
 
 node_modules/
+
+# Fonts extracted from npm @fontsource at render time (see tests/render-palettes.js)
+tests/fonts/

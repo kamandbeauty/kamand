@@ -20,8 +20,16 @@ t('no cafe_owner branching left', !/cafe_owner/.test(js));
 t('no owner auth views', !/owner-login|owner-register/.test(js));
 t('no dead owner form ids', !/hv-owner-login-btn|hv-reg-manager|hv-v-manager/.test(js));
 t('no menuDraft state', !/menuDraft/.test(js));
-t('auth wall links to wp-admin instead', /BOOT\.ownerPanelUrl/.test(js));
-t('server exposes that URL', /'ownerPanelUrl'/.test(rd('includes/class-havato-shortcode.php')));
+// The owner link was REMOVED from the guest auth wall on purpose (v1.9.1):
+// owners reach the portal directly, guests should only see one door.
+t('auth wall no longer shows an owner link', !/BOOT\.ownerPanelUrl/.test(js));
+t('dead ownerPanelUrl boot value dropped',
+  !/'ownerPanelUrl'/.test(rd('includes/class-havato-shortcode.php')));
+t('dead .hv-auth-foot styles dropped', !/hv-auth-foot/.test(rd('assets/css/havato-app.css')));
+t('owners can still reach the portal (shortcode intact)',
+  /havato_owner_auth/.test(rd('includes/class-havato-owner-auth.php')));
+t('wp-login still redirects owners to it',
+  /guard_wp_login/.test(rd('includes/class-havato-owner-auth.php')));
 t('web app still has the 4 guest tabs',
   /nav-explore/.test(js)&&/nav-map/.test(js)&&/nav-chat/.test(js)&&/nav-profile/.test(js));
 

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,22 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.9.1 =
+* Removed the "Café owner sign-in" button from the guest landing screen. Owners
+  still reach their portal directly and wp-login.php still redirects them there.
+* Signing out now really ends the session. Previously the app only re-rendered
+  itself, so a refresh brought the user straight back in.
+  - The service worker no longer caches HTML navigations or anything that can
+    carry a session, including the plain-permalink `?rest_route=` REST form
+    that the old `/wp-json/` check missed entirely.
+  - Logout disables Google auto-select, clears every cache and performs a real
+    top-level navigation, with wp_logout_url() as a fallback if REST fails.
+  - Side effect: a browser cache clear is no longer needed after an update.
+* Fixed near-black text on saturated backgrounds (profile card, auth screens,
+  own chat bubbles, toasts). Those elements inherited their colour, so any
+  theme rule targeting the bare tag overrode it. Every dark surface now sets
+  the colour explicitly and a blanket guard stops the bug from recurring.
 
 = 1.9.0 =
 * Demo content now ships a full sample directory: 30 cafés across Tehran,

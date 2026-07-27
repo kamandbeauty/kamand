@@ -213,9 +213,10 @@ class Havato_Shortcode {
 				'swUrl'        => esc_url_raw( Havato_PWA::url( 'sw' ) ),
 				'appUrl'       => esc_url_raw( Havato_PWA::app_url() ),
 				'homeUrl'      => esc_url_raw( home_url( '/' ) ),
-				// Café owners are managed from wp-admin now, so the auth wall
-				// links there instead of embedding a second portal.
-				'ownerPanelUrl' => esc_url_raw( Havato_Owner_Auth::url() ),
+				// A real WordPress logout URL (nonced). The app calls the REST
+				// endpoint first, but falls back to this when the REST call
+				// fails, so signing out can never silently do nothing.
+				'logoutUrl'    => esc_url_raw( wp_logout_url( home_url( '/' ) ) ),
 				'interests'    => havato_interest_tags(),
 				'map'          => array(
 					'lat'  => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),

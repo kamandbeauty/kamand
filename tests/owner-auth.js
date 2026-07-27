@@ -29,7 +29,12 @@ t('admin escape hatch (?havato_admin=1)', /havato_admin/.test(auth));
 t('logout / reset flows untouched', /'login' !== \$action/.test(auth));
 t('POST passes through so admin login still works', /'POST' === \(/.test(auth));
 t('falls back to wp-login if the page is missing', /return wp_login_url\(\)/.test(auth));
-t('app links to the branded page', /Havato_Owner_Auth::url\(\)/.test(rd('includes/class-havato-shortcode.php')));
+// v1.9.1: the guest auth wall no longer advertises the owner portal, but the
+// page must still be reachable on its own URL and be the wp-login target.
+t('guest screen does NOT advertise the owner portal',
+  !/Havato_Owner_Auth::url\(\)/.test(rd('includes/class-havato-shortcode.php')));
+t('branded page still resolves its own URL', /public static function url\(\)/.test(auth));
+t('and is still where wp-login sends owners', /wp_safe_redirect\( self::url\(\) \)/.test(auth));
 
 console.log('\n--- 3. owner/login hardened (the real vulnerability) ---');
 t('role check added — admins CANNOT use this door',

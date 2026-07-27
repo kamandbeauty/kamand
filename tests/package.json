@@ -10,6 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "php-parser": "^3.7.0"
+    "@fontsource/vazirmatn": "^5.3.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "php-parser": "^3.7.0",
+    "wawoff2": "^2.0.1"
   }
 }
