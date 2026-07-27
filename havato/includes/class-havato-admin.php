@@ -47,6 +47,8 @@ class Havato_Admin {
 		$pages = array(
 			'havato'            => array( 'admin_dashboard', 'page_dashboard' ),
 			'havato-approvals'  => array( 'admin_approvals', 'page_approvals' ),
+			'havato-events'     => array( 'admin_events', 'page_events' ),
+			'havato-venues'     => array( 'admin_venues', 'page_venues' ),
 			'havato-revenue'    => array( 'admin_revenue', 'page_revenue' ),
 			'havato-matcher'    => array( 'admin_matcher', 'page_matcher' ),
 			'havato-weights'    => array( 'admin_weights', 'page_weights' ),
@@ -129,6 +131,8 @@ class Havato_Admin {
 		$tabs = array(
 			'havato'           => Havato_I18N::t( 'admin_dashboard' ),
 			'havato-approvals' => Havato_I18N::t( 'admin_approvals' ),
+			'havato-events'    => Havato_I18N::t( 'admin_events' ),
+			'havato-venues'    => Havato_I18N::t( 'admin_venues' ),
 			'havato-revenue'   => Havato_I18N::t( 'admin_revenue' ),
 			'havato-matcher'   => Havato_I18N::t( 'admin_matcher' ),
 			'havato-weights'   => Havato_I18N::t( 'admin_weights' ),
@@ -217,6 +221,11 @@ class Havato_Admin {
 		wp_nonce_field( 'havato_admin', 'havato_nonce' );
 		echo '<input type="hidden" name="action" value="havato_admin_action">';
 		echo '<input type="hidden" name="havato_action" value="' . esc_attr( $action ) . '">';
+
+		// Remember where we came from so the redirect can come back here.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$current = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		echo '<input type="hidden" name="return_page" value="' . esc_attr( $current ) . '">';
 	}
 
 	/**
@@ -323,6 +332,403 @@ class Havato_Admin {
 		self::render_menu_queue();
 		self::render_photo_reports();
 
+		self::foot();
+	}
+
+	/* =====================================================================
+	 * Page — all events & their registered guests
+	 * ================================================================== */
+
+	/**
+	 * Every event on the platform, with the people signed up to each one.
+	 *
+	 * Read-only overview: the admin can see who registered, whether they paid
+	 * and whether the café checked them in, without leaving the page.
+	 */
+	public static function page_events() {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		$lang   = Havato_I18N::current_lang();
+		$events = Havato_DB::table( 'events' );
+		$venues = Havato_DB::table( 'venues' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$status = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$paged = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
+
+		$per_page = 20;
+		$offset   = ( $paged - 1 ) * $per_page;
+
+		$where = '1=1';
+		if ( in_array( $status, array( 'open', 'matched', 'completed', 'pending_admin' ), true ) ) {
+			$where .= $wpdb->prepare( ' AND e.status = %s', $status );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $events e WHERE $where" );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT e.*, v.name AS venue_name, v.city AS venue_city,
+						(SELECT COUNT(*) FROM $regs r WHERE r.event_id = e.id
+						 AND r.status NOT IN ('cancelled','pending_payment')) AS taken
+				 FROM $events e
+				 LEFT JOIN $venues v ON v.id = e.venue_id
+				 WHERE $where
+				 ORDER BY e.event_date DESC, e.event_time DESC
+				 LIMIT %d OFFSET %d",
+				$per_page,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		self::head( Havato_I18N::t( 'admin_events' ), Havato_I18N::t( 'explore_title' ) );
+
+		// Status filter.
+		$filters = array(
+			''              => Havato_I18N::t( 'filter' ),
+			'open'          => Havato_I18N::t( 'status_open' ),
+			'matched'       => Havato_I18N::t( 'status_matched' ),
+			'completed'     => Havato_I18N::t( 'status_completed' ),
+			'pending_admin' => Havato_I18N::t( 'status_pending_admin' ),
+		);
+
+		echo '<div class="hv-adm-filterbar">';
+		foreach ( $filters as $key => $label ) {
+			printf(
+				'<a class="hv-adm-chip%s" href="%s">%s</a>',
+				$key === $status ? ' is-active' : '',
+				esc_url( add_query_arg( array( 'page' => 'havato-events', 'status' => $key ), admin_url( 'admin.php' ) ) ),
+				esc_html( $label )
+			);
+		}
+		echo '</div>';
+
+		if ( empty( $rows ) ) {
+			echo '<div class="hv-adm-card"><p class="hv-adm-muted">' .
+				esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
+			self::foot();
+			return;
+		}
+
+		// Fetch every guest for the events on THIS page in one query. Doing it
+		// per-event would mean 20 extra round-trips (N+1) and would make the
+		// screen crawl once the platform has real traffic.
+		$ids          = wp_list_pluck( $rows, 'id' );
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%s' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$members = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT event_id, user_id, status, checked_in, amount
+				 FROM $regs
+				 WHERE event_id IN ($placeholders) AND status <> 'cancelled'
+				 ORDER BY id ASC",
+				$ids
+			),
+			ARRAY_A
+		);
+
+		$by_event = array();
+		foreach ( (array) $members as $m ) {
+			$by_event[ $m['event_id'] ][] = $m;
+		}
+
+		foreach ( $rows as $row ) {
+			self::render_event_card( $row, isset( $by_event[ $row['id'] ] ) ? $by_event[ $row['id'] ] : array(), $lang );
+		}
+
+		self::pagination( $total, $per_page, $paged, array( 'page' => 'havato-events', 'status' => $status ) );
+		self::foot();
+	}
+
+	/**
+	 * One event plus its guest list.
+	 *
+	 * @param array  $row     Event row.
+	 * @param array  $members Registrations.
+	 * @param string $lang    Language.
+	 */
+	private static function render_event_card( $row, $members, $lang ) {
+		$badges = array(
+			'open'          => 'is-green',
+			'matched'       => 'is-blue',
+			'completed'     => 'is-gray',
+			'pending_admin' => 'is-yellow',
+		);
+		$class = isset( $badges[ $row['status'] ] ) ? $badges[ $row['status'] ] : 'is-gray';
+		$title = trim( (string) $row['title'] );
+		$city  = havato_city_label( (string) $row['venue_city'] );
+
+		echo '<div class="hv-adm-card hv-adm-event">';
+
+		echo '<div class="hv-adm-event-head">';
+		echo '<div>';
+		echo '<h2 class="hv-adm-card-title">' .
+			esc_html( '' !== $title ? $title : Havato_I18N::t( 'explore_title' ) ) . '</h2>';
+		echo '<p class="hv-adm-muted">' .
+			esc_html( $row['venue_name'] ) .
+			( $city[ $lang ] ? ' · ' . esc_html( $city[ $lang ] ) : '' ) .
+			' · ' . esc_html( Havato_Jalali::format( $row['event_date'], $lang ) ) .
+			' — ' . esc_html( substr( $row['event_time'], 0, 5 ) ) .
+			'</p>';
+		echo '</div>';
+		echo '<div class="hv-adm-event-meta">';
+		echo '<span class="hv-adm-badge ' . esc_attr( $class ) . '">' .
+			esc_html( Havato_I18N::t( 'status_' . $row['status'] ) ) . '</span>';
+		echo '<span class="hv-adm-badge is-blue">' .
+			esc_html( $row['taken'] . ' / ' . $row['max_capacity'] ) . '</span>';
+		echo '<span class="hv-adm-badge is-gray">' .
+			esc_html( havato_price( (int) $row['price'], $lang ) ) . '</span>';
+		echo '</div></div>';
+
+		if ( empty( $members ) ) {
+			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
+			return;
+		}
+
+		echo '<div class="hv-adm-guests">';
+		foreach ( $members as $m ) {
+			$uid     = (int) $m['user_id'];
+			$profile = havato_get_profile( $uid );
+			$paid    = (int) $m['amount'] > 0;
+
+			echo '<div class="hv-adm-guest">';
+			printf(
+				'<img class="hv-adm-guest-avatar" src="%s" alt="" loading="lazy">',
+				esc_url( havato_avatar( $uid ) )
+			);
+			echo '<div class="hv-adm-guest-info">';
+			echo '<strong>' . esc_html( havato_display_name( $uid ) ) . '</strong>';
+			echo '<span class="hv-adm-muted">★ ' . esc_html( round( (float) $profile['rating_score'], 1 ) );
+			if ( (int) $profile['age'] ) {
+				echo ' · ' . esc_html( $profile['age'] );
+			}
+			echo '</span>';
+			echo '</div>';
+
+			echo '<div class="hv-adm-guest-tags">';
+			if ( (int) $m['checked_in'] ) {
+				echo '<span class="hv-adm-badge is-green">✓</span>';
+			}
+			if ( $paid ) {
+				echo '<span class="hv-adm-badge is-blue">' .
+					esc_html( havato_price( (int) $m['amount'], $lang ) ) . '</span>';
+			}
+			echo '</div>';
+			echo '</div>';
+		}
+		echo '</div></div>';
+	}
+
+	/**
+	 * Simple pager shared by the new listing screens.
+	 *
+	 * @param int   $total    Total rows.
+	 * @param int   $per_page Rows per page.
+	 * @param int   $paged    Current page.
+	 * @param array $args     Base query args.
+	 */
+	private static function pagination( $total, $per_page, $paged, $args ) {
+		$pages = (int) ceil( $total / max( 1, $per_page ) );
+		if ( $pages < 2 ) {
+			return;
+		}
+
+		echo '<div class="hv-adm-pager">';
+		for ( $i = 1; $i <= $pages; $i++ ) {
+			printf(
+				'<a class="hv-adm-chip%s" href="%s">%s</a>',
+				$i === $paged ? ' is-active' : '',
+				esc_url( add_query_arg( array_merge( $args, array( 'paged' => $i ) ), admin_url( 'admin.php' ) ) ),
+				esc_html( $i )
+			);
+		}
+		echo '</div>';
+	}
+
+	/* =====================================================================
+	 * Page — every café
+	 * ================================================================== */
+
+	/**
+	 * Full café directory with search, city / status filters and paging.
+	 *
+	 * The approvals screen only surfaces what needs action; this is the
+	 * complete list for day-to-day lookup.
+	 */
+	public static function page_venues() {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		$lang   = Havato_I18N::current_lang();
+		$venues = Havato_DB::table( 'venues' );
+		$events = Havato_DB::table( 'events' );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$city = isset( $_GET['city'] ) ? sanitize_key( wp_unslash( $_GET['city'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$state = isset( $_GET['state'] ) ? sanitize_key( wp_unslash( $_GET['state'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$paged = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
+
+		$per_page = 20;
+		$offset   = ( $paged - 1 ) * $per_page;
+
+		$where = '1=1';
+		if ( '' !== $search ) {
+			$like   = '%' . $wpdb->esc_like( $search ) . '%';
+			$where .= $wpdb->prepare( ' AND (v.name LIKE %s OR v.manager_name LIKE %s OR v.address LIKE %s)', $like, $like, $like );
+		}
+		if ( $city ) {
+			$where .= $wpdb->prepare( ' AND v.city = %s', $city );
+		}
+		if ( 'verified' === $state ) {
+			$where .= ' AND v.verified = 1';
+		} elseif ( 'pending' === $state ) {
+			$where .= ' AND v.verified = 0';
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $venues v WHERE $where" );
+
+		// One query with the event count folded in, rather than a lookup per row.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT v.*,
+						(SELECT COUNT(*) FROM $events e WHERE e.venue_id = v.id) AS event_count
+				 FROM $venues v
+				 WHERE $where
+				 ORDER BY v.verified ASC, v.created_at DESC
+				 LIMIT %d OFFSET %d",
+				$per_page,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		self::head( Havato_I18N::t( 'admin_venues' ), Havato_I18N::t( 'stat_venues' ) );
+
+		// Search + filters.
+		echo '<form method="get" class="hv-adm-card hv-adm-inline-form">';
+		echo '<input type="hidden" name="page" value="havato-venues">';
+		printf(
+			'<label class="hv-adm-grow">%s<input type="search" name="s" value="%s" placeholder="%s"></label>',
+			esc_html( Havato_I18N::t( 'search' ) ),
+			esc_attr( $search ),
+			esc_attr( Havato_I18N::t( 'venue_name' ) . ' / ' . Havato_I18N::t( 'col_manager' ) )
+		);
+
+		echo '<label>' . esc_html( Havato_I18N::t( 'q_city_select' ) ) . '<select name="city">';
+		printf( '<option value="">%s</option>', esc_html( Havato_I18N::t( 'filter' ) ) );
+		foreach ( havato_locations() as $country ) {
+			foreach ( $country['cities'] as $code => $label ) {
+				printf(
+					'<option value="%s"%s>%s</option>',
+					esc_attr( $code ),
+					selected( $code, $city, false ),
+					esc_html( $label[ $lang ] )
+				);
+			}
+		}
+		echo '</select></label>';
+
+		echo '<label>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '<select name="state">';
+		foreach ( array(
+			''         => Havato_I18N::t( 'filter' ),
+			'verified' => Havato_I18N::t( 'verified_venue' ),
+			'pending'  => Havato_I18N::t( 'badge_pending' ),
+		) as $key => $label ) {
+			printf( '<option value="%s"%s>%s</option>', esc_attr( $key ), selected( $key, $state, false ), esc_html( $label ) );
+		}
+		echo '</select></label>';
+
+		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' .
+			esc_html( Havato_I18N::t( 'search' ) ) . '</button>';
+		echo '</form>';
+
+		if ( empty( $rows ) ) {
+			echo '<div class="hv-adm-card"><p class="hv-adm-muted">' .
+				esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
+			self::foot();
+			return;
+		}
+
+		echo '<div class="hv-adm-card">';
+		printf(
+			'<h2 class="hv-adm-card-title">%s (%s)</h2>',
+			esc_html( Havato_I18N::t( 'stat_venues' ) ),
+			esc_html( $total )
+		);
+
+		echo '<table class="hv-adm-table"><thead><tr>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'venue_name' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_manager' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'q_city_select' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'tab_venue_events' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'guests_routed' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
+		echo '<th></th></tr></thead><tbody>';
+
+		foreach ( $rows as $row ) {
+			$account    = get_user_by( 'id', (int) $row['manager_id'] );
+			$city_label = havato_city_label( (string) $row['city'] );
+			$shot       = $row['storefront_photo'] ? $row['storefront_photo'] : $row['image'];
+
+			echo '<tr>';
+
+			echo '<td><div class="hv-adm-venue-cell">';
+			if ( $shot ) {
+				printf(
+					'<a href="%1$s" target="_blank" rel="noopener"><img class="hv-adm-shopfront" src="%1$s" alt="" loading="lazy"></a>',
+					esc_url( $shot )
+				);
+			} else {
+				echo '<span class="hv-adm-shopfront is-empty"><span class="dashicons dashicons-store"></span></span>';
+			}
+			echo '<div><strong>' . esc_html( $row['name'] ) . '</strong><br>' .
+				'<span class="hv-adm-muted">' . esc_html( wp_trim_words( (string) $row['address'], 6, '…' ) ) . '</span></div>';
+			echo '</div></td>';
+
+			echo '<td>' . esc_html( $row['manager_name'] ? $row['manager_name'] : '—' ) . '<br>' .
+				'<span class="hv-adm-muted">' . esc_html( $account ? $account->user_email : '—' ) . '</span></td>';
+			echo '<td>' . esc_html( $city_label[ $lang ] ) . '</td>';
+			echo '<td>' . esc_html( $row['event_count'] ) . '</td>';
+			echo '<td>' . esc_html( $row['guests_routed'] ) . '</td>';
+			echo '<td>' . ( (int) $row['verified']
+				? '<span class="hv-adm-badge is-green">✓ ' . esc_html( Havato_I18N::t( 'verified_venue' ) ) . '</span>'
+				: '<span class="hv-adm-badge is-yellow">' . esc_html( Havato_I18N::t( 'badge_pending' ) ) . '</span>' ) . '</td>';
+
+			echo '<td class="hv-adm-actions">';
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+			self::form_fields( 'verify' );
+			echo '<input type="hidden" name="venue_id" value="' . esc_attr( $row['id'] ) . '">';
+			echo '<input type="hidden" name="verified" value="' . ( (int) $row['verified'] ? '0' : '1' ) . '">';
+			printf(
+				'<button type="submit" class="hv-adm-btn %s">%s</button>',
+				(int) $row['verified'] ? 'hv-adm-btn-ghost' : 'hv-adm-btn-green',
+				esc_html( (int) $row['verified'] ? Havato_I18N::t( 'cancel' ) : Havato_I18N::t( 'verify_action' ) )
+			);
+			echo '</form>';
+			echo '</td></tr>';
+		}
+
+		echo '</tbody></table></div>';
+
+		self::pagination(
+			$total,
+			$per_page,
+			$paged,
+			array( 'page' => 'havato-venues', 's' => $search, 'city' => $city, 'state' => $state )
+		);
 		self::foot();
 	}
 
@@ -1113,7 +1519,11 @@ class Havato_Admin {
 				$wpdb->update( Havato_DB::table( 'venues' ), array( 'verified' => $verified ), array( 'id' => $venue_id ), array( '%d' ), array( '%s' ) );
 				Havato_REST::sync_venue_events( $venue_id, (bool) $verified );
 				Havato_Logger::log( sprintf( 'Venue %s %s by administrator.', $venue_id, $verified ? 'verified' : 'suspended' ), 'success' );
-				$page = 'havato-approvals';
+				// Return to whichever screen the button was clicked on, so
+				// verifying from the café directory does not bounce the admin
+				// over to the approvals queue.
+				$from = isset( $_POST['return_page'] ) ? sanitize_key( wp_unslash( $_POST['return_page'] ) ) : '';
+				$page = in_array( $from, array( 'havato-venues', 'havato-approvals' ), true ) ? $from : 'havato-approvals';
 				break;
 
 			case 'menu':

@@ -380,6 +380,10 @@ class Havato_I18N {
 			// Admin.
 			'admin_dashboard'       => array( 'fa' => 'داشبورد آمار', 'en' => 'Statistics dashboard' ),
 			'admin_approvals'       => array( 'fa' => 'تایید صلاحیت و منوها', 'en' => 'Approvals & menus' ),
+			'admin_events'          => array( 'fa' => 'رویدادها و اعضا', 'en' => 'Events & guests' ),
+			'admin_venues'          => array( 'fa' => 'همه کافه‌ها', 'en' => 'All cafés' ),
+			'event_title'           => array( 'fa' => 'عنوان دورهمی', 'en' => 'Event title' ),
+			'event_title_hint'      => array( 'fa' => 'مثلاً: شب فیلم، گپ استارتاپی', 'en' => 'e.g. Movie night, Startup talk' ),
 			'admin_matcher'         => array( 'fa' => 'اجرای تطابق هوشمند', 'en' => 'Run smart matching' ),
 			'admin_revenue'         => array( 'fa' => 'درآمد و تسویه', 'en' => 'Revenue & settlements' ),
 			'revenue_by_event'      => array( 'fa' => 'درآمد رویدادها', 'en' => 'Revenue by event' ),

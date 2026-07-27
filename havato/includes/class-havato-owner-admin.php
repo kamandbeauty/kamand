@@ -476,6 +476,9 @@ class Havato_Owner_Admin {
 		echo '<input type="hidden" name="action" value="havato_owner_action">';
 		echo '<input type="hidden" name="havato_action" value="create_event">';
 
+		echo '<label class="hv-adm-grow">' . esc_html( Havato_I18N::t( 'event_title' ) ) .
+			'<input type="text" name="title" maxlength="120" placeholder="' .
+			esc_attr( Havato_I18N::t( 'event_title_hint' ) ) . '"></label>';
 		echo '<label>' . esc_html( Havato_I18N::t( 'payout_period' ) ) .
 			'<input type="date" name="event_date" required value="' . esc_attr( gmdate( 'Y-m-d', strtotime( '+1 day' ) ) ) . '"></label>';
 		echo '<label>' . esc_html( Havato_I18N::t( 'quiet_hours' ) ) .
@@ -546,7 +549,9 @@ class Havato_Owner_Admin {
 
 			echo '<tr>';
 			echo '<td><strong>' . esc_html( Havato_Jalali::format( $row['event_date'], $lang ) ) . '</strong><br>' .
-				'<span class="hv-adm-muted">' . esc_html( substr( $row['event_time'], 0, 5 ) ) . '</span></td>';
+				'<span class="hv-adm-muted">' . esc_html( substr( $row['event_time'], 0, 5 ) ) .
+				( '' !== trim( (string) $row['title'] ) ? ' — ' . esc_html( $row['title'] ) : '' ) .
+				'</span></td>';
 			echo '<td>' . esc_html( $row['taken'] . ' / ' . $row['max_capacity'] ) . '</td>';
 			echo '<td>' . esc_html( havato_price( (int) $row['price'], $lang ) ) . '</td>';
 			echo '<td><span class="hv-adm-badge ' . esc_attr( $class ) . '">' .
@@ -875,7 +880,7 @@ class Havato_Owner_Admin {
 		switch ( $action ) {
 			case 'create_event':
 				$req = new WP_REST_Request( 'POST' );
-				foreach ( array( 'event_date', 'event_time', 'budget_tier' ) as $key ) {
+				foreach ( array( 'title', 'event_date', 'event_time', 'budget_tier' ) as $key ) {
 					$req->set_param( $key, isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '' );
 				}
 				$req->set_param( 'max_capacity', isset( $_POST['max_capacity'] ) ? (int) $_POST['max_capacity'] : 6 );

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,20 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.5.0 =
+* New admin screen "Events & guests": every event on the platform with the
+  people registered to each one — avatar, name, rating, amount paid and
+  check-in state — plus a status filter and paging.
+* New admin screen "All cafés": the complete directory with search by name,
+  manager or address, city and status filters, storefront photo, event count
+  and an inline verify button.
+* Events now have a title. Café owners can name a table ("Movie night",
+  "Startup talk") and it appears in both panels; untitled events fall back to
+  their date and time.
+* Guests for a whole page of events are fetched in a single batched query
+  rather than one lookup per event, so the screen stays fast as the platform
+  grows.
 
 = 1.4.0 =
 * SECURITY: the public owner/login endpoint authenticated ANY account,
