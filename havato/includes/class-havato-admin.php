@@ -49,6 +49,7 @@ class Havato_Admin {
 			'havato-approvals'  => array( 'admin_approvals', 'page_approvals' ),
 			'havato-events'     => array( 'admin_events', 'page_events' ),
 			'havato-venues'     => array( 'admin_venues', 'page_venues' ),
+			'havato-import'     => array( 'admin_import', 'page_import' ),
 			'havato-revenue'    => array( 'admin_revenue', 'page_revenue' ),
 			'havato-matcher'    => array( 'admin_matcher', 'page_matcher' ),
 			'havato-weights'    => array( 'admin_weights', 'page_weights' ),
@@ -133,6 +134,7 @@ class Havato_Admin {
 			'havato-approvals' => Havato_I18N::t( 'admin_approvals' ),
 			'havato-events'    => Havato_I18N::t( 'admin_events' ),
 			'havato-venues'    => Havato_I18N::t( 'admin_venues' ),
+			'havato-import'    => Havato_I18N::t( 'admin_import' ),
 			'havato-revenue'   => Havato_I18N::t( 'admin_revenue' ),
 			'havato-matcher'   => Havato_I18N::t( 'admin_matcher' ),
 			'havato-weights'   => Havato_I18N::t( 'admin_weights' ),
@@ -751,6 +753,183 @@ class Havato_Admin {
 			array( 'page' => 'havato-venues', 's' => $search, 'city' => $city, 'state' => $state )
 		);
 		self::foot();
+	}
+
+	/* =====================================================================
+	 * Page — bulk import cafés from JSON
+	 * ================================================================== */
+
+	/**
+	 * Paste a JSON array of cafés and create them in one go.
+	 *
+	 * Venues are created WITHOUT a WordPress account (manager_id = 0), because
+	 * seeding a directory should not mean inventing twenty fake logins. An
+	 * owner can be attached later by registering with that café's name.
+	 */
+	public static function page_import() {
+		Havato_DB::ensure_tables();
+
+		self::head( Havato_I18N::t( 'admin_import' ), Havato_I18N::t( 'stat_venues' ) );
+
+		$sample = "[\n  {\n    \"name\": \"کافه طهرون\",\n    \"city\": \"تهران\",\n"
+			. "    \"latitude\": 35.70057,\n    \"longitude\": 51.41239\n  }\n]";
+
+		echo '<div class="hv-adm-alert is-blue">' . esc_html( Havato_I18N::t( 'import_hint' ) ) . '</div>';
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="hv-adm-card">';
+		self::form_fields( 'import_venues' );
+
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'admin_import' ) ) . '</h2>';
+
+		printf(
+			'<textarea name="payload" rows="14" class="hv-adm-json" placeholder="%s" required></textarea>',
+			esc_attr( $sample )
+		);
+
+		echo '<label class="hv-adm-switch"><input type="checkbox" name="verified" value="1" checked><span></span>' .
+			esc_html( Havato_I18N::t( 'import_verified' ) ) . '</label>';
+
+		echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'import_cities' ) ) . ' ';
+		$names = array();
+		foreach ( havato_locations() as $country ) {
+			foreach ( $country['cities'] as $label ) {
+				$names[] = $label['fa'] . ' / ' . $label['en'];
+			}
+		}
+		echo esc_html( implode( '، ', $names ) ) . '</p>';
+
+		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-green">' .
+			esc_html( Havato_I18N::t( 'import_run' ) ) . '</button>';
+		echo '</form>';
+
+		self::foot();
+	}
+
+	/**
+	 * Resolve a human city name ("تهران", "Tehran") to its internal key.
+	 *
+	 * @param string $name City as written by a human.
+	 * @return string Key, or '' when we do not operate there.
+	 */
+	private static function resolve_city( $name ) {
+		$name = trim( (string) $name );
+		if ( '' === $name ) {
+			return '';
+		}
+
+		foreach ( havato_locations() as $country ) {
+			foreach ( $country['cities'] as $key => $label ) {
+				if ( 0 === strcasecmp( $name, $key )
+					|| $name === $label['fa']
+					|| 0 === strcasecmp( $name, $label['en'] ) ) {
+					return $key;
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Country that owns a city key.
+	 *
+	 * @param string $city City key.
+	 * @return string
+	 */
+	private static function country_of_city( $city ) {
+		foreach ( havato_locations() as $code => $country ) {
+			if ( isset( $country['cities'][ $city ] ) ) {
+				return $code;
+			}
+		}
+		return 'ir';
+	}
+
+	/**
+	 * Create venues from a decoded JSON array.
+	 *
+	 * @param array $items    Rows.
+	 * @param bool  $verified Publish immediately.
+	 * @return array {created, skipped, errors}
+	 */
+	public static function import_venues( $items, $verified ) {
+		global $wpdb;
+
+		$venues  = Havato_DB::table( 'venues' );
+		$created = 0;
+		$skipped = 0;
+		$errors  = array();
+
+		foreach ( (array) $items as $i => $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$name = isset( $item['name'] ) ? sanitize_text_field( $item['name'] ) : '';
+			$city = self::resolve_city( isset( $item['city'] ) ? $item['city'] : '' );
+			$lat  = isset( $item['latitude'] ) ? (float) $item['latitude'] : 0;
+			$lng  = isset( $item['longitude'] ) ? (float) $item['longitude'] : 0;
+
+			if ( '' === $name ) {
+				$errors[] = sprintf( '#%d: %s', $i + 1, Havato_I18N::t( 'venue_name' ) );
+				continue;
+			}
+			if ( '' === $city ) {
+				$errors[] = sprintf(
+					'#%d %s: %s',
+					$i + 1,
+					$name,
+					isset( $item['city'] ) ? sanitize_text_field( $item['city'] ) : '—'
+				);
+				continue;
+			}
+
+			// Skip a café we already have in that city, so re-running the
+			// import does not create duplicates.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$exists = $wpdb->get_var(
+				$wpdb->prepare( "SELECT id FROM $venues WHERE name = %s AND city = %s LIMIT 1", $name, $city )
+			);
+			if ( $exists ) {
+				$skipped++;
+				continue;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->insert(
+				$venues,
+				array(
+					'id'           => havato_uid( 'v' ),
+					'name'         => $name,
+					'manager_name' => isset( $item['manager'] ) ? sanitize_text_field( $item['manager'] ) : '',
+					'country'      => self::country_of_city( $city ),
+					'city'         => $city,
+					'address'      => isset( $item['address'] ) ? sanitize_textarea_field( $item['address'] ) : '',
+					'lat'          => $lat,
+					'lng'          => $lng,
+					'image'        => isset( $item['image'] ) ? esc_url_raw( $item['image'] ) : '',
+					'budget_tier'  => 'medium',
+					'verified'     => $verified ? 1 : 0,
+					'manager_id'   => 0,
+					'menu_json'    => '[]',
+					'created_at'   => havato_now(),
+				),
+				array( '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%d', '%d', '%s', '%s' )
+			);
+
+			$created++;
+		}
+
+		Havato_Logger::log(
+			sprintf( 'Bulk import: %d café(s) created, %d skipped.', $created, $skipped ),
+			'success'
+		);
+
+		return array(
+			'created' => $created,
+			'skipped' => $skipped,
+			'errors'  => $errors,
+		);
 	}
 
 	/* =====================================================================
@@ -1511,6 +1690,33 @@ class Havato_Admin {
 		$page    = 'havato';
 
 		switch ( $action ) {
+			case 'import_venues':
+				// Raw JSON: only unslash, never sanitise the whole blob or the
+				// quotes would be mangled before json_decode() sees them.
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+				$raw   = isset( $_POST['payload'] ) ? wp_unslash( $_POST['payload'] ) : '';
+				$items = json_decode( (string) $raw, true );
+
+				if ( ! is_array( $items ) ) {
+					$message = Havato_I18N::t( 'import_bad_json' );
+					$page    = 'havato-import';
+					break;
+				}
+
+				$result = self::import_venues( $items, ! empty( $_POST['verified'] ) );
+
+				$message = sprintf(
+					Havato_I18N::t( 'import_done' ),
+					$result['created'],
+					$result['skipped']
+				);
+				if ( ! empty( $result['errors'] ) ) {
+					$message .= ' — ' . Havato_I18N::t( 'import_failed_rows' ) . ': ' .
+						implode( ' | ', array_slice( $result['errors'], 0, 5 ) );
+				}
+				$page = 'havato-venues';
+				break;
+
 			case 'new_venue':
 				$req = new WP_REST_Request( 'POST' );
 				foreach ( array( 'venue_name', 'manager_name', 'email', 'country', 'city' ) as $key ) {

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,17 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.8.0 =
+* New admin screen "Bulk import cafés": paste a JSON list and create many
+  venues at once. Each row needs name, city, latitude and longitude; address,
+  manager and image are optional.
+* City names are accepted in Farsi or English ("تهران", "Tehran", "tehran")
+  and mapped to the internal key, so a list written by hand just works.
+* Re-running an import skips cafés that already exist rather than duplicating
+  them, and rows with an unsupported city are reported instead of dropped.
+* Imported cafés have no WordPress account attached; an owner can register
+  later. They can be published immediately or left pending review.
 
 = 1.7.1 =
 * Table numbers are no longer suggested. The café types the number the table

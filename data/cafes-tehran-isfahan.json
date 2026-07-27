@@ -1,0 +1,23 @@
+[
+  { "name": "کافه طهرون",      "city": "تهران",  "latitude": 35.70057, "longitude": 51.41239 },
+  { "name": "کافه دیاموند",     "city": "تهران",  "latitude": 35.71779, "longitude": 51.40986 },
+  { "name": "کافه پارادیزو",    "city": "تهران",  "latitude": 35.72458, "longitude": 51.43144 },
+  { "name": "چای بار",          "city": "تهران",  "latitude": 35.79442, "longitude": 51.46066 },
+  { "name": "کافه مکس",         "city": "تهران",  "latitude": 35.76340, "longitude": 51.47490 },
+  { "name": "کافه نایت لند",    "city": "تهران",  "latitude": 35.69931, "longitude": 51.41888 },
+  { "name": "کافه پارت",        "city": "تهران",  "latitude": 35.70784, "longitude": 51.39216 },
+  { "name": "کافه ناتور",       "city": "تهران",  "latitude": 35.71383, "longitude": 51.40157 },
+  { "name": "کافه رد",          "city": "تهران",  "latitude": 35.75766, "longitude": 51.37353 },
+  { "name": "کافه چای",         "city": "تهران",  "latitude": 35.77541, "longitude": 51.43225 },
+
+  { "name": "کافه عمو حسن",     "city": "اصفهان", "latitude": 32.66031, "longitude": 51.67757 },
+  { "name": "کافه مسو قالی",    "city": "اصفهان", "latitude": 32.65889, "longitude": 51.67546 },
+  { "name": "کافه دالون",       "city": "اصفهان", "latitude": 32.63478, "longitude": 51.65529 },
+  { "name": "کافه لوتوس",       "city": "اصفهان", "latitude": 32.63375, "longitude": 51.68584 },
+  { "name": "کافه سفر",         "city": "اصفهان", "latitude": 32.64056, "longitude": 51.66898 },
+  { "name": "کافه ناروان",      "city": "اصفهان", "latitude": 32.66018, "longitude": 51.67663 },
+  { "name": "کافه لفته",        "city": "اصفهان", "latitude": 32.66020, "longitude": 51.67630 },
+  { "name": "کافه بالکن سفید",  "city": "اصفهان", "latitude": 32.66012, "longitude": 51.67705 },
+  { "name": "پیس کافه",         "city": "اصفهان", "latitude": 32.66008, "longitude": 51.67672 },
+  { "name": "بلو استار کافه",   "city": "اصفهان", "latitude": 32.63634, "longitude": 51.65989 }
+]

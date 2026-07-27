@@ -821,3 +821,16 @@
 }
 .hv-adm-locklist { margin: 8px 0 8px 18px; font-size: 13px; }
 .hv-adm-locklist li { margin: 2px 0; list-style: disc; }
+.hv-adm-json {
+	width: 100%;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 12.5px;
+	line-height: 1.7;
+	padding: 14px;
+	border-radius: 12px;
+	border: 1px solid var(--hv-line);
+	background: #f9fbff;
+	direction: ltr;
+	text-align: left;
+	margin-bottom: 14px;
+}
