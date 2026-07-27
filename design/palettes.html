@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>هواتو — پیشنهاد رنگ‌بندی جدید</title>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+<style>
+:root{
+  --ink:#101828; --soft:#667085; --line:#e4e7ec; --bg:#f7f8fb;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:28px 18px 60px; background:var(--bg); color:var(--ink);
+  font-family:"Vazirmatn","Vazir","IRANSans",system-ui,sans-serif; line-height:1.85;
+}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font-size:1.9rem;margin:0 0 6px;font-weight:800}
+.lead{color:var(--soft);margin:0 0 8px;font-size:.95rem}
+.note{
+  background:#fff;border:1px solid var(--line);border-inline-start:5px solid #f79009;
+  border-radius:14px;padding:14px 18px;margin:18px 0 30px;font-size:.9rem;
+}
+.note b{color:#b54708}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:24px}
+
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;
+  box-shadow:0 6px 22px rgba(16,24,40,.06);display:flex;flex-direction:column;
+}
+.card.pick{border:2px solid #12b76a;box-shadow:0 10px 30px rgba(18,183,106,.18)}
+
+/* ---- phone mock ---- */
+.phone{padding:20px 20px 0;background:var(--bg)}
+.screen{
+  border-radius:26px;overflow:hidden;border:1px solid rgba(0,0,0,.10);
+  box-shadow:0 12px 30px rgba(16,24,40,.16);background:#fff;
+}
+.hdr{padding:16px 16px 26px;color:#fff;position:relative}
+.hdr .eyebrow{font-size:.62rem;opacity:.85;display:block}
+.hdr .ttl{font-size:1.02rem;font-weight:800;margin-top:1px}
+.hdr .av{
+  position:absolute;inset-block-start:15px;inset-inline-start:16px;
+  inline-size:34px;block-size:34px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.6);background:rgba(255,255,255,.22);
+}
+.body{padding:12px 14px 16px;background:#fff}
+
+/* the exact card that was broken in the screenshot */
+.pcard{
+  border-radius:16px;padding:11px 13px;color:#fff;display:flex;align-items:center;gap:10px;
+  margin-block-end:11px;
+}
+.pcard .pav{
+  inline-size:40px;block-size:40px;border-radius:50%;flex:0 0 auto;
+  border:2px solid rgba(255,255,255,.55);background:rgba(255,255,255,.22);
+}
+.pcard .pname{font-weight:800;font-size:.86rem;color:#fff}
+.pcard .pmeta{font-size:.68rem;color:rgba(255,255,255,.88)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-block-end:11px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px 6px;text-align:center}
+.stat .ic{inline-size:26px;block-size:26px;border-radius:9px;margin:0 auto 5px}
+.stat .v{font-weight:800;font-size:.8rem}
+.stat .l{font-size:.56rem;color:var(--soft)}
+
+.cta{
+  border-radius:14px;padding:11px;text-align:center;color:#fff;font-weight:800;font-size:.82rem;
+  margin-block-end:11px;
+}
+.nav{
+  display:flex;justify-content:space-around;padding:11px 8px 13px;color:#fff;font-size:.58rem;
+  font-weight:700;position:relative;
+}
+.nav i{display:block;inline-size:15px;block-size:15px;border-radius:5px;background:#fff;margin:0 auto 4px;opacity:.95}
+.fab{
+  position:absolute;inset-block-start:-17px;inset-inline-start:50%;transform:translateX(50%);
+  inline-size:38px;block-size:38px;border-radius:50%;border:4px solid #fff;
+  display:grid;place-items:center;color:#fff;font-size:1.05rem;font-weight:700;
+}
+
+/* ---- meta ---- */
+.meta{padding:16px 20px 20px}
+.name{font-size:1.14rem;font-weight:800;margin:0 0 3px}
+.tag{font-size:.83rem;color:var(--soft);margin:0 0 12px;min-height:48px}
+.sw{display:flex;gap:6px;margin-block-end:12px;flex-wrap:wrap}
+.sw span{
+  inline-size:38px;block-size:38px;border-radius:10px;border:1px solid rgba(0,0,0,.09);
+  position:relative;
+}
+.sw span::after{
+  content:attr(data-h);position:absolute;inset-block-end:-17px;inset-inline-start:0;
+  font-size:.5rem;color:var(--soft);direction:ltr;letter-spacing:-.02em;
+}
+.facts{margin-top:20px;font-size:.76rem;border-top:1px dashed var(--line);padding-top:11px}
+.facts div{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.facts b{font-variant-numeric:tabular-nums;direction:ltr}
+.pass{color:#067647;font-weight:800}
+.warn{color:#b54708;font-weight:800}
+.badge{
+  display:inline-block;background:#ecfdf3;color:#067647;border:1px solid #abefc6;
+  border-radius:999px;padding:2px 11px;font-size:.66rem;font-weight:800;margin-inline-start:7px;
+}
+footer{margin-top:40px;text-align:center;color:var(--soft);font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>هواتو — پنج پیشنهاد رنگ‌بندی</h1>
+<p class="lead">
+هر طرح روی همان صفحه‌ای پیش‌نمایش شده که در اسکرین‌شات فرستادید (هدر، کارت پروفایل، سه کارت آمار، دکمه تست، نوار پایین و FAB).
+</p>
+
+<div class="note">
+<b>چرا رنگ فعلی «بنفش» دیده می‌شود؟</b>
+رنگ اصلی فعلی <code dir="ltr">#1B1FBF</code> است. این رنگ در چرخ رنگ روی <b>هیو ۲۳۹ درجه</b> قرار دارد،
+و محدوده‌ی ۲۳۰ تا ۲۸۰ درجه از نظر ادراک بصری «بنفش/ایندیگو» است، نه آبی. اشباع آن هم ۷۵٪ است.
+سه رنگ پایه‌ی قالب (<code dir="ltr">#2B2FE0</code>، <code dir="ltr">#1B1FBF</code>، <code dir="ltr">#141A6E</code>)
+هر سه روی هیو ۲۳۶ تا ۲۳۹ نشسته‌اند — یعنی <b>کل پس‌زمینه یک‌دست بنفش است</b> و هیچ تضاد هیویی وجود ندارد.
+برای «آبی» دیده‌شدن باید هیو به کمتر از ۲۲۵ درجه بیاید.
+</div>
+
+<div class="grid">
+
+<!-- ============ 1 ============ -->
+<div class="card pick">
+  <div class="phone"><div class="screen">
+    <div class="hdr" style="background:linear-gradient(135deg,#2f74f7 0%,#1552d8 52%,#0a2a6b 100%)">
+      <div class="av"></div>
+      <div style="text-align:end"><span class="eyebrow">هواتو</span><div class="ttl">پروفایل من</div></div>
+    </div>
+    <div class="body">
+      <div class="pcard" style="background:linear-gradient(135deg,#2f74f7,#1552d8 58%,#0a2a6b)">
+        <div style="flex:1;text-align:end"><div class="pname">javid Film</div><div class="pmeta">★ ۵٫۰ · ۰ دورهمی حاضر شده</div></div>
+        <div class="pav"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="ic" style="background:#e6efff"></div><div class="v">رایگان</div><div class="l">مجموع پرداخت‌ها</div></div>
+        <div class="stat"><div class="ic" style="background:#fff0e6"></div><div class="v">۵</div><div class="l">امتیاز رفتاری</div></div>
+        <div class="stat"><div class="ic" style="background:#e6f6ff"></div><div class="v">۰</div><div class="l">تاریخچه</div></div>
+      </div>
+      <div class="cta" style="background:linear-gradient(120deg,#2f74f7,#1552d8)">شروع تست ۳۰ ثانیه‌ای</div>
+    </div>
+    <div class="nav" style="background:linear-gradient(135deg,#1552d8,#0a2a6b)">
+      <div class="fab" style="background:linear-gradient(140deg,#5fbcff,#38a3ff);box-shadow:0 8px 18px rgba(56,163,255,.5)">+</div>
+      <div><i></i>پروفایل</div><div><i></i>گفتگوها</div><div><i></i>نقشه</div><div><i></i>کاوش</div>
+    </div>
+  </div></div>
+  <div class="meta">
+    <p class="name">۱ — آبی اَزور <span class="badge">پیشنهاد طراح</span></p>
+    <p class="tag">کمترین تغییر، بیشترین اثر. همان حس «اعتماد و تکنولوژی» فعلی حفظ می‌شود ولی هیو از ۲۳۹ به ۲۲۱ می‌آید و بنفشی کاملاً از بین می‌رود. لهجه‌ی نارنجی گرم برای دکمه‌های دعوت.</p>
+    <div class="sw">
+      <span style="background:#2f74f7" data-h="2F74F7"></span>
+      <span style="background:#1552d8" data-h="1552D8"></span>
+      <span style="background:#0a2a6b" data-h="0A2A6B"></span>
+      <span style="background:#38a3ff" data-h="38A3FF"></span>
+      <span style="background:#ff7a45" data-h="FF7A45"></span>
+    </div>
+    <div class="facts">
+      <div><span>هیو رنگ اصلی</span><b>221° <span class="pass">(آبی)</span></b></div>
+      <div><span>سفید روی رنگ اصلی</span><b>6.50:1 <span class="pass">AA</span></b></div>
+      <div><span>سفید روی تیره‌ترین</span><b>13.49:1 <span class="pass">AAA</span></b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2 ============ -->
+<div class="card">
+  <div class="phone"><div class="screen">
+    <div class="hdr" style="background:linear-gradient(135deg,#16b98d 0%,#0b7a5e 52%,#053b2d 100%)">
+      <div class="av"></div>
+      <div style="text-align:end"><span class="eyebrow">هواتو</span><div class="ttl">پروفایل من</div></div>
+    </div>
+    <div class="body">
+      <div class="pcard" style="background:linear-gradient(135deg,#16b98d,#0b7a5e 58%,#053b2d)">
+        <div style="flex:1;text-align:end"><div class="pname">javid Film</div><div class="pmeta">★ ۵٫۰ · ۰ دورهمی حاضر شده</div></div>
+        <div class="pav"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="ic" style="background:#e3faf1"></div><div class="v">رایگان</div><div class="l">مجموع پرداخت‌ها</div></div>
+        <div class="stat"><div class="ic" style="background:#fff6e0"></div><div class="v">۵</div><div class="l">امتیاز رفتاری</div></div>
+        <div class="stat"><div class="ic" style="background:#e6f7f3"></div><div class="v">۰</div><div class="l">تاریخچه</div></div>
+      </div>
+      <div class="cta" style="background:linear-gradient(120deg,#16b98d,#0b7a5e)">شروع تست ۳۰ ثانیه‌ای</div>
+    </div>
+    <div class="nav" style="background:linear-gradient(135deg,#0b7a5e,#053b2d)">
+      <div class="fab" style="background:linear-gradient(140deg,#4ce0b6,#16b98d);box-shadow:0 8px 18px rgba(22,185,141,.5)">+</div>
+      <div><i></i>پروفایل</div><div><i></i>گفتگوها</div><div><i></i>نقشه</div><div><i></i>کاوش</div>
+    </div>
+  </div></div>
+  <div class="meta">
+    <p class="name">۲ — سبز زمردی</p>
+    <p class="tag">حس تازگی، آرامش و طبیعت. برای برندی که درباره‌ی «دورهمی و گفتگوی واقعی» است بسیار انسانی‌تر از آبی شرکتی به نظر می‌رسد و کاملاً از فضای اپ‌های فین‌تک فاصله می‌گیرد.</p>
+    <div class="sw">
+      <span style="background:#16b98d" data-h="16B98D"></span>
+      <span style="background:#0b7a5e" data-h="0B7A5E"></span>
+      <span style="background:#053b2d" data-h="053B2D"></span>
+      <span style="background:#2fd0a0" data-h="2FD0A0"></span>
+      <span style="background:#f5a524" data-h="F5A524"></span>
+    </div>
+    <div class="facts">
+      <div><span>هیو رنگ اصلی</span><b>165° <span class="pass">(سبز)</span></b></div>
+      <div><span>سفید روی رنگ اصلی</span><b>5.30:1 <span class="pass">AA</span></b></div>
+      <div><span>سفید روی تیره‌ترین</span><b>12.90:1 <span class="pass">AAA</span></b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3 ============ -->
+<div class="card">
+  <div class="phone"><div class="screen">
+    <div class="hdr" style="background:linear-gradient(135deg,#a3653f 0%,#7a4a2e 52%,#31201a 100%)">
+      <div class="av"></div>
+      <div style="text-align:end"><span class="eyebrow">هواتو</span><div class="ttl">پروفایل من</div></div>
+    </div>
+    <div class="body">
+      <div class="pcard" style="background:linear-gradient(135deg,#a3653f,#7a4a2e 58%,#31201a)">
+        <div style="flex:1;text-align:end"><div class="pname">javid Film</div><div class="pmeta">★ ۵٫۰ · ۰ دورهمی حاضر شده</div></div>
+        <div class="pav"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="ic" style="background:#f6ece3"></div><div class="v">رایگان</div><div class="l">مجموع پرداخت‌ها</div></div>
+        <div class="stat"><div class="ic" style="background:#e6f6f6"></div><div class="v">۵</div><div class="l">امتیاز رفتاری</div></div>
+        <div class="stat"><div class="ic" style="background:#faf0e4"></div><div class="v">۰</div><div class="l">تاریخچه</div></div>
+      </div>
+      <div class="cta" style="background:linear-gradient(120deg,#a3653f,#7a4a2e)">شروع تست ۳۰ ثانیه‌ای</div>
+    </div>
+    <div class="nav" style="background:linear-gradient(135deg,#7a4a2e,#31201a)">
+      <div class="fab" style="background:linear-gradient(140deg,#f0a86a,#e08b4c);box-shadow:0 8px 18px rgba(224,139,76,.5)">+</div>
+      <div><i></i>پروفایل</div><div><i></i>گفتگوها</div><div><i></i>نقشه</div><div><i></i>کاوش</div>
+    </div>
+  </div></div>
+  <div class="meta">
+    <p class="name">۳ — اسپرسو (قهوه‌ای گرم)</p>
+    <p class="tag">تنها طرحی که مستقیماً به «کافه» اشاره می‌کند. رنگ دانه‌ی قهوه و چوب. متمایزترین گزینه در بازار ایران — هیچ اپ اجتماعی این پالت را ندارد. لهجه‌ی فیروزه‌ای برای تعادل سرد/گرم.</p>
+    <div class="sw">
+      <span style="background:#a3653f" data-h="A3653F"></span>
+      <span style="background:#7a4a2e" data-h="7A4A2E"></span>
+      <span style="background:#31201a" data-h="31201A"></span>
+      <span style="background:#e08b4c" data-h="E08B4C"></span>
+      <span style="background:#12a3a3" data-h="12A3A3"></span>
+    </div>
+    <div class="facts">
+      <div><span>هیو رنگ اصلی</span><b>22° <span class="pass">(نارنجی/قهوه‌ای)</span></b></div>
+      <div><span>سفید روی رنگ اصلی</span><b>7.38:1 <span class="pass">AAA</span></b></div>
+      <div><span>سفید روی تیره‌ترین</span><b>14.82:1 <span class="pass">AAA</span></b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 4 ============ -->
+<div class="card">
+  <div class="phone"><div class="screen">
+    <div class="hdr" style="background:linear-gradient(135deg,#2c477f 0%,#1c2f5e 52%,#0d1730 100%)">
+      <div class="av"></div>
+      <div style="text-align:end"><span class="eyebrow">هواتو</span><div class="ttl">پروفایل من</div></div>
+    </div>
+    <div class="body">
+      <div class="pcard" style="background:linear-gradient(135deg,#2c477f,#1c2f5e 58%,#0d1730)">
+        <div style="flex:1;text-align:end"><div class="pname">javid Film</div><div class="pmeta">★ ۵٫۰ · ۰ دورهمی حاضر شده</div></div>
+        <div class="pav"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="ic" style="background:#e8ecf5"></div><div class="v">رایگان</div><div class="l">مجموع پرداخت‌ها</div></div>
+        <div class="stat"><div class="ic" style="background:#fdf1dc"></div><div class="v">۵</div><div class="l">امتیاز رفتاری</div></div>
+        <div class="stat"><div class="ic" style="background:#e4f4fd"></div><div class="v">۰</div><div class="l">تاریخچه</div></div>
+      </div>
+      <div class="cta" style="background:linear-gradient(120deg,#f0a92b,#d98f14);color:#3d2600">شروع تست ۳۰ ثانیه‌ای</div>
+    </div>
+    <div class="nav" style="background:linear-gradient(135deg,#1c2f5e,#0d1730)">
+      <div class="fab" style="background:linear-gradient(140deg,#f7bd52,#f0a92b);box-shadow:0 8px 18px rgba(240,169,43,.5)">+</div>
+      <div><i></i>پروفایل</div><div><i></i>گفتگوها</div><div><i></i>نقشه</div><div><i></i>کاوش</div>
+    </div>
+  </div></div>
+  <div class="meta">
+    <p class="name">۴ — نیلی شب + کهربا</p>
+    <p class="tag">پس‌زمینه‌ی سرمه‌ای کم‌اشباع (نه بنفش، نه آبی جیغ) با لهجه‌ی کهربایی گرم. لوکس‌ترین و بالغ‌ترین گزینه؛ شب‌های کافه را تداعی می‌کند. بالاترین کنتراست هر پنج طرح.</p>
+    <div class="sw">
+      <span style="background:#2c477f" data-h="2C477F"></span>
+      <span style="background:#1c2f5e" data-h="1C2F5E"></span>
+      <span style="background:#0d1730" data-h="0D1730"></span>
+      <span style="background:#f0a92b" data-h="F0A92B"></span>
+      <span style="background:#38bdf8" data-h="38BDF8"></span>
+    </div>
+    <div class="facts">
+      <div><span>هیو رنگ اصلی</span><b>223° <span class="pass">(سرمه‌ای، اشباع ۵۴٪)</span></b></div>
+      <div><span>سفید روی رنگ اصلی</span><b>12.98:1 <span class="pass">AAA</span></b></div>
+      <div><span>سفید روی تیره‌ترین</span><b>17.76:1 <span class="pass">AAA</span></b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 5 ============ -->
+<div class="card">
+  <div class="phone"><div class="screen">
+    <div class="hdr" style="background:linear-gradient(135deg,#f26a76 0%,#c53a52 52%,#6b1830 100%)">
+      <div class="av"></div>
+      <div style="text-align:end"><span class="eyebrow">هواتو</span><div class="ttl">پروفایل من</div></div>
+    </div>
+    <div class="body">
+      <div class="pcard" style="background:linear-gradient(135deg,#f26a76,#c53a52 58%,#6b1830)">
+        <div style="flex:1;text-align:end"><div class="pname">javid Film</div><div class="pmeta">★ ۵٫۰ · ۰ دورهمی حاضر شده</div></div>
+        <div class="pav"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="ic" style="background:#fdeaed"></div><div class="v">رایگان</div><div class="l">مجموع پرداخت‌ها</div></div>
+        <div class="stat"><div class="ic" style="background:#e6f6f6"></div><div class="v">۵</div><div class="l">امتیاز رفتاری</div></div>
+        <div class="stat"><div class="ic" style="background:#fff0e8"></div><div class="v">۰</div><div class="l">تاریخچه</div></div>
+      </div>
+      <div class="cta" style="background:linear-gradient(120deg,#f26a76,#c53a52)">شروع تست ۳۰ ثانیه‌ای</div>
+    </div>
+    <div class="nav" style="background:linear-gradient(135deg,#c53a52,#6b1830)">
+      <div class="fab" style="background:linear-gradient(140deg,#ffa98a,#ff9068);box-shadow:0 8px 18px rgba(255,144,104,.5)">+</div>
+      <div><i></i>پروفایل</div><div><i></i>گفتگوها</div><div><i></i>نقشه</div><div><i></i>کاوش</div>
+    </div>
+  </div></div>
+  <div class="meta">
+    <p class="name">۵ — مرجانی غروب</p>
+    <p class="tag">گرم‌ترین و اجتماعی‌ترین گزینه. حس صمیمیت و «آدم‌ها» را منتقل می‌کند نه «نرم‌افزار». جسورانه است؛ اگر مخاطب هدف جوان‌تر است بهترین انتخاب، ولی ریسک بیشتری دارد.</p>
+    <div class="sw">
+      <span style="background:#f26a76" data-h="F26A76"></span>
+      <span style="background:#c53a52" data-h="C53A52"></span>
+      <span style="background:#6b1830" data-h="6B1830"></span>
+      <span style="background:#ff9068" data-h="FF9068"></span>
+      <span style="background:#17a2a2" data-h="17A2A2"></span>
+    </div>
+    <div class="facts">
+      <div><span>هیو رنگ اصلی</span><b>349° <span class="pass">(مرجانی/سرخ)</span></b></div>
+      <div><span>سفید روی رنگ اصلی</span><b>5.12:1 <span class="pass">AA</span></b></div>
+      <div><span>سفید روی تیره‌ترین</span><b>11.68:1 <span class="pass">AAA</span></b></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<footer>
+همه‌ی مقادیر کنتراست با فرمول رسمی WCAG 2.1 محاسبه شده‌اند و همگی حداقل سطح AA را پاس می‌کنند.<br>
+شماره‌ی طرح مورد نظرتان را بگویید تا کل قالب با همان پالت بازسازی شود.
+</footer>
+
+</div>
+</body>
+</html>
