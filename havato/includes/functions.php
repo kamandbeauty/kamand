@@ -272,7 +272,6 @@ function havato_get_profile( $user_id ) {
 			'gender'                   => '',
 			'country'                  => '',
 			'city'                     => '',
-			'city_neighborhood'        => '',
 			'personality_extroversion' => 5,
 			'personality_talkative'    => 5,
 			'personality_openness'     => 5,
@@ -285,6 +284,9 @@ function havato_get_profile( $user_id ) {
 			'rating_score'             => 5,
 			'rating_count'             => 0,
 			'no_show_count'            => 0,
+			'empty_seat_count'         => 0,
+			'penalty_points'           => 0,
+			'phone'                    => '',
 			'attended_count'           => 0,
 			'blocklist_json'           => '[]',
 			'completed'                => 0,
@@ -303,10 +305,102 @@ function havato_get_profile( $user_id ) {
 		}
 	}
 
+	// Columns added in DB 1.10.0. Same reasoning: a row written before the
+	// upgrade has no such key, and havato_effective_rating() reads
+	// penalty_points on every profile render.
+	foreach ( array( 'no_show_count' => 0, 'empty_seat_count' => 0, 'penalty_points' => 0, 'phone' => '' ) as $havato_col => $havato_default ) {
+		if ( ! isset( $row[ $havato_col ] ) || null === $row[ $havato_col ] ) {
+			$row[ $havato_col ] = $havato_default;
+		}
+	}
+
 	$row['interests'] = havato_json( isset( $row['personality_interests'] ) ? $row['personality_interests'] : '' );
 	$row['blocklist'] = array_map( 'intval', havato_json( isset( $row['blocklist_json'] ) ? $row['blocklist_json'] : '' ) );
 
 	return $row;
+}
+
+/**
+ * International dialling prefix of a country we operate in.
+ *
+ * @param string $country Country key.
+ * @return string e.g. "+98", or '' when unknown.
+ */
+function havato_dial_code( $country ) {
+	$all = havato_locations();
+	$key = (string) $country;
+	return isset( $all[ $key ]['dial'] ) ? $all[ $key ]['dial'] : '';
+}
+
+/**
+ * Normalise a phone number to E.164-ish "+<dial><national>".
+ *
+ * Guests type their number in whatever shape they know it — "0912…",
+ * "+98912…", "0098912…", with spaces or dashes. All of those must end up as
+ * one canonical string, otherwise the same person looks like several.
+ *
+ * @param string $raw     Whatever the user typed.
+ * @param string $country Selected country key, used for the prefix.
+ * @return string Normalised number, or '' when it cannot be salvaged.
+ */
+function havato_normalize_phone( $raw, $country ) {
+	// Persian/Arabic-Indic digits first, or the whole thing looks empty.
+	$raw = Havato_Jalali::en_digits( (string) $raw );
+	$raw = trim( $raw );
+	if ( '' === $raw ) {
+		return '';
+	}
+
+	$dial = havato_dial_code( $country );
+	$cc   = ltrim( $dial, '+' );
+
+	// Keep digits only; remember whether it was already international.
+	$plus   = ( 0 === strpos( $raw, '+' ) );
+	$digits = preg_replace( '/\D+/', '', $raw );
+	if ( '' === $digits ) {
+		return '';
+	}
+
+	// "0098…" is the same as "+98…".
+	if ( ! $plus && $cc && 0 === strpos( $digits, '00' . $cc ) ) {
+		$digits = substr( $digits, 2 );
+		$plus   = true;
+	}
+
+	if ( $plus || ( $cc && 0 === strpos( $digits, $cc ) && strlen( $digits ) > strlen( $cc ) + 6 ) ) {
+		// Already carries the country code.
+		$national = $cc && 0 === strpos( $digits, $cc ) ? substr( $digits, strlen( $cc ) ) : $digits;
+	} else {
+		$national = $digits;
+	}
+
+	// Domestic trunk zero is dropped once the country code is attached.
+	$national = ltrim( $national, '0' );
+
+	if ( strlen( $national ) < 6 || strlen( $national ) > 14 ) {
+		return '';
+	}
+
+	return ( $dial ? $dial : '+' ) . $national;
+}
+
+/**
+ * Behaviour score actually shown and matched on.
+ *
+ * `rating_score` is the peer-feedback average and is rewritten wholesale by
+ * recalculate_rating(); reliability penalties therefore live in their own
+ * column and are subtracted here, at read time, so the two can never
+ * overwrite one another.
+ *
+ * @param array $profile Profile row.
+ * @return float 0..5
+ */
+function havato_effective_rating( $profile ) {
+	$base    = isset( $profile['rating_score'] ) ? (float) $profile['rating_score'] : 5.0;
+	$penalty = isset( $profile['penalty_points'] ) ? (float) $profile['penalty_points'] : 0.0;
+	$floor   = (float) Havato_Settings::get( 'penalty_floor', 1 );
+
+	return max( $floor, min( 5.0, $base - $penalty ) );
 }
 
 /**
@@ -354,6 +448,7 @@ function havato_locations() {
 	return array(
 		'ir' => array(
 			'label'  => array( 'fa' => 'ایران', 'en' => 'Iran' ),
+			'dial'   => '+98',
 			'cities' => array(
 				'tehran'  => array( 'fa' => 'تهران', 'en' => 'Tehran' ),
 				'isfahan' => array( 'fa' => 'اصفهان', 'en' => 'Isfahan' ),
@@ -361,6 +456,7 @@ function havato_locations() {
 		),
 		'tr' => array(
 			'label'  => array( 'fa' => 'ترکیه', 'en' => 'Turkey' ),
+			'dial'   => '+90',
 			'cities' => array(
 				'istanbul' => array( 'fa' => 'استانبول', 'en' => 'Istanbul' ),
 			),

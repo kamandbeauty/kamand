@@ -146,16 +146,77 @@ class Havato_Cron {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->update( $events, array( 'status' => 'completed' ), array( 'id' => $id ), array( '%s' ), array( '%s' ) );
 
-			// No-show penalty: matched but never checked in.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$absent = $wpdb->get_col( $wpdb->prepare( "SELECT user_id FROM $regs WHERE event_id=%s AND status='matched' AND checked_in=0", $id ) );
+			// --- Reliability penalties -----------------------------------
+			// Two distinct failures are charged here:
+			//   1. the booker never turned up at all;
+			//   2. they turned up but left seats they reserved for others
+			//      empty — each empty chair is charged separately, because
+			//      it is a chair somebody else could have used.
+			$per_no_show    = (float) Havato_Settings::get( 'penalty_no_show', 1 );
+			$per_empty_seat = (float) Havato_Settings::get( 'penalty_empty_seat', 1 );
 
-			foreach ( (array) $absent as $uid ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $wpdb->get_results(
+				$wpdb->prepare( "SELECT user_id, seats, arrived, checked_in FROM $regs WHERE event_id=%s AND status='matched'", $id ),
+				ARRAY_A
+			);
+
+			$no_shows = 0;
+			$empty    = 0;
+
+			foreach ( (array) $rows as $row ) {
+				$uid   = (int) $row['user_id'];
+				$booked = max( 1, (int) $row['seats'] );
+
+				// `arrived` is authoritative once the café has used the new
+				// counter. Older rows only carry the checked_in flag, so fall
+				// back to "all of them" / "none of them".
+				if ( (int) $row['arrived'] > 0 ) {
+					$arrived = min( $booked, (int) $row['arrived'] );
+				} else {
+					$arrived = (int) $row['checked_in'] ? $booked : 0;
+				}
+
+				$missing = max( 0, $booked - $arrived );
+				if ( 0 === $missing ) {
+					continue;
+				}
+
+				if ( 0 === $arrived ) {
+					// Nobody came. The booker owns the no-show, plus every
+					// extra chair they were holding.
+					$points = $per_no_show + ( ( $missing - 1 ) * $per_empty_seat );
+					$no_shows++;
+					$empty += ( $missing - 1 );
+
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$wpdb->query( $wpdb->prepare( "UPDATE $profiles SET no_show_count = no_show_count + 1 WHERE user_id=%d", $uid ) );
+				} else {
+					// They came, but brought fewer people than they booked.
+					$points = $missing * $per_empty_seat;
+					$empty += $missing;
+				}
+
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$wpdb->query( $wpdb->prepare( "UPDATE $profiles SET no_show_count = no_show_count + 1 WHERE user_id=%d", (int) $uid ) );
+				$wpdb->query(
+					$wpdb->prepare(
+						"UPDATE $profiles SET penalty_points = penalty_points + %f, empty_seat_count = empty_seat_count + %d WHERE user_id=%d",
+						$points,
+						$missing - ( 0 === $arrived ? 1 : 0 ),
+						$uid
+					)
+				);
 			}
 
-			Havato_Logger::log( sprintf( 'Event %s closed — feedback round opened (%d no-show).', $id, count( (array) $absent ) ), 'info' );
+			Havato_Logger::log(
+				sprintf(
+					'Event %s closed — feedback round opened (%d no-show, %d empty seat(s) charged).',
+					$id,
+					$no_shows,
+					$empty
+				),
+				'info'
+			);
 		}
 	}
 }

@@ -548,6 +548,33 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-event-when { margin: 3px 0 0; font-size: 0.79rem; color: var(--hv-text-soft); }
 /* Everything is free; this replaces where a price used to be shown. */
 .hv-free { font-weight: 800; color: var(--hv-green); font-size: 0.82rem; margin-block-start: 2px; }
+
+/* Phone field: a fixed dialling prefix sits beside the input so the guest
+   only types the national part and cannot double up the country code. */
+.hv-phone-row {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+	direction: ltr;
+}
+.hv-phone-row .hv-input {
+	flex: 1 1 auto;
+	min-inline-size: 0;
+	text-align: start;
+}
+.hv-dial {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	padding-inline: 12px;
+	border-radius: 14px;
+	background: rgba(27, 31, 191, 0.07);
+	border: 1.5px solid var(--hv-line);
+	color: var(--hv-indigo);
+	font-weight: 800;
+	font-size: 0.9rem;
+	letter-spacing: 0.02em;
+}
 .hv-event-foot {
 	display: flex;
 	align-items: center;

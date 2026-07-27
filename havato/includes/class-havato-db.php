@@ -152,13 +152,19 @@ class Havato_DB {
 		) $charset;";
 
 		// 3. User personality profiles.
+		// `penalty_points` holds reliability deductions (no-shows, empty
+		// seats). They cannot live in `rating_score` because
+		// recalculate_rating() rewrites that column from peer feedback, which
+		// would silently erase every penalty on the next review.
+		// NOTE: never put `--` comments inside these CREATE TABLE strings —
+		// dbDelta() parses them line by line and would treat `--` as a column.
 		$queries[] = "CREATE TABLE {$p}user_profiles (
 			user_id bigint(20) unsigned NOT NULL,
 			age int(11) NOT NULL DEFAULT 0,
 			gender varchar(20) NOT NULL DEFAULT '',
 			country varchar(8) NOT NULL DEFAULT '',
 			city varchar(32) NOT NULL DEFAULT '',
-			city_neighborhood varchar(191) NOT NULL DEFAULT '',
+			phone varchar(32) NOT NULL DEFAULT '',
 			personality_extroversion int(11) NOT NULL DEFAULT 5,
 			personality_talkative int(11) NOT NULL DEFAULT 5,
 			personality_vibe varchar(20) NOT NULL DEFAULT 'fun',
@@ -171,6 +177,8 @@ class Havato_DB {
 			rating_score double NOT NULL DEFAULT 5,
 			rating_count int(11) NOT NULL DEFAULT 0,
 			no_show_count int(11) NOT NULL DEFAULT 0,
+			empty_seat_count int(11) NOT NULL DEFAULT 0,
+			penalty_points double NOT NULL DEFAULT 0,
 			attended_count int(11) NOT NULL DEFAULT 0,
 			blocklist_json text NULL,
 			completed tinyint(1) NOT NULL DEFAULT 0,
@@ -179,6 +187,9 @@ class Havato_DB {
 		) $charset;";
 
 		// 4. Event registrations (the queue).
+		// `arrived` counts how many of the booked `seats` actually turned up,
+		// so a party that reserves 3 and brings 1 can be charged for the 2
+		// empty chairs.
 		// `status`: queued | matched | cancelled. Joining is free, so a seat
 		// is simply taken or not — there is no reservation/hold state.
 		// `seats`: 1..HAVATO_MAX_SEATS. One row per booking, not per chair:
@@ -191,6 +202,7 @@ class Havato_DB {
 			status varchar(20) NOT NULL DEFAULT 'queued',
 			checked_in tinyint(1) NOT NULL DEFAULT 0,
 			seats int(11) NOT NULL DEFAULT 1,
+			arrived int(11) NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			PRIMARY KEY  (id),
 			UNIQUE KEY event_user (event_id,user_id),

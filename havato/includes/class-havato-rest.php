@@ -847,7 +847,7 @@ class Havato_REST {
 			'country'       => isset( $profile['country'] ) ? $profile['country'] : '',
 			'city'          => isset( $profile['city'] ) ? $profile['city'] : '',
 			'city_label'    => havato_city_label( isset( $profile['city'] ) ? $profile['city'] : '' ),
-			'neighborhood'  => $profile['city_neighborhood'],
+			'phone'         => $is_self ? $profile['phone'] : '',
 			'extroversion'  => (int) $profile['personality_extroversion'],
 			'talkative'     => (int) $profile['personality_talkative'],
 			'openness'      => (int) $profile['personality_openness'],
@@ -857,8 +857,11 @@ class Havato_REST {
 			'empathy'       => (int) $profile['personality_empathy'],
 			'vibe'          => $profile['personality_vibe'],
 			'interests'     => $interests,
-			'rating'        => round( (float) $profile['rating_score'], 1 ),
+			'rating'        => round( havato_effective_rating( $profile ), 1 ),
 			'rating_count'  => (int) $profile['rating_count'],
+			'no_shows'      => (int) $profile['no_show_count'],
+			'empty_seats'   => (int) $profile['empty_seat_count'],
+			'penalty'       => round( (float) $profile['penalty_points'], 1 ),
 			'attended'      => (int) $profile['attended_count'],
 			'photos'        => self::user_photos( $target, $viewer, $is_self ),
 			'friend_status' => $is_self ? 'self' : havato_friend_status( $viewer, $target ),
@@ -982,7 +985,20 @@ class Havato_REST {
 			return new WP_Error( 'havato_bad_city', Havato_I18N::t( 'q_city_select' ), array( 'status' => 400 ) );
 		}
 
-		$hood = sanitize_text_field( (string) $req->get_param( 'neighborhood' ) );
+		// Phone is required: it is how a café reaches a guest about their
+		// booking. Stored normalised so "0912…", "+98912…" and "0098912…"
+		// are one number rather than three.
+		$phone = havato_normalize_phone( (string) $req->get_param( 'phone' ), $country );
+		if ( '' === $phone ) {
+			return new WP_Error( 'havato_bad_phone', Havato_I18N::t( 'err_phone' ), array( 'status' => 400 ) );
+		}
+
+		// One account per number, or a blocked guest could simply re-register.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$clash = (int) $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $table WHERE phone=%s AND user_id<>%d LIMIT 1", $phone, $user_id ) );
+		if ( $clash ) {
+			return new WP_Error( 'havato_phone_taken', Havato_I18N::t( 'err_phone_taken' ), array( 'status' => 409 ) );
+		}
 
 		// The display name lives on the WP user, not in the profile table, so
 		// it stays correct everywhere the app already renders a name.
@@ -999,7 +1015,7 @@ class Havato_REST {
 			'gender'            => $gender,
 			'country'           => $country,
 			'city'              => $city,
-			'city_neighborhood' => $hood,
+			'phone'             => $phone,
 			'updated_at'        => havato_now(),
 		);
 
@@ -1713,7 +1729,7 @@ class Havato_REST {
 				'user'       => self::user_card( (int) $row['user_id'] ),
 				'status'     => $row['status'],
 				'checked_in' => (bool) $row['checked_in'],
-				'rating'     => round( (float) $profile['rating_score'], 1 ),
+				'rating'     => round( havato_effective_rating( $profile ), 1 ),
 			);
 		}
 
@@ -2175,6 +2191,10 @@ class Havato_REST {
 		$event_id = sanitize_text_field( (string) $req->get_param( 'event_id' ) );
 		$target   = (int) $req->get_param( 'user_id' );
 		$value    = (bool) $req->get_param( 'checked_in' );
+		// How many of the party actually walked in. Absent (older callers)
+		// means "all of them" when checking in, which preserves the previous
+		// all-or-nothing behaviour.
+		$arrived  = $req->get_param( 'arrived' );
 
 		$events = Havato_DB::table( 'events' );
 		$regs   = Havato_DB::table( 'event_registrations' );
@@ -2185,12 +2205,25 @@ class Havato_REST {
 			return new WP_Error( 'havato_forbidden', Havato_I18N::t( 'error_generic' ), array( 'status' => 403 ) );
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$booked = (int) $wpdb->get_var( $wpdb->prepare( "SELECT seats FROM $regs WHERE event_id=%s AND user_id=%d", $event_id, $target ) );
+		$booked = max( 1, $booked );
+
+		if ( null === $arrived || '' === $arrived ) {
+			$count = $value ? $booked : 0;
+		} else {
+			$count = max( 0, min( $booked, (int) $arrived ) );
+		}
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->update(
 			$regs,
-			array( 'checked_in' => $value ? 1 : 0 ),
+			array(
+				'checked_in' => $count > 0 ? 1 : 0,
+				'arrived'    => $count,
+			),
 			array( 'event_id' => $event_id, 'user_id' => $target ),
-			array( '%d' ),
+			array( '%d', '%d' ),
 			array( '%s', '%d' )
 		);
 
@@ -2591,7 +2624,7 @@ class Havato_REST {
 			'name'   => havato_display_name( $user_id ),
 			'avatar' => havato_avatar( $user_id ),
 			'role'   => havato_user_role( $user_id ),
-			'rating' => round( (float) $profile['rating_score'], 1 ),
+			'rating' => round( havato_effective_rating( $profile ), 1 ),
 			'age'    => (int) $profile['age'],
 		);
 	}

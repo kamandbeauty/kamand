@@ -95,7 +95,8 @@ t('icons at full opacity', /\.hv-tab svg \{ opacity: 1; \}/.test(noC));
 t('no dimmed-icon rule left', !/\.hv-tab:not\(\.is-active\) svg \{ opacity: 0\.\d/.test(noC));
 t('state still shown by weight', /\.hv-tab\.is-active \{[^}]*font-weight:\s*800/s.test(noC));
 
-for (const k of ['q_country','q_city_select','q_neighborhood','city_empty'])
+// q_neighborhood was dropped in 1.14.0 (the field is gone; phone replaced it).
+for (const k of ['q_country','q_city_select','city_empty'])
   t(`i18n "${k}" bilingual`, new RegExp(`'${k}'[^\\n]*'fa' =>[^\\n]*'en' =>`).test(i18n));
 
 console.log(f?`\n❌ ${f} failure(s)`:'\n✅ city taxonomy, scoping and white nav all correct');

@@ -563,7 +563,7 @@ class Havato_Admin {
 			);
 			echo '<div class="hv-adm-guest-info">';
 			echo '<strong>' . esc_html( havato_display_name( $uid ) ) . '</strong>';
-			echo '<span class="hv-adm-muted">★ ' . esc_html( round( (float) $profile['rating_score'], 1 ) );
+			echo '<span class="hv-adm-muted">★ ' . esc_html( round( havato_effective_rating( $profile ), 1 ) );
 			if ( (int) $profile['age'] ) {
 				echo ' · ' . esc_html( $profile['age'] );
 			}
@@ -1374,6 +1374,9 @@ class Havato_Admin {
 		self::slider( 'w_trait_humor', 'Similar sense of humour', $s['w_trait_humor'], 0, 30 );
 		self::slider( 'w_trait_energy', 'Similar preferred atmosphere', $s['w_trait_energy'], 0, 30 );
 		self::slider( 'w_trait_empathy', 'A good listener at the table', $s['w_trait_empathy'], 0, 30 );
+		self::slider( 'penalty_no_show', 'Penalty for not turning up', $s['penalty_no_show'], 0, 5 );
+		self::slider( 'penalty_empty_seat', 'Penalty per empty reserved seat', $s['penalty_empty_seat'], 0, 5 );
+		self::slider( 'penalty_floor', 'Behaviour score never drops below', $s['penalty_floor'], 0, 5 );
 		self::slider( 'w_gender_balance', 'Gender balance weight', $s['w_gender_balance'], 0, 60 );
 
 		echo '<label class="hv-adm-switch"><input type="checkbox" name="gender_balance_on" value="1" ' .
@@ -1783,6 +1786,7 @@ class Havato_Admin {
 					'w_intro_extro', 'w_ambivert', 'w_same_vibe', 'w_age_penalty', 'w_age_threshold',
 					'w_rating', 'w_gender_balance', 'cron_lead_hours', 'auto_complete_hours',
 					'w_trait_humor', 'w_trait_energy', 'w_trait_empathy',
+					'penalty_no_show', 'penalty_empty_seat', 'penalty_floor',
 				);
 				$values = array();
 				foreach ( $keys as $key ) {

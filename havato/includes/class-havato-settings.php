@@ -55,6 +55,11 @@ class Havato_Settings {
 			'w_trait_energy'       => 6,     // Similar preferred atmosphere.
 			'w_trait_empathy'      => 5,     // At least one strong listener present.
 
+			// Reliability penalties (behaviour score is out of 5).
+			'penalty_no_show'      => 1,     // Booked a seat and never arrived.
+			'penalty_empty_seat'   => 1,     // Per companion seat left empty.
+			'penalty_floor'        => 1,     // Score can never fall below this.
+
 			'w_gender_balance'     => 20,    // Weight of the soft gender-balance term.
 			'gender_balance_on'    => 1,     // Toggle the gender balance criterion.
 			'w_location'           => 60,    // Admin sliders (venue proximity).

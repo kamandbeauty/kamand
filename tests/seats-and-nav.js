@@ -51,7 +51,12 @@ t('a cap constant exists', /HAVATO_MAX_SEATS', 3/.test(main));
 t('exposed through a filterable helper',
   /function havato_max_seats/.test(fn) && /apply_filters\( 'havato_max_seats'/.test(fn));
 t('seats column added', /seats int\(11\) NOT NULL DEFAULT 1/.test(db));
-t('schema bumped so it migrates', /HAVATO_DB_VERSION', '1\.9\.0'/.test(main));
+t('schema is at or past the seats column', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) return false;
+  const [maj, min] = [Number(m[1]), Number(m[2])];
+  return maj > 1 || (maj === 1 && min >= 9);
+})());
 t('server clamps the request to the cap', /min\( havato_max_seats\(\), \$seats \)/.test(rest));
 t('queue_user persists the party size', /'seats'\s*=>\s*max\( 1, min\( havato_max_seats\(\)/.test(rest));
 t('client shows a seat picker', /function openReserve/.test(js));

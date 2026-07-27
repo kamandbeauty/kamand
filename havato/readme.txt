@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.13.0
+Stable tag: 1.14.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,29 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.14.0 =
+* Reliability penalties. Not turning up costs behaviour score, and every seat
+  a guest reserved but left empty costs more on top — a party of three where
+  nobody arrives is charged three times as much as a solo no-show.
+* Penalties are stored in their own column, not in rating_score.
+  recalculate_rating() rewrites that column wholesale from peer feedback, so a
+  penalty written there would have been silently erased by the next review.
+  The score shown and matched on is now peer average minus penalties, with a
+  configurable floor so nobody can be driven to zero.
+* Cafés can record a partial arrival: registrations now store how many of the
+  booked seats actually turned up, and the check-in screen offers a picker
+  whenever more than one seat was reserved. Older rows keep working from the
+  original checked_in flag.
+* Three new tunables under Formula weights: no-show penalty, per-empty-seat
+  penalty and the score floor.
+* Mobile number is now required in the profile details, with the dialling
+  code taken from the selected country. Numbers are normalised before being
+  stored, so "0912…", "+98912…" and "0098912…" are one number and not three;
+  duplicates are rejected. It is only ever visible to the guest themselves and
+  the café, never to other guests.
+* The neighbourhood field has been removed.
+* Schema 1.10.0.
 
 = 1.13.0 =
 * Fixed the grey square left behind after tapping a bottom-nav item. It was

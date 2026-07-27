@@ -52,7 +52,7 @@
 			energy: 5, planning: 5, empathy: 5,
 			vibe: 'fun', interests: []
 		},
-		detailsData: { name: '', age: 27, gender: '', country: '', city: '', neighborhood: '' },
+		detailsData: { name: '', age: 27, gender: '', country: '', city: '', phone: '' },
 		booted: false
 	};
 
@@ -864,6 +864,7 @@
 			'<div class="hv-step-q">' + esc(t('how_many_seats')) + '</div>' +
 			'<div class="hv-choice-grid">' + options + '</div>' +
 			'<p class="hv-muted hv-mt">' + esc(t('seats_hint').replace('%s', num(max))) + '</p>' +
+			'<div class="hv-alert hv-alert-orange hv-mt">' + esc(t('penalty_notice')) + '</div>' +
 			'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-reserve-go">' +
 				esc(t('confirm_reserve')) + '</button>'
 		);
@@ -1395,6 +1396,15 @@
 				html += '</div>';
 			}
 
+			if (profile.is_self && (profile.penalty > 0)) {
+				html += '<div class="hv-card"><div class="hv-alert hv-alert-orange">' +
+					esc(t('penalty_notice')) +
+					'<br><strong>' + esc(t('stat_no_shows')) + ': ' + num(profile.no_shows) +
+					' · ' + esc(t('stat_empty_seats')) + ': ' + num(profile.empty_seats) +
+					' · ' + esc(t('penalty_points')) + ': ' + num(profile.penalty) + '</strong>' +
+					'</div></div>';
+			}
+
 			if (profile.completed) {
 				html += behaviourMarkup(profile);
 			}
@@ -1510,7 +1520,6 @@
 					'<span class="hv-behaviour-tag">' + esc(profile.vibe === 'deep' ? t('vibe_deep') : t('vibe_fun')) + '</span>' +
 					(profile.age ? '<span class="hv-behaviour-tag">' + num(profile.age) + '</span>' : '') +
 					(profile.city_label ? '<span class="hv-behaviour-tag">' + esc(profile.city_label) + '</span>' : '') +
-					(profile.neighborhood ? '<span class="hv-behaviour-tag">' + esc(profile.neighborhood) + '</span>' : '') +
 					tags +
 				'</div>' +
 				(bars ? '<div class="hv-traits">' + bars + '</div>' : '') +
@@ -1992,6 +2001,16 @@
 	 * Reachable at any time from the profile page, so these can be corrected
 	 * later instead of being frozen at sign-up.
 	 */
+	/** Dialling prefix of the selected country, e.g. "+98". */
+	function dialCode(country) {
+		var loc = (BOOT.locations || {})[country];
+		return (loc && loc.dial) ? loc.dial : '';
+	}
+
+	function phonePlaceholder(country) {
+		return country === 'tr' ? '5xx xxx xx xx' : '912 345 6789';
+	}
+
 	function openDetails() {
 		var profile = S.data.profile || {};
 		var user = profile.user || {};
@@ -2002,7 +2021,7 @@
 			gender: profile.gender || '',
 			country: profile.country || '',
 			city: profile.city || '',
-			neighborhood: profile.neighborhood || ''
+			phone: profile.phone || ''
 		};
 
 		renderDetails();
@@ -2067,8 +2086,13 @@
 			'<div class="hv-choice-grid">' + countryBtns + '</div>' +
 			cityBlock +
 
-			'<div class="hv-field hv-mt"><label for="hv-d-hood">' + esc(t('q_neighborhood')) + '</label>' +
-				'<input type="text" class="hv-input" id="hv-d-hood" value="' + esc(d.neighborhood) + '"></div>' +
+			'<div class="hv-field hv-mt"><label for="hv-d-phone">' + esc(t('q_phone')) + '</label>' +
+				'<div class="hv-phone-row">' +
+					'<span class="hv-dial" id="hv-d-dial">' + esc(dialCode(d.country)) + '</span>' +
+					'<input type="tel" inputmode="tel" autocomplete="tel" class="hv-input" id="hv-d-phone" ' +
+						'value="' + esc(d.phone) + '" placeholder="' + esc(phonePlaceholder(d.country)) + '">' +
+				'</div>' +
+				'<p class="hv-muted" style="margin:6px 0 0">' + esc(t('phone_hint')) + '</p></div>' +
 
 			'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-d-save">' +
 				esc(t('save')) + '</button>'
@@ -2084,8 +2108,8 @@
 		var age = $('#hv-d-age');
 		if (age) { age.onchange = function () { S.detailsData.age = parseInt(age.value, 10); }; }
 
-		var hood = $('#hv-d-hood');
-		if (hood) { hood.oninput = function () { S.detailsData.neighborhood = hood.value; }; }
+		var phone = $('#hv-d-phone');
+		if (phone) { phone.oninput = function () { S.detailsData.phone = phone.value; }; }
 
 		$$('[data-dgender]').forEach(function (btn) {
 			btn.onclick = function () {
@@ -2099,6 +2123,7 @@
 				if (S.detailsData.country === btn.dataset.dcountry) { return; }
 				S.detailsData.country = btn.dataset.dcountry;
 				S.detailsData.city = ''; // a city from the old country would be invalid
+				// Re-rendering also refreshes the dialling prefix.
 				renderDetails();
 			};
 		});
@@ -2116,6 +2141,9 @@
 			if (!d.name || d.name.trim().length < 2) { toast(t('err_name_short'), 'error'); return; }
 			if (!d.gender) { toast(t('q_gender'), 'error'); return; }
 			if (!d.country || !d.city) { toast(t('q_city_select'), 'error'); return; }
+			// Server normalises and re-validates; this is only a fast local
+			// check so the user is not bounced by a round-trip.
+			if (String(d.phone).replace(/\D+/g, '').length < 6) { toast(t('err_phone'), 'error'); return; }
 
 			saveWithProgress(api('profile/details', { method: 'POST', body: d }))
 				.then(function (res) {

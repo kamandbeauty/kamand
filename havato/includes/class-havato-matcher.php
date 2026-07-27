@@ -656,8 +656,10 @@ class Havato_Matcher {
 		// Users with a low rating_score are gradually pushed away from users
 		// with a high rating_score: the term is the product of both normalized
 		// ratings, so a 5/5 pair keeps the full bonus while a 5/1 pair loses it.
-		$ra = isset( $a['rating_score'] ) ? (float) $a['rating_score'] : 5.0;
-		$rb = isset( $b['rating_score'] ) ? (float) $b['rating_score'] : 5.0;
+		// Penalties are part of reliability, so the matcher must see the
+		// effective score rather than the raw peer average.
+		$ra = havato_effective_rating( $a );
+		$rb = havato_effective_rating( $b );
 		$na = max( 0.0, min( 1.0, $ra / 5.0 ) );
 		$nb = max( 0.0, min( 1.0, $rb / 5.0 ) );
 		$score += ( ( $na * $nb ) - 0.5 ) * 2 * (float) $s['w_rating'] * $softness;

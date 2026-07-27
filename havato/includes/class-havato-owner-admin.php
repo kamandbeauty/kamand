@@ -673,28 +673,67 @@ class Havato_Owner_Admin {
 			$uid     = (int) $member['user_id'];
 			$profile = havato_get_profile( $uid );
 			$in      = (int) $member['checked_in'];
+			$booked  = max( 1, (int) $member['seats'] );
+			$arrived = (int) $member['arrived'];
+			if ( $arrived <= 0 && $in ) {
+				$arrived = $booked; // legacy row: flag only.
+			}
 
 			echo '<tr>';
 			echo '<td class="hv-adm-user"><img src="' . esc_url( havato_avatar( $uid ) ) . '" alt="">' .
-				'<strong>' . esc_html( havato_display_name( $uid ) ) . '</strong></td>';
-			echo '<td>★ ' . esc_html( round( (float) $profile['rating_score'], 1 ) ) . '</td>';
+				'<strong>' . esc_html( havato_display_name( $uid ) ) . '</strong>';
+			if ( $booked > 1 ) {
+				echo ' <span class="hv-adm-badge is-blue">' .
+					esc_html( sprintf( Havato_I18N::t( 'seats_booked' ), number_format_i18n( $booked ) ) ) .
+					'</span>';
+			}
+			echo '</td>';
+			echo '<td>★ ' . esc_html( round( havato_effective_rating( $profile ), 1 ) ) . '</td>';
 			echo '<td>' . ( $in
-				? '<span class="hv-adm-badge is-green">' . esc_html( Havato_I18N::t( 'check_in' ) ) . '</span>'
+				? '<span class="hv-adm-badge is-green">' .
+					esc_html( sprintf( Havato_I18N::t( 'arrived_n_of_m' ), number_format_i18n( $arrived ), number_format_i18n( $booked ) ) ) .
+					'</span>'
 				: '<span class="hv-adm-badge is-gray">—</span>' ) . '</td>';
 			echo '<td class="hv-adm-actions">';
 
-			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="hv-adm-inline-form">';
 			wp_nonce_field( 'havato_owner', 'havato_owner_nonce' );
 			echo '<input type="hidden" name="action" value="havato_owner_action">';
 			echo '<input type="hidden" name="havato_action" value="checkin">';
 			echo '<input type="hidden" name="event_id" value="' . esc_attr( $event_id ) . '">';
 			echo '<input type="hidden" name="user_id" value="' . esc_attr( $uid ) . '">';
-			echo '<input type="hidden" name="checked_in" value="' . ( $in ? '0' : '1' ) . '">';
-			printf(
-				'<button type="submit" class="hv-adm-btn %s">%s</button>',
-				$in ? 'hv-adm-btn-ghost' : 'hv-adm-btn-green',
-				esc_html( $in ? Havato_I18N::t( 'cancel' ) : Havato_I18N::t( 'not_checked_in' ) )
-			);
+
+			if ( $in ) {
+				// Undo.
+				echo '<input type="hidden" name="checked_in" value="0">';
+				echo '<input type="hidden" name="arrived" value="0">';
+				printf(
+					'<button type="submit" class="hv-adm-btn hv-adm-btn-ghost">%s</button>',
+					esc_html( Havato_I18N::t( 'cancel' ) )
+				);
+			} else {
+				echo '<input type="hidden" name="checked_in" value="1">';
+				if ( $booked > 1 ) {
+					// A party can arrive incomplete; each empty chair is
+					// penalised, so the real number has to be recorded.
+					echo '<select name="arrived" aria-label="' . esc_attr( Havato_I18N::t( 'how_many_arrived' ) ) . '">';
+					for ( $n = 1; $n <= $booked; $n++ ) {
+						printf(
+							'<option value="%d"%s>%s</option>',
+							$n,
+							selected( $n, $booked, false ),
+							esc_html( sprintf( Havato_I18N::t( 'arrived_n_of_m' ), number_format_i18n( $n ), number_format_i18n( $booked ) ) )
+						);
+					}
+					echo '</select>';
+				} else {
+					echo '<input type="hidden" name="arrived" value="1">';
+				}
+				printf(
+					'<button type="submit" class="hv-adm-btn hv-adm-btn-green">%s</button>',
+					esc_html( Havato_I18N::t( 'not_checked_in' ) )
+				);
+			}
 			echo '</form>';
 
 			echo '</td></tr>';
@@ -975,6 +1014,7 @@ class Havato_Owner_Admin {
 				$req->set_param( 'event_id', isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '' );
 				$req->set_param( 'user_id', isset( $_POST['user_id'] ) ? (int) $_POST['user_id'] : 0 );
 				$req->set_param( 'checked_in', ! empty( $_POST['checked_in'] ) );
+				$req->set_param( 'arrived', isset( $_POST['arrived'] ) ? (int) $_POST['arrived'] : null );
 
 				$result = Havato_REST::owner_checkin( $req );
 				if ( is_wp_error( $result ) ) {
