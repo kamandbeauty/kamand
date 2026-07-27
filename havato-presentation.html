@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>هواتو — معرفی کامل افزونه</title>
+<!-- Vazirmatn from CDN; if it is unavailable (offline / filtered) the
+     font stack below falls back to the Persian fonts shipped with Windows,
+     macOS and Android, so the deck stays readable either way. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+<style>
+:root{
+  --indigo:#1b1fbf; --indigo2:#2b2fe0; --deep:#141a6e; --ink:#0f1440;
+  --blue:#3e8bff; --blue-soft:#e8f0ff;
+  --green:#12b981; --green-soft:#e3faf1;
+  --orange:#f97316; --orange-soft:#fff1e2;
+  --pink:#f0568f; --pink-soft:#ffe9f2;
+  --text:#16204a; --muted:#6b74a0; --line:#e6eaf5; --bg:#eef1fb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Vazirmatn","IRANSans","Segoe UI","Tahoma","Noto Naskh Arabic",system-ui,sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.9;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+
+/* ---------- slide shell ---------- */
+.slide{
+  max-width:1080px; margin:0 auto 26px; background:#fff;
+  border-radius:26px; padding:clamp(26px,4vw,54px);
+  box-shadow:0 10px 34px rgba(20,26,110,.09);
+  position:relative; overflow:hidden;
+}
+.slide::before{
+  content:attr(data-n); position:absolute; inset-inline-end:26px; inset-block-start:20px;
+  font-size:13px; font-weight:800; color:#c9d2ea;
+}
+.cover{
+  background:linear-gradient(150deg,#2b2fe0 0%,#1b1fbf 48%,#0f1440 100%);
+  color:#fff; text-align:center; padding:clamp(44px,7vw,86px) 34px;
+}
+.cover::before{color:rgba(255,255,255,.28)}
+.cover .logo{
+  width:92px;height:92px;margin:0 auto 22px;border-radius:28px;
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.34);
+  display:grid;place-items:center;font-size:44px;font-weight:800;
+  backdrop-filter:blur(20px);
+}
+.cover h1{font-size:clamp(34px,6vw,58px);font-weight:800;letter-spacing:-.5px}
+.cover .sub{font-size:clamp(15px,2.3vw,20px);opacity:.9;margin-top:12px}
+.cover .ver{
+  display:inline-block;margin-top:24px;padding:8px 22px;border-radius:999px;
+  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.32);
+  font-size:14px;font-weight:700;
+}
+
+h2{
+  font-size:clamp(21px,3.2vw,30px); font-weight:800; color:var(--indigo);
+  margin-bottom:8px; padding-inline-start:16px; position:relative;
+}
+h2::before{
+  content:"";position:absolute;inset-inline-start:0;inset-block:6px;
+  width:6px;border-radius:6px;background:linear-gradient(180deg,var(--blue),var(--indigo));
+}
+.lead{color:var(--muted);font-size:15.5px;margin-bottom:24px}
+h3{font-size:17.5px;font-weight:800;margin:24px 0 12px;color:var(--deep)}
+
+/* ---------- building blocks ---------- */
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+
+.card{
+  background:#f8faff;border:1px solid var(--line);
+  border-radius:16px;padding:18px 20px;
+}
+.card h4{font-size:15.5px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+.card p{font-size:14px;color:var(--muted);line-height:1.85}
+.ico{
+  width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+  font-size:17px;flex:0 0 auto;
+}
+.i-blue{background:var(--blue-soft)}.i-green{background:var(--green-soft)}
+.i-orange{background:var(--orange-soft)}.i-pink{background:var(--pink-soft)}
+
+.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
+.stat .n{font-size:clamp(26px,4vw,36px);font-weight:800;color:var(--indigo);line-height:1.25}
+.stat .l{font-size:12.5px;color:var(--muted);font-weight:600}
+
+table{width:100%;border-collapse:separate;border-spacing:0 7px;font-size:14px}
+th{
+  text-align:start;padding:6px 13px;color:var(--muted);
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+}
+td{background:#f8faff;padding:12px 13px;vertical-align:middle}
+tr td:first-child{border-start-start-radius:12px;border-end-start-radius:12px;font-weight:700}
+tr td:last-child{border-start-end-radius:12px;border-end-end-radius:12px}
+
+.badge{
+  display:inline-block;padding:4px 11px;border-radius:999px;
+  font-size:12px;font-weight:700;white-space:nowrap;
+}
+.b-green{background:var(--green-soft);color:#067a55}
+.b-blue{background:var(--blue-soft);color:#1d4ed8}
+.b-orange{background:var(--orange-soft);color:#b45309}
+.b-pink{background:var(--pink-soft);color:#be2f63}
+
+ul.clean{list-style:none;display:grid;gap:9px}
+ul.clean li{
+  padding-inline-start:28px;position:relative;font-size:14.5px;line-height:1.85;
+}
+ul.clean li::before{
+  content:"✓";position:absolute;inset-inline-start:0;top:1px;
+  width:19px;height:19px;border-radius:50%;background:var(--green-soft);
+  color:#067a55;font-size:11px;font-weight:800;display:grid;place-items:center;
+}
+ul.clean.warn li::before{content:"!";background:var(--orange-soft);color:#b45309}
+
+.note{
+  background:var(--blue-soft);border-inline-start:4px solid var(--blue);
+  border-radius:12px;padding:15px 18px;font-size:14.5px;margin-top:18px;
+}
+.note.warn{background:var(--orange-soft);border-color:var(--orange)}
+.note.ok{background:var(--green-soft);border-color:var(--green)}
+.note b{color:var(--deep)}
+
+.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin-top:6px}
+.flow .step{
+  flex:1 1 150px;background:#fff;border:2px solid var(--line);
+  border-radius:14px;padding:14px;position:relative;
+}
+.flow .step .num{
+  width:24px;height:24px;border-radius:50%;background:var(--indigo);color:#fff;
+  font-size:12px;font-weight:800;display:grid;place-items:center;margin-bottom:8px;
+}
+.flow .step b{font-size:14px;display:block;margin-bottom:3px}
+.flow .step span{font-size:12.5px;color:var(--muted);line-height:1.7}
+
+code{
+  background:#f2f5fd;border-radius:6px;padding:2px 7px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;
+  direction:ltr;display:inline-block;
+}
+.mono{direction:ltr;text-align:left;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+.toc{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.toc a{
+  display:flex;align-items:center;gap:11px;padding:12px 15px;background:#f8faff;
+  border:1px solid var(--line);border-radius:12px;text-decoration:none;color:var(--text);
+  font-size:14.5px;font-weight:600;transition:.15s;
+}
+.toc a:hover{border-color:var(--blue);background:var(--blue-soft)}
+.toc a i{
+  width:26px;height:26px;border-radius:8px;background:var(--indigo);color:#fff;
+  font-size:12px;font-weight:800;display:grid;place-items:center;font-style:normal;flex:0 0 auto;
+}
+
+.foot{text-align:center;color:var(--muted);font-size:13px;padding:26px 14px 40px}
+
+@media print{
+  body{background:#fff}
+  .slide{box-shadow:none;border:1px solid var(--line);page-break-after:always;margin-bottom:0}
+  .toc{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ COVER ============================ -->
+<section class="slide cover" data-n="">
+  <div class="logo">ه</div>
+  <h1>هواتو <span style="opacity:.55">/ Havato</span></h1>
+  <p class="sub">پلتفرم دورهمی‌های هوشمند در کافه‌ها — افزونه کامل وردپرس</p>
+  <div class="ver">نسخه ۱.۹.۰ &nbsp;·&nbsp; آماده بهره‌برداری</div>
+</section>
+
+<!-- ============================ TOC ============================ -->
+<section class="slide" data-n="۰۱">
+  <h2>فهرست مطالب</h2>
+  <p class="lead">این سند تمام امکانات پیاده‌سازی‌شده افزونه را پوشش می‌دهد.</p>
+  <nav class="toc">
+    <a href="#s2"><i>۲</i> هواتو چیست؟</a>
+    <a href="#s3"><i>۳</i> نگاه کلی به معماری</a>
+    <a href="#s4"><i>۴</i> سفر کاربر (کلاینت)</a>
+    <a href="#s5"><i>۵</i> موتور تطابق هوشمند</a>
+    <a href="#s6"><i>۶</i> سیستم میزها</a>
+    <a href="#s7"><i>۷</i> پنل کافه‌دار</a>
+    <a href="#s8"><i>۸</i> پنل مدیریت</a>
+    <a href="#s9"><i>۹</i> پرداخت و تسویه</a>
+    <a href="#s10"><i>۱۰</i> امنیت و حریم خصوصی</a>
+    <a href="#s11"><i>۱۱</i> دوزبانه و تقویم</a>
+    <a href="#s12"><i>۱۲</i> موبایل، PWA و اپلیکیشن</a>
+    <a href="#s13"><i>۱۳</i> کیفیت و تست</a>
+    <a href="#s14"><i>۱۴</i> راه‌اندازی</a>
+  </nav>
+</section>
+
+<!-- ============================ WHAT ============================ -->
+<section class="slide" id="s2" data-n="۰۲">
+  <h2>هواتو چیست؟</h2>
+  <p class="lead">
+    هواتو کافه‌های شریک را به شبکه‌ای از «میزهای اجتماعی» تبدیل می‌کند.
+    مهمان‌ها بر اساس شخصیت و علایقشان کنار هم می‌نشینند — نه به‌صورت تصادفی.
+  </p>
+
+  <div class="grid g3">
+    <div class="card">
+      <h4><span class="ico i-blue">👤</span> برای مهمان</h4>
+      <p>یک تست ۳۰ ثانیه‌ای پر می‌کند، دورهمی مناسب شهرش را انتخاب می‌کند، و کنار آدم‌هایی می‌نشیند که با او هم‌فرکانس‌اند.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-orange">☕</span> برای کافه‌دار</h4>
+      <p>میزهای خالی ساعات کم‌مشتری را پر می‌کند، بدون هزینه بازاریابی. مدیریت کامل از پنل اختصاصی.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-green">📊</span> برای پلتفرم</h4>
+      <p>درآمد از فروش بلیت با کارمزد قابل تنظیم، به‌همراه دفتر تسویه‌حساب شفاف با هر کافه.</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>تفاوت کلیدی:</b> هواتو صرفاً یک سیستم رزرو نیست. قلب آن یک الگوریتم تطابق است
+    که ترکیب افراد سر هر میز را بر اساس شخصیت‌شناسی، علایق مشترک و توازن جنسیتی می‌چیند.
+  </div>
+</section>
+
+<!-- ============================ ARCHITECTURE ============================ -->
+<section class="slide" id="s3" data-n="۰۳">
+  <h2>نگاه کلی به معماری</h2>
+  <p class="lead">افزونه‌ای مستقل، بدون وابستگی به Composer یا کتابخانه خارجی سنگین.</p>
+
+  <div class="grid g4" style="margin-bottom:22px">
+    <div class="stat"><div class="n">۱۶</div><div class="l">جدول اختصاصی</div></div>
+    <div class="stat"><div class="n">۴۹</div><div class="l">اندپوینت REST</div></div>
+    <div class="stat"><div class="n">۲۰</div><div class="l">کلاس PHP</div></div>
+    <div class="stat"><div class="n">۲۴۳</div><div class="l">رشته دوزبانه</div></div>
+  </div>
+
+  <h3>سه بخش مجزا</h3>
+  <div class="grid g3">
+    <div class="card">
+      <h4><span class="ico i-blue">📱</span> وب‌اپ مهمان‌ها</h4>
+      <p>شورت‌کد <code>[havato_app]</code> — رابط موبایلی تک‌صفحه‌ای (SPA) بدون بارگذاری مجدد.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-orange">🖥</span> پنل کافه‌دار</h4>
+      <p>داخل wp-admin با چیدمان دسکتاپ. کافه از پشت پیشخوان مدیریت می‌شود، نه با موبایل.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-green">⚙️</span> پنل مدیریت</h4>
+      <p>۱۰ صفحه برای کنترل کامل پلتفرم: تاییدها، درآمد، ضرایب الگوریتم و بیشتر.</p>
+    </div>
+  </div>
+
+  <div class="note ok">
+    <b>یک منبع حقیقت:</b> هر سه بخش از همان اندپوینت‌های REST استفاده می‌کنند.
+    منطق کسب‌وکار فقط در یک جا نوشته شده، پس تغییر یک قانون در همه‌جا اعمال می‌شود.
+  </div>
+</section>
+
+<!-- ============================ USER JOURNEY ============================ -->
+<section class="slide" id="s4" data-n="۰۴">
+  <h2>سفر کاربر (کلاینت)</h2>
+  <p class="lead">چهار تب، بدون رفرش صفحه، با پشتیبانی کامل از دکمه Back گوشی.</p>
+
+  <div class="flow">
+    <div class="step"><div class="num">۱</div><b>ورود با گوگل</b><span>احراز هویت واقعی با تایید توکن سمت سرور</span></div>
+    <div class="step"><div class="num">۲</div><b>تست شخصیت</b><span>۷ مرحله: کشور و شهر، سن، جنسیت، برون‌گرایی، سبک گفتگو، جو، علایق</span></div>
+    <div class="step"><div class="num">۳</div><b>انتخاب دورهمی</b><span>فقط کافه‌های شهر خودش را می‌بیند</span></div>
+    <div class="step"><div class="num">۴</div><b>پرداخت</b><span>درگاه واقعی ووکامرس با رزرو صندلی</span></div>
+    <div class="step"><div class="num">۵</div><b>چیده شدن میز</b><span>الگوریتم گروه را می‌چیند و چت باز می‌شود</span></div>
+    <div class="step"><div class="num">۶</div><b>پس از دورهمی</b><span>نظرسنجی، افزودن دوست، چت خصوصی</span></div>
+  </div>
+
+  <h3>چهار تب اصلی</h3>
+  <table>
+    <tr><td>کاوش</td><td>دورهمی‌های باز این هفته با فیلتر بودجه · فقط شهر کاربر</td></tr>
+    <tr><td>نقشه</td><td>نقشه Leaflet با پین کافه‌ها · دکمه «موقعیت نزدیک» با نقطه موقعیت شما</td></tr>
+    <tr><td>گفتگوها</td><td>چت گروهی میز + چت خصوصی با دوستان · به‌روزرسانی هر ۳ ثانیه</td></tr>
+    <tr><td>پروفایل من</td><td>شناسنامه رفتاری، کیف پول، گالری عکس، تاریخچه، درخواست‌های دوستی</td></tr>
+  </table>
+
+  <div class="note">
+    <b>گالری عکس:</b> آپلود از کتابخانه رسانه وردپرس، لایک (هر کاربر یک‌بار) و گزارش تخلف.
+    گالری هر کاربر فقط برای <b>دوستان تاییدشده</b> قابل مشاهده است.
+  </div>
+</section>
+
+<!-- ============================ MATCHER ============================ -->
+<section class="slide" id="s5" data-n="۰۵">
+  <h2>موتور تطابق هوشمند</h2>
+  <p class="lead">قلب محصول: چیدن بهترین ترکیب ممکن برای هر میز.</p>
+
+  <h3>دو مسیر اجرا</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4><span class="ico i-green">⚡</span> مسیر اصلی</h4>
+      <p>به‌محض پر شدن آخرین صندلی، الگوریتم خودکار اجرا می‌شود. بدون دخالت ادمین.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-orange">⏰</span> مسیر پشتیبان</h4>
+      <p>یک Cron چند ساعت قبل از رویداد (قابل تنظیم) اجرا می‌شود — حتی با ۲ نفر هم میز می‌چیند.</p>
+    </div>
+  </div>
+
+  <h3>فرمول امتیازدهی (پایه ۱۰۰ برای هر زوج)</h3>
+  <table>
+    <tr><td>اختلاف سن</td><td>بالای ۵ سال: هر سال <span class="badge b-orange">−۳</span></td></tr>
+    <tr><td>درون‌گرا × برون‌گرا</td><td><span class="badge b-green">+۱۰</span> &nbsp; دو Ambivert: <span class="badge b-green">+۱۵</span></td></tr>
+    <tr><td>گوینده × شنونده</td><td><span class="badge b-green">+۲۰</span> &nbsp; دو پرحرف یا دو ساکت: <span class="badge b-orange">−۱۵</span></td></tr>
+    <tr><td>هر علاقه مشترک</td><td><span class="badge b-green">+۱۰</span></td></tr>
+    <tr><td>جو مکالمه</td><td>یکسان <span class="badge b-green">+۱۵</span> &nbsp; متضاد <span class="badge b-orange">−۱۰</span></td></tr>
+    <tr><td>امتیاز رفتاری</td><td>کاربران خوش‌سابقه با هم اولویت می‌گیرند</td></tr>
+    <tr><td>توازن جنسیتی</td><td>معیار نرم، قابل خاموش کردن از پنل</td></tr>
+  </table>
+
+  <div class="note warn">
+    <b>قید سخت:</b> اگر کاربری کاربر دیگری را بلاک کرده باشد، هرگز سر یک میز نمی‌نشینند —
+    حتی در حالت «ثبت‌نام کم» که بقیه معیارها نرم می‌شوند. این قانون هیچ‌وقت نقض نمی‌شود.
+  </div>
+  <div class="note ok">
+    <b>هیچ‌کس جا نمی‌ماند:</b> الگوریتم Greedy + Local Search همیشه خروجی تولید می‌کند.
+    اگر ۷ نفر برای ۳ میز ۴ نفره ثبت‌نام کنند، دو میز چیده می‌شود (۴+۳) و سومی خالی می‌ماند.
+  </div>
+</section>
+
+<!-- ============================ TABLES ============================ -->
+<section class="slide" id="s6" data-n="۰۶">
+  <h2>سیستم میزها</h2>
+  <p class="lead">ظرفیت رویداد از روی مبلمان واقعی کافه محاسبه می‌شود، نه یک عدد دلخواه.</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4><span class="ico i-blue">🪑</span> تعریف یک‌باره</h4>
+      <p>کافه‌دار میزهایش را با <b>شماره واقعی همان میز در کافه</b> ثبت می‌کند: میز ۶ با ۴ صندلی، میز ۱۲ با ۶ صندلی.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-green">✅</span> انتخاب برای هر رویداد</h4>
+      <p>هنگام ساخت دورهمی فقط تیک می‌زند. ظرفیت خودکار جمع می‌شود و پیش‌نمایش زنده نشان داده می‌شود.</p>
+    </div>
+  </div>
+
+  <h3>چرا این مهم است</h3>
+  <table>
+    <tr><th>قبل</th><th>بعد</th></tr>
+    <tr>
+      <td>یک گروه ۱۸ نفره<br><span style="color:var(--muted);font-weight:400;font-size:13px">میزی که هیچ کافه‌ای ندارد</span></td>
+      <td><span class="badge b-green">۴ گروه مجزا: ۶ + ۴ + ۴ + ۴</span><br><span style="color:var(--muted);font-weight:400;font-size:13px">مطابق میزهای واقعی، هرکدام با چت خودش</span></td>
+    </tr>
+  </table>
+
+  <ul class="clean" style="margin-top:20px">
+    <li>مهمان دقیقاً می‌داند سر «میز شماره ۶» بنشیند — نه «میز ۲» که با واقعیت کافه نمی‌خواند</li>
+    <li>شماره تکراری پذیرفته نمی‌شود (هم در رابط کاربری، هم سمت سرور)</li>
+    <li>ویرایش میزها آزاد است، مگر وقتی دورهمی فعالی روی همان میزها در جریان باشد</li>
+  </ul>
+
+  <div class="note warn">
+    <b>قفل ایمنی:</b> اگر کافه‌دار بتواند میز یک دورهمی فروخته‌شده را حذف کند،
+    گروهی که پول داده بی‌جا می‌ماند. سیستم تا پایان آن رویداد اجازه ویرایش نمی‌دهد
+    و نام دقیق رویدادهای مسدودکننده را نشان می‌دهد.
+  </div>
+</section>
+
+<!-- ============================ OWNER PANEL ============================ -->
+<section class="slide" id="s7" data-n="۰۷">
+  <h2>پنل کافه‌دار</h2>
+  <p class="lead">داخل wp-admin با چیدمان دسکتاپ — چون کافه از پشت پیشخوان مدیریت می‌شود.</p>
+
+  <table>
+    <tr><td>داشبورد</td><td>بهره‌وری، مهمان‌های هدایت‌شده، دورهمی‌های پیش‌رو، ثبت حضورها</td></tr>
+    <tr><td>رویدادهای کافه</td><td>ساخت دورهمی + لیست اعضا با <b>ثبت حضور تک‌تک</b></td></tr>
+    <tr><td>میزهای کافه</td><td>تعریف میزها با شماره و تعداد صندلی</td></tr>
+    <tr><td>ساخت منو</td><td>ردیف‌های منویی با عکس، قیمت و توضیحات</td></tr>
+    <tr><td>تنظیمات کافه</td><td>نام، مدیر، شهر، آدرس، عکس کاور، پین نقشه قابل درگ</td></tr>
+    <tr><td>وضعیت تسویه</td><td>فقط سهم خود کافه — درآمد پلتفرم اینجا دیده نمی‌شود</td></tr>
+  </table>
+
+  <h3>ساخت یک دورهمی</h3>
+  <div class="flow">
+    <div class="step"><div class="num">۱</div><b>عنوان و تم</b><span>«شب فیلم» · موسیقی</span></div>
+    <div class="step"><div class="num">۲</div><b>تاریخ و ساعت</b><span>تقویم و ساعت</span></div>
+    <div class="step"><div class="num">۳</div><b>انتخاب میزها</b><span>تیک زدن + ظرفیت خودکار</span></div>
+    <div class="step"><div class="num">۴</div><b>قیمت و عکس</b><span>عکس اختیاری است</span></div>
+  </div>
+
+  <div class="note">
+    <b>ثبت‌نام مستقل:</b> کافه‌دارها از یک صفحه اختصاصی با برند هواتو
+    (<code>[havato_owner_auth]</code>) ثبت‌نام و ورود می‌کنند — نه از صفحه لاگین وردپرس.
+    کافه تا تایید مدیریت برای مهمان‌ها نمایش داده نمی‌شود.
+  </div>
+  <div class="note ok">
+    <b>تایید سریع‌تر:</b> پنل از کافه‌دار می‌خواهد عکسی از ورودی مغازه آپلود کند،
+    و همان عکس مستقیماً در جدول تاییدهای مدیر نمایش داده می‌شود.
+  </div>
+</section>
+
+<!-- ============================ ADMIN ============================ -->
+<section class="slide" id="s8" data-n="۰۸">
+  <h2>پنل مدیریت</h2>
+  <p class="lead">۱۰ صفحه با زبان بصری واحد؛ سایدبار پیش‌فرض وردپرس دست‌نخورده می‌ماند.</p>
+
+  <table>
+    <tr><td>داشبورد آمار</td><td>کارت‌های آماری با درصد رشد + کنسول زنده موتور تطابق</td></tr>
+    <tr><td>تایید صلاحیت و منوها</td><td>تایید کافه، تایید منو، رسیدگی به گزارش عکس</td></tr>
+    <tr><td>رویدادها و اعضا</td><td>همه دورهمی‌ها با <b>عکس و مشخصات اعضای ثبت‌نام‌شده</b></td></tr>
+    <tr><td>همه کافه‌ها</td><td>جستجو، فیلتر شهر و وضعیت، صفحه‌بندی</td></tr>
+    <tr><td>افزودن گروهی کافه</td><td>وارد کردن لیست JSON با تشخیص تکراری</td></tr>
+    <tr><td>درآمد و تسویه</td><td>فروش، کارمزد، بدهی · علامت‌زدن دوره به‌عنوان پرداخت‌شده</td></tr>
+    <tr><td>اجرای تطابق هوشمند</td><td>اجرای دستی الگوریتم + کنسول لاگ زنده</td></tr>
+    <tr><td>تنظیم ضرایب فرمول</td><td>اسلایدرهای تمام وزن‌های الگوریتم</td></tr>
+    <tr><td>ورود با گوگل</td><td>Client ID و راهنمای پیکربندی</td></tr>
+    <tr><td>زبان و منطقه</td><td>زبان پیش‌فرض، مرکز نقشه، تایید خودکار عکس</td></tr>
+  </table>
+
+  <div class="note">
+    <b>کنسول زنده:</b> جعبه تیره با فونت مونواسپیس که رویدادهای موتور تطابق را
+    با برچسب زمانی نشان می‌دهد: فعال‌سازی موتور، جستجوی منطقه، چیدن میز، ارسال اعلان.
+  </div>
+  <div class="note ok">
+    <b>محتوای نمونه:</b> با یک دکمه، ۳۰ کافه در تهران، اصفهان و استانبول
+    به‌همراه میز و دورهمی ساخته می‌شود — و با دکمه دیگر کاملاً حذف می‌شود،
+    بدون اینکه به کافه‌های واقعی دست بزند.
+  </div>
+</section>
+
+<!-- ============================ PAYMENTS ============================ -->
+<section class="slide" id="s9" data-n="۰۹">
+  <h2>پرداخت و تسویه‌حساب</h2>
+  <p class="lead">پرداخت واقعی از طریق ووکامرس — بدون کیف پول شبیه‌سازی‌شده.</p>
+
+  <div class="flow">
+    <div class="step"><div class="num">۱</div><b>درخواست صندلی</b><span>کاربر روی دورهمی می‌زند</span></div>
+    <div class="step"><div class="num">۲</div><b>رزرو صندلی</b><span>صندلی نگه داشته می‌شود</span></div>
+    <div class="step"><div class="num">۳</div><b>درگاه بانکی</b><span>زرین‌پال و درگاه‌های شتاب</span></div>
+    <div class="step"><div class="num">۴</div><b>تایید نهایی</b><span>عضویت در میز قطعی می‌شود</span></div>
+  </div>
+
+  <div class="note warn" style="margin-top:20px">
+    <b>جلوگیری از فروش بیش از ظرفیت:</b> صندلی <b>قبل</b> از رفتن کاربر به درگاه رزرو می‌شود.
+    بدون این کار، ۱۰ نفر می‌توانستند هم‌زمان برای یک میز ۶ نفره پول بدهند.
+    اگر پرداخت رها شود، صندلی بعد از ۳۰ دقیقه آزاد می‌گردد.
+  </div>
+
+  <h3>تسویه با کافه</h3>
+  <ul class="clean">
+    <li>محاسبه خودکار فروش هر کافه در هر دوره ماهانه</li>
+    <li>کسر کارمزد پلتفرم با درصد قابل تنظیم</li>
+    <li>نمایش وضعیت «بدهکار / تسویه‌شده» در پنل کافه‌دار</li>
+    <li>علامت‌زدن دوره به‌عنوان پرداخت‌شده توسط مدیر</li>
+  </ul>
+
+  <div class="note">
+    <b>منوی کافه فقط نمایشی است.</b> مهمان قبل از رفتن، منو را مرور می‌کند تا بداند
+    چه سفارش بدهد؛ اما سفارش واقعی حضوری و مستقیماً در کافه انجام می‌شود.
+  </div>
+</section>
+
+<!-- ============================ SECURITY ============================ -->
+<section class="slide" id="s10" data-n="۱۰">
+  <h2>امنیت و حریم خصوصی</h2>
+
+  <h3>حریم خصوصی کاربران</h3>
+  <table>
+    <tr><td>گالری عکس</td><td>فقط برای دوستان تاییدشده — نه هم‌میزی‌ها، نه غریبه‌ها</td></tr>
+    <tr><td>چت خصوصی</td><td>فقط بین دوستانی که درخواست را پذیرفته‌اند</td></tr>
+    <tr><td>بلاک کردن</td><td>دوطرفه و کامل: پروفایل، عکس، چت و تطابق همگی مسدود</td></tr>
+    <tr><td>درآمد پلتفرم</td><td>در پاسخ API کافه‌دار حذف می‌شود، نه فقط در ظاهر</td></tr>
+  </table>
+
+  <h3>امنیت فنی</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4><span class="ico i-blue">🔐</span> کنترل دسترسی</h4>
+      <p>هر ۴۹ اندپوینت permission callback دارد. کافه‌دار فقط پنل خودش را می‌بیند و کاربر عادی اصلاً وارد wp-admin نمی‌شود.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-green">🛡</span> برابر حملات</h4>
+      <p>محدودیت ۵ تلاش ورود در ۱۵ دقیقه، nonce روی همه فرم‌ها، کوئری‌های prepared و خروجی escape‌شده.</p>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <b>یک آسیب‌پذیری واقعی که در بازبینی پیدا و رفع شد:</b>
+    اندپوینت ورود کافه‌دار، هر حسابی — از جمله مدیر سایت — را بدون بررسی نقش
+    و بدون محدودیت تلاش لاگین می‌کرد. حالا فقط نقش کافه‌دار پذیرفته می‌شود.
+  </div>
+</section>
+
+<!-- ============================ I18N ============================ -->
+<section class="slide" id="s11" data-n="۱۱">
+  <h2>دوزبانه و تقویم</h2>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4><span class="ico i-blue">🇮🇷</span> فارسی</h4>
+      <p>راست‌چین، فونت وزیرمتن، تقویم شمسی، اعداد فارسی، واحد تومان.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-green">🇬🇧</span> English</h4>
+      <p>چپ‌چین، فونت سیستمی، تقویم میلادی، اعداد لاتین.</p>
+    </div>
+  </div>
+
+  <ul class="clean" style="margin-top:20px">
+    <li>سوییچ آنی با یک دکمه — بدون بارگذاری مجدد صفحه</li>
+    <li>۲۴۳ رشته متنی در هر دو زبان</li>
+    <li>تقویم جلالی با پیاده‌سازی سبک داخلی، بدون Composer و بدون وابستگی خارجی</li>
+  </ul>
+
+  <div class="note warn">
+    <b>باگی که با تست پیدا شد:</b> الگوریتم جلالی به تقسیم truncating نیاز دارد نه floor.
+    با floor تمام تاریخ‌ها تا یک سال جابه‌جا می‌شدند —
+    مثلاً ۲۰۲۴/۰۳/۲۰ به‌جای ۱۴۰۳/۰۱/۰۱ می‌شد ۱۴۰۲/۱۲/۲۹.
+    بعد از رفع، رفت‌وبرگشت سال‌های ۱۹۵۰ تا ۲۱۰۰ بدون خطا تایید شد.
+  </div>
+
+  <h3>مناطق تحت پوشش</h3>
+  <table>
+    <tr><td>ایران</td><td>تهران · اصفهان</td></tr>
+    <tr><td>ترکیه</td><td>استانبول</td></tr>
+  </table>
+  <p style="font-size:13.5px;color:var(--muted);margin-top:10px">
+    مهمان فقط کافه‌ها و دورهمی‌های شهر خودش را می‌بیند. افزودن شهر جدید فقط یک آرایه در کد است.
+  </p>
+</section>
+
+<!-- ============================ MOBILE ============================ -->
+<section class="slide" id="s12" data-n="۱۲">
+  <h2>موبایل، PWA و اپلیکیشن</h2>
+
+  <div class="grid g3">
+    <div class="card">
+      <h4><span class="ico i-blue">📲</span> PWA</h4>
+      <p>manifest و service worker توسط خود افزونه تولید می‌شوند. قابل نصب روی صفحه اصلی گوشی.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-green">📦</span> آماده APK</h4>
+      <p>حالت تمام‌صفحه با <code>?webview=1</code> — بدون هدر و فوتر قالب، آماده بسته‌بندی با Capacitor.</p>
+    </div>
+    <div class="card">
+      <h4><span class="ico i-pink">🎨</span> طراحی</h4>
+      <p>پالت ایندیگو/آبی، افکت شیشه‌ای، نوار پایین موج‌دار با دکمه شناور.</p>
+    </div>
+  </div>
+
+  <h3>نکات فنی رعایت‌شده</h3>
+  <ul class="clean">
+    <li><code>height:100dvh</code> روی ریشه و نوار پایین <code>absolute</code> — رفع کامل باگ پرش منوی فوتر</li>
+    <li>فقط ناحیه محتوا اسکرول می‌شود، نه کل صفحه</li>
+    <li>ناوبری با History API — دکمه Back گوشی بین تب‌ها حرکت می‌کند و از اپ خارج نمی‌شود</li>
+    <li>همه دکمه‌ها حداقل ۴۴ پیکسل (استاندارد لمسی)</li>
+    <li>واحدهای نسبی <code>clamp()</code> و <code>dvh</code> — تست‌شده از ۳۲۰ پیکسل تا تبلت</li>
+    <li>پروگرس‌بار واقعی برای آپلود عکس با درصد بایت و امکان لغو</li>
+  </ul>
+</section>
+
+<!-- ============================ QUALITY ============================ -->
+<section class="slide" id="s13" data-n="۱۳">
+  <h2>کیفیت و تست</h2>
+  <p class="lead">تست‌ها فقط وجود کد را چک نمی‌کنند — رفتار واقعی را شبیه‌سازی می‌کنند.</p>
+
+  <div class="grid g4" style="margin-bottom:22px">
+    <div class="stat"><div class="n">۱۳</div><div class="l">مجموعه تست</div></div>
+    <div class="stat"><div class="n">۴۴۸</div><div class="l">بررسی خودکار</div></div>
+    <div class="stat"><div class="n">۱۰۰٪</div><div class="l">وضعیت سبز</div></div>
+    <div class="stat"><div class="n">۰</div><div class="l">وابستگی خارجی</div></div>
+  </div>
+
+  <h3>نمونه تست‌های رفتاری</h3>
+  <table>
+    <tr><td>موتور تطابق</td><td>توازن جنسیتی ۳M/۳F، بلاک‌لیست هرگز نقض نشد، هیچ کاربری حذف نشد</td></tr>
+    <tr><td>رزرو صندلی</td><td>۱۰ پرداخت هم‌زمان روی میز ۶ نفره ← دقیقاً ۶ رزرو، ۴ رد</td></tr>
+    <tr><td>حذف محتوای نمونه</td><td>کافه واقعی در همان شهر سالم ماند</td></tr>
+    <tr><td>تقویم جلالی</td><td>رفت‌وبرگشت ۱۹۵۰ تا ۲۱۰۰ بدون خطا</td></tr>
+    <tr><td>ریسپانسیو</td><td>۸ اندازه صفحه از ۳۲۰px تا تبلت و لندسکیپ</td></tr>
+    <tr><td>کنتراست رنگ</td><td>محاسبه واقعی WCAG روی گرادیان نوار پایین</td></tr>
+  </table>
+
+  <div class="note ok">
+    <b>باگ‌های واقعی که تست‌ها پیدا کردند:</b> جابه‌جایی تاریخ در تقویم جلالی،
+    فروش بیش از ظرفیت در پرداخت هم‌زمان، نشت گالری عکس، برچسب اشتباه دکمه تایید در پنل ادمین،
+    و آیکون ۳۰۰ پیکسلی که کل نقشه را می‌پوشاند.
+  </div>
+</section>
+
+<!-- ============================ SETUP ============================ -->
+<section class="slide" id="s14" data-n="۱۴">
+  <h2>راه‌اندازی</h2>
+
+  <div class="flow">
+    <div class="step"><div class="num">۱</div><b>نصب</b><span>بارگذاری فایل ZIP و فعال‌سازی</span></div>
+    <div class="step"><div class="num">۲</div><b>ساخت برگه</b><span>قرار دادن <code>[havato_app]</code></span></div>
+    <div class="step"><div class="num">۳</div><b>ورود گوگل</b><span>وارد کردن Client ID</span></div>
+    <div class="step"><div class="num">۴</div><b>محتوای نمونه</b><span>تست کل جریان با یک دکمه</span></div>
+  </div>
+
+  <h3>آنچه خودکار انجام می‌شود</h3>
+  <ul class="clean">
+    <li>ساخت ۱۶ جدول با موتور InnoDB و سیستم خودمراقبتی</li>
+    <li>ثبت دو نقش <code>gatherer</code> و <code>cafe_owner</code></li>
+    <li>ساخت برگه ورود کافه‌داران در آدرس <code>/cafe-owners</code></li>
+    <li>زمان‌بندی دو Cron برای تطابق و چرخه عمر رویدادها</li>
+    <li>ساخت manifest و service worker برای PWA</li>
+  </ul>
+
+  <h3>پیش‌نیازها</h3>
+  <table>
+    <tr><td>وردپرس</td><td>۵.۸ یا بالاتر</td></tr>
+    <tr><td>PHP</td><td>۷.۴ یا بالاتر</td></tr>
+    <tr><td>ووکامرس</td><td>فقط برای دورهمی‌های پولی (اختیاری)</td></tr>
+  </table>
+
+  <div class="note">
+    <b>به‌روزرسانی:</b> پس از نصب نسخه جدید، یک‌بار پنل مدیریت را باز کنید
+    تا مهاجرت‌های دیتابیس اجرا شوند، سپس کش مرورگر را پاک کنید.
+  </div>
+</section>
+
+<p class="foot">
+  هواتو — نسخه ۱.۹.۰ &nbsp;·&nbsp; ۱۶ جدول &nbsp;·&nbsp; ۴۹ اندپوینت &nbsp;·&nbsp; ۴۴۸ تست موفق
+</p>
+
+</body>
+</html>
