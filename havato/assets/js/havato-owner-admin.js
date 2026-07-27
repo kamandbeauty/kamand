@@ -223,20 +223,17 @@
 			return rows.reduce(function (n, r) { return n + (parseInt(r.seats, 10) || 0); }, 0);
 		}
 
-		/** Lowest unused table number, so adding never collides. */
-		function nextNumber() {
-			var used = {};
-			rows.forEach(function (r) { used[parseInt(r.table_number, 10) || 0] = true; });
-			var n = 1;
-			while (used[n]) { n++; }
-			return n;
+		/** Duplicate numbers make check-in ambiguous — flag them before saving. */
+		/** A table with no number cannot be identified in the room. */
+		function missingNumbers() {
+			return rows.some(function (r) { return !(parseInt(r.table_number, 10) || 0); });
 		}
 
-		/** Duplicate numbers make check-in ambiguous — flag them before saving. */
 		function duplicates() {
 			var seen = {}, dupes = [];
 			rows.forEach(function (r) {
 				var n = parseInt(r.table_number, 10) || 0;
+				if (!n) { return; } // not filled in yet
 				if (seen[n]) { dupes.push(n); }
 				seen[n] = true;
 			});
@@ -249,11 +246,11 @@
 
 			var body = rows.map(function (r, i) {
 				var num = parseInt(r.table_number, 10) || 0;
-				var bad = dupes.indexOf(num) !== -1 ? ' is-dupe' : '';
+				var bad = (num && dupes.indexOf(num) !== -1) ? ' is-dupe' : '';
 				return '' +
 					'<tr>' +
 						'<td><input type="number" class="hv-adm-input hv-adm-tnum' + bad + '" data-num="' + i + '" value="' +
-							num + '" min="1" max="999"' + dis + '></td>' +
+							(num || '') + '" min="1" max="999" placeholder="' + esc(t('table_number_col')) + '"' + dis + '></td>' +
 						'<td><input type="text" class="hv-adm-input" data-label="' + i + '" value="' + esc(r.label || '') +
 							'" placeholder="' + esc(t('table_label_hint')) + '"' + dis + '></td>' +
 						'<td><input type="number" class="hv-adm-input" data-seats="' + i + '" value="' +
@@ -276,12 +273,14 @@
 				(dupes.length
 					? '<p class="hv-adm-alert is-orange">' +
 						esc(t('table_number_duplicate').replace('%d', dupes[0])) + '</p>'
-					: '') +
+					: (missingNumbers()
+						? '<p class="hv-adm-alert is-orange">' + esc(t('table_number_required')) + '</p>'
+						: '')) +
 				'<p class="hv-adm-menu-actions">' +
 					'<button type="button" class="hv-adm-btn hv-adm-btn-ghost" id="hv-tables-add"' +
 						(locked ? ' disabled' : '') + '>＋ ' + esc(t('add_item')) + '</button> ' +
 					'<button type="button" class="hv-adm-btn hv-adm-btn-blue" id="hv-tables-save"' +
-						(locked || dupes.length ? ' disabled' : '') + '>' + esc(t('save')) + '</button> ' +
+						(locked || dupes.length || missingNumbers() ? ' disabled' : '') + '>' + esc(t('save')) + '</button> ' +
 					'<span class="hv-adm-muted">' + esc(t('table_quantity')) + ': <strong>' + rows.length +
 					'</strong> · ' + esc(t('seats_left')) + ': <strong>' + totalSeats() + '</strong></span>' +
 				'</p>';
@@ -310,12 +309,14 @@
 			});
 
 			$('#hv-tables-add').onclick = function () {
-				rows.push({ id: 0, table_number: nextNumber(), label: '', seats: 4, quantity: 1 });
+				// No suggested number: the café enters the number the table
+				// actually carries in the room, so staff and guests match.
+				rows.push({ id: 0, table_number: 0, label: '', seats: 4, quantity: 1 });
 				render();
 			};
 
 			$('#hv-tables-save').onclick = function () {
-				if (duplicates().length) { return; }
+				if (duplicates().length || missingNumbers()) { return; }
 				var clean = rows.filter(function (r) {
 					return (parseInt(r.seats, 10) || 0) >= 2 && (parseInt(r.table_number, 10) || 0) >= 1;
 				});

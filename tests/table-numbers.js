@@ -12,11 +12,14 @@ console.log('--- numbering ---');
 t('table_number column', /table_number int\(11\)/.test(db));
 t('indexed per venue', /KEY table_number \(venue_id,table_number\)/.test(db));
 t('DB version bumped', /HAVATO_DB_VERSION', '1\.5\.0'/.test(main));
-t('number saved + clamped 1..999', /min\( 999, isset\( \$item\['table_number'\] \)/.test(rest));
+// Stricter now: an out-of-range or missing number is REJECTED rather than
+// silently clamped, because we must never invent a number for the café.
+t('number required, 1..999 enforced', /\$number < 1 \|\| \$number > 999/.test(rest));
 t('exposed in the payload', /'table_number' => \(int\) \$row\['table_number'\]/.test(rest));
 t('listed in number order', /ORDER BY table_number ASC/.test(rest));
 t('number column in the editor', /table_number_col/.test(oj));
-t('auto-picks the next free number', /function nextNumber/.test(oj));
+// Deliberately removed: the number must be the one on the real table.
+t('does NOT auto-pick a number', !/function nextNumber/.test(oj));
 t('shown as "Table #6" on the event picker', /table_number_label/.test(oa));
 t('admin shows the numbers', /sprintf\( '#%d \(%d\)'/.test(adm));
 
@@ -24,7 +27,8 @@ console.log('\n--- duplicate numbers rejected ---');
 t('server rejects duplicates', /havato_duplicate_number/.test(rest));
 t('reason documented', /duplicate would make check-in ambiguous/.test(rest));
 t('client flags them live', /function duplicates/.test(oj));
-t('save disabled while duplicated', /if \(duplicates\(\)\.length\) \{ return; \}/.test(oj));
+t('save disabled while duplicated or unnumbered',
+  /if \(duplicates\(\)\.length \|\| missingNumbers\(\)\) \{ return; \}/.test(oj));
 {
   const dupes=rows=>{const seen={},out=[];rows.forEach(r=>{if(seen[r.n])out.push(r.n);seen[r.n]=true;});return out;};
   t('1,2,3 -> no duplicates', dupes([{n:1},{n:2},{n:3}]).length===0);

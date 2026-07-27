@@ -623,6 +623,9 @@ class Havato_REST {
 		foreach ( (array) $group_rows as $row ) {
 			$group_threads[] = array(
 				'id'           => $row['id'],
+				// The group is named after the real table ("Table #6"), which
+				// is what the guest will look for when they arrive.
+				'table_name'   => $row['name'],
 				'name'         => $row['venue_name'] ? $row['venue_name'] : $row['name'],
 				'image'        => $row['venue_image'],
 				'date'         => havato_date_pair( $row['event_date'] ),
@@ -1723,7 +1726,17 @@ class Havato_REST {
 			}
 
 			$seats  = max( 2, min( 20, isset( $item['seats'] ) ? (int) $item['seats'] : 4 ) );
-			$number = max( 1, min( 999, isset( $item['table_number'] ) ? (int) $item['table_number'] : 0 ) );
+			$number = isset( $item['table_number'] ) ? (int) $item['table_number'] : 0;
+
+			// The number is the one painted on the table in the room, so it is
+			// required and never invented for the café.
+			if ( $number < 1 || $number > 999 ) {
+				return new WP_Error(
+					'havato_table_number_required',
+					Havato_I18N::t( 'table_number_required' ),
+					array( 'status' => 400 )
+				);
+			}
 			$label  = isset( $item['label'] ) ? sanitize_text_field( $item['label'] ) : '';
 			$id     = isset( $item['id'] ) ? (int) $item['id'] : 0;
 

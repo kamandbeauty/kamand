@@ -96,7 +96,7 @@ class Havato_Matcher {
 		// event: 3x4 + 1x6 means groups of 4, 4, 4 and 6 — NOT one group of 18.
 		// Events created before tables existed fall back to max_capacity.
 		$seat_plan = self::seat_plan( $event );
-		$capacity  = array_sum( $seat_plan );
+		$capacity  = array_sum( wp_list_pluck( $seat_plan, 'seats' ) );
 
 		// RELAXATION: when the queue can not fill a balanced table, soften every
 		// secondary penalty/bonus so a table is ALWAYS produced (hard blocklist
@@ -107,7 +107,7 @@ class Havato_Matcher {
 		}
 
 		Havato_Logger::log(
-			sprintf( 'Seating plan: %d table(s) — %s seats.', count( $seat_plan ), implode( '+', $seat_plan ) ),
+			sprintf( 'Seating plan: %d table(s) — %s seats.', count( $seat_plan ), implode( '+', wp_list_pluck( $seat_plan, 'seats' ) ) ),
 			'info'
 		);
 
@@ -124,13 +124,22 @@ class Havato_Matcher {
 		$index   = 1;
 		foreach ( $tables as $table ) {
 			$gid = havato_uid( 'g' );
+
+			// Name the group after the number painted on the real table, so a
+			// guest told "Table 6" walks to table 6. Falling back to a running
+			// index would contradict the room and confuse everybody.
+			$assigned = isset( $table['table'] ) ? $table['table'] : null;
+			$number   = ( $assigned && ! empty( $assigned['number'] ) ) ? (int) $assigned['number'] : 0;
+			$group_name = $number
+				? sprintf( Havato_I18N::t( 'table_number_label', 'en' ), $number )
+				: sprintf( 'Table %d', $index );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->insert(
 				$groups_t,
 				array(
 					'id'         => $gid,
 					'event_id'   => $event_id,
-					'name'       => sprintf( 'Table %d', $index ),
+					'name'       => $group_name,
 					'score'      => round( $table['score'], 2 ),
 					'created_at' => havato_now(),
 				),
@@ -159,16 +168,23 @@ class Havato_Matcher {
 				);
 			}
 
-			self::system_message( $gid, $event );
+			self::system_message( $gid, $event, $number );
 
 			$created[] = array(
-				'id'      => $gid,
-				'score'   => round( $table['score'], 2 ),
-				'members' => $table['members'],
+				'id'           => $gid,
+				'score'        => round( $table['score'], 2 ),
+				'members'      => $table['members'],
+				'table_number' => $number,
 			);
 
 			Havato_Logger::log(
-				sprintf( 'Table matched successfully: %d seats, harmony score %.1f (group %s).', count( $table['members'] ), $table['score'], $gid ),
+				sprintf(
+					'Table matched successfully: %s, %d seats, harmony score %.1f (group %s).',
+					$group_name,
+					count( $table['members'] ),
+					$table['score'],
+					$gid
+				),
 				'success'
 			);
 			$index++;
@@ -206,16 +222,30 @@ class Havato_Matcher {
 		foreach ( Havato_REST::event_tables( $event['id'] ) as $row ) {
 			$seats = max( 2, (int) $row['seats'] );
 			for ( $i = 0; $i < max( 1, (int) $row['quantity'] ); $i++ ) {
-				$plan[] = $seats;
+				$plan[] = array(
+					'seats'  => $seats,
+					'number' => (int) $row['table_number'],
+					'label'  => (string) $row['label'],
+				);
 			}
 		}
 
 		if ( empty( $plan ) ) {
 			// Legacy event with no furniture attached: one table, old capacity.
-			$plan[] = max( 2, (int) $event['max_capacity'] );
+			$plan[] = array(
+				'seats'  => max( 2, (int) $event['max_capacity'] ),
+				'number' => 0,
+				'label'  => '',
+			);
 		}
 
-		rsort( $plan );
+		// Biggest table first: the strongest groups form while the pool is deep.
+		usort(
+			$plan,
+			function ( $a, $b ) {
+				return $b['seats'] - $a['seats'];
+			}
+		);
 
 		return $plan;
 	}
@@ -244,7 +274,7 @@ class Havato_Matcher {
 		// Each pass fills the next physical table; $capacity changes per table.
 		$plan     = array_values( (array) $seat_plan );
 		$plan_i   = 0;
-		$capacity = isset( $plan[0] ) ? (int) $plan[0] : 6;
+		$capacity = isset( $plan[0]['seats'] ) ? (int) $plan[0]['seats'] : 6;
 		$pairs = array();
 		$n     = count( $user_ids );
 
@@ -265,9 +295,11 @@ class Havato_Matcher {
 
 			// Move to the next table in the plan. Once the café's furniture is
 			// exhausted, keep the last size so nobody is silently dropped.
-			if ( isset( $plan[ $plan_i ] ) ) {
-				$capacity = max( 2, (int) $plan[ $plan_i ] );
+			if ( isset( $plan[ $plan_i ]['seats'] ) ) {
+				$capacity = max( 2, (int) $plan[ $plan_i ]['seats'] );
 			}
+			// Remember which physical table this group is being seated at.
+			$assigned_table = isset( $plan[ $plan_i ] ) ? $plan[ $plan_i ] : null;
 			$plan_i++;
 
 			// --- Step 2: seed with the best available pair ------------------
@@ -292,8 +324,8 @@ class Havato_Matcher {
 			if ( empty( $seed ) ) {
 				// Nobody can sit together (or a single person is left):
 				// seat the remaining people alone rather than dropping them.
-				$table  = array( array_shift( $pool ) );
-				$tables[] = array( 'members' => $table, 'score' => 0.0 );
+				$table    = array( array_shift( $pool ) );
+				$tables[] = array( 'members' => $table, 'score' => 0.0, 'table' => $assigned_table );
 				continue;
 			}
 
@@ -354,6 +386,7 @@ class Havato_Matcher {
 			$tables[] = array(
 				'members' => array_values( $table ),
 				'score'   => self::table_score( $table, $pairs ),
+				'table'   => $assigned_table,
 			);
 
 			// Keep going: leftovers deserve a table too (step 5).
@@ -663,17 +696,24 @@ class Havato_Matcher {
 	 * @param string $group_id Group id.
 	 * @param array  $event    Event row.
 	 */
-	private static function system_message( $group_id, $event ) {
+	private static function system_message( $group_id, $event, $number = 0 ) {
 		global $wpdb;
 		$chats = Havato_DB::table( 'chats' );
 		$venue = self::venue_name( $event['venue_id'] );
 
+		// Bilingual, and it names the physical table when there is one so
+		// nobody has to ask a waiter where to sit.
+		$seat_fa = $number ? sprintf( ' — میز شماره %s', Havato_Jalali::fa_digits( $number ) ) : '';
+		$seat_en = $number ? sprintf( ' — Table #%d', $number ) : '';
+
 		$text = sprintf(
-			'میز شما چیده شد! %s — %s ساعت %s | Your table is ready at %s.',
+			'میز شما چیده شد! %s%s — %s ساعت %s | Your table is ready at %s%s.',
 			$venue['fa'],
+			$seat_fa,
 			Havato_Jalali::format( $event['event_date'], 'fa' ),
 			Havato_Jalali::fa_digits( substr( $event['event_time'], 0, 5 ) ),
-			$venue['en']
+			$venue['en'],
+			$seat_en
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery

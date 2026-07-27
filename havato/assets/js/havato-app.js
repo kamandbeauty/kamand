@@ -1106,6 +1106,9 @@
 					'<span class="hv-list-sub">' + esc(thread.last_message || pick(thread.date)) + '</span>' +
 				'</span>' +
 				'<span class="hv-list-meta">' +
+					(thread.table_name
+						? '<span class="hv-badge hv-badge-blue">' + esc(thread.table_name) + '</span>'
+						: '') +
 					'<span class="hv-badge hv-badge-indigo">' + num(thread.members) + '</span>' +
 					'<span class="hv-muted">' + num(thread.time || '') + '</span>' +
 				'</span>' +

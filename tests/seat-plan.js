@@ -8,11 +8,13 @@ console.log('--- wiring ---');
 t('seat_plan() derives sizes from furniture', /private static function seat_plan/.test(M));
 t('reads the event_tables rows', /Havato_REST::event_tables\( \$event\['id'\] \)/.test(M));
 t('expands quantity into individual tables', /for \( \$i = 0; \$i < max\( 1, \(int\) \$row\['quantity'\] \)/.test(M));
-t('biggest table first', /rsort\( \$plan \)/.test(M));
-t('legacy events still work', /\$plan\[\] = max\( 2, \(int\) \$event\['max_capacity'\] \)/.test(M));
+t('biggest table first', /usort\(/.test(M) && /\$b\['seats'\] - \$a\['seats'\]/.test(M));
+t('legacy events still work', /'seats'  => max\( 2, \(int\) \$event\['max_capacity'\] \)/.test(M));
 t('build_tables takes the plan', /function build_tables\( \$user_ids, \$profiles, \$seat_plan, \$relaxed \)/.test(M));
 t('capacity advances per table', /\$plan_i\+\+;/.test(M));
-t('total capacity = sum of seats', /\$capacity\s*=\s*array_sum\( \$seat_plan \)/.test(M));
+t('total capacity = sum of seats',
+  /array_sum\( wp_list_pluck\( \$seat_plan, 'seats' \) \)/.test(M));
+t('plan carries the real table number', /'number' => \(int\) \$row\['table_number'\]/.test(M));
 t('plan logged for the admin console', /Seating plan: %d table/.test(M));
 
 console.log('\n--- behavioural simulation ---');

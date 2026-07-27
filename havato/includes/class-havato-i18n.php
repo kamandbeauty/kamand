@@ -248,6 +248,8 @@ class Havato_I18N {
 			'table_number_col'      => array( 'fa' => 'شماره میز', 'en' => 'Table no.' ),
 			'table_number_label'    => array( 'fa' => 'میز شماره %d', 'en' => 'Table #%d' ),
 			'table_number_duplicate' => array( 'fa' => 'شماره میز %d تکراری است.', 'en' => 'Table number %d is duplicated.' ),
+			'table_number_required' => array( 'fa' => 'برای هر میز، شماره همان میز در کافه را وارد کنید.', 'en' => 'Enter the number each table actually carries in your café.' ),
+			'table_number_hint'     => array( 'fa' => 'شماره‌ای که روی میز نوشته شده را وارد کنید تا مهمان‌ها گیج نشوند.', 'en' => 'Use the number written on the table itself so guests are not confused.' ),
 			'tables_locked'         => array( 'fa' => 'تا پایان %d دورهمی فعال، امکان ویرایش میزها نیست.', 'en' => 'Tables cannot be edited while %d active event(s) are using them.' ),
 			'tables_locked_hint'    => array( 'fa' => 'پس از برگزاری یا لغو این دورهمی‌ها، میزها دوباره قابل ویرایش می‌شوند.', 'en' => 'Once those events finish or are cancelled, the tables unlock again.' ),
 			'table_quantity'        => array( 'fa' => 'تعداد میز', 'en' => 'How many' ),

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,16 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.7.1 =
+* Table numbers are no longer suggested. The café types the number the table
+  actually carries in the room, and saving is blocked until every table has
+  one — a number we invented would not match the furniture.
+* Seats per table remain fully editable and continue to drive event capacity
+  and group sizes.
+* Guests now see the real table: a matched group is named after the café's own
+  number ("Table #6") instead of a running 1, 2, 3, the welcome message states
+  it in both languages, and it appears as a badge in the chat list.
 
 = 1.7.0 =
 * Every table now has its own number ("Table #6"), so a café lists its real

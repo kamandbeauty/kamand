@@ -28,7 +28,7 @@ t('seats clamped 2..20', /max\( 2, min\( 20,/.test(rest));
 // Each row is now ONE numbered physical table, so quantity is fixed at 1
 // and the table NUMBER is what gets clamped instead.
 t('quantity fixed at 1 per row', /'quantity'\s*=> 1,/.test(rest));
-t('table number clamped 1..999', /max\( 1, min\( 999,/.test(rest));
+t('table number required, 1..999 enforced', /\$number < 1 \|\| \$number > 999/.test(rest));
 t('removed tables soft-deleted, not dropped', /SET active = 0 WHERE venue_id = %s AND id NOT IN/.test(rest));
 t('reason: past events keep resolving', /past events that referenced the table still resolve/.test(rest));
 t('editor UI', /function initTables/.test(oj));

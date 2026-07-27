@@ -734,7 +734,8 @@ class Havato_Owner_Admin {
 			$seats += $row['seats'] * $row['quantity'];
 		}
 
-		echo '<div class="hv-adm-alert is-blue">' . esc_html( Havato_I18N::t( 'tables_hint' ) ) . '</div>';
+		echo '<div class="hv-adm-alert is-blue">' . esc_html( Havato_I18N::t( 'tables_hint' ) ) .
+			' ' . esc_html( Havato_I18N::t( 'table_number_hint' ) ) . '</div>';
 
 		// Editing is blocked while an event still depends on this furniture.
 		if ( ! empty( $locked ) ) {
