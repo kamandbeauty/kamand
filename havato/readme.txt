@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,17 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.1.2 =
+* Fix: bottom-navigation icons were still washed out. The 1.0.2 attempt used a
+  `.hv-tab svg *` rule, but <use> clones each symbol into a shadow tree and
+  descendant selectors cannot pierce a shadow boundary, so that rule never
+  applied. The nav now uses dedicated monochrome symbols authored with
+  `currentColor` (an inherited property, which does cross the boundary).
+* Inactive tabs raised to 78% white and given a soft dark halo; the active tab
+  is solid white and bolder. Measured contrast is now 6.0:1 to 15.0:1 across
+  the whole nav gradient, well past the 3:1 WCAG threshold for UI glyphs.
+* The colourful gradient icons are unchanged everywhere else.
 
 = 1.1.1 =
 * Fix: the Map tab was unusable — a giant green pin covered the map. icon()

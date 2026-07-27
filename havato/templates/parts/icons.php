@@ -159,6 +159,71 @@ defined( 'ABSPATH' ) || exit;
 		<path d="M14.6 3.6a3 3 0 0 1 3 3 2.8 2.8 0 0 1 1.6 5 3 3 0 0 1-1.7 4.7 3 3 0 0 1-5.5 1.6V4.9a3 3 0 0 1 2.6-1.3z" fill="url(#hvGradPink)"/>
 	</symbol>
 
+	<!-- =====================================================================
+	     Bottom-navigation icons (monochrome).
+
+	     The colourful sprite symbols above are built for white cards and are
+	     cloned through <use>, which puts their shapes inside a SHADOW TREE:
+	     a `.hv-tab svg *` rule can never reach them, and each shape hard-codes
+	     its own fill="url(#hvGrad…)" anyway. On the dark indigo nav bar the
+	     indigo layer became invisible.
+
+	     These variants paint with `currentColor` — an inherited property, so
+	     it DOES cross the shadow boundary — letting the tab colour drive them:
+	     translucent white when inactive, solid white when active.
+	     ================================================================== -->
+
+	<symbol id="hv-i-nav-explore" viewBox="0 0 24 24">
+		<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.9"/>
+		<path d="M15.4 8.6l-2.1 5-5 2.1 2.1-5z" fill="currentColor"/>
+	</symbol>
+
+	<symbol id="hv-i-nav-map" viewBox="0 0 24 24">
+		<path d="M12 2.6c-3.7 0-6.7 3-6.7 6.7 0 4.9 6.7 12.1 6.7 12.1s6.7-7.2 6.7-12.1c0-3.7-3-6.7-6.7-6.7z"
+			fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+		<circle cx="12" cy="9.3" r="2.5" fill="currentColor"/>
+	</symbol>
+
+	<symbol id="hv-i-nav-chat" viewBox="0 0 24 24">
+		<path d="M4 6.4c0-1.4 1.1-2.5 2.5-2.5h11c1.4 0 2.5 1.1 2.5 2.5v7c0 1.4-1.1 2.5-2.5 2.5H9.7L5.6 19.4c-.7.6-1.6.1-1.6-.8z"
+			fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+		<circle cx="8.6" cy="10" r="1.15" fill="currentColor"/>
+		<circle cx="12" cy="10" r="1.15" fill="currentColor"/>
+		<circle cx="15.4" cy="10" r="1.15" fill="currentColor"/>
+	</symbol>
+
+	<symbol id="hv-i-nav-profile" viewBox="0 0 24 24">
+		<circle cx="12" cy="8.2" r="3.6" fill="none" stroke="currentColor" stroke-width="1.9"/>
+		<path d="M4.9 20c.6-3.8 3.6-6 7.1-6s6.5 2.2 7.1 6"
+			fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+	</symbol>
+
+	<symbol id="hv-i-nav-dashboard" viewBox="0 0 24 24">
+		<rect x="3.4" y="3.4" width="7.6" height="7.6" rx="2.2" fill="currentColor"/>
+		<rect x="13" y="3.4" width="7.6" height="7.6" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.9"/>
+		<rect x="3.4" y="13" width="7.6" height="7.6" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.9"/>
+		<rect x="13" y="13" width="7.6" height="7.6" rx="2.2" fill="currentColor"/>
+	</symbol>
+
+	<symbol id="hv-i-nav-calendar" viewBox="0 0 24 24">
+		<rect x="3.4" y="5" width="17.2" height="15.4" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.9"/>
+		<path d="M3.4 9.6h17.2" stroke="currentColor" stroke-width="1.9"/>
+		<path d="M8 3.2v3.4M16 3.2v3.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+		<circle cx="9" cy="14.4" r="1.3" fill="currentColor"/>
+		<circle cx="13.6" cy="14.4" r="1.3" fill="currentColor"/>
+	</symbol>
+
+	<symbol id="hv-i-nav-menu" viewBox="0 0 24 24">
+		<rect x="4.4" y="2.8" width="15.2" height="18.4" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/>
+		<path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+	</symbol>
+
+	<symbol id="hv-i-nav-settings" viewBox="0 0 24 24">
+		<path d="M12 2.8l2 1.6 2.5-.5 1 2.4 2.3 1.1-.5 2.5 1.6 2-1.6 2 .5 2.5-2.3 1.1-1 2.4-2.5-.5-2 1.6-2-1.6-2.5.5-1-2.4-2.3-1.1.5-2.5-1.6-2 1.6-2-.5-2.5 2.3-1.1 1-2.4 2.5.5z"
+			fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+		<circle cx="12" cy="12" r="3" fill="currentColor"/>
+	</symbol>
+
 	<!-- Google G -->
 	<symbol id="hv-i-google" viewBox="0 0 24 24">
 		<path d="M21.6 12.2c0-.7-.1-1.3-.2-1.9H12v3.7h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" fill="#4285F4"/>

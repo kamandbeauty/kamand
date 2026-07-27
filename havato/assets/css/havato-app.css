@@ -724,19 +724,25 @@ body.havato-standalone #havato-app { border-radius: 0; }
 }
 .hv-tab svg { inline-size: 24px; block-size: 24px; }
 
-/* The sprite icons are built for white cards, so their indigo layer
-   (#1B1FBF) disappears against the dark indigo nav bar. Inside the nav we
-   drop the gradient fills and paint the icon with currentColor instead, so
-   inactive tabs read as translucent white and the active tab is solid white. */
-.hv-tab svg * {
-	fill: currentColor !important;
-	stroke: currentColor !important;
-	opacity: 1 !important;
-}
-.hv-tab:not(.is-active) svg { opacity: 0.72; }
+/* NOTE: a `.hv-tab svg *` rule looks like the obvious fix here, but <use>
+   clones the symbol into a shadow tree and descendant selectors cannot pierce
+   a shadow boundary — such a rule silently does nothing. The nav therefore
+   uses the dedicated #hv-i-nav-* symbols, whose shapes are authored with
+   `currentColor`; colour IS inherited, so it crosses the boundary and the
+   rules below drive the icons. */
+.hv-tab:not(.is-active) { color: rgba(255, 255, 255, 0.78); }
 
-.hv-tab.is-active { color: #fff; transform: translateY(-2px); }
-.hv-tab.is-active svg { opacity: 1; filter: drop-shadow(0 2px 6px rgba(127, 180, 255, 0.55)); }
+.hv-tab.is-active {
+	color: #fff;
+	font-weight: 800;
+	transform: translateY(-2px);
+}
+.hv-tab.is-active svg { filter: drop-shadow(0 2px 7px rgba(140, 190, 255, 0.75)); }
+/* Legibility guard: the nav gradient darkens toward the bottom, so give the
+   glyphs a soft dark halo. Without it thin 1.9px strokes wash out on smaller
+   screens where the icons render at 22px. */
+.hv-tab svg { filter: drop-shadow(0 1px 2px rgba(10, 14, 48, 0.45)); }
+.hv-tab span { text-shadow: 0 1px 2px rgba(10, 14, 48, 0.5); }
 .hv-tab.is-active::after {
 	content: "";
 	position: absolute;

@@ -459,19 +459,22 @@
 	 * Tabs & routing
 	 * ================================================================== */
 	function tabsFor(role) {
+		// nav-* icons are the monochrome variants: they paint with
+		// currentColor so the tab state (translucent vs solid white) actually
+		// drives them on the dark indigo bar.
 		if (role === 'cafe_owner') {
 			return [
-				{ id: 'dashboard', label: 'tab_dashboard', icon: 'dashboard' },
-				{ id: 'venue-events', label: 'tab_venue_events', icon: 'calendar' },
-				{ id: 'menu', label: 'tab_menu_builder', icon: 'menu' },
-				{ id: 'venue-settings', label: 'tab_venue_settings', icon: 'settings' }
+				{ id: 'dashboard', label: 'tab_dashboard', icon: 'nav-dashboard' },
+				{ id: 'venue-events', label: 'tab_venue_events', icon: 'nav-calendar' },
+				{ id: 'menu', label: 'tab_menu_builder', icon: 'nav-menu' },
+				{ id: 'venue-settings', label: 'tab_venue_settings', icon: 'nav-settings' }
 			];
 		}
 		return [
-			{ id: 'explore', label: 'tab_explore', icon: 'explore' },
-			{ id: 'map', label: 'tab_map', icon: 'map' },
-			{ id: 'chats', label: 'tab_chats', icon: 'chat' },
-			{ id: 'profile', label: 'tab_profile', icon: 'profile' }
+			{ id: 'explore', label: 'tab_explore', icon: 'nav-explore' },
+			{ id: 'map', label: 'tab_map', icon: 'nav-map' },
+			{ id: 'chats', label: 'tab_chats', icon: 'nav-chat' },
+			{ id: 'profile', label: 'tab_profile', icon: 'nav-profile' }
 		];
 	}
 
