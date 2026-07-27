@@ -126,6 +126,13 @@
 			init.body = JSON.stringify(options.body);
 		}
 
+		// fetch() cannot report upload progress, so file uploads go through
+		// XHR instead — that is the only way to get real byte-level percentages
+		// rather than a fake animation. Everything else stays on fetch.
+		if (options.onProgress && options.body instanceof FormData) {
+			return apiUpload(url, options);
+		}
+
 		return fetch(url, init).then(function (res) {
 			return res.json().catch(function () { return {}; }).then(function (json) {
 				if (!res.ok) {
@@ -136,6 +143,67 @@
 				}
 				return json;
 			});
+		});
+	}
+
+	/**
+	 * XHR-based POST used for file uploads so we can report real progress.
+	 *
+	 * Resolves/rejects exactly like the fetch path in api(), so callers do not
+	 * need to know which transport was used.
+	 *
+	 * @param {string} url     Absolute REST URL.
+	 * @param {object} options { body: FormData, onProgress(percent|null) }
+	 */
+	function apiUpload(url, options) {
+		return new Promise(function (resolve, reject) {
+			var xhr = new XMLHttpRequest();
+			xhr.open(options.method || 'POST', url, true);
+			xhr.withCredentials = true;
+			xhr.setRequestHeader('X-WP-Nonce', BOOT.nonce);
+
+			if (xhr.upload) {
+				xhr.upload.onprogress = function (event) {
+					if (!event.lengthComputable) {
+						options.onProgress(null); // unknown size -> indeterminate
+						return;
+					}
+					// Cap the transfer at 95%: the last 5% represents the server
+					// still resizing/storing the image after the bytes landed.
+					var pct = Math.round((event.loaded / event.total) * 95);
+					options.onProgress(Math.max(1, Math.min(95, pct)));
+				};
+				// Bytes are away; WordPress is now generating thumbnails.
+				xhr.upload.onload = function () { options.onProgress(97); };
+			}
+
+			xhr.onload = function () {
+				var json = {};
+				try { json = JSON.parse(xhr.responseText) || {}; } catch (e) { json = {}; }
+
+				if (xhr.status >= 200 && xhr.status < 300) {
+					options.onProgress(100);
+					resolve(json);
+					return;
+				}
+				var err = new Error(json.message || t('error_generic'));
+				err.data = json;
+				err.status = xhr.status;
+				reject(err);
+			};
+
+			xhr.onerror = function () { reject(new Error(t('error_generic'))); };
+			xhr.ontimeout = function () { reject(new Error(t('error_generic'))); };
+			xhr.onabort = function () {
+				var err = new Error(t('upload_cancelled'));
+				err.aborted = true;
+				reject(err);
+			};
+
+			// Let the caller cancel a slow upload.
+			if (options.onStart) { options.onStart(xhr); }
+
+			xhr.send(options.body);
 		});
 	}
 
@@ -155,6 +223,157 @@
 			node.style.transition = 'all .25s ease';
 			setTimeout(function () { node.remove(); }, 260);
 		}, 2800);
+	}
+
+	/**
+	 * Full-width progress overlay used by uploads and saves.
+	 *
+	 * show(label)            -> open, indeterminate
+	 * set(percent|null)      -> null keeps it indeterminate
+	 * done(okMessage) / fail(message)
+	 */
+	var progress = (function () {
+		var host = null;
+		var bar = null;
+		var pctEl = null;
+		var labelEl = null;
+		var cancelEl = null;
+		var hideTimer = null;
+		var xhr = null;
+
+		function build() {
+			if (host) { return; }
+			host = document.createElement('div');
+			host.className = 'hv-progress-host';
+			host.innerHTML =
+				'<div class="hv-progress-card">' +
+					'<div class="hv-progress-top">' +
+						'<span class="hv-progress-label"></span>' +
+						'<span class="hv-progress-pct"></span>' +
+					'</div>' +
+					'<div class="hv-progress-track"><span class="hv-progress-fill"></span></div>' +
+					'<button type="button" class="hv-progress-cancel"></button>' +
+				'</div>';
+			el.root.appendChild(host);
+
+			bar = host.querySelector('.hv-progress-fill');
+			pctEl = host.querySelector('.hv-progress-pct');
+			labelEl = host.querySelector('.hv-progress-label');
+			cancelEl = host.querySelector('.hv-progress-cancel');
+
+			cancelEl.onclick = function () {
+				if (xhr) { xhr.abort(); }
+			};
+		}
+
+		return {
+			show: function (label, cancellable) {
+				build();
+				clearTimeout(hideTimer);
+				xhr = null;
+				host.className = 'hv-progress-host is-open';
+				labelEl.textContent = label || t('uploading');
+				pctEl.textContent = '';
+				bar.style.width = '0%';
+				bar.classList.add('is-indeterminate');
+				cancelEl.textContent = t('cancel');
+				cancelEl.hidden = !cancellable;
+			},
+			attach: function (activeXhr) { xhr = activeXhr; },
+			set: function (percent) {
+				if (!host) { return; }
+				if (percent === null || percent === undefined) {
+					bar.classList.add('is-indeterminate');
+					pctEl.textContent = '';
+					return;
+				}
+				bar.classList.remove('is-indeterminate');
+				bar.style.width = percent + '%';
+				pctEl.textContent = num(percent) + (S.lang === 'fa' ? '٪' : '%');
+			},
+			done: function (message) {
+				if (!host) { return; }
+				xhr = null;
+				bar.classList.remove('is-indeterminate');
+				bar.style.width = '100%';
+				host.classList.add('is-done');
+				labelEl.textContent = message || t('saved');
+				pctEl.textContent = num(100) + (S.lang === 'fa' ? '٪' : '%');
+				cancelEl.hidden = true;
+				hideTimer = setTimeout(function () {
+					host.className = 'hv-progress-host';
+				}, 900);
+			},
+			fail: function (message) {
+				if (!host) { return; }
+				xhr = null;
+				host.classList.add('is-error');
+				labelEl.textContent = message || t('error_generic');
+				cancelEl.hidden = true;
+				hideTimer = setTimeout(function () {
+					host.className = 'hv-progress-host';
+				}, 2200);
+			},
+			hide: function () {
+				if (!host) { return; }
+				xhr = null;
+				clearTimeout(hideTimer);
+				host.className = 'hv-progress-host';
+			}
+		};
+	})();
+
+	/**
+	 * Upload a file with a live progress bar.
+	 *
+	 * @param {string}   path     REST path.
+	 * @param {File}     file     The chosen file.
+	 * @param {string}   label    Progress label.
+	 * @returns {Promise}
+	 */
+	function uploadWithProgress(path, file, label) {
+		var form = new FormData();
+		form.append('file', file);
+
+		progress.show(label || t('uploading'), true);
+
+		return api(path, {
+			method: 'POST',
+			body: form,
+			onStart: progress.attach,
+			onProgress: progress.set
+		});
+	}
+
+	/**
+	 * Shared failure handler for uploads: a user-initiated cancel is not an
+	 * error, so it dismisses the bar quietly instead of showing a red state.
+	 */
+	function uploadFailed(err) {
+		if (err && err.aborted) {
+			progress.hide();
+			toast(t('upload_cancelled'), 'info');
+			return;
+		}
+		progress.fail(err && err.message ? err.message : t('error_generic'));
+	}
+
+	/**
+	 * Wrap any save request in the same progress bar (indeterminate, since a
+	 * JSON POST has no meaningful byte progress).
+	 *
+	 * @param {Promise} request  The api() promise.
+	 * @param {string}  label    Optional label.
+	 */
+	function saveWithProgress(request, label) {
+		progress.show(label || t('saving'), false);
+		return request.then(function (res) {
+			progress.done(t('saved'));
+			return res;
+		}).catch(function (err) {
+			progress.fail(err && err.message ? err.message : t('error_generic'));
+			throw err;
+		});
 	}
 
 	function openModal(html) {
@@ -1404,11 +1623,9 @@
 		if (avatar) {
 			avatar.onclick = function () {
 				pickFile(function (file) {
-					var form = new FormData();
-					form.append('file', file);
-					api('profile/avatar', { method: 'POST', body: form })
-						.then(function () { toast(t('saved'), 'ok'); viewProfile(); })
-						.catch(function (err) { toast(err.message, 'error'); });
+					uploadWithProgress('profile/avatar', file, t('uploading_avatar'))
+						.then(function () { progress.done(t('saved')); viewProfile(); })
+						.catch(function (err) { uploadFailed(err); });
 				});
 			};
 		}
@@ -1557,11 +1774,9 @@
 	function pickGalleryPhoto() {
 		if (S.role === 'cafe_owner') { return; }
 		pickFile(function (file) {
-			var form = new FormData();
-			form.append('file', file);
-			api('photos/upload', { method: 'POST', body: form })
-				.then(function () { toast(t('saved'), 'ok'); viewProfile(); })
-				.catch(function (err) { toast(err.message, 'error'); });
+			uploadWithProgress('photos/upload', file, t('uploading_photo'))
+				.then(function () { progress.done(t('saved')); viewProfile(); })
+				.catch(function (err) { uploadFailed(err); });
 		});
 	}
 
@@ -1725,13 +1940,13 @@
 	}
 
 	function saveTest() {
-		api('profile/test', { method: 'POST', body: S.testData })
+		saveWithProgress(api('profile/test', { method: 'POST', body: S.testData }))
 			.then(function () {
 				closeModal();
 				toast(t('test_done'), 'ok');
 				viewProfile();
 			})
-			.catch(function (err) { toast(err.message, 'error'); });
+			.catch(function () { /* reported by the progress bar */ });
 	}
 
 	/* =====================================================================
@@ -2015,15 +2230,13 @@
 
 			$('[data-menu-img]', row).onclick = function () {
 				pickFile(function (file) {
-					var form = new FormData();
-					form.append('file', file);
-					toast(t('loading'), 'info');
-					api('owner/upload', { method: 'POST', body: form }).then(function (res) {
+					uploadWithProgress('owner/upload', file, t('uploading_photo')).then(function (res) {
 						S.menuDraft[index].image = res.url;
+						progress.done(t('saved'));
 						// Keep the pending banner state; passing false here used
 						// to make the "awaiting approval" notice vanish.
 						renderMenuDraft(S.menuHasPending);
-					}).catch(function (err) { toast(err.message, 'error'); });
+					}).catch(function (err) { uploadFailed(err); });
 				});
 			};
 
@@ -2058,9 +2271,13 @@
 
 	function saveMenu() {
 		var items = S.menuDraft.filter(function (item) { return item.name.trim() !== ''; });
-		api('owner/menu', { method: 'POST', body: { items: items } })
-			.then(function (res) { toast(res.message || t('saved'), 'ok'); viewMenuBuilder(); })
-			.catch(function (err) { toast(err.message, 'error'); });
+		saveWithProgress(
+			api('owner/menu', { method: 'POST', body: { items: items } }),
+			t('saving')
+		).then(function (res) {
+			if (res && res.message) { toast(res.message, 'ok'); }
+			viewMenuBuilder();
+		}).catch(function () { /* progress bar already reported it */ });
 	}
 
 	/* =====================================================================
@@ -2098,12 +2315,14 @@
 			$('#hv-v-save').onclick = saveVenueForm;
 			$('#hv-v-cover').onclick = function () {
 				pickFile(function (file) {
-					var form = new FormData();
-					form.append('file', file);
-					api('owner/upload', { method: 'POST', body: form }).then(function (up) {
+					uploadWithProgress('owner/upload', file, t('uploading_cover')).then(function (up) {
+						// Bytes are in; now persist the URL on the venue.
+						progress.set(null);
 						return api('owner/venue', { method: 'POST', body: { image: up.url } });
-					}).then(function () { toast(t('saved'), 'ok'); viewVenueSettings(); })
-						.catch(function (err) { toast(err.message, 'error'); });
+					}).then(function () {
+						progress.done(t('saved'));
+						viewVenueSettings();
+					}).catch(function (err) { uploadFailed(err); });
 				});
 			};
 
@@ -2130,9 +2349,9 @@
 		// Auto-save on drag end, exactly as specified.
 		marker.on('dragend', function () {
 			var pos = marker.getLatLng();
-			api('owner/venue', { method: 'POST', body: { lat: pos.lat, lng: pos.lng } })
-				.then(function () { toast(t('saved'), 'ok'); })
-				.catch(function (err) { toast(err.message, 'error'); });
+			saveWithProgress(
+				api('owner/venue', { method: 'POST', body: { lat: pos.lat, lng: pos.lng } })
+			).catch(function () { /* reported by the progress bar */ });
 		});
 
 		setTimeout(function () { if (S.ownerMap) { S.ownerMap.invalidateSize(); } }, 220);
@@ -2143,7 +2362,7 @@
 		var nameEn = $('#hv-v-name');
 		if (!nameEn) { return; }
 
-		api('owner/venue', {
+		saveWithProgress(api('owner/venue', {
 			method: 'POST',
 			body: {
 				name: nameEn.value,
@@ -2151,8 +2370,7 @@
 				address: $('#hv-v-addr').value,
 				quiet_hours: $('#hv-v-quiet').value
 			}
-		}).then(function () { toast(t('saved'), 'ok'); })
-			.catch(function (err) { toast(err.message, 'error'); });
+		})).catch(function () { /* reported by the progress bar */ });
 	}
 
 	/* =====================================================================

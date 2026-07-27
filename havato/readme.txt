@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,17 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.0.4 =
+* New: a real progress bar for every photo upload (profile avatar, gallery,
+  menu item, venue cover) showing true byte-level percentages, plus a cancel
+  button. Uploads switched from fetch() to XHR because fetch cannot report
+  upload progress.
+* New: the same bar covers saves (menu, venue settings, map pin, personality
+  test) in indeterminate mode.
+* The bar reports success in green and failures in red, falls back to an
+  animated indeterminate state when the size is unknown, mirrors its animation
+  for RTL, and honours prefers-reduced-motion.
 
 = 1.0.3 =
 * Menu Builder: each product is now a single compact restaurant-style row
