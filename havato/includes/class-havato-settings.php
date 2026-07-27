@@ -47,6 +47,14 @@ class Havato_Settings {
 			'w_same_vibe'          => 15,    // Same conversation vibe.
 			'w_opposite_vibe'      => -10,   // Opposite vibe.
 			'w_rating'             => 8,     // Weight of the behaviour-score term.
+
+			// Traits from the longer personality test. Kept small on purpose:
+			// they refine the ordering the criteria above establish rather
+			// than competing with them.
+			'w_trait_humor'        => 6,     // Similar sense of humour.
+			'w_trait_energy'       => 6,     // Similar preferred atmosphere.
+			'w_trait_empathy'      => 5,     // At least one strong listener present.
+
 			'w_gender_balance'     => 20,    // Weight of the soft gender-balance term.
 			'gender_balance_on'    => 1,     // Toggle the gender balance criterion.
 			'w_location'           => 60,    // Admin sliders (venue proximity).

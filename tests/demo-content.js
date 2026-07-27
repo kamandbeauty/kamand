@@ -12,7 +12,14 @@ console.log('--- demo flag ---');
 t('venues.is_demo column', /is_demo tinyint\(1\)/.test(db));
 t('events.is_demo column', (db.match(/is_demo tinyint\(1\)/g)||[]).length===2);
 t('indexed', /KEY is_demo \(is_demo\)/.test(db));
-t('DB version bumped', /HAVATO_DB_VERSION', '1\.6\.0'/.test(main));
+// Pin the intent, not the number: the schema version must simply be ahead
+// of the release that introduced is_demo (1.6.0).
+t('DB version is at or past the is_demo schema', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) return false;
+  const [maj, min] = [Number(m[1]), Number(m[2])];
+  return maj > 1 || (maj === 1 && min >= 6);
+})());
 
 console.log('\n--- catalogue: all three cities ---');
 t('catalogue() exists', /function catalogue/.test(seed));

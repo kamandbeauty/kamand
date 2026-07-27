@@ -31,14 +31,19 @@ for (const c of ['tehran','isfahan','istanbul']) t(`city ${c}`, new RegExp(`'${c
 }
 t('validators exported', /function havato_valid_city/.test(fn) && /function havato_valid_country/.test(fn));
 
-console.log('\n--- asked during the personality test ---');
-t('dedicated location step', /function stepLocation/.test(js));
-t('step count raised to 7', /var steps = 7;/.test(js));
-t('location is the FIRST step', /stepLocation, stepAge/.test(js));
-t('cities derive from the chosen country', /locations\[country\]\.cities/.test(js));
-t('changing country clears a stale city', /S\.testData\.city = ''; \/\/ a city from the old country/.test(js));
-t('cannot advance without both', /S\.testStep === 0 && \(!S\.testData\.country \|\| !S\.testData\.city\)/.test(js));
-t('gender validation moved to step 2', /S\.testStep === 2 && !S\.testData\.gender/.test(js));
+// Location moved OUT of the personality test in 1.11.0 and into the profile
+// details editor, so it can be corrected later and a failure there can never
+// block the test.
+console.log('\n--- asked in the profile details editor ---');
+t('dedicated details editor', /function renderDetails/.test(js));
+t('country picker present', /data-dcountry=/.test(js));
+t('cities derive from the chosen country', /locations\[d\.country\]\.cities/.test(js));
+t('changing country clears a stale city',
+  /S\.detailsData\.city = ''; \/\/ a city from the old country/.test(js));
+t('cannot save without both', /!d\.country \|\| !d\.city/.test(js));
+t('gender still required', /!d\.gender/.test(js));
+t('the picker is reachable from the profile', /hv-edit-details/.test(js));
+t('the test itself no longer asks for a location', !/function stepLocation/.test(js));
 t('server re-validates the pair', /havato_valid_city\( \$country, \$city \)/.test(rest));
 t('server rejects a bad pair', /havato_bad_city/.test(rest));
 

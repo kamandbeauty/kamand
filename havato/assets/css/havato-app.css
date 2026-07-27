@@ -1244,6 +1244,47 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	font-weight: 700;
 }
 
+/* Personality trait bars (the five sliders added to the test). */
+.hv-traits {
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+	margin-block-start: 14px;
+}
+.hv-trait {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.hv-trait-label {
+	flex: 0 0 auto;
+	inline-size: 5.5rem;
+	font-size: 0.78rem;
+	font-weight: 700;
+	color: var(--hv-text);
+}
+.hv-trait-bar {
+	flex: 1 1 auto;
+	block-size: 8px;
+	border-radius: 999px;
+	background: rgba(27, 31, 191, 0.1);
+	overflow: hidden;
+}
+.hv-trait-bar i {
+	display: block;
+	block-size: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, var(--hv-indigo-2), var(--hv-blue));
+}
+.hv-trait-value {
+	flex: 0 0 auto;
+	inline-size: 1.6rem;
+	text-align: center;
+	font-size: 0.76rem;
+	font-weight: 800;
+	color: var(--hv-text-soft);
+}
+
 /* Rating stars */
 .hv-stars { display: inline-flex; gap: 3px; }
 .hv-star {

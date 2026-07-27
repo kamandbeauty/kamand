@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.10.0
+Stable tag: 1.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,28 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.11.0 =
+* Fixed: the country and city step of the personality test was completely
+  empty, so the test could never be finished. The lists are built from
+  BOOT.locations, but the server only ever sent that map in the bootstrap REST
+  response and never in the boot payload the screen actually reads.
+* The 30-second test is now purely about personality. It asks seven traits --
+  extroversion, conversation style, openness, humour, energy, planning and
+  empathy -- plus the conversation vibe and interests. Every step has a
+  sensible default, so no step can trap the user.
+* Name, age, gender, country, city and area moved to a new "Edit my details"
+  button on the profile. It stays available permanently, so these can be
+  corrected whenever they change instead of being frozen at sign-up.
+* Splitting the two also means a validation failure on the details can no
+  longer cost somebody their test answers, and vice versa.
+* The profile now shows the five new traits as labelled bars, and the matcher
+  scores similar humour, similar preferred atmosphere and the presence of a
+  good listener. The weights are small and adjustable under Formula weights:
+  the new terms refine the existing ordering rather than competing with it.
+* Schema 1.7.0 adds the five trait columns. Profiles written before the
+  upgrade read as the neutral midpoint 5 rather than 0, which the matcher
+  would otherwise have scored as an extreme introvert.
 
 = 1.10.0 =
 * New "Appearance & theme" page in the Havato admin menu. Five ready palettes

@@ -577,6 +577,31 @@ class Havato_Matcher {
 			}
 		}
 
+		// --- Extra traits (added with the longer personality test) -----------
+		// Deliberately gentle: these refine an ordering the original criteria
+		// already established, they must not overpower it. Humour and energy
+		// reward similarity (a joker and a very serious guest rarely click),
+		// while empathy rewards having at least one good listener at a table.
+		// Openness and planning are informational only for now, so a partly
+		// answered profile is never punished.
+		$pairs = array(
+			'personality_humor'  => (float) $s['w_trait_humor'],
+			'personality_energy' => (float) $s['w_trait_energy'],
+		);
+		foreach ( $pairs as $key => $weight ) {
+			$xa = isset( $a[ $key ] ) ? (int) $a[ $key ] : 5;
+			$xb = isset( $b[ $key ] ) ? (int) $b[ $key ] : 5;
+			// distance 0 -> +weight, distance 9 -> -weight
+			$closeness = 1.0 - ( abs( $xa - $xb ) / 9.0 * 2.0 );
+			$score    += $closeness * $weight * $softness;
+		}
+
+		$mp_a = isset( $a['personality_empathy'] ) ? (int) $a['personality_empathy'] : 5;
+		$mp_b = isset( $b['personality_empathy'] ) ? (int) $b['personality_empathy'] : 5;
+		if ( max( $mp_a, $mp_b ) >= 7 ) {
+			$score += (float) $s['w_trait_empathy'] * $softness;
+		}
+
 		// --- Behaviour score (section 7.5) -----------------------------------
 		// Users with a low rating_score are gradually pushed away from users
 		// with a high rating_score: the term is the product of both normalized

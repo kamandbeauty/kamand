@@ -154,6 +154,7 @@ class Havato_REST {
 			// Profile.
 			'profile'            => array( 'GET', 'get_profile', $auth ),
 			'profile/test'       => array( 'POST', 'save_test', $auth ),
+			'profile/details'    => array( 'POST', 'save_details', $auth ),
 			'profile/avatar'     => array( 'POST', 'upload_avatar', $auth ),
 
 			// Photos.
@@ -871,6 +872,11 @@ class Havato_REST {
 			'neighborhood'  => $profile['city_neighborhood'],
 			'extroversion'  => (int) $profile['personality_extroversion'],
 			'talkative'     => (int) $profile['personality_talkative'],
+			'openness'      => (int) $profile['personality_openness'],
+			'humor'         => (int) $profile['personality_humor'],
+			'energy'        => (int) $profile['personality_energy'],
+			'planning'      => (int) $profile['personality_planning'],
+			'empathy'       => (int) $profile['personality_empathy'],
 			'vibe'          => $profile['personality_vibe'],
 			'interests'     => $interests,
 			'rating'        => round( (float) $profile['rating_score'], 1 ),
@@ -901,49 +907,38 @@ class Havato_REST {
 		$user_id = get_current_user_id();
 		$table   = Havato_DB::table( 'user_profiles' );
 
-		$age    = max( 18, min( 75, (int) $req->get_param( 'age' ) ) );
-		$gender = sanitize_text_field( (string) $req->get_param( 'gender' ) );
-		$gender = in_array( $gender, array( 'male', 'female', 'other' ), true ) ? $gender : 'other';
-
-		$extro  = max( 1, min( 10, (int) $req->get_param( 'extroversion' ) ) );
-		$talk   = max( 1, min( 10, (int) $req->get_param( 'talkative' ) ) );
-		$vibe   = 'deep' === $req->get_param( 'vibe' ) ? 'deep' : 'fun';
-		$hood   = sanitize_text_field( (string) $req->get_param( 'neighborhood' ) );
-
-		// Country/city must be a pair we actually operate in, otherwise the
-		// city filter below would silently hide every event from this user.
-		$country = sanitize_key( (string) $req->get_param( 'country' ) );
-		$city    = sanitize_key( (string) $req->get_param( 'city' ) );
-		if ( ! havato_valid_city( $country, $city ) ) {
-			return new WP_Error( 'havato_bad_city', Havato_I18N::t( 'q_city_select' ), array( 'status' => 400 ) );
+		// The 30-second test is now purely psychometric. Name, age, country
+		// and city are personal details and are edited from the profile
+		// screen instead (see save_details), so answering the test can never
+		// be blocked by a location list failing to load.
+		$traits = array();
+		foreach ( self::trait_keys() as $key ) {
+			$traits[ 'personality_' . $key ] = max( 1, min( 10, (int) $req->get_param( $key ) ) );
 		}
+
+		$vibe = 'deep' === $req->get_param( 'vibe' ) ? 'deep' : 'fun';
 
 		$raw_interests = $req->get_param( 'interests' );
 		$raw_interests = is_array( $raw_interests ) ? $raw_interests : havato_json( $raw_interests );
 		$allowed       = array_keys( havato_interest_tags() );
 		$interests     = array_values( array_intersect( array_map( 'sanitize_key', $raw_interests ), $allowed ) );
 
-		$existing = havato_get_profile( $user_id );
-
-		$data = array(
-			'user_id'                  => $user_id,
-			'age'                      => $age,
-			'gender'                   => $gender,
-			'country'                  => $country,
-			'city'                     => $city,
-			'city_neighborhood'        => $hood,
-			'personality_extroversion' => $extro,
-			'personality_talkative'    => $talk,
-			'personality_vibe'         => $vibe,
-			'personality_interests'    => wp_json_encode( $interests ),
-			'completed'                => 1,
-			'updated_at'               => havato_now(),
+		$data = array_merge(
+			$traits,
+			array(
+				'user_id'               => $user_id,
+				'personality_vibe'      => $vibe,
+				'personality_interests' => wp_json_encode( $interests ),
+				'completed'             => 1,
+				'updated_at'            => havato_now(),
+			)
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $table WHERE user_id=%d", $user_id ) );
 
 		if ( $exists ) {
+			unset( $data['user_id'] );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->update( $table, $data, array( 'user_id' => $user_id ) );
 		} else {
@@ -953,11 +948,110 @@ class Havato_REST {
 			$wpdb->insert( $table, $data );
 		}
 
-		unset( $existing );
-
 		Havato_Logger::log( sprintf( 'Personality profile stored for user %d.', $user_id ), 'info' );
 
 		return self::ok( array( 'completed' => true ) );
+	}
+
+	/**
+	 * The psychometric sliders, in the order the test asks them.
+	 *
+	 * Kept in one place so the REST layer, the matcher and the profile screen
+	 * can never drift out of sync.
+	 *
+	 * @return array
+	 */
+	public static function trait_keys() {
+		return array( 'extroversion', 'talkative', 'openness', 'humor', 'energy', 'planning', 'empathy' );
+	}
+
+	/**
+	 * Save the personal details (name, age, gender, country, city, area).
+	 *
+	 * Deliberately separate from the personality test: these are facts about
+	 * the person rather than answers, the user must be able to correct them
+	 * later, and a failure here must never cost somebody their test answers.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function save_details( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$table   = Havato_DB::table( 'user_profiles' );
+
+		$name = sanitize_text_field( (string) $req->get_param( 'name' ) );
+		$name = trim( preg_replace( '/\s+/u', ' ', $name ) );
+		if ( function_exists( 'mb_strlen' ) ? mb_strlen( $name ) < 2 : strlen( $name ) < 2 ) {
+			return new WP_Error( 'havato_bad_name', Havato_I18N::t( 'err_name_short' ), array( 'status' => 400 ) );
+		}
+		$name = function_exists( 'mb_substr' ) ? mb_substr( $name, 0, 60 ) : substr( $name, 0, 60 );
+
+		$age = (int) $req->get_param( 'age' );
+		if ( $age < 18 || $age > 75 ) {
+			return new WP_Error( 'havato_bad_age', Havato_I18N::t( 'err_age_range' ), array( 'status' => 400 ) );
+		}
+
+		$gender = sanitize_text_field( (string) $req->get_param( 'gender' ) );
+		$gender = in_array( $gender, array( 'male', 'female', 'other' ), true ) ? $gender : 'other';
+
+		// Country/city must be a pair we actually operate in, otherwise the
+		// city filter would silently hide every event from this user.
+		$country = sanitize_key( (string) $req->get_param( 'country' ) );
+		$city    = sanitize_key( (string) $req->get_param( 'city' ) );
+		if ( ! havato_valid_city( $country, $city ) ) {
+			return new WP_Error( 'havato_bad_city', Havato_I18N::t( 'q_city_select' ), array( 'status' => 400 ) );
+		}
+
+		$hood = sanitize_text_field( (string) $req->get_param( 'neighborhood' ) );
+
+		// The display name lives on the WP user, not in the profile table, so
+		// it stays correct everywhere the app already renders a name.
+		wp_update_user(
+			array(
+				'ID'           => $user_id,
+				'display_name' => $name,
+			)
+		);
+
+		$data = array(
+			'user_id'           => $user_id,
+			'age'               => $age,
+			'gender'            => $gender,
+			'country'           => $country,
+			'city'              => $city,
+			'city_neighborhood' => $hood,
+			'updated_at'        => havato_now(),
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM $table WHERE user_id=%d", $user_id ) );
+
+		if ( $exists ) {
+			unset( $data['user_id'] );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update( $table, $data, array( 'user_id' => $user_id ) );
+		} else {
+			// Details saved before the test: seed the row without marking the
+			// personality profile complete.
+			$data['rating_score']   = 5;
+			$data['blocklist_json'] = '[]';
+			$data['completed']      = 0;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->insert( $table, $data );
+		}
+
+		Havato_Logger::log( sprintf( 'Personal details updated for user %d.', $user_id ), 'info' );
+
+		return self::ok(
+			array(
+				'saved' => true,
+				'user'  => self::user_card( $user_id ),
+				'city'  => $city,
+			)
+		);
 	}
 
 	/**

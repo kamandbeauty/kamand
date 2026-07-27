@@ -45,7 +45,14 @@
 		meMarker: null,   // "you are here" dot, recreated with each map
 		ownerMap: null,
 		testStep: 0,
-		testData: { age: 27, gender: '', extroversion: 5, talkative: 5, vibe: 'fun', interests: [], neighborhood: '', country: '', city: '' },
+		// The test is psychometric only. Name/age/gender/location live in
+		// detailsData and are edited from the profile screen.
+		testData: {
+			extroversion: 5, talkative: 5, openness: 5, humor: 5,
+			energy: 5, planning: 5, empathy: 5,
+			vibe: 'fun', interests: []
+		},
+		detailsData: { name: '', age: 27, gender: '', country: '', city: '', neighborhood: '' },
 		booted: false
 	};
 
@@ -1322,11 +1329,29 @@
 
 			if (profile.is_self) {
 				html += walletMarkup(profile);
-			}
 
-			if (profile.is_self && !profile.completed) {
-				html += '<div class="hv-card"><button type="button" class="hv-btn hv-btn-primary hv-btn-block" id="hv-start-test">' +
-					icon('brain', 'hv-fab-icon') + esc(t('start_test')) + '</button></div>';
+				// "Edit my details" is permanent: name/age/city change over
+				// time and the user must be able to correct them. The test
+				// button only shows until the personality profile exists.
+				var needsDetails = !profile.city;
+
+				html += '<div class="hv-card">';
+
+				if (needsDetails) {
+					html += '<div class="hv-alert hv-alert-orange">' + esc(t('details_needed')) + '</div>';
+				}
+
+				html += '<button type="button" class="hv-btn ' +
+					(needsDetails ? 'hv-btn-primary' : 'hv-btn-ghost') +
+					' hv-btn-block" id="hv-edit-details">' +
+					esc(t('edit_details')) + '</button>';
+
+				if (!profile.completed) {
+					html += '<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-start-test">' +
+						icon('brain', 'hv-fab-icon') + esc(t('start_test')) + '</button>';
+				}
+
+				html += '</div>';
 			}
 
 			if (profile.completed) {
@@ -1415,6 +1440,24 @@
 		var extro = profile.extroversion >= 7 ? t('extrovert') : (profile.extroversion <= 4 ? t('introvert') : 'Ambivert');
 		var talk = profile.talkative >= 7 ? t('speaker') : (profile.talkative <= 4 ? t('listener') : '—');
 
+		// The five traits added with the longer test, each shown as a small
+		// labelled bar so the result reads as a profile rather than numbers.
+		var bars = [
+			{ label: t('trait_openness'), value: profile.openness },
+			{ label: t('trait_humor'),    value: profile.humor },
+			{ label: t('trait_energy'),   value: profile.energy },
+			{ label: t('trait_planning'), value: profile.planning },
+			{ label: t('trait_empathy'),  value: profile.empathy }
+		].filter(function (row) {
+			return typeof row.value === 'number' && row.value > 0;
+		}).map(function (row) {
+			return '<div class="hv-trait">' +
+				'<span class="hv-trait-label">' + esc(row.label) + '</span>' +
+				'<span class="hv-trait-bar"><i style="inline-size:' + (row.value * 10) + '%"></i></span>' +
+				'<span class="hv-trait-value">' + num(row.value) + '</span>' +
+			'</div>';
+		}).join('');
+
 		return '' +
 			'<div class="hv-card">' +
 				'<div class="hv-section-head">' +
@@ -1425,9 +1468,11 @@
 					'<span class="hv-behaviour-tag">' + esc(talk) + '</span>' +
 					'<span class="hv-behaviour-tag">' + esc(profile.vibe === 'deep' ? t('vibe_deep') : t('vibe_fun')) + '</span>' +
 					(profile.age ? '<span class="hv-behaviour-tag">' + num(profile.age) + '</span>' : '') +
+					(profile.city_label ? '<span class="hv-behaviour-tag">' + esc(profile.city_label) + '</span>' : '') +
 					(profile.neighborhood ? '<span class="hv-behaviour-tag">' + esc(profile.neighborhood) + '</span>' : '') +
 					tags +
 				'</div>' +
+				(bars ? '<div class="hv-traits">' + bars + '</div>' : '') +
 			'</div>';
 	}
 
@@ -1573,6 +1618,9 @@
 		if (startTest) {
 			startTest.onclick = function () { S.testStep = 0; renderTestStep(); };
 		}
+
+		var editDetails = $('#hv-edit-details');
+		if (editDetails) { editDetails.onclick = openDetails; }
 
 		var logout = $('#hv-logout');
 		if (logout) {
@@ -1758,20 +1806,52 @@
 	/* =====================================================================
 	 * Personality test (6-step stepper)
 	 * ================================================================== */
+	/* =====================================================================
+	 * PERSONALITY TEST  (psychometric only — see openDetails for the rest)
+	 * ================================================================== */
+
+	/**
+	 * The seven sliders/choices, in order. Declaring them as data rather than
+	 * seven near-identical functions keeps the labels, the state keys and the
+	 * server's trait list in one place.
+	 */
+	var TEST_STEPS = [
+		{ key: 'extroversion', q: 'q_extroversion', lo: 'introvert',     hi: 'extrovert' },
+		{ key: 'talkative',    q: 'q_talkative',    lo: 'listener',      hi: 'speaker' },
+		{ key: 'openness',     q: 'q_openness',     lo: 'openness_low',  hi: 'openness_high' },
+		{ key: 'humor',        q: 'q_humor',        lo: 'humor_low',     hi: 'humor_high' },
+		{ key: 'energy',       q: 'q_energy',       lo: 'energy_low',    hi: 'energy_high' },
+		{ key: 'planning',     q: 'q_planning',     lo: 'planning_low',  hi: 'planning_high' },
+		{ key: 'empathy',      q: 'q_empathy',      lo: 'empathy_low',   hi: 'empathy_high' },
+		{ vibe: true },
+		{ interests: true }
+	];
+
 	function renderTestStep() {
-		var steps = 7;
+		var steps = TEST_STEPS.length;
+		var step = TEST_STEPS[S.testStep];
 		var dots = '';
 		for (var i = 0; i < steps; i++) {
 			dots += '<i class="' + (i <= S.testStep ? 'is-done' : '') + '"></i>';
 		}
 
-		var body = [
-			stepLocation, stepAge, stepGender, stepExtroversion, stepTalkative, stepVibe, stepInterests
-		][S.testStep]();
+		var body;
+		if (step.vibe) {
+			body = stepVibe();
+		} else if (step.interests) {
+			body = stepInterests();
+		} else {
+			body = stepSlider(step);
+		}
+
+		var intro = S.testStep === 0
+			? '<p class="hv-muted" style="margin:0 0 12px">' + esc(t('test_intro_body')) + '</p>'
+			: '';
 
 		openModal(
-			'<h3 class="hv-modal-title">' + esc(t('start_test')) + '</h3>' +
+			'<h3 class="hv-modal-title">' + esc(t('test_intro_title')) + '</h3>' +
 			'<div class="hv-stepper-dots">' + dots + '</div>' +
+			intro +
 			'<div id="hv-step-body">' + body + '</div>' +
 			'<div class="hv-row hv-mt">' +
 				(S.testStep > 0 ? '<button type="button" class="hv-btn hv-btn-ghost" id="hv-step-prev">' + esc(t('prev')) + '</button>' : '') +
@@ -1783,79 +1863,15 @@
 		bindStepEvents();
 	}
 
-	function stepAge() {
-		var options = '';
-		for (var age = 18; age <= 75; age++) {
-			options += '<option value="' + age + '"' + (S.testData.age === age ? ' selected' : '') + '>' + num(age) + '</option>';
-		}
-		return '<div class="hv-step-q">' + esc(t('q_age')) + '</div>' +
-			'<select class="hv-select" id="hv-step-age">' + options + '</select>';
-	}
-
-	/**
-	 * Country + city. The city list is derived from the selected country, so
-	 * an impossible pair (e.g. Iran + Istanbul) cannot be submitted.
-	 */
-	function stepLocation() {
-		var locations = BOOT.locations || {};
-		var country = S.testData.country;
-
-		var countryBtns = Object.keys(locations).map(function (key) {
-			var active = country === key ? ' is-active' : '';
-			return '<button type="button" class="hv-choice' + active + '" data-country="' + esc(key) + '">' +
-				esc(pick(locations[key].label)) + '</button>';
-		}).join('');
-
-		var cityBlock = '';
-		if (country && locations[country]) {
-			var cities = locations[country].cities || {};
-			cityBlock =
-				'<div class="hv-step-q hv-mt">' + esc(t('q_city_select')) + '</div>' +
-				'<div class="hv-choice-grid">' +
-					Object.keys(cities).map(function (key) {
-						var active = S.testData.city === key ? ' is-active' : '';
-						return '<button type="button" class="hv-choice' + active + '" data-city="' + esc(key) + '">' +
-							esc(pick(cities[key])) + '</button>';
-					}).join('') +
-				'</div>';
-		}
-
-		return '<div class="hv-step-q">' + esc(t('q_country')) + '</div>' +
-			'<div class="hv-choice-grid">' + countryBtns + '</div>' +
-			cityBlock +
-			'<div class="hv-field hv-mt"><label>' + esc(t('q_neighborhood')) + '</label>' +
-				'<input type="text" class="hv-input" id="hv-step-hood" value="' + esc(S.testData.neighborhood) + '"></div>';
-	}
-
-	function stepGender() {
-		var options = [
-			{ key: 'male', label: t('gender_male') },
-			{ key: 'female', label: t('gender_female') },
-			{ key: 'other', label: t('gender_other') }
-		];
-		return '<div class="hv-step-q">' + esc(t('q_gender')) + '</div>' +
-			'<div class="hv-choice-grid">' +
-				options.map(function (opt) {
-					return '<button type="button" class="hv-choice' + (S.testData.gender === opt.key ? ' is-active' : '') +
-						'" data-gender="' + opt.key + '">' + esc(opt.label) + '</button>';
-				}).join('') +
-			'</div>';
-	}
-
-	function stepExtroversion() {
-		return '<div class="hv-step-q">' + esc(t('q_extroversion')) + '</div>' +
-			'<div class="hv-row-between"><span class="hv-muted">' + esc(t('introvert')) + '</span>' +
-				'<span class="hv-range-value" id="hv-extro-value">' + num(S.testData.extroversion) + '</span>' +
-				'<span class="hv-muted">' + esc(t('extrovert')) + '</span></div>' +
-			'<input type="range" min="1" max="10" step="1" class="hv-range" id="hv-step-extro" value="' + S.testData.extroversion + '">';
-	}
-
-	function stepTalkative() {
-		return '<div class="hv-step-q">' + esc(t('q_talkative')) + '</div>' +
-			'<div class="hv-row-between"><span class="hv-muted">' + esc(t('listener')) + '</span>' +
-				'<span class="hv-range-value" id="hv-talk-value">' + num(S.testData.talkative) + '</span>' +
-				'<span class="hv-muted">' + esc(t('speaker')) + '</span></div>' +
-			'<input type="range" min="1" max="10" step="1" class="hv-range" id="hv-step-talk" value="' + S.testData.talkative + '">';
+	/** One 1..10 trait slider. */
+	function stepSlider(step) {
+		var value = S.testData[step.key];
+		return '<div class="hv-step-q">' + esc(t(step.q)) + '</div>' +
+			'<div class="hv-row-between"><span class="hv-muted">' + esc(t(step.lo)) + '</span>' +
+				'<span class="hv-range-value" id="hv-trait-value">' + num(value) + '</span>' +
+				'<span class="hv-muted">' + esc(t(step.hi)) + '</span></div>' +
+			'<input type="range" min="1" max="10" step="1" class="hv-range" id="hv-step-trait" ' +
+				'data-trait="' + esc(step.key) + '" value="' + value + '">';
 	}
 
 	function stepVibe() {
@@ -1881,52 +1897,11 @@
 	}
 
 	function bindStepEvents() {
-		var age = $('#hv-step-age');
-		if (age) {
-			age.onchange = function () { S.testData.age = parseInt(age.value, 10); };
-		}
-
-		var hood = $('#hv-step-hood');
-		if (hood) {
-			hood.oninput = function () { S.testData.neighborhood = hood.value; };
-		}
-
-		$$('[data-country]').forEach(function (btn) {
-			btn.onclick = function () {
-				if (S.testData.country === btn.dataset.country) { return; }
-				S.testData.country = btn.dataset.country;
-				S.testData.city = ''; // a city from the old country would be invalid
-				renderTestStep();
-			};
-		});
-
-		$$('[data-city]').forEach(function (btn) {
-			btn.onclick = function () {
-				S.testData.city = btn.dataset.city;
-				$$('[data-city]').forEach(function (o) { o.classList.toggle('is-active', o === btn); });
-			};
-		});
-
-		$$('[data-gender]').forEach(function (btn) {
-			btn.onclick = function () {
-				S.testData.gender = btn.dataset.gender;
-				$$('[data-gender]').forEach(function (o) { o.classList.toggle('is-active', o === btn); });
-			};
-		});
-
-		var extro = $('#hv-step-extro');
-		if (extro) {
-			extro.oninput = function () {
-				S.testData.extroversion = parseInt(extro.value, 10);
-				$('#hv-extro-value').textContent = num(S.testData.extroversion);
-			};
-		}
-
-		var talk = $('#hv-step-talk');
-		if (talk) {
-			talk.oninput = function () {
-				S.testData.talkative = parseInt(talk.value, 10);
-				$('#hv-talk-value').textContent = num(S.testData.talkative);
+		var slider = $('#hv-step-trait');
+		if (slider) {
+			slider.oninput = function () {
+				S.testData[slider.dataset.trait] = parseInt(slider.value, 10);
+				$('#hv-trait-value').textContent = num(S.testData[slider.dataset.trait]);
 			};
 		}
 
@@ -1950,12 +1925,9 @@
 		if (prev) { prev.onclick = function () { S.testStep = Math.max(0, S.testStep - 1); renderTestStep(); }; }
 
 		$('#hv-step-next').onclick = function () {
-			if (S.testStep === 0 && (!S.testData.country || !S.testData.city)) {
-				toast(t('q_city_select'), 'error');
-				return;
-			}
-			if (S.testStep === 2 && !S.testData.gender) { toast(t('q_gender'), 'error'); return; }
-			if (S.testStep < 6) { S.testStep++; renderTestStep(); return; }
+			// Every step has a usable default, so the test can always be
+			// finished — nothing here can trap the user on a step.
+			if (S.testStep < TEST_STEPS.length - 1) { S.testStep++; renderTestStep(); return; }
 			saveTest();
 		};
 	}
@@ -1968,6 +1940,152 @@
 				viewProfile();
 			})
 			.catch(function () { /* reported by the progress bar */ });
+	}
+
+	/* =====================================================================
+	 * PERSONAL DETAILS  (name, age, gender, country, city, area)
+	 * ================================================================== */
+
+	/**
+	 * Open the details editor, pre-filled from the profile already on screen.
+	 * Reachable at any time from the profile page, so these can be corrected
+	 * later instead of being frozen at sign-up.
+	 */
+	function openDetails() {
+		var profile = S.data.profile || {};
+		var user = profile.user || {};
+
+		S.detailsData = {
+			name: user.name || '',
+			age: profile.age || 27,
+			gender: profile.gender || '',
+			country: profile.country || '',
+			city: profile.city || '',
+			neighborhood: profile.neighborhood || ''
+		};
+
+		renderDetails();
+	}
+
+	function renderDetails() {
+		var d = S.detailsData;
+		var locations = BOOT.locations || {};
+
+		var ages = '';
+		for (var age = 18; age <= 75; age++) {
+			ages += '<option value="' + age + '"' + (d.age === age ? ' selected' : '') + '>' + num(age) + '</option>';
+		}
+
+		var genders = [
+			{ key: 'male', label: t('gender_male') },
+			{ key: 'female', label: t('gender_female') },
+			{ key: 'other', label: t('gender_other') }
+		].map(function (opt) {
+			return '<button type="button" class="hv-choice' + (d.gender === opt.key ? ' is-active' : '') +
+				'" data-dgender="' + opt.key + '">' + esc(opt.label) + '</button>';
+		}).join('');
+
+		var countryBtns = Object.keys(locations).map(function (key) {
+			return '<button type="button" class="hv-choice' + (d.country === key ? ' is-active' : '') +
+				'" data-dcountry="' + esc(key) + '">' + esc(pick(locations[key].label)) + '</button>';
+		}).join('');
+
+		// If the server ever sends no locations the picker would be empty and
+		// the form unsubmittable, so say so instead of showing a blank gap.
+		if (!countryBtns) {
+			countryBtns = '<div class="hv-alert hv-alert-orange">' + esc(t('error_generic')) + '</div>';
+		}
+
+		var cityBlock = '';
+		if (d.country && locations[d.country]) {
+			var cities = locations[d.country].cities || {};
+			cityBlock =
+				'<div class="hv-step-q hv-mt">' + esc(t('q_city_select')) + '</div>' +
+				'<div class="hv-choice-grid">' +
+					Object.keys(cities).map(function (key) {
+						return '<button type="button" class="hv-choice' + (d.city === key ? ' is-active' : '') +
+							'" data-dcity="' + esc(key) + '">' + esc(pick(cities[key])) + '</button>';
+					}).join('') +
+				'</div>';
+		}
+
+		openModal(
+			'<h3 class="hv-modal-title">' + esc(t('details_title')) + '</h3>' +
+			'<p class="hv-muted" style="margin:0 0 12px">' + esc(t('details_hint')) + '</p>' +
+
+			'<div class="hv-field"><label for="hv-d-name">' + esc(t('q_name')) + '</label>' +
+				'<input type="text" class="hv-input" id="hv-d-name" maxlength="60" value="' + esc(d.name) + '"></div>' +
+
+			'<div class="hv-field hv-mt"><label for="hv-d-age">' + esc(t('q_age')) + '</label>' +
+				'<select class="hv-select" id="hv-d-age">' + ages + '</select></div>' +
+
+			'<div class="hv-step-q hv-mt">' + esc(t('q_gender')) + '</div>' +
+			'<div class="hv-choice-grid">' + genders + '</div>' +
+
+			'<div class="hv-step-q hv-mt">' + esc(t('q_country')) + '</div>' +
+			'<div class="hv-choice-grid">' + countryBtns + '</div>' +
+			cityBlock +
+
+			'<div class="hv-field hv-mt"><label for="hv-d-hood">' + esc(t('q_neighborhood')) + '</label>' +
+				'<input type="text" class="hv-input" id="hv-d-hood" value="' + esc(d.neighborhood) + '"></div>' +
+
+			'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-d-save">' +
+				esc(t('save')) + '</button>'
+		);
+
+		bindDetailsEvents();
+	}
+
+	function bindDetailsEvents() {
+		var name = $('#hv-d-name');
+		if (name) { name.oninput = function () { S.detailsData.name = name.value; }; }
+
+		var age = $('#hv-d-age');
+		if (age) { age.onchange = function () { S.detailsData.age = parseInt(age.value, 10); }; }
+
+		var hood = $('#hv-d-hood');
+		if (hood) { hood.oninput = function () { S.detailsData.neighborhood = hood.value; }; }
+
+		$$('[data-dgender]').forEach(function (btn) {
+			btn.onclick = function () {
+				S.detailsData.gender = btn.dataset.dgender;
+				$$('[data-dgender]').forEach(function (o) { o.classList.toggle('is-active', o === btn); });
+			};
+		});
+
+		$$('[data-dcountry]').forEach(function (btn) {
+			btn.onclick = function () {
+				if (S.detailsData.country === btn.dataset.dcountry) { return; }
+				S.detailsData.country = btn.dataset.dcountry;
+				S.detailsData.city = ''; // a city from the old country would be invalid
+				renderDetails();
+			};
+		});
+
+		$$('[data-dcity]').forEach(function (btn) {
+			btn.onclick = function () {
+				S.detailsData.city = btn.dataset.dcity;
+				$$('[data-dcity]').forEach(function (o) { o.classList.toggle('is-active', o === btn); });
+			};
+		});
+
+		$('#hv-d-save').onclick = function () {
+			var d = S.detailsData;
+
+			if (!d.name || d.name.trim().length < 2) { toast(t('err_name_short'), 'error'); return; }
+			if (!d.gender) { toast(t('q_gender'), 'error'); return; }
+			if (!d.country || !d.city) { toast(t('q_city_select'), 'error'); return; }
+
+			saveWithProgress(api('profile/details', { method: 'POST', body: d }))
+				.then(function (res) {
+					closeModal();
+					toast(t('details_saved'), 'ok');
+					if (res && res.city) { S.city = res.city; }
+					if (res && res.user) { S.user = res.user; renderHeaderUser(); }
+					viewProfile();
+				})
+				.catch(function () { /* reported by the progress bar */ });
+		};
 	}
 
 	/* =====================================================================

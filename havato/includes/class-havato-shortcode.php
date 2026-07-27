@@ -218,6 +218,11 @@ class Havato_Shortcode {
 				// fails, so signing out can never silently do nothing.
 				'logoutUrl'    => esc_url_raw( wp_logout_url( home_url( '/' ) ) ),
 				'interests'    => havato_interest_tags(),
+				// The profile editor renders its country/city pickers straight
+				// from this map. It used to be sent only in the bootstrap REST
+				// response while the UI read it off the boot payload, so the
+				// lists were always empty and no city could ever be chosen.
+				'locations'    => havato_locations(),
 				'map'          => array(
 					'lat'  => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
 					'lng'  => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),

@@ -275,6 +275,11 @@ function havato_get_profile( $user_id ) {
 			'city_neighborhood'        => '',
 			'personality_extroversion' => 5,
 			'personality_talkative'    => 5,
+			'personality_openness'     => 5,
+			'personality_humor'        => 5,
+			'personality_energy'       => 5,
+			'personality_planning'     => 5,
+			'personality_empathy'      => 5,
 			'personality_vibe'         => 'fun',
 			'personality_interests'    => '[]',
 			'rating_score'             => 5,
@@ -285,6 +290,17 @@ function havato_get_profile( $user_id ) {
 			'completed'                => 0,
 			'updated_at'               => havato_now(),
 		);
+	}
+
+	// Traits added in DB 1.7.0. A row written before the upgrade ran simply
+	// has no such key, and every caller reads them unconditionally, so give
+	// them the neutral midpoint rather than letting them read as 0 (which the
+	// matcher would score as "extremely introverted").
+	foreach ( array( 'extroversion', 'talkative', 'openness', 'humor', 'energy', 'planning', 'empathy' ) as $havato_trait ) {
+		$havato_key = 'personality_' . $havato_trait;
+		if ( ! isset( $row[ $havato_key ] ) || '' === $row[ $havato_key ] || null === $row[ $havato_key ] ) {
+			$row[ $havato_key ] = 5;
+		}
 	}
 
 	$row['interests'] = havato_json( isset( $row['personality_interests'] ) ? $row['personality_interests'] : '' );

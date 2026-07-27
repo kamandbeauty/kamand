@@ -1549,6 +1549,9 @@ class Havato_Admin {
 		self::slider( 'w_age_penalty', 'Age gap penalty (per year)', $s['w_age_penalty'], 0, 12 );
 		self::slider( 'w_age_threshold', 'Free age gap (years)', $s['w_age_threshold'], 0, 20 );
 		self::slider( 'w_rating', 'Behaviour score weight', $s['w_rating'], 0, 30 );
+		self::slider( 'w_trait_humor', 'Similar sense of humour', $s['w_trait_humor'], 0, 30 );
+		self::slider( 'w_trait_energy', 'Similar preferred atmosphere', $s['w_trait_energy'], 0, 30 );
+		self::slider( 'w_trait_empathy', 'A good listener at the table', $s['w_trait_empathy'], 0, 30 );
 		self::slider( 'w_gender_balance', 'Gender balance weight', $s['w_gender_balance'], 0, 60 );
 
 		echo '<label class="hv-adm-switch"><input type="checkbox" name="gender_balance_on" value="1" ' .
@@ -1972,6 +1975,7 @@ class Havato_Admin {
 					'w_location', 'w_time', 'w_density', 'w_shared_interest', 'w_speaker_listener',
 					'w_intro_extro', 'w_ambivert', 'w_same_vibe', 'w_age_penalty', 'w_age_threshold',
 					'w_rating', 'w_gender_balance', 'cron_lead_hours', 'auto_complete_hours',
+					'w_trait_humor', 'w_trait_energy', 'w_trait_empathy',
 					'commission_percent', 'default_ticket_price',
 				);
 				$values = array();
