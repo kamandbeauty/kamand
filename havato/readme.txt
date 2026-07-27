@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,16 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.0.1 =
+* Fix: the checkout-redirect and modal overlays stayed on screen permanently,
+  covering the app with a spinner on a blue gradient. Their `.hv-redirect` /
+  `.hv-modal-host` class rules declared `display: flex`, which outranks the
+  browser's built-in `[hidden] { display: none }`. Added an explicit
+  `#havato-app [hidden] { display: none !important }` guard.
+* Add: a visible "could not reach the server" state with a retry button, so an
+  unreachable REST API can never look like an endless loading spinner.
+* Bumped the version so cached CSS/JS and the service-worker cache refresh.
 
 = 1.0.0 =
 * Initial release.

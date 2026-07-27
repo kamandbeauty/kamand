@@ -88,6 +88,14 @@
 #havato-app *::before,
 #havato-app *::after { box-sizing: border-box; }
 
+/* CRITICAL: the [hidden] attribute must always win.
+   Several overlays (.hv-redirect, .hv-modal-host, .hv-status-strip) declare
+   `display: flex` on their class. A class selector outbeats the UA stylesheet's
+   `[hidden] { display: none }`, so without this guard those overlays render
+   permanently and cover the whole app with a spinner. */
+#havato-app [hidden],
+#havato-app [hidden="hidden"] { display: none !important; }
+
 #havato-app button,
 #havato-app input,
 #havato-app select,

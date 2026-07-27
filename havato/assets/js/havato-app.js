@@ -2192,11 +2192,49 @@
 			buildTabs();
 			render();
 			S.booted = true;
-		}).catch(function () {
-			render();
+		}).catch(function (err) {
+			// Never leave the user staring at a spinner: if the REST API is
+			// unreachable (permalinks off, wp-json blocked by a security
+			// plugin, offline…) show the reason plus a retry button.
+			bootFailed(err);
 		});
 
 		registerServiceWorker();
+	}
+
+	function bootFailed(err) {
+		el.bottomNav.style.display = 'none';
+		el.header.style.display = '';
+		setHeader(t('app_name'), '');
+
+		var detail = (err && err.message) ? err.message : t('error_generic');
+
+		el.main.innerHTML =
+			'<div class="hv-card" style="margin-top:8dvh;text-align:center">' +
+				'<div class="hv-empty">' + icon('cup') +
+					'<p><strong>' + esc(t('boot_failed')) + '</strong></p>' +
+					'<p class="hv-muted" style="direction:ltr;word-break:break-word">' + esc(detail) + '</p>' +
+				'</div>' +
+				'<button type="button" class="hv-btn hv-btn-primary hv-btn-block" id="hv-boot-retry">' +
+					esc(t('retry')) + '</button>' +
+			'</div>';
+
+		var retry = $('#hv-boot-retry');
+		if (retry) {
+			retry.onclick = function () {
+				retry.disabled = true;
+				loading();
+				api('bootstrap').then(function (res) {
+					S.loggedIn = !!res.logged_in;
+					S.role = res.role || 'guest';
+					S.user = res.user || null;
+					S.venue = res.venue || null;
+					buildTabs();
+					render();
+					S.booted = true;
+				}).catch(bootFailed);
+			};
+		}
 	}
 
 	function applyLangSilent(lang) {

@@ -196,6 +196,8 @@ class Havato_I18N {
 			'search'                => array( 'fa' => 'جستجو', 'en' => 'Search' ),
 			'filter'                => array( 'fa' => 'فیلتر', 'en' => 'Filter' ),
 			'error_generic'         => array( 'fa' => 'خطایی رخ داد. دوباره تلاش کنید.', 'en' => 'Something went wrong. Please retry.' ),
+			'boot_failed'           => array( 'fa' => 'ارتباط با سرور برقرار نشد', 'en' => 'Could not reach the server' ),
+			'retry'                 => array( 'fa' => 'تلاش دوباره', 'en' => 'Try again' ),
 			'empty_state'           => array( 'fa' => 'فعلاً چیزی برای نمایش نیست.', 'en' => 'Nothing here yet.' ),
 			'toman'                 => array( 'fa' => 'تومان', 'en' => 'Toman' ),
 			'free'                  => array( 'fa' => 'رایگان', 'en' => 'Free' ),
