@@ -61,7 +61,11 @@ t('throttle skipped for admins onboarding a café', /! current_user_can\( 'manag
 
 console.log('\n--- 4. storefront photo speeds up verification ---');
 t('column added', /storefront_photo varchar\(255\)/.test(db));
-t('DB version bumped', /HAVATO_DB_VERSION', '1\.3\.0'/.test(main));
+{
+  const v=/HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  t('DB version bumped (>=1.3.0), got '+v[1]+'.'+v[2]+'.'+v[3],
+    (+v[1])*10000+(+v[2])*100+(+v[3]) >= 10300);
+}
 t('accepted at signup', /storefront_photo/.test(rest));
 t('editable + URL-sanitised', /'image' === \$key \|\| 'storefront_photo' === \$key/.test(rest));
 t('prompt shown on the owner dashboard', /function storefront_prompt/.test(oa));

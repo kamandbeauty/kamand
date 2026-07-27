@@ -240,6 +240,18 @@ class Havato_I18N {
 			'tab_dashboard'         => array( 'fa' => 'داشبورد', 'en' => 'Dashboard' ),
 			'tab_venue_events'      => array( 'fa' => 'رویدادهای کافه', 'en' => 'Venue Events' ),
 			'tab_menu_builder'      => array( 'fa' => 'ساخت منو', 'en' => 'Menu Builder' ),
+			'tab_tables'            => array( 'fa' => 'میزهای کافه', 'en' => 'My tables' ),
+			'tables_hint'           => array( 'fa' => 'میزهای کافه را یک‌بار تعریف کنید؛ بعد برای هر دورهمی فقط تیک می‌زنید. ظرفیت خودکار حساب می‌شود.', 'en' => 'Define your tables once, then just tick them for each event — capacity is calculated automatically.' ),
+			'table_label'           => array( 'fa' => 'نام میز', 'en' => 'Table name' ),
+			'table_label_hint'      => array( 'fa' => 'مثلاً میز پنجره', 'en' => 'e.g. Window table' ),
+			'table_seats'           => array( 'fa' => 'تعداد صندلی', 'en' => 'Seats' ),
+			'table_quantity'        => array( 'fa' => 'تعداد میز', 'en' => 'How many' ),
+			'event_tables_pick'     => array( 'fa' => 'میزهای این دورهمی را انتخاب کنید', 'en' => 'Pick the tables for this event' ),
+			'event_capacity_preview' => array( 'fa' => 'ظرفیت این دورهمی: %d نفر', 'en' => 'Capacity for this event: %d guests' ),
+			'event_need_tables'     => array( 'fa' => 'حداقل یک میز را انتخاب کنید.', 'en' => 'Please select at least one table.' ),
+			'event_theme'           => array( 'fa' => 'تم دورهمی', 'en' => 'Event theme' ),
+			'event_theme_hint'      => array( 'fa' => 'مثلاً موسیقی، کتاب، بازی', 'en' => 'e.g. Music, Books, Games' ),
+			'event_image'           => array( 'fa' => 'عکس دورهمی (اختیاری)', 'en' => 'Event photo (optional)' ),
 			'tab_venue_settings'    => array( 'fa' => 'تنظیمات کافه', 'en' => 'Venue Settings' ),
 
 			// Explore.

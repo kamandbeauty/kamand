@@ -78,6 +78,7 @@ class Havato_Owner_Admin {
 		$pages = array(
 			'havato-venue'          => array( 'tab_dashboard', 'page_dashboard' ),
 			'havato-venue-events'   => array( 'tab_venue_events', 'page_events' ),
+			'havato-venue-tables'   => array( 'tab_tables', 'page_tables' ),
 			'havato-venue-menu'     => array( 'tab_menu_builder', 'page_menu' ),
 			'havato-venue-settings' => array( 'tab_venue_settings', 'page_settings' ),
 			'havato-venue-payouts'  => array( 'payout_status', 'page_payouts' ),
@@ -286,6 +287,7 @@ class Havato_Owner_Admin {
 		$tabs = array(
 			'havato-venue'          => Havato_I18N::t( 'tab_dashboard' ),
 			'havato-venue-events'   => Havato_I18N::t( 'tab_venue_events' ),
+			'havato-venue-tables'   => Havato_I18N::t( 'tab_tables' ),
 			'havato-venue-menu'     => Havato_I18N::t( 'tab_menu_builder' ),
 			'havato-venue-settings' => Havato_I18N::t( 'tab_venue_settings' ),
 			'havato-venue-payouts'  => Havato_I18N::t( 'payout_status' ),
@@ -471,10 +473,11 @@ class Havato_Owner_Admin {
 		// New-table form.
 		echo '<div class="hv-adm-card">';
 		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'add_item' ) ) . '</h2>';
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="hv-adm-inline-form">';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'havato_owner', 'havato_owner_nonce' );
 		echo '<input type="hidden" name="action" value="havato_owner_action">';
 		echo '<input type="hidden" name="havato_action" value="create_event">';
+		echo '<div class="hv-adm-inline-form">';
 
 		echo '<label class="hv-adm-grow">' . esc_html( Havato_I18N::t( 'event_title' ) ) .
 			'<input type="text" name="title" maxlength="120" placeholder="' .
@@ -483,8 +486,13 @@ class Havato_Owner_Admin {
 			'<input type="date" name="event_date" required value="' . esc_attr( gmdate( 'Y-m-d', strtotime( '+1 day' ) ) ) . '"></label>';
 		echo '<label>' . esc_html( Havato_I18N::t( 'quiet_hours' ) ) .
 			'<input type="time" name="event_time" required value="19:00"></label>';
-		echo '<label>' . esc_html( Havato_I18N::t( 'seats_left' ) ) .
-			'<input type="number" name="max_capacity" min="2" max="12" value="6"></label>';
+		// Table pickers, or a plain seat count if no furniture is defined yet.
+		$tables = Havato_REST::venue_tables( $venue['id'] );
+
+		if ( empty( $tables ) ) {
+			echo '<label>' . esc_html( Havato_I18N::t( 'seats_left' ) ) .
+				'<input type="number" name="max_capacity" min="2" max="60" value="6"></label>';
+		}
 		echo '<label>' . esc_html( Havato_I18N::t( 'menu_item_price' ) ) .
 			'<input type="number" name="price" min="0" step="5000" value="75000"></label>';
 		echo '<label>' . esc_html( Havato_I18N::t( 'filter' ) ) . '<select name="budget_tier">';
@@ -497,7 +505,56 @@ class Havato_Owner_Admin {
 			);
 		}
 		echo '</select></label>';
-		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' . esc_html( Havato_I18N::t( 'save' ) ) . '</button>';
+		echo '<label class="hv-adm-grow">' . esc_html( Havato_I18N::t( 'event_theme' ) ) .
+			'<input type="text" name="theme" maxlength="120" placeholder="' .
+			esc_attr( Havato_I18N::t( 'event_theme_hint' ) ) . '"></label>';
+
+		// Optional event photo (falls back to the café cover).
+		echo '<label>' . esc_html( Havato_I18N::t( 'event_image' ) ) .
+			'<span class="hv-adm-imgpick">' .
+				'<input type="hidden" name="image" id="hv-event-image">' .
+				'<img id="hv-event-image-preview" alt="" hidden>' .
+				'<button type="button" class="hv-adm-btn hv-adm-btn-ghost" id="hv-event-image-pick">' .
+					esc_html( Havato_I18N::t( 'upload_photo' ) ) . '</button>' .
+			'</span></label>';
+
+		echo '</div>'; // close the field row before the table pickers.
+
+		if ( ! empty( $tables ) ) {
+			echo '<div class="hv-adm-tablepick">';
+			echo '<span class="hv-adm-tablepick-label">' . esc_html( Havato_I18N::t( 'event_tables_pick' ) ) . '</span>';
+			echo '<div class="hv-adm-tablepick-grid">';
+
+			foreach ( $tables as $i => $row ) {
+				$name = '' !== $row['label']
+					? $row['label']
+					: sprintf( '%d %s', $row['seats'], Havato_I18N::t( 'seats_left' ) );
+
+				echo '<label class="hv-adm-tablepick-item">';
+				printf(
+					'<input type="checkbox" name="tables[%1$d][use]" value="1" data-seats="%2$d">',
+					(int) $i,
+					(int) $row['seats']
+				);
+				printf( '<input type="hidden" name="tables[%d][table_id]" value="%d">', (int) $i, (int) $row['id'] );
+				echo '<span class="hv-adm-tablepick-name">' . esc_html( $name ) . '</span>';
+				echo '<span class="hv-adm-muted">' . esc_html( sprintf( '%d×%d', $row['quantity'], $row['seats'] ) ) . '</span>';
+				printf(
+					'<input type="number" class="hv-adm-tablepick-qty" name="tables[%d][quantity]" min="1" max="%d" value="%d">',
+					(int) $i,
+					(int) $row['quantity'],
+					(int) $row['quantity']
+				);
+				echo '</label>';
+			}
+
+			echo '</div>';
+			echo '<p class="hv-adm-muted" id="hv-event-capacity"></p>';
+			echo '</div>';
+		}
+
+		echo '<p><button type="submit" class="hv-adm-btn hv-adm-btn-blue">' .
+			esc_html( Havato_I18N::t( 'save' ) ) . '</button></p>';
 		echo '</form></div>';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -651,6 +708,50 @@ class Havato_Owner_Admin {
 		}
 
 		echo '</tbody></table></div>';
+	}
+
+	/* =====================================================================
+	 * Page — the café's physical tables
+	 * ================================================================== */
+
+	/**
+	 * Define the furniture: how many tables of each size the café has.
+	 *
+	 * These are picked per event, and the matcher then seats one group per
+	 * physical table instead of one oversized group.
+	 */
+	public static function page_tables() {
+		$venue = self::venue();
+		self::head( Havato_I18N::t( 'tab_tables' ), $venue );
+
+		if ( ! $venue ) {
+			self::no_venue();
+			return;
+		}
+
+		$tables = Havato_REST::venue_tables( $venue['id'] );
+		$seats  = 0;
+		foreach ( $tables as $row ) {
+			$seats += $row['seats'] * $row['quantity'];
+		}
+
+		echo '<div class="hv-adm-alert is-blue">' . esc_html( Havato_I18N::t( 'tables_hint' ) ) . '</div>';
+
+		echo '<div class="hv-adm-card">';
+		printf(
+			'<h2 class="hv-adm-card-title">%s — %s</h2>',
+			esc_html( Havato_I18N::t( 'tab_tables' ) ),
+			esc_html( sprintf( '%d %s', $seats, Havato_I18N::t( 'seats_left' ) ) )
+		);
+		printf(
+			'<div id="hv-owner-tables" data-tables="%s" data-nonce="%s" data-action="%s"></div>',
+			esc_attr( wp_json_encode( $tables ) ),
+			esc_attr( wp_create_nonce( 'havato_owner' ) ),
+			esc_url( admin_url( 'admin-post.php' ) )
+		);
+		echo '</div>';
+
+		self::foot();
 	}
 
 	/* =====================================================================
@@ -880,11 +981,27 @@ class Havato_Owner_Admin {
 		switch ( $action ) {
 			case 'create_event':
 				$req = new WP_REST_Request( 'POST' );
-				foreach ( array( 'title', 'event_date', 'event_time', 'budget_tier' ) as $key ) {
+				foreach ( array( 'title', 'theme', 'event_date', 'event_time', 'budget_tier' ) as $key ) {
 					$req->set_param( $key, isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '' );
 				}
+				$req->set_param( 'image', isset( $_POST['image'] ) ? esc_url_raw( wp_unslash( $_POST['image'] ) ) : '' );
 				$req->set_param( 'max_capacity', isset( $_POST['max_capacity'] ) ? (int) $_POST['max_capacity'] : 6 );
 				$req->set_param( 'price', isset( $_POST['price'] ) ? (int) $_POST['price'] : 0 );
+
+				// Only the ticked tables count toward the event.
+				$picked = array();
+				// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified above.
+				$raw_tables = isset( $_POST['tables'] ) && is_array( $_POST['tables'] ) ? wp_unslash( $_POST['tables'] ) : array();
+				foreach ( $raw_tables as $row ) {
+					if ( empty( $row['use'] ) || empty( $row['table_id'] ) ) {
+						continue;
+					}
+					$picked[] = array(
+						'table_id' => (int) $row['table_id'],
+						'quantity' => isset( $row['quantity'] ) ? (int) $row['quantity'] : 1,
+					);
+				}
+				$req->set_param( 'tables', $picked );
 
 				$result = Havato_REST::owner_create_event( $req );
 				if ( is_wp_error( $result ) ) {
@@ -939,6 +1056,16 @@ class Havato_Owner_Admin {
 					$msg = $result->get_error_message();
 				}
 				$page = 'havato-venue-settings';
+				break;
+
+			case 'save_tables':
+				$raw = isset( $_POST['tables_json'] ) ? wp_unslash( $_POST['tables_json'] ) : '[]';
+				$req = new WP_REST_Request( 'POST' );
+				$req->set_param( 'tables', havato_json( $raw ) );
+
+				$result = Havato_REST::owner_save_tables( $req );
+				$msg    = is_wp_error( $result ) ? $result->get_error_message() : Havato_I18N::t( 'saved' );
+				$page   = 'havato-venue-tables';
 				break;
 
 			case 'save_menu':

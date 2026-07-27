@@ -104,21 +104,7 @@
 				// Submit as one JSON payload through the normal admin-post flow,
 				// so the same sanitiser and approval rules apply as before.
 				var clean = items.filter(function (i) { return String(i.name).trim() !== ''; });
-				var form = document.createElement('form');
-				form.method = 'post';
-				form.action = $('#hv-owner-menu').dataset.action || window.ajaxurl.replace('admin-ajax.php', 'admin-post.php');
-				form.innerHTML =
-					'<input type="hidden" name="action" value="havato_owner_action">' +
-					'<input type="hidden" name="havato_action" value="save_menu">' +
-					'<input type="hidden" name="havato_owner_nonce" value="' + esc(host.dataset.nonce) + '">' +
-					'<input type="hidden" name="_wp_http_referer" value="' + esc(window.location.pathname + window.location.search) + '">';
-				var payload = document.createElement('input');
-				payload.type = 'hidden';
-				payload.name = 'menu_json';
-				payload.value = JSON.stringify(clean);
-				form.appendChild(payload);
-				document.body.appendChild(form);
-				form.submit();
+				postJson(host, 'save_menu', 'menu_json', clean);
 			};
 		}
 
@@ -219,8 +205,158 @@
 		};
 	}
 
+
+	/* =====================================================================
+	 * Venue tables ("3 tables of 4, 2 tables of 6")
+	 * ================================================================== */
+	function initTables() {
+		var host = $('#hv-owner-tables');
+		if (!host) { return; }
+
+		var rows = [];
+		try { rows = JSON.parse(host.dataset.tables || '[]') || []; } catch (e) { rows = []; }
+
+		function totalSeats() {
+			return rows.reduce(function (n, r) {
+				return n + (parseInt(r.seats, 10) || 0) * (parseInt(r.quantity, 10) || 0);
+			}, 0);
+		}
+
+		function render() {
+			var body = rows.map(function (r, i) {
+				return '' +
+					'<tr>' +
+						'<td><input type="text" class="hv-adm-input" data-label="' + i + '" value="' + esc(r.label || '') +
+							'" placeholder="' + esc(t('table_label_hint')) + '"></td>' +
+						'<td><input type="number" class="hv-adm-input" data-seats="' + i + '" value="' +
+							(parseInt(r.seats, 10) || 4) + '" min="2" max="20"></td>' +
+						'<td><input type="number" class="hv-adm-input" data-qty="' + i + '" value="' +
+							(parseInt(r.quantity, 10) || 1) + '" min="1" max="50"></td>' +
+						'<td class="hv-adm-muted">' +
+							((parseInt(r.seats, 10) || 0) * (parseInt(r.quantity, 10) || 0)) +
+						'</td>' +
+						'<td class="hv-adm-actions">' +
+							'<button type="button" class="hv-adm-btn hv-adm-btn-danger" data-del="' + i + '">✕</button>' +
+						'</td>' +
+					'</tr>';
+			}).join('');
+
+			host.innerHTML =
+				'<table class="hv-adm-table"><thead><tr>' +
+					'<th>' + esc(t('table_label')) + '</th>' +
+					'<th>' + esc(t('table_seats')) + '</th>' +
+					'<th>' + esc(t('table_quantity')) + '</th>' +
+					'<th>' + esc(t('seats_left')) + '</th>' +
+					'<th></th>' +
+				'</tr></thead><tbody>' +
+					(body || '<tr><td colspan="5" class="hv-adm-muted">' + esc(t('empty_state')) + '</td></tr>') +
+				'</tbody></table>' +
+				'<p class="hv-adm-menu-actions">' +
+					'<button type="button" class="hv-adm-btn hv-adm-btn-ghost" id="hv-tables-add">＋ ' + esc(t('add_item')) + '</button> ' +
+					'<button type="button" class="hv-adm-btn hv-adm-btn-blue" id="hv-tables-save">' + esc(t('save')) + '</button> ' +
+					'<span class="hv-adm-muted">' + esc(t('seats_left')) + ': <strong>' + totalSeats() + '</strong></span>' +
+				'</p>';
+
+			bind();
+		}
+
+		function bind() {
+			[['label', 'label'], ['seats', 'seats'], ['qty', 'quantity']].forEach(function (pair) {
+				Array.prototype.forEach.call(host.querySelectorAll('[data-' + pair[0] + ']'), function (el) {
+					el.oninput = function () {
+						var i = +el.dataset[pair[0] === 'qty' ? 'qty' : pair[0]];
+						rows[i][pair[1]] = (pair[0] === 'label') ? el.value : (parseInt(el.value, 10) || 0);
+						// Re-render only for numbers, so the seat total stays live
+						// without stealing focus from the text field.
+						if (pair[0] !== 'label') { render(); }
+					};
+				});
+			});
+
+			Array.prototype.forEach.call(host.querySelectorAll('[data-del]'), function (el) {
+				el.onclick = function () { rows.splice(+el.dataset.del, 1); render(); };
+			});
+
+			$('#hv-tables-add').onclick = function () {
+				rows.push({ id: 0, label: '', seats: 4, quantity: 1 });
+				render();
+			};
+
+			$('#hv-tables-save').onclick = function () {
+				var clean = rows.filter(function (r) {
+					return (parseInt(r.seats, 10) || 0) >= 2 && (parseInt(r.quantity, 10) || 0) >= 1;
+				});
+				postJson(host, 'save_tables', 'tables_json', clean);
+			};
+		}
+
+		render();
+	}
+
+	/**
+	 * Submit a JSON payload through the normal admin-post flow, so the server
+	 * keeps doing the validation.
+	 */
+	function postJson(host, action, field, payload) {
+		var form = document.createElement('form');
+		form.method = 'post';
+		form.action = host.dataset.action;
+		form.innerHTML =
+			'<input type="hidden" name="action" value="havato_owner_action">' +
+			'<input type="hidden" name="havato_action" value="' + esc(action) + '">' +
+			'<input type="hidden" name="havato_owner_nonce" value="' + esc(host.dataset.nonce) + '">';
+		var input = document.createElement('input');
+		input.type = 'hidden';
+		input.name = field;
+		input.value = JSON.stringify(payload);
+		form.appendChild(input);
+		document.body.appendChild(form);
+		form.submit();
+	}
+
+	/* =====================================================================
+	 * Event form: live capacity + optional photo
+	 * ================================================================== */
+	function initEventForm() {
+		var pick = $('#hv-event-image-pick');
+		if (pick) {
+			pick.onclick = function () {
+				pickMedia(function (url) {
+					$('#hv-event-image').value = url;
+					var img = $('#hv-event-image-preview');
+					img.src = url;
+					img.hidden = false;
+				});
+			};
+		}
+
+		var out = $('#hv-event-capacity');
+		if (!out) { return; }
+
+		function recalc() {
+			var total = 0;
+			Array.prototype.forEach.call(document.querySelectorAll('.hv-adm-tablepick-item'), function (item) {
+				var box = item.querySelector('input[type="checkbox"]');
+				var qty = item.querySelector('.hv-adm-tablepick-qty');
+				item.classList.toggle('is-on', box.checked);
+				if (box.checked) {
+					total += (parseInt(box.dataset.seats, 10) || 0) * (parseInt(qty.value, 10) || 0);
+				}
+			});
+			out.textContent = t('event_capacity_preview').replace('%d', total);
+		}
+
+		Array.prototype.forEach.call(document.querySelectorAll('.hv-adm-tablepick-item input'), function (el) {
+			el.addEventListener('change', recalc);
+			el.addEventListener('input', recalc);
+		});
+		recalc();
+	}
+
 	function boot() {
 		initMenu();
+		initTables();
+		initEventForm();
 		initCover();
 		initStorefront();
 		initMap();

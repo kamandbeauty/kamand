@@ -92,7 +92,11 @@ class Havato_Matcher {
 
 		Havato_Logger::log( sprintf( 'Region scan complete: %d guests in queue.', count( $user_ids ) ), 'info' );
 
-		$capacity = max( 2, (int) $event['max_capacity'] );
+		// Seat sizes come from the physical furniture the café picked for this
+		// event: 3x4 + 1x6 means groups of 4, 4, 4 and 6 — NOT one group of 18.
+		// Events created before tables existed fall back to max_capacity.
+		$seat_plan = self::seat_plan( $event );
+		$capacity  = array_sum( $seat_plan );
 
 		// RELAXATION: when the queue can not fill a balanced table, soften every
 		// secondary penalty/bonus so a table is ALWAYS produced (hard blocklist
@@ -102,8 +106,13 @@ class Havato_Matcher {
 			Havato_Logger::log( 'Low-registration mode: secondary criteria relaxed to guarantee an output table.', 'warn' );
 		}
 
+		Havato_Logger::log(
+			sprintf( 'Seating plan: %d table(s) — %s seats.', count( $seat_plan ), implode( '+', $seat_plan ) ),
+			'info'
+		);
+
 		$profiles = self::load_profiles( $user_ids );
-		$tables   = self::build_tables( $user_ids, $profiles, $capacity, $relaxed );
+		$tables   = self::build_tables( $user_ids, $profiles, $seat_plan, $relaxed );
 
 		if ( empty( $tables ) ) {
 			Havato_Logger::log( 'Engine could not seat anyone (all pairs blocked).', 'error' );
@@ -181,6 +190,36 @@ class Havato_Matcher {
 		);
 	}
 
+
+	/**
+	 * Expand an event's furniture into a flat list of seat counts.
+	 *
+	 * "3 tables of 4 + 1 table of 6" becomes [6, 4, 4, 4] — biggest first, so
+	 * the strongest groups are formed while the candidate pool is deepest.
+	 *
+	 * @param array $event Event row.
+	 * @return array List of seat counts, never empty.
+	 */
+	private static function seat_plan( $event ) {
+		$plan = array();
+
+		foreach ( Havato_REST::event_tables( $event['id'] ) as $row ) {
+			$seats = max( 2, (int) $row['seats'] );
+			for ( $i = 0; $i < max( 1, (int) $row['quantity'] ); $i++ ) {
+				$plan[] = $seats;
+			}
+		}
+
+		if ( empty( $plan ) ) {
+			// Legacy event with no furniture attached: one table, old capacity.
+			$plan[] = max( 2, (int) $event['max_capacity'] );
+		}
+
+		rsort( $plan );
+
+		return $plan;
+	}
+
 	/**
 	 * Greedy + local-search table builder.
 	 *
@@ -195,13 +234,17 @@ class Havato_Matcher {
 	 *   5. Repeat from (2) with the remaining pool so nobody is left behind —
 	 *      leftovers always end up on a (smaller) table instead of being dropped.
 	 *
-	 * @param array $user_ids Candidate user ids.
-	 * @param array $profiles user_id => profile row.
-	 * @param int   $capacity Seats per table.
-	 * @param bool  $relaxed  Relaxed mode.
+	 * @param array $user_ids  Candidate user ids.
+	 * @param array $profiles  user_id => profile row.
+	 * @param array $seat_plan Seats of each physical table, biggest first.
+	 * @param bool  $relaxed   Relaxed mode.
 	 * @return array List of ['members'=>[], 'score'=>float]
 	 */
-	private static function build_tables( $user_ids, $profiles, $capacity, $relaxed ) {
+	private static function build_tables( $user_ids, $profiles, $seat_plan, $relaxed ) {
+		// Each pass fills the next physical table; $capacity changes per table.
+		$plan     = array_values( (array) $seat_plan );
+		$plan_i   = 0;
+		$capacity = isset( $plan[0] ) ? (int) $plan[0] : 6;
 		$pairs = array();
 		$n     = count( $user_ids );
 
@@ -219,6 +262,13 @@ class Havato_Matcher {
 
 		while ( count( $pool ) > 0 && $guard < 50 ) {
 			$guard++;
+
+			// Move to the next table in the plan. Once the café's furniture is
+			// exhausted, keep the last size so nobody is silently dropped.
+			if ( isset( $plan[ $plan_i ] ) ) {
+				$capacity = max( 2, (int) $plan[ $plan_i ] );
+			}
+			$plan_i++;
 
 			// --- Step 2: seed with the best available pair ------------------
 			$seed_score = null;

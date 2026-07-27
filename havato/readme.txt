@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,21 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.6.0 =
+* Cafés can now describe their real furniture once — "3 tables of 4, 2 tables
+  of 6" — on a new "My tables" screen.
+* When creating an event the owner ticks which tables to use; capacity is
+  calculated from the seats instead of being typed in, and a live preview
+  shows the total.
+* The matcher now seats one group per PHYSICAL table. An event with 3x4 + 1x6
+  produces groups of 6, 4, 4 and 4 — previously it produced a single group of
+  18, which was never what a café actually has.
+* Events gained a theme and an optional photo (falling back to the café cover
+  when omitted). Both appear in the admin event list along with the table
+  layout.
+* Events created before this release keep working: with no furniture attached
+  they fall back to their existing capacity as a single table.
 
 = 1.5.0 =
 * New admin screen "Events & guests": every event on the platform with the

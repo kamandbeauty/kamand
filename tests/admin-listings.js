@@ -56,7 +56,7 @@ t('return_page allow-listed (no open redirect)',
 
 console.log('\n--- event title end-to-end ---');
 t('owner form asks for it', /name="title"/.test(oa));
-t('passed through the POST handler', /'title', 'event_date', 'event_time', 'budget_tier'/.test(oa));
+t('passed through the POST handler', /foreach \( array\( 'title',[^)]*'event_date'/.test(oa));
 t('shown in the owner events table', /\$row\['title'\]/.test(oa));
 t('stored by the REST layer', /'title'\s*=>\s*sanitize_text_field/.test(rest));
 t('returned to clients', /'title'\s*=>\s*\$row\['title'\]/.test(rest));

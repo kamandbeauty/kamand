@@ -184,6 +184,8 @@ class Havato_REST {
 			'owner/venue'        => array( 'POST', 'owner_save_venue', $owner ),
 			'owner/upload'       => array( 'POST', 'owner_upload', $owner ),
 			'owner/payouts'      => array( 'GET', 'owner_payouts', $owner ),
+			'owner/tables'       => array( 'GET', 'owner_get_tables', $owner ),
+			'owner/tables/save'  => array( 'POST', 'owner_save_tables', $owner ),
 
 			// Admin console.
 			'admin/stats'        => array( 'GET', 'admin_stats', $admin ),
@@ -1655,6 +1657,165 @@ class Havato_REST {
 		);
 	}
 
+
+	/**
+	 * The café's physical tables.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_get_tables( $req ) {
+		self::boot( $req );
+
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		return self::ok( array( 'tables' => self::venue_tables( $venue['id'] ) ) );
+	}
+
+	/**
+	 * Replace the café's table list.
+	 *
+	 * Rows are rewritten wholesale, but ids are preserved where the client
+	 * sends them so existing events keep pointing at the same table.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function owner_save_tables( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$venue = self::owner_venue( get_current_user_id() );
+		if ( ! $venue ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$items = $req->get_param( 'tables' );
+		$items = is_array( $items ) ? $items : havato_json( $items );
+		$table = Havato_DB::table( 'venue_tables' );
+
+		$keep = array();
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$seats = max( 2, min( 20, isset( $item['seats'] ) ? (int) $item['seats'] : 4 ) );
+			$qty   = max( 1, min( 50, isset( $item['quantity'] ) ? (int) $item['quantity'] : 1 ) );
+			$label = isset( $item['label'] ) ? sanitize_text_field( $item['label'] ) : '';
+			$id    = isset( $item['id'] ) ? (int) $item['id'] : 0;
+
+			$data = array(
+				'venue_id' => $venue['id'],
+				'label'    => $label,
+				'seats'    => $seats,
+				'quantity' => $qty,
+				'active'   => 1,
+			);
+
+			if ( $id ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->update( $table, $data, array( 'id' => $id, 'venue_id' => $venue['id'] ), array( '%s', '%s', '%d', '%d', '%d' ), array( '%d', '%s' ) );
+				$keep[] = $id;
+			} else {
+				$data['created_at'] = havato_now();
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->insert( $table, $data, array( '%s', '%s', '%d', '%d', '%d', '%s' ) );
+				$keep[] = (int) $wpdb->insert_id;
+			}
+		}
+
+		// Retire anything the owner removed. Soft-delete (active = 0) rather
+		// than DELETE, so past events that referenced the table still resolve.
+		if ( ! empty( $keep ) ) {
+			$ph = implode( ',', array_fill( 0, count( $keep ), '%d' ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE $table SET active = 0 WHERE venue_id = %s AND id NOT IN ($ph)",
+					array_merge( array( $venue['id'] ), $keep )
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update( $table, array( 'active' => 0 ), array( 'venue_id' => $venue['id'] ), array( '%d' ), array( '%s' ) );
+		}
+
+		return self::ok( array( 'tables' => self::venue_tables( $venue['id'] ) ) );
+	}
+
+	/**
+	 * Active tables of a venue.
+	 *
+	 * @param string $venue_id Venue id.
+	 * @return array
+	 */
+	public static function venue_tables( $venue_id ) {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		$table = Havato_DB::table( 'venue_tables' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM $table WHERE venue_id = %s AND active = 1 ORDER BY seats ASC, id ASC", $venue_id ),
+			ARRAY_A
+		);
+
+		return array_map(
+			function ( $row ) {
+				return array(
+					'id'       => (int) $row['id'],
+					'label'    => $row['label'],
+					'seats'    => (int) $row['seats'],
+					'quantity' => (int) $row['quantity'],
+				);
+			},
+			(array) $rows
+		);
+	}
+
+	/**
+	 * Tables assigned to one event.
+	 *
+	 * @param string $event_id Event id.
+	 * @return array
+	 */
+	public static function event_tables( $event_id ) {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		$et = Havato_DB::table( 'event_tables' );
+		$vt = Havato_DB::table( 'venue_tables' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT et.*, vt.label FROM $et et
+				 LEFT JOIN $vt vt ON vt.id = et.table_id
+				 WHERE et.event_id = %s ORDER BY et.seats ASC",
+				$event_id
+			),
+			ARRAY_A
+		);
+
+		return array_map(
+			function ( $row ) {
+				return array(
+					'table_id' => (int) $row['table_id'],
+					'label'    => $row['label'],
+					'seats'    => (int) $row['seats'],
+					'quantity' => (int) $row['quantity'],
+				);
+			},
+			(array) $rows
+		);
+	}
+
 	/**
 	 * Create a new social table for the owner's venue.
 	 *
@@ -1689,8 +1850,52 @@ class Havato_REST {
 		$tier = sanitize_text_field( (string) $req->get_param( 'budget_tier' ) );
 		$tier = in_array( $tier, array( 'low', 'medium', 'high' ), true ) ? $tier : $venue['budget_tier'];
 
-		$capacity = max( 2, min( 12, (int) $req->get_param( 'max_capacity' ) ) );
-		$price    = max( 0, (int) $req->get_param( 'price' ) );
+		$price = max( 0, (int) $req->get_param( 'price' ) );
+
+		// Tables selected for this event. Capacity is DERIVED from the real
+		// furniture (3 x 4-seater = 12) rather than typed in, so the matcher
+		// can seat one group per physical table instead of one giant group.
+		$picked = $req->get_param( 'tables' );
+		$picked = is_array( $picked ) ? $picked : havato_json( $picked );
+
+		$available = array();
+		foreach ( self::venue_tables( $venue['id'] ) as $vt ) {
+			$available[ (int) $vt['id'] ] = $vt;
+		}
+
+		$chosen   = array();
+		$capacity = 0;
+
+		foreach ( (array) $picked as $row ) {
+			$tid = isset( $row['table_id'] ) ? (int) $row['table_id'] : 0;
+			$qty = isset( $row['quantity'] ) ? (int) $row['quantity'] : 0;
+
+			if ( $qty < 1 || ! isset( $available[ $tid ] ) ) {
+				continue;
+			}
+			// Never allow more copies than the café actually owns.
+			$qty = min( $qty, (int) $available[ $tid ]['quantity'] );
+
+			$chosen[] = array(
+				'table_id' => $tid,
+				'seats'    => (int) $available[ $tid ]['seats'],
+				'quantity' => $qty,
+			);
+			$capacity += (int) $available[ $tid ]['seats'] * $qty;
+		}
+
+		// Backwards compatible: a café that has not defined any furniture yet
+		// can still publish an event with a plain seat count.
+		if ( empty( $chosen ) ) {
+			$capacity = max( 2, min( 60, (int) $req->get_param( 'max_capacity' ) ) );
+		}
+
+		if ( $capacity < 2 ) {
+			return new WP_Error( 'havato_no_tables', Havato_I18N::t( 'event_need_tables' ), array( 'status' => 400 ) );
+		}
+
+		$theme = sanitize_text_field( (string) $req->get_param( 'theme' ) );
+		$image = esc_url_raw( (string) $req->get_param( 'image' ) );
 
 		$event_id = havato_uid( 'e' );
 		$events   = Havato_DB::table( 'events' );
@@ -1702,6 +1907,8 @@ class Havato_REST {
 				'id'           => $event_id,
 				'venue_id'     => $venue['id'],
 				'title'        => sanitize_text_field( (string) $req->get_param( 'title' ) ),
+				'theme'        => $theme,
+				'image'        => $image,
 				'event_date'   => $date,
 				'event_time'   => $time,
 				'budget_tier'  => $tier,
@@ -1710,8 +1917,26 @@ class Havato_REST {
 				'status'       => $venue['verified'] ? 'open' : 'pending_admin',
 				'created_at'   => havato_now(),
 			),
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s' )
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s' )
 		);
+
+		// Persist the chosen furniture for the matcher and the guest list.
+		if ( ! empty( $chosen ) ) {
+			$et = Havato_DB::table( 'event_tables' );
+			foreach ( $chosen as $row ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->insert(
+					$et,
+					array(
+						'event_id' => $event_id,
+						'table_id' => $row['table_id'],
+						'seats'    => $row['seats'],
+						'quantity' => $row['quantity'],
+					),
+					array( '%s', '%d', '%d', '%d' )
+				);
+			}
+		}
 
 		Havato_Logger::log( sprintf( 'New table published by venue %s for %s %s.', $venue['id'], $date, $time ), 'info' );
 
@@ -2258,7 +2483,9 @@ class Havato_REST {
 			'id'          => $row['id'],
 			'venue_id'    => $row['venue_id'],
 			'venue'       => isset( $row['venue_name'] ) ? $row['venue_name'] : '',
-			'image'       => isset( $row['venue_image'] ) ? $row['venue_image'] : '',
+			// The event's own photo is optional; fall back to the café's.
+			'image'       => ! empty( $row['image'] ) ? $row['image'] : ( isset( $row['venue_image'] ) ? $row['venue_image'] : '' ),
+			'theme'       => isset( $row['theme'] ) ? $row['theme'] : '',
 			'address'     => isset( $row['venue_address'] ) ? $row['venue_address'] : '',
 			'title'       => $row['title'],
 			'date'        => havato_date_pair( $row['event_date'] ),

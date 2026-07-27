@@ -468,6 +468,13 @@ class Havato_Admin {
 		echo '<div class="hv-adm-card hv-adm-event">';
 
 		echo '<div class="hv-adm-event-head">';
+		echo '<div class="hv-adm-event-title">';
+		if ( ! empty( $row['image'] ) ) {
+			printf(
+				'<img class="hv-adm-event-img" src="%s" alt="" loading="lazy">',
+				esc_url( $row['image'] )
+			);
+		}
 		echo '<div>';
 		echo '<h2 class="hv-adm-card-title">' .
 			esc_html( '' !== $title ? $title : Havato_I18N::t( 'explore_title' ) ) . '</h2>';
@@ -477,12 +484,24 @@ class Havato_Admin {
 			' · ' . esc_html( Havato_Jalali::format( $row['event_date'], $lang ) ) .
 			' — ' . esc_html( substr( $row['event_time'], 0, 5 ) ) .
 			'</p>';
-		echo '</div>';
+		echo '</div></div>';
 		echo '<div class="hv-adm-event-meta">';
 		echo '<span class="hv-adm-badge ' . esc_attr( $class ) . '">' .
 			esc_html( Havato_I18N::t( 'status_' . $row['status'] ) ) . '</span>';
 		echo '<span class="hv-adm-badge is-blue">' .
 			esc_html( $row['taken'] . ' / ' . $row['max_capacity'] ) . '</span>';
+
+		// Show the physical layout so the admin knows this is 3x4, not one 12.
+		$layout = array();
+		foreach ( Havato_REST::event_tables( $row['id'] ) as $tbl ) {
+			$layout[] = $tbl['quantity'] . '×' . $tbl['seats'];
+		}
+		if ( ! empty( $layout ) ) {
+			echo '<span class="hv-adm-badge is-gray">' . esc_html( implode( ' + ', $layout ) ) . '</span>';
+		}
+		if ( ! empty( $row['theme'] ) ) {
+			echo '<span class="hv-adm-badge is-yellow">' . esc_html( $row['theme'] ) . '</span>';
+		}
 		echo '<span class="hv-adm-badge is-gray">' .
 			esc_html( havato_price( (int) $row['price'], $lang ) ) . '</span>';
 		echo '</div></div>';

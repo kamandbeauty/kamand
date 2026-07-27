@@ -30,7 +30,10 @@ t('class loaded in admin', /class-havato-owner-admin\.php/.test(main) && /Havato
 for (const [p,fn] of [['dashboard','page_dashboard'],['events','page_events'],
                       ['menu','page_menu'],['settings','page_settings'],['payouts','page_payouts']])
   t(`${p} page exists`, new RegExp('function '+fn).test(oa));
-t('5 submenu pages registered', (oa.match(/'havato-venue[a-z-]*'\s*=>\s*array\(/g)||[]).length===5);
+t('all owner submenus registered',
+  ['havato-venue','havato-venue-events','havato-venue-menu','havato-venue-settings','havato-venue-payouts']
+    .every(p=>new RegExp("'"+p+"'\\s*=>\\s*array\\(").test(oa)));
+t('the new "My tables" page is among them', /'havato-venue-tables'/.test(oa));
 t('reuses the REST controllers, no duplicated logic',
   /Havato_REST::owner_create_event/.test(oa) && /Havato_REST::owner_checkin/.test(oa) &&
   /Havato_REST::owner_save_venue/.test(oa) && /Havato_REST::owner_save_menu/.test(oa));

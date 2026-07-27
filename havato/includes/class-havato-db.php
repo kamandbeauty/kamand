@@ -40,6 +40,8 @@ class Havato_DB {
 			'photo_reports',
 			'private_chats',
 			'payouts',
+			'venue_tables',
+			'event_tables',
 		);
 	}
 
@@ -134,6 +136,8 @@ class Havato_DB {
 			title varchar(191) NOT NULL DEFAULT '',
 			event_date date NOT NULL DEFAULT '0000-00-00',
 			event_time time NOT NULL DEFAULT '00:00:00',
+			theme varchar(191) NOT NULL DEFAULT '',
+			image varchar(255) NOT NULL DEFAULT '',
 			budget_tier varchar(20) NOT NULL DEFAULT 'medium',
 			price int(11) NOT NULL DEFAULT 0,
 			max_capacity int(11) NOT NULL DEFAULT 6,
@@ -298,6 +302,34 @@ class Havato_DB {
 			PRIMARY KEY  (id),
 			KEY thread_id (thread_id),
 			KEY receiver_id (receiver_id)
+		) $charset;";
+
+		// 15. Venue tables — the physical furniture a café owns.
+		// Defined once by the owner ("3 tables of 4, 2 tables of 6") and then
+		// picked per event, so an event's capacity is derived from real seats
+		// instead of one arbitrary number.
+		$queries[] = "CREATE TABLE {$p}venue_tables (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			venue_id varchar(64) NOT NULL DEFAULT '',
+			label varchar(191) NOT NULL DEFAULT '',
+			seats int(11) NOT NULL DEFAULT 4,
+			quantity int(11) NOT NULL DEFAULT 1,
+			active tinyint(1) NOT NULL DEFAULT 1,
+			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			PRIMARY KEY  (id),
+			KEY venue_id (venue_id)
+		) $charset;";
+
+		// 16. Which tables an event uses, and how many of each.
+		$queries[] = "CREATE TABLE {$p}event_tables (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			event_id varchar(64) NOT NULL DEFAULT '',
+			table_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			seats int(11) NOT NULL DEFAULT 4,
+			quantity int(11) NOT NULL DEFAULT 1,
+			PRIMARY KEY  (id),
+			KEY event_id (event_id),
+			KEY table_id (table_id)
 		) $charset;";
 
 		// 14. Venue payout periods (section 5.5 settlement ledger).
