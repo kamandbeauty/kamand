@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,19 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.1.3 =
+* Bottom-nav labels are now pure white on every tab (9.0:1 contrast); the
+  active tab is marked by weight, a brighter underline and an icon glow.
+* Fix: the notch behind the floating button was cut from an SVG stretched with
+  preserveAspectRatio="none", so it grew with the screen while the button did
+  not — leaving a pale wedge of page background on either side. The bar is now
+  painted directly and the notch is mask-cut from --hv-fab-size, giving a
+  constant 5px ring on every width, with an @supports fallback.
+* Fix: the green "nearby location" pill did nothing. It was a decorative
+  <span> inside a pointer-events:none strip. It is now a real button that
+  centres the map, drops a "you are here" marker, and reports permission
+  denial, failure or an unsupported browser instead of failing silently.
 
 = 1.1.2 =
 * Fix: bottom-navigation icons were still washed out. The 1.0.2 attempt used a

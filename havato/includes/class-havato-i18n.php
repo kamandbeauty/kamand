@@ -263,6 +263,10 @@ class Havato_I18N {
 			'map_title'             => array( 'fa' => 'کافه‌های نزدیک', 'en' => 'Nearby cafés' ),
 			'nearby_location'       => array( 'fa' => 'موقعیت نزدیک', 'en' => 'Nearby Location' ),
 			'map_hint'              => array( 'fa' => 'روی پین‌ها بزنید تا پروفایل کافه باز شود.', 'en' => 'Tap a pin to open the café profile.' ),
+			'locating'              => array( 'fa' => 'در حال یافتن موقعیت شما…', 'en' => 'Finding your location…' ),
+			'geo_denied'            => array( 'fa' => 'دسترسی به موقعیت مکانی رد شد. از تنظیمات مرورگر اجازه دهید.', 'en' => 'Location access denied. Allow it in your browser settings.' ),
+			'geo_failed'            => array( 'fa' => 'موقعیت مکانی پیدا نشد. دوباره تلاش کنید.', 'en' => 'Could not determine your location. Please try again.' ),
+			'geo_unsupported'       => array( 'fa' => 'مرورگر شما از موقعیت مکانی پشتیبانی نمی‌کند.', 'en' => 'Your browser does not support geolocation.' ),
 
 			// Chats.
 			'chats_title'           => array( 'fa' => 'گفتگوها', 'en' => 'Chats' ),

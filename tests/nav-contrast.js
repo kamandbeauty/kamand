@@ -44,16 +44,18 @@ const ratio=(f1,b)=>{const L1=lum(f1),L2=lum(b);const [hi,lo]=L1>L2?[L1,L2]:[L2,
 const blend=(fg,a,bg)=>fg.map((c,i)=>Math.round(c*a+bg[i]*(1-a)));
 // the wave gradient stops
 const stops={'#232AD1':[35,42,209],'#1B1FBF':[27,31,191],'#141A6E':[20,26,110]};
-const inactiveA=parseFloat(/\.hv-tab:not\(\.is-active\) \{ color: rgba\(255, 255, 255, ([\d.]+)\)/.exec(css)[1]);
+// Labels are now pure white on every tab (see nav-and-locate.js); only the
+// icon glyphs are slightly dimmed when inactive.
+const iconA=parseFloat(/\.hv-tab:not\(\.is-active\) svg \{ opacity: ([\d.]+)/.exec(css)[1]);
 let worst=Infinity;
 for (const [hex,bg] of Object.entries(stops)) {
-  const rIn =ratio(blend([255,255,255],inactiveA,bg),bg);
-  const rAct=ratio([255,255,255],bg);
-  worst=Math.min(worst,rIn);
-  console.log(`   on ${hex}: inactive ${rIn.toFixed(2)}:1   active ${rAct.toFixed(2)}:1`);
+  const rIcon=ratio(blend([255,255,255],iconA,bg),bg);
+  const rTxt =ratio([255,255,255],bg);
+  worst=Math.min(worst,rIcon);
+  console.log(`   on ${hex}: inactive icon ${rIcon.toFixed(2)}:1   label ${rTxt.toFixed(2)}:1`);
 }
-t(`inactive tabs clear WCAG AA for large/UI text (3:1) — worst ${worst.toFixed(2)}:1`, worst>=3);
-t('inactive alpha raised from the original 0.62', inactiveA>=0.75);
+t(`inactive icons clear WCAG AA for UI glyphs (3:1) — worst ${worst.toFixed(2)}:1`, worst>=3);
+t('labels are pure white', /\.hv-tab \{ color: #fff; \}/.test(css));
 t('active tab is pure white', /\.hv-tab\.is-active \{[^}]*color:\s*#fff/s.test(css));
 t('active tab also bolder (not colour-only)', /\.hv-tab\.is-active \{[^}]*font-weight:\s*800/s.test(css));
 t('glyph halo for thin strokes', /\.hv-tab svg \{ filter: drop-shadow/.test(css));

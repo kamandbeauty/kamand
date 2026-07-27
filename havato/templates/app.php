@@ -68,7 +68,11 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 					<stop offset="100%" stop-color="#141A6E"/>
 				</linearGradient>
 			</defs>
-			<path d="M0,20 L136,20 C150,20 152,4 165,2 C176,0 182,0 195,0 C208,0 214,0 225,2 C238,4 240,20 254,20 L390,20 L390,84 L0,84 Z"
+			<!-- The notch is deliberately only slightly wider than the floating
+			     button (which is ~59px on a 390pt phone). The previous curve was
+			     118px wide, so the page background showed through on both sides
+			     of the button and read as a pale box behind the active tab. -->
+			<path d="M0,16 L157,16 C168,16 170,3 180,1 C185,0 205,0 210,1 C220,3 222,16 233,16 L390,16 L390,84 L0,84 Z"
 				fill="url(#hvWaveGrad)"></path>
 		</svg>
 

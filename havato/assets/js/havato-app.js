@@ -41,6 +41,7 @@
 		lastMsgId: 0,
 		map: null,
 		mapMarkers: [],
+		meMarker: null,   // "you are here" dot, recreated with each map
 		ownerMap: null,
 		testStep: 0,
 		testData: { age: 27, gender: '', extroversion: 5, talkative: 5, vibe: 'fun', interests: [], neighborhood: '' },
@@ -1003,7 +1004,11 @@
 			el.main.innerHTML =
 				'<div class="hv-map-wrap">' +
 					'<div class="hv-map-strip">' +
-						'<span class="hv-map-pill is-green">' + icon('map') + esc(t('nearby_location')) + '</span>' +
+						// The green pill is a real control: tapping it centres the
+						// map on the visitor. The orange one is just a count.
+						'<button type="button" class="hv-map-pill is-green" id="hv-locate-btn">' +
+							icon('map') + '<span>' + esc(t('nearby_location')) + '</span>' +
+						'</button>' +
 						'<span class="hv-map-pill is-orange">' + icon('cup') + num(S.data.venues.length) + '</span>' +
 					'</div>' +
 					'<div id="hv-map"></div>' +
@@ -1018,6 +1023,9 @@
 			});
 
 			initLeaflet();
+
+			var locateBtn = $('#hv-locate-btn');
+			if (locateBtn) { locateBtn.onclick = locateMe; }
 		});
 	}
 
@@ -1056,6 +1064,7 @@
 		}).addTo(S.map);
 
 		S.mapMarkers = [];
+		S.meMarker = null; // belongs to the previous map instance
 		(S.data.venues || []).forEach(function (venue) {
 			if (!venue.lat || !venue.lng) { return; }
 			var marker = window.L.marker([venue.lat, venue.lng], {
@@ -1078,10 +1087,42 @@
 	}
 
 	function locateMe() {
-		if (!S.map || !navigator.geolocation) { return; }
+		if (!S.map) { return; }
+
+		var btn = $('#hv-locate-btn');
+		// Geolocation needs HTTPS and is unavailable in some in-app browsers,
+		// so say why instead of doing nothing.
+		if (!navigator.geolocation) {
+			toast(t('geo_unsupported'), 'error');
+			return;
+		}
+
+		if (btn) { btn.classList.add('is-busy'); }
+		toast(t('locating'), 'info');
+
 		navigator.geolocation.getCurrentPosition(function (pos) {
-			S.map.setView([pos.coords.latitude, pos.coords.longitude], 14);
-		}, function () { toast(t('error_generic'), 'error'); });
+			if (btn) { btn.classList.remove('is-busy'); }
+			var here = [pos.coords.latitude, pos.coords.longitude];
+			S.map.setView(here, 14);
+
+			// Drop / move a marker so the user can see where "here" is.
+			if (S.meMarker) {
+				S.meMarker.setLatLng(here);
+			} else if (window.L) {
+				S.meMarker = window.L.marker(here, {
+					icon: window.L.divIcon({
+						className: '',
+						html: '<div class="hv-me-dot"></div>',
+						iconSize: [22, 22],
+						iconAnchor: [11, 11]
+					})
+				}).addTo(S.map);
+			}
+		}, function (err) {
+			if (btn) { btn.classList.remove('is-busy'); }
+			// 1 = PERMISSION_DENIED
+			toast(err && err.code === 1 ? t('geo_denied') : t('geo_failed'), 'error');
+		}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
 	}
 
 	window.HavatoOpenVenue = function (id) { openVenue(id); };

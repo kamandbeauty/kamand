@@ -693,6 +693,39 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	block-size: calc(var(--hv-nav-h) + env(safe-area-inset-bottom));
 	filter: drop-shadow(0 -8px 22px rgba(20, 26, 110, 0.26));
 	pointer-events: none;
+	/* The SVG is stretched with preserveAspectRatio="none", so its notch grows
+	   with the viewport while the floating button does not. On wide screens
+	   that left a visible gap of page background either side of the button.
+	   The bar below paints the real surface at a fixed geometry; the SVG is
+	   kept only for its soft drop shadow. */
+	opacity: 0;
+}
+
+/* Solid nav surface with a notch cut to exactly the button's size. */
+.hv-bottom-nav::before {
+	content: "";
+	position: absolute;
+	inset-inline: 0;
+	inset-block-end: 0;
+	block-size: calc(var(--hv-nav-h) + env(safe-area-inset-bottom));
+	background: linear-gradient(135deg, #232AD1 0%, #1B1FBF 55%, #141A6E 100%);
+	box-shadow: 0 -8px 22px rgba(20, 26, 110, 0.26);
+	pointer-events: none;
+	/* Radius = half the button + a 5px breathing ring. */
+	--hv-notch: calc((var(--hv-fab-size) / 2) + 5px);
+	-webkit-mask:
+		radial-gradient(var(--hv-notch) at 50% 0, transparent 99%, #000 100%);
+	mask:
+		radial-gradient(var(--hv-notch) at 50% 0, transparent 99%, #000 100%);
+	border-start-start-radius: 22px;
+	border-start-end-radius: 22px;
+}
+/* Safety: if mask isn't supported the notch simply is not cut — the bar still
+   paints, so the nav can never disappear. Hide the legacy SVG only when we
+   know the replacement will render. */
+@supports not ((-webkit-mask: radial-gradient(1px at 0 0, #000 99%, #000)) or (mask: radial-gradient(1px at 0 0, #000 99%, #000))) {
+	.hv-wave { opacity: 1; }
+	.hv-bottom-nav::before { display: none; }
 }
 .hv-tabs {
 	position: absolute;
@@ -730,7 +763,11 @@ body.havato-standalone #havato-app { border-radius: 0; }
    uses the dedicated #hv-i-nav-* symbols, whose shapes are authored with
    `currentColor`; colour IS inherited, so it crosses the boundary and the
    rules below drive the icons. */
-.hv-tab:not(.is-active) { color: rgba(255, 255, 255, 0.78); }
+/* Labels are pure white on every tab, as requested; the active tab is
+   distinguished by weight, the underline and the icon glow rather than by a
+   dimmer colour. */
+.hv-tab { color: #fff; }
+.hv-tab:not(.is-active) svg { opacity: 0.88; }
 
 .hv-tab.is-active {
 	color: #fff;
@@ -747,10 +784,11 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	content: "";
 	position: absolute;
 	inset-block-end: -4px;
-	inline-size: 20px;
+	inline-size: 22px;
 	block-size: 3px;
 	border-radius: 3px;
-	background: #7fb4ff;
+	background: #9fc9ff;
+	box-shadow: 0 0 8px rgba(159, 201, 255, 0.9);
 }
 /* Third slot is reserved for the FAB notch */
 .hv-tab:nth-child(2) { margin-inline-end: 16px; }
@@ -817,7 +855,18 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-map-pill {
 	min-inline-size: 0;
 	max-inline-size: 100%;
+	border: 0;
+	font: inherit;
 }
+/* The strip itself ignores clicks so the map stays draggable underneath, but
+   the pills that ARE controls must opt back in. */
+button.hv-map-pill {
+	pointer-events: auto;
+	cursor: pointer;
+	min-block-size: 44px;
+}
+button.hv-map-pill:active { transform: scale(0.96); }
+button.hv-map-pill.is-busy { opacity: 0.65; }
 .hv-map-pill {
 	display: inline-flex;
 	align-items: center;
@@ -832,6 +881,16 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-map-pill svg { inline-size: 16px; block-size: 16px; flex: 0 0 auto; }
 .hv-map-pill.is-green  { background: linear-gradient(120deg, #34d399, #12b981); }
 .hv-map-pill.is-orange { background: linear-gradient(120deg, #fb923c, #f97316); }
+
+/* Current-location dot dropped by the "nearby" button. */
+.hv-me-dot {
+	inline-size: 18px;
+	block-size: 18px;
+	border-radius: 50%;
+	background: #3e8bff;
+	border: 3px solid #fff;
+	box-shadow: 0 0 0 6px rgba(62, 139, 255, 0.28), 0 4px 10px rgba(20, 26, 110, 0.35);
+}
 
 .hv-pin {
 	inline-size: 34px;
