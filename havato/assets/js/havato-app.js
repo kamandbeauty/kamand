@@ -29,6 +29,7 @@
 		role: BOOT.role || 'guest',
 		user: null,
 		venue: null,
+		city: '',        // the viewer's city; results are scoped to it
 		tab: null,
 		tabs: [],
 		data: {},
@@ -44,7 +45,7 @@
 		meMarker: null,   // "you are here" dot, recreated with each map
 		ownerMap: null,
 		testStep: 0,
-		testData: { age: 27, gender: '', extroversion: 5, talkative: 5, vibe: 'fun', interests: [], neighborhood: '' },
+		testData: { age: 27, gender: '', extroversion: 5, talkative: 5, vibe: 'fun', interests: [], neighborhood: '', country: '', city: '' },
 		menuDraft: [],
 		menuOpenRow: -1,
 		menuHasPending: false,
@@ -713,6 +714,7 @@
 					'<input type="text" class="hv-input" id="hv-reg-name"></div>' +
 				'<div class="hv-field"><label>' + esc(t('manager_name')) + '</label>' +
 					'<input type="text" class="hv-input" id="hv-reg-manager"></div>' +
+				locationSelects('hv-reg', '', '') +
 				'<div class="hv-field"><label>' + esc(t('venue_address')) + '</label>' +
 					'<textarea class="hv-textarea" id="hv-reg-addr"></textarea></div>' +
 				'<div class="hv-field"><label>' + esc(t('email')) + '</label>' +
@@ -725,6 +727,47 @@
 					'<button type="button" data-auth="wall">' + esc(t('back')) + '</button>' +
 				'</div>' +
 			'</div>';
+	}
+
+	/**
+	 * Country + city <select> pair for the owner forms. Changing the country
+	 * repopulates the cities, so an invalid pair cannot be submitted.
+	 */
+	function locationSelects(idPrefix, country, city) {
+		var locations = BOOT.locations || {};
+		var countries = Object.keys(locations);
+		if (!country || !locations[country]) { country = countries[0]; }
+		var cities = Object.keys((locations[country] || {}).cities || {});
+		if (cities.indexOf(city) === -1) { city = cities[0]; }
+
+		return '<div class="hv-field"><label>' + esc(t('q_country')) + '</label>' +
+				'<select class="hv-select" id="' + idPrefix + '-country">' +
+					countries.map(function (k) {
+						return '<option value="' + esc(k) + '"' + (k === country ? ' selected' : '') + '>' +
+							esc(pick(locations[k].label)) + '</option>';
+					}).join('') +
+				'</select></div>' +
+			'<div class="hv-field hv-mt"><label>' + esc(t('q_city_select')) + '</label>' +
+				'<select class="hv-select" id="' + idPrefix + '-city">' +
+					cities.map(function (k) {
+						return '<option value="' + esc(k) + '"' + (k === city ? ' selected' : '') + '>' +
+							esc(pick(locations[country].cities[k])) + '</option>';
+					}).join('') +
+				'</select></div>';
+	}
+
+	/** Keep the city list in sync with the chosen country. */
+	function bindLocationSelects(idPrefix) {
+		var cSel = $('#' + idPrefix + '-country');
+		var sSel = $('#' + idPrefix + '-city');
+		if (!cSel || !sSel) { return; }
+
+		cSel.onchange = function () {
+			var cities = ((BOOT.locations || {})[cSel.value] || {}).cities || {};
+			sSel.innerHTML = Object.keys(cities).map(function (k) {
+				return '<option value="' + esc(k) + '">' + esc(pick(cities[k])) + '</option>';
+			}).join('');
+		};
 	}
 
 	function bindAuthEvents() {
@@ -762,6 +805,8 @@
 				var payload = {
 					venue_name: $('#hv-reg-name').value.trim(),
 					manager_name: $('#hv-reg-manager').value.trim(),
+					country: $('#hv-reg-country').value,
+					city: $('#hv-reg-city').value,
 					address: $('#hv-reg-addr').value.trim(),
 					email: $('#hv-reg-email').value.trim(),
 					password: $('#hv-reg-pass').value
@@ -785,6 +830,8 @@
 					.catch(function (err) { toast(err.message, 'error'); regBtn.disabled = false; });
 			};
 		}
+
+		bindLocationSelects('hv-reg');
 
 		var fallback = $('#hv-google-fallback');
 		if (fallback) {
@@ -881,7 +928,8 @@
 			S.data.events = res.events || [];
 
 			if (!S.data.events.length) {
-				el.main.innerHTML = emptyState(t('explore_empty'), 'explore');
+				// Results are scoped to the user's city, so say so.
+				el.main.innerHTML = emptyState(S.city ? t('city_empty') : t('explore_empty'), 'explore');
 				return;
 			}
 
@@ -1871,14 +1919,14 @@
 	 * Personality test (6-step stepper)
 	 * ================================================================== */
 	function renderTestStep() {
-		var steps = 6;
+		var steps = 7;
 		var dots = '';
 		for (var i = 0; i < steps; i++) {
 			dots += '<i class="' + (i <= S.testStep ? 'is-done' : '') + '"></i>';
 		}
 
 		var body = [
-			stepAge, stepGender, stepExtroversion, stepTalkative, stepVibe, stepInterests
+			stepLocation, stepAge, stepGender, stepExtroversion, stepTalkative, stepVibe, stepInterests
 		][S.testStep]();
 
 		openModal(
@@ -1901,9 +1949,42 @@
 			options += '<option value="' + age + '"' + (S.testData.age === age ? ' selected' : '') + '>' + num(age) + '</option>';
 		}
 		return '<div class="hv-step-q">' + esc(t('q_age')) + '</div>' +
-			'<select class="hv-select" id="hv-step-age">' + options + '</select>' +
-			'<div class="hv-field hv-mt"><label>' + esc(t('q_city')) + '</label>' +
-			'<input type="text" class="hv-input" id="hv-step-hood" value="' + esc(S.testData.neighborhood) + '"></div>';
+			'<select class="hv-select" id="hv-step-age">' + options + '</select>';
+	}
+
+	/**
+	 * Country + city. The city list is derived from the selected country, so
+	 * an impossible pair (e.g. Iran + Istanbul) cannot be submitted.
+	 */
+	function stepLocation() {
+		var locations = BOOT.locations || {};
+		var country = S.testData.country;
+
+		var countryBtns = Object.keys(locations).map(function (key) {
+			var active = country === key ? ' is-active' : '';
+			return '<button type="button" class="hv-choice' + active + '" data-country="' + esc(key) + '">' +
+				esc(pick(locations[key].label)) + '</button>';
+		}).join('');
+
+		var cityBlock = '';
+		if (country && locations[country]) {
+			var cities = locations[country].cities || {};
+			cityBlock =
+				'<div class="hv-step-q hv-mt">' + esc(t('q_city_select')) + '</div>' +
+				'<div class="hv-choice-grid">' +
+					Object.keys(cities).map(function (key) {
+						var active = S.testData.city === key ? ' is-active' : '';
+						return '<button type="button" class="hv-choice' + active + '" data-city="' + esc(key) + '">' +
+							esc(pick(cities[key])) + '</button>';
+					}).join('') +
+				'</div>';
+		}
+
+		return '<div class="hv-step-q">' + esc(t('q_country')) + '</div>' +
+			'<div class="hv-choice-grid">' + countryBtns + '</div>' +
+			cityBlock +
+			'<div class="hv-field hv-mt"><label>' + esc(t('q_neighborhood')) + '</label>' +
+				'<input type="text" class="hv-input" id="hv-step-hood" value="' + esc(S.testData.neighborhood) + '"></div>';
 	}
 
 	function stepGender() {
@@ -1963,9 +2044,28 @@
 		var age = $('#hv-step-age');
 		if (age) {
 			age.onchange = function () { S.testData.age = parseInt(age.value, 10); };
-			var hood = $('#hv-step-hood');
+		}
+
+		var hood = $('#hv-step-hood');
+		if (hood) {
 			hood.oninput = function () { S.testData.neighborhood = hood.value; };
 		}
+
+		$$('[data-country]').forEach(function (btn) {
+			btn.onclick = function () {
+				if (S.testData.country === btn.dataset.country) { return; }
+				S.testData.country = btn.dataset.country;
+				S.testData.city = ''; // a city from the old country would be invalid
+				renderTestStep();
+			};
+		});
+
+		$$('[data-city]').forEach(function (btn) {
+			btn.onclick = function () {
+				S.testData.city = btn.dataset.city;
+				$$('[data-city]').forEach(function (o) { o.classList.toggle('is-active', o === btn); });
+			};
+		});
 
 		$$('[data-gender]').forEach(function (btn) {
 			btn.onclick = function () {
@@ -2010,8 +2110,12 @@
 		if (prev) { prev.onclick = function () { S.testStep = Math.max(0, S.testStep - 1); renderTestStep(); }; }
 
 		$('#hv-step-next').onclick = function () {
-			if (S.testStep === 1 && !S.testData.gender) { toast(t('q_gender'), 'error'); return; }
-			if (S.testStep < 5) { S.testStep++; renderTestStep(); return; }
+			if (S.testStep === 0 && (!S.testData.country || !S.testData.city)) {
+				toast(t('q_city_select'), 'error');
+				return;
+			}
+			if (S.testStep === 2 && !S.testData.gender) { toast(t('q_gender'), 'error'); return; }
+			if (S.testStep < 6) { S.testStep++; renderTestStep(); return; }
 			saveTest();
 		};
 	}
@@ -2373,6 +2477,7 @@
 						'<input type="text" class="hv-input" id="hv-v-name" value="' + esc(venue.name || '') + '"></div>' +
 					'<div class="hv-field hv-mt"><label>' + esc(t('manager_name')) + '</label>' +
 						'<input type="text" class="hv-input" id="hv-v-manager" value="' + esc(venue.manager_name || '') + '"></div>' +
+					'<div class="hv-mt">' + locationSelects('hv-v', venue.country, venue.city) + '</div>' +
 					'<div class="hv-field hv-mt"><label>' + esc(t('venue_address')) + '</label>' +
 						'<textarea class="hv-textarea" id="hv-v-addr">' + esc(venue.address || '') + '</textarea></div>' +
 					'<div class="hv-field hv-mt"><label>' + esc(t('quiet_hours')) + '</label>' +
@@ -2389,6 +2494,7 @@
 					'<div class="hv-owner-map hv-mt" id="hv-owner-map"></div>' +
 				'</div>';
 
+			bindLocationSelects('hv-v');
 			$('#hv-v-save').onclick = saveVenueForm;
 			$('#hv-v-cover').onclick = function () {
 				pickFile(function (file) {
@@ -2444,6 +2550,8 @@
 			body: {
 				name: nameField.value,
 				manager_name: $('#hv-v-manager').value,
+				country: $('#hv-v-country').value,
+				city: $('#hv-v-city').value,
 				address: $('#hv-v-addr').value,
 				quiet_hours: $('#hv-v-quiet').value
 			}
@@ -2520,6 +2628,7 @@
 			S.role = res.role || 'guest';
 			S.user = res.user || null;
 			S.venue = res.venue || null;
+			S.city = res.city || '';
 
 			if (res.lang && res.lang !== S.lang) { applyLangSilent(res.lang); }
 

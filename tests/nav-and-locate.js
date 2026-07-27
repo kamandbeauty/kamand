@@ -12,8 +12,7 @@ console.log('--- 1. nav labels are pure white ---');
 t('base tab colour is #fff', /\.hv-tab \{ color: #fff; \}/.test(noC));
 t('no dimmed rgba label colour left', !/\.hv-tab:not\(\.is-active\) \{ color: rgba/.test(noC));
 t('active tab still distinguishable by weight', /\.hv-tab\.is-active \{[^}]*font-weight:\s*800/s.test(noC));
-t('inactive icons only slightly dimmed (>=0.85)',
-  parseFloat(/\.hv-tab:not\(\.is-active\) svg \{ opacity: ([\d.]+)/.exec(noC)[1])>=0.85);
+t('icons are fully white on every tab', /\.hv-tab svg \{ opacity: 1; \}/.test(noC));
 {
   const lum=([r,g,b])=>{const a=[r,g,b].map(v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
     return 0.2126*a[0]+0.7152*a[1]+0.0722*a[2];};

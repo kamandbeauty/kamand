@@ -242,6 +242,8 @@ class Havato_REST {
 				'zoom' => (int) Havato_Settings::get( 'map_zoom', 12 ),
 			),
 			'interests'     => havato_interest_tags(),
+			'locations'     => havato_locations(),
+			'city'          => self::viewer_city(),
 		);
 
 		if ( $user_id ) {
@@ -321,6 +323,21 @@ class Havato_REST {
 	 * ================================================================== */
 
 	/**
+	 * The city the current user belongs to, or '' for guests / unfinished
+	 * profiles. Drives the geographic scoping of Explore and the Map.
+	 *
+	 * @return string
+	 */
+	private static function viewer_city() {
+		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return '';
+		}
+		$profile = havato_get_profile( $user_id );
+		return isset( $profile['city'] ) ? (string) $profile['city'] : '';
+	}
+
+	/**
 	 * Open events of the coming days.
 	 *
 	 * @param WP_REST_Request $req Request.
@@ -338,6 +355,13 @@ class Havato_REST {
 		$where = "e.status IN ('open','matched') AND v.verified = 1 AND e.event_date >= CURDATE()";
 		if ( in_array( $tier, array( 'low', 'medium', 'high' ), true ) ) {
 			$where .= $wpdb->prepare( ' AND e.budget_tier = %s', $tier );
+		}
+
+		// Only ever show tables in the guest's own city — a Tehran user has no
+		// use for an Istanbul table. Guests (no profile yet) see everything.
+		$city = self::viewer_city();
+		if ( $city ) {
+			$where .= $wpdb->prepare( ' AND v.city = %s', $city );
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -510,7 +534,18 @@ class Havato_REST {
 		$venues = Havato_DB::table( 'venues' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( "SELECT * FROM $venues WHERE verified = 1 ORDER BY guests_routed DESC LIMIT 200", ARRAY_A );
+		$city = self::viewer_city();
+
+		if ( $city ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $wpdb->get_results(
+				$wpdb->prepare( "SELECT * FROM $venues WHERE verified = 1 AND city = %s ORDER BY guests_routed DESC LIMIT 200", $city ),
+				ARRAY_A
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$rows = $wpdb->get_results( "SELECT * FROM $venues WHERE verified = 1 ORDER BY guests_routed DESC LIMIT 200", ARRAY_A );
+		}
 
 		$out = array();
 		foreach ( (array) $rows as $row ) {
@@ -825,6 +860,9 @@ class Havato_REST {
 			'completed'     => (bool) $profile['completed'],
 			'age'           => (int) $profile['age'],
 			'gender'        => $profile['gender'],
+			'country'       => isset( $profile['country'] ) ? $profile['country'] : '',
+			'city'          => isset( $profile['city'] ) ? $profile['city'] : '',
+			'city_label'    => havato_city_label( isset( $profile['city'] ) ? $profile['city'] : '' ),
 			'neighborhood'  => $profile['city_neighborhood'],
 			'extroversion'  => (int) $profile['personality_extroversion'],
 			'talkative'     => (int) $profile['personality_talkative'],
@@ -867,6 +905,14 @@ class Havato_REST {
 		$vibe   = 'deep' === $req->get_param( 'vibe' ) ? 'deep' : 'fun';
 		$hood   = sanitize_text_field( (string) $req->get_param( 'neighborhood' ) );
 
+		// Country/city must be a pair we actually operate in, otherwise the
+		// city filter below would silently hide every event from this user.
+		$country = sanitize_key( (string) $req->get_param( 'country' ) );
+		$city    = sanitize_key( (string) $req->get_param( 'city' ) );
+		if ( ! havato_valid_city( $country, $city ) ) {
+			return new WP_Error( 'havato_bad_city', Havato_I18N::t( 'q_city_select' ), array( 'status' => 400 ) );
+		}
+
 		$raw_interests = $req->get_param( 'interests' );
 		$raw_interests = is_array( $raw_interests ) ? $raw_interests : havato_json( $raw_interests );
 		$allowed       = array_keys( havato_interest_tags() );
@@ -878,6 +924,8 @@ class Havato_REST {
 			'user_id'                  => $user_id,
 			'age'                      => $age,
 			'gender'                   => $gender,
+			'country'                  => $country,
+			'city'                     => $city,
 			'city_neighborhood'        => $hood,
 			'personality_extroversion' => $extro,
 			'personality_talkative'    => $talk,
@@ -1296,9 +1344,11 @@ class Havato_REST {
 		$pass    = (string) $req->get_param( 'password' );
 		$name    = sanitize_text_field( (string) $req->get_param( 'venue_name' ) );
 		$manager = sanitize_text_field( (string) $req->get_param( 'manager_name' ) );
+		$country = sanitize_key( (string) $req->get_param( 'country' ) );
+		$city    = sanitize_key( (string) $req->get_param( 'city' ) );
 		$addr    = sanitize_textarea_field( (string) $req->get_param( 'address' ) );
 
-		if ( ! is_email( $email ) || strlen( $pass ) < 6 || '' === $name || '' === $manager ) {
+		if ( ! is_email( $email ) || strlen( $pass ) < 6 || '' === $name || '' === $manager || ! havato_valid_city( $country, $city ) ) {
 			return new WP_Error( 'havato_bad_input', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
 		}
 
@@ -1334,19 +1384,21 @@ class Havato_REST {
 		$wpdb->insert(
 			$venues,
 			array(
-				'id'          => $venue_id,
+				'id'           => $venue_id,
 				'name'         => $name,
 				'manager_name' => $manager,
-				'address'     => $addr,
-				'lat'         => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
-				'lng'         => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
-				'budget_tier' => 'medium',
-				'verified'    => 0,
-				'manager_id'  => (int) $uid,
-				'menu_json'   => '[]',
-				'created_at'  => havato_now(),
+				'country'      => $country,
+				'city'         => $city,
+				'address'      => $addr,
+				'lat'          => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
+				'lng'          => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
+				'budget_tier'  => 'medium',
+				'verified'     => 0,
+				'manager_id'   => (int) $uid,
+				'menu_json'    => '[]',
+				'created_at'   => havato_now(),
 			),
-			array( '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%d', '%d', '%s', '%s' )
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%d', '%d', '%s', '%s' )
 		);
 
 		// Instant session — no second login required after a refresh.
@@ -1727,6 +1779,8 @@ class Havato_REST {
 		$map = array(
 			'name'         => '%s',
 			'manager_name' => '%s',
+			'country'      => '%s',
+			'city'         => '%s',
 			'address'     => '%s',
 			'image'       => '%s',
 			'quiet_hours' => '%s',
@@ -1748,6 +1802,20 @@ class Havato_REST {
 				$fields[ $key ] = sanitize_textarea_field( (string) $value );
 			} elseif ( 'manager_name' === $key ) {
 				$fields[ $key ] = sanitize_text_field( (string) $value );
+			} elseif ( 'country' === $key ) {
+				$c              = sanitize_key( (string) $value );
+				$fields[ $key ] = havato_valid_country( $c ) ? $c : 'ir';
+			} elseif ( 'city' === $key ) {
+				// Validate against the country in the same request so a café
+				// can never end up as Iran/Istanbul. An invalid pair keeps the
+				// stored value by being dropped from the update.
+				$c    = sanitize_key( (string) $req->get_param( 'country' ) );
+				$city = sanitize_key( (string) $value );
+				if ( ! havato_valid_city( $c, $city ) ) {
+					array_pop( $format );
+					continue;
+				}
+				$fields[ $key ] = $city;
 			} elseif ( 'budget_tier' === $key ) {
 				$tier           = sanitize_text_field( (string) $value );
 				$fields[ $key ] = in_array( $tier, array( 'low', 'medium', 'high' ), true ) ? $tier : 'medium';
@@ -2150,6 +2218,9 @@ class Havato_REST {
 			// in both languages.
 			'name'          => $row['name'],
 			'manager_name'  => isset( $row['manager_name'] ) ? $row['manager_name'] : '',
+			'country'       => isset( $row['country'] ) ? $row['country'] : '',
+			'city'          => isset( $row['city'] ) ? $row['city'] : '',
+			'city_label'    => havato_city_label( isset( $row['city'] ) ? $row['city'] : '' ),
 			'address'       => $row['address'],
 			'lat'           => (float) $row['lat'],
 			'lng'           => (float) $row['lng'],

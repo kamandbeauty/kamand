@@ -470,6 +470,7 @@ class Havato_Admin {
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_order' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'venue_name' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_manager' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'q_city_select' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_location' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
 		echo '<th></th></tr></thead><tbody>';
@@ -487,6 +488,8 @@ class Havato_Admin {
 			echo '<td><strong>' . esc_html( $name ) . '</strong></td>';
 			echo '<td>' . esc_html( $manager ) . '<br><span class="hv-adm-muted">' .
 				esc_html( $account ? $account->user_email : '—' ) . '</span></td>';
+			$city_label = havato_city_label( isset( $row['city'] ) ? $row['city'] : '' );
+			echo '<td>' . esc_html( $city_label[ Havato_I18N::current_lang() ] ) . '</td>';
 			echo '<td>' . esc_html( wp_trim_words( (string) $row['address'], 8, '…' ) ) . '</td>';
 			echo '<td>' . ( $row['verified']
 				? '<span class="hv-adm-badge is-green">✓ ' . esc_html( Havato_I18N::t( 'verified_venue' ) ) . '</span>'

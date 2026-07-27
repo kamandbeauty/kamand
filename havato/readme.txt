@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.1.3
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,18 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.2.0 =
+* The personality test now asks for country and city first. Supported:
+  Iran (Tehran, Isfahan) and Turkey (Istanbul). The city list is derived from
+  the chosen country, so an impossible pair such as Iran/Istanbul cannot be
+  submitted, and the server re-validates it.
+* Guests now only see cafés and tables in their own city. Explore and the Map
+  are both scoped, with an empty state that explains why. Visitors without a
+  finished profile still see everything.
+* Cafés declare their country and city at signup and can change it in Venue
+  Settings; the city also appears in the wp-admin verification table.
+* Bottom-navigation labels AND icons are now fully white on every tab.
 
 = 1.1.3 =
 * Bottom-nav labels are now pure white on every tab (9.0:1 contrast); the

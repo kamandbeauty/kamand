@@ -46,7 +46,7 @@ const blend=(fg,a,bg)=>fg.map((c,i)=>Math.round(c*a+bg[i]*(1-a)));
 const stops={'#232AD1':[35,42,209],'#1B1FBF':[27,31,191],'#141A6E':[20,26,110]};
 // Labels are now pure white on every tab (see nav-and-locate.js); only the
 // icon glyphs are slightly dimmed when inactive.
-const iconA=parseFloat(/\.hv-tab:not\(\.is-active\) svg \{ opacity: ([\d.]+)/.exec(css)[1]);
+const iconA=1; // icons are now fully opaque white on every tab
 let worst=Infinity;
 for (const [hex,bg] of Object.entries(stops)) {
   const rIcon=ratio(blend([255,255,255],iconA,bg),bg);

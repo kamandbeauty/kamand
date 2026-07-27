@@ -766,8 +766,10 @@ body.havato-standalone #havato-app { border-radius: 0; }
 /* Labels are pure white on every tab, as requested; the active tab is
    distinguished by weight, the underline and the icon glow rather than by a
    dimmer colour. */
+/* Labels AND glyphs are pure white on every tab. State is signalled by weight,
+   the underline and the active glow — never by dimming the colour. */
 .hv-tab { color: #fff; }
-.hv-tab:not(.is-active) svg { opacity: 0.88; }
+.hv-tab svg { opacity: 1; }
 
 .hv-tab.is-active {
 	color: #fff;

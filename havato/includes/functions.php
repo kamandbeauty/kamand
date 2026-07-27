@@ -270,6 +270,8 @@ function havato_get_profile( $user_id ) {
 			'user_id'                  => $user_id,
 			'age'                      => 0,
 			'gender'                   => '',
+			'country'                  => '',
+			'city'                     => '',
 			'city_neighborhood'        => '',
 			'personality_extroversion' => 5,
 			'personality_talkative'    => 5,
@@ -311,6 +313,70 @@ function havato_interest_tags() {
 		'philo'    => array( 'fa' => 'فلسفه', 'en' => 'Philosophy' ),
 		'business' => array( 'fa' => 'کسب‌وکار', 'en' => 'Business' ),
 	);
+}
+
+/**
+ * Supported countries and their cities.
+ *
+ * Single source of truth: the personality test, the venue settings screen and
+ * the city filter all read this list, so adding a city later means editing
+ * one array.
+ *
+ * @return array
+ */
+function havato_locations() {
+	return array(
+		'ir' => array(
+			'label'  => array( 'fa' => 'ایران', 'en' => 'Iran' ),
+			'cities' => array(
+				'tehran'  => array( 'fa' => 'تهران', 'en' => 'Tehran' ),
+				'isfahan' => array( 'fa' => 'اصفهان', 'en' => 'Isfahan' ),
+			),
+		),
+		'tr' => array(
+			'label'  => array( 'fa' => 'ترکیه', 'en' => 'Turkey' ),
+			'cities' => array(
+				'istanbul' => array( 'fa' => 'استانبول', 'en' => 'Istanbul' ),
+			),
+		),
+	);
+}
+
+/**
+ * Is this a country we operate in?
+ *
+ * @param string $country Country key.
+ * @return bool
+ */
+function havato_valid_country( $country ) {
+	return array_key_exists( (string) $country, havato_locations() );
+}
+
+/**
+ * Does the given city belong to the given country?
+ *
+ * @param string $country Country key.
+ * @param string $city    City key.
+ * @return bool
+ */
+function havato_valid_city( $country, $city ) {
+	$all = havato_locations();
+	return isset( $all[ (string) $country ]['cities'][ (string) $city ] );
+}
+
+/**
+ * Bilingual label for a city key.
+ *
+ * @param string $city City key.
+ * @return array{fa:string,en:string}
+ */
+function havato_city_label( $city ) {
+	foreach ( havato_locations() as $country ) {
+		if ( isset( $country['cities'][ (string) $city ] ) ) {
+			return $country['cities'][ (string) $city ];
+		}
+	}
+	return array( 'fa' => '', 'en' => '' );
 }
 
 /**

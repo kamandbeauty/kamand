@@ -105,6 +105,8 @@ class Havato_DB {
 			id varchar(64) NOT NULL,
 			name varchar(191) NOT NULL DEFAULT '',
 			manager_name varchar(191) NOT NULL DEFAULT '',
+			country varchar(8) NOT NULL DEFAULT 'ir',
+			city varchar(32) NOT NULL DEFAULT 'tehran',
 			address text NULL,
 			lat double NOT NULL DEFAULT 0,
 			lng double NOT NULL DEFAULT 0,
@@ -120,7 +122,8 @@ class Havato_DB {
 			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			PRIMARY KEY  (id),
 			KEY manager_id (manager_id),
-			KEY verified (verified)
+			KEY verified (verified),
+			KEY city (city)
 		) $charset;";
 
 		// 2. Events.
@@ -146,6 +149,8 @@ class Havato_DB {
 			user_id bigint(20) unsigned NOT NULL,
 			age int(11) NOT NULL DEFAULT 0,
 			gender varchar(20) NOT NULL DEFAULT '',
+			country varchar(8) NOT NULL DEFAULT '',
+			city varchar(32) NOT NULL DEFAULT '',
 			city_neighborhood varchar(191) NOT NULL DEFAULT '',
 			personality_extroversion int(11) NOT NULL DEFAULT 5,
 			personality_talkative int(11) NOT NULL DEFAULT 5,

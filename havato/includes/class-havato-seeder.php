@@ -37,6 +37,7 @@ class Havato_Seeder {
 			array(
 				'fa'      => 'کافه لمیز',
 				'manager' => 'سارا محمدی',
+				'city'    => 'tehran',
 				'en'    => 'Lamiz Coffee',
 				'addr'  => 'تهران، خیابان ولیعصر، نرسیده به پارک ساعی',
 				'lat'   => 35.7448,
@@ -52,6 +53,7 @@ class Havato_Seeder {
 			array(
 				'fa'      => 'کافه واوموشن',
 				'manager' => 'امیر رضایی',
+				'city'    => 'tehran',
 				'en'    => 'Wawmotion Café',
 				'addr'  => 'تهران، سعادت‌آباد، بلوار دریا',
 				'lat'   => 35.7796,
@@ -66,6 +68,7 @@ class Havato_Seeder {
 			array(
 				'fa'      => 'کافه‌کتاب مانا',
 				'manager' => 'نگار حسینی',
+				'city'    => 'isfahan',
 				'en'    => 'Mana Book Café',
 				'addr'  => 'تهران، انقلاب، خیابان ۱۲ فروردین',
 				'lat'   => 35.7008,
@@ -88,21 +91,23 @@ class Havato_Seeder {
 			$wpdb->insert(
 				$venues_t,
 				array(
-					'id'          => $venue_id,
+					'id'           => $venue_id,
 					'name'         => $sample['fa'],
 					'manager_name' => $sample['manager'],
-					'address'     => $sample['addr'],
-					'lat'         => $sample['lat'],
-					'lng'         => $sample['lng'],
-					'image'       => '',
-					'budget_tier' => $sample['tier'],
-					'verified'    => 1,
-					'manager_id'  => 0,
-					'quiet_hours' => $sample['quiet'],
-					'menu_json'   => wp_json_encode( havato_sanitize_menu( $sample['menu'] ) ),
-					'created_at'  => havato_now(),
+					'country'      => 'ir',
+					'city'         => $sample['city'],
+					'address'      => $sample['addr'],
+					'lat'          => $sample['lat'],
+					'lng'          => $sample['lng'],
+					'image'        => '',
+					'budget_tier'  => $sample['tier'],
+					'verified'     => 1,
+					'manager_id'   => 0,
+					'quiet_hours'  => $sample['quiet'],
+					'menu_json'    => wp_json_encode( havato_sanitize_menu( $sample['menu'] ) ),
+					'created_at'   => havato_now(),
 				),
-				array( '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%d', '%d', '%s', '%s', '%s' )
+				array( '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%d', '%d', '%s', '%s', '%s' )
 			);
 
 			$prices = array( 'low' => 45000, 'medium' => 75000, 'high' => 120000 );
