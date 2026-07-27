@@ -752,8 +752,15 @@ class Havato_Admin {
 				'<span class="hv-adm-muted">' . esc_html( wp_trim_words( (string) $row['address'], 6, '…' ) ) . '</span></div>';
 			echo '</div></td>';
 
+			// The café's contact number is administrator-only: it is shown
+			// here and in approvals, and never travels to a guest.
+			$phone = isset( $row['manager_phone'] ) ? (string) $row['manager_phone'] : '';
 			echo '<td>' . esc_html( $row['manager_name'] ? $row['manager_name'] : '—' ) . '<br>' .
-				'<span class="hv-adm-muted">' . esc_html( $account ? $account->user_email : '—' ) . '</span></td>';
+				'<span class="hv-adm-muted">' . esc_html( $account ? $account->user_email : '—' ) . '</span>' .
+				( '' !== $phone
+					? '<br><span class="hv-adm-muted" dir="ltr">' . esc_html( $phone ) . '</span>'
+					: '' ) .
+				'</td>';
 			echo '<td>' . esc_html( $city_label[ $lang ] ) . '</td>';
 			echo '<td>' . esc_html( $row['event_count'] ) . '</td>';
 			echo '<td>' . esc_html( $row['guests_routed'] ) . '</td>';
@@ -1079,8 +1086,11 @@ class Havato_Admin {
 			}
 			echo '<strong>' . esc_html( $name ) . '</strong>';
 			echo '</div></td>';
+			$mphone = isset( $row['manager_phone'] ) ? (string) $row['manager_phone'] : '';
 			echo '<td>' . esc_html( $manager ) . '<br><span class="hv-adm-muted">' .
-				esc_html( $account ? $account->user_email : '—' ) . '</span></td>';
+				esc_html( $account ? $account->user_email : '—' ) . '</span>' .
+				( '' !== $mphone ? '<br><span class="hv-adm-muted" dir="ltr">' . esc_html( $mphone ) . '</span>' : '' ) .
+				'</td>';
 			$city_label = havato_city_label( isset( $row['city'] ) ? $row['city'] : '' );
 			echo '<td>' . esc_html( $city_label[ Havato_I18N::current_lang() ] ) . '</td>';
 			echo '<td>' . esc_html( wp_trim_words( (string) $row['address'], 8, '…' ) ) . '</td>';

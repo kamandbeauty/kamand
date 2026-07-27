@@ -1036,6 +1036,16 @@ class Havato_REST {
 			$wpdb->insert( $table, $data );
 		}
 
+		// First time a country is chosen, adopt its language as the default so
+		// a Turkish guest gets a Turkish panel. Never overrides a language the
+		// user has already picked themselves.
+		if ( ! get_user_meta( $user_id, 'havato_lang', true ) ) {
+			$implied = Havato_I18N::country_language( $user_id );
+			if ( $implied ) {
+				update_user_meta( $user_id, 'havato_lang', $implied );
+			}
+		}
+
 		Havato_Logger::log( sprintf( 'Personal details updated for user %d.', $user_id ), 'info' );
 
 		return self::ok(
@@ -1043,6 +1053,7 @@ class Havato_REST {
 				'saved' => true,
 				'user'  => self::user_card( $user_id ),
 				'city'  => $city,
+				'lang'  => Havato_I18N::current_lang(),
 			)
 		);
 	}
@@ -2296,6 +2307,7 @@ class Havato_REST {
 		$map = array(
 			'name'         => '%s',
 			'manager_name' => '%s',
+			'manager_phone' => '%s',
 			'country'      => '%s',
 			'city'         => '%s',
 			'address'     => '%s',
@@ -2320,6 +2332,17 @@ class Havato_REST {
 				$fields[ $key ] = sanitize_textarea_field( (string) $value );
 			} elseif ( 'manager_name' === $key ) {
 				$fields[ $key ] = sanitize_text_field( (string) $value );
+			} elseif ( 'manager_phone' === $key ) {
+				// Normalised against whichever country the café is saving
+				// with, so the stored number is always canonical.
+				$c     = sanitize_key( (string) $req->get_param( 'country' ) );
+				$c     = havato_valid_country( $c ) ? $c : $venue['country'];
+				$phone = havato_normalize_phone( (string) $value, $c );
+				if ( '' === $phone && '' !== trim( (string) $value ) ) {
+					array_pop( $format );
+					continue;
+				}
+				$fields[ $key ] = $phone;
 			} elseif ( 'country' === $key ) {
 				$c              = sanitize_key( (string) $value );
 				$fields[ $key ] = havato_valid_country( $c ) ? $c : 'ir';
@@ -2725,6 +2748,9 @@ class Havato_REST {
 			}
 			$payload['pending_menu'] = $pending;
 			$payload['manager_id']   = (int) $row['manager_id'];
+			// Owner-only. Guests receive $private = false and therefore never
+			// see the café's contact number.
+			$payload['manager_phone'] = isset( $row['manager_phone'] ) ? $row['manager_phone'] : '';
 		}
 
 		return $payload;

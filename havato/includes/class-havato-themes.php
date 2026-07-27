@@ -134,6 +134,23 @@ class Havato_Themes {
 				'text'       => '#141d33',
 				'text_soft'  => '#6a7590',
 			),
+			'raspberry' => array(
+				'label'      => array( 'fa' => 'تمشکی', 'en' => 'Raspberry', 'tr' => 'Ahududu' ),
+				'note'       => array(
+					'fa' => 'سرزنده و اشتهاآور، با لهجه‌ی بنفش؛ الهام‌گرفته از اپ‌های سفارش غذا.',
+					'en' => 'Vivid and appetising, lifted by a violet accent — the food-delivery look.',
+					'tr' => 'Canlı ve iştah açıcı, mor vurgulu — yemek uygulaması havası.',
+				),
+				'light'      => '#f0186e',
+				'base'       => '#c81355',
+				'deep'       => '#6d0a30',
+				'ink'        => '#3d0519',
+				'accent'     => '#5b4bd6',
+				'accent_2'   => '#12b981',
+				'canvas'     => '#fdf2f6',
+				'text'       => '#3a1226',
+				'text_soft'  => '#8d6274',
+			),
 			'coral' => array(
 				'label'      => array( 'fa' => 'مرجانی غروب', 'en' => 'Sunset Coral' ),
 				'note'       => array(

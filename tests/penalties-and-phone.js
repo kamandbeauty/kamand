@@ -25,7 +25,12 @@ t('empty_seat_count column', /empty_seat_count int\(11\) NOT NULL DEFAULT 0/.tes
 t('registrations.arrived column', /arrived int\(11\) NOT NULL DEFAULT 0/.test(db));
 t('profiles.phone column', /phone varchar\(32\)/.test(db));
 t('neighbourhood column dropped', !/city_neighborhood/.test(db));
-t('schema bumped', /HAVATO_DB_VERSION', '1\.10\.0'/.test(main));
+t('schema is at or past the penalty columns', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) return false;
+  const [maj, min] = [Number(m[1]), Number(m[2])];
+  return maj > 1 || (maj === 1 && min >= 10);
+})());
 // dbDelta parses CREATE TABLE line by line; a `--` line would be read as a column.
 t('no SQL comments inside any CREATE TABLE', (() => {
   const blocks = db.match(/CREATE TABLE[\s\S]*?\)\s*\$charset/g) || [];

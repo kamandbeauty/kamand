@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.14.0
+Stable tag: 1.15.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,31 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.15.0 =
+* New "Raspberry" theme, taken from a food-delivery reference: vivid pink with
+  a violet accent. The reference pink only reaches 4.15:1 on white, so it is
+  used as the gradient highlight while a slightly deeper tone (5.71:1) carries
+  the white text.
+* Turkish is now a full third language — all 298 strings translated, not a
+  partial pass with English gaps. The JS bundle is generated from the language
+  registry, so a fourth language needs no further wiring.
+* Guests who choose Turkey get a Turkish panel by default. It is only a
+  default: an explicit language switch is stored per user and always wins.
+  The mapping is filterable via `havato_country_languages`.
+* The header language button now cycles fa → en → tr and shows the language it
+  will switch to; text direction comes from the language table rather than an
+  is-it-Persian guess.
+* Cafés now provide a contact number in their panel. It is stored normalised
+  and shown only to the site administrator — it is added to the private venue
+  payload, so it never reaches a guest.
+* Fixed the café name and city running together in the map list. The card is
+  built from <span>s, and as inline elements the margin, nowrap and ellipsis
+  rules were all being ignored; they are block-level now, and the card shows
+  the city alongside the address.
+* Removed a duplicated `event_theme` string, where the second definition was
+  silently overriding the first.
+* Schema 1.11.0.
 
 = 1.14.0 =
 * Reliability penalties. Not turning up costs behaviour score, and every seat

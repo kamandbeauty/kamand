@@ -42,9 +42,12 @@ while ((m = reTheme.exec(block))) {
               text: grab('text'), text_soft: grab('text_soft') };
 }
 
-console.log('--- 1. the five palettes are all present and complete ---');
-const want = ['azure', 'emerald', 'espresso', 'midnight', 'coral'];
-t('exactly the five agreed themes ship', want.every(k => cat[k]) && Object.keys(cat).length === 5);
+console.log('--- 1. every shipped palette is present and complete ---');
+// 'raspberry' joined in 1.15.0; the list is asserted by content, not length,
+// so adding a theme is not a breaking change.
+const want = ['azure', 'emerald', 'espresso', 'midnight', 'coral', 'raspberry'];
+t('all agreed themes ship', want.every(k => cat[k]));
+t('no unexpected extras', Object.keys(cat).every(k => want.includes(k)));
 for (const id of want) {
   const c = cat[id];
   t(`${id}: every colour parsed`, c && Object.values(c).every(v => /^#[0-9a-f]{6}$/.test(v || '')));
@@ -127,5 +130,5 @@ t('filter output is type-checked', /is_array\( \$themes \) \? \$themes : array\(
 for (const k of ['admin_theme', 'theme_apply', 'theme_in_use', 'theme_custom', 'theme_applied'])
   t(`i18n "${k}" is bilingual`, new RegExp("'" + k + "'[\\s\\S]{0,200}?'fa' =>[\\s\\S]{0,200}?'en' =>").test(i18n));
 
-console.log(f ? `\n❌ ${f} failing` : '\n✅ five themes, all AA, none violet, admin-switchable and extensible');
+console.log(f ? `\n❌ ${f} failing` : `\n✅ ${want.length} themes, all AA, none violet, admin-switchable and extensible`);
 process.exit(f ? 1 : 0);

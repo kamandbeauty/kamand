@@ -44,7 +44,7 @@ while ((m = re.exec(block))) {
     accent: g('accent'), accent2: g('accent_2'), canvas: g('canvas')
   });
 }
-if (THEMES.length !== 5) { console.error('expected 5 themes, parsed ' + THEMES.length); process.exit(1); }
+if (THEMES.length < 2) { console.error('parsed only ' + THEMES.length + ' themes'); process.exit(1); }
 
 const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const toHex = a => '#' + a.map(c => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0')).join('');

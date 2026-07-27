@@ -440,24 +440,49 @@
 	/* =====================================================================
 	 * Language switching (instant, no reload)
 	 * ================================================================== */
-	function applyLang(lang) {
-		S.lang = lang === 'en' ? 'en' : 'fa';
-		S.dir = S.lang === 'fa' ? 'rtl' : 'ltr';
 
+	// Order defines the cycle of the header button. `dir` drives the RTL flip.
+	var LANGS = [
+		{ code: 'fa', dir: 'rtl', short: 'فا' },
+		{ code: 'en', dir: 'ltr', short: 'EN' },
+		{ code: 'tr', dir: 'ltr', short: 'TR' }
+	];
+
+	function langInfo(code) {
+		for (var i = 0; i < LANGS.length; i++) {
+			if (LANGS[i].code === code) { return LANGS[i]; }
+		}
+		return LANGS[0];
+	}
+
+	/** The button shows the language it will switch TO, not the current one. */
+	function nextLang(code) {
+		for (var i = 0; i < LANGS.length; i++) {
+			if (LANGS[i].code === code) { return LANGS[(i + 1) % LANGS.length]; }
+		}
+		return LANGS[1];
+	}
+
+	function setLangAttrs(lang) {
+		var info = langInfo(lang);
+		S.lang = info.code;
+		S.dir = info.dir;
 		el.root.setAttribute('dir', S.dir);
 		el.root.setAttribute('data-lang', S.lang);
 		el.root.classList.toggle('hv-dir-rtl', S.dir === 'rtl');
 		el.root.classList.toggle('hv-dir-ltr', S.dir === 'ltr');
-		el.langLabel.textContent = S.lang === 'fa' ? 'EN' : 'فا';
+		if (el.langLabel) { el.langLabel.textContent = nextLang(S.lang).short; }
+	}
 
+	function applyLang(lang) {
+		setLangAttrs(lang);
 		document.cookie = 'havato_lang=' + S.lang + ';path=/;max-age=31536000;samesite=lax';
-
 		buildTabs();
 		render();
 	}
 
 	function toggleLang() {
-		var next = S.lang === 'fa' ? 'en' : 'fa';
+		var next = nextLang(S.lang).code;
 		applyLang(next);
 		api('lang', { method: 'POST', body: { value: next } }).catch(function () {});
 	}
@@ -630,7 +655,7 @@
 
 		el.authwall.innerHTML =
 			'<button type="button" class="hv-lang-btn hv-auth-lang" id="hv-auth-lang">' +
-				(S.lang === 'fa' ? 'EN' : 'فا') +
+				nextLang(S.lang).short +
 			'</button>' + body;
 
 		$('#hv-auth-lang').onclick = toggleLang;
@@ -979,7 +1004,11 @@
 				'<span class="hv-list-thumb">' + thumb + '</span>' +
 				'<span class="hv-list-body">' +
 					'<span class="hv-list-title">' + esc(pick(venue.name)) + '</span>' +
-					'<span class="hv-list-sub">' + esc(venue.address || '') + '</span>' +
+					'<span class="hv-list-sub">' +
+						(venue.city_label ? esc(pick(venue.city_label)) : '') +
+						((venue.city_label && venue.address) ? ' · ' : '') +
+						esc(venue.address || '') +
+					'</span>' +
 				'</span>' +
 				'<span class="hv-list-meta">' +
 					(venue.verified ? '<span class="hv-badge hv-badge-green">✓</span>' : '') +
@@ -2150,6 +2179,8 @@
 					closeModal();
 					toast(t('details_saved'), 'ok');
 					if (res && res.city) { S.city = res.city; }
+					// Picking Turkey switches the panel to Turkish straight away.
+					if (res && res.lang && res.lang !== S.lang) { applyLang(res.lang); }
 					if (res && res.user) { S.user = res.user; renderHeaderUser(); }
 					viewProfile();
 				})
@@ -2377,13 +2408,7 @@
 	}
 
 	function applyLangSilent(lang) {
-		S.lang = lang === 'en' ? 'en' : 'fa';
-		S.dir = S.lang === 'fa' ? 'rtl' : 'ltr';
-		el.root.setAttribute('dir', S.dir);
-		el.root.setAttribute('data-lang', S.lang);
-		el.root.classList.toggle('hv-dir-rtl', S.dir === 'rtl');
-		el.root.classList.toggle('hv-dir-ltr', S.dir === 'ltr');
-		el.langLabel.textContent = S.lang === 'fa' ? 'EN' : 'فا';
+		setLangAttrs(lang);
 	}
 
 	if (document.readyState === 'loading') {

@@ -875,6 +875,15 @@ class Havato_Owner_Admin {
 			esc_attr( $venue['manager_name'] )
 		);
 
+		// Administrator-only contact number. Guests never receive it.
+		printf(
+			'<label>%s<input type="tel" name="manager_phone" value="%s" placeholder="%s"><small class="hv-adm-hint">%s</small></label>',
+			esc_html( Havato_I18N::t( 'venue_phone' ) ),
+			esc_attr( isset( $venue['manager_phone'] ) ? $venue['manager_phone'] : '' ),
+			esc_attr( 'ir' === $venue['country'] ? '0912…' : '05xx…' ),
+			esc_html( Havato_I18N::t( 'venue_phone_hint' ) )
+		);
+
 		// Country / city.
 		$locations = havato_locations();
 		$lang      = Havato_I18N::current_lang();
@@ -1034,7 +1043,7 @@ class Havato_Owner_Admin {
 
 			case 'save_venue':
 				$req = new WP_REST_Request( 'POST' );
-				foreach ( array( 'name', 'manager_name', 'quiet_hours', 'country', 'city' ) as $key ) {
+				foreach ( array( 'name', 'manager_name', 'manager_phone', 'quiet_hours', 'country', 'city' ) as $key ) {
 					if ( isset( $_POST[ $key ] ) ) {
 						$req->set_param( $key, sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) );
 					}

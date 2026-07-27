@@ -101,11 +101,13 @@ class Havato_DB {
 		// 1. Venues (cafés / restaurants).
 		// `name` is the single café name (no separate Persian field — the name
 		// of a venue is a proper noun and is written once). `manager_name` is
-		// the person running it, shown to the administrator.
+		// the person running it, shown to the administrator. `manager_phone`
+		// is administrator-only and is never exposed to guests.
 		$queries[] = "CREATE TABLE {$p}venues (
 			id varchar(64) NOT NULL,
 			name varchar(191) NOT NULL DEFAULT '',
 			manager_name varchar(191) NOT NULL DEFAULT '',
+			manager_phone varchar(32) NOT NULL DEFAULT '',
 			country varchar(8) NOT NULL DEFAULT 'ir',
 			city varchar(32) NOT NULL DEFAULT 'tehran',
 			address text NULL,

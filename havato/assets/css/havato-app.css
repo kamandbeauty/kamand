@@ -474,8 +474,12 @@ body.havato-standalone #havato-app { border-radius: 0; }
 }
 .hv-list-thumb img { inline-size: 100%; block-size: 100%; object-fit: cover; }
 .hv-list-thumb svg { inline-size: 26px; block-size: 26px; }
-.hv-list-body { flex: 1 1 auto; min-inline-size: 0; }
+/* The list card is built from <span>s, so these MUST be block-level: as
+   inline elements the title and the sub-line ran together with no gap, and
+   `margin`, `white-space` and `text-overflow` were all silently ignored. */
+.hv-list-body { flex: 1 1 auto; min-inline-size: 0; display: block; }
 .hv-list-title {
+	display: block;
 	margin: 0;
 	font-size: 0.95rem;
 	font-weight: 700;
@@ -485,7 +489,8 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	white-space: nowrap;
 }
 .hv-list-sub {
-	margin: 2px 0 0;
+	display: block;
+	margin: 3px 0 0;
 	font-size: 0.78rem;
 	color: var(--hv-text-soft);
 	overflow: hidden;
