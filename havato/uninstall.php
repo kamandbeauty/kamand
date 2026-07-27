@@ -38,7 +38,6 @@ $havato_tables = array(
 	'photo_likes',
 	'photo_reports',
 	'private_chats',
-	'payouts',
 );
 
 foreach ( $havato_tables as $havato_table ) {

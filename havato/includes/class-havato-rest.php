@@ -84,35 +84,10 @@ class Havato_REST {
 	 */
 	private static function boot( $req ) {
 		Havato_DB::ensure_tables();
-		self::expire_stale_holds();
 		$lang = $req->get_param( 'lang' );
 		if ( $lang ) {
 			Havato_I18N::set_lang( $lang );
 		}
-	}
-
-	/**
-	 * Release abandoned checkout seat-holds.
-	 *
-	 * A paid seat is reserved as `pending_payment` the moment the guest is sent
-	 * to the gateway, so a 6-seat table can never be oversold by concurrent
-	 * checkouts. If the payment never completes, the hold expires and the seat
-	 * returns to the pool.
-	 */
-	public static function expire_stale_holds() {
-		global $wpdb;
-
-		$regs    = Havato_DB::table( 'event_registrations' );
-		$minutes = (int) apply_filters( 'havato_seat_hold_minutes', 30 );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->query(
-			$wpdb->prepare(
-				"UPDATE $regs SET status='cancelled'
-				 WHERE status='pending_payment' AND created_at < DATE_SUB(NOW(), INTERVAL %d MINUTE)",
-				max( 5, $minutes )
-			)
-		);
 	}
 
 	/* =====================================================================
@@ -184,7 +159,6 @@ class Havato_REST {
 			'owner/menu'         => array( 'POST', 'owner_save_menu', $owner ),
 			'owner/venue'        => array( 'POST', 'owner_save_venue', $owner ),
 			'owner/upload'       => array( 'POST', 'owner_upload', $owner ),
-			'owner/payouts'      => array( 'GET', 'owner_payouts', $owner ),
 			'owner/tables'       => array( 'GET', 'owner_get_tables', $owner ),
 			'owner/tables/save'  => array( 'POST', 'owner_save_tables', $owner ),
 
@@ -195,7 +169,6 @@ class Havato_REST {
 			'admin/menu-approve' => array( 'POST', 'admin_menu_approve', $admin ),
 			'admin/run-matcher'  => array( 'POST', 'admin_run_matcher', $admin ),
 			'admin/settings'     => array( 'POST', 'admin_save_settings', $admin ),
-			'admin/payout'       => array( 'POST', 'admin_payout', $admin ),
 			'admin/photo-report' => array( 'POST', 'admin_photo_report', $admin ),
 			'admin/seed'         => array( 'POST', 'admin_seed', $admin ),
 		);
@@ -238,7 +211,6 @@ class Havato_REST {
 			'dir'           => Havato_I18N::dir( $lang ),
 			'google_ready'  => Havato_Google_Auth::is_configured(),
 			'google_client' => Havato_Settings::get( 'google_client_id', '' ),
-			'woo_active'    => havato_woo_active(),
 			'map'           => array(
 				'lat'  => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
 				'lng'  => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
@@ -391,7 +363,7 @@ class Havato_REST {
 	}
 
 	/**
-	 * Join an event → Woo checkout (paid) or direct queue (free).
+	 * Join an event. Always free; the seat goes straight into the queue.
 	 *
 	 * @param WP_REST_Request $req Request.
 	 * @return WP_REST_Response|WP_Error
@@ -412,9 +384,15 @@ class Havato_REST {
 			return new WP_Error( 'havato_no_event', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
 		}
 
+		// Joining is free. What it does require is a usable profile: the
+		// matcher needs the personality answers to seat anyone, and events
+		// are scoped by city, so both halves must exist before taking a seat.
 		$profile = havato_get_profile( $user_id );
 		if ( ! $profile['completed'] ) {
 			return new WP_Error( 'havato_no_profile', Havato_I18N::t( 'need_profile_first' ), array( 'status' => 400 ) );
+		}
+		if ( ! havato_valid_city( $profile['country'], $profile['city'] ) ) {
+			return new WP_Error( 'havato_no_details', Havato_I18N::t( 'need_details_first' ), array( 'status' => 400 ) );
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -422,9 +400,7 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$mine = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND user_id=%d", $event_id, $user_id ), ARRAY_A );
 
-		// An in-flight checkout hold is not a confirmed seat: let the guest
-		// resume payment instead of blocking them with "already joined".
-		if ( $mine && ! in_array( $mine['status'], array( 'cancelled', 'pending_payment' ), true ) ) {
+		if ( $mine && 'cancelled' !== $mine['status'] ) {
 			return self::ok( array( 'already' => true ) );
 		}
 
@@ -432,39 +408,7 @@ class Havato_REST {
 			return new WP_Error( 'havato_full', Havato_I18N::t( 'event_full' ), array( 'status' => 409 ) );
 		}
 
-		$price = (int) $event['price'];
-
-		// Paid event → real WooCommerce checkout, never a simulated wallet.
-		if ( $price > 0 && havato_woo_active() ) {
-			// Reserve the seat BEFORE sending the guest to the gateway,
-			// otherwise concurrent checkouts could oversell the table. The
-			// hold expires automatically if the payment is abandoned.
-			self::queue_user( $event_id, $user_id, 0, 0, 'pending_payment' );
-
-			$checkout = Havato_Woo::create_checkout( $event, $user_id );
-			if ( ! $checkout['ok'] ) {
-				// Release the hold again if the cart could not be built.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->update(
-					$regs,
-					array( 'status' => 'cancelled' ),
-					array( 'event_id' => $event_id, 'user_id' => $user_id, 'status' => 'pending_payment' ),
-					array( '%s' ),
-					array( '%s', '%d', '%s' )
-				);
-				return new WP_Error( 'havato_checkout', $checkout['message'], array( 'status' => 500 ) );
-			}
-			Havato_Logger::log( sprintf( 'Checkout session opened for user %d on event %s.', $user_id, $event_id ), 'info' );
-			return self::ok(
-				array(
-					'checkout_url' => $checkout['url'],
-					'redirect'     => true,
-				)
-			);
-		}
-
-		// Free event → straight into the queue.
-		self::queue_user( $event_id, $user_id, 0, 0 );
+		self::queue_user( $event_id, $user_id );
 		Havato_Logger::log( sprintf( 'User request received: guest %d queued for event %s.', $user_id, $event_id ), 'info' );
 
 		$match = Havato_Matcher::maybe_run_on_full( $event_id );
@@ -503,7 +447,7 @@ class Havato_REST {
 				 FROM $regs r
 				 INNER JOIN $events e ON e.id = r.event_id
 				 LEFT JOIN $venues v ON v.id = e.venue_id
-				 WHERE r.user_id = %d AND r.status NOT IN ('cancelled','pending_payment')
+				 WHERE r.user_id = %d AND r.status <> 'cancelled'
 				 ORDER BY e.event_date DESC LIMIT 40",
 				$user_id
 			),
@@ -888,7 +832,6 @@ class Havato_REST {
 		);
 
 		if ( $is_self ) {
-			$data['wallet'] = self::wallet_summary( $target );
 		}
 
 		return self::ok( $data );
@@ -1650,8 +1593,6 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$checked = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs r INNER JOIN $events e ON e.id=r.event_id WHERE e.venue_id=%s AND r.checked_in=1", $venue['id'] ) );
 
-		Havato_Payouts::rebuild_venue( $venue['id'] );
-
 		return self::ok(
 			array(
 				'venue'    => self::venue_payload( $venue, true ),
@@ -1661,7 +1602,6 @@ class Havato_REST {
 					'upcoming'      => $upcoming,
 					'checked_in'    => $checked,
 				),
-				'payouts'  => Havato_Payouts::get_venue_payouts( $venue['id'] ),
 			)
 		);
 	}
@@ -1730,7 +1670,7 @@ class Havato_REST {
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND status NOT IN ('cancelled','pending_payment') ORDER BY id ASC", $event_id ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND status <> 'cancelled' ORDER BY id ASC", $event_id ), ARRAY_A );
 
 		$members = array();
 		foreach ( (array) $rows as $row ) {
@@ -2034,8 +1974,6 @@ class Havato_REST {
 		$tier = sanitize_text_field( (string) $req->get_param( 'budget_tier' ) );
 		$tier = in_array( $tier, array( 'low', 'medium', 'high' ), true ) ? $tier : $venue['budget_tier'];
 
-		$price = max( 0, (int) $req->get_param( 'price' ) );
-
 		// Tables selected for this event. Capacity is DERIVED from the real
 		// furniture (3 x 4-seater = 12) rather than typed in, so the matcher
 		// can seat one group per physical table instead of one giant group.
@@ -2096,7 +2034,6 @@ class Havato_REST {
 				'event_date'   => $date,
 				'event_time'   => $time,
 				'budget_tier'  => $tier,
-				'price'        => $price,
 				'max_capacity' => $capacity,
 				'status'       => $venue['verified'] ? 'open' : 'pending_admin',
 				'created_at'   => havato_now(),
@@ -2350,23 +2287,6 @@ class Havato_REST {
 		return self::ok( array( 'url' => $url ) );
 	}
 
-	/**
-	 * Settlement rows for the owner.
-	 *
-	 * @param WP_REST_Request $req Request.
-	 * @return WP_REST_Response|WP_Error
-	 */
-	public static function owner_payouts( $req ) {
-		self::boot( $req );
-
-		$venue = self::owner_venue( get_current_user_id() );
-		if ( ! $venue ) {
-			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
-		}
-
-		return self::ok( array( 'payouts' => Havato_Payouts::rebuild_venue( $venue['id'] ) ) );
-	}
-
 	/* =====================================================================
 	 * Admin console
 	 * ================================================================== */
@@ -2502,21 +2422,6 @@ class Havato_REST {
 	}
 
 	/**
-	 * Mark a payout period as settled.
-	 *
-	 * @param WP_REST_Request $req Request.
-	 * @return WP_REST_Response
-	 */
-	public static function admin_payout( $req ) {
-		self::boot( $req );
-
-		$id   = (int) $req->get_param( 'payout_id' );
-		$note = sanitize_text_field( (string) $req->get_param( 'note' ) );
-
-		return self::ok( array( 'paid' => Havato_Payouts::mark_paid( $id, $note ) ) );
-	}
-
-	/**
 	 * Moderate a reported photo.
 	 *
 	 * @param WP_REST_Request $req Request.
@@ -2592,7 +2497,7 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$venue_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $venues" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$revenue = (int) $wpdb->get_var( "SELECT COALESCE(SUM(amount),0) FROM $regs WHERE status NOT IN ('cancelled','pending_payment')" );
+		$signups = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $regs WHERE status <> 'cancelled'" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$last_week = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM $regs WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -2609,8 +2514,7 @@ class Havato_REST {
 			'active_users'   => $active_users,
 			'matched_tables' => $matched,
 			'venues'         => $venue_count,
-			'revenue'        => $revenue,
-			'revenue_label'  => havato_price_pair( $revenue ),
+			'signups'        => $signups,
 			'growth'         => $growth,
 			'open_events'    => $open_events,
 			'pending_venues' => $pending_venues,
@@ -2650,7 +2554,6 @@ class Havato_REST {
 
 		$taken    = isset( $row['taken'] ) ? (int) $row['taken'] : 0;
 		$capacity = (int) $row['max_capacity'];
-		$price    = (int) $row['price'];
 
 		$joined = false;
 		if ( $user_id ) {
@@ -2679,8 +2582,6 @@ class Havato_REST {
 			),
 			'time'        => substr( (string) $row['event_time'], 0, 5 ),
 			'budget_tier' => $row['budget_tier'],
-			'price'       => $price,
-			'price_label' => havato_price_pair( $price ),
 			'capacity'    => $capacity,
 			'taken'       => $taken,
 			'seats_left'  => max( 0, $capacity - $taken ),
@@ -2912,28 +2813,6 @@ class Havato_REST {
 	}
 
 	/**
-	 * Wallet summary (real Woo spending, no simulated balance).
-	 *
-	 * @param int $user_id User id.
-	 * @return array
-	 */
-	private static function wallet_summary( $user_id ) {
-		global $wpdb;
-		$regs = Havato_DB::table( 'event_registrations' );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$spent = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(amount),0) FROM $regs WHERE user_id=%d AND status NOT IN ('cancelled','pending_payment')", $user_id ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$tickets = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $regs WHERE user_id=%d AND status NOT IN ('cancelled','pending_payment')", $user_id ) );
-
-		return array(
-			'spent'       => $spent,
-			'spent_label' => havato_price_pair( $spent ),
-			'tickets'     => $tickets,
-		);
-	}
-
-	/**
 	 * Pending feedback cards (completed events without a submitted review).
 	 *
 	 * @param int $user_id User id.
@@ -3009,11 +2888,9 @@ class Havato_REST {
 	 *
 	 * @param string $event_id Event id.
 	 * @param int    $user_id  User id.
-	 * @param int    $order_id Woo order id.
-	 * @param int    $amount   Paid amount.
-	 * @param string $status   'queued' (free/paid) or 'pending_payment' (hold).
+	 * @param string $status   Registration status, normally 'queued'.
 	 */
-	private static function queue_user( $event_id, $user_id, $order_id = 0, $amount = 0, $status = 'queued' ) {
+	private static function queue_user( $event_id, $user_id, $status = 'queued' ) {
 		global $wpdb;
 		$regs = Havato_DB::table( 'event_registrations' );
 
@@ -3025,11 +2902,9 @@ class Havato_REST {
 				'user_id'    => (int) $user_id,
 				'status'     => $status,
 				'checked_in' => 0,
-				'order_id'   => (int) $order_id,
-				'amount'     => (int) $amount,
 				'created_at' => havato_now(),
 			),
-			array( '%s', '%d', '%s', '%d', '%d', '%d', '%s' )
+			array( '%s', '%d', '%s', '%d', '%s' )
 		);
 	}
 

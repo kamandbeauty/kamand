@@ -107,7 +107,6 @@ class Havato_Seeder {
 
 		$menus   = self::sample_menus();
 		$tiers   = array( 'low', 'medium', 'high' );
-		$prices  = array( 'low' => 45000, 'medium' => 75000, 'high' => 120000 );
 		$themes  = array( 'موسیقی', 'کتاب', 'استارتاپ', 'Board games', 'Film' );
 
 		$created_venues = 0;
@@ -192,7 +191,6 @@ class Havato_Seeder {
 						'event_date'   => $date,
 						'event_time'   => $time,
 						'budget_tier'  => $tier,
-						'price'        => $prices[ $tier ],
 						'max_capacity' => 14,
 						'status'       => 'open',
 						'is_demo'      => 1,

@@ -100,7 +100,7 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 	<!-- Toasts -->
 	<div class="hv-toast-host" id="hv-toast-host" aria-live="polite"></div>
 
-	<!-- Full-screen transition overlay (used before the Woo checkout redirect) -->
+	<!-- Full-screen transition overlay -->
 	<div class="hv-redirect" id="hv-redirect" hidden>
 		<div class="hv-spinner hv-spinner-lg" aria-hidden="true"></div>
 		<p id="hv-redirect-text"></p>

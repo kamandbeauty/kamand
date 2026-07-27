@@ -208,7 +208,6 @@ class Havato_Shortcode {
 				'role'         => havato_user_role(),
 				'googleClient' => Havato_Settings::get( 'google_client_id', '' ),
 				'googleReady'  => Havato_Google_Auth::is_configured(),
-				'wooActive'    => havato_woo_active(),
 				'standalone'   => self::is_standalone(),
 				'swUrl'        => esc_url_raw( Havato_PWA::url( 'sw' ) ),
 				'appUrl'       => esc_url_raw( Havato_PWA::app_url() ),

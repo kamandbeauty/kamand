@@ -424,11 +424,3 @@ function havato_sanitize_menu( $items ) {
 	return $clean;
 }
 
-/**
- * Whether WooCommerce is active and usable.
- *
- * @return bool
- */
-function havato_woo_active() {
-	return class_exists( 'WooCommerce' ) && function_exists( 'WC' );
-}

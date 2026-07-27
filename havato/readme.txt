@@ -1,10 +1,10 @@
 === Havato — هواتو ===
 Contributors: havato
-Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
+Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.11.0
+Stable tag: 1.12.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,35 +13,36 @@ Smart social-table platform for cafés & restaurants: personality-based matching
 == Description ==
 
 Havato turns partner cafés into a network of curated social tables. Guests take a
-30-second personality test, request a seat at a themed table, pay through
-WooCommerce (Zarinpal / Shetab gateways), and the Smart Matcher Core seats the
-best possible N-person table. After the event, guests review each other, can add
-friends and keep chatting privately.
+short personality test, fill in their details, request a seat at a themed table,
+and the Smart Matcher Core seats the best possible N-person table. Everything is
+free for guests: the plugin handles no money and has no payment step at all.
+After the event, guests review each other, can add friends and keep chatting
+privately.
 
 **Highlights**
 
 * Bilingual out of the box — Persian (RTL, Jalali calendar) and English (LTR, Gregorian), switched instantly without a page reload.
-* 14 dedicated InnoDB tables with a self-healing installer (missing tables are recreated on the fly).
+* 15 dedicated InnoDB tables with a self-healing installer (missing tables are recreated on the fly).
 * Two native roles: `gatherer` (guest) and `cafe_owner`, each with its own portal and profile.
 * Smart Matcher Core with two execution paths: automatic on last-seat-taken, plus a cron fallback that always produces a table even with very few registrations.
 * Real Google Sign-In (Google Identity Services, server-side token verification).
-* Real WooCommerce checkout — no simulated wallet. Menus are display-only, no in-app ordering.
-* Venue payout ledger with per-period commission split and a "mark as paid" admin action.
+* Completely free to join: no payments, no tickets, no wallet, no gateway. Menus are display-only, no in-app ordering.
+* Seats are gated on a finished profile instead — the personality test plus name, age and city.
 * Check-in / no-show tracking that feeds back into the matching score.
 * PWA manifest + service worker, full-screen standalone mode (`?webview=1`) for Android/iOS WebView or Capacitor packaging.
 
 == Installation ==
 
 1. Upload the `havato` folder to `/wp-content/plugins/` (or install the ZIP through Plugins → Add New → Upload).
-2. Activate the plugin. The 14 tables, both roles and the cron jobs are created automatically.
+2. Activate the plugin. The 15 tables, both roles and the cron jobs are created automatically.
 3. Create a page and add the shortcode `[havato_app]`.
 4. Go to **Havato → Google sign-in** and paste your OAuth Client ID.
 5. Optionally go to **Havato → Statistics dashboard → Generate demo content** to populate sample cafés and events.
 
 == Frequently Asked Questions ==
 
-= Does it require WooCommerce? =
-Only for paid tables. Free events work without it.
+= Does it require WooCommerce or any payment gateway? =
+No. Havato never handles money — joining a gathering is always free.
 
 = How do I ship it as an APK? =
 Point your WebView / Capacitor `server.url` at the app page with `?webview=1`
@@ -52,6 +53,26 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.12.0 =
+* Money is gone from the plugin entirely. Every gathering is free to join and
+  nothing anywhere mentions payment, tickets, a wallet, revenue or a payout.
+* Removed the WooCommerce integration and the settlement ledger, the admin
+  "Revenue & settlements" page, the café "Payout status" page, the profile
+  wallet card, the event ticket price, the commission and default-price
+  settings, and the payouts table with the order_id/amount/price columns.
+* Also removed the pending_payment seat hold and the 30-minute hold expiry:
+  with no checkout to wait for, a seat is either taken or free.
+* Joining now requires a finished profile instead of a payment — the
+  personality test AND the personal details, because the matcher needs the
+  answers and events are scoped to the guest's city. A guest who is missing
+  either is told which one and sent to the right screen.
+* Demo content is free too.
+* The café price filter is now an atmosphere filter (Cosy / Everyday /
+  Upscale). The stored keys are unchanged, so no migration is needed.
+* Café menu prices are kept on purpose: those belong to the café and are shown
+  for information only, exactly like the rest of the menu.
+* Schema 1.8.0.
 
 = 1.11.0 =
 * Fixed: the country and city step of the personality test was completely

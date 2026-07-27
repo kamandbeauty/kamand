@@ -135,12 +135,6 @@ defined( 'ABSPATH' ) || exit;
 		<path d="M12 3.4l2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.8l6-.9z" fill="url(#hvGradOrange)"/>
 	</symbol>
 
-	<!-- Wallet -->
-	<symbol id="hv-i-wallet" viewBox="0 0 24 24">
-		<rect x="2.8" y="5.6" width="18.4" height="13" rx="3.2" fill="url(#hvGradBlue)" opacity=".2"/>
-		<rect x="2.8" y="5.6" width="18.4" height="13" rx="3.2" fill="none" stroke="url(#hvGradBlue)" stroke-width="1.7"/>
-		<path d="M15.4 12.1h5.8" stroke="url(#hvGradGreen)" stroke-width="3.4" stroke-linecap="round"/>
-	</symbol>
 
 	<!-- Heart -->
 	<symbol id="hv-i-heart" viewBox="0 0 24 24">

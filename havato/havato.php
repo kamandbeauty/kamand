@@ -3,7 +3,7 @@
  * Plugin Name:       Havato — هواتو
  * Plugin URI:        https://havato.app
  * Description:       پلتفرم دورهمی‌های هوشمند در کافه‌ها | Smart social table matching web-app for cafés & restaurants (Glassmorphism PWA + WebView ready).
- * Version:           1.11.0
+ * Version:           1.12.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Havato Team
@@ -18,8 +18,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HAVATO_VERSION', '1.11.0' );
-define( 'HAVATO_DB_VERSION', '1.7.0' );
+define( 'HAVATO_VERSION', '1.12.0' );
+define( 'HAVATO_DB_VERSION', '1.8.0' );
 define( 'HAVATO_FILE', __FILE__ );
 define( 'HAVATO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'HAVATO_URL', plugin_dir_url( __FILE__ ) );
@@ -70,8 +70,6 @@ final class Havato {
 		require_once HAVATO_PATH . 'includes/class-havato-settings.php';
 		require_once HAVATO_PATH . 'includes/class-havato-themes.php';
 		require_once HAVATO_PATH . 'includes/class-havato-matcher.php';
-		require_once HAVATO_PATH . 'includes/class-havato-woo.php';
-		require_once HAVATO_PATH . 'includes/class-havato-payouts.php';
 		require_once HAVATO_PATH . 'includes/class-havato-google-auth.php';
 		require_once HAVATO_PATH . 'includes/class-havato-rest.php';
 		require_once HAVATO_PATH . 'includes/class-havato-shortcode.php';
@@ -102,7 +100,6 @@ final class Havato {
 		Havato_Owner_Auth::init();
 		Havato_PWA::init();
 		Havato_Cron::init();
-		Havato_Woo::init();
 		Havato_Google_Auth::init();
 
 		if ( is_admin() ) {

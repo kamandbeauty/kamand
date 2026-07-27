@@ -488,6 +488,8 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	white-space: nowrap;
 }
 .hv-event-when { margin: 3px 0 0; font-size: 0.79rem; color: var(--hv-text-soft); }
+/* Everything is free; this replaces where a price used to be shown. */
+.hv-free { font-weight: 800; color: var(--hv-green); font-size: 0.82rem; margin-block-start: 2px; }
 .hv-event-foot {
 	display: flex;
 	align-items: center;
@@ -498,7 +500,6 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	border-block-start: 1px dashed var(--hv-line);
 	flex-wrap: wrap;
 }
-.hv-event-price { font-weight: 800; color: var(--hv-indigo); font-size: 0.92rem; }
 
 .hv-seatbar {
 	inline-size: 100%;
@@ -1470,17 +1471,6 @@ img.hv-menu-thumb {
 	box-shadow: var(--hv-shadow-soft);
 }
 
-.hv-payout-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 10px;
-	padding: 12px 13px;
-	border-radius: var(--hv-radius-md);
-	background: var(--hv-card-2);
-	margin-block-end: 8px;
-	flex-wrap: wrap;
-}
 
 /* =========================================================================
    12. Modal, toasts, misc

@@ -207,6 +207,11 @@ class Havato_I18N {
 			'empty_state'           => array( 'fa' => 'فعلاً چیزی برای نمایش نیست.', 'en' => 'Nothing here yet.' ),
 			'toman'                 => array( 'fa' => 'تومان', 'en' => 'Toman' ),
 			'free'                  => array( 'fa' => 'رایگان', 'en' => 'Free' ),
+			'always_free'           => array( 'fa' => 'شرکت در همه‌ی دورهمی‌ها رایگان است.', 'en' => 'Every gathering is free to join.' ),
+			'need_details_first'    => array(
+				'fa' => 'برای ثبت‌نام، ابتدا مشخصات خود را در پروفایل کامل کنید.',
+				'en' => 'Complete your details on your profile before joining.',
+			),
 			'yes'                   => array( 'fa' => 'بله', 'en' => 'Yes' ),
 			'no'                    => array( 'fa' => 'خیر', 'en' => 'No' ),
 			'lang_switch'           => array( 'fa' => 'English', 'en' => 'فارسی' ),
@@ -268,14 +273,17 @@ class Havato_I18N {
 			'join_event'            => array( 'fa' => 'درخواست هم‌نشینی موضوعی', 'en' => 'Request a seat' ),
 			'joined_event'          => array( 'fa' => 'در صف این میز هستید', 'en' => 'You are in the queue' ),
 			'event_full'            => array( 'fa' => 'ظرفیت تکمیل است', 'en' => 'Table is full' ),
-			'budget_low'            => array( 'fa' => 'اقتصادی', 'en' => 'Budget' ),
-			'budget_medium'         => array( 'fa' => 'متوسط', 'en' => 'Standard' ),
-			'budget_high'           => array( 'fa' => 'لاکچری', 'en' => 'Premium' ),
+			// Atmosphere, not price. The plugin never handles money, so these
+			// describe how a café feels rather than what it costs. The stored
+			// keys stay low/medium/high so no migration is needed.
+			'budget_low'            => array( 'fa' => 'دنج', 'en' => 'Cosy' ),
+			'budget_medium'         => array( 'fa' => 'معمولی', 'en' => 'Everyday' ),
+			'budget_high'           => array( 'fa' => 'لاکچری', 'en' => 'Upscale' ),
+			'atmosphere'            => array( 'fa' => 'حال و هوا', 'en' => 'Atmosphere' ),
 			'status_open'           => array( 'fa' => 'باز', 'en' => 'Open' ),
 			'status_matched'        => array( 'fa' => 'میز چیده شد', 'en' => 'Matched' ),
 			'status_completed'      => array( 'fa' => 'برگزار شد', 'en' => 'Completed' ),
 			'status_pending_admin'  => array( 'fa' => 'در انتظار تایید', 'en' => 'Pending review' ),
-			'redirect_payment'      => array( 'fa' => 'در حال انتقال به درگاه پرداخت…', 'en' => 'Redirecting to secure checkout…' ),
 			'need_profile_first'    => array( 'fa' => 'ابتدا تست شخصیت‌شناسی ۳۰ ثانیه‌ای را کامل کنید.', 'en' => 'Please complete the 30-second personality test first.' ),
 
 			// Venue popup.
@@ -307,8 +315,6 @@ class Havato_I18N {
 
 			// Profile.
 			'profile_title'         => array( 'fa' => 'پروفایل من', 'en' => 'My Profile' ),
-			'wallet'                => array( 'fa' => 'کیف پول', 'en' => 'Wallet' ),
-			'wallet_spent'          => array( 'fa' => 'مجموع پرداخت‌ها', 'en' => 'Total spent' ),
 			'rating_score'          => array( 'fa' => 'امتیاز رفتاری', 'en' => 'Behaviour score' ),
 			'events_attended'       => array( 'fa' => 'دورهمی حاضر شده', 'en' => 'Tables attended' ),
 			'start_test'            => array( 'fa' => '🧠 شروع تست ۳۰ ثانیه‌ای', 'en' => '🧠 Take the 30-second test' ),
@@ -431,13 +437,6 @@ class Havato_I18N {
 			'menu_saved_pending'    => array( 'fa' => 'منو ذخیره شد و برای تایید ارسال گردید.', 'en' => 'Menu saved and submitted for approval.' ),
 			'drag_pin'              => array( 'fa' => 'پین را روی موقعیت دقیق کافه بکشید (ذخیره خودکار).', 'en' => 'Drag the pin to your exact location (auto-saved).' ),
 			'cover_image'           => array( 'fa' => 'عکس کاور', 'en' => 'Cover image' ),
-			'payout_status'         => array( 'fa' => 'وضعیت تسویه', 'en' => 'Payout status' ),
-			'payout_period'         => array( 'fa' => 'دوره', 'en' => 'Period' ),
-			'payout_gross'          => array( 'fa' => 'فروش ناخالص', 'en' => 'Gross sales' ),
-			'payout_commission'     => array( 'fa' => 'کارمزد پلتفرم', 'en' => 'Platform fee' ),
-			'payout_share'          => array( 'fa' => 'سهم کافه', 'en' => 'Café share' ),
-			'payout_paid'           => array( 'fa' => 'تسویه‌شده', 'en' => 'Paid' ),
-			'payout_due'            => array( 'fa' => 'بدهکار', 'en' => 'Due' ),
 
 			// Admin.
 			'admin_dashboard'       => array( 'fa' => 'داشبورد آمار', 'en' => 'Statistics dashboard' ),
@@ -464,8 +463,6 @@ class Havato_I18N {
 			'event_title'           => array( 'fa' => 'عنوان دورهمی', 'en' => 'Event title' ),
 			'event_title_hint'      => array( 'fa' => 'مثلاً: شب فیلم، گپ استارتاپی', 'en' => 'e.g. Movie night, Startup talk' ),
 			'admin_matcher'         => array( 'fa' => 'اجرای تطابق هوشمند', 'en' => 'Run smart matching' ),
-			'admin_revenue'         => array( 'fa' => 'درآمد و تسویه', 'en' => 'Revenue & settlements' ),
-			'revenue_by_event'      => array( 'fa' => 'درآمد رویدادها', 'en' => 'Revenue by event' ),
 			'admin_weights'         => array( 'fa' => 'تنظیم ضرایب فرمول', 'en' => 'Formula weights' ),
 			'admin_google'          => array( 'fa' => 'تنظیمات ورود با گوگل', 'en' => 'Google sign-in' ),
 			'admin_locale'          => array( 'fa' => 'تنظیمات زبان و منطقه', 'en' => 'Language & region' ),
@@ -495,7 +492,9 @@ class Havato_I18N {
 			'stat_active_users'     => array( 'fa' => 'کاربران فعال', 'en' => 'Active users' ),
 			'stat_matched_tables'   => array( 'fa' => 'میزهای مطابقت‌یافته', 'en' => 'Matched tables' ),
 			'stat_venues'           => array( 'fa' => 'مکان‌های ثبت‌شده', 'en' => 'Registered venues' ),
-			'stat_revenue'          => array( 'fa' => 'فروش بلیت', 'en' => 'Ticket revenue' ),
+			'stat_signups'          => array( 'fa' => 'ثبت‌نام‌ها', 'en' => 'Sign-ups' ),
+			'stat_attended'         => array( 'fa' => 'دورهمی‌های حاضر شده', 'en' => 'Gatherings attended' ),
+			'rating_count'          => array( 'fa' => 'تعداد بازخوردها', 'en' => 'Ratings received' ),
 			'col_order'             => array( 'fa' => 'ترتیب', 'en' => 'Order' ),
 			'col_manager'           => array( 'fa' => 'مدیر', 'en' => 'Manager' ),
 			'col_location'          => array( 'fa' => 'مکان', 'en' => 'Location' ),

@@ -157,8 +157,5 @@ class Havato_Cron {
 
 			Havato_Logger::log( sprintf( 'Event %s closed — feedback round opened (%d no-show).', $id, count( (array) $absent ) ), 'info' );
 		}
-
-		// Keep the settlement ledger fresh for the owner dashboards.
-		Havato_Payouts::rebuild_all();
 	}
 }

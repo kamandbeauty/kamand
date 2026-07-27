@@ -65,11 +65,6 @@ class Havato_Settings {
 			'cron_lead_hours'      => 2,     // Force matching N hours before the event.
 			'auto_complete_hours'  => 3,     // Mark event completed N hours after start.
 
-			// Money.
-			'commission_percent'   => 20,    // Platform fee on ticket sales.
-			'default_ticket_price' => 45000, // Fallback ticket price in Toman.
-			'wc_product_id'        => 0,     // Virtual ticket product id.
-
 			// Google sign-in.
 			'google_client_id'     => '',
 			'google_client_secret' => '',

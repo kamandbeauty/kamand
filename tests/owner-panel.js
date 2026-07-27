@@ -36,10 +36,10 @@ t('web app still has the 4 guest tabs',
 console.log('\n--- 2. wp-admin owner panel ---');
 t('class loaded in admin', /class-havato-owner-admin\.php/.test(main) && /Havato_Owner_Admin::init\(\)/.test(main));
 for (const [p,fn] of [['dashboard','page_dashboard'],['events','page_events'],
-                      ['menu','page_menu'],['settings','page_settings'],['payouts','page_payouts']])
+                      ['menu','page_menu'],['settings','page_settings']])
   t(`${p} page exists`, new RegExp('function '+fn).test(oa));
 t('all owner submenus registered',
-  ['havato-venue','havato-venue-events','havato-venue-menu','havato-venue-settings','havato-venue-payouts']
+  ['havato-venue','havato-venue-events','havato-venue-menu','havato-venue-settings']
     .every(p=>new RegExp("'"+p+"'\\s*=>\\s*array\\(").test(oa)));
 t('the new "My tables" page is among them', /'havato-venue-tables'/.test(oa));
 t('reuses the REST controllers, no duplicated logic',
@@ -52,8 +52,9 @@ t('menu builder JS', /initMenu/.test(oj));
 t('media library for photos', /wp\.media/.test(oj) && /wp_enqueue_media/.test(oa));
 t('draggable pin writes to inputs', /marker\.on\('dragend'/.test(oj) && /hv-owner-lat/.test(oj));
 t('leaflet tiles unclamped in admin', /#hv-owner-map img \{ max-width: none !important/.test(rd('assets/css/havato-admin.css')));
-t('payouts show share only, never platform revenue',
-  /rebuild_venue\( \$venue\['id'\] \)/.test(oa) && !/payout_gross/.test(oa));
+// The payout page went away with the rest of the money features in 1.12.0.
+t('no payouts page left', !/function page_payouts/.test(oa) && !/havato-venue-payouts/.test(oa));
+t('no settlement ledger left', !/Havato_Payouts/.test(oa));
 t('shared stat-card widget', /Havato_Admin_UI::stat_card/.test(oa));
 
 console.log('\n--- 3. role lockdown ---');

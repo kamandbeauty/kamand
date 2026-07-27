@@ -81,7 +81,6 @@ class Havato_Owner_Admin {
 			'havato-venue-tables'   => array( 'tab_tables', 'page_tables' ),
 			'havato-venue-menu'     => array( 'tab_menu_builder', 'page_menu' ),
 			'havato-venue-settings' => array( 'tab_venue_settings', 'page_settings' ),
-			'havato-venue-payouts'  => array( 'payout_status', 'page_payouts' ),
 		);
 
 		foreach ( $pages as $slug => $conf ) {
@@ -290,7 +289,6 @@ class Havato_Owner_Admin {
 			'havato-venue-tables'   => Havato_I18N::t( 'tab_tables' ),
 			'havato-venue-menu'     => Havato_I18N::t( 'tab_menu_builder' ),
 			'havato-venue-settings' => Havato_I18N::t( 'tab_venue_settings' ),
-			'havato-venue-payouts'  => Havato_I18N::t( 'payout_status' ),
 		);
 
 		$name = $venue ? $venue['name'] : Havato_I18N::t( 'owner_panel' );
@@ -384,7 +382,7 @@ class Havato_Owner_Admin {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT e.*, (SELECT COUNT(*) FROM $regs r WHERE r.event_id=e.id AND r.status NOT IN ('cancelled','pending_payment')) AS taken
+				"SELECT e.*, (SELECT COUNT(*) FROM $regs r WHERE r.event_id=e.id AND r.status <> 'cancelled') AS taken
 				 FROM $events e WHERE e.venue_id=%s AND e.event_date >= CURDATE()
 				 ORDER BY e.event_date ASC LIMIT 10",
 				$venue['id']
@@ -482,7 +480,7 @@ class Havato_Owner_Admin {
 		echo '<label class="hv-adm-grow">' . esc_html( Havato_I18N::t( 'event_title' ) ) .
 			'<input type="text" name="title" maxlength="120" placeholder="' .
 			esc_attr( Havato_I18N::t( 'event_title_hint' ) ) . '"></label>';
-		echo '<label>' . esc_html( Havato_I18N::t( 'payout_period' ) ) .
+		echo '<label>' . esc_html( Havato_I18N::t( 'col_date' ) ) .
 			'<input type="date" name="event_date" required value="' . esc_attr( gmdate( 'Y-m-d', strtotime( '+1 day' ) ) ) . '"></label>';
 		echo '<label>' . esc_html( Havato_I18N::t( 'quiet_hours' ) ) .
 			'<input type="time" name="event_time" required value="19:00"></label>';
@@ -493,9 +491,7 @@ class Havato_Owner_Admin {
 			echo '<label>' . esc_html( Havato_I18N::t( 'seats_left' ) ) .
 				'<input type="number" name="max_capacity" min="2" max="60" value="6"></label>';
 		}
-		echo '<label>' . esc_html( Havato_I18N::t( 'menu_item_price' ) ) .
-			'<input type="number" name="price" min="0" step="5000" value="75000"></label>';
-		echo '<label>' . esc_html( Havato_I18N::t( 'filter' ) ) . '<select name="budget_tier">';
+		echo '<label>' . esc_html( Havato_I18N::t( 'atmosphere' ) ) . '<select name="budget_tier">';
 		foreach ( array( 'low', 'medium', 'high' ) as $tier ) {
 			printf(
 				'<option value="%s"%s>%s</option>',
@@ -558,7 +554,7 @@ class Havato_Owner_Admin {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT e.*, (SELECT COUNT(*) FROM $regs r WHERE r.event_id=e.id AND r.status NOT IN ('cancelled','pending_payment')) AS taken
+				"SELECT e.*, (SELECT COUNT(*) FROM $regs r WHERE r.event_id=e.id AND r.status <> 'cancelled') AS taken
 				 FROM $events e WHERE e.venue_id=%s ORDER BY e.event_date DESC LIMIT 60",
 				$venue['id']
 			),
@@ -587,9 +583,8 @@ class Havato_Owner_Admin {
 		}
 
 		echo '<table class="hv-adm-table"><thead><tr>';
-		echo '<th>' . esc_html( Havato_I18N::t( 'payout_period' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_date' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'seats_left' ) ) . '</th>';
-		echo '<th>' . esc_html( Havato_I18N::t( 'menu_item_price' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
 		echo '<th></th></tr></thead><tbody>';
 
@@ -648,7 +643,7 @@ class Havato_Owner_Admin {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$members = $wpdb->get_results(
-			$wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND status NOT IN ('cancelled','pending_payment') ORDER BY id ASC", $event_id ),
+			$wpdb->prepare( "SELECT * FROM $regs WHERE event_id=%s AND status <> 'cancelled' ORDER BY id ASC", $event_id ),
 			ARRAY_A
 		);
 
@@ -910,54 +905,6 @@ class Havato_Owner_Admin {
 	}
 
 	/* =====================================================================
-	 * Page 5 — payouts (café share only)
-	 * ================================================================== */
-
-	/**
-	 * Settlement status. Platform revenue is deliberately not shown.
-	 */
-	public static function page_payouts() {
-		$venue = self::venue();
-		self::head( Havato_I18N::t( 'payout_status' ), $venue );
-
-		if ( ! $venue ) {
-			self::no_venue();
-			return;
-		}
-
-		$lang = Havato_I18N::current_lang();
-		$rows = Havato_Payouts::rebuild_venue( $venue['id'] ); // owner view: share only.
-
-		echo '<div class="hv-adm-card">';
-		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'payout_status' ) ) . '</h2>';
-
-		if ( empty( $rows ) ) {
-			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
-			self::foot();
-			return;
-		}
-
-		echo '<table class="hv-adm-table"><thead><tr>';
-		echo '<th>' . esc_html( Havato_I18N::t( 'payout_period' ) ) . '</th>';
-		echo '<th>' . esc_html( Havato_I18N::t( 'payout_share' ) ) . '</th>';
-		echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
-		echo '</tr></thead><tbody>';
-
-		foreach ( $rows as $row ) {
-			echo '<tr>';
-			echo '<td><strong>' . esc_html( $row['period_label'][ $lang ] ) . '</strong></td>';
-			echo '<td>' . esc_html( $row['share_label'][ $lang ] ) . '</td>';
-			echo '<td>' . ( 'paid' === $row['status']
-				? '<span class="hv-adm-badge is-green">' . esc_html( Havato_I18N::t( 'payout_paid' ) ) . '</span>'
-				: '<span class="hv-adm-badge is-yellow">' . esc_html( Havato_I18N::t( 'payout_due' ) ) . '</span>' ) . '</td>';
-			echo '</tr>';
-		}
-
-		echo '</tbody></table></div>';
-		self::foot();
-	}
-
-	/* =====================================================================
 	 * POST handler
 	 * ================================================================== */
 
@@ -1000,7 +947,6 @@ class Havato_Owner_Admin {
 				}
 				$req->set_param( 'image', isset( $_POST['image'] ) ? esc_url_raw( wp_unslash( $_POST['image'] ) ) : '' );
 				$req->set_param( 'max_capacity', isset( $_POST['max_capacity'] ) ? (int) $_POST['max_capacity'] : 6 );
-				$req->set_param( 'price', isset( $_POST['price'] ) ? (int) $_POST['price'] : 0 );
 
 				// Only the ticked tables count toward the event.
 				$picked = array();

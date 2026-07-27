@@ -6,7 +6,7 @@
  *     re-render, tab state is mirrored into the History API so the hardware
  *     Back button moves between tabs instead of leaving the app.
  *   • Instant bilingual switch: all strings live in HAVATO_BOOT.i18n, dates and
- *     prices are pre-rendered by PHP in both calendars, so switching language
+ *     dates are pre-rendered by PHP in both calendars, so switching language
  *     only re-renders the current view.
  *   • Guests only. The cafe owner panel now lives in wp-admin.
  */
@@ -419,6 +419,7 @@
 		return '<div class="hv-empty">' + icon(iconId || 'explore') + '<p>' + esc(text || t('empty_state')) + '</p></div>';
 	}
 
+	/** Atmosphere label. The stored keys are historical. */
 	function budgetLabel(tier) {
 		if (tier === 'low') { return t('budget_low'); }
 		if (tier === 'high') { return t('budget_high'); }
@@ -772,7 +773,7 @@
 		setStatusStrip('');
 
 		var params = {};
-		if (S.data.exploreFilter) { params.budget = S.data.exploreFilter; }
+		if (S.data.exploreFilter) { params.budget = S.data.exploreFilter; } // atmosphere tier
 
 		return api('events', { params: params }).then(function (res) {
 			S.data.events = res.events || [];
@@ -831,8 +832,8 @@
 				'<div class="hv-seatbar"><span style="width:' + pct + '%"></span></div>' +
 				'<div class="hv-event-foot">' +
 					'<div>' +
-						'<div class="hv-event-price">' + esc(pick(event.price_label)) + '</div>' +
 						'<div class="hv-muted">' + num(event.seats_left) + ' ' + esc(t('seats_left')) + '</div>' +
+						'<div class="hv-free">' + esc(t('free')) + '</div>' +
 					'</div>' +
 					action +
 				'</div>' +
@@ -843,19 +844,15 @@
 		btn.disabled = true;
 		api('events/join', { method: 'POST', body: { event_id: eventId } })
 			.then(function (res) {
-				if (res.checkout_url) {
-					el.redirectText.textContent = t('redirect_payment');
-					el.redirect.hidden = false;
-					setTimeout(function () { window.location.href = res.checkout_url; }, 700);
-					return;
-				}
 				toast(res.matched ? t('status_matched') : t('joined_event'), 'ok');
 				viewExplore();
 			})
 			.catch(function (err) {
 				btn.disabled = false;
 				toast(err.message, 'error');
-				if (err.data && err.data.code === 'havato_no_profile') {
+				// Both halves of the profile are required to take a seat, so
+				// send the guest to the screen that can fix it.
+				if (err.data && (err.data.code === 'havato_no_profile' || err.data.code === 'havato_no_details')) {
 					setTab('profile');
 				}
 			});
@@ -1295,7 +1292,7 @@
 	 * ================================================================== */
 	function viewProfile(force, userId) {
 		// `userId` renders the PUBLIC profile of another gatherer (add-friend
-		// button, gallery, no wallet / no feedback / no logout).
+		// button, gallery, no stats / no feedback / no logout).
 		userId = userId || S.viewingUser || 0;
 		S.viewingUser = userId || 0;
 
@@ -1328,7 +1325,7 @@
 			html += profileHeadMarkup(profile);
 
 			if (profile.is_self) {
-				html += walletMarkup(profile);
+				html += statsMarkup(profile);
 
 				// "Edit my details" is permanent: name/age/city change over
 				// time and the user must be able to correct them. The test
@@ -1410,14 +1407,14 @@
 			'</div>';
 	}
 
-	function walletMarkup(profile) {
-		var wallet = profile.wallet || { spent_label: { fa: '', en: '' }, tickets: 0 };
+	/** Three headline numbers. Everything is free, so none of them is money. */
+	function statsMarkup(profile) {
 		return '' +
 			'<div class="hv-stat-grid">' +
 				'<div class="hv-stat">' +
-					'<div class="hv-stat-icon is-blue">' + icon('wallet') + '</div>' +
-					'<div class="hv-stat-value">' + esc(pick(wallet.spent_label)) + '</div>' +
-					'<div class="hv-stat-label">' + esc(t('wallet_spent')) + '</div>' +
+					'<div class="hv-stat-icon is-blue">' + icon('users') + '</div>' +
+					'<div class="hv-stat-value">' + num(profile.attended || 0) + '</div>' +
+					'<div class="hv-stat-label">' + esc(t('stat_attended')) + '</div>' +
 				'</div>' +
 				'<div class="hv-stat">' +
 					'<div class="hv-stat-icon is-green">' + icon('star') + '</div>' +
@@ -1425,9 +1422,9 @@
 					'<div class="hv-stat-label">' + esc(t('rating_score')) + '</div>' +
 				'</div>' +
 				'<div class="hv-stat">' +
-					'<div class="hv-stat-icon is-orange">' + icon('users') + '</div>' +
-					'<div class="hv-stat-value">' + num(wallet.tickets) + '</div>' +
-					'<div class="hv-stat-label">' + esc(t('my_events')) + '</div>' +
+					'<div class="hv-stat-icon is-orange">' + icon('chat') + '</div>' +
+					'<div class="hv-stat-value">' + num(profile.rating_count || 0) + '</div>' +
+					'<div class="hv-stat-label">' + esc(t('rating_count')) + '</div>' +
 				'</div>' +
 			'</div>';
 	}

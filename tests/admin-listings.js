@@ -11,9 +11,11 @@ console.log('--- new admin screens registered ---');
 t('Events & guests submenu', /'havato-events'\s*=>\s*array\( 'admin_events', 'page_events' \)/.test(adm));
 t('All cafés submenu', /'havato-venues'\s*=>\s*array\( 'admin_venues', 'page_venues' \)/.test(adm));
 t('both in the tab strip', /'havato-events'\s*=>\s*Havato_I18N::t/.test(adm) && /'havato-venues'\s*=>\s*Havato_I18N::t/.test(adm));
-t('existing 7 pages untouched',
-  ['page_dashboard','page_approvals','page_revenue','page_matcher','page_weights','page_google','page_locale']
+// page_revenue was deleted in 1.12.0 along with everything else money-related.
+t('the other admin pages are untouched',
+  ['page_dashboard','page_approvals','page_matcher','page_weights','page_google','page_locale']
     .every(p=>new RegExp('function '+p).test(adm)));
+t('the revenue page is gone', !/function page_revenue/.test(adm));
 
 console.log('\n--- events page ---');
 t('lists every event', /function page_events/.test(adm));
@@ -23,7 +25,8 @@ t('avatars lazy-loaded', /loading="lazy"/.test(adm));
 t('shows event title', /\$title = trim\( \(string\) \$row\['title'\] \)/.test(adm));
 t('falls back when title is empty', /'' !== \$title \? \$title :/.test(adm));
 t('shows venue + city + date', /venue_name/.test(adm) && /havato_city_label/.test(adm));
-t('shows paid amount + check-in', /checked_in/.test(adm) && /havato_price\( \(int\) \$m\['amount'\]/.test(adm));
+t('shows check-in state', /checked_in/.test(adm));
+t('no paid amount shown any more', !/\$m\['amount'\]/.test(adm));
 t('status filter', /hv-adm-filterbar/.test(adm));
 t('paginated', /function pagination/.test(adm));
 t('cancelled registrations excluded', /status <> 'cancelled'/.test(adm));

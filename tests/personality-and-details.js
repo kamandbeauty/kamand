@@ -80,7 +80,12 @@ t('users missing a city are prompted', /details_needed/.test(js) && /details_nee
 console.log('\n--- 5. schema + safe upgrade ---');
 for (const k of ['openness', 'humor', 'energy', 'planning', 'empathy'])
   t(`column personality_${k}`, new RegExp('personality_' + k + ' int\\(11\\)').test(db));
-t('DB version bumped so the migration runs', /HAVATO_DB_VERSION', '1\.7\.0'/.test(main));
+t('DB version is at or past the trait schema', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) return false;
+  const [maj, min] = [Number(m[1]), Number(m[2])];
+  return maj > 1 || (maj === 1 && min >= 7);
+})());
 // A row written before the upgrade has no such key. Reading it as 0 would make
 // the matcher treat everyone as an extreme introvert, so it must default to 5.
 t('pre-upgrade rows read as the neutral midpoint 5',
