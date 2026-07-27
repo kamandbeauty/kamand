@@ -46,7 +46,13 @@ console.log('\n--- schema ---');
 t('profiles store country+city', /country varchar\(8\)[\s\S]{0,120}city varchar\(32\)/.test(db));
 t('venues store country+city', /country varchar\(8\) NOT NULL DEFAULT 'ir'/.test(db));
 t('venues.city indexed for the filter', /KEY city \(city\)/.test(db));
-t('DB version bumped so dbDelta adds them', /HAVATO_DB_VERSION', '1\.2\.0'/.test(rd('havato.php')));
+// Any bump past 1.1.0 triggers dbDelta; the exact number moves with later
+// schema changes, so assert the floor rather than one literal version.
+{
+  const v = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(rd('havato.php'));
+  const num = (+v[1])*10000 + (+v[2])*100 + (+v[3]);
+  t('DB version bumped so dbDelta adds them (>=1.2.0), got '+v[1]+'.'+v[2]+'.'+v[3], num >= 10200);
+}
 
 console.log('\n--- only the client’s city is shown ---');
 t('viewer_city() helper', /private static function viewer_city/.test(rest));

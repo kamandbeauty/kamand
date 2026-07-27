@@ -159,6 +159,20 @@
 	/* =====================================================================
 	 * Draggable location pin
 	 * ================================================================== */
+	function initStorefront() {
+		var btn = $('#hv-storefront-pick');
+		if (!btn) { return; }
+		btn.onclick = function () {
+			pickMedia(function (url) {
+				$('#hv-storefront-url').value = url;
+				var save = $('#hv-storefront-save');
+				if (save) { save.disabled = false; }
+				// Submit immediately: one tap, one job done.
+				save.click();
+			});
+		};
+	}
+
 	function initMap() {
 		var node = $('#hv-owner-map');
 		if (!node || typeof window.L === 'undefined') { return; }
@@ -208,6 +222,7 @@
 	function boot() {
 		initMenu();
 		initCover();
+		initStorefront();
 		initMap();
 		initLocationSelects();
 	}

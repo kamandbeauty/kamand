@@ -111,6 +111,7 @@ class Havato_DB {
 			lat double NOT NULL DEFAULT 0,
 			lng double NOT NULL DEFAULT 0,
 			image varchar(255) NOT NULL DEFAULT '',
+			storefront_photo varchar(255) NOT NULL DEFAULT '',
 			utilization int(11) NOT NULL DEFAULT 0,
 			guests_routed int(11) NOT NULL DEFAULT 0,
 			budget_tier varchar(20) NOT NULL DEFAULT 'medium',

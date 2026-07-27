@@ -364,6 +364,13 @@ class Havato_Owner_Admin {
 			return 'fa' === $lang ? Havato_Jalali::fa_digits( number_format( (int) $n ) ) : number_format( (int) $n );
 		};
 
+		// An unverified café is invisible to guests, and the single biggest
+		// thing that speeds up approval is a photo of the shopfront, so ask
+		// for it prominently until it is supplied.
+		if ( ! (int) $venue['verified'] ) {
+			self::storefront_prompt( $venue );
+		}
+
 		echo '<div class="hv-adm-stats">';
 		Havato_Admin_UI::stat_card( Havato_I18N::t( 'utilization' ), $fmt( $venue['utilization'] ) . '%', 'blue', 'chart-bar' );
 		Havato_Admin_UI::stat_card( Havato_I18N::t( 'guests_routed' ), $fmt( $venue['guests_routed'] ), 'green', 'groups' );
@@ -389,6 +396,44 @@ class Havato_Owner_Admin {
 		echo '</div>';
 
 		self::foot();
+	}
+
+	/**
+	 * Storefront-photo request shown to unverified cafés.
+	 *
+	 * @param array $venue Venue row.
+	 */
+	private static function storefront_prompt( $venue ) {
+		$has = ! empty( $venue['storefront_photo'] );
+
+		echo '<div class="hv-adm-card hv-adm-storefront' . ( $has ? ' is-done' : '' ) . '">';
+		echo '<div class="hv-adm-storefront-body">';
+		echo '<span class="hv-adm-stat-icon is-orange"><span class="dashicons dashicons-camera"></span></span>';
+		echo '<div>';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'storefront_title' ) ) . '</h2>';
+		echo '<p class="hv-adm-muted">' . esc_html(
+			$has ? Havato_I18N::t( 'storefront_received' ) : Havato_I18N::t( 'storefront_hint' )
+		) . '</p>';
+		echo '</div></div>';
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'havato_owner', 'havato_owner_nonce' );
+		echo '<input type="hidden" name="action" value="havato_owner_action">';
+		echo '<input type="hidden" name="havato_action" value="save_storefront">';
+		echo '<input type="hidden" name="storefront_photo" id="hv-storefront-url" value="' .
+			esc_attr( $venue['storefront_photo'] ) . '">';
+
+		if ( $has ) {
+			echo '<img class="hv-adm-storefront-img" src="' . esc_url( $venue['storefront_photo'] ) . '" alt="">';
+		}
+
+		echo '<p class="hv-adm-storefront-actions">';
+		echo '<button type="button" class="hv-adm-btn hv-adm-btn-ghost" id="hv-storefront-pick">' .
+			esc_html( $has ? Havato_I18N::t( 'edit' ) : Havato_I18N::t( 'upload_photo' ) ) . '</button> ';
+		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-green" id="hv-storefront-save"' .
+			( $has ? '' : ' disabled' ) . '>' . esc_html( Havato_I18N::t( 'save' ) ) . '</button>';
+		echo '</p>';
+		echo '</form></div>';
 	}
 
 	/* =====================================================================
@@ -855,6 +900,14 @@ class Havato_Owner_Admin {
 				}
 				$page  = 'havato-venue-events';
 				$extra = array( 'event' => isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '' );
+				break;
+
+			case 'save_storefront':
+				$req = new WP_REST_Request( 'POST' );
+				$req->set_param( 'storefront_photo', isset( $_POST['storefront_photo'] ) ? esc_url_raw( wp_unslash( $_POST['storefront_photo'] ) ) : '' );
+
+				$result = Havato_REST::owner_save_venue( $req );
+				$msg    = is_wp_error( $result ) ? $result->get_error_message() : Havato_I18N::t( 'storefront_received' );
 				break;
 
 			case 'save_venue':

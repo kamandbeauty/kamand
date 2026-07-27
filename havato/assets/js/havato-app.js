@@ -655,6 +655,7 @@
 				'<div class="hv-auth-logo">' + icon('cup') + '</div>' +
 				'<h2 class="hv-auth-title">' + esc(t('auth_title')) + '</h2>' +
 				'<p class="hv-auth-sub">' + esc(t('auth_sub')) + '</p>' +
+				'<h3 class="hv-auth-heading">' + esc(t('user_login_heading')) + '</h3>' +
 				googleBlock +
 				'<div class="hv-auth-foot">' +
 					'<a href="' + esc(BOOT.ownerPanelUrl) + '">' + esc(t('login_owner')) + '</a>' +

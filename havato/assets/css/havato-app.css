@@ -1721,3 +1721,87 @@ img.hv-menu-thumb {
 	.hv-header-title { font-size: 1rem; }
 	.hv-chat-log { max-block-size: 42dvh; }
 }
+
+/* =========================================================================
+   Owner auth page ([havato_owner_auth]) — standalone, not inside the app
+   ====================================================================== */
+.hv-owner-auth {
+	--hv-indigo: #1b1fbf;
+	--hv-indigo-2: #2b2fe0;
+	--hv-blue: #3e8bff;
+	--hv-text: #16204a;
+	--hv-text-soft: #6b74a0;
+	--hv-card-2: #f4f6fc;
+	--hv-radius-xl: 24px;
+	--hv-gutter: clamp(14px, 4.2vw, 22px);
+
+	position: relative;
+	min-height: 100dvh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: clamp(20px, 6vw, 48px) var(--hv-gutter);
+	background: linear-gradient(160deg, #2b2fe0 0%, #1b1fbf 50%, #0f1440 100%);
+	font-family: "Vazirmatn", system-ui, sans-serif;
+	overflow: hidden;
+	isolation: isolate;
+}
+.hv-owner-auth.hv-dir-ltr { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.hv-owner-auth * { box-sizing: border-box; }
+.hv-owner-auth svg { inline-size: 1.25em; block-size: 1.25em; }
+
+.hv-owner-auth .hv-auth-card {
+	inline-size: min(100%, 460px);
+	max-height: 92dvh;
+	overflow-y: auto;
+	padding: clamp(22px, 6vw, 32px);
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	z-index: 1;
+}
+.hv-owner-auth .hv-auth-logo svg { inline-size: 36px; block-size: 36px; }
+.hv-owner-auth .hv-subtabs {
+	background: rgba(255, 255, 255, 0.14);
+	margin-block: 6px 4px;
+}
+.hv-owner-auth .hv-subtab { color: rgba(255, 255, 255, 0.75); }
+.hv-owner-auth .hv-subtab.is-active { background: #fff; color: var(--hv-indigo); }
+.hv-owner-auth .hv-auth-form { text-align: start; }
+.hv-owner-auth .hv-field label { color: #fff; }
+.hv-owner-auth .hv-input,
+.hv-owner-auth .hv-select,
+.hv-owner-auth .hv-textarea {
+	background: rgba(255, 255, 255, 0.14);
+	border-color: rgba(255, 255, 255, 0.32);
+	color: #fff;
+}
+.hv-owner-auth .hv-select option { color: #16204a; }
+.hv-owner-auth .hv-auth-small {
+	margin: 12px 0 0;
+	font-size: 0.78rem;
+	color: rgba(255, 255, 255, 0.82);
+	text-align: center;
+	line-height: 1.8;
+}
+.hv-owner-auth .hv-auth-small a { color: #fff; text-decoration: underline; }
+.hv-owner-auth .hv-alert { text-align: start; }
+
+/* "User sign-in" heading above the Google button */
+.hv-auth-heading {
+	margin: 6px 0 2px;
+	font-size: clamp(1.05rem, 4.6vw, 1.25rem);
+	font-weight: 800;
+	color: #fff;
+	letter-spacing: 0.01em;
+}
+.hv-auth-heading::after {
+	content: "";
+	display: block;
+	inline-size: 44px;
+	block-size: 3px;
+	margin: 8px auto 0;
+	border-radius: 3px;
+	background: linear-gradient(90deg, #7fb4ff, #ffffff);
+}

@@ -542,7 +542,20 @@ class Havato_Admin {
 
 			echo '<tr>';
 			echo '<td><span class="hv-adm-order">' . esc_html( $i ) . '</span></td>';
-			echo '<td><strong>' . esc_html( $name ) . '</strong></td>';
+			// Show the storefront photo inline: it is the evidence the admin
+			// needs in order to approve, so it must not hide behind a click.
+			$shot = isset( $row['storefront_photo'] ) ? $row['storefront_photo'] : '';
+			echo '<td><div class="hv-adm-venue-cell">';
+			if ( $shot ) {
+				printf(
+					'<a href="%1$s" target="_blank" rel="noopener"><img class="hv-adm-shopfront" src="%1$s" alt=""></a>',
+					esc_url( $shot )
+				);
+			} else {
+				echo '<span class="hv-adm-shopfront is-empty"><span class="dashicons dashicons-camera"></span></span>';
+			}
+			echo '<strong>' . esc_html( $name ) . '</strong>';
+			echo '</div></td>';
 			echo '<td>' . esc_html( $manager ) . '<br><span class="hv-adm-muted">' .
 				esc_html( $account ? $account->user_email : '—' ) . '</span></td>';
 			$city_label = havato_city_label( isset( $row['city'] ) ? $row['city'] : '' );

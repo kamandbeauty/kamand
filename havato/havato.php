@@ -3,7 +3,7 @@
  * Plugin Name:       Havato — هواتو
  * Plugin URI:        https://havato.app
  * Description:       پلتفرم دورهمی‌های هوشمند در کافه‌ها | Smart social table matching web-app for cafés & restaurants (Glassmorphism PWA + WebView ready).
- * Version:           1.3.0
+ * Version:           1.4.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Havato Team
@@ -18,8 +18,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HAVATO_VERSION', '1.3.0' );
-define( 'HAVATO_DB_VERSION', '1.2.0' );
+define( 'HAVATO_VERSION', '1.4.0' );
+define( 'HAVATO_DB_VERSION', '1.3.0' );
 define( 'HAVATO_FILE', __FILE__ );
 define( 'HAVATO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'HAVATO_URL', plugin_dir_url( __FILE__ ) );
@@ -74,6 +74,7 @@ final class Havato {
 		require_once HAVATO_PATH . 'includes/class-havato-google-auth.php';
 		require_once HAVATO_PATH . 'includes/class-havato-rest.php';
 		require_once HAVATO_PATH . 'includes/class-havato-shortcode.php';
+		require_once HAVATO_PATH . 'includes/class-havato-owner-auth.php';
 		require_once HAVATO_PATH . 'includes/class-havato-pwa.php';
 		require_once HAVATO_PATH . 'includes/class-havato-cron.php';
 
@@ -96,6 +97,7 @@ final class Havato {
 		Havato_Settings::init();
 		Havato_REST::init();
 		Havato_Shortcode::init();
+		Havato_Owner_Auth::init();
 		Havato_PWA::init();
 		Havato_Cron::init();
 		Havato_Woo::init();
@@ -155,11 +157,28 @@ register_activation_hook(
 		require_once HAVATO_PATH . 'includes/class-havato-roles.php';
 		require_once HAVATO_PATH . 'includes/class-havato-settings.php';
 		require_once HAVATO_PATH . 'includes/class-havato-cron.php';
+		require_once HAVATO_PATH . 'includes/class-havato-owner-auth.php';
 
 		Havato_DB::install();
 		Havato_Roles::register_roles();
 		Havato_Settings::install_defaults();
 		Havato_Cron::schedule_events();
+
+		// Create the café owner sign-in page so owners never need wp-login.php.
+		if ( ! get_option( 'havato_owner_auth_page_id' ) ) {
+			$page_id = wp_insert_post(
+				array(
+					'post_title'   => 'Havato — Café owners',
+					'post_name'    => 'cafe-owners',
+					'post_content' => '[havato_owner_auth]',
+					'post_status'  => 'publish',
+					'post_type'    => 'page',
+				)
+			);
+			if ( $page_id && ! is_wp_error( $page_id ) ) {
+				update_option( 'havato_owner_auth_page_id', (int) $page_id );
+			}
+		}
 
 		// Flush rewrites so /havato-manifest.json & /havato-sw.js resolve.
 		update_option( 'havato_flush_rewrite', 1 );

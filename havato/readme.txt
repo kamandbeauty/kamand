@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, woocommerce, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,23 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.4.0 =
+* SECURITY: the public owner/login endpoint authenticated ANY account,
+  including administrators, with no role check and no rate limiting. It now
+  accepts only the cafe_owner role and is throttled to 5 attempts per IP per
+  15 minutes. Registration is throttled the same way.
+* New branded sign-in / sign-up page for cafe owners ([havato_owner_auth],
+  created automatically on activation). Owners no longer touch wp-login.php:
+  that URL redirects them to the branded page, while administrators keep an
+  escape hatch at wp-login.php?havato_admin=1.
+* Cafes can now self-register again; the venue stays hidden from guests until
+  an administrator approves it.
+* After signing up, the owner panel asks for a photo of the shopfront to speed
+  up verification, and that photo is shown to the administrator right in the
+  approvals table.
+* The guest sign-in screen now has a large "User sign-in" heading above the
+  Google button.
 
 = 1.3.0 =
 * The café owner panel moved into wp-admin as a proper desktop interface:

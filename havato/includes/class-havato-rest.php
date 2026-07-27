@@ -1340,6 +1340,15 @@ class Havato_REST {
 
 		global $wpdb;
 
+		// Registration is public, so the same IP throttle applies — otherwise
+		// a script could flood the approvals queue with fake cafés.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$throttle = self::check_login_throttle();
+			if ( is_wp_error( $throttle ) ) {
+				return $throttle;
+			}
+		}
+
 		$email   = sanitize_email( (string) $req->get_param( 'email' ) );
 		$pass    = (string) $req->get_param( 'password' );
 		$name    = sanitize_text_field( (string) $req->get_param( 'venue_name' ) );
@@ -1347,6 +1356,8 @@ class Havato_REST {
 		$country = sanitize_key( (string) $req->get_param( 'country' ) );
 		$city    = sanitize_key( (string) $req->get_param( 'city' ) );
 		$addr    = sanitize_textarea_field( (string) $req->get_param( 'address' ) );
+
+		$storefront = esc_url_raw( (string) $req->get_param( 'storefront_photo' ) );
 
 		if ( ! is_email( $email ) || strlen( $pass ) < 6 || '' === $name || '' === $manager || ! havato_valid_city( $country, $city ) ) {
 			return new WP_Error( 'havato_bad_input', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
@@ -1389,6 +1400,7 @@ class Havato_REST {
 				'manager_name' => $manager,
 				'country'      => $country,
 				'city'         => $city,
+				'storefront_photo' => $storefront,
 				'address'      => $addr,
 				'lat'          => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
 				'lng'          => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
@@ -1398,7 +1410,7 @@ class Havato_REST {
 				'menu_json'    => '[]',
 				'created_at'   => havato_now(),
 			),
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%d', '%d', '%s', '%s' )
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%d', '%d', '%s', '%s' )
 		);
 
 		// Instant session — no second login required after a refresh.
@@ -1414,6 +1426,60 @@ class Havato_REST {
 		);
 	}
 
+
+	/* =====================================================================
+	 * Login throttling (owner auth page)
+	 * ================================================================== */
+
+	/**
+	 * Transient key for the caller's IP.
+	 *
+	 * @return string
+	 */
+	private static function throttle_key() {
+		$ip = '';
+		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+		}
+		return 'havato_login_fail_' . md5( $ip );
+	}
+
+	/**
+	 * Refuse further attempts once the limit is hit.
+	 *
+	 * @return true|WP_Error
+	 */
+	private static function check_login_throttle() {
+		$max   = (int) apply_filters( 'havato_login_max_attempts', 5 );
+		$tries = (int) get_transient( self::throttle_key() );
+
+		if ( $tries >= $max ) {
+			return new WP_Error(
+				'havato_too_many',
+				Havato_I18N::t( 'login_throttled' ),
+				array( 'status' => 429 )
+			);
+		}
+		return true;
+	}
+
+	/**
+	 * Count a failed attempt (window: 15 minutes, sliding).
+	 */
+	private static function record_failed_login() {
+		$key     = self::throttle_key();
+		$window  = (int) apply_filters( 'havato_login_window', 15 * MINUTE_IN_SECONDS );
+		$tries   = (int) get_transient( $key );
+		set_transient( $key, $tries + 1, $window );
+	}
+
+	/**
+	 * Reset the counter after a successful login.
+	 */
+	private static function clear_login_throttle() {
+		delete_transient( self::throttle_key() );
+	}
+
 	/**
 	 * Café owner sign-in.
 	 *
@@ -1423,14 +1489,32 @@ class Havato_REST {
 	public static function owner_login( $req ) {
 		self::boot( $req );
 
+		// Brute-force guard: this endpoint is public, so throttle by IP before
+		// touching the password at all.
+		$throttle = self::check_login_throttle();
+		if ( is_wp_error( $throttle ) ) {
+			return $throttle;
+		}
+
 		$email = sanitize_text_field( (string) $req->get_param( 'email' ) );
 		$pass  = (string) $req->get_param( 'password' );
 
 		$user = wp_authenticate( $email, $pass );
 		if ( is_wp_error( $user ) ) {
-			return new WP_Error( 'havato_login_failed', Havato_I18N::t( 'error_generic' ), array( 'status' => 401 ) );
+			self::record_failed_login();
+			return new WP_Error( 'havato_login_failed', Havato_I18N::t( 'login_failed' ), array( 'status' => 401 ) );
 		}
 
+		// HARD CONSTRAINT: this door is for café owners only. Without this an
+		// administrator could be signed in through a public, unthrottled
+		// endpoint — a privilege-escalation path that bypasses wp-login.php
+		// entirely. Admins must use the normal WordPress login.
+		if ( ! in_array( 'cafe_owner', (array) $user->roles, true ) ) {
+			self::record_failed_login();
+			return new WP_Error( 'havato_not_owner', Havato_I18N::t( 'login_owner_only' ), array( 'status' => 403 ) );
+		}
+
+		self::clear_login_throttle();
 		Havato_Google_Auth::force_login( $user->ID );
 
 		$venue = self::owner_venue( $user->ID );
@@ -1783,6 +1867,7 @@ class Havato_REST {
 			'city'         => '%s',
 			'address'     => '%s',
 			'image'       => '%s',
+			'storefront_photo' => '%s',
 			'quiet_hours' => '%s',
 			'budget_tier' => '%s',
 			'lat'         => '%f',
@@ -1796,7 +1881,7 @@ class Havato_REST {
 			}
 			if ( '%f' === $fmt ) {
 				$fields[ $key ] = (float) $value;
-			} elseif ( 'image' === $key ) {
+			} elseif ( 'image' === $key || 'storefront_photo' === $key ) {
 				$fields[ $key ] = esc_url_raw( (string) $value );
 			} elseif ( 'address' === $key ) {
 				$fields[ $key ] = sanitize_textarea_field( (string) $value );
@@ -2220,6 +2305,7 @@ class Havato_REST {
 			'manager_name'  => isset( $row['manager_name'] ) ? $row['manager_name'] : '',
 			'country'       => isset( $row['country'] ) ? $row['country'] : '',
 			'city'          => isset( $row['city'] ) ? $row['city'] : '',
+			'storefront'    => isset( $row['storefront_photo'] ) ? $row['storefront_photo'] : '',
 			'city_label'    => havato_city_label( isset( $row['city'] ) ? $row['city'] : '' ),
 			'address'       => $row['address'],
 			'lat'           => (float) $row['lat'],

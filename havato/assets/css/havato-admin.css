@@ -638,3 +638,34 @@
 	margin-top: 10px;
 }
 #hv-owner-map img { max-width: none !important; }
+
+/* Storefront photo request (unverified cafés) */
+.hv-adm-storefront { border: 2px dashed rgba(249, 115, 22, 0.45); }
+.hv-adm-storefront.is-done { border-color: rgba(18, 185, 129, 0.45); }
+.hv-adm-storefront-body { display: flex; align-items: flex-start; gap: 14px; }
+.hv-adm-storefront-body .hv-adm-card-title { margin-bottom: 4px; }
+.hv-adm-storefront-img {
+	display: block;
+	max-width: 280px;
+	width: 100%;
+	border-radius: 12px;
+	margin: 14px 0 0;
+	border: 1px solid var(--hv-line);
+}
+.hv-adm-storefront-actions { margin: 14px 0 0; display: flex; gap: 10px; }
+.hv-adm-venue-cell { display: flex; align-items: center; gap: 10px; }
+.hv-adm-shopfront {
+	width: 46px;
+	height: 46px;
+	min-width: 46px;
+	border-radius: 10px;
+	object-fit: cover;
+	border: 1px solid var(--hv-line);
+	display: block;
+}
+.hv-adm-shopfront.is-empty {
+	display: grid;
+	place-items: center;
+	background: #f2f5fd;
+	color: #9aa4c4;
+}
