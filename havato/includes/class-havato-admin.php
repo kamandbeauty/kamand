@@ -659,7 +659,9 @@ class Havato_Admin {
 			'event_time'    => substr( (string) $row['event_time'], 0, 5 ),
 			'event_theme'   => $row['theme'],
 			'col_status'    => Havato_I18N::t( 'status_' . $row['status'] ),
-			'seats_left'    => $row['taken'] . ' / ' . $row['max_capacity'],
+			// taken / capacity — labelled as occupancy, not as "seats left",
+			// which would have read as the exact opposite of the figure.
+			'seats_occupancy' => $row['taken'] . ' / ' . $row['max_capacity'],
 			// Café contact stays admin-only, exactly as on every other screen.
 			'venue_phone'   => $row['venue_phone'],
 		);

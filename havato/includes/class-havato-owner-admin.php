@@ -488,7 +488,8 @@ class Havato_Owner_Admin {
 		$tables = Havato_REST::venue_tables( $venue['id'] );
 
 		if ( empty( $tables ) ) {
-			echo '<label>' . esc_html( Havato_I18N::t( 'seats_left' ) ) .
+			// This asks for the event's total capacity, not what is left of it.
+			echo '<label>' . esc_html( Havato_I18N::t( 'total_seats' ) ) .
 				'<input type="number" name="max_capacity" min="2" max="60" value="6"></label>';
 		}
 		echo '<label>' . esc_html( Havato_I18N::t( 'atmosphere' ) ) . '<select name="budget_tier">';
@@ -584,7 +585,9 @@ class Havato_Owner_Admin {
 
 		echo '<table class="hv-adm-table"><thead><tr>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_date' ) ) . '</th>';
-		echo '<th>' . esc_html( Havato_I18N::t( 'seats_left' ) ) . '</th>';
+		// This column prints "taken / capacity", which is occupancy — the old
+		// "seats left" label said the opposite of the number underneath it.
+		echo '<th>' . esc_html( Havato_I18N::t( 'seats_occupancy' ) ) . '</th>';
 		echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
 		echo '<th></th></tr></thead><tbody>';
 
@@ -787,7 +790,8 @@ class Havato_Owner_Admin {
 		printf(
 			'<h2 class="hv-adm-card-title">%s — %s</h2>',
 			esc_html( Havato_I18N::t( 'tab_tables' ) ),
-			esc_html( sprintf( '%d %s', $seats, Havato_I18N::t( 'seats_left' ) ) )
+			// The café's total number of chairs, not free seats at an event.
+			esc_html( sprintf( '%d %s', $seats, Havato_I18N::t( 'total_seats' ) ) )
 		);
 		printf(
 			'<div id="hv-owner-tables" data-tables="%s" data-nonce="%s" data-action="%s" data-locked="%s"></div>',
@@ -828,11 +832,18 @@ class Havato_Owner_Admin {
 
 		echo '<div class="hv-adm-card">';
 		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'venue_menu' ) ) . '</h2>';
+		// Show the owner which currency the price column is in — the field is
+		// a bare number, and a Turkish café types Lira, not Toman.
+		$currency = havato_currency_label( isset( $venue['country'] ) ? $venue['country'] : '' );
+
 		printf(
-			'<div id="hv-owner-menu" data-items="%s" data-nonce="%s" data-action="%s"></div>',
+			'<div id="hv-owner-menu" data-items="%s" data-nonce="%s" data-action="%s" data-currency="%s" data-step="%d"></div>',
 			esc_attr( wp_json_encode( array_values( $items ) ) ),
 			esc_attr( wp_create_nonce( 'havato_owner' ) ),
-			esc_url( admin_url( 'admin-post.php' ) )
+			esc_url( admin_url( 'admin-post.php' ) ),
+			esc_attr( $currency ),
+			// Toman prices run to six figures, Lira to three.
+			'ir' === ( isset( $venue['country'] ) ? $venue['country'] : 'ir' ) ? 1000 : 1
 		);
 		echo '</div>';
 

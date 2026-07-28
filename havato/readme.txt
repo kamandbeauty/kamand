@@ -86,6 +86,19 @@ A floating button in the app header, plus the `havato_lang` user meta.
 * Fixed: the café owner's events table printed a price cell that no longer
   exists in the schema — a leftover from the payment removal — which shifted
   every column one place against its header.
+* Demo menus are now priced per country. The seeder rotated one Toman price
+  list across every café, so an Istanbul filter coffee would have been shown
+  as 95,000 Lira. Turkish demo cafés carry Lira-sized figures and Turkish
+  item names.
+* The owner's menu editor now names the currency beside the price column and
+  steps by 1 for Lira instead of the 1,000 that suits Toman. The column label
+  no longer hard-codes a currency, which used to tell an Iranian owner
+  reading the Turkish interface that prices were in Lira.
+* Fixed: three admin and café-owner screens labelled a figure "seats left"
+  when it was the opposite or something else entirely — "taken / capacity" on
+  the event lists, and the total chair count in the café panel. Each now says
+  what it means. The guest-facing card, which really does show remaining
+  seats, is unchanged.
 
 = 1.20.0 =
 * Fixed: on a site that also runs WooCommerce, a café owner who signed in was

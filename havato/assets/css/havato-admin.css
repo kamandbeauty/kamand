@@ -193,6 +193,13 @@
 }
 .hv-adm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .hv-adm-actions form { margin: 0; }
+/* Details / edit / cancel, sitting between the event header and its guests. */
+.hv-adm-event-actions {
+	margin: 12px 0 4px;
+	padding-block-start: 12px;
+	border-block-start: 1px solid var(--hv-line, #e6eaf5);
+	align-items: center;
+}
 
 /* ---------- Badges ---------- */
 .hv-adm-badge {

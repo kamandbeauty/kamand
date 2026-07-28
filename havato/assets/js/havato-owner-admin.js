@@ -35,6 +35,12 @@
 		var items = [];
 		try { items = JSON.parse(host.dataset.items || '[]') || []; } catch (e) { items = []; }
 
+		// The price column is a bare number, so the owner has to be told which
+		// currency they are typing. A Lira menu also needs a step of 1, not
+		// the 1,000 that suits Toman.
+		var currency = host.dataset.currency || '';
+		var step = parseInt(host.dataset.step, 10) || 1;
+
 		function render() {
 			var rows = items.map(function (item, i) {
 				return '' +
@@ -47,7 +53,7 @@
 							'</button>' +
 						'</td>' +
 						'<td><input type="text" class="hv-adm-input" data-name="' + i + '" value="' + esc(item.name) + '" placeholder="' + esc(t('menu_item_name')) + '"></td>' +
-						'<td><input type="number" class="hv-adm-input" data-price="' + i + '" value="' + (parseInt(item.price, 10) || 0) + '" min="0" step="1000"></td>' +
+						'<td><input type="number" class="hv-adm-input" data-price="' + i + '" value="' + (parseInt(item.price, 10) || 0) + '" min="0" step="' + step + '"></td>' +
 						'<td><input type="text" class="hv-adm-input" data-desc="' + i + '" value="' + esc(item.desc || '') + '" placeholder="' + esc(t('menu_item_desc')) + '"></td>' +
 						'<td class="hv-adm-actions">' +
 							'<button type="button" class="hv-adm-btn hv-adm-btn-danger" data-del="' + i + '">✕</button>' +
@@ -59,7 +65,7 @@
 				'<table class="hv-adm-table hv-adm-menu-table"><thead><tr>' +
 					'<th>' + esc(t('menu_item_image')) + '</th>' +
 					'<th>' + esc(t('menu_item_name')) + '</th>' +
-					'<th>' + esc(t('menu_item_price')) + '</th>' +
+					'<th>' + esc(t('menu_item_price')) + (currency ? ' <span class="hv-adm-muted">(' + esc(currency) + ')</span>' : '') + '</th>' +
 					'<th>' + esc(t('menu_item_desc')) + '</th>' +
 					'<th></th>' +
 				'</tr></thead><tbody>' +

@@ -64,27 +64,54 @@ class Havato_Seeder {
 	}
 
 	/**
-	 * Sample menus, rotated across the demo cafés.
+	 * Sample menus, rotated across the demo cafés — keyed by country.
 	 *
+	 * Prices are stored as plain numbers and rendered in the café's own
+	 * currency, so a Turkish café must carry Lira-sized figures. Rotating one
+	 * shared list would have priced an Istanbul filter coffee at 95,000 Lira.
+	 *
+	 * @param string $country Country key ('ir', 'tr').
 	 * @return array
 	 */
-	private static function sample_menus() {
-		return array(
-			array(
-				array( 'name' => 'اسپرسو دوبل', 'price' => 65000, 'desc' => 'قهوه ترکیبی عربیکا', 'image' => '' ),
-				array( 'name' => 'لته وانیلی', 'price' => 92000, 'desc' => '', 'image' => '' ),
-				array( 'name' => 'چیزکیک نیویورکی', 'price' => 148000, 'desc' => 'سرو با سس تمشک', 'image' => '' ),
+	private static function sample_menus( $country = 'ir' ) {
+		$menus = array(
+			// Toman, for Iranian cafés.
+			'ir' => array(
+				array(
+					array( 'name' => 'اسپرسو دوبل', 'price' => 65000, 'desc' => 'قهوه ترکیبی عربیکا', 'image' => '' ),
+					array( 'name' => 'لته وانیلی', 'price' => 92000, 'desc' => '', 'image' => '' ),
+					array( 'name' => 'چیزکیک نیویورکی', 'price' => 148000, 'desc' => 'سرو با سس تمشک', 'image' => '' ),
+				),
+				array(
+					array( 'name' => 'فلت وایت', 'price' => 110000, 'desc' => '', 'image' => '' ),
+					array( 'name' => 'ماچا لاته', 'price' => 135000, 'desc' => 'ماچای درجه یک ژاپنی', 'image' => '' ),
+				),
+				array(
+					array( 'name' => 'قهوه ترک', 'price' => 70000, 'desc' => 'سرو با لوکوم', 'image' => '' ),
+					array( 'name' => 'قهوه دمی', 'price' => 95000, 'desc' => 'تک‌خاستگاه', 'image' => '' ),
+					array( 'name' => 'چیزکیک', 'price' => 150000, 'desc' => '', 'image' => '' ),
+				),
 			),
-			array(
-				array( 'name' => 'فلت وایت', 'price' => 110000, 'desc' => '', 'image' => '' ),
-				array( 'name' => 'ماچا لاته', 'price' => 135000, 'desc' => 'ماچای درجه یک ژاپنی', 'image' => '' ),
-			),
-			array(
-				array( 'name' => 'Turkish Coffee', 'price' => 70000, 'desc' => 'Traditional, served with lokum', 'image' => '' ),
-				array( 'name' => 'Filter Coffee', 'price' => 95000, 'desc' => 'Single origin', 'image' => '' ),
-				array( 'name' => 'Cheesecake', 'price' => 150000, 'desc' => '', 'image' => '' ),
+			// Lira, for Turkish cafés.
+			'tr' => array(
+				array(
+					array( 'name' => 'Türk Kahvesi', 'price' => 70, 'desc' => 'Lokum ile servis edilir', 'image' => '' ),
+					array( 'name' => 'Filtre Kahve', 'price' => 95, 'desc' => 'Tek çeşit çekirdek', 'image' => '' ),
+					array( 'name' => 'Cheesecake', 'price' => 150, 'desc' => '', 'image' => '' ),
+				),
+				array(
+					array( 'name' => 'Flat White', 'price' => 110, 'desc' => '', 'image' => '' ),
+					array( 'name' => 'Matcha Latte', 'price' => 135, 'desc' => 'Japon matcha', 'image' => '' ),
+				),
+				array(
+					array( 'name' => 'Double Espresso', 'price' => 65, 'desc' => 'Arabica harmanı', 'image' => '' ),
+					array( 'name' => 'Sahlep', 'price' => 90, 'desc' => 'Tarçınlı', 'image' => '' ),
+					array( 'name' => 'Baklava', 'price' => 120, 'desc' => 'Antep fıstıklı', 'image' => '' ),
+				),
 			),
 		);
+
+		return isset( $menus[ $country ] ) ? $menus[ $country ] : $menus['ir'];
 	}
 
 	/**
@@ -105,7 +132,6 @@ class Havato_Seeder {
 		$tables_t = Havato_DB::table( 'venue_tables' );
 		$et_t     = Havato_DB::table( 'event_tables' );
 
-		$menus   = self::sample_menus();
 		$tiers   = array( 'low', 'medium', 'high' );
 		$themes  = array( 'موسیقی', 'کتاب', 'استارتاپ', 'Board games', 'Film' );
 
@@ -126,6 +152,10 @@ class Havato_Seeder {
 			$venue_id = havato_uid( 'v' );
 			$tier     = $tiers[ $index % 3 ];
 			$country  = ( 'istanbul' === $sample['city'] ) ? 'tr' : 'ir';
+
+			// Menu prices are meaningless without a currency, and the currency
+			// comes from the café's country — so pick the matching price list.
+			$menus = self::sample_menus( $country );
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->insert(

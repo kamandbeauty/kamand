@@ -228,6 +228,67 @@ t('the pending menu does too', /\$pending\[ \$i \]\['price_label'\] = havato_pri
 t('the admin approval queue uses the café currency', /havato_price\( \$price, null, isset\( \$row\['country'\] \)/.test(admin));
 
 /* =====================================================================
+ * 6b. The numbers themselves have to suit the currency
+ * ================================================================== */
+console.log('\n--- 6b. demo prices and the menu editor match the currency ---');
+
+const seeder = rd('includes/class-havato-seeder.php');
+
+t('sample menus are keyed by country', /function sample_menus\( \$country = 'ir' \)/.test(seeder));
+t('the seeder asks for the café\'s own list', /\$menus = self::sample_menus\( \$country \)/.test(seeder));
+t('…after the country is known', seeder.indexOf("$country  = ( 'istanbul'") < seeder.indexOf('self::sample_menus( $country )'));
+t('an unknown country still gets a list', /isset\( \$menus\[ \$country \] \) \? \$menus\[ \$country \] : \$menus\['ir'\]/.test(seeder));
+
+// The real point: a Lira menu must not carry six-figure Toman numbers.
+const irStart = seeder.indexOf("'ir' => array(");
+const trStart = seeder.indexOf("'tr' => array(");
+const irBlock = seeder.slice(irStart, trStart);
+const trBlock = seeder.slice(trStart, seeder.indexOf('return isset(', trStart));
+const nums = s => (s.match(/'price'\s*=>\s*(\d+)/g) || []).map(x => parseInt(x.replace(/\D/g, ''), 10));
+const ir = nums(irBlock);
+const tr = nums(trBlock);
+
+t('Iranian demo prices are Toman-sized (>= 10,000)', ir.length >= 6 && ir.every(n => n >= 10000));
+t('Turkish demo prices are Lira-sized (< 1,000)', tr.length >= 6 && tr.every(n => n > 0 && n < 1000));
+t('no Turkish café carries a Toman figure any more', !tr.some(n => n >= 10000));
+t('both lists offer the same number of menus to rotate',
+  (irBlock.match(/\n\t\t\t\tarray\(\n/g) || []).length === (trBlock.match(/\n\t\t\t\tarray\(\n/g) || []).length);
+
+t('the menu editor is told the currency', /data-currency="%s"/.test(ownerAdmin));
+t('…read from the café country', /havato_currency_label\( isset\( \$venue\['country'\] \)/.test(ownerAdmin));
+t('the number step suits the currency, not a fixed 1000',
+  /data-step="%d"/.test(ownerAdmin) && !/step="1000"/.test(rd('assets/js/havato-owner-admin.js')));
+t('the client renders the unit next to the column', /esc\(t\('menu_item_price'\)\) \+ \(currency \?/.test(rd('assets/js/havato-owner-admin.js')));
+t('the price label no longer hard-codes a currency',
+  !/'menu_item_price'[^)]*Toman/.test(i18n) && !/'menu_item_price'[^)]*Lira/.test(i18n));
+
+/* =====================================================================
+ * 6c. Labels must not contradict the number printed under them
+ * ================================================================== */
+console.log('\n--- 6c. "seats left" only labels seats that are actually left ---');
+
+// Caught by rendering the new screen: "taken / capacity" was captioned
+// "صندلی خالی" (seats LEFT), the exact opposite of the figure shown.
+t('the occupancy label exists', /'seats_occupancy'\s*=> array\( 'fa' =>.*'en' =>.*'tr' =>/.test(i18n));
+t('the total-seats label exists', /'total_seats'\s*=> array\( 'fa' =>.*'en' =>.*'tr' =>/.test(i18n));
+t('the admin detail row uses occupancy for taken/capacity',
+  /'seats_occupancy' => \$row\['taken'\] \. ' \/ ' \. \$row\['max_capacity'\]/.test(admin));
+t('the owner events column does too',
+  /Havato_I18N::t\( 'seats_occupancy' \)/.test(ownerAdmin));
+t('the capacity input is labelled as a total, not a remainder',
+  /Havato_I18N::t\( 'total_seats' \)[\s\S]{0,120}name="max_capacity"/.test(ownerAdmin));
+t('the café chair count is labelled as a total',
+  /sprintf\( '%d %s', \$seats, Havato_I18N::t\( 'total_seats' \) \)/.test(ownerAdmin));
+t('no owner screen still says "seats left" for something else',
+  !/Havato_I18N::t\( 'seats_left' \)/.test(ownerAdmin));
+
+// The guest-facing use is the one case where the label is literally true.
+t('the guest card still shows real remaining seats',
+  /'seats_left'\s*=> max\( 0, \$capacity - \$taken \)/.test(rest));
+t('…and the app labels that one "seats left"',
+  /num\(event\.seats_left\) \+ ' ' \+ esc\(t\('seats_left'\)\)/.test(js));
+
+/* =====================================================================
  * 7. Regression found while reading the owner panel
  * ================================================================== */
 console.log('\n--- 7. the owner events table is no longer column-shifted ---');
