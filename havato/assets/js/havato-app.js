@@ -1176,7 +1176,9 @@
 						esc(t('chat_groups')) + '</button>' +
 					'<button type="button" class="hv-subtab' + (S.chatMode === 'friends' ? ' is-active' : '') + '" data-chatmode="friends">' +
 						esc(t('chat_friends')) + '</button>' +
-				'</div>' + list;
+				'</div>' +
+				'<p class="hv-muted" style="margin:0 0 12px">' + esc(t('chat_privacy_note')) + '</p>' +
+				list;
 
 			$$('[data-chatmode]').forEach(function (btn) {
 				btn.onclick = function () { S.chatMode = btn.dataset.chatmode; viewChats(); };
@@ -1292,12 +1294,41 @@
 				S.lastMsgId = Math.max(S.lastMsgId, msg.id);
 				var node = document.createElement('div');
 				node.className = 'hv-msg' + (msg.is_system ? ' is-system' : (msg.mine ? ' is-mine' : ''));
+
+				// Somebody else's message can be reported or its sender
+				// blocked. Your own and system lines cannot.
+				var actionable = !msg.mine && !msg.is_system && msg.sender_id;
+				if (actionable) {
+					node.classList.add('is-actionable');
+					node.setAttribute('role', 'button');
+					node.setAttribute('tabindex', '0');
+					node.title = t('msg_actions');
+					node.dataset.msgId = msg.id;
+					node.dataset.msgUser = msg.sender_id;
+					node.dataset.msgName = msg.name || '';
+				}
+
 				node.innerHTML =
 					(!msg.mine && !msg.is_system && msg.name ? '<span class="hv-msg-name">' + esc(msg.name) + '</span>' : '') +
 					esc(msg.text) +
-					'<span class="hv-msg-time">' + num(msg.time) + '</span>';
+					'<span class="hv-msg-time">' + num(msg.time) + '</span>' +
+					(actionable ? '<span class="hv-msg-flag" aria-hidden="true">⋯</span>' : '');
+
+				if (actionable) {
+					node.onclick = function () {
+						openMessageActions(node.dataset.msgId, parseInt(node.dataset.msgUser, 10), node.dataset.msgName);
+					};
+				}
+
 				log.appendChild(node);
 			});
+
+			// Prefer the server's cursor: it counts messages that were filtered
+			// out (e.g. from a blocked sender), so polling cannot get stuck
+			// re-requesting them.
+			if (typeof res.cursor === 'number') {
+				S.lastMsgId = Math.max(S.lastMsgId, res.cursor);
+			}
 
 			if ((res.messages || []).length) {
 				log.scrollTop = log.scrollHeight;
@@ -1307,6 +1338,87 @@
 				renderGroupMembers(res.members);
 			}
 		}).catch(function () { /* silent during polling */ });
+	}
+
+	/**
+	 * Report a message, or block its sender.
+	 *
+	 * Reporting sends the message id; the server re-checks that the reporter
+	 * was allowed to see it, so a guessed id gets a 403.
+	 */
+	function openMessageActions(messageId, senderId, senderName) {
+		var scope = (S.chatRoom && S.chatRoom.type === 'private') ? 'private' : 'group';
+
+		var reasons = [
+			{ key: 'nudity', label: t('reason_nudity') },
+			{ key: 'fake', label: t('reason_fake') },
+			{ key: 'spam', label: t('reason_spam') },
+			{ key: 'other', label: t('reason_other') }
+		];
+
+		openModal(
+			'<h3 class="hv-modal-title">' + esc(t('msg_actions')) + '</h3>' +
+			(senderName ? '<p class="hv-muted" style="margin-bottom:12px">' + esc(senderName) + '</p>' : '') +
+			'<div class="hv-step-q">' + esc(t('report_reason')) + '</div>' +
+			'<div class="hv-choice-grid">' +
+				reasons.map(function (r) {
+					return '<button type="button" class="hv-choice" data-report-reason="' + esc(r.key) + '">' +
+						esc(r.label) + '</button>';
+				}).join('') +
+			'</div>' +
+			'<button type="button" class="hv-btn hv-btn-danger hv-btn-block hv-mt" id="hv-msg-block">' +
+				esc(t('block_user')) + '</button>' +
+			'<p class="hv-muted" style="margin-top:10px">' + esc(t('chat_privacy_note')) + '</p>' +
+			'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
+				esc(t('cancel')) + '</button>'
+		);
+
+		$$('[data-report-reason]').forEach(function (btn) {
+			btn.onclick = function () {
+				btn.disabled = true;
+				api('chat/report', {
+					method: 'POST',
+					body: { scope: scope, message_id: messageId, reason: btn.dataset.reportReason }
+				}).then(function () {
+					closeModal();
+					toast(t('message_reported'), 'ok');
+				}).catch(function (err) {
+					btn.disabled = false;
+					toast(err.message, 'error');
+				});
+			};
+		});
+
+		$('#hv-msg-block').onclick = function () {
+			openModal(
+				'<h3 class="hv-modal-title">' + esc(t('block_user')) + '</h3>' +
+				(senderName ? '<p style="font-weight:800;margin-bottom:8px">' + esc(senderName) + '</p>' : '') +
+				'<div class="hv-alert hv-alert-orange">' + esc(t('block_confirm')) + '</div>' +
+				'<button type="button" class="hv-btn hv-btn-danger hv-btn-block hv-mt" id="hv-block-go">' +
+					esc(t('block_user')) + '</button>' +
+				'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
+					esc(t('cancel')) + '</button>'
+			);
+
+			$('#hv-block-go').onclick = function () {
+				var go = $('#hv-block-go');
+				go.disabled = true;
+				api('chat/block', { method: 'POST', body: { user_id: senderId } })
+					.then(function () {
+						closeModal();
+						toast(t('blocked_done'), 'ok');
+						// The thread may no longer be readable, so go back to
+						// the list rather than leaving a dead room open.
+						S.chatRoom = null;
+						stopPolling();
+						viewChats();
+					})
+					.catch(function (err) {
+						go.disabled = false;
+						toast(err.message, 'error');
+					});
+			};
+		};
 	}
 
 	function renderGroupMembers(members) {

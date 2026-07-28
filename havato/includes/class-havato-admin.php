@@ -48,6 +48,7 @@ class Havato_Admin {
 			'havato'            => array( 'admin_dashboard', 'page_dashboard' ),
 			'havato-approvals'  => array( 'admin_approvals', 'page_approvals' ),
 			'havato-events'     => array( 'admin_events', 'page_events' ),
+			'havato-chats'      => array( 'admin_chats', 'page_chats' ),
 			'havato-venues'     => array( 'admin_venues', 'page_venues' ),
 			'havato-import'     => array( 'admin_import', 'page_import' ),
 			'havato-matcher'    => array( 'admin_matcher', 'page_matcher' ),
@@ -133,6 +134,7 @@ class Havato_Admin {
 			'havato'           => Havato_I18N::t( 'admin_dashboard' ),
 			'havato-approvals' => Havato_I18N::t( 'admin_approvals' ),
 			'havato-events'    => Havato_I18N::t( 'admin_events' ),
+			'havato-chats'     => Havato_I18N::t( 'admin_chats' ),
 			'havato-venues'    => Havato_I18N::t( 'admin_venues' ),
 			'havato-import'    => Havato_I18N::t( 'admin_import' ),
 			'havato-matcher'   => Havato_I18N::t( 'admin_matcher' ),
@@ -1469,6 +1471,172 @@ class Havato_Admin {
 	}
 
 	/* =====================================================================
+	 * Page — chats & reports (administrator only)
+	 * ================================================================== */
+
+	/**
+	 * Reported messages, plus a searchable archive of every conversation.
+	 *
+	 * Guests are told in the app that chats are stored and may be reviewed if
+	 * reported, so this screen is not a surprise to them.
+	 */
+	public static function page_chats() {
+		global $wpdb;
+		Havato_DB::ensure_tables();
+
+		self::head( Havato_I18N::t( 'admin_chats' ), Havato_I18N::t( 'chat_reports' ) );
+
+		self::render_chat_reports();
+		self::render_chat_archive();
+
+		self::foot();
+	}
+
+	/**
+	 * The moderation queue.
+	 */
+	private static function render_chat_reports() {
+		global $wpdb;
+
+		$reports = Havato_DB::table( 'message_reports' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT * FROM $reports WHERE status = 'pending' ORDER BY id DESC LIMIT 100", ARRAY_A );
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'chat_reports' ) ) . '</h2>';
+
+		if ( empty( $rows ) ) {
+			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'no_reports' ) ) . '</p></div>';
+			return;
+		}
+
+		echo '<table class="hv-adm-table"><thead><tr>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_order' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'report_reason' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_message' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_manager' ) ) . '</th>';
+		echo '<th></th></tr></thead><tbody>';
+
+		$i = 1;
+		foreach ( $rows as $row ) {
+			echo '<tr>';
+			echo '<td><span class="hv-adm-order">' . esc_html( $i ) . '</span></td>';
+			echo '<td><span class="hv-adm-badge is-yellow">' .
+				esc_html( Havato_I18N::t( 'reason_' . $row['reason'] ) ) . '</span><br>' .
+				'<span class="hv-adm-muted">' . esc_html( 'private' === $row['scope']
+					? Havato_I18N::t( 'chat_private_col' )
+					: Havato_I18N::t( 'chat_group_col' ) ) . '</span></td>';
+			echo '<td style="max-width:380px">' . esc_html( wp_trim_words( (string) $row['excerpt'], 30, '…' ) ) . '</td>';
+			echo '<td>' . esc_html( havato_display_name( (int) $row['reported_id'] ) ) . '<br>' .
+				'<span class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'report' ) ) . ': ' .
+				esc_html( havato_display_name( (int) $row['reporter_id'] ) ) . '</span></td>';
+
+			echo '<td class="hv-adm-actions">';
+			foreach ( array( 'keep' => 'keep_message', 'delete' => 'remove_message' ) as $action => $label ) {
+				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline">';
+				self::form_fields( 'chat_report' );
+				echo '<input type="hidden" name="report_id" value="' . esc_attr( $row['id'] ) . '">';
+				echo '<input type="hidden" name="action_type" value="' . esc_attr( $action ) . '">';
+				printf(
+					'<button type="submit" class="hv-adm-btn %s">%s</button>',
+					'delete' === $action ? 'hv-adm-btn-danger' : 'hv-adm-btn-ghost',
+					esc_html( Havato_I18N::t( $label ) )
+				);
+				echo '</form> ';
+			}
+			echo '</td></tr>';
+			$i++;
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Searchable archive of stored conversations.
+	 */
+	private static function render_chat_archive() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$scope = isset( $_GET['scope'] ) ? sanitize_key( wp_unslash( $_GET['scope'] ) ) : 'group';
+		$scope = 'private' === $scope ? 'private' : 'group';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$paged = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
+
+		$per_page = 50;
+		$offset   = ( $paged - 1 ) * $per_page;
+
+		$table = 'private' === $scope
+			? Havato_DB::table( 'private_chats' )
+			: Havato_DB::table( 'chats' );
+
+		$where = '1=1';
+		if ( '' !== $search ) {
+			$like   = '%' . $wpdb->esc_like( $search ) . '%';
+			$where .= $wpdb->prepare( ' AND message_text LIKE %s', $like );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $table WHERE $where" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM $table WHERE $where ORDER BY id DESC LIMIT %d OFFSET %d", $per_page, $offset ),
+			ARRAY_A
+		);
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'chat_log' ) ) . '</h2>';
+
+		echo '<form method="get" class="hv-adm-filterbar">';
+		echo '<input type="hidden" name="page" value="havato-chats">';
+		printf(
+			'<input type="search" name="s" value="%s" placeholder="%s">',
+			esc_attr( $search ),
+			esc_attr( Havato_I18N::t( 'search' ) )
+		);
+		echo '<select name="scope">';
+		printf(
+			'<option value="group"%s>%s</option>',
+			selected( 'group', $scope, false ),
+			esc_html( Havato_I18N::t( 'chat_group_col' ) )
+		);
+		printf(
+			'<option value="private"%s>%s</option>',
+			selected( 'private', $scope, false ),
+			esc_html( Havato_I18N::t( 'chat_private_col' ) )
+		);
+		echo '</select>';
+		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' . esc_html( Havato_I18N::t( 'search' ) ) . '</button>';
+		echo '</form>';
+
+		if ( empty( $rows ) ) {
+			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
+			return;
+		}
+
+		echo '<table class="hv-adm-table"><thead><tr>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_date' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_manager' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_message' ) ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $rows as $row ) {
+			$sender = (int) $row['sender_id'];
+			echo '<tr>';
+			echo '<td><span class="hv-adm-muted" dir="ltr">' . esc_html( substr( (string) $row['message_time'], 0, 16 ) ) . '</span></td>';
+			echo '<td>' . esc_html( $sender ? havato_display_name( $sender ) : Havato_I18N::t( 'system_message' ) ) . '</td>';
+			echo '<td>' . esc_html( $row['message_text'] ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+		self::pagination( $total, $per_page, $paged, array( 'page' => 'havato-chats', 's' => $search, 'scope' => $scope ) );
+		echo '</div>';
+	}
+
+	/* =====================================================================
 	 * Page — appearance & theme
 	 * ================================================================== */
 
@@ -1818,6 +1986,14 @@ class Havato_Admin {
 					)
 				);
 				$page = 'havato-google';
+				break;
+
+			case 'chat_report':
+				$request = new WP_REST_Request( 'POST' );
+				$request->set_param( 'report_id', isset( $_POST['report_id'] ) ? (int) $_POST['report_id'] : 0 );
+				$request->set_param( 'action_type', isset( $_POST['action_type'] ) ? sanitize_key( wp_unslash( $_POST['action_type'] ) ) : 'keep' );
+				Havato_REST::admin_chat_report( $request );
+				$page = 'havato-chats';
 				break;
 
 			case 'theme':

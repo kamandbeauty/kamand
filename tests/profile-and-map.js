@@ -117,7 +117,12 @@ t('all strings remain trilingual', (() => {
   const tr = [...b.matchAll(/'([a-z0-9_]+)'\s*=>\s*array\([\s\S]{0,800}?'tr'\s*=>/g)].map(m => m[1]);
   return [...new Set(keys)].every(k => tr.includes(k));
 })());
-t('no schema change was needed', /HAVATO_DB_VERSION', '1\.11\.0'/.test(rd('havato.php')));
+t('schema is at or past the trait/penalty columns', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(rd('havato.php'));
+  if (!m) return false;
+  const [maj, min] = [Number(m[1]), Number(m[2])];
+  return maj > 1 || (maj === 1 && min >= 11);
+})());
 t('gender column still accepts the stored values', /gender varchar\(20\)/.test(db));
 
 console.log(f ? `\n❌ ${f} failing` : '\n✅ profile, map, deletion, interests and the review chat shortcut all in place');

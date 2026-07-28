@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.17.0
+Stable tag: 1.18.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,30 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.18.0 =
+* Conversations were already stored on the server; there is now a "Chats &
+  reports" screen in the admin menu to read them. It covers both table chats
+  and private threads, is searchable and paginated.
+* Guests can report a message or block its sender from inside the chat: tap
+  any message that is not your own. Reporting asks for a reason; blocking
+  asks for confirmation first and also ends the friendship.
+* Reports land in a moderation queue. Removing a message blanks its text
+  rather than deleting the row, so the rest of the conversation keeps its
+  order and context.
+* A report is only accepted if the reporter could actually see the message —
+  group reports require membership of that group, private reports require
+  being one of the two participants — so a guessed message id returns 403.
+  One report per person per message, and you cannot report yourself.
+* Blocking now also hides the messages that person already posted to a table.
+  Previously a block hid them everywhere except the existing chat history.
+* The message list returns a cursor so polling advances past filtered
+  messages instead of re-requesting them on every poll.
+* Guests are told in the app that conversations are stored and may be
+  reviewed if reported.
+* Fixed: the "col_date" string was referenced in four table headers but never
+  defined, so those headers printed the raw key.
+* Schema 1.12.0 adds the message_reports table.
 
 = 1.17.0 =
 * Fixed "[object Object]" appearing among the behaviour tags. havato_city_label()

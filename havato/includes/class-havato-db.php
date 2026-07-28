@@ -39,6 +39,7 @@ class Havato_DB {
 			'photo_likes',
 			'photo_reports',
 			'private_chats',
+			'message_reports',
 			'venue_tables',
 			'event_tables',
 		);
@@ -326,7 +327,26 @@ class Havato_DB {
 			KEY receiver_id (receiver_id)
 		) $charset;";
 
-		// 14. Venue tables — the physical furniture a café owns.
+		// 14. Reported chat messages.
+		// `message_id` points at either chats.id or private_chats.id, told
+		// apart by `scope`, so one queue covers both kinds of conversation.
+		$queries[] = "CREATE TABLE {$p}message_reports (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			scope varchar(16) NOT NULL DEFAULT 'group',
+			message_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			reporter_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			reported_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			reason varchar(191) NOT NULL DEFAULT '',
+			excerpt text NULL,
+			status varchar(20) NOT NULL DEFAULT 'pending',
+			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			PRIMARY KEY  (id),
+			UNIQUE KEY one_per_reporter (scope,message_id,reporter_id),
+			KEY status (status),
+			KEY reported_id (reported_id)
+		) $charset;";
+
+		// 15. Venue tables — the physical furniture a café owns.
 		// Defined once by the owner ("3 tables of 4, 2 tables of 6") and then
 		// picked per event, so an event's capacity is derived from real seats
 		// instead of one arbitrary number.
@@ -344,7 +364,7 @@ class Havato_DB {
 			KEY table_number (venue_id,table_number)
 		) $charset;";
 
-		// 15. Which tables an event uses, and how many of each.
+		// 16. Which tables an event uses, and how many of each.
 		$queries[] = "CREATE TABLE {$p}event_tables (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			event_id varchar(64) NOT NULL DEFAULT '',

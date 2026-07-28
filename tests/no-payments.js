@@ -39,8 +39,14 @@ t('events.price column dropped', !/price int\(11\)/.test(db));
 t('registrations.amount dropped', !/amount int\(11\)/.test(db));
 t('registrations.order_id dropped', !/order_id bigint/.test(db));
 t('uninstall no longer drops a payouts table', !/'payouts',/.test(uninst));
-t('table comments renumbered with no gap',
-  /\/\/ 14\. Venue tables/.test(db) && /\/\/ 15\. Which tables/.test(db) && !/\/\/ 16\./.test(db));
+// Assert the numbering is a gapless run rather than pinning a table count,
+// so adding a table later is not a false failure.
+t('table comments are numbered without a gap', (() => {
+  const nums = [...db.matchAll(/^\t\t\/\/ (\d+)\. /gm)].map(m => Number(m[1]));
+  if (!nums.length) return false;
+  return nums.every((n, i) => n === i + 1);
+})());
+t('the payouts table is not among them', !/\{\$p\}payouts/.test(db));
 t('schema version is at or past the money-removal bump', (() => {
   const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
   if (!m) return false;

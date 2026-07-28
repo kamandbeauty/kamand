@@ -148,6 +148,9 @@ class Havato_REST {
 			'chat/group/send'    => array( 'POST', 'chat_group_send', $auth ),
 			'chat/private'       => array( 'GET', 'chat_private', $auth ),
 			'chat/private/send'  => array( 'POST', 'chat_private_send', $auth ),
+			'chat/report'        => array( 'POST', 'report_message', $auth ),
+			'chat/block'         => array( 'POST', 'block_user', $auth ),
+			'chat/unblock'       => array( 'POST', 'unblock_user', $auth ),
 
 			// Profile.
 			'profile'            => array( 'GET', 'get_profile', $auth ),
@@ -194,6 +197,7 @@ class Havato_REST {
 			'admin/run-matcher'  => array( 'POST', 'admin_run_matcher', $admin ),
 			'admin/settings'     => array( 'POST', 'admin_save_settings', $admin ),
 			'admin/photo-report' => array( 'POST', 'admin_photo_report', $admin ),
+			'admin/chat-report'  => array( 'POST', 'admin_chat_report', $admin ),
 			'admin/seed'         => array( 'POST', 'admin_seed', $admin ),
 		);
 
@@ -706,23 +710,42 @@ class Havato_REST {
 			ARRAY_A
 		);
 
+		// Blocking must mean "I no longer see this person", including the
+		// lines they already posted to this table. Resolve the blocklist once
+		// rather than per message.
+		$profile = havato_get_profile( $user_id );
+		$blocked = array_map( 'intval', (array) $profile['blocklist'] );
+
 		$messages = array();
+		// Highest id actually scanned, blocked or not. The client uses it as
+		// the next `since`, so a filtered-out trailing message is not
+		// re-queried on every poll.
+		$cursor = (int) $since;
+
 		foreach ( (array) $rows as $row ) {
+			$sender = (int) $row['sender_id'];
+			$cursor = max( $cursor, (int) $row['id'] );
+
+			if ( $sender && $sender !== $user_id && in_array( $sender, $blocked, true ) ) {
+				continue;
+			}
+
 			$messages[] = array(
 				'id'        => (int) $row['id'],
-				'sender_id' => (int) $row['sender_id'],
+				'sender_id' => $sender,
 				'name'      => $row['sender_name'],
-				'avatar'    => $row['sender_id'] ? havato_avatar( $row['sender_id'] ) : '',
+				'avatar'    => $sender ? havato_avatar( $sender ) : '',
 				'text'      => $row['message_text'],
 				'time'      => substr( (string) $row['message_time'], 11, 5 ),
 				'time_full' => havato_date_pair( $row['message_time'], true ),
 				'is_system' => (bool) $row['is_system'],
-				'mine'      => (int) $row['sender_id'] === $user_id,
+				'mine'      => $sender === $user_id,
 			);
 		}
 
 		return self::ok(
 			array(
+				'cursor'   => $cursor,
 				'messages' => $messages,
 				'members'  => self::group_members( $group_id, $user_id ),
 			)
@@ -1372,6 +1395,193 @@ class Havato_REST {
 		$wpdb->delete( $photos, array( 'id' => $photo_id, 'user_id' => $user_id ), array( '%d', '%d' ) );
 
 		return self::ok( array( 'deleted' => true ) );
+	}
+
+	/* =====================================================================
+	 * Chat moderation
+	 * ================================================================== */
+
+	/**
+	 * Report a chat message.
+	 *
+	 * The reporter must be able to see the message in the first place, so the
+	 * same membership/friendship rules as reading apply. A copy of the text is
+	 * stored with the report: the sender can edit nothing, but the row may be
+	 * anonymised later if they delete their account, and a moderator still
+	 * needs to see what was actually said.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function report_message( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id    = get_current_user_id();
+		$scope      = 'private' === $req->get_param( 'scope' ) ? 'private' : 'group';
+		$message_id = (int) $req->get_param( 'message_id' );
+		$reason     = sanitize_text_field( (string) $req->get_param( 'reason' ) );
+
+		$allowed = array( 'nudity', 'fake', 'spam', 'other' );
+		$reason  = in_array( $reason, $allowed, true ) ? $reason : 'other';
+
+		if ( $message_id <= 0 ) {
+			return new WP_Error( 'havato_no_message', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		if ( 'group' === $scope ) {
+			$chats = Havato_DB::table( 'chats' );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $chats WHERE id=%d", $message_id ), ARRAY_A );
+			if ( ! $row || ! self::is_group_member( $row['group_id'], $user_id ) ) {
+				return new WP_Error( 'havato_forbidden', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+			}
+		} else {
+			$pm = Havato_DB::table( 'private_chats' );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $pm WHERE id=%d", $message_id ), ARRAY_A );
+			// Only the two people in the thread may report it.
+			if ( ! $row || ( (int) $row['sender_id'] !== $user_id && (int) $row['receiver_id'] !== $user_id ) ) {
+				return new WP_Error( 'havato_forbidden', Havato_I18N::t( 'blocked_user' ), array( 'status' => 403 ) );
+			}
+		}
+
+		$sender = (int) $row['sender_id'];
+		if ( $sender === $user_id ) {
+			return new WP_Error( 'havato_self_report', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		$reports = Havato_DB::table( 'message_reports' );
+
+		// UNIQUE(scope,message_id,reporter_id) makes this idempotent, so a
+		// double tap cannot flood the queue.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->replace(
+			$reports,
+			array(
+				'scope'       => $scope,
+				'message_id'  => $message_id,
+				'reporter_id' => $user_id,
+				'reported_id' => $sender,
+				'reason'      => $reason,
+				'excerpt'     => havato_clamp_text( (string) $row['message_text'], 500 ),
+				'status'      => 'pending',
+				'created_at'  => havato_now(),
+			),
+			array( '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s' )
+		);
+
+		Havato_Logger::log( sprintf( 'Message %d (%s) reported by user %d.', $message_id, $scope, $user_id ), 'warn' );
+
+		return self::ok( array( 'reported' => true ) );
+	}
+
+	/**
+	 * Block another guest.
+	 *
+	 * A block is one-directional in intent but enforced both ways by
+	 * havato_is_blocked(): neither person is matched with, or can message,
+	 * the other again.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function block_user( $req ) {
+		self::boot( $req );
+
+		$user_id = get_current_user_id();
+		$target  = (int) $req->get_param( 'user_id' );
+
+		if ( $target <= 0 || $target === $user_id ) {
+			return new WP_Error( 'havato_bad_target', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		self::add_to_blocklist( $user_id, $target );
+
+		// A block also ends any friendship, otherwise the private thread would
+		// stay open from the other side.
+		global $wpdb;
+		$friends = Havato_DB::table( 'friends' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM $friends WHERE (user_id=%d AND friend_id=%d) OR (user_id=%d AND friend_id=%d)",
+				$user_id,
+				$target,
+				$target,
+				$user_id
+			)
+		);
+
+		Havato_Logger::log( sprintf( 'User %d blocked user %d.', $user_id, $target ), 'info' );
+
+		return self::ok( array( 'blocked' => true ) );
+	}
+
+	/**
+	 * Undo a block.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function unblock_user( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$target  = (int) $req->get_param( 'user_id' );
+
+		if ( $target <= 0 ) {
+			return new WP_Error( 'havato_bad_target', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		$profiles = Havato_DB::table( 'user_profiles' );
+		$profile  = havato_get_profile( $user_id );
+		$list     = array_values( array_diff( $profile['blocklist'], array( $target ) ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update( $profiles, array( 'blocklist_json' => wp_json_encode( $list ) ), array( 'user_id' => $user_id ), array( '%s' ), array( '%d' ) );
+
+		return self::ok( array( 'unblocked' => true, 'blocked' => $list ) );
+	}
+
+	/**
+	 * Resolve a reported message (administrator).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function admin_chat_report( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$id     = (int) $req->get_param( 'report_id' );
+		$action = sanitize_key( (string) $req->get_param( 'action_type' ) );
+
+		$reports = Havato_DB::table( 'message_reports' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$report = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $reports WHERE id=%d", $id ), ARRAY_A );
+
+		if ( ! $report ) {
+			return self::ok( array( 'done' => false ) );
+		}
+
+		if ( 'delete' === $action ) {
+			// Blank the message rather than removing the row, so the rest of
+			// the conversation keeps its order and context.
+			$table = 'private' === $report['scope']
+				? Havato_DB::table( 'private_chats' )
+				: Havato_DB::table( 'chats' );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update( $table, array( 'message_text' => Havato_I18N::t( 'message_removed' ) ), array( 'id' => (int) $report['message_id'] ), array( '%s' ), array( '%d' ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update( $reports, array( 'status' => 'delete' === $action ? 'removed' : 'kept' ), array( 'id' => $id ), array( '%s' ), array( '%d' ) );
+
+		Havato_Logger::log( sprintf( 'Chat report %d resolved (%s).', $id, $action ), 'info' );
+
+		return self::ok( array( 'done' => true ) );
 	}
 
 	/* =====================================================================
