@@ -61,7 +61,14 @@ console.log('\n--- 4. blocking ---');
 t('block endpoint registered', /'chat\/block'\s*=>\s*array\( 'POST', 'block_user', \$auth \)/.test(rest));
 t('unblock endpoint registered', /'chat\/unblock'\s*=>\s*array\( 'POST', 'unblock_user', \$auth \)/.test(rest));
 t('you cannot block yourself', /\$target === \$user_id/.test(rest));
-t('blocking also ends the friendship', /function block_user[\s\S]{0,900}DELETE FROM \$friends/.test(rest));
+// Scoped to the function body rather than a fixed character window, so
+// adding a guard above the query cannot make this silently stop matching.
+(() => {
+  const body = rest.slice(rest.indexOf('public static function block_user'));
+  const fnBody = body.slice(0, body.indexOf('\n\t}'));
+  t('blocking also ends the friendship', /DELETE FROM \$friends/.test(fnBody));
+  t('…and the blocklist entry is written before it', fnBody.indexOf('add_to_blocklist') < fnBody.indexOf('DELETE FROM'));
+})();
 t('unblock rewrites the list without the target', /array_diff\( \$profile\['blocklist'\], array\( \$target \) \)/.test(rest));
 t('the block is symmetric', /function havato_is_blocked/.test(fn));
 // The gap found while building this: a block hid the person everywhere
@@ -115,8 +122,34 @@ t('own and system messages are not', /!msg\.mine && !msg\.is_system && msg\.send
 t('an action sheet exists', /function openMessageActions/.test(js));
 t('it offers all four reasons',
   ['nudity', 'fake', 'spam', 'other'].every(r => new RegExp("key: '" + r + "'").test(js)));
+// v1.23.0: block is a one-to-one act, so the sheet only offers it in a
+// private thread. A table gets Report, which brings a moderator in without
+// tearing a hole in a room everybody else still sees.
 t('it offers block', /hv-msg-block/.test(js));
+t('…but only in a private conversation', /var canBlock = \('private' === scope\);/.test(js));
+t('the button is not even rendered at a table', /\(canBlock\s*\n\s*\?\s*'<button[^']*hv-msg-block/.test(js));
+t('and nothing is wired up when it is absent', /if \(!canBlock\) \{ return; \}/.test(js));
+t('report stays available in both kinds of room',
+  /'<div class="hv-step-q">' \+ esc\(t\('report_reason'\)\)/.test(js) &&
+  !/canBlock[\s\S]{0,80}report_reason/.test(js));
 t('blocking asks for confirmation first', /hv-block-go/.test(js) && /block_confirm/.test(js));
+
+(() => {
+  // Model the sheet's own condition and drive it with both room types.
+  const canBlock = roomType => (roomType === 'private');
+  t('a table message offers report only', canBlock('group') === false);
+  t('a private message offers report and block', canBlock('private') === true);
+})();
+
+// Hiding a button is presentation, not a rule: the endpoint is reachable
+// directly, so the same restriction has to exist server-side.
+t('the server refuses a block between non-friends',
+  /function block_user[\s\S]{0,900}! havato_are_friends\( \$user_id, \$target \)[\s\S]{0,120}403/.test(rest));
+t('…with an explanation rather than a bare error', /'block_friends_only'/.test(rest));
+t('that message is trilingual',
+  /'block_friends_only'\s*=> array\( 'fa' =>.*'en' =>.*'tr' =>/.test(i18n));
+t('the post-event feedback form can still block a table-mate',
+  /if \( \$block \) \{\s*\n\s*self::add_to_blocklist\( \$user_id, \$target \);/.test(rest));
 t('after blocking the room is closed', /S\.chatRoom = null;\s*\n\s*stopPolling\(\);\s*\n\s*viewChats\(\);/.test(js));
 t('the scope is derived from the open room', /S\.chatRoom\.type === 'private'\) \? 'private' : 'group'/.test(js));
 // Removed in 1.19.0 at the site owner's request: guests are no longer shown

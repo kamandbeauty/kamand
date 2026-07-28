@@ -1442,6 +1442,13 @@
 	function openMessageActions(messageId, senderId, senderName) {
 		var scope = (S.chatRoom && S.chatRoom.type === 'private') ? 'private' : 'group';
 
+		// Blocking is a one-to-one act, so it only belongs in a one-to-one
+		// conversation. At a shared table it would silently tear a hole in a
+		// group everybody else still sees — and the people at that table were
+		// seated together for one sitting, not befriended. Reporting is what
+		// a table needs: it brings a moderator in without altering the room.
+		var canBlock = ('private' === scope);
+
 		var reasons = [
 			{ key: 'nudity', label: t('reason_nudity') },
 			{ key: 'fake', label: t('reason_fake') },
@@ -1459,8 +1466,10 @@
 						esc(r.label) + '</button>';
 				}).join('') +
 			'</div>' +
-			'<button type="button" class="hv-btn hv-btn-danger hv-btn-block hv-mt" id="hv-msg-block">' +
-				esc(t('block_user')) + '</button>' +
+			(canBlock
+				? '<button type="button" class="hv-btn hv-btn-danger hv-btn-block hv-mt" id="hv-msg-block">' +
+					esc(t('block_user')) + '</button>'
+				: '') +
 			'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
 				esc(t('cancel')) + '</button>'
 		);
@@ -1480,6 +1489,9 @@
 				});
 			};
 		});
+
+		// Not rendered at a table, so there is nothing to wire up there.
+		if (!canBlock) { return; }
 
 		$('#hv-msg-block').onclick = function () {
 			openModal(

@@ -477,6 +477,7 @@ class Havato_I18N {
 				'tr' => 'Bu kişiyi artık görmeyeceksiniz, size mesaj gönderemez ve asla aynı masaya oturtulmazsınız. Arkadaşlığınız da sona erer.',
 			),
 			'blocked_done'          => array( 'fa' => 'کاربر مسدود شد.', 'en' => 'User blocked.', 'tr' => 'Kullanıcı engellendi.' ),
+			'block_friends_only'    => array( 'fa' => 'مسدود کردن فقط در گفتگوی خصوصی ممکن است. برای پیام نامناسب سر میز، از دکمه گزارش استفاده کنید.', 'en' => 'Blocking is only available in a private conversation. To flag a message at a table, use Report.', 'tr' => 'Engelleme yalnızca özel sohbette kullanılabilir. Masadaki bir mesajı bildirmek için Bildir düğmesini kullanın.' ),
 			'unblocked_done'        => array( 'fa' => 'مسدودی برداشته شد.', 'en' => 'User unblocked.', 'tr' => 'Engel kaldırıldı.' ),
 			'report_message'        => array( 'fa' => 'گزارش پیام', 'en' => 'Report message', 'tr' => 'Mesajı bildir' ),
 			'message_reported'      => array( 'fa' => 'گزارش شما ثبت شد و بررسی می‌شود.', 'en' => 'Your report has been submitted for review.', 'tr' => 'Bildiriminiz incelenmek üzere gönderildi.' ),

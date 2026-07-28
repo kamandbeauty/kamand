@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.22.1
+Stable tag: 1.23.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,23 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.23.0 =
+* Blocking is now offered only in a private conversation. At a shared table it
+  made little sense: it would silently tear a hole in a room everybody else
+  still sees, between people who were seated together for one sitting rather
+  than befriended.
+* Reporting is unchanged and available in both kinds of room — at a table it
+  is the right tool, since it brings a moderator in without altering the
+  conversation for anyone else.
+* The same rule is enforced on the server, not just hidden in the interface:
+  the block endpoint now refuses a target who is not an accepted friend and
+  says why. This matters because the blocklist is a hard constraint in the
+  matcher, so blocking a stranger you merely sat beside would quietly shrink
+  who the engine can ever seat you with.
+* Unaffected: the post-event feedback form still lets you block a table-mate
+  after the gathering, which is a considered decision rather than a reaction
+  to a single message.
 
 = 1.22.1 =
 * Fixed a second, separate way a message could be duplicated. 1.21.0 stopped

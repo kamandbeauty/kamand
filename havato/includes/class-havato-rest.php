@@ -1579,6 +1579,16 @@ class Havato_REST {
 			return new WP_Error( 'havato_bad_target', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
 		}
 
+		// Blocking belongs to a one-to-one relationship: it ends a friendship
+		// and closes a private thread. Hiding the button at a shared table is
+		// not enough on its own — the endpoint is reachable directly — so the
+		// same rule is enforced here. The blocklist is also a hard constraint
+		// in the matcher, and letting anyone block a stranger they merely sat
+		// beside would quietly shrink who the engine can ever seat them with.
+		if ( ! havato_are_friends( $user_id, $target ) ) {
+			return new WP_Error( 'havato_block_friends_only', Havato_I18N::t( 'block_friends_only' ), array( 'status' => 403 ) );
+		}
+
 		self::add_to_blocklist( $user_id, $target );
 
 		// A block also ends any friendship, otherwise the private thread would
