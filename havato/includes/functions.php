@@ -404,6 +404,27 @@ function havato_effective_rating( $profile ) {
 }
 
 /**
+ * Clamp free text to a sane length before it is stored.
+ *
+ * `sanitize_textarea_field()` strips tags but imposes no size limit, so a
+ * scripted client could post megabytes into a TEXT column on every request.
+ * Everything user-authored goes through here first.
+ *
+ * @param string $text Sanitised text.
+ * @param int    $max  Maximum characters.
+ * @return string
+ */
+function havato_clamp_text( $text, $max = 2000 ) {
+	$text = trim( (string) $text );
+	$max  = max( 1, (int) $max );
+
+	if ( function_exists( 'mb_substr' ) ) {
+		return mb_substr( $text, 0, $max );
+	}
+	return substr( $text, 0, $max );
+}
+
+/**
  * Most seats one guest may book for a single gathering.
  *
  * @return int
@@ -511,18 +532,26 @@ function havato_sanitize_menu( $items ) {
 	$items = is_array( $items ) ? $items : havato_json( $items );
 	$clean = array();
 
+	// The whole menu lands in one longtext column, so bound both the number
+	// of rows and the length of each field. Without this an owner could post
+	// an arbitrarily large payload on every save.
+	$max_items = (int) apply_filters( 'havato_max_menu_items', 200 );
+
 	foreach ( $items as $item ) {
+		if ( count( $clean ) >= $max_items ) {
+			break;
+		}
 		if ( ! is_array( $item ) ) {
 			continue;
 		}
-		$name = isset( $item['name'] ) ? sanitize_text_field( $item['name'] ) : '';
+		$name = isset( $item['name'] ) ? havato_clamp_text( sanitize_text_field( $item['name'] ), 120 ) : '';
 		if ( '' === $name ) {
 			continue;
 		}
 		$clean[] = array(
 			'name'  => $name,
-			'price' => isset( $item['price'] ) ? (int) $item['price'] : 0,
-			'desc'  => isset( $item['desc'] ) ? sanitize_textarea_field( $item['desc'] ) : '',
+			'price' => isset( $item['price'] ) ? max( 0, (int) $item['price'] ) : 0,
+			'desc'  => isset( $item['desc'] ) ? havato_clamp_text( sanitize_textarea_field( $item['desc'] ), 300 ) : '',
 			'image' => isset( $item['image'] ) ? esc_url_raw( $item['image'] ) : '',
 		);
 	}

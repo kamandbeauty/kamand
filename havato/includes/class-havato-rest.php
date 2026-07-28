@@ -684,7 +684,7 @@ class Havato_REST {
 		global $wpdb;
 		$user_id  = get_current_user_id();
 		$group_id = sanitize_text_field( (string) $req->get_param( 'group_id' ) );
-		$text     = sanitize_textarea_field( (string) $req->get_param( 'text' ) );
+		$text     = havato_clamp_text( sanitize_textarea_field( (string) $req->get_param( 'text' ) ), 1000 );
 
 		if ( '' === trim( $text ) ) {
 			return new WP_Error( 'havato_empty', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
@@ -775,7 +775,7 @@ class Havato_REST {
 		global $wpdb;
 		$user_id  = get_current_user_id();
 		$other_id = (int) $req->get_param( 'user_id' );
-		$text     = sanitize_textarea_field( (string) $req->get_param( 'text' ) );
+		$text     = havato_clamp_text( sanitize_textarea_field( (string) $req->get_param( 'text' ) ), 1000 );
 
 		if ( '' === trim( $text ) ) {
 			return new WP_Error( 'havato_empty', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
@@ -1395,7 +1395,7 @@ class Havato_REST {
 		$group_id = sanitize_text_field( (string) $req->get_param( 'group_id' ) );
 		$target   = (int) $req->get_param( 'user_id' );
 		$rating   = max( 1, min( 5, (int) $req->get_param( 'rating' ) ) );
-		$comment  = sanitize_textarea_field( (string) $req->get_param( 'comment' ) );
+		$comment  = havato_clamp_text( sanitize_textarea_field( (string) $req->get_param( 'comment' ) ), 500 );
 		$block    = (bool) $req->get_param( 'block' );
 
 		if ( ! self::is_group_member( $group_id, $user_id ) || ! self::is_group_member( $group_id, $target ) ) {
@@ -1458,7 +1458,7 @@ class Havato_REST {
 		$manager = sanitize_text_field( (string) $req->get_param( 'manager_name' ) );
 		$country = sanitize_key( (string) $req->get_param( 'country' ) );
 		$city    = sanitize_key( (string) $req->get_param( 'city' ) );
-		$addr    = sanitize_textarea_field( (string) $req->get_param( 'address' ) );
+		$addr    = havato_clamp_text( sanitize_textarea_field( (string) $req->get_param( 'address' ) ), 300 );
 
 		$storefront = esc_url_raw( (string) $req->get_param( 'storefront_photo' ) );
 
@@ -2329,7 +2329,7 @@ class Havato_REST {
 			} elseif ( 'image' === $key || 'storefront_photo' === $key ) {
 				$fields[ $key ] = esc_url_raw( (string) $value );
 			} elseif ( 'address' === $key ) {
-				$fields[ $key ] = sanitize_textarea_field( (string) $value );
+				$fields[ $key ] = havato_clamp_text( sanitize_textarea_field( (string) $value ), 300 );
 			} elseif ( 'manager_name' === $key ) {
 				$fields[ $key ] = sanitize_text_field( (string) $value );
 			} elseif ( 'manager_phone' === $key ) {

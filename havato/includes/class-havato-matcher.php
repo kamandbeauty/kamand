@@ -347,16 +347,35 @@ class Havato_Matcher {
 			}
 
 			if ( empty( $seed ) ) {
-				// Nobody can sit together (or a single person is left):
-				// seat the remaining people alone rather than dropping them.
-				$table    = array( array_shift( $pool ) );
-				$tables[] = array( 'members' => $table, 'score' => 0.0, 'table' => $assigned_table );
+				// Nobody can sit together (or a single booking is left):
+				// seat it alone rather than dropping it. A booking can be a
+				// party of up to HAVATO_MAX_SEATS, and the table we happen to
+				// be on may be smaller than the one it was validated against
+				// at booking time, so move it to a table in the plan that
+				// actually fits before falling back.
+				$alone = array_shift( $pool );
+				$fit   = self::fit_table( $chairs( $alone ), $capacity, $plan, $plan_i, $assigned_table );
+				// Keep the swapped plan, or the displaced table is lost for
+				// the remaining passes.
+				$plan     = $fit['plan'];
+				$capacity = $fit['capacity'];
+
+				$tables[] = array( 'members' => array( $alone ), 'score' => 0.0, 'table' => $fit['table'] );
 				continue;
 			}
 
-			// A seed of two parties can already exceed a small table.
+			// A seed of two parties can already exceed a small table. Dropping
+			// back to one is not always enough either: that single booking may
+			// itself be a party of three on a two-seater, so re-home it.
 			if ( $occupied( $seed ) > $capacity ) {
 				$seed = array( $seed[0] );
+
+				if ( $chairs( $seed[0] ) > $capacity ) {
+					$fit            = self::fit_table( $chairs( $seed[0] ), $capacity, $plan, $plan_i, $assigned_table );
+					$plan           = $fit['plan'];
+					$capacity       = $fit['capacity'];
+					$assigned_table = $fit['table'];
+				}
 			}
 
 			$table = $seed;
@@ -431,6 +450,53 @@ class Havato_Matcher {
 		}
 
 		return $tables;
+	}
+
+	/**
+	 * Find a table in the plan big enough for a party that does not fit the
+	 * one currently in hand, and swap the two so neither is lost.
+	 *
+	 * A booking is validated at join time against the café's LARGEST table,
+	 * but the matcher walks the plan largest-first and may reach a small
+	 * table while that party is still unseated. Without this, a party of
+	 * three could be seated at a two-seater.
+	 *
+	 * @param int   $need     Chairs required.
+	 * @param int   $capacity Capacity currently in hand.
+	 * @param array $plan     Seat plan (by value; the swapped copy is returned).
+	 * @param int   $plan_i   Index of the next unused table.
+	 * @param array $current  Table currently assigned.
+	 * @return array{plan:array,capacity:int,table:array|null}
+	 */
+	private static function fit_table( $need, $capacity, $plan, $plan_i, $current ) {
+		if ( $need <= $capacity ) {
+			return array(
+				'plan'     => $plan,
+				'capacity' => $capacity,
+				'table'    => $current,
+			);
+		}
+
+		for ( $look = $plan_i; $look < count( $plan ); $look++ ) {
+			if ( isset( $plan[ $look ]['seats'] ) && (int) $plan[ $look ]['seats'] >= $need ) {
+				$swap          = $plan[ $look ];
+				$plan[ $look ] = $current;
+				return array(
+					'plan'     => $plan,
+					'capacity' => max( 2, (int) $swap['seats'] ),
+					'table'    => $swap,
+				);
+			}
+		}
+
+		// No table in this event can hold the party. join_event() refuses such
+		// bookings, so this is only reachable if the café shrank its furniture
+		// afterwards; seat them anyway rather than dropping anyone.
+		return array(
+			'plan'     => $plan,
+			'capacity' => $need,
+			'table'    => $current,
+		);
 	}
 
 	/**

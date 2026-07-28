@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.15.0
+Stable tag: 1.16.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,28 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.16.0 =
+* Full code and security audit. Two real bugs found and fixed.
+* Fixed: a party could be seated at a table smaller than itself. A booking is
+  validated against the café's largest table, but the matcher walks the plan
+  largest-first and could reach a two-seater while a party of three was still
+  unseated. Reproduced with a minimal case, then fixed by re-homing such a
+  booking onto a table in the plan that fits and swapping the displaced table
+  back in. 10,000 randomised seatings now run with no table over capacity and
+  nobody dropped.
+* Hardened: free text was sanitised but never length-limited, so chat
+  messages, feedback comments, addresses and menu descriptions could each
+  write megabytes into a TEXT column on every request. All are now clamped,
+  the number of menu items is capped, and menu prices cannot be negative.
+* Audited and confirmed correct, with regression tests added for each:
+  authorisation on all 48 endpoints, cross-café isolation, group-chat and
+  private-chat membership checks, photo ownership, SQL preparation and
+  esc_like on search, client-side escaping, CSS-injection resistance of the
+  custom theme colour, login and registration throttling, upload allow-list,
+  and that no guest-facing payload carries an e-mail or phone number.
+* The Persian presentation has been rewritten for this release; every figure
+  in it is extracted from the source rather than written by hand.
 
 = 1.15.0 =
 * New "Raspberry" theme, taken from a food-delivery reference: vivid pink with
