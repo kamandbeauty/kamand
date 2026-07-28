@@ -915,7 +915,18 @@
 				var msg = res.matched ? t('status_matched')
 					: (seats > 1 ? t('seats_booked').replace('%s', num(seats)) : t('joined_event'));
 				toast(msg, 'ok');
-				viewExplore();
+
+				// TEMPORARY (requested for review): jump straight into Chats
+				// after reserving so the chat features can be inspected without
+				// waiting for the matcher. The normal behaviour is to stay on
+				// Explore until a table is actually formed — revert by
+				// replacing this block with viewExplore().
+				S.chatMode = 'groups';
+				// If the table was seated, open its room directly; otherwise
+				// land on the chat list.
+				S.chatRoom = res.group_id ? { type: 'group', id: res.group_id } : null;
+				S.lastMsgId = 0;
+				setTab('chats');
 			})
 			.catch(function (err) {
 				if (onFail) { onFail(); }
@@ -1023,10 +1034,15 @@
 		var node = $('#hv-map');
 		if (!node) { return; }
 
+		// bootstrap() returns a centre already resolved to the viewer's city,
+		// so an Istanbul guest does not open the map on Tehran. BOOT.map is the
+		// admin default and is only the fallback for a first paint.
+		var centre = S.mapCenter || BOOT.map;
+
 		S.map = window.L.map(node, {
 			zoomControl: false,
 			attributionControl: false
-		}).setView([BOOT.map.lat, BOOT.map.lng], BOOT.map.zoom);
+		}).setView([centre.lat, centre.lng], centre.zoom);
 
 		window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 19
@@ -1387,7 +1403,16 @@
 			var mine = results[3];
 
 			S.data.profile = profile;
-			if (profile.is_self) { S.user = profile.user; renderHeaderUser(); }
+			if (profile.is_self) {
+				S.user = profile.user;
+				renderHeaderUser();
+				// Your own name and rating live in the page header; the card
+				// below used to repeat them, which read as a duplicate.
+				setHeader(
+					profile.user.name || t('profile_title'),
+					'★ ' + num(profile.rating) + ' · ' + num(profile.attended) + ' ' + t('events_attended')
+				);
+			}
 
 			var html = '';
 
@@ -1455,6 +1480,15 @@
 			if (profile.is_self) {
 				html += '<div class="hv-card hv-mt"><button type="button" class="hv-btn hv-btn-ghost hv-btn-block" id="hv-logout">' +
 					esc(t('logout')) + '</button></div>';
+
+				// Deleting an account is irreversible, so it is visually
+				// separated and asks twice (see confirmDeleteAccount).
+				html += '<div class="hv-card hv-mt hv-danger">' +
+					'<h3 class="hv-section-title hv-danger-title">' + esc(t('danger_zone')) + '</h3>' +
+					'<p class="hv-muted" style="margin:6px 0 12px">' + esc(t('delete_confirm_1')) + '</p>' +
+					'<button type="button" class="hv-btn hv-btn-danger hv-btn-block" id="hv-delete-account">' +
+						esc(t('delete_account')) + '</button>' +
+				'</div>';
 			}
 
 			el.main.innerHTML = html;
@@ -1477,10 +1511,16 @@
 			}
 		}
 
+		// On your OWN profile the name and rating are shown in the page header
+		// instead, so this card would just repeat them. Someone else's profile
+		// still needs it, together with the add-friend button.
+		if (profile.is_self) {
+			return '';
+		}
+
 		return '' +
 			'<div class="hv-profile-head">' +
-				'<img class="hv-profile-avatar" src="' + esc(user.avatar) + '" alt=""' +
-					(profile.is_self ? ' id="hv-avatar-upload" style="cursor:pointer" title="' + esc(t('upload_photo')) + '"' : '') + '>' +
+				'<img class="hv-profile-avatar" src="' + esc(user.avatar) + '" alt="">' +
 				'<div style="flex:1 1 auto;min-width:0">' +
 					'<h2 class="hv-profile-name">' + esc(user.name) + '</h2>' +
 					'<p class="hv-profile-meta">★ ' + num(profile.rating) + ' · ' +
@@ -1542,13 +1582,17 @@
 			'<div class="hv-card">' +
 				'<div class="hv-section-head">' +
 					'<h3 class="hv-section-title">' + esc(t('behaviour_id')) + '</h3>' +
+					(profile.is_self
+						? '<button type="button" class="hv-btn hv-btn-ghost hv-btn-sm" id="hv-edit-behaviour">' +
+							esc(t('edit')) + '</button>'
+						: '') +
 				'</div>' +
 				'<div class="hv-behaviour-tags">' +
 					'<span class="hv-behaviour-tag">' + esc(extro) + ' · ' + num(profile.extroversion) + '/' + num(10) + '</span>' +
 					'<span class="hv-behaviour-tag">' + esc(talk) + '</span>' +
 					'<span class="hv-behaviour-tag">' + esc(profile.vibe === 'deep' ? t('vibe_deep') : t('vibe_fun')) + '</span>' +
 					(profile.age ? '<span class="hv-behaviour-tag">' + num(profile.age) + '</span>' : '') +
-					(profile.city_label ? '<span class="hv-behaviour-tag">' + esc(profile.city_label) + '</span>' : '') +
+					(pick(profile.city_label) ? '<span class="hv-behaviour-tag">' + esc(pick(profile.city_label)) + '</span>' : '') +
 					tags +
 				'</div>' +
 				(bars ? '<div class="hv-traits">' + bars + '</div>' : '') +
@@ -1700,6 +1744,31 @@
 
 		var editDetails = $('#hv-edit-details');
 		if (editDetails) { editDetails.onclick = openDetails; }
+
+		var editBehaviour = $('#hv-edit-behaviour');
+		if (editBehaviour) {
+			editBehaviour.onclick = function () {
+				// Re-open the same test, pre-filled with the stored answers so
+				// it edits rather than starting from scratch.
+				var p = S.data.profile || {};
+				S.testData = {
+					extroversion: p.extroversion || 5,
+					talkative: p.talkative || 5,
+					openness: p.openness || 5,
+					humor: p.humor || 5,
+					energy: p.energy || 5,
+					planning: p.planning || 5,
+					empathy: p.empathy || 5,
+					vibe: p.vibe || 'fun',
+					interests: (p.interests || []).map(function (i) { return i.key; })
+				};
+				S.testStep = 0;
+				renderTestStep();
+			};
+		}
+
+		var del = $('#hv-delete-account');
+		if (del) { del.onclick = confirmDeleteAccount; }
 
 		var logout = $('#hv-logout');
 		if (logout) {
@@ -2065,10 +2134,11 @@
 			ages += '<option value="' + age + '"' + (d.age === age ? ' selected' : '') + '>' + num(age) + '</option>';
 		}
 
+		// "Prefer not to say" was removed: the matcher uses gender for the
+		// soft balance term, and an opted-out guest simply never benefits.
 		var genders = [
 			{ key: 'male', label: t('gender_male') },
-			{ key: 'female', label: t('gender_female') },
-			{ key: 'other', label: t('gender_other') }
+			{ key: 'female', label: t('gender_female') }
 		].map(function (opt) {
 			return '<button type="button" class="hv-choice' + (d.gender === opt.key ? ' is-active' : '') +
 				'" data-dgender="' + opt.key + '">' + esc(opt.label) + '</button>';
@@ -2179,6 +2249,8 @@
 					closeModal();
 					toast(t('details_saved'), 'ok');
 					if (res && res.city) { S.city = res.city; }
+					// The city drives where the map opens.
+					if (res && res.map) { S.mapCenter = res.map; }
 					// Picking Turkey switches the panel to Turkish straight away.
 					if (res && res.lang && res.lang !== S.lang) { applyLang(res.lang); }
 					if (res && res.user) { S.user = res.user; renderHeaderUser(); }
@@ -2254,6 +2326,59 @@
 			if (S.map) { S.map.invalidateSize(); }
 			if (S.ownerMap) { S.ownerMap.invalidateSize(); }
 		});
+	}
+
+	/**
+	 * Delete the account, asking twice.
+	 *
+	 * Step 1 explains what is lost. Step 2 requires the word to be typed, so
+	 * it cannot be completed by tapping through. The server independently
+	 * requires confirm=DELETE.
+	 */
+	function confirmDeleteAccount() {
+		openModal(
+			'<h3 class="hv-modal-title">' + esc(t('delete_account')) + '</h3>' +
+			'<div class="hv-alert hv-alert-orange">' + esc(t('delete_confirm_1')) + '</div>' +
+			'<button type="button" class="hv-btn hv-btn-danger hv-btn-block hv-mt" id="hv-del-step1">' +
+				esc(t('delete_continue')) + '</button>' +
+			'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
+				esc(t('cancel')) + '</button>'
+		);
+
+		$('#hv-del-step1').onclick = function () {
+			var word = t('delete_keyword');
+
+			openModal(
+				'<h3 class="hv-modal-title">' + esc(t('delete_account')) + '</h3>' +
+				'<p class="hv-muted">' + esc(t('delete_confirm_2')) + '</p>' +
+				'<p style="font-weight:800;font-size:1.1rem;margin:8px 0">' + esc(word) + '</p>' +
+				'<input type="text" class="hv-input" id="hv-del-word" autocomplete="off">' +
+				'<button type="button" class="hv-btn hv-btn-danger hv-btn-block hv-mt" id="hv-del-final">' +
+					esc(t('delete_final')) + '</button>' +
+				'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
+					esc(t('cancel')) + '</button>'
+			);
+
+			$('#hv-del-final').onclick = function () {
+				var typed = ($('#hv-del-word').value || '').trim();
+				if (typed !== word) { toast(t('delete_mismatch'), 'error'); return; }
+
+				var btn = $('#hv-del-final');
+				btn.disabled = true;
+
+				api('profile/delete', { method: 'POST', body: { confirm: 'DELETE' } })
+					.then(function () {
+						closeModal();
+						toast(t('delete_done'), 'ok');
+						disableGoogleAutoSelect();
+						clearAppCaches().then(hardReload, hardReload);
+					})
+					.catch(function (err) {
+						btn.disabled = false;
+						toast(err.message, 'error');
+					});
+			};
+		};
 	}
 
 	/* =====================================================================
@@ -2356,6 +2481,7 @@
 			S.user = res.user || null;
 			S.venue = res.venue || null;
 			S.city = res.city || '';
+			if (res.map) { S.mapCenter = res.map; }
 
 			if (res.lang && res.lang !== S.lang) { applyLangSilent(res.lang); }
 
@@ -2399,6 +2525,7 @@
 					S.role = res.role || 'guest';
 					S.user = res.user || null;
 					S.venue = res.venue || null;
+					if (res.map) { S.mapCenter = res.map; }
 					buildTabs();
 					render();
 					S.booted = true;

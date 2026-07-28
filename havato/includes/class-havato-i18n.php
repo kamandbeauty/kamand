@@ -453,6 +453,30 @@ class Havato_I18N {
 			'trait_empathy'         => array( 'fa' => 'همدلی', 'en' => 'Empathy', 'tr' => 'Empati' ),
 
 			// --- personal details editor -----------------------------------
+			'edit_behaviour'        => array( 'fa' => '🧠 ویرایش شناسنامه رفتاری', 'en' => '🧠 Edit behaviour profile', 'tr' => '🧠 Davranış profilini düzenle' ),
+			'delete_account'        => array( 'fa' => 'حذف حساب کاربری', 'en' => 'Delete my account', 'tr' => 'Hesabımı sil' ),
+			'delete_confirm_1'      => array(
+				'fa' => 'با حذف حساب، پروفایل، رزروها، گفتگوها و عکس‌های شما برای همیشه پاک می‌شود. این کار قابل بازگشت نیست.',
+				'en' => 'Deleting your account permanently removes your profile, bookings, chats and photos. This cannot be undone.',
+				'tr' => 'Hesabınızı silmek profilinizi, rezervasyonlarınızı, sohbetlerinizi ve fotoğraflarınızı kalıcı olarak siler. Bu işlem geri alınamaz.',
+			),
+			'delete_continue'       => array( 'fa' => 'متوجه‌ام، ادامه', 'en' => 'I understand, continue', 'tr' => 'Anladım, devam et' ),
+			'delete_confirm_2'      => array(
+				'fa' => 'برای تایید نهایی، عبارت زیر را وارد کنید:',
+				'en' => 'To confirm, type the word below:',
+				'tr' => 'Onaylamak için aşağıdaki kelimeyi yazın:',
+			),
+			'delete_keyword'        => array( 'fa' => 'حذف', 'en' => 'DELETE', 'tr' => 'SIL' ),
+			'delete_final'          => array( 'fa' => 'حذف دائمی حساب', 'en' => 'Permanently delete', 'tr' => 'Kalıcı olarak sil' ),
+			'delete_mismatch'       => array( 'fa' => 'عبارت وارد شده درست نیست.', 'en' => 'That does not match.', 'tr' => 'Girdiğiniz kelime eşleşmiyor.' ),
+			'delete_done'           => array( 'fa' => 'حساب شما حذف شد.', 'en' => 'Your account has been deleted.', 'tr' => 'Hesabınız silindi.' ),
+			'delete_admin_blocked'  => array(
+				'fa' => 'حساب مدیر از این بخش قابل حذف نیست.',
+				'en' => 'An administrator account cannot be deleted from here.',
+				'tr' => 'Yönetici hesabı buradan silinemez.',
+			),
+			'deleted_user'          => array( 'fa' => 'کاربر حذف‌شده', 'en' => 'Deleted user', 'tr' => 'Silinmiş kullanıcı' ),
+			'danger_zone'           => array( 'fa' => 'منطقه خطر', 'en' => 'Danger zone', 'tr' => 'Tehlikeli bölge' ),
 			'edit_details'          => array( 'fa' => '✏️ ویرایش مشخصات من', 'en' => '✏️ Edit my details', 'tr' => '✏️ Bilgilerimi düzenle' ),
 			'details_title'         => array( 'fa' => 'مشخصات من', 'en' => 'My details', 'tr' => 'Bilgilerim' ),
 			'details_hint'          => array(

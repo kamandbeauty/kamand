@@ -49,6 +49,29 @@ class Havato_REST {
 	}
 
 	/**
+	 * Where the map should open.
+	 *
+	 * Centres on the viewer's own city so an Istanbul guest is not shown
+	 * Tehran; falls back to the administrator's default when unknown.
+	 *
+	 * @param string $city City key.
+	 * @return array
+	 */
+	public static function map_center( $city ) {
+		$centre = $city ? havato_city_center( $city ) : null;
+
+		if ( $centre ) {
+			return $centre;
+		}
+
+		return array(
+			'lat'  => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
+			'lng'  => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
+			'zoom' => (int) Havato_Settings::get( 'map_zoom', 12 ),
+		);
+	}
+
+	/**
 	 * Café owners (and admins).
 	 *
 	 * @return bool|WP_Error
@@ -130,6 +153,7 @@ class Havato_REST {
 			'profile'            => array( 'GET', 'get_profile', $auth ),
 			'profile/test'       => array( 'POST', 'save_test', $auth ),
 			'profile/details'    => array( 'POST', 'save_details', $auth ),
+			'profile/delete'     => array( 'POST', 'delete_account', $auth ),
 			'profile/avatar'     => array( 'POST', 'upload_avatar', $auth ),
 
 			// Photos.
@@ -211,11 +235,7 @@ class Havato_REST {
 			'dir'           => Havato_I18N::dir( $lang ),
 			'google_ready'  => Havato_Google_Auth::is_configured(),
 			'google_client' => Havato_Settings::get( 'google_client_id', '' ),
-			'map'           => array(
-				'lat'  => (float) Havato_Settings::get( 'map_center_lat', 35.7219 ),
-				'lng'  => (float) Havato_Settings::get( 'map_center_lng', 51.3347 ),
-				'zoom' => (int) Havato_Settings::get( 'map_zoom', 12 ),
-			),
+			'map'           => self::map_center( self::viewer_city() ),
 			'max_seats'     => havato_max_seats(),
 			'interests'     => havato_interest_tags(),
 			'locations'     => havato_locations(),
@@ -447,10 +467,47 @@ class Havato_REST {
 
 		$match = Havato_Matcher::maybe_run_on_full( $event_id );
 
+		/**
+		 * TEMPORARY (requested for review): seat the table immediately instead
+		 * of waiting for the last seat, so the chat room exists right after
+		 * reserving and its features can be inspected.
+		 *
+		 * Normal behaviour is to wait until the event fills (or the cron
+		 * fallback runs). Set this filter to false to restore it.
+		 *
+		 * @param bool   $now      Whether to match on every booking.
+		 * @param string $event_id Event id.
+		 */
+		if ( ! ( is_array( $match ) && ! empty( $match['ok'] ) )
+			&& apply_filters( 'havato_match_immediately', true, $event_id ) ) {
+			$match = Havato_Matcher::run( $event_id, true );
+		}
+
+		$matched = (bool) ( is_array( $match ) && ! empty( $match['ok'] ) );
+
+		// Hand back the group so the app can open its chat straight away.
+		$group_id = '';
+		if ( $matched ) {
+			$gm = Havato_DB::table( 'group_members' );
+			$gr = Havato_DB::table( 'groups' );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$group_id = (string) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT g.id FROM $gr g
+					 INNER JOIN $gm m ON m.group_id = g.id
+					 WHERE g.event_id = %s AND m.user_id = %d
+					 ORDER BY g.id DESC LIMIT 1",
+					$event_id,
+					$user_id
+				)
+			);
+		}
+
 		return self::ok(
 			array(
-				'queued'  => true,
-				'matched' => (bool) ( is_array( $match ) && ! empty( $match['ok'] ) ),
+				'queued'   => true,
+				'matched'  => $matched,
+				'group_id' => $group_id,
 			)
 		);
 	}
@@ -974,8 +1031,12 @@ class Havato_REST {
 			return new WP_Error( 'havato_bad_age', Havato_I18N::t( 'err_age_range' ), array( 'status' => 400 ) );
 		}
 
+		// Only male/female are offered now; anything else is rejected rather
+		// than silently stored, so the gender-balance term stays meaningful.
 		$gender = sanitize_text_field( (string) $req->get_param( 'gender' ) );
-		$gender = in_array( $gender, array( 'male', 'female', 'other' ), true ) ? $gender : 'other';
+		if ( ! in_array( $gender, array( 'male', 'female' ), true ) ) {
+			return new WP_Error( 'havato_bad_gender', Havato_I18N::t( 'q_gender' ), array( 'status' => 400 ) );
+		}
 
 		// Country/city must be a pair we actually operate in, otherwise the
 		// city filter would silently hide every event from this user.
@@ -1053,9 +1114,75 @@ class Havato_REST {
 				'saved' => true,
 				'user'  => self::user_card( $user_id ),
 				'city'  => $city,
+				'map'   => self::map_center( $city ),
 				'lang'  => Havato_I18N::current_lang(),
 			)
 		);
+	}
+
+	/**
+	 * Permanently delete the caller's own account.
+	 *
+	 * Deliberately self-service only: it acts on the logged-in user and takes
+	 * no user id, so it cannot be pointed at somebody else. Administrators are
+	 * refused because deleting the last admin through an app screen would lock
+	 * the site out; they can still be removed from wp-admin.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function delete_account( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+
+		if ( user_can( $user_id, 'manage_options' ) ) {
+			return new WP_Error( 'havato_admin_delete', Havato_I18N::t( 'delete_admin_blocked' ), array( 'status' => 403 ) );
+		}
+
+		// The client asks twice; require it to say so, so a stray POST cannot
+		// wipe an account.
+		if ( 'DELETE' !== strtoupper( (string) $req->get_param( 'confirm' ) ) ) {
+			return new WP_Error( 'havato_no_confirm', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		// Remove everything that belongs to this person. Group chat lines are
+		// kept but anonymised, otherwise other guests' conversations would
+		// develop holes.
+		$chats = Havato_DB::table( 'chats' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->update( $chats, array( 'sender_id' => 0, 'sender_name' => Havato_I18N::t( 'deleted_user' ) ), array( 'sender_id' => $user_id ), array( '%d', '%s' ), array( '%d' ) );
+
+		// These all key on user_id.
+		foreach ( array( 'user_profiles', 'event_registrations', 'group_members', 'user_photos', 'photo_likes' ) as $table ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->delete( Havato_DB::table( $table ), array( 'user_id' => $user_id ), array( '%d' ) );
+		}
+
+		// photo_reports keys on reporter_id, not user_id.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( Havato_DB::table( 'photo_reports' ), array( 'reporter_id' => $user_id ), array( '%d' ) );
+
+		$friends = Havato_DB::table( 'friends' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( "DELETE FROM $friends WHERE user_id=%d OR friend_id=%d", $user_id, $user_id ) );
+
+		$pm = Havato_DB::table( 'private_chats' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( "DELETE FROM $pm WHERE sender_id=%d OR receiver_id=%d", $user_id, $user_id ) );
+
+		$feedbacks = Havato_DB::table( 'feedbacks' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( "DELETE FROM $feedbacks WHERE reporter_id=%d OR reported_id=%d", $user_id, $user_id ) );
+
+		Havato_Logger::log( sprintf( 'Account %d deleted at the user\'s own request.', $user_id ), 'info' );
+
+		require_once ABSPATH . 'wp-admin/includes/user.php';
+		wp_logout();
+		wp_delete_user( $user_id );
+
+		return self::ok( array( 'deleted' => true ) );
 	}
 
 	/**

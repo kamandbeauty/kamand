@@ -1343,6 +1343,19 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 
 /* Personality trait bars (the five sliders added to the test). */
+/* Danger zone: visually separated so account deletion is never a stray tap. */
+.hv-danger {
+	border: 1.5px solid #fecaca;
+	background: #fffafa;
+}
+.hv-danger-title { color: #b91c1c; }
+#havato-app .hv-btn-danger {
+	background: linear-gradient(120deg, #ef4444, #b91c1c);
+	color: #fff;
+	text-shadow: 0 1px 2px rgba(10, 14, 48, 0.45);
+	box-shadow: 0 10px 22px rgba(185, 28, 28, 0.28);
+}
+
 .hv-traits {
 	display: flex;
 	flex-direction: column;

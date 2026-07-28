@@ -441,20 +441,45 @@ function havato_max_seats() {
  */
 function havato_interest_tags() {
 	return array(
-		'music'    => array( 'fa' => 'موسیقی', 'en' => 'Music' ),
-		'cinema'   => array( 'fa' => 'سینما', 'en' => 'Cinema' ),
-		'books'    => array( 'fa' => 'کتاب', 'en' => 'Books' ),
-		'startup'  => array( 'fa' => 'استارتاپ', 'en' => 'Startups' ),
-		'tech'     => array( 'fa' => 'تکنولوژی', 'en' => 'Technology' ),
-		'travel'   => array( 'fa' => 'سفر', 'en' => 'Travel' ),
-		'sports'   => array( 'fa' => 'ورزش', 'en' => 'Sports' ),
-		'art'      => array( 'fa' => 'هنر', 'en' => 'Art' ),
-		'food'     => array( 'fa' => 'آشپزی', 'en' => 'Food' ),
-		'gaming'   => array( 'fa' => 'بازی', 'en' => 'Gaming' ),
-		'philo'    => array( 'fa' => 'فلسفه', 'en' => 'Philosophy' ),
-		'business' => array( 'fa' => 'کسب‌وکار', 'en' => 'Business' ),
+		'music'      => array( 'fa' => 'موسیقی', 'en' => 'Music', 'tr' => 'Müzik' ),
+		'cinema'     => array( 'fa' => 'سینما', 'en' => 'Cinema', 'tr' => 'Sinema' ),
+		'series'     => array( 'fa' => 'سریال', 'en' => 'TV series', 'tr' => 'Diziler' ),
+		'books'      => array( 'fa' => 'کتاب', 'en' => 'Books', 'tr' => 'Kitap' ),
+		'writing'    => array( 'fa' => 'نویسندگی', 'en' => 'Writing', 'tr' => 'Yazarlık' ),
+		'poetry'     => array( 'fa' => 'شعر و ادبیات', 'en' => 'Poetry & literature', 'tr' => 'Şiir ve edebiyat' ),
+		'art'        => array( 'fa' => 'هنر', 'en' => 'Art', 'tr' => 'Sanat' ),
+		'photo'      => array( 'fa' => 'عکاسی', 'en' => 'Photography', 'tr' => 'Fotoğrafçılık' ),
+		'theatre'    => array( 'fa' => 'تئاتر', 'en' => 'Theatre', 'tr' => 'Tiyatro' ),
+		'startup'    => array( 'fa' => 'استارتاپ', 'en' => 'Startups', 'tr' => 'Girişimcilik' ),
+		'business'   => array( 'fa' => 'کسب‌وکار', 'en' => 'Business', 'tr' => 'İş dünyası' ),
+		'marketing'  => array( 'fa' => 'بازاریابی', 'en' => 'Marketing', 'tr' => 'Pazarlama' ),
+		'tech'       => array( 'fa' => 'تکنولوژی', 'en' => 'Technology', 'tr' => 'Teknoloji' ),
+		'programming' => array( 'fa' => 'برنامه‌نویسی', 'en' => 'Programming', 'tr' => 'Yazılım' ),
+		'ai'         => array( 'fa' => 'هوش مصنوعی', 'en' => 'AI', 'tr' => 'Yapay zekâ' ),
+		'science'    => array( 'fa' => 'علم', 'en' => 'Science', 'tr' => 'Bilim' ),
+		'philo'      => array( 'fa' => 'فلسفه', 'en' => 'Philosophy', 'tr' => 'Felsefe' ),
+		'psychology' => array( 'fa' => 'روان‌شناسی', 'en' => 'Psychology', 'tr' => 'Psikoloji' ),
+		'history'    => array( 'fa' => 'تاریخ', 'en' => 'History', 'tr' => 'Tarih' ),
+		'language'   => array( 'fa' => 'زبان‌آموزی', 'en' => 'Languages', 'tr' => 'Yabancı dil' ),
+		'travel'     => array( 'fa' => 'سفر', 'en' => 'Travel', 'tr' => 'Seyahat' ),
+		'nature'     => array( 'fa' => 'طبیعت‌گردی', 'en' => 'Nature & hiking', 'tr' => 'Doğa ve yürüyüş' ),
+		'sports'     => array( 'fa' => 'ورزش', 'en' => 'Sports', 'tr' => 'Spor' ),
+		'football'   => array( 'fa' => 'فوتبال', 'en' => 'Football', 'tr' => 'Futbol' ),
+		'fitness'    => array( 'fa' => 'تناسب اندام', 'en' => 'Fitness', 'tr' => 'Fitness' ),
+		'yoga'       => array( 'fa' => 'یوگا و مدیتیشن', 'en' => 'Yoga & meditation', 'tr' => 'Yoga ve meditasyon' ),
+		'food'       => array( 'fa' => 'آشپزی', 'en' => 'Cooking', 'tr' => 'Yemek yapmak' ),
+		'coffee'     => array( 'fa' => 'قهوه', 'en' => 'Coffee', 'tr' => 'Kahve' ),
+		'gaming'     => array( 'fa' => 'بازی ویدیویی', 'en' => 'Video games', 'tr' => 'Video oyunları' ),
+		'boardgames' => array( 'fa' => 'بازی رومیزی', 'en' => 'Board games', 'tr' => 'Kutu oyunları' ),
+		'pets'       => array( 'fa' => 'حیوانات خانگی', 'en' => 'Pets', 'tr' => 'Evcil hayvanlar' ),
+		'volunteer'  => array( 'fa' => 'کار داوطلبانه', 'en' => 'Volunteering', 'tr' => 'Gönüllülük' ),
+		'fashion'    => array( 'fa' => 'مد و استایل', 'en' => 'Fashion', 'tr' => 'Moda' ),
+		'cars'       => array( 'fa' => 'خودرو', 'en' => 'Cars', 'tr' => 'Otomobil' ),
+		'crafts'     => array( 'fa' => 'کاردستی', 'en' => 'Crafts & DIY', 'tr' => 'El işi' ),
+		'finance'    => array( 'fa' => 'سرمایه‌گذاری', 'en' => 'Investing', 'tr' => 'Yatırım' ),
 	);
 }
+
 
 /**
  * Supported countries and their cities.
@@ -468,21 +493,45 @@ function havato_interest_tags() {
 function havato_locations() {
 	return array(
 		'ir' => array(
-			'label'  => array( 'fa' => 'ایران', 'en' => 'Iran' ),
+			'label'  => array( 'fa' => 'ایران', 'en' => 'Iran', 'tr' => 'İran' ),
 			'dial'   => '+98',
 			'cities' => array(
-				'tehran'  => array( 'fa' => 'تهران', 'en' => 'Tehran' ),
-				'isfahan' => array( 'fa' => 'اصفهان', 'en' => 'Isfahan' ),
+				'tehran'  => array( 'fa' => 'تهران', 'en' => 'Tehran', 'tr' => 'Tahran', 'lat' => 35.7219, 'lng' => 51.3347, 'zoom' => 12 ),
+				'isfahan' => array( 'fa' => 'اصفهان', 'en' => 'Isfahan', 'tr' => 'İsfahan', 'lat' => 32.6539, 'lng' => 51.6660, 'zoom' => 12 ),
 			),
 		),
 		'tr' => array(
-			'label'  => array( 'fa' => 'ترکیه', 'en' => 'Turkey' ),
+			'label'  => array( 'fa' => 'ترکیه', 'en' => 'Turkey', 'tr' => 'Türkiye' ),
 			'dial'   => '+90',
 			'cities' => array(
-				'istanbul' => array( 'fa' => 'استانبول', 'en' => 'Istanbul' ),
+				'istanbul' => array( 'fa' => 'استانبول', 'en' => 'Istanbul', 'tr' => 'İstanbul', 'lat' => 41.0082, 'lng' => 28.9784, 'zoom' => 11 ),
 			),
 		),
 	);
+}
+
+/**
+ * Map centre for a city key.
+ *
+ * The map used to open on the admin's global default for everyone, so a
+ * guest in Istanbul was shown Tehran. Falls back to that default only when
+ * the city is unknown.
+ *
+ * @param string $city City key.
+ * @return array|null array{lat:float,lng:float,zoom:int} or null.
+ */
+function havato_city_center( $city ) {
+	foreach ( havato_locations() as $country ) {
+		if ( isset( $country['cities'][ (string) $city ]['lat'] ) ) {
+			$c = $country['cities'][ (string) $city ];
+			return array(
+				'lat'  => (float) $c['lat'],
+				'lng'  => (float) $c['lng'],
+				'zoom' => isset( $c['zoom'] ) ? (int) $c['zoom'] : 12,
+			);
+		}
+	}
+	return null;
 }
 
 /**
@@ -516,10 +565,17 @@ function havato_valid_city( $country, $city ) {
 function havato_city_label( $city ) {
 	foreach ( havato_locations() as $country ) {
 		if ( isset( $country['cities'][ (string) $city ] ) ) {
-			return $country['cities'][ (string) $city ];
+			$c = $country['cities'][ (string) $city ];
+			// Return ONLY the language keys: the row also carries lat/lng/zoom
+			// and handing the whole thing to the UI printed "[object Object]".
+			return array(
+				'fa' => isset( $c['fa'] ) ? $c['fa'] : '',
+				'en' => isset( $c['en'] ) ? $c['en'] : '',
+				'tr' => isset( $c['tr'] ) ? $c['tr'] : ( isset( $c['en'] ) ? $c['en'] : '' ),
+			);
 		}
 	}
-	return array( 'fa' => '', 'en' => '' );
+	return array( 'fa' => '', 'en' => '', 'tr' => '' );
 }
 
 /**

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.16.0
+Stable tag: 1.17.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,32 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.17.0 =
+* Fixed "[object Object]" appearing among the behaviour tags. havato_city_label()
+  returned the whole city row, which now also carries lat/lng/zoom, and the app
+  passed it straight to esc() instead of pick(). Both sides fixed.
+* Your own name and behaviour score now appear in the page header; the card
+  underneath that repeated them has been removed. Other people's profiles keep
+  the card, together with the add-friend button.
+* The map opens on the guest's own city. Each city carries its own centre and
+  zoom, so an Istanbul guest no longer lands on Tehran; the administrator's
+  default is used only when the city is unknown.
+* "Prefer not to say" removed from gender. The matcher uses gender for its soft
+  balance term, so an opted-out guest never benefited from it. The server now
+  rejects any other value rather than storing it.
+* New "Delete my account" button in a separate danger zone, with two
+  confirmations: an explanation, then typing a word. Removes the profile,
+  bookings, photos, friendships, private messages and feedback; group chat
+  lines are anonymised rather than deleted so other guests' conversations do
+  not develop holes. Administrator accounts are refused.
+* The behaviour profile is editable: the test reopens pre-filled with the
+  stored answers instead of starting from scratch.
+* Interests expanded from 12 to 36, all trilingual.
+* TEMPORARY, for review only: after reserving a seat the app now opens the
+  chat, and the matcher seats the table immediately instead of waiting for the
+  last seat. Both are clearly marked in the code and the server side is behind
+  the `havato_match_immediately` filter, so normal behaviour is one line away.
 
 = 1.16.0 =
 * Full code and security audit. Two real bugs found and fixed.
