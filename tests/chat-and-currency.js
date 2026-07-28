@@ -108,6 +108,45 @@ checks.push(replay(true).then(log => {
   t('with the fix it is rendered exactly once', log.length === 1 && log[0] === 1);
 }));
 
+// Rendering de-duplication cannot help if the row is created twice. A typed
+// message is protected by clearing the field, but a sticker takes its text
+// from the argument, so the send path needs its own lock.
+(() => {
+  function replaySend(withFix) {
+    let rows = [], sending = false;
+    const api = () => new Promise(r => setTimeout(r, 5));
+    function send(sticker, input) {
+      let text;
+      if (typeof sticker === 'string' && sticker) { text = sticker; }
+      else { text = input.value.trim(); if (!text) { return; } input.value = ''; }
+      if (withFix && sending) { return; }
+      sending = true;
+      return api().then(() => { rows.push(text); }).then(() => { sending = false; });
+    }
+    send('👍'); send('👍');
+    return new Promise(r => setTimeout(() => r({ rows, send }), 40));
+  }
+
+  checks.push(replaySend(false).then(({ rows }) => {
+    t('a double-tapped sticker really did post twice before the fix', rows.length === 2);
+  }));
+  checks.push(replaySend(true).then(({ rows, send }) => {
+    t('…and posts exactly once now', rows.length === 1 && rows[0] === '👍');
+    // The lock must not wedge the chat shut afterwards.
+    send('☕');
+    return new Promise(r => setTimeout(() => {
+      t('a later sticker still sends (the lock releases)', rows.length === 2 && rows[1] === '☕');
+      r();
+    }, 40));
+  }));
+})();
+
+t('the send path is locked while a write is in flight', /if \(S\.chatSending\) \{ return; \}/.test(js));
+t('the lock is released whatever the outcome', /\.then\(function \(\) \{ S\.chatSending = false; \}\)/.test(js));
+t('it is declared in the state object', /chatSending: false/.test(js));
+t('changing room clears the send lock too', /openChatRoom[\s\S]{0,360}S\.chatSending = false;/.test(js));
+t('a failed send hands the typed text back', /if \(!sticker && input\) \{ input\.value = text; \}/.test(js));
+
 t('a second request is refused while one is in flight', /if \(S\.chatFetching\) \{ return; \}/.test(js));
 t('the flag is raised before the request', /S\.chatFetching = true;/.test(js));
 t('…and always cleared afterwards', /\}\)\.then\(function \(\) \{[\s\S]{0,160}S\.chatFetching = false;/.test(js));

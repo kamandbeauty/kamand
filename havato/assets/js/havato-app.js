@@ -40,7 +40,8 @@
 		returnTab: null,
 		pollTimer: null,
 		lastMsgId: 0,
-		chatFetching: false, // one chat request in flight at a time
+		chatFetching: false, // one chat read in flight at a time
+		chatSending: false,  // …and one write, so a double-tap cannot post twice
 		map: null,
 		mapMarkers: [],
 		meMarker: null,   // "you are here" dot, recreated with each map
@@ -1253,6 +1254,7 @@
 		// A request still in flight from the previous room must not keep the
 		// new one locked out.
 		S.chatFetching = false;
+		S.chatSending = false;
 		renderChatRoom();
 	}
 
@@ -1561,12 +1563,26 @@
 			input.value = '';
 		}
 
+		// Typing is protected by clearing the field above: a second tap finds
+		// it empty and returns. A sticker takes its text from the argument, so
+		// nothing stopped an impatient double-tap from posting the same emoji
+		// twice — two real rows in the database, which no amount of
+		// render-side de-duplication can undo. Hold the send path shut until
+		// the request settles.
+		if (S.chatSending) { return; }
+		S.chatSending = true;
+
 		var path = room.type === 'group' ? 'chat/group/send' : 'chat/private/send';
 		var body = room.type === 'group' ? { group_id: room.id, text: text } : { user_id: room.id, text: text };
 
 		api(path, { method: 'POST', body: body })
 			.then(function () { fetchMessages(false); })
-			.catch(function (err) { toast(err.message, 'error'); });
+			.catch(function (err) {
+				toast(err.message, 'error');
+				// Put a typed message back so the guest does not lose it.
+				if (!sticker && input) { input.value = text; }
+			})
+			.then(function () { S.chatSending = false; });
 	}
 
 	function startPolling() {
