@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.20.0
+Stable tag: 1.21.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,39 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.21.0 =
+* Fixed: every message a guest sent appeared twice. Sending triggered a
+  refresh while the three-second poll fired independently; both read the same
+  cursor and both appended the same rows. Only one chat request is now in
+  flight at a time, and a message id already on screen is never rendered
+  again.
+* Fixed: the "your table is ready" line showed Persian and English glued
+  together with a pipe. System messages are now stored as one string per
+  language and the app shows only the active one. Lines written before this
+  release still display exactly as they did.
+* Chat messages now carry the sender's photo and name. Your own messages and
+  system lines stay plain, since there is nothing to identify.
+* New sticker tray in the chat. Plain Unicode emoji: nothing to host, no extra
+  request, and they render in every WebView. A sticker travels through the
+  same endpoint, moderation and archive as any other message.
+* New administrator controls on each event: view details, edit, and cancel.
+  The detail screen lists the venue, address, table layout and the full guest
+  list with attendance. Cancelling sets the status and releases the seats
+  rather than deleting anything, so the history stays intact; a confirmation
+  names the number of bookings affected first. Capacity is not editable by
+  hand because it is derived from the café's real tables.
+* Fixed: a café in Turkey priced its menu in Toman. Prices now follow the
+  country the café trades in, not the language it is being read in, so an
+  Istanbul menu shows Lira even to a Persian-speaking guest. The mapping is
+  filterable via `havato_country_currencies`.
+* Fixed: the Turkish word for Toman was "Lira", which would have made an
+  Iranian café look as though it charged Turkish money.
+* Fixed: `join_event` never checked the event status, so a stale tab or a
+  direct API call could book a seat at an event that was cancelled or over.
+* Fixed: the café owner's events table printed a price cell that no longer
+  exists in the schema — a leftover from the payment removal — which shifted
+  every column one place against its header.
 
 = 1.20.0 =
 * Fixed: on a site that also runs WooCommerce, a café owner who signed in was

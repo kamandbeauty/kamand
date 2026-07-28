@@ -49,7 +49,12 @@ t('private reports require being one of the two participants',
   /\(int\) \$row\['sender_id'\] !== \$user_id && \(int\) \$row\['receiver_id'\] !== \$user_id/.test(rest));
 t('you cannot report yourself', /havato_self_report/.test(rest));
 t('the reason is allow-listed', /array\( 'nudity', 'fake', 'spam', 'other' \)/.test(rest));
-t('the excerpt is length-clamped', /havato_clamp_text\( \(string\) \$row\['message_text'\], 500 \)/.test(rest));
+// Since v1.21.0 the excerpt is decoded before being clamped, so assert both
+// properties rather than the exact old one-liner.
+t('the excerpt is length-clamped',
+  /'excerpt'\s*=> havato_clamp_text\([\s\S]{0,200}500\s*\)/.test(rest));
+t('…and decoded so a moderator never sees raw JSON',
+  /'excerpt'\s*=> havato_clamp_text\(\s*havato_message_text\(/.test(rest));
 t('duplicate taps cannot flood the queue', /\$wpdb->replace\(\s*\n\s*\$reports/.test(rest));
 
 console.log('\n--- 4. blocking ---');

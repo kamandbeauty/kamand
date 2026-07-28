@@ -603,7 +603,6 @@ class Havato_Owner_Admin {
 				( '' !== trim( (string) $row['title'] ) ? ' — ' . esc_html( $row['title'] ) : '' ) .
 				'</span></td>';
 			echo '<td>' . esc_html( $row['taken'] . ' / ' . $row['max_capacity'] ) . '</td>';
-			echo '<td>' . esc_html( havato_price( (int) $row['price'], $lang ) ) . '</td>';
 			echo '<td><span class="hv-adm-badge ' . esc_attr( $class ) . '">' .
 				esc_html( Havato_I18N::t( 'status_' . $row['status'] ) ) . '</span></td>';
 			echo '<td class="hv-adm-actions">';

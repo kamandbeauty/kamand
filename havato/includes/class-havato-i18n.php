@@ -266,7 +266,8 @@ class Havato_I18N {
 			'boot_failed'           => array( 'fa' => 'ارتباط با سرور برقرار نشد', 'en' => 'Could not reach the server', 'tr' => 'Sunucuya ulaşılamadı' ),
 			'retry'                 => array( 'fa' => 'تلاش دوباره', 'en' => 'Try again', 'tr' => 'Tekrar dene' ),
 			'empty_state'           => array( 'fa' => 'فعلاً چیزی برای نمایش نیست.', 'en' => 'Nothing here yet.', 'tr' => 'Burada henüz bir şey yok.' ),
-			'toman'                 => array( 'fa' => 'تومان', 'en' => 'Toman', 'tr' => 'Lira' ),
+			'toman'                 => array( 'fa' => 'تومان', 'en' => 'Toman', 'tr' => 'Tümen' ),
+			'lira'                  => array( 'fa' => 'لیر', 'en' => 'Lira', 'tr' => 'TL' ),
 			'free'                  => array( 'fa' => 'رایگان', 'en' => 'Free', 'tr' => 'Ücretsiz' ),
 			'always_free'           => array( 'fa' => 'شرکت در همه‌ی دورهمی‌ها رایگان است.', 'en' => 'Every gathering is free to join.', 'tr' => 'Tüm buluşmalara katılım ücretsizdir.' ),
 			'need_details_first'    => array(
@@ -377,6 +378,16 @@ class Havato_I18N {
 			'status_matched'        => array( 'fa' => 'میز چیده شد', 'en' => 'Matched', 'tr' => 'Eşleşti' ),
 			'status_completed'      => array( 'fa' => 'برگزار شد', 'en' => 'Completed', 'tr' => 'Tamamlandı' ),
 			'status_pending_admin'  => array( 'fa' => 'در انتظار تایید', 'en' => 'Pending review', 'tr' => 'İnceleniyor' ),
+			'status_cancelled'      => array( 'fa' => 'لغو شده', 'en' => 'Cancelled', 'tr' => 'İptal edildi' ),
+			'event_details'         => array( 'fa' => 'جزئیات رویداد', 'en' => 'Event details', 'tr' => 'Etkinlik ayrıntıları' ),
+			'event_edit'            => array( 'fa' => 'ویرایش رویداد', 'en' => 'Edit event', 'tr' => 'Etkinliği düzenle' ),
+			'event_cancel'          => array( 'fa' => 'لغو رویداد', 'en' => 'Cancel event', 'tr' => 'Etkinliği iptal et' ),
+			'event_cancel_confirm'  => array( 'fa' => 'این رویداد لغو شود؟', 'en' => 'Cancel this event?', 'tr' => 'Bu etkinlik iptal edilsin mi?' ),
+			'event_cancel_confirm_guests' => array( 'fa' => 'این رویداد %s رزرو دارد. با لغو آن، همه‌ی رزروها هم لغو می‌شوند. ادامه می‌دهید؟', 'en' => 'This event has %s bookings. Cancelling it will cancel them all. Continue?', 'tr' => 'Bu etkinlikte %s rezervasyon var. İptal ederseniz hepsi iptal olur. Devam edilsin mi?' ),
+			'event_cancelled_done'  => array( 'fa' => 'رویداد لغو شد.', 'en' => 'Event cancelled.', 'tr' => 'Etkinlik iptal edildi.' ),
+			'event_not_open'        => array( 'fa' => 'این دورهمی دیگر پذیرای رزرو نیست.', 'en' => 'This gathering is no longer taking bookings.', 'tr' => 'Bu buluşma artık rezervasyon almıyor.' ),
+			'event_time'            => array( 'fa' => 'ساعت', 'en' => 'Time', 'tr' => 'Saat' ),
+			'seats_reserved'        => array( 'fa' => 'صندلی رزروشده', 'en' => 'Seats reserved', 'tr' => 'Ayrılan koltuk' ),
 			'need_profile_first'    => array( 'fa' => 'ابتدا تست شخصیت‌شناسی ۳۰ ثانیه‌ای را کامل کنید.', 'en' => 'Please complete the 30-second personality test first.', 'tr' => 'Lütfen önce 30 saniyelik kişilik testini tamamlayın.' ),
 
 			// Venue popup.
@@ -405,6 +416,8 @@ class Havato_I18N {
 			'no_groups'             => array( 'fa' => 'هنوز عضو هیچ میزی نشده‌اید.', 'en' => 'You are not seated at any table yet.', 'tr' => 'Henüz hiçbir masaya oturmadınız.' ),
 			'no_friends'            => array( 'fa' => 'هنوز دوستی اضافه نکرده‌اید.', 'en' => 'You have not added any friends yet.', 'tr' => 'Henüz arkadaş eklemediniz.' ),
 			'system_message'        => array( 'fa' => 'پیام سیستم', 'en' => 'System message', 'tr' => 'Sistem mesajı' ),
+			'chat_table_ready'      => array( 'fa' => 'میز شما چیده شد!', 'en' => 'Your table is ready at', 'tr' => 'Masanız hazır:' ),
+			'venue_fallback'        => array( 'fa' => 'کافه', 'en' => 'Café', 'tr' => 'Kafe' ),
 
 			// Profile.
 			'profile_title'         => array( 'fa' => 'پروفایل من', 'en' => 'My Profile', 'tr' => 'Profilim' ),
@@ -467,6 +480,7 @@ class Havato_I18N {
 			'message_reported'      => array( 'fa' => 'گزارش شما ثبت شد و بررسی می‌شود.', 'en' => 'Your report has been submitted for review.', 'tr' => 'Bildiriminiz incelenmek üzere gönderildi.' ),
 			'message_removed'       => array( 'fa' => '[این پیام توسط مدیریت حذف شد]', 'en' => '[This message was removed by a moderator]', 'tr' => '[Bu mesaj yönetici tarafından kaldırıldı]' ),
 			'msg_actions'           => array( 'fa' => 'گزینه‌های پیام', 'en' => 'Message options', 'tr' => 'Mesaj seçenekleri' ),
+			'stickers'              => array( 'fa' => 'استیکرها', 'en' => 'Stickers', 'tr' => 'Çıkartmalar' ),
 			'needs_review'          => array( 'fa' => 'نیازمند بررسی', 'en' => 'Needs review', 'tr' => 'İnceleme gerekli' ),
 			'only_flagged'          => array( 'fa' => 'فقط پیام‌های علامت‌خورده', 'en' => 'Flagged only', 'tr' => 'Yalnızca işaretliler' ),
 			'flagged_count'         => array( 'fa' => 'پیام علامت‌خورده', 'en' => 'flagged messages', 'tr' => 'işaretli mesaj' ),

@@ -396,6 +396,15 @@ class Havato_Admin {
 		$venues = Havato_DB::table( 'venues' );
 		$regs   = Havato_DB::table( 'event_registrations' );
 
+		// A single event was asked for: show its own screen instead of the list.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$single = isset( $_GET['event'] ) ? sanitize_text_field( wp_unslash( $_GET['event'] ) ) : '';
+		if ( '' !== $single ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			self::page_event_single( $single, isset( $_GET['edit'] ) );
+			return;
+		}
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$status = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -405,7 +414,7 @@ class Havato_Admin {
 		$offset   = ( $paged - 1 ) * $per_page;
 
 		$where = '1=1';
-		if ( in_array( $status, array( 'open', 'matched', 'completed', 'pending_admin' ), true ) ) {
+		if ( in_array( $status, array( 'open', 'matched', 'completed', 'cancelled', 'pending_admin' ), true ) ) {
 			$where .= $wpdb->prepare( ' AND e.status = %s', $status );
 		}
 
@@ -437,6 +446,7 @@ class Havato_Admin {
 			'open'          => Havato_I18N::t( 'status_open' ),
 			'matched'       => Havato_I18N::t( 'status_matched' ),
 			'completed'     => Havato_I18N::t( 'status_completed' ),
+			'cancelled'     => Havato_I18N::t( 'status_cancelled' ),
 			'pending_admin' => Havato_I18N::t( 'status_pending_admin' ),
 		);
 
@@ -548,6 +558,8 @@ class Havato_Admin {
 		}
 		echo '</div></div>';
 
+		self::event_actions( $row, $members );
+
 		if ( empty( $members ) ) {
 			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
 			return;
@@ -580,6 +592,247 @@ class Havato_Admin {
 			echo '</div>';
 		}
 		echo '</div></div>';
+	}
+
+	/**
+	 * One event: full details, and the edit form when asked for.
+	 *
+	 * @param string $event_id Event id.
+	 * @param bool   $editing  Render the edit form.
+	 */
+	private static function page_event_single( $event_id, $editing ) {
+		global $wpdb;
+
+		$lang   = Havato_I18N::current_lang();
+		$events = Havato_DB::table( 'events' );
+		$venues = Havato_DB::table( 'venues' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT e.*, v.name AS venue_name, v.city AS venue_city, v.address AS venue_address,
+						v.manager_phone AS venue_phone,
+						(SELECT COALESCE(SUM(r.seats),0) FROM $regs r WHERE r.event_id = e.id
+						 AND r.status <> 'cancelled') AS taken
+				 FROM $events e
+				 LEFT JOIN $venues v ON v.id = e.venue_id
+				 WHERE e.id = %s",
+				$event_id
+			),
+			ARRAY_A
+		);
+
+		self::head( Havato_I18N::t( 'admin_events' ), Havato_I18N::t( 'event_details' ) );
+
+		printf(
+			'<p><a class="hv-adm-btn hv-adm-btn-ghost" href="%s">&larr; %s</a></p>',
+			esc_url( add_query_arg( array( 'page' => 'havato-events' ), admin_url( 'admin.php' ) ) ),
+			esc_html( Havato_I18N::t( 'admin_events' ) )
+		);
+
+		if ( ! $row ) {
+			echo '<div class="hv-adm-card"><p class="hv-adm-muted">' .
+				esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
+			self::foot();
+			return;
+		}
+
+		if ( $editing ) {
+			self::render_event_edit_form( $row );
+		}
+
+		// ---- details ----
+		$city = havato_city_label( (string) $row['venue_city'] );
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' .
+			esc_html( '' !== trim( (string) $row['title'] ) ? $row['title'] : Havato_I18N::t( 'explore_title' ) ) .
+			'</h2>';
+
+		echo '<table class="hv-adm-table"><tbody>';
+		$rows = array(
+			'venue_name'    => $row['venue_name'],
+			'q_city_select' => isset( $city[ $lang ] ) ? $city[ $lang ] : '',
+			'venue_address' => $row['venue_address'],
+			'col_date'      => Havato_Jalali::format( $row['event_date'], $lang ),
+			'event_time'    => substr( (string) $row['event_time'], 0, 5 ),
+			'event_theme'   => $row['theme'],
+			'col_status'    => Havato_I18N::t( 'status_' . $row['status'] ),
+			'seats_left'    => $row['taken'] . ' / ' . $row['max_capacity'],
+			// Café contact stays admin-only, exactly as on every other screen.
+			'venue_phone'   => $row['venue_phone'],
+		);
+		foreach ( $rows as $key => $value ) {
+			if ( '' === (string) $value ) {
+				continue;
+			}
+			printf(
+				'<tr><td><strong>%s</strong></td><td>%s</td></tr>',
+				esc_html( Havato_I18N::t( $key ) ),
+				esc_html( (string) $value )
+			);
+		}
+		echo '</tbody></table>';
+
+		// Physical layout, so the admin can see this is 3x4 and not one 12.
+		$layout = array();
+		foreach ( Havato_REST::event_tables( $row['id'] ) as $tbl ) {
+			$layout[] = $tbl['table_number']
+				? sprintf( '#%d (%d)', $tbl['table_number'], $tbl['seats'] )
+				: $tbl['quantity'] . '×' . $tbl['seats'];
+		}
+		if ( ! empty( $layout ) ) {
+			echo '<p><strong>' . esc_html( Havato_I18N::t( 'tab_tables' ) ) . ':</strong> ' .
+				esc_html( implode( ' + ', $layout ) ) . '</p>';
+		}
+		echo '</div>';
+
+		// ---- guests ----
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$members = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT user_id, status, checked_in, seats FROM $regs
+				 WHERE event_id = %s AND status <> 'cancelled' ORDER BY id ASC",
+				$event_id
+			),
+			ARRAY_A
+		);
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'members_at_table' ) ) . '</h2>';
+
+		if ( empty( $members ) ) {
+			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p>';
+		} else {
+			echo '<table class="hv-adm-table"><thead><tr>';
+			echo '<th>' . esc_html( Havato_I18N::t( 'col_manager' ) ) . '</th>';
+			echo '<th>' . esc_html( Havato_I18N::t( 'seats_reserved' ) ) . '</th>';
+			echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
+			echo '</tr></thead><tbody>';
+
+			foreach ( $members as $m ) {
+				$uid     = (int) $m['user_id'];
+				$profile = havato_get_profile( $uid );
+
+				echo '<tr><td>' . esc_html( havato_display_name( $uid ) ) .
+					' <span class="hv-adm-muted">★ ' .
+					esc_html( round( havato_effective_rating( $profile ), 1 ) ) . '</span><br>' .
+					self::ban_button( $uid ) . '</td>';
+				echo '<td>' . esc_html( (int) $m['seats'] ) . '</td>';
+				echo '<td>' . ( (int) $m['checked_in']
+					? '<span class="hv-adm-badge is-green">✓</span>'
+					: '<span class="hv-adm-badge is-gray">—</span>' ) . '</td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table>';
+		}
+		echo '</div>';
+
+		self::foot();
+	}
+
+	/**
+	 * Edit form for one event.
+	 *
+	 * Capacity is deliberately absent: it is derived from the physical tables
+	 * the café selected, so typing a number here would let the matcher seat
+	 * more people than there are chairs. Tables are edited in the café panel.
+	 *
+	 * @param array $row Event row.
+	 */
+	private static function render_event_edit_form( $row ) {
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="hv-adm-card">';
+		self::form_fields( 'event_save' );
+		printf( '<input type="hidden" name="event_id" value="%s">', esc_attr( $row['id'] ) );
+
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'event_edit' ) ) . '</h2>';
+
+		echo '<div class="hv-adm-fields">';
+		printf(
+			'<label>%s<input type="text" name="title" value="%s" maxlength="191"></label>',
+			esc_html( Havato_I18N::t( 'event_title' ) ),
+			esc_attr( $row['title'] )
+		);
+		printf(
+			'<label>%s<input type="text" name="theme" value="%s" maxlength="191"></label>',
+			esc_html( Havato_I18N::t( 'event_theme' ) ),
+			esc_attr( $row['theme'] )
+		);
+		// Gregorian in the admin form: a date input speaks ISO, and the list
+		// screen already renders the Jalali equivalent.
+		printf(
+			'<label>%s<input type="date" name="event_date" value="%s" required></label>',
+			esc_html( Havato_I18N::t( 'col_date' ) ),
+			esc_attr( $row['event_date'] )
+		);
+		printf(
+			'<label>%s<input type="time" name="event_time" value="%s" required></label>',
+			esc_html( Havato_I18N::t( 'event_time' ) ),
+			esc_attr( substr( (string) $row['event_time'], 0, 5 ) )
+		);
+
+		echo '<label>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '<select name="status">';
+		foreach ( array( 'open', 'matched', 'completed', 'cancelled', 'pending_admin' ) as $state ) {
+			printf(
+				'<option value="%s"%s>%s</option>',
+				esc_attr( $state ),
+				selected( $state, $row['status'], false ),
+				esc_html( Havato_I18N::t( 'status_' . $state ) )
+			);
+		}
+		echo '</select></label>';
+		echo '</div>';
+
+		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' .
+			esc_html( Havato_I18N::t( 'save' ) ) . '</button>';
+		echo '</form>';
+	}
+
+	/**
+	 * Edit / cancel / details controls under an event card.
+	 *
+	 * @param array $row     Event row.
+	 * @param array $members Registrations.
+	 */
+	private static function event_actions( $row, $members ) {
+		$event_id = (string) $row['id'];
+		$booked   = count( (array) $members );
+
+		echo '<div class="hv-adm-actions hv-adm-event-actions">';
+
+		printf(
+			'<a class="hv-adm-btn hv-adm-btn-ghost" href="%s">%s</a>',
+			esc_url( add_query_arg( array( 'page' => 'havato-events', 'event' => $event_id ), admin_url( 'admin.php' ) ) ),
+			esc_html( Havato_I18N::t( 'event_details' ) )
+		);
+
+		printf(
+			'<a class="hv-adm-btn hv-adm-btn-ghost" href="%s">%s</a>',
+			esc_url( add_query_arg( array( 'page' => 'havato-events', 'event' => $event_id, 'edit' => 1 ), admin_url( 'admin.php' ) ) ),
+			esc_html( Havato_I18N::t( 'event_edit' ) )
+		);
+
+		// Cancelling keeps the row and its guest list — it is a status change,
+		// not a delete, so nobody's history disappears and the guests can
+		// still be told what happened.
+		if ( 'cancelled' !== $row['status'] ) {
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline">';
+			self::form_fields( 'event_cancel' );
+			printf( '<input type="hidden" name="event_id" value="%s">', esc_attr( $event_id ) );
+			printf(
+				'<button type="submit" class="hv-adm-btn hv-adm-btn-danger" onclick="return confirm(%s)">%s</button>',
+				esc_attr( wp_json_encode( $booked
+					? sprintf( Havato_I18N::t( 'event_cancel_confirm_guests' ), $booked )
+					: Havato_I18N::t( 'event_cancel_confirm' ) ) ),
+				esc_html( Havato_I18N::t( 'event_cancel' ) )
+			);
+			echo '</form>';
+		} else {
+			echo '<span class="hv-adm-badge is-gray">' . esc_html( Havato_I18N::t( 'status_cancelled' ) ) . '</span>';
+		}
+
+		echo '</div>';
 	}
 
 	/**
@@ -1172,7 +1425,10 @@ class Havato_Admin {
 				}
 				echo '</span>';
 
-				echo '<b class="hv-adm-menu-price">' . esc_html( havato_price( $price ) ) . '</b>';
+				// Priced in the café's own currency, not the reviewer's.
+				echo '<b class="hv-adm-menu-price">' .
+					esc_html( havato_price( $price, null, isset( $row['country'] ) ? $row['country'] : '' ) ) .
+					'</b>';
 				echo '</li>';
 			}
 			echo '</ul>';
@@ -1726,7 +1982,9 @@ class Havato_Admin {
 					esc_attr( (string) $row['flag_term'] ) . '">⚑ ' .
 					esc_html( Havato_I18N::t( 'needs_review' ) ) . '</span> ';
 			}
-			echo esc_html( $row['message_text'] ) . '</td>';
+			// A system line is stored as a per-language JSON object; print the
+			// admin's own language rather than the raw payload.
+			echo esc_html( havato_message_text( $row['message_text'], empty( $row['sender_id'] ) ) ) . '</td>';
 			echo '</tr>';
 		}
 
@@ -1977,9 +2235,12 @@ class Havato_Admin {
 
 		check_admin_referer( 'havato_admin', 'havato_nonce' );
 
+		global $wpdb;
+
 		$action  = isset( $_POST['havato_action'] ) ? sanitize_key( wp_unslash( $_POST['havato_action'] ) ) : '';
 		$message = Havato_I18N::t( 'saved' );
 		$page    = 'havato';
+		$extra   = array();
 
 		switch ( $action ) {
 			case 'import_venues':
@@ -2094,6 +2355,81 @@ class Havato_Admin {
 				$page = 'havato-google';
 				break;
 
+			case 'event_save':
+				$event_id = isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '';
+				$date     = isset( $_POST['event_date'] ) ? sanitize_text_field( wp_unslash( $_POST['event_date'] ) ) : '';
+				$time     = isset( $_POST['event_time'] ) ? sanitize_text_field( wp_unslash( $_POST['event_time'] ) ) : '';
+				$state    = isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : '';
+
+				// Validate before writing: a malformed date would silently
+				// become 0000-00-00 and drop the event out of every listing.
+				$valid_date = (bool) preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date );
+				$valid_time = (bool) preg_match( '/^\d{2}:\d{2}(:\d{2})?$/', $time );
+
+				if ( $event_id && $valid_date && $valid_time
+					&& in_array( $state, array( 'open', 'matched', 'completed', 'cancelled', 'pending_admin' ), true ) ) {
+
+					if ( 5 === strlen( $time ) ) {
+						$time .= ':00';
+					}
+
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->update(
+						Havato_DB::table( 'events' ),
+						array(
+							'title'      => isset( $_POST['title'] ) ? havato_clamp_text( sanitize_text_field( wp_unslash( $_POST['title'] ) ), 191 ) : '',
+							'theme'      => isset( $_POST['theme'] ) ? havato_clamp_text( sanitize_text_field( wp_unslash( $_POST['theme'] ) ), 191 ) : '',
+							'event_date' => $date,
+							'event_time' => $time,
+							'status'     => $state,
+						),
+						array( 'id' => $event_id ),
+						array( '%s', '%s', '%s', '%s', '%s' ),
+						array( '%s' )
+					);
+
+					Havato_Logger::log( sprintf( 'Event %s edited by administrator.', $event_id ), 'info' );
+				} else {
+					$message = Havato_I18N::t( 'error_generic' );
+				}
+
+				$page  = 'havato-events';
+				$extra = array( 'event' => $event_id );
+				break;
+
+			case 'event_cancel':
+				$event_id = isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '';
+
+				if ( $event_id ) {
+					// A cancellation is a status change, never a delete: the
+					// guest list, the chat and the history all stay intact so
+					// the people who booked can still be accounted for.
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->update(
+						Havato_DB::table( 'events' ),
+						array( 'status' => 'cancelled' ),
+						array( 'id' => $event_id ),
+						array( '%s' ),
+						array( '%s' )
+					);
+
+					// Free the seats so they stop counting against capacity.
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->update(
+						Havato_DB::table( 'event_registrations' ),
+						array( 'status' => 'cancelled' ),
+						array( 'event_id' => $event_id ),
+						array( '%s' ),
+						array( '%s' )
+					);
+
+					Havato_Logger::log( sprintf( 'Event %s cancelled by administrator.', $event_id ), 'warn' );
+					$message = Havato_I18N::t( 'event_cancelled_done' );
+				}
+
+				$page = 'havato-events';
+				break;
+
 			case 'ban_user':
 				$target = isset( $_POST['user_id'] ) ? (int) $_POST['user_id'] : 0;
 				$ban    = ! empty( $_POST['banned'] );
@@ -2167,9 +2503,14 @@ class Havato_Admin {
 
 		wp_safe_redirect(
 			add_query_arg(
-				array(
-					'page'       => $page,
-					'havato_msg' => rawurlencode( $message ),
+				array_merge(
+					array(
+						'page'       => $page,
+						'havato_msg' => rawurlencode( $message ),
+					),
+					// Lets a handler send the admin back to the exact record
+					// they were editing rather than the top of the list.
+					$extra
 				),
 				admin_url( 'admin.php' )
 			)

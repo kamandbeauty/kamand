@@ -414,6 +414,14 @@ class Havato_REST {
 			return new WP_Error( 'havato_no_event', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
 		}
 
+		// Explore only lists open and matched events, but the id travels in
+		// the request body: without this check a stale tab — or a direct call
+		// — could still book a seat at an event that has been cancelled or is
+		// already over.
+		if ( ! in_array( (string) $event['status'], array( 'open', 'matched' ), true ) ) {
+			return new WP_Error( 'havato_event_closed', Havato_I18N::t( 'event_not_open' ), array( 'status' => 409 ) );
+		}
+
 		// Joining is free. What it does require is a usable profile: the
 		// matcher needs the personality answers to seat anyone, and events
 		// are scoped by city, so both halves must exist before taking a seat.
@@ -652,6 +660,7 @@ class Havato_REST {
 				"SELECT g.id, g.name, e.event_date, e.event_time, e.status AS event_status,
 						v.name AS venue_name, v.image AS venue_image,
 						(SELECT message_text FROM $chats c WHERE c.group_id = g.id ORDER BY c.id DESC LIMIT 1) AS last_message,
+						(SELECT is_system FROM $chats c WHERE c.group_id = g.id ORDER BY c.id DESC LIMIT 1) AS last_is_system,
 						(SELECT COUNT(*) FROM $gm m2 WHERE m2.group_id = g.id) AS member_count
 				 FROM $gm m
 				 INNER JOIN $groups g ON g.id = m.group_id
@@ -676,7 +685,15 @@ class Havato_REST {
 				'date'         => havato_date_pair( $row['event_date'] ),
 				'time'         => substr( (string) $row['event_time'], 0, 5 ),
 				'members'      => (int) $row['member_count'],
-				'last_message' => $row['last_message'] ? wp_trim_words( $row['last_message'], 8, '…' ) : '',
+				// The preview must be decoded first: a freshly matched table's
+				// newest line is the system message, which is stored as JSON.
+				'last_message' => $row['last_message']
+					? wp_trim_words(
+						havato_message_text( $row['last_message'], ! empty( $row['last_is_system'] ) ),
+						8,
+						'…'
+					)
+					: '',
 				'event_status' => $row['event_status'],
 			);
 		}
@@ -740,7 +757,9 @@ class Havato_REST {
 				'sender_id' => $sender,
 				'name'      => $row['sender_name'],
 				'avatar'    => $sender ? havato_avatar( $sender ) : '',
-				'text'      => $row['message_text'],
+				// System lines carry one string per language; the client picks
+				// the active one so a Persian guest never sees the English half.
+				'text'      => havato_message_pair( $row['message_text'], (bool) $row['is_system'] ),
 				'time'      => substr( (string) $row['message_time'], 11, 5 ),
 				'time_full' => havato_date_pair( $row['message_time'], true ),
 				'is_system' => (bool) $row['is_system'],
@@ -840,7 +859,12 @@ class Havato_REST {
 			$messages[] = array(
 				'id'        => (int) $row['id'],
 				'sender_id' => (int) $row['sender_id'],
-				'text'      => $row['message_text'],
+				'name'      => havato_display_name( (int) $row['sender_id'] ),
+				'avatar'    => havato_avatar( (int) $row['sender_id'] ),
+				// Same shape as a table message: the renderer is shared, so it
+				// must always receive a language map. A private line is never a
+				// system line, hence `false`.
+				'text'      => havato_message_pair( $row['message_text'], false ),
 				'time'      => substr( (string) $row['message_time'], 11, 5 ),
 				'time_full' => havato_date_pair( $row['message_time'], true ),
 				'mine'      => (int) $row['sender_id'] === $user_id,
@@ -1481,7 +1505,12 @@ class Havato_REST {
 				'reporter_id' => $user_id,
 				'reported_id' => $sender,
 				'reason'      => $reason,
-				'excerpt'     => havato_clamp_text( (string) $row['message_text'], 500 ),
+				// Decoded defensively: only guest text can reach here, but the
+				// queue must never show a moderator a raw JSON blob.
+				'excerpt'     => havato_clamp_text(
+					havato_message_text( (string) $row['message_text'], ! empty( $row['is_system'] ) ),
+					500
+				),
 				'status'      => 'pending',
 				'created_at'  => havato_now(),
 			),
@@ -3068,9 +3097,13 @@ class Havato_REST {
 			return array();
 		}
 
+		// Prices follow the café's own country: an Istanbul menu is priced in
+		// Lira even when a Persian-speaking guest is reading it.
+		$country = isset( $row['country'] ) ? (string) $row['country'] : '';
+
 		$menu = havato_json( $row['menu_json'] );
 		foreach ( $menu as $i => $item ) {
-			$menu[ $i ]['price_label'] = havato_price_pair( isset( $item['price'] ) ? (int) $item['price'] : 0 );
+			$menu[ $i ]['price_label'] = havato_price_pair( isset( $item['price'] ) ? (int) $item['price'] : 0, $country );
 		}
 
 		$payload = array(
@@ -3098,7 +3131,7 @@ class Havato_REST {
 		if ( $private ) {
 			$pending = havato_json( $row['pending_menu_json'] );
 			foreach ( $pending as $i => $item ) {
-				$pending[ $i ]['price_label'] = havato_price_pair( isset( $item['price'] ) ? (int) $item['price'] : 0 );
+				$pending[ $i ]['price_label'] = havato_price_pair( isset( $item['price'] ) ? (int) $item['price'] : 0, $country );
 			}
 			$payload['pending_menu'] = $pending;
 			$payload['manager_id']   = (int) $row['manager_id'];

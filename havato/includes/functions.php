@@ -113,17 +113,50 @@ function havato_display_name( $user_id ) {
  * @param string|null $lang   Language.
  * @return string
  */
-function havato_price( $amount, $lang = null ) {
+function havato_price( $amount, $lang = null, $country = '' ) {
 	$lang   = $lang ? $lang : Havato_I18N::current_lang();
 	$amount = (int) $amount;
 	if ( $amount <= 0 ) {
 		return Havato_I18N::t( 'free', $lang );
 	}
+
 	$formatted = number_format( $amount );
 	if ( 'fa' === $lang ) {
-		return Havato_Jalali::fa_digits( $formatted ) . ' ' . Havato_I18N::t( 'toman', $lang );
+		$formatted = Havato_Jalali::fa_digits( $formatted );
 	}
-	return $formatted . ' ' . Havato_I18N::t( 'toman', $lang );
+
+	return $formatted . ' ' . havato_currency_label( $country, $lang );
+}
+
+/**
+ * Currency of a café, by the country it trades in.
+ *
+ * A price belongs to the till, not to the reader: an Istanbul café charges
+ * Lira whether the menu is being read in Persian, English or Turkish. Reading
+ * it off the interface language would have shown Toman to a Persian visitor
+ * looking at a Turkish café.
+ *
+ * @param string      $country Country key ('ir', 'tr', …).
+ * @param string|null $lang    Language to label it in.
+ * @return string
+ */
+function havato_currency_label( $country, $lang = null ) {
+	$lang    = $lang ? $lang : Havato_I18N::current_lang();
+	$country = strtolower( (string) $country );
+
+	$map = apply_filters(
+		'havato_country_currencies',
+		array(
+			'ir' => 'toman',
+			'tr' => 'lira',
+		)
+	);
+
+	// An unknown country falls back to the platform's home currency rather
+	// than printing a bare number with no unit at all.
+	$key = isset( $map[ $country ] ) ? $map[ $country ] : 'toman';
+
+	return Havato_I18N::t( $key, $lang );
 }
 
 /**
@@ -154,16 +187,68 @@ function havato_date_pair( $date, $with_time = false ) {
 }
 
 /**
- * Both localized variants of a price.
+ * Decode a chat line into a per-language map.
  *
- * @param int $amount Amount.
- * @return array{fa:string,en:string}
+ * System messages are stored as a JSON object keyed by language. Everything a
+ * guest types is plain text and must be returned untouched — including text
+ * that merely looks like JSON, which is why only system rows are decoded.
+ *
+ * Rows written before v1.21.0 hold one glued-together bilingual string; those
+ * are returned as-is in every language rather than being reformatted, so old
+ * conversations keep reading exactly as they did.
+ *
+ * @param string $raw       Stored message text.
+ * @param bool   $is_system Whether the row is a system line.
+ * @return array Language map, always containing every supported language.
  */
-function havato_price_pair( $amount ) {
-	return array(
-		'fa' => havato_price( $amount, 'fa' ),
-		'en' => havato_price( $amount, 'en' ),
-	);
+function havato_message_pair( $raw, $is_system = false ) {
+	$langs = array_keys( Havato_I18N::languages() );
+	$out   = array();
+
+	$decoded = $is_system ? json_decode( (string) $raw, true ) : null;
+
+	foreach ( $langs as $lang ) {
+		if ( is_array( $decoded ) && isset( $decoded[ $lang ] ) && is_string( $decoded[ $lang ] ) ) {
+			$out[ $lang ] = $decoded[ $lang ];
+			continue;
+		}
+		if ( is_array( $decoded ) && isset( $decoded['en'] ) && is_string( $decoded['en'] ) ) {
+			$out[ $lang ] = $decoded['en'];
+			continue;
+		}
+		$out[ $lang ] = (string) $raw;
+	}
+
+	return $out;
+}
+
+/**
+ * Flatten a chat line for a screen that shows one language (the admin archive).
+ *
+ * @param string $raw       Stored message text.
+ * @param bool   $is_system Whether the row is a system line.
+ * @param string $lang      Language to render.
+ * @return string
+ */
+function havato_message_text( $raw, $is_system = false, $lang = null ) {
+	$lang = $lang ? $lang : Havato_I18N::current_lang();
+	$pair = havato_message_pair( $raw, $is_system );
+	return isset( $pair[ $lang ] ) ? $pair[ $lang ] : reset( $pair );
+}
+
+/**
+ * Every localized variant of a price.
+ *
+ * @param int    $amount  Amount.
+ * @param string $country Country of the café that charges it.
+ * @return array Language map.
+ */
+function havato_price_pair( $amount, $country = '' ) {
+	$out = array();
+	foreach ( array_keys( Havato_I18N::languages() ) as $lang ) {
+		$out[ $lang ] = havato_price( $amount, $lang, $country );
+	}
+	return $out;
 }
 
 /**

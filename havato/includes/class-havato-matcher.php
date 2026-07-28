@@ -844,20 +844,39 @@ class Havato_Matcher {
 		$chats = Havato_DB::table( 'chats' );
 		$venue = self::venue_name( $event['venue_id'] );
 
-		// Bilingual, and it names the physical table when there is one so
-		// nobody has to ask a waiter where to sit.
-		$seat_fa = $number ? sprintf( ' — میز شماره %s', Havato_Jalali::fa_digits( $number ) ) : '';
-		$seat_en = $number ? sprintf( ' — Table #%d', $number ) : '';
+		// Stored as JSON in every supported language, not as one glued-together
+		// bilingual string. A Persian speaker was being shown the English half
+		// as well, which read like a bug; the client now picks its own language
+		// exactly like every other label in the app.
+		$payload = array();
 
-		$text = sprintf(
-			'میز شما چیده شد! %s%s — %s ساعت %s | Your table is ready at %s%s.',
-			$venue['fa'],
-			$seat_fa,
-			Havato_Jalali::format( $event['event_date'], 'fa' ),
-			Havato_Jalali::fa_digits( substr( $event['event_time'], 0, 5 ) ),
-			$venue['en'],
-			$seat_en
-		);
+		foreach ( array_keys( Havato_I18N::languages() ) as $lang ) {
+			// `table_number_label` is a %d template ("میز شماره %d" / "Table #%d").
+			// Fill it first, then convert the digits, otherwise sprintf would
+			// choke on Persian numerals.
+			$seat = '';
+			if ( $number ) {
+				$label = sprintf( Havato_I18N::t( 'table_number_label', $lang ), (int) $number );
+				if ( 'fa' === $lang ) {
+					$label = Havato_Jalali::fa_digits( $label );
+				}
+				$seat = ' — ' . $label;
+			}
+
+			$time = substr( (string) $event['event_time'], 0, 5 );
+			if ( 'fa' === $lang ) {
+				$time = Havato_Jalali::fa_digits( $time );
+			}
+
+			$payload[ $lang ] = sprintf(
+				'%s %s%s — %s %s',
+				Havato_I18N::t( 'chat_table_ready', $lang ),
+				isset( $venue[ $lang ] ) ? $venue[ $lang ] : $venue['en'],
+				$seat,
+				Havato_Jalali::format( $event['event_date'], $lang ),
+				$time
+			);
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->insert(
@@ -866,7 +885,7 @@ class Havato_Matcher {
 				'group_id'     => $group_id,
 				'sender_id'    => 0,
 				'sender_name'  => 'Havato',
-				'message_text' => $text,
+				'message_text' => wp_json_encode( $payload ),
 				'message_time' => havato_now(),
 				'is_system'    => 1,
 			),
@@ -885,14 +904,14 @@ class Havato_Matcher {
 		$venues = Havato_DB::table( 'venues' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$row = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM $venues WHERE id=%s", $venue_id ), ARRAY_A );
-		if ( ! $row ) {
-			return array( 'fa' => 'کافه', 'en' => 'Café' );
+
+		$out = array();
+		foreach ( array_keys( Havato_I18N::languages() ) as $lang ) {
+			// A café name is a proper noun: one canonical spelling in every
+			// language. Only the fallback for a missing venue is translated.
+			$out[ $lang ] = $row ? $row['name'] : Havato_I18N::t( 'venue_fallback', $lang );
 		}
-		// One canonical café name, used in both languages.
-		return array(
-			'fa' => $row['name'],
-			'en' => $row['name'],
-		);
+		return $out;
 	}
 
 	/**

@@ -40,6 +40,7 @@
 		returnTab: null,
 		pollTimer: null,
 		lastMsgId: 0,
+		chatFetching: false, // one chat request in flight at a time
 		map: null,
 		mapMarkers: [],
 		meMarker: null,   // "you are here" dot, recreated with each map
@@ -63,6 +64,17 @@
 	 * ================================================================== */
 	function $(sel, root) { return (root || document).querySelector(sel); }
 	function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+	// Chat stickers. Plain Unicode emoji rather than images: nothing to host,
+	// nothing to upload, no extra request, and they render in every WebView.
+	// Deliberately warm and neutral — nothing that could read as an insult or
+	// a come-on between strangers who have just met.
+	var STICKERS = [
+		'😀', '😂', '🙂', '😍', '😎', '🤗',
+		'👍', '👏', '🙏', '🤝', '💪', '✌️',
+		'☕', '🍰', '🎉', '🔥', '💯', '❤️',
+		'😮', '🤔', '😴', '🙈', '🌹', '⭐'
+	];
 
 	function t(key) {
 		var pack = BOOT.i18n[S.lang] || BOOT.i18n.fa || {};
@@ -1228,6 +1240,9 @@
 	function openChatRoom(type, id) {
 		S.chatRoom = { type: type, id: id };
 		S.lastMsgId = 0;
+		// A request still in flight from the previous room must not keep the
+		// new one locked out.
+		S.chatFetching = false;
 		renderChatRoom();
 	}
 
@@ -1241,7 +1256,15 @@
 					'<div class="hv-list-body"><div class="hv-list-title" id="hv-chat-title">' + esc(t('loading')) + '</div></div>' +
 				'</div>' +
 				'<div class="hv-chat-log" id="hv-chat-log"></div>' +
+				'<div class="hv-sticker-tray" id="hv-sticker-tray" hidden>' +
+					STICKERS.map(function (s) {
+						return '<button type="button" class="hv-sticker" data-sticker="' + esc(s) + '">' + esc(s) + '</button>';
+					}).join('') +
+				'</div>' +
 				'<div class="hv-chat-form">' +
+					'<button type="button" class="hv-chat-sticker" id="hv-chat-sticker" ' +
+						'aria-label="' + esc(t('stickers')) + '" title="' + esc(t('stickers')) + '" ' +
+						'aria-expanded="false">☺</button>' +
 					'<input type="text" class="hv-input" id="hv-chat-input" placeholder="' + esc(t('chat_placeholder')) + '">' +
 					'<button type="button" class="hv-chat-send" id="hv-chat-send">➤</button>' +
 				'</div>' +
@@ -1258,6 +1281,27 @@
 			if (e.key === 'Enter') { sendMessage(); }
 		};
 
+		var tray = $('#hv-sticker-tray');
+		var stickerBtn = $('#hv-chat-sticker');
+		stickerBtn.onclick = function () {
+			var open = tray.hidden;
+			tray.hidden = !open;
+			stickerBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+			stickerBtn.classList.toggle('is-open', open);
+		};
+
+		$$('[data-sticker]', tray).forEach(function (btn) {
+			btn.onclick = function () {
+				// A sticker is just a message whose body is the emoji, so it
+				// travels through the same endpoint, the same moderation and
+				// the same archive as any other line — nothing new to secure.
+				sendMessage(btn.dataset.sticker);
+				tray.hidden = true;
+				stickerBtn.setAttribute('aria-expanded', 'false');
+				stickerBtn.classList.remove('is-open');
+			};
+		});
+
 		fetchMessages(true);
 		startPolling();
 
@@ -1268,6 +1312,14 @@
 		var room = S.chatRoom;
 		if (!room) { return; }
 
+		// Only one request may be in flight. Sending a message triggers a
+		// fetch, and the 3-second poll fires independently: both used to read
+		// the same `since` and both appended the same rows, so every message
+		// appeared twice. Dropping the overlapping call is safe because the
+		// poll comes round again immediately afterwards.
+		if (S.chatFetching) { return; }
+		S.chatFetching = true;
+
 		var path = room.type === 'group' ? 'chat/group' : 'chat/private';
 		var params = room.type === 'group'
 			? { group_id: room.id, since: S.lastMsgId }
@@ -1276,6 +1328,9 @@
 		api(path, { params: params }).then(function (res) {
 			var log = $('#hv-chat-log');
 			if (!log) { return; }
+
+			// The room may have changed while the request was in the air.
+			if (!S.chatRoom || S.chatRoom.id !== room.id) { return; }
 
 			var title = $('#hv-chat-title');
 			if (title) {
@@ -1289,8 +1344,14 @@
 			if (initial) { log.innerHTML = ''; }
 
 			(res.messages || []).forEach(function (msg) {
+				// Second guard: never render an id that is already on screen.
+				// The cursor makes this rare, but a retried request or a
+				// re-entrant render must not be able to duplicate a line.
+				if (log.querySelector('[data-msg-key="' + msg.id + '"]')) { return; }
+
 				S.lastMsgId = Math.max(S.lastMsgId, msg.id);
 				var node = document.createElement('div');
+				node.setAttribute('data-msg-key', msg.id);
 				node.className = 'hv-msg' + (msg.is_system ? ' is-system' : (msg.mine ? ' is-mine' : ''));
 
 				// Somebody else's message can be reported or its sender
@@ -1306,11 +1367,27 @@
 					node.dataset.msgName = msg.name || '';
 				}
 
-				node.innerHTML =
+				// A system line arrives as a language map; anything a guest
+				// typed arrives as one too, holding the same text in each key.
+				var body = (msg.text && typeof msg.text === 'object') ? pick(msg.text) : msg.text;
+
+				var bubble =
 					(!msg.mine && !msg.is_system && msg.name ? '<span class="hv-msg-name">' + esc(msg.name) + '</span>' : '') +
-					esc(msg.text) +
+					'<span class="hv-msg-text">' + esc(body) + '</span>' +
 					'<span class="hv-msg-time">' + num(msg.time) + '</span>' +
 					(actionable ? '<span class="hv-msg-flag" aria-hidden="true">⋯</span>' : '');
+
+				// Show who is talking. Without a face beside the bubble a busy
+				// table reads as one anonymous stream. Own and system lines
+				// need no avatar: there is no ambiguity about either.
+				if (!msg.mine && !msg.is_system && msg.avatar) {
+					node.innerHTML =
+						'<img class="hv-msg-avatar" src="' + esc(msg.avatar) + '" alt="" loading="lazy">' +
+						'<span class="hv-msg-bubble">' + bubble + '</span>';
+					node.classList.add('has-avatar');
+				} else {
+					node.innerHTML = bubble;
+				}
 
 				if (actionable) {
 					node.onclick = function () {
@@ -1335,7 +1412,13 @@
 			if (initial && room.type === 'group' && (res.members || []).length) {
 				renderGroupMembers(res.members);
 			}
-		}).catch(function () { /* silent during polling */ });
+		}).catch(function () {
+			/* silent during polling */
+		}).then(function () {
+			// Always clear the flag, success or failure, or one dropped
+			// request would freeze the chat for good.
+			S.chatFetching = false;
+		});
 	}
 
 	/**
@@ -1453,14 +1536,20 @@
 		bindUserLinks();
 	}
 
-	function sendMessage() {
+	function sendMessage(sticker) {
 		var input = $('#hv-chat-input');
 		var room = S.chatRoom;
-		if (!input || !room) { return; }
+		if (!room) { return; }
 
-		var text = input.value.trim();
-		if (!text) { return; }
-		input.value = '';
+		var text;
+		if (typeof sticker === 'string' && sticker) {
+			text = sticker;
+		} else {
+			if (!input) { return; }
+			text = input.value.trim();
+			if (!text) { return; }
+			input.value = '';
+		}
 
 		var path = room.type === 'group' ? 'chat/group/send' : 'chat/private/send';
 		var body = room.type === 'group' ? { group_id: room.id, text: text } : { user_id: room.id, text: text };

@@ -1091,12 +1091,83 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 .hv-msg-name { display: block; font-size: 0.68rem; font-weight: 700; color: var(--hv-blue); margin-block-end: 2px; }
 .hv-msg-time { display: block; font-size: 0.62rem; color: var(--hv-text-soft); margin-block-start: 3px; }
+.hv-msg-text { display: block; }
 .hv-msg.is-mine {
 	align-self: flex-end;
 	background: linear-gradient(120deg, var(--hv-indigo-2), var(--hv-indigo));
 	color: #fff;
 }
 .hv-msg.is-mine .hv-msg-name { color: rgba(255, 255, 255, 0.85); }
+
+/* A message from somebody else carries their face, so a busy table does not
+   read as one anonymous stream. The bubble keeps the padding; the row itself
+   becomes a transparent flex container so the avatar sits outside it. */
+.hv-msg.has-avatar {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+	background: none;
+	box-shadow: none;
+	padding: 0;
+	max-inline-size: 88%;
+}
+.hv-msg-avatar {
+	inline-size: 30px;
+	block-size: 30px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex: 0 0 auto;
+	background: var(--hv-surface-2, #eef1fb);
+}
+.hv-msg.has-avatar .hv-msg-bubble {
+	display: block;
+	background: #fff;
+	border-radius: 16px;
+	padding: 9px 13px;
+	box-shadow: var(--hv-shadow-soft);
+	min-inline-size: 0;
+}
+/* The tap target for report/block is the bubble, not the avatar. */
+.hv-msg.has-avatar.is-actionable { padding-inline-end: 0; }
+.hv-msg.has-avatar .hv-msg-flag { inset-inline-end: 8px; inset-block-start: 6px; }
+
+/* ---------------------------------------------------------------- stickers */
+.hv-sticker-tray {
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 4px;
+	padding: 8px;
+	margin-block-start: 6px;
+	background: #fff;
+	border-radius: 14px;
+	box-shadow: var(--hv-shadow-soft);
+	max-block-size: 34vh;
+	overflow-y: auto;
+}
+#havato-app .hv-sticker-tray[hidden] { display: none !important; }
+.hv-sticker {
+	font-size: 1.35rem;
+	line-height: 1;
+	padding: 7px 0;
+	border: 0;
+	border-radius: 10px;
+	background: transparent;
+	cursor: pointer;
+}
+.hv-sticker:active { background: rgba(0, 0, 0, 0.06); transform: scale(0.94); }
+.hv-chat-sticker {
+	flex: 0 0 auto;
+	inline-size: 38px;
+	block-size: 38px;
+	border: 0;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.05);
+	color: var(--hv-text, #16204a);
+	font-size: 1.15rem;
+	line-height: 1;
+	cursor: pointer;
+}
+.hv-chat-sticker.is-open { background: var(--hv-indigo); color: #fff; }
 /* A foreign message is tappable: it opens the report/block sheet. */
 .hv-msg.is-actionable { cursor: pointer; position: relative; padding-inline-end: 26px; }
 .hv-msg.is-actionable:active { transform: scale(0.99); }

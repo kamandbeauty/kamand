@@ -123,8 +123,14 @@ t('admin-post handlers check capability AND nonce',
 
 console.log('\n--- verified: injection ---');
 t('search uses esc_like + prepare', /esc_like\( \$search \)[\s\S]{0,200}\$wpdb->prepare/.test(adm));
+// 'cancelled' joined the list in v1.21.0. What matters is that the value is
+// checked against a fixed set before it reaches SQL, not which states are in
+// that set.
 t('status filters are allow-listed before interpolation',
-  /in_array\( \$status, array\( 'open', 'matched', 'completed', 'pending_admin' \), true \)/.test(adm));
+  /in_array\( \$status, array\((?:\s*'[a-z_]+',?)+\s*\), true \)/.test(adm));
+t('…and the allow-list still covers the states the UI offers',
+  ['open', 'matched', 'completed', 'cancelled', 'pending_admin']
+    .every(s => new RegExp("in_array\\( \\$status, array\\([^)]*'" + s + "'").test(adm)));
 t('client escaping covers all five dangerous characters',
   /&amp;/.test(js) && /&lt;/.test(js) && /&gt;/.test(js) && /&quot;/.test(js) && /&#39;/.test(js));
 t('theme colours are strictly validated before entering a <style> block',

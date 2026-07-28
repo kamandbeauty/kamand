@@ -48,8 +48,14 @@ console.log('\n--- 3. guests are never confused ---');
 t('group named after the REAL table number', /table_number_label', 'en' \), \$number/.test(M));
 t('no sequential "Table 1,2,3" when a number exists', /\$number\s*\?\s*sprintf/.test(M));
 t('legacy events still get a fallback name', /sprintf\( 'Table %d', \$index \)/.test(M));
-t('welcome message names the table', /Table #%d/.test(M));
-t('message bilingual', /میز شماره %s/.test(M));
+// The welcome line used to be one glued-together fa|en string carrying a
+// literal "Table #%d". Since v1.21.0 it is built per language from the string
+// map, so assert the behaviour rather than the old literal.
+t('welcome message names the table', /table_number_label', \$lang \), \(int\) \$number/.test(M));
+t('message built for every supported language',
+  /foreach \( array_keys\( Havato_I18N::languages\(\) \) as \$lang \)/.test(M) &&
+  /'message_text' => wp_json_encode\( \$payload \)/.test(M));
+t('no language is glued onto another any more', !/\| Your table is ready at/.test(M));
 t('chat list shows the table badge', /thread\.table_name/.test(js));
 t('server sends it', /'table_name'   => \$row\['name'\]/.test(rest));
 t('reason documented', /guest told "Table 6" walks to table 6/.test(M));
