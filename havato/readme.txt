@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.21.0
+Stable tag: 1.22.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,23 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.22.0 =
+* The temporary review behaviour introduced in 1.17.0 is now limited to cafés
+  outside Iran. Booking a seat at a café in Iran again does what it always
+  should: the guest stays on Explore, and the table forms when the event fills
+  or when the cron fallback runs before it starts. Cafés in other countries
+  keep seating immediately and opening the chat, so the chat features can
+  still be reviewed.
+* The decision is made once, on the server, from the country of the café
+  hosting the event, and the answer is sent back with the booking. The app
+  branches on that value rather than deciding for itself, so the two halves
+  cannot disagree and leave a guest looking at an empty chat list for a table
+  that was never seated.
+* A café whose country cannot be resolved is treated as Iran — the cautious
+  side, since it means nothing happens behind the guest's back.
+* The `havato_match_immediately` filter now receives the country as a third
+  argument, so a site can still override the rule per country.
 
 = 1.21.0 =
 * Fixed: every message a guest sent appeared twice. Sending triggered a

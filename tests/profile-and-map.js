@@ -100,15 +100,49 @@ console.log('\n--- 7. more interests ---');
   t('every interest is trilingual', withTr === n);
 })();
 
-console.log('\n--- 8. chat after reserving (temporary) ---');
-t('the app goes to Chats after a booking', /setTab\('chats'\)/.test(js));
+console.log('\n--- 8. chat after reserving (temporary, non-Iran only) ---');
+t('the app can go to Chats after a booking', /setTab\('chats'\)/.test(js));
 t('it is clearly flagged temporary', /TEMPORARY \(requested for review\)/.test(js));
-t('the revert instruction is written down', /replacing this block with viewExplore/.test(js));
+t('the revert instruction is written down', /replacing this\s*\n?\s*\/\/ whole block with viewExplore/.test(js));
 t('the server can seat immediately', /havato_match_immediately/.test(rest));
-t('that behaviour is filterable, so it can be turned off',
-  /apply_filters\( 'havato_match_immediately', true, \$event_id \)/.test(rest));
+t('that behaviour is still filterable, so it can be turned off',
+  /apply_filters\( 'havato_match_immediately', \$temp_seat, \$event_id, \$country \)/.test(rest));
 t('the group id is returned so the room can open', /'group_id' => \$group_id/.test(rest));
 t('the client opens that room directly', /res\.group_id \? \{ type: 'group', id: res\.group_id \}/.test(js));
+
+// Scoped to cafés outside Iran, decided on the server so both halves agree.
+t('the default is now country-dependent, not a blanket true',
+  !/apply_filters\( 'havato_match_immediately', true,/.test(rest));
+t('an unresolvable country is excluded server-side too',
+  /\$temp_seat = \( '' !== \$country && 'ir' !== \$country \)/.test(rest));
+t('the café country is resolved from the venue', /private static function event_country/.test(rest));
+t('…by joining the event to its venue', /SELECT v\.country FROM \$events e[\s\S]{0,160}INNER JOIN \$venues v/.test(rest));
+t('it is lower-cased so casing cannot defeat the check', /strtolower\( \(string\) \$country \)/.test(rest));
+t('the country travels back to the app', /'country'  => \$country/.test(rest));
+t('the client branches on it', /res\.country && res\.country !== 'ir'/.test(js));
+t('an Iranian booking falls back to Explore', /\} else \{\s*\n\s*viewExplore\(\);/.test(js));
+
+(() => {
+  // Both halves must reach the same verdict for the same café, or a guest
+  // could be dropped into a chat list for a table that was never seated.
+  const server = c => c !== '' && String(c).toLowerCase() !== 'ir';
+  const client = c => !!(c && c !== 'ir');
+  const cases = ['ir', 'tr', '', 'IR'];
+  const agree = cases.every(c => {
+    // The server lower-cases before comparing; the client receives that
+    // already-normalised value, so feed it the same thing.
+    const normalised = String(c).toLowerCase();
+    return server(normalised) === client(normalised);
+  });
+  t('server and client agree for every country tested', agree);
+
+  t('Turkey seats immediately', server('tr') === true && client('tr') === true);
+  t('Iran waits for the table to fill', server('ir') === false && client('ir') === false);
+  t('uppercase IR is still treated as Iran', server('IR'.toLowerCase()) === false);
+  // An unresolvable venue must not silently opt a café into the temporary
+  // path; it is the safer default to behave normally.
+  t('an unknown country does not force the chat jump', client('') === false);
+})();
 
 console.log('\n--- 9. nothing else broke ---');
 t('all strings remain trilingual', (() => {

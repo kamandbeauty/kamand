@@ -489,14 +489,23 @@ class Havato_REST {
 		 * of waiting for the last seat, so the chat room exists right after
 		 * reserving and its features can be inspected.
 		 *
-		 * Normal behaviour is to wait until the event fills (or the cron
-		 * fallback runs). Set this filter to false to restore it.
+		 * Limited to cafés outside Iran. Iranian venues follow the normal rule
+		 * — the table forms when the event fills, or when the cron fallback
+		 * runs before it starts.
+		 *
+		 * An unresolvable country counts as "no": the app would send that
+		 * guest to Explore, so seating them here would leave a table formed
+		 * behind their back.
 		 *
 		 * @param bool   $now      Whether to match on every booking.
 		 * @param string $event_id Event id.
+		 * @param string $country  Country of the café hosting the event.
 		 */
+		$country   = self::event_country( $event_id );
+		$temp_seat = ( '' !== $country && 'ir' !== $country );
+
 		if ( ! ( is_array( $match ) && ! empty( $match['ok'] ) )
-			&& apply_filters( 'havato_match_immediately', true, $event_id ) ) {
+			&& apply_filters( 'havato_match_immediately', $temp_seat, $event_id, $country ) ) {
 			$match = Havato_Matcher::run( $event_id, true );
 		}
 
@@ -525,8 +534,36 @@ class Havato_REST {
 				'queued'   => true,
 				'matched'  => $matched,
 				'group_id' => $group_id,
+				// The app decides where to land next from this, so the rule
+				// lives in one place instead of being duplicated client-side.
+				'country'  => $country,
 			)
 		);
+	}
+
+	/**
+	 * Country of the café hosting an event.
+	 *
+	 * @param string $event_id Event id.
+	 * @return string Country key, or '' when it cannot be resolved.
+	 */
+	private static function event_country( $event_id ) {
+		global $wpdb;
+
+		$events = Havato_DB::table( 'events' );
+		$venues = Havato_DB::table( 'venues' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$country = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT v.country FROM $events e
+				 INNER JOIN $venues v ON v.id = e.venue_id
+				 WHERE e.id = %s LIMIT 1",
+				$event_id
+			)
+		);
+
+		return strtolower( (string) $country );
 	}
 
 	/**

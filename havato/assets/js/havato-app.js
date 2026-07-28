@@ -928,17 +928,27 @@
 					: (seats > 1 ? t('seats_booked').replace('%s', num(seats)) : t('joined_event'));
 				toast(msg, 'ok');
 
-				// TEMPORARY (requested for review): jump straight into Chats
-				// after reserving so the chat features can be inspected without
-				// waiting for the matcher. The normal behaviour is to stay on
-				// Explore until a table is actually formed — revert by
-				// replacing this block with viewExplore().
-				S.chatMode = 'groups';
-				// If the table was seated, open its room directly; otherwise
-				// land on the chat list.
-				S.chatRoom = res.group_id ? { type: 'group', id: res.group_id } : null;
-				S.lastMsgId = 0;
-				setTab('chats');
+				// TEMPORARY (requested for review), and only for cafés outside
+				// Iran: jump straight into Chats after reserving so the chat
+				// features can be inspected without waiting for the matcher.
+				// Iranian cafés keep the normal behaviour — stay on Explore
+				// until a table is actually formed. Revert by replacing this
+				// whole block with viewExplore().
+				//
+				// The country comes from the server, which applies the same
+				// rule when deciding whether to seat the table right away, so
+				// the two halves can never disagree.
+				if (res.country && res.country !== 'ir') {
+					S.chatMode = 'groups';
+					// If the table was seated, open its room directly;
+					// otherwise land on the chat list.
+					S.chatRoom = res.group_id ? { type: 'group', id: res.group_id } : null;
+					S.lastMsgId = 0;
+					S.chatFetching = false;
+					setTab('chats');
+				} else {
+					viewExplore();
+				}
 			})
 			.catch(function (err) {
 				if (onFail) { onFail(); }
