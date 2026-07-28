@@ -117,6 +117,12 @@ class Havato_Google_Auth {
 			update_user_meta( $user->ID, 'havato_avatar', $pic );
 		}
 
+		// Google sign-in sets the cookie directly, so it never passes through
+		// the `authenticate` filter that refuses banned accounts elsewhere.
+		if ( havato_is_banned( $user->ID ) ) {
+			return new WP_Error( 'havato_banned', Havato_I18N::t( 'account_banned' ), array( 'status' => 403 ) );
+		}
+
 		self::force_login( $user->ID );
 
 		return array(

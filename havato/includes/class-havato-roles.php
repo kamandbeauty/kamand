@@ -17,8 +17,27 @@ class Havato_Roles {
 	 */
 	public static function init() {
 		add_action( 'admin_init', array( __CLASS__, 'block_gatherers' ) );
+		// Refuse the login itself, so a banned person cannot get a fresh
+		// cookie even though the REST layer would also stop them.
+		add_filter( 'authenticate', array( __CLASS__, 'refuse_banned' ), 30, 1 );
 		add_filter( 'manage_users_columns', array( __CLASS__, 'user_columns' ) );
 		add_filter( 'manage_users_custom_column', array( __CLASS__, 'user_column_content' ), 10, 3 );
+	}
+
+	/**
+	 * Stop a banned account from authenticating.
+	 *
+	 * Runs after WordPress has resolved the user, so it applies to any login
+	 * route — the branded owner page, wp-login.php or Google sign-in.
+	 *
+	 * @param WP_User|WP_Error|null $user Resolved user.
+	 * @return WP_User|WP_Error|null
+	 */
+	public static function refuse_banned( $user ) {
+		if ( $user instanceof WP_User && havato_is_banned( $user->ID ) ) {
+			return new WP_Error( 'havato_banned', Havato_I18N::t( 'account_banned' ) );
+		}
+		return $user;
 	}
 
 	/**
@@ -109,6 +128,11 @@ class Havato_Roles {
 	public static function user_column_content( $output, $column, $user_id ) {
 		if ( 'havato_role' === $column ) {
 			$role = havato_user_role( $user_id );
+
+			// Make a ban obvious wherever users are listed.
+			$flag = havato_is_banned( $user_id )
+				? '<span class="hv-user-badge hv-badge-orange">⛔ ' . esc_html( Havato_I18N::t( 'banned_badge' ) ) . '</span> '
+				: '';
 			$map  = array(
 				'gatherer'   => array( 'label' => 'Gatherer', 'class' => 'hv-badge-blue' ),
 				'cafe_owner' => array( 'label' => 'Café Owner', 'class' => 'hv-badge-orange' ),
@@ -116,7 +140,7 @@ class Havato_Roles {
 				'guest'      => array( 'label' => '—', 'class' => 'hv-badge-gray' ),
 			);
 			$info = isset( $map[ $role ] ) ? $map[ $role ] : $map['guest'];
-			return '<span class="hv-user-badge ' . esc_attr( $info['class'] ) . '">' . esc_html( $info['label'] ) . '</span>';
+			return $flag . '<span class="hv-user-badge ' . esc_attr( $info['class'] ) . '">' . esc_html( $info['label'] ) . '</span>';
 		}
 
 		if ( 'havato_venue' === $column ) {

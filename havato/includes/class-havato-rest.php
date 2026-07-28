@@ -45,6 +45,11 @@ class Havato_REST {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'havato_auth', Havato_I18N::t( 'auth_title' ), array( 'status' => 401 ) );
 		}
+		// A banned account keeps its cookie until it expires, so every
+		// authenticated endpoint has to re-check rather than trusting login.
+		if ( havato_is_banned( get_current_user_id() ) ) {
+			return new WP_Error( 'havato_banned', Havato_I18N::t( 'account_banned' ), array( 'status' => 403 ) );
+		}
 		return true;
 	}
 
@@ -775,6 +780,11 @@ class Havato_REST {
 
 		$chats = Havato_DB::table( 'chats' );
 
+		// Flag for review if the text trips the word list. The message is
+		// delivered exactly as written and the sender is told nothing; only
+		// the admin panel shows the marker.
+		$flag = havato_profanity_hit( $text );
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->insert(
 			$chats,
@@ -785,8 +795,10 @@ class Havato_REST {
 				'message_text' => $text,
 				'message_time' => havato_now(),
 				'is_system'    => 0,
+				'flagged'      => '' !== $flag ? 1 : 0,
+				'flag_term'    => $flag,
 			),
-			array( '%s', '%d', '%s', '%s', '%s', '%d' )
+			array( '%s', '%d', '%s', '%s', '%s', '%d', '%d', '%s' )
 		);
 
 		return self::ok( array( 'id' => (int) $wpdb->insert_id ) );
@@ -867,6 +879,9 @@ class Havato_REST {
 		$table = Havato_DB::table( 'private_chats' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// Same silent review flag as the table chat.
+		$flag = havato_profanity_hit( $text );
+
 		$wpdb->insert(
 			$table,
 			array(
@@ -876,8 +891,10 @@ class Havato_REST {
 				'message_text' => $text,
 				'message_time' => havato_now(),
 				'is_read'      => 0,
+				'flagged'      => '' !== $flag ? 1 : 0,
+				'flag_term'    => $flag,
 			),
-			array( '%s', '%d', '%d', '%s', '%s', '%d' )
+			array( '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s' )
 		);
 
 		return self::ok( array( 'id' => (int) $wpdb->insert_id ) );

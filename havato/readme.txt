@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.18.0
+Stable tag: 1.19.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,31 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.19.0 =
+* Removed the notice telling guests that conversations are stored.
+* Messages containing offensive language are now flagged for the
+  administrator. The flag is completely silent: the message is delivered
+  exactly as written, nothing is blocked or altered, and the sender is told
+  nothing. Only the admin panel shows the marker.
+* The word list covers Persian, English and Turkish and is filterable via
+  `havato_profanity_terms`. Matching folds Arabic letter variants, undoes
+  letter-for-symbol tricks ("sh1t", "@sshole") and catches deliberately split
+  words ("f.u.c.k", "b i t c h"), while ordinary words that merely contain a
+  rude substring — "Shitake", "Scunthorpe" — stay clean.
+* The Chats & reports screen now opens with a count of flagged messages,
+  links straight to a filtered view, highlights flagged rows and shows which
+  term matched.
+* New "Ban user" control for the administrator, on the chat archive and
+  reflected in the WordPress users list. A ban is stored as user meta rather
+  than deleting the account, so it is reversible and the person's history
+  stays intact for moderation.
+* A ban is enforced at three independent points: the login filter, Google
+  sign-in (which sets its cookie directly and bypasses that filter), and
+  every authenticated REST call, since an already-issued cookie would
+  otherwise keep working. Existing sessions are destroyed the moment the ban
+  is applied. Administrator accounts cannot be banned from this screen.
+* Schema 1.13.0 adds the flag columns to both chat tables.
 
 = 1.18.0 =
 * Conversations were already stored on the server; there is now a "Chats &

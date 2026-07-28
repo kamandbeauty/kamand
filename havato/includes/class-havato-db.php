@@ -236,6 +236,9 @@ class Havato_DB {
 		) $charset;";
 
 		// 7. Group (table) live chat.
+		// `flagged` marks a message for moderator review when it trips the
+		// word list. Nothing is blocked or altered and the sender is never
+		// told — it only surfaces the message in the admin panel.
 		$queries[] = "CREATE TABLE {$p}chats (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			group_id varchar(64) NOT NULL DEFAULT '',
@@ -244,8 +247,11 @@ class Havato_DB {
 			message_text text NULL,
 			message_time datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			is_system tinyint(1) NOT NULL DEFAULT 0,
+			flagged tinyint(1) NOT NULL DEFAULT 0,
+			flag_term varchar(64) NOT NULL DEFAULT '',
 			PRIMARY KEY  (id),
 			KEY group_id (group_id),
+			KEY flagged (flagged),
 			KEY message_time (message_time)
 		) $charset;";
 
@@ -322,8 +328,11 @@ class Havato_DB {
 			message_text text NULL,
 			message_time datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			is_read tinyint(1) NOT NULL DEFAULT 0,
+			flagged tinyint(1) NOT NULL DEFAULT 0,
+			flag_term varchar(64) NOT NULL DEFAULT '',
 			PRIMARY KEY  (id),
 			KEY thread_id (thread_id),
+			KEY flagged (flagged),
 			KEY receiver_id (receiver_id)
 		) $charset;";
 

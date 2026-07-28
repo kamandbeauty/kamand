@@ -404,6 +404,219 @@ function havato_effective_rating( $profile ) {
 }
 
 /**
+ * Is this account banned from the platform?
+ *
+ * Stored as user meta rather than deleting the account, so the person's
+ * history stays intact for moderation and the decision is reversible.
+ *
+ * @param int $user_id User id.
+ * @return bool
+ */
+function havato_is_banned( $user_id ) {
+	$user_id = (int) $user_id;
+	if ( ! $user_id ) {
+		return false;
+	}
+	return '1' === (string) get_user_meta( $user_id, 'havato_banned', true );
+}
+
+/**
+ * Ban or reinstate an account.
+ *
+ * @param int  $user_id User id.
+ * @param bool $banned  True to ban.
+ */
+function havato_set_banned( $user_id, $banned ) {
+	$user_id = (int) $user_id;
+	if ( ! $user_id ) {
+		return;
+	}
+
+	if ( $banned ) {
+		update_user_meta( $user_id, 'havato_banned', '1' );
+		update_user_meta( $user_id, 'havato_banned_at', havato_now() );
+		// End every active session immediately.
+		$sessions = WP_Session_Tokens::get_instance( $user_id );
+		$sessions->destroy_all();
+	} else {
+		delete_user_meta( $user_id, 'havato_banned' );
+		delete_user_meta( $user_id, 'havato_banned_at' );
+	}
+}
+
+/**
+ * Words that mark a message for moderator review.
+ *
+ * Deliberately a review signal, not a censor: nothing is blocked or altered
+ * and the sender is never told. The list is filterable so a site can tune it
+ * without touching the plugin.
+ *
+ * @return array Lower-case terms.
+ */
+function havato_profanity_terms() {
+	$terms = array(
+		// Persian
+		'کیر', 'کس', 'کون', 'جنده', 'کصکش', 'کسکش', 'جاکش', 'مادرجنده',
+		'حرومزاده', 'حرامزاده', 'بیناموس', 'بی‌ناموس', 'گاییدم', 'گایید',
+		'کونی', 'ممه', 'لاشی', 'عوضی', 'دیوث', 'قرمساق', 'پدرسگ', 'خارکسه',
+		'گوه', 'ریدم', 'شاش', 'اوبی', 'ساک زدن',
+		// English
+		'fuck', 'fucking', 'fucker', 'motherfucker', 'shit', 'bullshit',
+		'bitch', 'bastard', 'asshole', 'cunt', 'dick', 'pussy', 'whore',
+		'slut', 'faggot', 'nigger', 'wanker', 'prick', 'twat',
+		// Turkish
+		'amk', 'aq', 'sik', 'sikeyim', 'siktir', 'orospu', 'piç', 'göt',
+		'yarrak', 'amcık', 'kahpe', 'pezevenk', 'ibne', 'oç',
+	);
+
+	/**
+	 * Adjust the review word list.
+	 *
+	 * @param array $terms Lower-case terms.
+	 */
+	$terms = apply_filters( 'havato_profanity_terms', $terms );
+
+	return array_values( array_unique( array_filter( array_map( 'strval', (array) $terms ) ) ) );
+}
+
+/**
+ * Does a message contain anything worth a moderator's attention?
+ *
+ * Matching is deliberately simple and forgiving: text is lower-cased, Arabic
+ * variants of Persian letters are folded, and common letter-for-symbol
+ * substitutions (@ for a, 0 for o…) are undone, so "f*ck" and "sh1t" still
+ * register. False positives only add a flag in the admin panel, so a slightly
+ * eager match is far cheaper than a missed one.
+ *
+ * @param string $text Message text.
+ * @return string The first term matched, or '' when clean.
+ */
+function havato_profanity_hit( $text ) {
+	$text = (string) $text;
+	if ( '' === trim( $text ) ) {
+		return '';
+	}
+
+	$haystack = function_exists( 'mb_strtolower' ) ? mb_strtolower( $text, 'UTF-8' ) : strtolower( $text );
+
+	// Persian text is routinely typed with Arabic ي/ك; fold them so one entry
+	// in the list covers both spellings.
+	$haystack = strtr(
+		$haystack,
+		array(
+			'ي' => 'ی',
+			'ك' => 'ک',
+			'ۀ' => 'ه',
+			'ة' => 'ه',
+			'‌' => '', // zero-width non-joiner
+			'‏' => '',
+			'‎' => '',
+		)
+	);
+
+	// Undo the usual letter-for-symbol substitutions.
+	$decoded = strtr(
+		$haystack,
+		array(
+			'@' => 'a',
+			'$' => 's',
+			'0' => 'o',
+			'1' => 'i',
+			'3' => 'e',
+			'4' => 'a',
+			'5' => 's',
+			'7' => 't',
+		)
+	);
+
+	// Separators inserted to dodge a filter ("f.u.c.k", "s h i t") are
+	// collapsed. A marker is left where they were so a word boundary still
+	// exists there — deleting them outright glued the word to its neighbour
+	// and defeated the boundary check below.
+	$collapsed = preg_replace( '/[*._\-\s]+/u', "\x01", $decoded );
+	$collapsed = str_replace( "\x01", '', $collapsed );
+
+	// The same text with the separators kept as boundaries.
+	$spaced = preg_replace( '/[*._\-\s]+/u', ' ', $decoded );
+
+	// Did the writer split a word up to dodge a filter? Two signals, both of
+	// which ordinary prose does not produce:
+	//   - punctuation wedged between two letters ("f.u.c.k", "f**k");
+	//   - three or more single letters separated one by one ("b i t c h").
+	// Plain spacing between whole words is deliberately NOT a signal.
+	$obfuscated = (bool) preg_match( '/[^\W\d_][*._\-]+[^\W\d_]/u', $decoded )
+		|| (bool) preg_match( '/(?:^|\s)[^\W\d_](?:[*._\-\s]+[^\W\d_]){2,}(?:\s|$)/u', $decoded );
+
+	// A censored vowel ("f*ck") vanishes with the symbol, so also compare
+	// against a vowel-free form.
+	$devowelled = preg_replace( '/[aeiou]/', '', $collapsed );
+
+	foreach ( havato_profanity_terms() as $term ) {
+		$needle = function_exists( 'mb_strtolower' ) ? mb_strtolower( $term, 'UTF-8' ) : strtolower( $term );
+		if ( '' === $needle ) {
+			continue;
+		}
+
+		$flat = preg_replace( '/[\s._\-]+/u', '', $needle );
+
+		// Plain text, and the separator-normalised form.
+		if ( havato_term_in_text( $needle, $haystack )
+			|| havato_term_in_text( $flat, $spaced ) ) {
+			return $term;
+		}
+
+		// Only when the writer actually broke a word up ("f.u.c.k", "s h i t")
+		// is the glued form consulted, and then as a plain substring. Gating
+		// it on $obfuscated is what keeps innocent words such as "Shitake"
+		// clean: they contain no intra-word separators, so they never reach
+		// this branch.
+		if ( $obfuscated && '' !== $flat && false !== strpos( $collapsed, $flat ) ) {
+			return $term;
+		}
+
+		// "f*ck" style: only for longer Latin terms, so short words do not
+		// collide once their vowels are gone.
+		// Same gate for a censored vowel: only when the writer inserted a
+		// symbol mid-word, and then as a substring, since removing vowels
+		// destroys the word boundaries a regex would need.
+		if ( $obfuscated && preg_match( '/^[a-z]{5,}$/', $flat ) ) {
+			$short = preg_replace( '/[aeiou]/', '', $flat );
+			if ( strlen( $short ) >= 3 && false !== strpos( $devowelled, $short ) ) {
+				return $term;
+			}
+		}
+	}
+
+	return '';
+}
+
+/**
+ * Whole-word search that also works for Persian.
+ *
+ * A plain substring test flags innocent words that merely contain a rude one
+ * ("Scunthorpe", "Shitake"), so Latin terms are matched on word boundaries.
+ * \b is unreliable around Arabic-script characters, so Persian terms keep the
+ * substring test: Persian compounds and clitics are written without spaces,
+ * and there a missed insult costs more than an occasional extra flag.
+ *
+ * @param string $needle   Lower-case term.
+ * @param string $haystack Lower-case text.
+ * @return bool
+ */
+function havato_term_in_text( $needle, $haystack ) {
+	if ( '' === $needle || '' === $haystack ) {
+		return false;
+	}
+
+	// Latin-only term: require a word boundary.
+	if ( preg_match( '/^[a-z0-9]+$/', $needle ) ) {
+		return (bool) preg_match( '/(?<![a-z0-9])' . preg_quote( $needle, '/' ) . '(?![a-z0-9])/u', $haystack );
+	}
+
+	return false !== strpos( $haystack, $needle );
+}
+
+/**
  * Clamp free text to a sane length before it is stored.
  *
  * `sanitize_textarea_field()` strips tags but imposes no size limit, so a

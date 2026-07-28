@@ -899,3 +899,7 @@
 }
 .hv-theme-ratio { font-size: 11px !important; direction: ltr; text-align: start; }
 .hv-theme-meta .hv-adm-btn { margin-top: 2px; justify-content: center; }
+
+/* A message the word filter marked for review. */
+.hv-adm-flagged td { background: #fffaf0; }
+.hv-adm-flagged td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }

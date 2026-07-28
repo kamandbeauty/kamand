@@ -1176,9 +1176,7 @@
 						esc(t('chat_groups')) + '</button>' +
 					'<button type="button" class="hv-subtab' + (S.chatMode === 'friends' ? ' is-active' : '') + '" data-chatmode="friends">' +
 						esc(t('chat_friends')) + '</button>' +
-				'</div>' +
-				'<p class="hv-muted" style="margin:0 0 12px">' + esc(t('chat_privacy_note')) + '</p>' +
-				list;
+				'</div>' + list;
 
 			$$('[data-chatmode]').forEach(function (btn) {
 				btn.onclick = function () { S.chatMode = btn.dataset.chatmode; viewChats(); };
@@ -1368,7 +1366,6 @@
 			'</div>' +
 			'<button type="button" class="hv-btn hv-btn-danger hv-btn-block hv-mt" id="hv-msg-block">' +
 				esc(t('block_user')) + '</button>' +
-			'<p class="hv-muted" style="margin-top:10px">' + esc(t('chat_privacy_note')) + '</p>' +
 			'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
 				esc(t('cancel')) + '</button>'
 		);

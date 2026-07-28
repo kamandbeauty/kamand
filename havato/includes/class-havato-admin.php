@@ -1486,10 +1486,52 @@ class Havato_Admin {
 
 		self::head( Havato_I18N::t( 'admin_chats' ), Havato_I18N::t( 'chat_reports' ) );
 
+		self::render_flagged_summary();
 		self::render_chat_reports();
 		self::render_chat_archive();
 
 		self::foot();
+	}
+
+	/**
+	 * Headline count of messages the word filter marked.
+	 *
+	 * Shown first so the administrator can see at a glance that something is
+	 * waiting, without scrolling the archive.
+	 */
+	private static function render_flagged_summary() {
+		global $wpdb;
+
+		$chats = Havato_DB::table( 'chats' );
+		$pm    = Havato_DB::table( 'private_chats' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$group_flagged = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $chats WHERE flagged = 1" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$private_flagged = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $pm WHERE flagged = 1" );
+
+		if ( 0 === $group_flagged && 0 === $private_flagged ) {
+			return;
+		}
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">⚑ ' . esc_html( Havato_I18N::t( 'needs_review' ) ) . '</h2>';
+		echo '<p class="hv-adm-note">';
+		printf(
+			'<a href="%s"><strong>%s</strong> %s — %s</a> · ',
+			esc_url( admin_url( 'admin.php?page=havato-chats&scope=group&flagged=1' ) ),
+			esc_html( number_format_i18n( $group_flagged ) ),
+			esc_html( Havato_I18N::t( 'flagged_count' ) ),
+			esc_html( Havato_I18N::t( 'chat_group_col' ) )
+		);
+		printf(
+			'<a href="%s"><strong>%s</strong> %s — %s</a>',
+			esc_url( admin_url( 'admin.php?page=havato-chats&scope=private&flagged=1' ) ),
+			esc_html( number_format_i18n( $private_flagged ) ),
+			esc_html( Havato_I18N::t( 'flagged_count' ) ),
+			esc_html( Havato_I18N::t( 'chat_private_col' ) )
+		);
+		echo '</p></div>';
 	}
 
 	/**
@@ -1552,6 +1594,39 @@ class Havato_Admin {
 	}
 
 	/**
+	 * Ban / unban control for one user.
+	 *
+	 * A ban is a user-meta flag rather than a deletion, so the person's
+	 * history stays intact and the decision can be undone.
+	 *
+	 * @param int $user_id Target.
+	 * @return string HTML.
+	 */
+	private static function ban_button( $user_id ) {
+		$user_id = (int) $user_id;
+
+		// Never offer to ban another administrator from here.
+		if ( user_can( $user_id, 'manage_options' ) ) {
+			return '<span class="hv-adm-muted">—</span>';
+		}
+
+		$banned = havato_is_banned( $user_id );
+
+		ob_start();
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline">';
+		self::form_fields( 'ban_user' );
+		echo '<input type="hidden" name="user_id" value="' . esc_attr( $user_id ) . '">';
+		echo '<input type="hidden" name="banned" value="' . ( $banned ? '0' : '1' ) . '">';
+		printf(
+			'<button type="submit" class="hv-adm-btn %s">%s</button>',
+			$banned ? 'hv-adm-btn-ghost' : 'hv-adm-btn-danger',
+			esc_html( $banned ? Havato_I18N::t( 'unban_user' ) : Havato_I18N::t( 'ban_user' ) )
+		);
+		echo '</form>';
+		return ob_get_clean();
+	}
+
+	/**
 	 * Searchable archive of stored conversations.
 	 */
 	private static function render_chat_archive() {
@@ -1562,6 +1637,8 @@ class Havato_Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$scope = isset( $_GET['scope'] ) ? sanitize_key( wp_unslash( $_GET['scope'] ) ) : 'group';
 		$scope = 'private' === $scope ? 'private' : 'group';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$only_flagged = isset( $_GET['flagged'] ) && '1' === $_GET['flagged'];
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$paged = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
 
@@ -1576,6 +1653,9 @@ class Havato_Admin {
 		if ( '' !== $search ) {
 			$like   = '%' . $wpdb->esc_like( $search ) . '%';
 			$where .= $wpdb->prepare( ' AND message_text LIKE %s', $like );
+		}
+		if ( $only_flagged ) {
+			$where .= ' AND flagged = 1';
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -1608,6 +1688,11 @@ class Havato_Admin {
 			esc_html( Havato_I18N::t( 'chat_private_col' ) )
 		);
 		echo '</select>';
+		printf(
+			'<label class="hv-adm-switch"><input type="checkbox" name="flagged" value="1"%s><span></span>%s</label>',
+			checked( true, $only_flagged, false ),
+			esc_html( Havato_I18N::t( 'only_flagged' ) )
+		);
 		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' . esc_html( Havato_I18N::t( 'search' ) ) . '</button>';
 		echo '</form>';
 
@@ -1623,11 +1708,25 @@ class Havato_Admin {
 		echo '</tr></thead><tbody>';
 
 		foreach ( $rows as $row ) {
-			$sender = (int) $row['sender_id'];
-			echo '<tr>';
+			$sender  = (int) $row['sender_id'];
+			$flagged = ! empty( $row['flagged'] );
+
+			echo '<tr' . ( $flagged ? ' class="hv-adm-flagged"' : '' ) . '>';
 			echo '<td><span class="hv-adm-muted" dir="ltr">' . esc_html( substr( (string) $row['message_time'], 0, 16 ) ) . '</span></td>';
-			echo '<td>' . esc_html( $sender ? havato_display_name( $sender ) : Havato_I18N::t( 'system_message' ) ) . '</td>';
-			echo '<td>' . esc_html( $row['message_text'] ) . '</td>';
+
+			echo '<td>' . esc_html( $sender ? havato_display_name( $sender ) : Havato_I18N::t( 'system_message' ) );
+			if ( $sender ) {
+				echo '<br>' . self::ban_button( $sender );
+			}
+			echo '</td>';
+
+			echo '<td>';
+			if ( $flagged ) {
+				echo '<span class="hv-adm-badge is-yellow" title="' .
+					esc_attr( (string) $row['flag_term'] ) . '">⚑ ' .
+					esc_html( Havato_I18N::t( 'needs_review' ) ) . '</span> ';
+			}
+			echo esc_html( $row['message_text'] ) . '</td>';
 			echo '</tr>';
 		}
 
@@ -1986,6 +2085,21 @@ class Havato_Admin {
 					)
 				);
 				$page = 'havato-google';
+				break;
+
+			case 'ban_user':
+				$target = isset( $_POST['user_id'] ) ? (int) $_POST['user_id'] : 0;
+				$ban    = ! empty( $_POST['banned'] );
+
+				// Guard against an administrator being locked out.
+				if ( $target && ! user_can( $target, 'manage_options' ) ) {
+					havato_set_banned( $target, $ban );
+					Havato_Logger::log(
+						sprintf( 'User %d %s by administrator.', $target, $ban ? 'banned' : 'unbanned' ),
+						$ban ? 'warn' : 'info'
+					);
+				}
+				$page = isset( $_POST['return_page'] ) ? sanitize_key( wp_unslash( $_POST['return_page'] ) ) : 'havato-chats';
 				break;
 
 			case 'chat_report':

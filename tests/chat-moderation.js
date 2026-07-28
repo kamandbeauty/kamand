@@ -28,7 +28,12 @@ t('registered in the table list', /'message_reports',/.test(db));
 t('it covers group AND private via a scope column', /scope varchar\(16\)/.test(db));
 t('one report per person per message', /UNIQUE KEY one_per_reporter \(scope,message_id,reporter_id\)/.test(db));
 t('an excerpt is kept for the moderator', /excerpt text NULL/.test(db));
-t('schema bumped', /HAVATO_DB_VERSION', '1\.12\.0'/.test(main));
+t('schema is at or past the report table', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) return false;
+  const [maj, min] = [Number(m[1]), Number(m[2])];
+  return maj > 1 || (maj === 1 && min >= 12);
+})());
 t('table numbering has no gap', (() => {
   const nums = [...db.matchAll(/^\t\t\/\/ (\d+)\. /gm)].map(m => Number(m[1]));
   return nums.length > 0 && nums.every((n, i) => n === i + 1);
@@ -109,7 +114,10 @@ t('it offers block', /hv-msg-block/.test(js));
 t('blocking asks for confirmation first', /hv-block-go/.test(js) && /block_confirm/.test(js));
 t('after blocking the room is closed', /S\.chatRoom = null;\s*\n\s*stopPolling\(\);\s*\n\s*viewChats\(\);/.test(js));
 t('the scope is derived from the open room', /S\.chatRoom\.type === 'private'\) \? 'private' : 'group'/.test(js));
-t('guests are told chats are stored', /chat_privacy_note/.test(js) && /'chat_privacy_note'/.test(i18n));
+// Removed in 1.19.0 at the site owner's request: guests are no longer shown
+// a storage notice anywhere in the app.
+t('no storage notice is shown to guests',
+  !/chat_privacy_note/.test(js) && !/chat_privacy_note/.test(i18n));
 
 console.log('\n--- 8. strings ---');
 for (const k of ['block_user', 'unblock_user', 'block_confirm', 'report_message',
