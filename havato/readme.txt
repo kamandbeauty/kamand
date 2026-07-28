@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.23.0
+Stable tag: 1.24.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,21 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.24.0 =
+* New "Blocklists" section on the Chats & reports screen. It lists every block
+  currently on file, names both people, and lets the administrator lift one.
+* This exists because of the change in 1.23.0: blocks placed from a table chat
+  before that release are still stored, and a blocklist entry is a hard
+  constraint in the matcher — those two guests are never seated together
+  again. A block made with one tap at a shared table can now be reviewed
+  rather than staying in force forever.
+* Each row states the consequence in plain words and marks a block as mutual
+  when both sides have blocked each other, so lifting one direction is not
+  mistaken for clearing the pair.
+* Lifting removes only that one entry and leaves the guest's other blocks
+  intact. The action is nonce-protected, asks for confirmation, and is
+  written to the log.
 
 = 1.23.0 =
 * Blocking is now offered only in a private conversation. At a shared table it

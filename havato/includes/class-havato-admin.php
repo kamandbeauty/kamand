@@ -1746,9 +1746,103 @@ class Havato_Admin {
 
 		self::render_flagged_summary();
 		self::render_chat_reports();
+		self::render_blocklists();
 		self::render_chat_archive();
 
 		self::foot();
+	}
+
+	/**
+	 * Every block a guest currently holds, with a way to lift it.
+	 *
+	 * Until 1.23.0 a block could be placed from a table chat. That is no
+	 * longer offered, but the entries it created are still on file — and a
+	 * blocklist entry is a hard constraint in the matcher, so it permanently
+	 * narrows who that guest can be seated with. This screen exists so those
+	 * old, one-tap blocks can be reviewed and lifted.
+	 */
+	private static function render_blocklists() {
+		global $wpdb;
+
+		$profiles = Havato_DB::table( 'user_profiles' );
+
+		// Only rows that actually hold a list; an empty array still encodes
+		// as "[]", so the length test is what keeps the query honest.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT user_id, blocklist_json FROM $profiles
+			 WHERE blocklist_json IS NOT NULL
+			   AND blocklist_json <> ''
+			   AND CHAR_LENGTH(blocklist_json) > 2
+			 ORDER BY user_id ASC
+			 LIMIT 200",
+			ARRAY_A
+		);
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'blocklists_title' ) ) . '</h2>';
+		echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'blocklists_hint' ) ) . '</p>';
+
+		$pairs = array();
+		foreach ( (array) $rows as $row ) {
+			$owner = (int) $row['user_id'];
+			foreach ( havato_json( $row['blocklist_json'] ) as $target ) {
+				$target = (int) $target;
+				if ( $target > 0 ) {
+					$pairs[] = array( $owner, $target );
+				}
+			}
+		}
+
+		if ( empty( $pairs ) ) {
+			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
+			return;
+		}
+
+		echo '<table class="hv-adm-table"><thead><tr>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'blocklist_owner' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'blocklist_target' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'blocklist_effect' ) ) . '</th>';
+		echo '<th></th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $pairs as $pair ) {
+			list( $owner, $target ) = $pair;
+
+			// A block is one-directional in storage but the matcher treats it
+			// symmetrically, so say so rather than letting the admin guess.
+			$mutual = havato_is_blocked( $target, $owner );
+
+			echo '<tr>';
+			echo '<td>' . esc_html( havato_display_name( $owner ) ) .
+				' <span class="hv-adm-muted">#' . esc_html( $owner ) . '</span></td>';
+			echo '<td>' . esc_html( havato_display_name( $target ) ) .
+				' <span class="hv-adm-muted">#' . esc_html( $target ) . '</span></td>';
+			echo '<td><span class="hv-adm-badge is-yellow">' .
+				esc_html( Havato_I18N::t( 'blocklist_never_seated' ) ) . '</span>';
+			if ( $mutual ) {
+				echo ' <span class="hv-adm-badge is-gray">' .
+					esc_html( Havato_I18N::t( 'blocklist_mutual' ) ) . '</span>';
+			}
+			echo '</td>';
+
+			echo '<td>';
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline">';
+			self::form_fields( 'clear_block' );
+			echo '<input type="hidden" name="owner_id" value="' . esc_attr( $owner ) . '">';
+			echo '<input type="hidden" name="target_id" value="' . esc_attr( $target ) . '">';
+			printf(
+				'<button type="submit" class="hv-adm-btn hv-adm-btn-ghost" onclick="return confirm(%s)">%s</button>',
+				esc_attr( wp_json_encode( Havato_I18N::t( 'blocklist_clear_confirm' ) ) ),
+				esc_html( Havato_I18N::t( 'blocklist_clear' ) )
+			);
+			echo '</form>';
+			echo '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table>';
+		echo '</div>';
 	}
 
 	/**
@@ -2430,6 +2524,42 @@ class Havato_Admin {
 				}
 
 				$page = 'havato-events';
+				break;
+
+			case 'clear_block':
+				$owner  = isset( $_POST['owner_id'] ) ? (int) $_POST['owner_id'] : 0;
+				$target = isset( $_POST['target_id'] ) ? (int) $_POST['target_id'] : 0;
+
+				if ( $owner > 0 && $target > 0 ) {
+					$profiles = Havato_DB::table( 'user_profiles' );
+					$profile  = havato_get_profile( $owner );
+
+					// Rebuild the list without the target rather than emptying
+					// it: this guest may hold other blocks that must survive.
+					$list = array_values(
+						array_diff(
+							array_map( 'intval', (array) $profile['blocklist'] ),
+							array( $target )
+						)
+					);
+
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->update(
+						$profiles,
+						array( 'blocklist_json' => wp_json_encode( $list ) ),
+						array( 'user_id' => $owner ),
+						array( '%s' ),
+						array( '%d' )
+					);
+
+					Havato_Logger::log(
+						sprintf( 'Administrator lifted the block by user %d on user %d.', $owner, $target ),
+						'info'
+					);
+					$message = Havato_I18N::t( 'blocklist_cleared' );
+				}
+
+				$page = 'havato-chats';
 				break;
 
 			case 'ban_user':

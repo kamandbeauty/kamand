@@ -157,6 +157,48 @@ t('the scope is derived from the open room', /S\.chatRoom\.type === 'private'\) 
 t('no storage notice is shown to guests',
   !/chat_privacy_note/.test(js) && !/chat_privacy_note/.test(i18n));
 
+console.log('\n--- 7b. the admin can review and lift old blocks ---');
+const adm2 = fs.readFileSync(R + 'includes/class-havato-admin.php', 'utf8');
+
+t('a blocklist section is rendered', /function render_blocklists/.test(adm2));
+t('it is shown on the chats screen', /render_blocklists\(\);/.test(adm2));
+t('only rows that hold a list are queried', /CHAR_LENGTH\(blocklist_json\) > 2/.test(adm2));
+t('the query is bounded', /LIMIT 200/.test(adm2));
+t('both sides of the pair are named', /blocklist_owner/.test(adm2) && /blocklist_target/.test(adm2));
+t('the matcher consequence is spelled out', /blocklist_never_seated/.test(adm2));
+t('a mutual block is labelled as such', /havato_is_blocked\( \$target, \$owner \)/.test(adm2));
+t('lifting is nonce-protected', /self::form_fields\( 'clear_block' \)/.test(adm2));
+t('…and asks for confirmation', /blocklist_clear_confirm/.test(adm2));
+t('a handler exists', /case 'clear_block':/.test(adm2));
+t('the action is logged', /Administrator lifted the block by user %d on user %d/.test(adm2));
+t('it returns to the chats screen', /case 'clear_block':[\s\S]{0,1400}\$page = 'havato-chats';/.test(adm2));
+
+(() => {
+  // The handler must remove one entry, not empty the list: a guest may hold
+  // several blocks and the others have to survive.
+  const lift = (list, target) => list.map(Number).filter(id => id !== Number(target));
+
+  t('the targeted block is removed', lift([7, 9, 12], 9).join() === '7,12');
+  t('…and the others survive', lift([7, 9, 12], 9).length === 2);
+  t('lifting the only entry empties the list', lift([9], 9).length === 0);
+  t('lifting something absent changes nothing', lift([7, 12], 9).join() === '7,12');
+  t('a string id from POST still matches', lift([7, 9], '9').join() === '7');
+
+  // An empty list must still encode as an array, or havato_json() would hand
+  // the matcher something it cannot read.
+  t('an emptied list is still valid JSON', JSON.stringify(lift([9], 9)) === '[]');
+})();
+
+t('the code rebuilds rather than clears', /array_diff\(\s*\n?\s*array_map\( 'intval', \(array\) \$profile\['blocklist'\] \),\s*\n?\s*array\( \$target \)/.test(adm2));
+t('array_values keeps it a JSON array, not an object', /array_values\(\s*\n?\s*array_diff\(/.test(adm2));
+
+for (const k of ['blocklists_title', 'blocklists_hint', 'blocklist_owner', 'blocklist_target',
+                 'blocklist_never_seated', 'blocklist_mutual', 'blocklist_clear',
+                 'blocklist_clear_confirm', 'blocklist_cleared']) {
+  t('i18n "' + k + '" trilingual',
+    new RegExp("'" + k + "'\\s*=> array\\( 'fa' =>.*'en' =>.*'tr' =>").test(i18n));
+}
+
 console.log('\n--- 8. strings ---');
 for (const k of ['block_user', 'unblock_user', 'block_confirm', 'report_message',
                  'message_reported', 'message_removed', 'admin_chats', 'chat_reports',
