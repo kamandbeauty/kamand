@@ -87,6 +87,11 @@ class Havato_Owner_Auth {
 			return;
 		}
 
+		// The site owner can switch the redirect off entirely.
+		if ( ! Havato_Settings::get( 'owner_login_guard', 1 ) ) {
+			return;
+		}
+
 		// Never interfere with logout, password resets or the postpass flow.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : 'login';
@@ -107,8 +112,53 @@ class Havato_Owner_Auth {
 			return;
 		}
 
+		// Anyone who asked for wp-admin, was bounced here by an expired
+		// session, or has just logged out is trying to reach WordPress
+		// itself — not the café portal. Sending them to the café page locks
+		// the administrator out of their own dashboard, because /wp-admin
+		// forwards to wp-login.php with `redirect_to` set.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['loggedout'] ) || isset( $_GET['reauth'] ) || isset( $_GET['interim-login'] ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$target = isset( $_REQUEST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_REQUEST['redirect_to'] ) ) : '';
+		if ( self::targets_wp_admin( $target ) ) {
+			return;
+		}
+
 		wp_safe_redirect( self::url() );
 		exit;
+	}
+
+	/**
+	 * Does this redirect target point inside wp-admin on this very site?
+	 *
+	 * Compared path-first so a crafted absolute URL on another host can never
+	 * qualify, and so it keeps working on subdirectory installs.
+	 *
+	 * @param string $target Requested redirect target.
+	 * @return bool
+	 */
+	public static function targets_wp_admin( $target ) {
+		if ( '' === $target ) {
+			return false;
+		}
+
+		$host = wp_parse_url( $target, PHP_URL_HOST );
+		if ( $host && strtolower( $host ) !== strtolower( (string) wp_parse_url( admin_url(), PHP_URL_HOST ) ) ) {
+			return false;
+		}
+
+		$path = (string) wp_parse_url( $target, PHP_URL_PATH );
+		if ( '' === $path ) {
+			return false;
+		}
+
+		$admin_path = (string) wp_parse_url( admin_url(), PHP_URL_PATH );
+
+		return 0 === strpos( $path, $admin_path );
 	}
 
 	/**

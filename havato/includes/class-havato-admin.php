@@ -1938,6 +1938,13 @@ class Havato_Admin {
 			checked( 1, (int) $s['photo_auto_approve'], false ) . '><span></span>' .
 			esc_html__( 'Auto-approve gallery photos', 'havato' ) . '</label>';
 
+		echo '<label class="hv-adm-switch"><input type="checkbox" name="owner_login_guard" value="1" ' .
+			checked( 1, (int) $s['owner_login_guard'], false ) . '><span></span>' .
+			esc_html__( 'Send café owners from wp-login.php to the branded café page', 'havato' ) . '</label>';
+		echo '<p class="hv-adm-muted">' .
+			esc_html__( 'Administrators are never redirected: any sign-in aimed at wp-admin goes to WordPress as usual, and wp-login.php?havato_admin=1 always works.', 'havato' ) .
+			'</p>';
+
 		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' . esc_html( Havato_I18N::t( 'save' ) ) . '</button>';
 		echo '</form>';
 
@@ -2139,6 +2146,7 @@ class Havato_Admin {
 						'map_zoom'           => isset( $_POST['map_zoom'] ) ? (int) $_POST['map_zoom'] : 12,
 						'allow_lang_switch'  => empty( $_POST['allow_lang_switch'] ) ? 0 : 1,
 						'photo_auto_approve' => empty( $_POST['photo_auto_approve'] ) ? 0 : 1,
+						'owner_login_guard'  => empty( $_POST['owner_login_guard'] ) ? 0 : 1,
 					)
 				);
 				$page = 'havato-locale';

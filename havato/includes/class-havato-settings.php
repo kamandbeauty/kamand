@@ -83,6 +83,12 @@ class Havato_Settings {
 
 			// Moderation.
 			'photo_auto_approve'   => 1,
+
+			// Send non-administrators from wp-login.php to the branded café
+			// page. Administrators and any request already aimed at wp-admin
+			// are exempt, but the switch exists so a site can turn the whole
+			// behaviour off.
+			'owner_login_guard'    => 1,
 		);
 	}
 

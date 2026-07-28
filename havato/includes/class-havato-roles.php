@@ -16,12 +16,62 @@ class Havato_Roles {
 	 * Hook up the users.php columns.
 	 */
 	public static function init() {
-		add_action( 'admin_init', array( __CLASS__, 'block_gatherers' ) );
+		// Priority 1: WooCommerce also bounces these users on admin_init, and
+		// its target (the shop's My Account page) is the wrong destination for
+		// a gatherer. Running first means our redirect is the one that fires.
+		add_action( 'admin_init', array( __CLASS__, 'block_gatherers' ), 1 );
 		// Refuse the login itself, so a banned person cannot get a fresh
 		// cookie even though the REST layer would also stop them.
 		add_filter( 'authenticate', array( __CLASS__, 'refuse_banned' ), 30, 1 );
 		add_filter( 'manage_users_columns', array( __CLASS__, 'user_columns' ) );
 		add_filter( 'manage_users_custom_column', array( __CLASS__, 'user_column_content' ), 10, 3 );
+
+		// WooCommerce locks every user without `edit_posts`, `manage_woocommerce`
+		// or `view_admin_dashboard` out of wp-admin and bounces them to its
+		// My Account page. A café owner has none of those, so on a shop site
+		// the owner panel became unreachable. Both filters run late so we win
+		// over the shop's own customisations.
+		add_filter( 'woocommerce_prevent_admin_access', array( __CLASS__, 'allow_owner_admin_access' ), 99 );
+		add_filter( 'woocommerce_disable_admin_bar', array( __CLASS__, 'allow_owner_admin_bar' ), 99 );
+	}
+
+	/**
+	 * Let café owners reach wp-admin on a WooCommerce site.
+	 *
+	 * Only the owner panel is reachable anyway — Havato_Owner_Admin::block_dashboard()
+	 * redirects every other admin screen — so this widens nothing beyond the
+	 * panel the role exists for.
+	 *
+	 * @param bool $prevent Whether WooCommerce wants to block the request.
+	 * @return bool
+	 */
+	public static function allow_owner_admin_access( $prevent ) {
+		return self::is_panel_user() ? false : $prevent;
+	}
+
+	/**
+	 * Keep the admin bar for café owners on a WooCommerce site.
+	 *
+	 * @param bool $disable Whether WooCommerce wants to hide the bar.
+	 * @return bool
+	 */
+	public static function allow_owner_admin_bar( $disable ) {
+		return self::is_panel_user() ? false : $disable;
+	}
+
+	/**
+	 * Is the current user someone who owns a wp-admin panel here?
+	 *
+	 * @return bool
+	 */
+	private static function is_panel_user() {
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+		return in_array( 'cafe_owner', (array) wp_get_current_user()->roles, true );
 	}
 
 	/**

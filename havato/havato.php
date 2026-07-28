@@ -3,7 +3,7 @@
  * Plugin Name:       Havato — هواتو
  * Plugin URI:        https://havato.app
  * Description:       پلتفرم دورهمی‌های هوشمند در کافه‌ها | Smart social table matching web-app for cafés & restaurants (Glassmorphism PWA + WebView ready).
- * Version:           1.19.0
+ * Version:           1.20.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Havato Team
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HAVATO_VERSION', '1.19.0' );
+define( 'HAVATO_VERSION', '1.20.0' );
 define( 'HAVATO_DB_VERSION', '1.13.0' );
 // Most seats one guest may book in a single gathering (themselves + guests).
 // Filterable so a site can tighten or loosen it without touching the plugin.

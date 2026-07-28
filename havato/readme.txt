@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.19.0
+Stable tag: 1.20.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,31 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.20.0 =
+* Fixed: on a site that also runs WooCommerce, a café owner who signed in was
+  dropped on the shop's "My account" page instead of the owner panel.
+  WooCommerce locks every account without `edit_posts`, `manage_woocommerce`
+  or `view_admin_dashboard` out of wp-admin, and the `cafe_owner` role
+  deliberately holds none of those. Havato now answers WooCommerce's
+  `woocommerce_prevent_admin_access` and `woocommerce_disable_admin_bar`
+  filters for owners and administrators only. This widens nothing: every
+  admin screen outside the owner panel still redirects back to it, so the
+  owner sees exactly the five pages they always could.
+* Fixed: the administrator could not reach /wp-admin. WordPress answers that
+  URL by sending the visitor to wp-login.php with `redirect_to` set, and the
+  café-page guard forwarded that to the café portal — so the login form was
+  never reachable and the redirect looked like a loop. Any sign-in already
+  aimed at wp-admin on this site now goes to WordPress untouched, as do the
+  logged-out, `reauth` and interim-login screens.
+* The wp-admin exemption is matched on host and path, so an off-site or
+  lookalike URL carrying a "/wp-admin/" path cannot use it as an open
+  redirect. A bare visit to wp-login.php still goes to the branded café page,
+  which is what the guard is for.
+* New switch on the Language & region screen turns the wp-login.php redirect
+  off entirely. `wp-login.php?havato_admin=1` still works regardless.
+* Gatherers are now bounced out of wp-admin at priority 1, before WooCommerce
+  runs, so they reach the web-app instead of the shop account page.
 
 = 1.19.0 =
 * Removed the notice telling guests that conversations are stored.
