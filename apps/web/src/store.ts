@@ -1460,3 +1460,46 @@ export function unpostedOpeningStock(db: DB): { product: Product; value: Rial }[
   }
   return out;
 }
+
+
+// ─────────── حذف تراکنش ───────────
+
+/**
+ * حذف نرم تراکنش با برداشتن سند آن.
+ *
+ * `deletedAt` روی `Transaction` تعریف شده بود ولی هیچ راهی برای
+ * حذف وجود نداشت. مغازه‌داری که اشتباهی دریافت ثبت می‌کرد، راهی
+ * برای اصلاحش نداشت جز سند دستی معکوس.
+ */
+export function voidTransaction(db: DB, txId: ID): DB {
+  const tx = db.transactions.find((t) => t.id === txId);
+  if (!tx) throw new Error('تراکنش یافت نشد');
+  if (tx.deletedAt) throw new Error('این تراکنش قبلاً حذف شده است');
+
+  guardPeriod(db, tx.date);
+
+  if (tx.chequeId) {
+    throw new Error('این تراکنش به چک مرتبط است؛ وضعیت چک را تغییر دهید');
+  }
+
+  const next: DB = {
+    ...db,
+    transactions: db.transactions.map((t) =>
+      t.id === txId ? { ...t, deletedAt: nowIso() } : t,
+    ),
+    entries: db.entries.filter(
+      (e) => !(e.sourceType === 'transaction' && e.sourceId === txId),
+    ),
+  };
+
+  track('transaction', txId, { ...tx, deletedAt: nowIso() });
+
+  return audit(next, 'delete', 'transaction', txId, {
+    before: { مبلغ: tx.amount, تاریخ: tx.date, شرح: tx.description ?? '' },
+  });
+}
+
+/** تراکنش‌های فعال (حذف‌نشده) */
+export function activeTransactions(db: DB): Transaction[] {
+  return db.transactions.filter((t) => !t.deletedAt);
+}

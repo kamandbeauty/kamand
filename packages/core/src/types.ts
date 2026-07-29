@@ -184,6 +184,12 @@ export interface JournalLine {
   credit: Rial;
   partyId?: ID | null;
   productId?: ID | null;
+  /**
+   * حساب خزانهٔ مربوط به این ردیف.
+   * لازم است چون چند صندوق یا چند حساب بانکی همگی به یک حساب کل
+   * می‌نشینند؛ بدون این فیلد نمی‌توان موجودی هرکدام را جدا کرد.
+   */
+  treasuryId?: ID | null;
   description?: string;
 }
 

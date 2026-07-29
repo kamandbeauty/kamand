@@ -13,7 +13,7 @@ import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
-import { postStockCount, stockCountPreview, unpostedOpeningStock, postOpeningBalances as _pob, canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { activeTransactions, voidTransaction, postStockCount, stockCountPreview, unpostedOpeningStock, postOpeningBalances as _pob, canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -765,6 +765,78 @@ for (const [k, v] of taxChecks) {
   const report = debtorsAndCreditors(rc.db.entries, idxc, rc.db.parties);
   const fromReport = [...report.debtors, ...report.creditors].find((r) => r.partyId === cid)?.balance ?? 0;
   checks.push(['صورتحساب شخص با گزارش بدهکاران می‌خواند', stmt === fromReport]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
+// تفکیک موجودی خزانه‌ها
+{
+  const { treasuryBalance, treasuryBalances, balanceOf, SYSTEM_ACCOUNTS: A, trialBalance } = await import('@javid/core');
+
+  let dt = createEmptyDB('آزمون خزانه');
+  const cash1 = dt.treasuries.find((x) => x.kind === 'cash')!;
+  const bank1 = dt.treasuries.find((x) => x.kind === 'bank')!;
+  const cash2 = { id: uuid(), businessId: dt.business.id, kind: 'cash' as const,
+    name: 'صندوق شعبه ۲', openingBalance: 0 };
+  dt = { ...dt, treasuries: [...dt.treasuries, cash2] };
+
+  const tq = new Date().toISOString(), dq = tq.slice(0, 10);
+  const mkTx = (treasuryId: string, amount: number) => ({
+    id: uuid(), businessId: dt.business.id, kind: 'income' as const,
+    treasuryId, amount, date: dq, method: 'cash' as const, createdAt: tq,
+  });
+
+  dt = postTransactionToDB(dt, mkTx(cash1.id, 1_000_000));
+  dt = postTransactionToDB(dt, mkTx(cash2.id, 300_000));
+
+  const perT = treasuryBalances(dt.entries);
+  const checks: [string, boolean][] = [
+    ['صندوق اول موجودی خودش را دارد', perT.get(cash1.id) === 1_000_000],
+    ['صندوق دوم موجودی خودش را دارد', perT.get(cash2.id) === 300_000],
+    ['صندوق بدون تراکنش صفر است', (perT.get(bank1.id) ?? 0) === 0],
+    ['جمع خزانه‌ها با حساب کل می‌خواند',
+      (perT.get(cash1.id)! + perT.get(cash2.id)!) === balanceOf(dt.entries, indexOf(dt).id(A.CASH))],
+    ['تابع تک‌حسابه هم درست است', treasuryBalance(dt.entries, cash2.id) === 300_000],
+  ];
+
+  // انتقال بین دو صندوق
+  dt = postTransactionToDB(dt, { id: uuid(), businessId: dt.business.id, kind: 'transfer',
+    treasuryId: cash1.id, toTreasuryId: cash2.id, amount: 400_000,
+    date: dq, method: 'cash', createdAt: tq });
+
+  const afterT = treasuryBalances(dt.entries);
+  checks.push(['انتقال از مبدأ کم می‌کند', afterT.get(cash1.id) === 600_000]);
+  checks.push(['انتقال به مقصد اضافه می‌کند', afterT.get(cash2.id) === 700_000]);
+  checks.push(['انتقال جمع کل را تغییر نمی‌دهد',
+    (afterT.get(cash1.id)! + afterT.get(cash2.id)!) === 1_300_000]);
+  checks.push(['تراز پس از انتقال متوازن است', trialBalance(dt.entries, indexOf(dt)).balanced]);
+
+  // حذف تراکنش
+  const txToKill = dt.transactions[0]!;
+  const beforeKill = treasuryBalances(dt.entries).get(cash1.id)!;
+  const dtk = voidTransaction(dt, txToKill.id);
+  const afterKill = treasuryBalances(dtk.entries).get(cash1.id) ?? 0;
+
+  checks.push(['حذف تراکنش موجودی را اصلاح می‌کند', afterKill === beforeKill - 1_000_000]);
+  checks.push(['تراکنش حذف‌شده از فهرست خارج می‌شود',
+    activeTransactions(dtk).length === dt.transactions.length - 1]);
+  checks.push(['تراکنش برای ممیزی باقی می‌ماند',
+    !!dtk.transactions.find((x) => x.id === txToKill.id)?.deletedAt]);
+  checks.push(['سند تراکنش حذف‌شده برداشته می‌شود',
+    !dtk.entries.some((e) => e.sourceType === 'transaction' && e.sourceId === txToKill.id)]);
+  checks.push(['تراز پس از حذف متوازن است', trialBalance(dtk.entries, indexOf(dtk)).balanced]);
+
+  let twice = false;
+  try { voidTransaction(dtk, txToKill.id); } catch { twice = true; }
+  checks.push(['حذف دوباره مسدود است', twice]);
+
+  const lockedT = lockPeriod(dt, dq, 'آزمون');
+  let lockedDel = false;
+  try { voidTransaction(lockedT, dt.transactions[1]!.id); } catch { lockedDel = true; }
+  checks.push(['حذف در دورهٔ بسته مسدود است', lockedDel]);
 
   for (const [k, v] of checks) {
     console.log(v ? `✅ ${k}` : `❌ ${k}`);

@@ -115,6 +115,7 @@ export interface LedgerFilter {
   to?: string;
   accountIds?: ID[];
   partyId?: ID;
+  treasuryId?: ID;
 }
 
 function inRange(date: string, f?: string, t?: string): boolean {
@@ -141,6 +142,7 @@ export function accountBalances(
     for (const l of e.lines) {
       if (filter.accountIds && !filter.accountIds.includes(l.accountId)) continue;
       if (filter.partyId && l.partyId !== filter.partyId) continue;
+      if (filter.treasuryId && l.treasuryId !== filter.treasuryId) continue;
       const cur = acc.get(l.accountId) ?? { debit: 0, credit: 0 };
       cur.debit = addMoney(cur.debit, l.debit);
       cur.credit = addMoney(cur.credit, l.credit);
@@ -177,6 +179,7 @@ export function balanceOf(
     for (const l of e.lines) {
       if (l.accountId !== accountId) continue;
       if (filter.partyId && l.partyId !== filter.partyId) continue;
+      if (filter.treasuryId && l.treasuryId !== filter.treasuryId) continue;
       debit = addMoney(debit, l.debit);
       credit = addMoney(credit, l.credit);
     }
@@ -238,4 +241,41 @@ export function accountLedger(
     }
   }
   return rows;
+}
+
+
+/**
+ * موجودی یک حساب خزانهٔ مشخص.
+ *
+ * چند صندوق یا چند حساب بانکی همگی روی یک حساب کل می‌نشینند،
+ * پس تفکیک فقط با برچسب `treasuryId` روی ردیف سند ممکن است.
+ */
+export function treasuryBalance(
+  entries: JournalEntry[],
+  treasuryId: ID,
+  filter: LedgerFilter = {},
+): Rial {
+  let net = 0;
+  for (const e of activeEntries(entries, filter)) {
+    for (const l of e.lines) {
+      if (l.treasuryId !== treasuryId) continue;
+      net += l.debit - l.credit;
+    }
+  }
+  return net;
+}
+
+/** موجودی همهٔ خزانه‌ها یکجا */
+export function treasuryBalances(
+  entries: JournalEntry[],
+  filter: LedgerFilter = {},
+): Map<ID, Rial> {
+  const out = new Map<ID, Rial>();
+  for (const e of activeEntries(entries, filter)) {
+    for (const l of e.lines) {
+      if (!l.treasuryId) continue;
+      out.set(l.treasuryId, (out.get(l.treasuryId) ?? 0) + l.debit - l.credit);
+    }
+  }
+  return out;
 }

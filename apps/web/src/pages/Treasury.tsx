@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
-  balanceOf, SYSTEM_ACCOUNTS as A,
+  treasuryBalance, treasuryBalances,
   toPersianDigits, uuid, type Cheque, type ChequeDirection, type Transaction, type TransactionKind, type Treasury as T,
 } from '@javid/core';
 
 const fa = (n: number) => toPersianDigits(n);
 import {
   allocatePayment, canChangeChequeStatus, chequeAlerts, CHEQUE_STATUS_LABELS,
-  indexOf, openInvoicesOf, postTransactionToDB, registerCheque, settleCheque, type DB,
+  activeTransactions, indexOf, openInvoicesOf, postTransactionToDB,
+  registerCheque, settleCheque, voidTransaction, type DB,
 } from '../store';
 import { Badge, Banner, Card, DateInput, Empty, Field, JDate, Modal, Money, MoneyInput, Tabs } from '../ui';
 
@@ -33,11 +34,13 @@ export function Treasury({ db, setDB, canWrite }: {
   const index = indexOf(db);
   const today = new Date().toISOString().slice(0, 10);
 
-  const balances = db.treasuries.map((t) => {
-    const code = t.kind === 'bank' ? A.BANK : t.kind === 'petty_cash' ? A.PETTY_CASH : A.CASH;
-    // چند خزانه با یک حساب: مانده کل حساب را نشان می‌دهیم
-    return { t, balance: balanceOf(db.entries, index.id(code)) };
-  });
+  // موجودی هر خزانه جداگانه — پیش‌تر همهٔ صندوق‌ها مانده حساب کل را
+  // نشان می‌دادند و جمعشان چند برابر پول واقعی می‌شد
+  const perTreasury = treasuryBalances(db.entries);
+  const balances = db.treasuries.map((t) => ({
+    t,
+    balance: perTreasury.get(t.id) ?? 0,
+  }));
 
   const totalCash = balances.reduce((s, b) => s + b.balance, 0);
 
@@ -125,13 +128,13 @@ export function Treasury({ db, setDB, canWrite }: {
 
       {tab === 'transactions' && (
         <Card>
-          {db.transactions.length === 0 ? <Empty icon="💳" text="تراکنشی ثبت نشده است" /> : (
+          {activeTransactions(db).length === 0 ? <Empty icon="💳" text="تراکنشی ثبت نشده است" /> : (
             <table>
               <thead>
-                <tr><th>تاریخ</th><th>نوع</th><th>طرف حساب</th><th>حساب</th><th>شرح</th><th className="end">مبلغ</th></tr>
+                <tr><th>تاریخ</th><th>نوع</th><th>طرف حساب</th><th>حساب</th><th>شرح</th><th className="end">مبلغ</th><th></th></tr>
               </thead>
               <tbody>
-                {[...db.transactions].reverse().map((t) => (
+                {[...activeTransactions(db)].reverse().map((t) => (
                   <tr key={t.id}>
                     <td><JDate value={t.date} /></td>
                     <td className="small">
@@ -143,6 +146,17 @@ export function Treasury({ db, setDB, canWrite }: {
                     <td className="small">{db.treasuries.find((x) => x.id === t.treasuryId)?.name}</td>
                     <td className="small muted">{t.description ?? '—'}</td>
                     <td className="end"><Money value={t.amount} /></td>
+                    <td className="end no-print">
+                      {canWrite && !t.invoiceId && (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => {
+                            try { setDB(voidTransaction(db, t.id)); setError(''); }
+                            catch (e) { setError((e as Error).message); }
+                          }}
+                        >حذف</button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

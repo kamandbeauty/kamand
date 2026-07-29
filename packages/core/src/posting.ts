@@ -179,34 +179,37 @@ export function postTransaction(
   const { index } = ctx;
   const from = ctx.treasuryAccount(treasury);
   const party = tx.partyId ?? null;
+  // ردیف خزانه با شناسهٔ حساب برچسب می‌خورد تا موجودی هر صندوق
+  // یا حساب بانکی جداگانه قابل محاسبه باشد
+  const fromTag = { treasuryId: treasury.id };
   const desc = tx.description ?? labelForTransaction(tx.kind);
   const b = new EntryBuilder(ctx.businessId, tx.date, desc, 'transaction', tx.id);
 
   switch (tx.kind) {
     case 'receive':
-      b.debit(from, tx.amount);
+      b.debit(from, tx.amount, fromTag);
       b.credit(index.id(A.RECEIVABLE), tx.amount, { partyId: party });
       break;
 
     case 'pay':
       b.debit(index.id(A.PAYABLE), tx.amount, { partyId: party });
-      b.credit(from, tx.amount);
+      b.credit(from, tx.amount, fromTag);
       break;
 
     case 'transfer': {
       if (!toTreasury) throw new Error('مقصد انتقال مشخص نیست');
-      b.debit(ctx.treasuryAccount(toTreasury), tx.amount);
-      b.credit(from, tx.amount);
+      b.debit(ctx.treasuryAccount(toTreasury), tx.amount, { treasuryId: toTreasury.id });
+      b.credit(from, tx.amount, fromTag);
       break;
     }
 
     case 'expense':
       b.debit(tx.accountId ?? index.id(A.OTHER_EXPENSE), tx.amount, { partyId: party });
-      b.credit(from, tx.amount);
+      b.credit(from, tx.amount, fromTag);
       break;
 
     case 'income':
-      b.debit(from, tx.amount);
+      b.debit(from, tx.amount, fromTag);
       b.credit(tx.accountId ?? index.id(A.OTHER_INCOME), tx.amount, { partyId: party });
       break;
   }
@@ -266,12 +269,13 @@ export function postCheque(
   } else if (event === 'cash') {
     if (!treasury) throw new Error('حساب خزانه برای وصول چک مشخص نیست');
     const treasuryAcc = ctx.treasuryAccount(treasury);
+    const tag = { treasuryId: treasury.id };
     if (received) {
-      b.debit(treasuryAcc, cheque.amount);
+      b.debit(treasuryAcc, cheque.amount, tag);
       b.credit(noteAccount, cheque.amount);
     } else {
       b.debit(noteAccount, cheque.amount);
-      b.credit(treasuryAcc, cheque.amount);
+      b.credit(treasuryAcc, cheque.amount, tag);
     }
   } else {
     // برگشت: معکوس ثبت اولیه
@@ -306,7 +310,7 @@ export function postOpening(
 
   for (const { treasury, balance } of input.treasuries) {
     if (balance === 0) continue;
-    b.debit(ctx.treasuryAccount(treasury), balance);
+    b.debit(ctx.treasuryAccount(treasury), balance, { treasuryId: treasury.id });
     debitTotal += balance;
   }
 
