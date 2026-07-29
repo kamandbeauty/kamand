@@ -9,6 +9,7 @@ coverage/
 .env.local
 ssr-out/
 preview.html
+*-preview.html
 test-out/
 apps/server/dist/
 *.sqlite

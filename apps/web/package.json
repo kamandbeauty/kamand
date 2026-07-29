@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vite build --config vite.testlib.config.ts && vite build --config vite.ssr.config.ts && node --experimental-sqlite --test test/*.test.mjs && node ssr-out/render.js",
-    "snapshot": "vite build --config vite.snap.config.ts && node ssr-out/snapshot.js"
+    "snapshot": "vite build --config vite.snap.config.ts && node ssr-out/snapshot.js",
+    "snapshot:yearend": "vite build --config vite.yep.config.ts && node ssr-out/yearend-preview.js"
   },
   "dependencies": {
     "@javid/core": "*",
