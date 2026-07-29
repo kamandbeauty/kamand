@@ -5,6 +5,7 @@ import {
 } from '@javid/core';
 import { clearDB, flushDB, queue, STORAGE_LABELS, storageEstimate, storageKind, type DB } from '../store';
 import { Badge, Banner, Card, Field, JDate, Modal, download } from '../ui';
+import { canInstall, installHint, isStandalone, onInstallAvailable, promptInstall } from '../pwa';
 
 export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
   const [biz, setBiz] = useState<Business>(db.business);
@@ -12,8 +13,12 @@ export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const notice = subscriptionNotice(db.subscription, new Date());
   const [quota, setQuota] = useState<{ usage: number; quota: number } | null>(null);
+  const [installable, setInstallable] = useState(canInstall());
+  const hint = installHint();
+  const standalone = isStandalone();
 
   React.useEffect(() => { void storageEstimate().then(setQuota); }, []);
+  React.useEffect(() => onInstallAvailable(setInstallable), []);
 
   function save() {
     setDB({ ...db, business: biz });
@@ -220,6 +225,34 @@ export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
             </tr>
           </tbody>
         </table>
+      </Card>
+
+      <Card title="نصب برنامه">
+        {standalone ? (
+          <Banner tone="success">
+            جاوید به صورت برنامهٔ نصب‌شده اجرا می‌شود و آفلاین هم در دسترس است.
+          </Banner>
+        ) : (
+          <>
+            <p className="small" style={{ marginBottom: 12 }}>
+              جاوید را می‌توانید مثل یک برنامهٔ معمولی روی گوشی یا رایانه نصب کنید:
+              آیکن اختصاصی، اجرای تمام‌صفحه و کارکرد کامل بدون اینترنت.
+            </p>
+            {installable ? (
+              <button
+                className="btn btn-primary"
+                onClick={() => { void promptInstall(); }}
+              >⬇ نصب جاوید</button>
+            ) : hint ? (
+              <Banner tone="info">{hint}</Banner>
+            ) : (
+              <div className="small muted">
+                اگر گزینهٔ نصب دیده نمی‌شود، از منوی مرورگر «نصب برنامه» یا
+                «افزودن به صفحهٔ اصلی» را انتخاب کنید.
+              </div>
+            )}
+          </>
+        )}
       </Card>
 
       <Card title="همگام‌سازی">
