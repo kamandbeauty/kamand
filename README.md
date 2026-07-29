@@ -50,12 +50,37 @@
    ./gradlew :app:assembleRelease      # ریلیز (R8 فعال)
    ./gradlew testDebugUnitTest         # تست‌های واحد (فاکتور، جلالی، سود، انبار، یادآوری)
    ```
-3. اگر Maven گوگل در دسترس نیست، میرورهای Myket/Bazaar در `settings.gradle.kts` به‌صورت خودکار fallback هستند.
+3. **میرورهای داخلی** در `settings.gradle.kts` با اولویت اول تنظیم شده‌اند (مایکت، en-mirror، جامکو، کارگادان) و منابع رسمی گوگل/mavenCentral فقط fallback هستند.
+
+### اگر Gradle سینک نشد (فیلترینگ / تحریم)
+
+سه لایه پیش‌بینی شده است:
+
+| لایه | فایل | چه چیزی را پوشش می‌دهد |
+|---|---|---|
+| ۱ | `settings.gradle.kts` | دانلود کتابخانه‌ها و پلاگین‌ها |
+| ۲ | `gradle/wrapper/gradle-wrapper.properties` | دانلود خودِ توزیع Gradle (~۱۳۰MB) |
+| ۳ | `gradle/init.mirror.gradle.kts` | اجبار پلاگین‌های سرکش به میرور |
+
+اگر با لایه ۱ و ۲ باز هم خطای `Could not resolve` یا timeout گرفتید، لایه ۳ را فعال کنید:
+
+```bash
+# موقتی — فقط همین بیلد
+./gradlew --init-script gradle/init.mirror.gradle.kts :app:assembleDebug
+
+# دائمی — برای همه پروژه‌ها (توصیه‌شده)
+mkdir -p ~/.gradle/init.d
+cp gradle/init.mirror.gradle.kts ~/.gradle/init.d/mirror.gradle.kts
+```
+
+**اگر میروری از کار افتاد:** کافی است خطش را در `settings.gradle.kts` کامنت کنید یا ترتیب را عوض کنید. فهرست به‌روز میرورهای ایرانی: [MiravaOrg/Mirava](https://github.com/MiravaOrg/Mirava)
+
+**اگر Gradle از قبل نصب است:** اصلاً نیازی به دانلود توزیع نیست — `gradle wrapper --gradle-version 8.10.2` بزنید.
 
 ## راه‌اندازی برای انتشار
 
 1. **فونت وزیرمتن** (OFL): فایل‌های `vazirmatn_regular/medium/bold.ttf` را در `core/ui/src/main/res/font/` قرار داده و در `FactorYarTheme.kt` مقدار `FyFontFamily` را با `FontFamily(Font(R.font.vazirmatn_regular))…` پر کنید.
-2. **Poolakey:** کلید عمومی RSA را از پنل توسعه‌دهندگان بازار در `BillingManager.RSA_PUBLIC_KEY` جای‌گذاری و SKUها را بسازید (`factoryar_gold_monthly/yearly`).
+2. **Poolakey:** کلید عمومی RSA را از پنل توسعه‌دهندگان بازار در `BillingManager.RSA_PUBLIC_KEY` جای‌گذاری و SKUها را بسازید (`factoryar_gold_monthly/yearly`). وابستگی از JitPack با مختصات `com.github.cafebazaar.Poolakey:poolakey:2.2.0` می‌آید.
 3. **امضای انتشار:** keystore خود را بسازید و در `app/build.gradle.kts` بلوک `signingConfigs` را اضافه کنید.
 4. تست روی دستگاهی بدون Google Play Services (مهم‌ترین سناریوی بازار ایران) — به‌ویژه مسیر اسکن بارکد که باید به ZXing یا ورود دستی برگردد.
 5. تست ویجت: افزودن به صفحه اصلی، تغییر تم در تنظیمات و بررسی به‌روزرسانی رنگ ویجت.

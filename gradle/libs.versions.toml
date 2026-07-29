@@ -18,7 +18,7 @@ coroutines = "1.8.1"
 serialization = "1.7.1"
 javaxInject = "1"
 splashscreen = "1.0.1"
-poolakey = "2.0.0"
+poolakey = "2.2.0"
 glance = "1.1.0"
 camerax = "1.3.4"
 mlkitBarcode = "17.3.0"
@@ -65,7 +65,8 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 
-poolakey = { group = "ir.cafebazaar.poolakey", name = "poolakey", version.ref = "poolakey" }
+# مختصات رسمی Poolakey روی JitPack (طبق مخزن cafebazaar/Poolakey)
+poolakey = { group = "com.github.cafebazaar.Poolakey", name = "poolakey", version.ref = "poolakey" }
 
 # ویجت صفحه اصلی (Glance)
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
