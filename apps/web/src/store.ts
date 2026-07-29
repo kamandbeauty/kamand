@@ -5,6 +5,8 @@ import {
   buildElectronicInvoice, nextSerial, validateForTaxSystem,
   assertNotLocked, createAuditLog, hasPermission,
   checkIntegrity, closeFiscalYear, fiscalYearBounds, previewClosing, currentFiscalYear,
+  postOpening, SYSTEM_ACCOUNTS, EntryBuilder, assertBalanced,
+  type JournalLine,
   type AuditLog, type AuditedEntity, type PeriodLock, type Permission, type Role,
   type Business, type Cheque, type Invoice, type JournalEntry, type Party,
   type Product, type StockMovement, type Subscription, type Transaction,
@@ -571,4 +573,186 @@ export function closeYear(db: DB, jy: number, distributeProfit: boolean): DB {
 /** بررسی سلامت دفتر */
 export function integrityOf(db: DB) {
   return checkIntegrity(db.entries, indexOf(db));
+}
+
+
+// ─────────── مانده‌های اول دوره ───────────
+
+/**
+ * ثبت سند افتتاحیه از روی مانده‌های اول دورهٔ اشخاص، خزانه و کالا.
+ *
+ * ⚠️ چرا لازم است: کاربر مانده اول دوره را در فرم شخص یا حساب وارد
+ * می‌کند، ولی تا وقتی سند افتتاحیه ثبت نشود آن مبلغ در دفتر نیست و
+ * در گزارش بدهکاران دیده نمی‌شود. این تابع آن شکاف را می‌بندد.
+ *
+ * قابل اجرای مجدد است: سند افتتاحیهٔ قبلی جایگزین می‌شود، نه اینکه
+ * روی هم انباشته گردد.
+ */
+export function postOpeningBalances(db: DB, date?: string): DB {
+  const openingDate = date ?? openingDateOf(db);
+  const index = indexOf(db);
+
+  const entry = postOpening(
+    {
+      date: openingDate,
+      parties: db.parties
+        .filter((p) => !p.archived && p.openingBalance !== 0)
+        .map((p) => ({ id: p.id, balance: p.openingBalance })),
+      treasuries: db.treasuries
+        .filter((t) => !t.archived && t.openingBalance !== 0)
+        .map((t) => ({ treasury: t, balance: t.openingBalance })),
+      inventoryValue: openingInventoryValue(db),
+    },
+    {
+      index,
+      businessId: db.business.id,
+      idGen: uuid,
+      now: nowIso(),
+      treasuryAccount: defaultTreasuryAccount(index),
+    },
+  );
+
+  // سند افتتاحیهٔ قبلی حذف می‌شود تا دوباره‌کاری نشود
+  const withoutOld = db.entries.filter((e) => e.sourceType !== 'opening');
+  const next: DB = {
+    ...db,
+    entries: entry ? [...withoutOld, entry] : withoutOld,
+  };
+
+  if (entry) track('entry', entry.id, entry);
+
+  return audit(next, 'create', 'entry', entry?.id ?? db.business.id, {
+    after: { عملیات: 'ثبت مانده‌های اول دوره', تاریخ: openingDate },
+  });
+}
+
+/** ارزش موجودی اولیهٔ کالاها — از حرکات نوع opening */
+export function openingInventoryValue(db: DB): Rial {
+  return db.movements
+    .filter((m) => m.sourceType === 'opening')
+    .reduce((s, m) => s + Math.round(m.unitCost * m.qty), 0);
+}
+
+/** تاریخ پیش‌فرض سند افتتاحیه: ابتدای سال مالی جاری */
+export function openingDateOf(db: DB): string {
+  const jy = currentFiscalYear(new Date(), db.business.fiscalYearStartMonth);
+  return fiscalYearBounds(jy, db.business.fiscalYearStartMonth).from;
+}
+
+export function hasOpeningEntry(db: DB): boolean {
+  return db.entries.some((e) => e.sourceType === 'opening' && !e.deletedAt);
+}
+
+/** آیا مانده‌ای وارد شده که هنوز به دفتر نرفته؟ */
+export function pendingOpeningBalances(db: DB): {
+  parties: number;
+  treasuries: number;
+  inventory: Rial;
+  total: number;
+} {
+  const parties = db.parties.filter((p) => !p.archived && p.openingBalance !== 0).length;
+  const treasuries = db.treasuries.filter((t) => !t.archived && t.openingBalance !== 0).length;
+  const inventory = openingInventoryValue(db);
+  return { parties, treasuries, inventory, total: parties + treasuries + (inventory ? 1 : 0) };
+}
+
+
+// ─────────── سند دستی ───────────
+
+export interface ManualLineInput {
+  accountId: ID;
+  debit: Rial;
+  credit: Rial;
+  partyId?: ID | null;
+  description?: string;
+}
+
+/**
+ * اعتبارسنجی سند دستی پیش از ثبت.
+ * سند دستی تنها راهی است که کاربر مستقیماً به دفتر می‌نویسد،
+ * پس اعتبارسنجی باید سخت‌گیرانه باشد.
+ */
+export function validateManualEntry(input: {
+  date: string;
+  description: string;
+  lines: ManualLineInput[];
+}): string[] {
+  const errors: string[] = [];
+
+  if (!input.description.trim()) errors.push('شرح سند الزامی است');
+
+  const active = input.lines.filter((l) => l.debit > 0 || l.credit > 0);
+  if (active.length < 2) errors.push('سند باید حداقل دو ردیف با مبلغ داشته باشد');
+
+  input.lines.forEach((l, i) => {
+    const n = i + 1;
+    if (l.debit < 0 || l.credit < 0) errors.push(`ردیف ${n}: مبلغ منفی مجاز نیست`);
+    if (l.debit > 0 && l.credit > 0) {
+      errors.push(`ردیف ${n}: یک ردیف نمی‌تواند هم بدهکار باشد هم بستانکار`);
+    }
+    if ((l.debit > 0 || l.credit > 0) && !l.accountId) {
+      errors.push(`ردیف ${n}: انتخاب حساب الزامی است`);
+    }
+  });
+
+  const debit = active.reduce((s, l) => s + l.debit, 0);
+  const credit = active.reduce((s, l) => s + l.credit, 0);
+  if (debit !== credit) {
+    errors.push(`سند متوازن نیست — اختلاف ${Math.abs(debit - credit).toLocaleString('en-US')}`);
+  }
+  if (debit === 0) errors.push('مبلغ سند نمی‌تواند صفر باشد');
+
+  return errors;
+}
+
+/** ثبت سند دستی در دفتر */
+export function postManualEntry(
+  db: DB,
+  input: { date: string; description: string; lines: ManualLineInput[] },
+): DB {
+  const errors = validateManualEntry(input);
+  if (errors.length > 0) throw new Error(errors.join('؛ '));
+
+  guardPeriod(db, input.date);
+
+  const b = new EntryBuilder(db.business.id, input.date, input.description.trim(), 'manual', null);
+  for (const l of input.lines) {
+    const extra: Partial<JournalLine> = {};
+    if (l.partyId) extra.partyId = l.partyId;
+    if (l.description) extra.description = l.description;
+    if (l.debit > 0) b.debit(l.accountId, l.debit, extra);
+    else if (l.credit > 0) b.credit(l.accountId, l.credit, extra);
+  }
+
+  const entry = b.build(uuid(), nowIso());
+  assertBalanced(entry.lines);
+  track('entry', entry.id, entry);
+
+  return audit({ ...db, entries: [...db.entries, entry] }, 'create', 'entry', entry.id, {
+    after: {
+      شرح: entry.description,
+      تاریخ: entry.date,
+      مبلغ: entry.lines.reduce((s, l) => s + l.debit, 0),
+    },
+  });
+}
+
+/** حذف نرم سند دستی — فقط سند دستی قابل حذف است */
+export function voidManualEntry(db: DB, entryId: ID): DB {
+  const entry = db.entries.find((e) => e.id === entryId);
+  if (!entry) throw new Error('سند یافت نشد');
+  if (entry.sourceType !== 'manual') {
+    throw new Error('فقط سند دستی قابل حذف است؛ سند خودکار با اصلاح منبع آن تغییر می‌کند');
+  }
+  guardPeriod(db, entry.date);
+
+  const next: DB = {
+    ...db,
+    entries: db.entries.map((e) => (e.id === entryId ? { ...e, deletedAt: nowIso() } : e)),
+  };
+  track('entry', entryId, { ...entry, deletedAt: nowIso() });
+
+  return audit(next, 'delete', 'entry', entryId, {
+    before: { شرح: entry.description, تاریخ: entry.date },
+  });
 }

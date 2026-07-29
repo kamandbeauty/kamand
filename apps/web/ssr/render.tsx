@@ -12,7 +12,8 @@ import { Tax } from '../src/pages/Tax';
 import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
-import { closedYears, closeYear, closingPreviewFor, integrityOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { Ledger } from '../src/pages/Ledger';
+import { closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -64,6 +65,7 @@ const pages: [string, React.ReactElement][] = [
   ['گزارش‌ها', <Reports db={db} />],
   ['سامانهٔ مؤدیان', <Tax db={db} setDB={noop} canWrite />],
   ['ممیزی و دوره', <Audit db={db} setDB={noop} />],
+  ['دفتر و اسناد', <Ledger db={db} setDB={noop} />],
   ['بستن سال', <YearEnd db={db} setDB={noop} />],
   ['حساب و همگام‌سازی', <Account db={db} setDB={noop} />],
   ['تنظیمات', <Settings db={db} setDB={noop} />],
@@ -195,6 +197,87 @@ for (const [k, v] of taxChecks) {
   if (!rejectsFuture) failed++;
 
   console.log(closedYears(db).length === 0 ? '✅ هنوز سالی بسته نشده' : '❌ سال ناخواسته بسته شد');
+}
+
+// مانده اول دوره باید واقعاً به دفتر برود
+{
+  const { debtorsAndCreditors, balanceSheet } = await import('@javid/core');
+
+  let d2 = createEmptyDB('آزمون افتتاحیه');
+  const pid = uuid();
+  d2 = upsertParty(d2, {
+    id: pid, businessId: d2.business.id, kind: 'customer',
+    name: 'بدهکار قبلی', openingBalance: 5_000_000,
+  });
+
+  const beforePost = debtorsAndCreditors(d2.entries, indexOf(d2), d2.parties).totalDebt;
+  d2 = postOpeningBalances(d2);
+  const afterPost = debtorsAndCreditors(d2.entries, indexOf(d2), d2.parties).totalDebt;
+
+  const checks: [string, boolean][] = [
+    ['پیش از ثبت، مانده در دفتر نیست', beforePost === 0],
+    ['پس از ثبت، مانده در گزارش دیده می‌شود', afterPost === 5_000_000],
+    ['سند افتتاحیه ثبت شد', hasOpeningEntry(d2)],
+    ['ترازنامه پس از افتتاحیه متوازن است', balanceSheet(d2.entries, indexOf(d2)).balanced],
+  ];
+
+  // ثبت مجدد نباید مبلغ را دو برابر کند
+  d2 = postOpeningBalances(d2);
+  const twice = debtorsAndCreditors(d2.entries, indexOf(d2), d2.parties).totalDebt;
+  checks.push(['ثبت مجدد مبلغ را دو برابر نمی‌کند', twice === 5_000_000]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
+// سند دستی
+{
+  const { balanceSheet } = await import('@javid/core');
+  const idx = indexOf(db);
+  const cash = idx.all().find((a) => a.code === '1010')!;
+  const capital = idx.all().find((a) => a.code === '3010')!;
+
+  // نامتوازن باید رد شود
+  const bad = validateManualEntry({
+    date: '2026-07-29', description: 'تست',
+    lines: [
+      { accountId: cash.id, debit: 1000, credit: 0 },
+      { accountId: capital.id, debit: 0, credit: 900 },
+    ],
+  });
+  console.log(bad.length > 0 ? '✅ سند دستی نامتوازن رد می‌شود' : '❌ سند نامتوازن پذیرفته شد');
+  if (bad.length === 0) failed++;
+
+  // متوازن باید ثبت شود
+  let d3 = postManualEntry(db, {
+    date: '2026-07-29', description: 'آوردهٔ نقدی مالک',
+    lines: [
+      { accountId: cash.id, debit: 2_000_000, credit: 0 },
+      { accountId: capital.id, debit: 0, credit: 2_000_000 },
+    ],
+  });
+  const added = d3.entries.find((e) => e.sourceType === 'manual');
+  console.log(added ? '✅ سند دستی ثبت شد' : '❌ سند دستی ثبت نشد');
+  if (!added) failed++;
+
+  const bal = balanceSheet(d3.entries, indexOf(d3)).balanced;
+  console.log(bal ? '✅ ترازنامه پس از سند دستی متوازن است' : '❌ سند دستی ترازنامه را شکست');
+  if (!bal) failed++;
+
+  // حذف نرم
+  d3 = voidManualEntry(d3, added!.id);
+  const gone = d3.entries.find((e) => e.id === added!.id)?.deletedAt;
+  console.log(gone ? '✅ حذف سند دستی نرم است' : '❌ حذف نرم کار نکرد');
+  if (!gone) failed++;
+
+  // سند خودکار نباید حذف شود
+  const auto = db.entries.find((e) => e.sourceType === 'invoice')!;
+  let blocked = false;
+  try { voidManualEntry(db, auto.id); } catch { blocked = true; }
+  console.log(blocked ? '✅ سند خودکار قابل حذف نیست' : '❌ سند خودکار حذف شد');
+  if (!blocked) failed++;
 }
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
