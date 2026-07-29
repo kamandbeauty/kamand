@@ -10,7 +10,8 @@ import { Treasury } from '../src/pages/Treasury';
 import { Settings } from '../src/pages/Settings';
 import { Tax } from '../src/pages/Tax';
 import { Account } from '../src/pages/Account';
-import { createEmptyDB, issueElectronicInvoice, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { Audit } from '../src/pages/Audit';
+import { createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -61,6 +62,7 @@ const pages: [string, React.ReactElement][] = [
   ['خزانه', <Treasury db={db} setDB={noop} canWrite />],
   ['گزارش‌ها', <Reports db={db} />],
   ['سامانهٔ مؤدیان', <Tax db={db} setDB={noop} canWrite />],
+  ['ممیزی و دوره', <Audit db={db} setDB={noop} />],
   ['حساب و همگام‌سازی', <Account db={db} setDB={noop} />],
   ['تنظیمات', <Settings db={db} setDB={noop} />],
   ['حالت فقط-خواندنی', <Invoices db={db} setDB={noop} canWrite={false} />],
@@ -118,6 +120,50 @@ const taxChecks: [string, boolean][] = [
 for (const [k, v] of taxChecks) {
   console.log(v ? `✅ ${k}` : `❌ ${k}`);
   if (!v) failed++;
+}
+
+// بررسی ردّ ممیزی و قفل دوره در جریان واقعی ثبت
+{
+  const auditChecks: [string, boolean][] = [
+    ['ردّ ممیزی هنگام ثبت پر می‌شود', db.auditLogs.length > 0],
+    ['ثبت فاکتور رویداد ایجاد دارد', db.auditLogs.some((l) => l.entity === 'invoice' && l.action === 'create')],
+    ['ثبت شخص رویداد دارد', db.auditLogs.some((l) => l.entity === 'party')],
+    ['هر رویداد کاربر و زمان دارد', db.auditLogs.every((l) => !!l.userId && !!l.at)],
+  ];
+  for (const [k, v] of auditChecks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+
+  // قفل دوره باید واقعاً جلوی ثبت را بگیرد
+  const locked = lockPeriod(db, new Date().toISOString().slice(0, 10), 'آزمون');
+  let blocked = false;
+  try {
+    postInvoiceToDB(locked, {
+      ...db.invoices[0]!,
+      id: uuid(),
+      number: 'F-BLOCKED',
+    });
+  } catch (e) {
+    blocked = (e as Error).name === 'PeriodLockedError';
+  }
+  console.log(blocked ? '✅ قفل دوره جلوی ثبت را می‌گیرد' : '❌ قفل دوره کار نمی‌کند');
+  if (!blocked) failed++;
+
+  // خارج از دورهٔ قفل باید آزاد باشد
+  let allowed = false;
+  try {
+    const future = new Date(); future.setFullYear(future.getFullYear() + 1);
+    postInvoiceToDB(locked, {
+      ...db.invoices[0]!,
+      id: uuid(),
+      number: 'F-FUTURE',
+      date: future.toISOString().slice(0, 10),
+    });
+    allowed = true;
+  } catch { /* نباید رخ دهد */ }
+  console.log(allowed ? '✅ خارج دورهٔ قفل ثبت آزاد است' : '❌ قفل بیش از حد سخت‌گیر است');
+  if (!allowed) failed++;
 }
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);

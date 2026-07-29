@@ -3,6 +3,8 @@ import {
   MemorySyncQueue, postInvoice, postTransaction, stockMovementsFor,
   replayProduct, uuid, computeInvoice, consumeStock, invoiceLineUnitCost,
   buildElectronicInvoice, nextSerial, validateForTaxSystem,
+  assertNotLocked, createAuditLog, hasPermission,
+  type AuditLog, type AuditedEntity, type PeriodLock, type Permission, type Role,
   type Business, type Cheque, type Invoice, type JournalEntry, type Party,
   type Product, type StockMovement, type Subscription, type Transaction,
   type Treasury, type Account, type ID, type Rial,
@@ -35,6 +37,10 @@ export interface DB {
   subscription: Subscription;
   taxProfile: TaxProfile;
   taxSubmissions: TaxSubmission[];
+  auditLogs: AuditLog[];
+  periodLock: PeriodLock | null;
+  /** نقش کاربر جاری در این کسب‌وکار */
+  role: Role;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -81,6 +87,9 @@ export function createEmptyDB(name = 'کسب‌وکار من'): DB {
     },
     taxProfile: { memoryId: '', sellerTin: '', sellerType: 2, lastSerial: 0 },
     taxSubmissions: [],
+    auditLogs: [],
+    periodLock: null,
+    role: 'owner',
   };
 }
 
@@ -105,6 +114,9 @@ export function migrate(db: DB): DB {
     out.taxProfile = { memoryId: '', sellerTin: '', sellerType: 2, lastSerial: 0 };
   }
   if (!Array.isArray(out.taxSubmissions)) out.taxSubmissions = [];
+  if (!Array.isArray(out.auditLogs)) out.auditLogs = [];
+  if (out.periodLock === undefined) out.periodLock = null;
+  if (!out.role) out.role = 'owner';
   if (!Array.isArray(out.movements)) out.movements = [];
   if (!Array.isArray(out.entries)) out.entries = [];
   return out;
@@ -193,6 +205,8 @@ export function stockOf(db: DB, productId: ID) {
  * این تنها نقطهٔ ورود ثبت فاکتور است تا دفتر همیشه سازگار بماند.
  */
 export function postInvoiceToDB(db: DB, invoice: Invoice): DB {
+  // دورهٔ بسته نباید سند جدید بپذیرد
+  guardPeriod(db, invoice.date);
   const method = db.business.costingMethod;
 
   const outbound = invoice.type === 'sale' || invoice.type === 'waste';
@@ -244,15 +258,22 @@ export function postInvoiceToDB(db: DB, invoice: Invoice): DB {
 
   track('invoice', withCosts.id, withCosts);
 
-  return {
+  const existing = db.invoices.find((i) => i.id === withCosts.id);
+  const next: DB = {
     ...db,
     invoices: [...db.invoices.filter((i) => i.id !== withCosts.id), withCosts],
     entries: entry ? [...db.entries, entry] : db.entries,
     movements: [...db.movements, ...movements],
   };
+
+  return audit(next, existing ? 'update' : 'create', 'invoice', withCosts.id, {
+    before: existing as unknown as Record<string, unknown>,
+    after: withCosts as unknown as Record<string, unknown>,
+  });
 }
 
 export function postTransactionToDB(db: DB, tx: Transaction): DB {
+  guardPeriod(db, tx.date);
   const treasury = db.treasuries.find((t) => t.id === tx.treasuryId);
   if (!treasury) throw new Error('حساب خزانه یافت نشد');
   const to = tx.toTreasuryId ? db.treasuries.find((t) => t.id === tx.toTreasuryId) ?? null : null;
@@ -260,20 +281,27 @@ export function postTransactionToDB(db: DB, tx: Transaction): DB {
   const entry = postTransaction(tx, treasury, to, ctxOf(db));
   track('transaction', tx.id, tx);
 
-  return {
+  const next: DB = {
     ...db,
     transactions: [...db.transactions, tx],
     entries: entry ? [...db.entries, entry] : db.entries,
   };
+  return audit(next, 'create', 'transaction', tx.id, {
+    after: tx as unknown as Record<string, unknown>,
+  });
 }
 
 export function upsertParty(db: DB, party: Party): DB {
   track('party', party.id, party);
-  const exists = db.parties.some((p) => p.id === party.id);
-  return {
+  const before = db.parties.find((p) => p.id === party.id);
+  const next: DB = {
     ...db,
-    parties: exists ? db.parties.map((p) => (p.id === party.id ? party : p)) : [...db.parties, party],
+    parties: before ? db.parties.map((p) => (p.id === party.id ? party : p)) : [...db.parties, party],
   };
+  return audit(next, before ? 'update' : 'create', 'party', party.id, {
+    before: before as unknown as Record<string, unknown>,
+    after: party as unknown as Record<string, unknown>,
+  });
 }
 
 export function upsertProduct(db: DB, product: Product): DB {
@@ -295,11 +323,16 @@ export function upsertProduct(db: DB, product: Product): DB {
     }];
   }
 
-  return {
+  const before = db.products.find((p) => p.id === product.id);
+  const next: DB = {
     ...db,
     products: exists ? db.products.map((p) => (p.id === product.id ? product : p)) : [...db.products, product],
     movements,
   };
+  return audit(next, before ? 'update' : 'create', 'product', product.id, {
+    before: before as unknown as Record<string, unknown>,
+    after: product as unknown as Record<string, unknown>,
+  });
 }
 
 export function upsertCheque(db: DB, cheque: Cheque): DB {
@@ -392,4 +425,87 @@ export function issueElectronicInvoice(
 export function updateTaxProfile(db: DB, profile: TaxProfile): DB {
   track('tax_profile', db.business.id, profile);
   return { ...db, taxProfile: profile };
+}
+
+
+// ─────────── ردّ ممیزی و قفل دوره ───────────
+
+/** کاربر جاری — تا وقتی حساب ابری نساخته، محلی است */
+export function currentUserId(): ID {
+  let id = storage.getItemSync('javid:user');
+  if (!id) {
+    id = uuid();
+    storage.setItemSync('javid:user', id);
+  }
+  return id;
+}
+
+/**
+ * ثبت رویداد در ردّ ممیزی.
+ * فهرست عمداً محدود نگه داشته می‌شود تا حافظهٔ دستگاه پر نشود؛
+ * رکوردهای قدیمی‌تر در پشتیبان باقی می‌مانند.
+ */
+const AUDIT_LIMIT = 2000;
+
+export function audit(
+  db: DB,
+  action: AuditLog['action'],
+  entity: AuditedEntity,
+  entityId: ID,
+  data: { before?: Record<string, unknown> | null; after?: Record<string, unknown> | null } = {},
+): DB {
+  const log = createAuditLog(
+    {
+      businessId: db.business.id,
+      userId: currentUserId(),
+      action, entity, entityId,
+      before: data.before ?? null,
+      after: data.after ?? null,
+    },
+    uuid(),
+    nowIso(),
+  );
+
+  const logs = [...db.auditLogs, log];
+  return {
+    ...db,
+    auditLogs: logs.length > AUDIT_LIMIT ? logs.slice(-AUDIT_LIMIT) : logs,
+  };
+}
+
+/** بررسی اجازه بر اساس نقش کاربر جاری */
+export function can(db: DB, permission: Permission): boolean {
+  return hasPermission(db.role, permission);
+}
+
+/**
+ * بررسی قفل دوره پیش از هر نوشتن مالی.
+ * پرتاب می‌کند تا فراموش کردنش سخت باشد.
+ */
+export function guardPeriod(db: DB, date: string): void {
+  assertNotLocked(date, db.periodLock);
+}
+
+export function lockPeriod(db: DB, through: string, note?: string): DB {
+  const lock: PeriodLock = {
+    businessId: db.business.id,
+    lockedThrough: through,
+    lockedBy: currentUserId(),
+    lockedAt: nowIso(),
+    note,
+  };
+  track('period_lock', db.business.id, lock);
+  return audit({ ...db, periodLock: lock }, 'update', 'business', db.business.id, {
+    before: { lockedThrough: db.periodLock?.lockedThrough ?? null },
+    after: { lockedThrough: through },
+  });
+}
+
+export function unlockPeriod(db: DB, reason: string): DB {
+  const before = db.periodLock?.lockedThrough ?? null;
+  track('period_lock', db.business.id, null);
+  return audit({ ...db, periodLock: null }, 'update', 'business', db.business.id, {
+    before: { lockedThrough: before },
+    after: { lockedThrough: null, reason },
+  });
 }

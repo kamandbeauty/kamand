@@ -27,6 +27,8 @@ export * from './tax.js';
 export * from './escpos.js';
 export * from './protocol.js';
 export * from './tax-transport.js';
+export * from './audit.js';
+export * from './workspace.js';
 
 export const VERSION = '0.1.0';
 export const APP_NAME = 'جاوید';
