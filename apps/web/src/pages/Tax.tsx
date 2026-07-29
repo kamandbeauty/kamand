@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
   computeInvoice, isValidMemoryId, MEMORY_ID_ALPHABET, SUBJECT_LABELS,
-  SUBMISSION_LABELS, TAX_SPEC_VERSION, taxQuarter, toCSV, toPersianDigits,
-  validateTaxId, vatReport, type TaxProfile,
+  SUBMISSION_LABELS, TAX_API_BASE, TAX_SPEC_VERSION, taxQuarter, toCSV,
+  toPersianDigits, validateTaxId, validateTransportConfig, vatReport,
+  type TaxProfile,
 } from '@javid/core';
 import { issueElectronicInvoice, submissionFor, taxReadiness, updateTaxProfile, type DB } from '../store';
 import {
@@ -415,6 +416,38 @@ function TaxSettings({ db, setDB, canWrite }: { db: DB; setDB: (d: DB) => void; 
           </table>
         </Card>
       )}
+
+      <Card title="ارسال به سامانه">
+        <p className="small" style={{ marginBottom: 12 }}>
+          صدور صورتحساب الکترونیکی و تولید شمارهٔ مالیاتی در جاوید کامل انجام
+          می‌شود. برای <strong>ارسال واقعی</strong> به سامانه، سه مورد زیر لازم است
+          که باید از مراجع رسمی دریافت شوند:
+        </p>
+        <table style={{ marginBottom: 12 }}>
+          <tbody>
+            <tr>
+              <td>گواهی امضای دیجیتال</td>
+              <td className="end small muted">از مرکز میانی معتبر (rca.gov.ir)</td>
+            </tr>
+            <tr>
+              <td>کلید عمومی سازمان</td>
+              <td className="end small muted">متد GET_SERVER_INFORMATION</td>
+            </tr>
+            <tr>
+              <td>نام کاربری و رمز کارپوشه</td>
+              <td className="end small muted">از کارپوشهٔ سامانهٔ مؤدیان</td>
+            </tr>
+          </tbody>
+        </table>
+        <Banner tone="info">
+          لایهٔ فنی ارسال — نرمال‌سازی، امضای RSA-۲۰۴۸، رمزگذاری AES-GCM و
+          استعلام وضعیت — پیاده و آزمون شده است. پس از دریافت گواهی، فقط
+          کافی است آن را در سرور بارگذاری کنید.
+        </Banner>
+        <div className="small muted">
+          نشانی سامانه: <span className="num" style={{ direction: 'ltr' }}>{TAX_API_BASE}</span>
+        </div>
+      </Card>
 
       <Card title="دربارهٔ سامانهٔ مؤدیان">
         <p className="small" style={{ marginBottom: 10 }}>

@@ -34,6 +34,9 @@ export interface OtpOutcome {
   retryAfter: number;
   code?: string;
   error?: string;
+  /** کد تولیدشده — برای ارسال پیامک توسط لایهٔ بالاتر */
+  generated?: string;
+  phone?: string;
 }
 
 export function requestOtp(db: DB, rawPhone: string, isDev: boolean): OtpOutcome {
@@ -66,8 +69,15 @@ export function requestOtp(db: DB, rawPhone: string, isDev: boolean): OtpOutcome
       sent_at = excluded.sent_at
   `).run(phone, hashCode(phone, code), now() + OTP_TTL_MS, now());
 
-  // در محیط واقعی اینجا پیامک ارسال می‌شود
-  return { ok: true, retryAfter: Math.ceil(OTP_RESEND_MS / 1000), ...(isDev ? { code } : {}) };
+  // کد تولیدشده برگردانده می‌شود تا لایهٔ HTTP آن را پیامک کند.
+  // فیلد `code` فقط در حالت توسعه به کلاینت می‌رسد.
+  return {
+    ok: true,
+    retryAfter: Math.ceil(OTP_RESEND_MS / 1000),
+    generated: code,
+    phone,
+    ...(isDev ? { code } : {}),
+  };
 }
 
 export interface VerifyOutcome {

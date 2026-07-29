@@ -2,6 +2,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import { createApp } from '../src/http.js';
+import { silentProvider } from '../src/sms.js';
 import type { DB } from '../src/db.js';
 
 /**
@@ -19,6 +20,7 @@ before(async () => {
     dev: true,
     rateLimit: { windowMs: 60_000, max: 10_000 },
     otpLimit: { windowMs: 60_000, perPhone: 50, perIp: 10_000 },
+    sms: silentProvider,
   });
   db = app.db;
   close = app.close;
@@ -316,6 +318,7 @@ describe('محدودیت نرخ', () => {
       dev: true,
       rateLimit: { windowMs: 60_000, max: 10_000 },
       otpLimit: { windowMs: 60_000, perPhone: 5, perIp: 6 },
+      sms: silentProvider,
     });
     const s = createServer((req, res) => { void app.handler(req, res); });
     await new Promise<void>((r) => s.listen(0, '127.0.0.1', r));

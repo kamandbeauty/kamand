@@ -10,6 +10,7 @@ import {
   revokeSession, roleOf, sessionOf, verifyOtp, type Role, type Session,
 } from './auth.js';
 import { pull, push, snapshot } from './sync.js';
+import { providerFromEnv, sendWithRetry, type SmsProvider } from './sms.js';
 
 /**
  * لایهٔ HTTP بدون فریم‌ورک.
@@ -29,6 +30,8 @@ export interface ServerOptions {
    * همدیگر را قفل کنند.
    */
   otpLimit?: { windowMs: number; perPhone: number; perIp: number };
+  /** سرویس ارسال پیامک — پیش‌فرض از متغیرهای محیطی خوانده می‌شود */
+  sms?: SmsProvider;
 }
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
@@ -40,6 +43,7 @@ interface Ctx {
   db: DB;
   dev: boolean;
   session: Session | null;
+  sms: SmsProvider;
 }
 
 function send(res: ServerResponse, status: number, body: unknown): void {
@@ -133,6 +137,7 @@ export function createApp(opts: ServerOptions = {}) {
   const otpPhoneRl = new RateLimiter(otpWindow, opts.otpLimit?.perPhone ?? 5);
   const otpIpRl = new RateLimiter(otpWindow, opts.otpLimit?.perIp ?? 40);
 
+  const sms = opts.sms ?? providerFromEnv();
   const sweeper = setInterval(() => { rl.sweep(); otpPhoneRl.sweep(); otpIpRl.sweep(); }, 60_000);
   sweeper.unref?.();
 
@@ -156,7 +161,7 @@ export function createApp(opts: ServerOptions = {}) {
       return;
     }
 
-    const ctx: Ctx = { req, res, url, db, dev, session: sessionOf(db, bearer(req)) };
+    const ctx: Ctx = { req, res, url, db, dev, sms, session: sessionOf(db, bearer(req)) };
     const path = url.pathname.replace(/\/+$/, '') || '/';
 
     try {
@@ -166,7 +171,7 @@ export function createApp(opts: ServerOptions = {}) {
       if (msg.includes('JSON') || msg.includes('حجم')) {
         fail(res, 400, ERROR_CODES.INVALID, msg);
       } else {
-        console.error('خطای سرور:', e);
+        process.stderr.write(`خطای سرور: ${String(e)}\n`);
         fail(res, 500, ERROR_CODES.SERVER, 'خطای سرور — اطلاعات شما روی دستگاه محفوظ است');
       }
     }
@@ -205,6 +210,18 @@ async function route(ctx: Ctx, path: string, otpRl: OtpLimiters): Promise<void> 
     if (!out.ok) {
       const code = out.error?.includes('نامعتبر') ? ERROR_CODES.INVALID : ERROR_CODES.RATE_LIMITED;
       return fail(res, code === ERROR_CODES.INVALID ? 400 : 429, code, out.error ?? 'ارسال کد ناموفق بود');
+    }
+
+    // ارسال پیامک؛ شکست آن نباید کل درخواست را بشکند چون کد
+    // در حالت توسعه از مسیر پاسخ هم در دسترس است.
+    if (out.generated) {
+      const smsResult = await sendWithRetry(ctx.sms, phone, out.generated);
+      if (!smsResult.ok) {
+        process.stderr.write(`[پیامک] ارسال ناموفق: ${smsResult.error}\n`);
+        if (!ctx.dev) {
+          return fail(res, 502, ERROR_CODES.SERVER, 'ارسال پیامک ناموفق بود، دوباره تلاش کنید');
+        }
+      }
     }
 
     const result: RequestOtpResult = { sent: true, retryAfter: out.retryAfter };
