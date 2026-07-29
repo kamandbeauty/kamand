@@ -5,6 +5,7 @@ import ir.javid.hesabyar.core.common.PersianDate
 import ir.javid.hesabyar.core.common.ValidationResult
 import ir.javid.hesabyar.core.common.validateNonBlank
 import ir.javid.hesabyar.core.model.*
+import ir.javid.hesabyar.domain.usecase.InvoiceCalculator
 import ir.javid.hesabyar.data.local.HesabyarDatabase
 import ir.javid.hesabyar.data.local.dao.*
 import ir.javid.hesabyar.data.local.entity.*
@@ -61,8 +62,10 @@ class SettingsRepositoryImpl @Inject constructor(private val dao: SettingsDao) :
 
 class ProductRepositoryImpl @Inject constructor(
     private val db: HesabyarDatabase,
-    private val dao: ProductDao
+    private val dao: ProductDao,
+    accountingDao: AccountingDao
 ) : ProductRepository {
+    private val journal = JournalPoster(accountingDao)
     override val products = dao.observeAll()
     override val categories = dao.observeCategories()
     override val lowStock = dao.observeLowStock()
@@ -78,13 +81,17 @@ class ProductRepositoryImpl @Inject constructor(
                 val id = dao.insert(product.copy(name = product.name.trim(), sku = product.sku?.trim()?.ifBlank { null }, createdAt = now, updatedAt = now))
                 if (product.trackInventory && product.stock != 0.0) {
                     dao.insertInventoryTransaction(InventoryTransactionEntity(productId = id, type = "ADJUSTMENT", quantity = product.stock, unitCost = product.purchasePrice, dateEpochDay = PersianDate.today(), note = "موجودی اولیه"))
+                    postInventoryAdjustment(id, product.stock, product.purchasePrice, PersianDate.today(), "موجودی اولیه ${product.name}", "OPENING_STOCK")
                 }
                 id
             } else {
                 val old = requireNotNull(dao.getById(product.id)) { "کالا پیدا نشد" }
                 val stockDelta = product.stock - old.stock
                 dao.update(product.copy(name = product.name.trim(), createdAt = old.createdAt, updatedAt = now))
-                if (product.trackInventory && stockDelta != 0.0) dao.insertInventoryTransaction(InventoryTransactionEntity(productId = product.id, type = "ADJUSTMENT", quantity = stockDelta, unitCost = product.purchasePrice, dateEpochDay = PersianDate.today(), note = "اصلاح موجودی از فرم کالا"))
+                if (product.trackInventory && stockDelta != 0.0) {
+                    dao.insertInventoryTransaction(InventoryTransactionEntity(productId = product.id, type = "ADJUSTMENT", quantity = stockDelta, unitCost = product.purchasePrice, dateEpochDay = PersianDate.today(), note = "اصلاح موجودی از فرم کالا"))
+                    postInventoryAdjustment(product.id, stockDelta, product.purchasePrice, PersianDate.today(), "اصلاح موجودی ${product.name}", "STOCK_ADJUSTMENT")
+                }
                 product.id
             }
         }
@@ -101,17 +108,34 @@ class ProductRepositoryImpl @Inject constructor(
     override suspend fun adjustStock(productId: Long, quantity: Double, note: String, dateEpochDay: Long): Result<Unit> = runCatching {
         require(quantity != 0.0) { "مقدار تغییر موجودی را وارد کنید" }
         db.withTransaction {
-            requireNotNull(dao.getById(productId)) { "کالا پیدا نشد" }
+            val product = requireNotNull(dao.getById(productId)) { "کالا پیدا نشد" }
+            require(product.trackInventory) { "برای خدمات بدون موجودی نمی‌توان گردش انبار ثبت کرد" }
             dao.updateStock(productId, quantity)
-            dao.insertInventoryTransaction(InventoryTransactionEntity(productId = productId, type = "ADJUSTMENT", quantity = quantity, dateEpochDay = dateEpochDay, note = note.ifBlank { "اصلاح موجودی" }))
+            dao.insertInventoryTransaction(InventoryTransactionEntity(productId = productId, type = "ADJUSTMENT", quantity = quantity, unitCost = product.purchasePrice, dateEpochDay = dateEpochDay, note = note.ifBlank { "اصلاح موجودی" }))
+            postInventoryAdjustment(productId, quantity, product.purchasePrice, dateEpochDay, note.ifBlank { "اصلاح موجودی ${product.name}" }, "STOCK_ADJUSTMENT")
         }
+    }
+
+    private suspend fun postInventoryAdjustment(productId: Long, quantity: Double, unitCost: Long, dateEpochDay: Long, description: String, sourceType: String) {
+        val amount = (kotlin.math.abs(quantity) * unitCost).roundToLong()
+        if (amount == 0L) return
+        val lines = if (quantity > 0) listOf(
+            JournalPoster.Line("12", debit = amount),
+            JournalPoster.Line("3", credit = amount)
+        ) else listOf(
+            JournalPoster.Line("3", debit = amount),
+            JournalPoster.Line("12", credit = amount)
+        )
+        journal.post(sourceType, productId, dateEpochDay, description, lines)
     }
 }
 
 class PartyRepositoryImpl @Inject constructor(
     private val db: HesabyarDatabase,
-    private val dao: PartyDao
+    private val dao: PartyDao,
+    accountingDao: AccountingDao
 ) : PartyRepository {
+    private val journal = JournalPoster(accountingDao)
     override val parties = dao.observeAll()
     override val debtors = dao.observeDebtors()
     override val creditors = dao.observeCreditors()
@@ -124,13 +148,19 @@ class PartyRepositoryImpl @Inject constructor(
         db.withTransaction {
             if (party.id == 0L) {
                 val id = dao.insert(party.copy(name = party.name.trim()))
-                if (party.balance != 0L) dao.insertTransaction(PartyTransactionEntity(partyId = id, type = "OPENING_BALANCE", amount = party.balance, dateEpochDay = PersianDate.today(), note = "مانده اول دوره"))
+                if (party.balance != 0L) {
+                    dao.insertTransaction(PartyTransactionEntity(partyId = id, type = "OPENING_BALANCE", amount = party.balance, dateEpochDay = PersianDate.today(), note = "مانده اول دوره"))
+                    postPartyBalanceAdjustment(id, party.balance, PersianDate.today(), "مانده اول دوره ${party.name}", "OPENING_PARTY")
+                }
                 id
             } else {
                 val old = requireNotNull(dao.getById(party.id)) { "شخص پیدا نشد" }
                 val delta = party.balance - old.balance
                 dao.update(party.copy(name = party.name.trim(), createdAt = old.createdAt, updatedAt = System.currentTimeMillis()))
-                if (delta != 0L) dao.insertTransaction(PartyTransactionEntity(partyId = party.id, type = "ADJUSTMENT", amount = delta, dateEpochDay = PersianDate.today(), note = "اصلاح مانده"))
+                if (delta != 0L) {
+                    dao.insertTransaction(PartyTransactionEntity(partyId = party.id, type = "ADJUSTMENT", amount = delta, dateEpochDay = PersianDate.today(), note = "اصلاح مانده"))
+                    postPartyBalanceAdjustment(party.id, delta, PersianDate.today(), "اصلاح مانده ${party.name}", "PARTY_ADJUSTMENT")
+                }
                 party.id
             }
         }
@@ -138,6 +168,19 @@ class PartyRepositoryImpl @Inject constructor(
 
     override suspend fun archive(id: Long): Result<Unit> = runCatching { dao.archive(id) }
     override fun transactions(partyId: Long) = dao.observeTransactions(partyId)
+
+    private suspend fun postPartyBalanceAdjustment(partyId: Long, balanceDelta: Long, dateEpochDay: Long, description: String, sourceType: String) {
+        val amount = kotlin.math.abs(balanceDelta)
+        if (amount == 0L) return
+        val lines = if (balanceDelta > 0L) listOf(
+            JournalPoster.Line("13", debit = amount),
+            JournalPoster.Line("3", credit = amount)
+        ) else listOf(
+            JournalPoster.Line("3", debit = amount),
+            JournalPoster.Line("21", credit = amount)
+        )
+        journal.post(sourceType, partyId, dateEpochDay, description, lines)
+    }
 }
 
 class InvoiceRepositoryImpl @Inject constructor(
@@ -158,47 +201,64 @@ class InvoiceRepositoryImpl @Inject constructor(
     override suspend fun createPurchase(input: InvoiceInput): Result<Long> = createInvoice(InvoiceKind.PURCHASE, input)
 
     private suspend fun createInvoice(kind: InvoiceKind, input: InvoiceInput): Result<Long> = runCatching {
-        validateInvoice(input)
+        require(input.paidAmount >= 0) { "مبلغ پرداختی نامعتبر است" }
+        val calculated = InvoiceCalculator.calculate(input)
         db.withTransaction {
-            val calculated = calculate(input)
-            require(input.paidAmount <= calculated.total) { "مبلغ پرداختی نباید از مبلغ فاکتور بیشتر باشد" }
-            val due = calculated.total - input.paidAmount
+            require(input.paidAmount <= calculated.totalAmount) { "مبلغ پرداختی نباید از مبلغ فاکتور بیشتر باشد" }
+            require(input.paidAmount == 0L || input.cashAccountId != null) { "برای مبلغ پرداختی، صندوق یا بانک را انتخاب کنید" }
+            val due = calculated.totalAmount - input.paidAmount
             require(due == 0L || input.partyId != null) { "برای مبلغ باقی‌مانده، طرف حساب را انتخاب کنید" }
-            if (input.cashAccountId != null) requireNotNull(cashDao.getAccount(input.cashAccountId)) { "حساب نقدی پیدا نشد" }
-            if (input.partyId != null) requireNotNull(partyDao.getById(input.partyId)) { "طرف حساب پیدا نشد" }
+            input.cashAccountId?.let { accountId ->
+                val account = requireNotNull(cashDao.getAccount(accountId)) { "حساب نقدی پیدا نشد" }
+                require(account.isActive) { "حساب نقدی غیرفعال است" }
+            }
+            input.partyId?.let { partyId ->
+                val party = requireNotNull(partyDao.getById(partyId)) { "طرف حساب پیدا نشد" }
+                require(party.isActive) { "طرف حساب غیرفعال است" }
+                require(if (kind == InvoiceKind.SALE) party.type != "SUPPLIER" else party.type != "CUSTOMER") { "نوع طرف حساب با فاکتور هم‌خوانی ندارد" }
+            }
             val prefix = settingsDao.get()?.invoicePrefix?.ifBlank { "ف" } ?: "ف"
             val sequence = if (kind == InvoiceKind.SALE) salesDao.countForDay(input.dateEpochDay) + 1 else purchaseDao.countForDay(input.dateEpochDay) + 1
             val datePart = PersianDate.format(input.dateEpochDay).replace("/", "")
             val number = "$prefix-$datePart-${"%03d".format(sequence)}"
             val invoiceId = if (kind == InvoiceKind.SALE) {
-                salesDao.insertInvoice(SalesInvoiceEntity(invoiceNumber = number, partyId = input.partyId, dateEpochDay = input.dateEpochDay, subtotal = calculated.subtotal, discountAmount = calculated.discount, taxAmount = calculated.tax, totalAmount = calculated.total, paidAmount = input.paidAmount, balanceAmount = due, cashAccountId = input.cashAccountId, notes = input.notes.trim()))
+                salesDao.insertInvoice(SalesInvoiceEntity(invoiceNumber = number, partyId = input.partyId, dateEpochDay = input.dateEpochDay, subtotal = calculated.subtotal, discountAmount = calculated.discountAmount, taxAmount = calculated.taxAmount, totalAmount = calculated.totalAmount, paidAmount = input.paidAmount, balanceAmount = due, cashAccountId = input.cashAccountId, notes = input.notes.trim()))
             } else {
-                purchaseDao.insertInvoice(PurchaseInvoiceEntity(invoiceNumber = number, partyId = input.partyId, dateEpochDay = input.dateEpochDay, subtotal = calculated.subtotal, discountAmount = calculated.discount, taxAmount = calculated.tax, totalAmount = calculated.total, paidAmount = input.paidAmount, balanceAmount = due, cashAccountId = input.cashAccountId, notes = input.notes.trim()))
+                purchaseDao.insertInvoice(PurchaseInvoiceEntity(invoiceNumber = number, partyId = input.partyId, dateEpochDay = input.dateEpochDay, subtotal = calculated.subtotal, discountAmount = calculated.discountAmount, taxAmount = calculated.taxAmount, totalAmount = calculated.totalAmount, paidAmount = input.paidAmount, balanceAmount = due, cashAccountId = input.cashAccountId, notes = input.notes.trim()))
             }
-            val costs = mutableListOf<Long>()
-            val unitCosts = mutableListOf<Long>()
-            input.lines.forEach { line ->
-                val product = requireNotNull(productDao.getById(line.productId)) { "یکی از کالاها حذف شده است" }
-                if (kind == InvoiceKind.SALE) {
-                    require(!product.trackInventory || product.stock >= line.quantity) { "موجودی «${product.name}» کافی نیست" }
-                    unitCosts += product.purchasePrice
-                    costs += if (product.trackInventory) (product.purchasePrice * line.quantity).roundToLong() else 0L
+            val productsById = input.lines.map { it.productId }.distinct().associateWith { productId ->
+                val product = requireNotNull(productDao.getById(productId)) { "یکی از کالاها حذف شده است" }
+                require(product.isActive) { "کالای «${product.name}» غیرفعال است" }
+                product
+            }
+            if (kind == InvoiceKind.SALE) {
+                input.lines.groupBy { it.productId }.forEach { (productId, lines) ->
+                    val product = requireNotNull(productsById[productId])
+                    val requestedQuantity = lines.sumOf { it.quantity }
+                    require(!product.trackInventory || product.stock >= requestedQuantity) { "موجودی «${product.name}» کافی نیست" }
                 }
+            }
+            val unitCosts = input.lines.map { line ->
+                val product = requireNotNull(productsById[line.productId])
+                if (kind == InvoiceKind.SALE && product.trackInventory) product.purchasePrice else 0L
+            }
+            val costs = input.lines.indices.map { index ->
+                (unitCosts[index] * input.lines[index].quantity).roundToLong()
             }
             if (kind == InvoiceKind.SALE) {
                 salesDao.insertItems(input.lines.mapIndexed { index, line ->
                     val c = calculated.lines[index]
-                    SalesInvoiceItemEntity(invoiceId = invoiceId, productId = line.productId, description = line.description.trim(), quantity = line.quantity, unitPrice = line.unitPrice, discountAmount = line.discountAmount, taxAmount = c.tax, totalAmount = c.total, unitCost = unitCosts[index], tracksInventory = requireNotNull(productDao.getById(line.productId)).trackInventory)
+                    SalesInvoiceItemEntity(invoiceId = invoiceId, productId = line.productId, description = line.description.trim(), quantity = line.quantity, unitPrice = line.unitPrice, discountAmount = c.discountAmount, taxAmount = c.taxAmount, totalAmount = c.totalAmount, unitCost = unitCosts[index], tracksInventory = requireNotNull(productsById[line.productId]).trackInventory)
                 })
             } else {
                 purchaseDao.insertItems(input.lines.mapIndexed { index, line ->
                     val c = calculated.lines[index]
-                    PurchaseInvoiceItemEntity(invoiceId = invoiceId, productId = line.productId, description = line.description.trim(), quantity = line.quantity, unitPrice = line.unitPrice, discountAmount = line.discountAmount, taxAmount = c.tax, totalAmount = c.total, tracksInventory = requireNotNull(productDao.getById(line.productId)).trackInventory)
+                    PurchaseInvoiceItemEntity(invoiceId = invoiceId, productId = line.productId, description = line.description.trim(), quantity = line.quantity, unitPrice = line.unitPrice, discountAmount = c.discountAmount, taxAmount = c.taxAmount, totalAmount = c.totalAmount, tracksInventory = requireNotNull(productsById[line.productId]).trackInventory)
                 })
             }
             input.lines.forEach { line ->
                 val delta = if (kind == InvoiceKind.SALE) -line.quantity else line.quantity
-                val product = requireNotNull(productDao.getById(line.productId))
+                val product = requireNotNull(productsById[line.productId])
                 if (product.trackInventory) {
                     productDao.updateStock(line.productId, delta)
                     productDao.insertInventoryTransaction(InventoryTransactionEntity(productId = line.productId, type = if (kind == InvoiceKind.SALE) "SALE" else "PURCHASE", quantity = delta, unitCost = if (kind == InvoiceKind.SALE) product.purchasePrice else line.unitPrice, referenceId = invoiceId, referenceType = if (kind == InvoiceKind.SALE) "SALE" else "PURCHASE", dateEpochDay = input.dateEpochDay, note = number))
@@ -213,12 +273,12 @@ class InvoiceRepositoryImpl @Inject constructor(
             val baseLines = if (kind == InvoiceKind.SALE) listOf(
                 JournalPoster.Line("11", debit = input.paidAmount, description = "دریافت نقدی $number"),
                 JournalPoster.Line("13", debit = due, description = "باقیمانده فروش $number"),
-                JournalPoster.Line("41", credit = calculated.total - calculated.tax, description = "فروش $number"),
-                JournalPoster.Line("22", credit = calculated.tax, description = "مالیات فروش $number"),
+                JournalPoster.Line("41", credit = calculated.totalAmount - calculated.taxAmount, description = "فروش $number"),
+                JournalPoster.Line("22", credit = calculated.taxAmount, description = "مالیات فروش $number"),
                 JournalPoster.Line("51", debit = costs.sum(), description = "بهای تمام‌شده $number"),
                 JournalPoster.Line("12", credit = costs.sum(), description = "خروج موجودی $number")
             ) else listOf(
-                JournalPoster.Line("12", debit = calculated.total, description = "خرید $number"),
+                JournalPoster.Line("12", debit = calculated.totalAmount, description = "خرید $number"),
                 JournalPoster.Line("11", credit = input.paidAmount, description = "پرداخت نقدی $number"),
                 JournalPoster.Line("21", credit = due, description = "باقیمانده خرید $number")
             )
@@ -242,7 +302,7 @@ class InvoiceRepositoryImpl @Inject constructor(
                 partyDao.insertTransaction(PartyTransactionEntity(partyId = invoice.partyId, type = "ADJUSTMENT", amount = -invoice.balanceAmount, dateEpochDay = PersianDate.today(), referenceId = invoiceId, referenceType = "SALE_CANCEL", note = "ابطال ${invoice.invoiceNumber}"))
             }
             if (invoice.paidAmount > 0 && invoice.cashAccountId != null) cashDao.updateBalance(invoice.cashAccountId, -invoice.paidAmount)
-            val cost = items.sumOf { (it.unitCost * it.quantity).roundToLong() }
+            val cost = items.filter { it.tracksInventory }.sumOf { (it.unitCost * it.quantity).roundToLong() }
             journal.post("SALE_RETURN", invoiceId, PersianDate.today(), "ابطال فاکتور ${invoice.invoiceNumber}", listOf(
                 JournalPoster.Line("41", debit = invoice.totalAmount - invoice.taxAmount), JournalPoster.Line("22", debit = invoice.taxAmount), JournalPoster.Line("11", credit = invoice.paidAmount), JournalPoster.Line("13", credit = invoice.balanceAmount),
                 JournalPoster.Line("12", debit = cost), JournalPoster.Line("51", credit = cost)
@@ -293,28 +353,6 @@ class InvoiceRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun validateInvoice(input: InvoiceInput) {
-        require(input.lines.isNotEmpty()) { "حداقل یک کالا به فاکتور اضافه کنید" }
-        require(input.discountAmount >= 0 && input.paidAmount >= 0 && input.taxRate >= 0) { "مبالغ فاکتور نامعتبرند" }
-        input.lines.forEach { require(it.quantity > 0 && it.unitPrice >= 0 && it.discountAmount >= 0) { "مقادیر یکی از ردیف‌ها نامعتبر است" } }
-    }
-
-    private data class CalculatedLine(val total: Long, val tax: Long)
-    private data class Calculated(val subtotal: Long, val discount: Long, val tax: Long, val total: Long, val lines: List<CalculatedLine>)
-    private fun calculate(input: InvoiceInput): Calculated {
-        val subtotal = input.lines.sumOf { (it.quantity * it.unitPrice).roundToLong() }
-        val lineDiscount = input.lines.sumOf { it.discountAmount }
-        val discount = lineDiscount + input.discountAmount
-        require(discount <= subtotal) { "تخفیف نمی‌تواند بیشتر از جمع فاکتور باشد" }
-        val netBeforeTax = subtotal - discount
-        val tax = if (input.taxEnabled) (netBeforeTax * input.taxRate / 100).roundToLong() else 0L
-        val lines = input.lines.map { line ->
-            val lineBase = (line.quantity * line.unitPrice).roundToLong() - line.discountAmount
-            val lineTax = if (input.taxEnabled && netBeforeTax > 0) (tax * lineBase.toDouble() / netBeforeTax).roundToLong() else 0L
-            CalculatedLine(lineBase + lineTax, lineTax)
-        }
-        return Calculated(subtotal, discount, tax, netBeforeTax + tax, lines)
-    }
 }
 
 class CashRepositoryImpl @Inject constructor(
@@ -333,15 +371,27 @@ class CashRepositoryImpl @Inject constructor(
     override suspend fun saveAccount(account: CashAccountEntity): Result<Long> = runCatching {
         require(account.name.trim().isNotEmpty()) { "نام حساب را وارد کنید" }
         require(account.type in setOf("CASH", "BANK")) { "نوع حساب نامعتبر است" }
-        if (account.id == 0L) dao.insertAccount(account.copy(name = account.name.trim(), balance = account.openingBalance))
-        else { dao.updateAccount(account.copy(name = account.name.trim(), updatedAt = System.currentTimeMillis())); account.id }
+        if (account.id == 0L) {
+            db.withTransaction {
+                val id = dao.insertAccount(account.copy(name = account.name.trim(), balance = account.openingBalance))
+                postCashOpeningBalance(id, account.openingBalance, "مانده اولیه ${account.name}")
+                id
+            }
+        } else {
+            dao.updateAccount(account.copy(name = account.name.trim(), updatedAt = System.currentTimeMillis()))
+            account.id
+        }
     }
 
     override suspend fun receive(receipt: ReceiptEntity): Result<Long> = runCatching {
         require(receipt.amount > 0) { "مبلغ دریافت را وارد کنید" }
         db.withTransaction {
-            requireNotNull(dao.getAccount(receipt.cashAccountId)) { "حساب نقدی پیدا نشد" }
-            if (receipt.partyId != null) requireNotNull(partyDao.getById(receipt.partyId)) { "طرف حساب پیدا نشد" }
+            val account = requireNotNull(dao.getAccount(receipt.cashAccountId)) { "حساب نقدی پیدا نشد" }
+            require(account.isActive) { "حساب نقدی غیرفعال است" }
+            receipt.partyId?.let { partyId ->
+                val party = requireNotNull(partyDao.getById(partyId)) { "طرف حساب پیدا نشد" }
+                require(party.isActive && party.type != "SUPPLIER") { "برای دریافت، مشتری یا سایر طرف حساب‌ها را انتخاب کنید" }
+            }
             val id = dao.insertReceipt(receipt)
             dao.updateBalance(receipt.cashAccountId, receipt.amount)
             if (receipt.partyId != null) {
@@ -356,8 +406,12 @@ class CashRepositoryImpl @Inject constructor(
     override suspend fun pay(payment: PaymentEntity): Result<Long> = runCatching {
         require(payment.amount > 0) { "مبلغ پرداخت را وارد کنید" }
         db.withTransaction {
-            requireNotNull(dao.getAccount(payment.cashAccountId)) { "حساب نقدی پیدا نشد" }
-            if (payment.partyId != null) requireNotNull(partyDao.getById(payment.partyId)) { "طرف حساب پیدا نشد" }
+            val account = requireNotNull(dao.getAccount(payment.cashAccountId)) { "حساب نقدی پیدا نشد" }
+            require(account.isActive) { "حساب نقدی غیرفعال است" }
+            payment.partyId?.let { partyId ->
+                val party = requireNotNull(partyDao.getById(partyId)) { "طرف حساب پیدا نشد" }
+                require(party.isActive && party.type != "CUSTOMER") { "برای پرداخت، فروشنده یا سایر طرف حساب‌ها را انتخاب کنید" }
+            }
             val id = dao.insertPayment(payment)
             dao.updateBalance(payment.cashAccountId, -payment.amount)
             if (payment.partyId != null) {
@@ -372,7 +426,8 @@ class CashRepositoryImpl @Inject constructor(
     override suspend fun addExpense(expense: ExpenseEntity): Result<Long> = runCatching {
         require(expense.title.trim().isNotEmpty() && expense.amount > 0) { "عنوان و مبلغ هزینه را وارد کنید" }
         db.withTransaction {
-            requireNotNull(dao.getAccount(expense.cashAccountId)) { "حساب نقدی پیدا نشد" }
+            val account = requireNotNull(dao.getAccount(expense.cashAccountId)) { "حساب نقدی پیدا نشد" }
+            require(account.isActive) { "حساب نقدی غیرفعال است" }
             val id = dao.insertExpense(expense.copy(title = expense.title.trim()))
             dao.updateBalance(expense.cashAccountId, -expense.amount)
             journal.post("EXPENSE", id, expense.dateEpochDay, expense.title, listOf(JournalPoster.Line("52", debit = expense.amount), JournalPoster.Line("11", credit = expense.amount)))
@@ -383,7 +438,8 @@ class CashRepositoryImpl @Inject constructor(
     override suspend fun addIncome(income: IncomeEntity): Result<Long> = runCatching {
         require(income.title.trim().isNotEmpty() && income.amount > 0) { "عنوان و مبلغ درآمد را وارد کنید" }
         db.withTransaction {
-            requireNotNull(dao.getAccount(income.cashAccountId)) { "حساب نقدی پیدا نشد" }
+            val account = requireNotNull(dao.getAccount(income.cashAccountId)) { "حساب نقدی پیدا نشد" }
+            require(account.isActive) { "حساب نقدی غیرفعال است" }
             val id = dao.insertIncome(income.copy(title = income.title.trim()))
             dao.updateBalance(income.cashAccountId, income.amount)
             journal.post("INCOME", id, income.dateEpochDay, income.title, listOf(JournalPoster.Line("11", debit = income.amount), JournalPoster.Line("41", credit = income.amount)))
@@ -394,14 +450,28 @@ class CashRepositoryImpl @Inject constructor(
     override suspend fun transfer(transfer: CashTransferEntity): Result<Long> = runCatching {
         require(transfer.amount > 0 && transfer.fromAccountId != transfer.toAccountId) { "اطلاعات انتقال وجه نامعتبر است" }
         db.withTransaction {
-            requireNotNull(dao.getAccount(transfer.fromAccountId)) { "حساب مبدا پیدا نشد" }
-            requireNotNull(dao.getAccount(transfer.toAccountId)) { "حساب مقصد پیدا نشد" }
+            val fromAccount = requireNotNull(dao.getAccount(transfer.fromAccountId)) { "حساب مبدا پیدا نشد" }
+            val toAccount = requireNotNull(dao.getAccount(transfer.toAccountId)) { "حساب مقصد پیدا نشد" }
+            require(fromAccount.isActive && toAccount.isActive) { "حساب مبدا یا مقصد غیرفعال است" }
             val id = dao.insertTransfer(transfer)
             dao.updateBalance(transfer.fromAccountId, -transfer.amount)
             dao.updateBalance(transfer.toAccountId, transfer.amount)
             journal.post("TRANSFER", id, transfer.dateEpochDay, "انتقال وجه", listOf(JournalPoster.Line("11", debit = transfer.amount, description = "مقصد"), JournalPoster.Line("11", credit = transfer.amount, description = "مبدا")))
             id
         }
+    }
+
+    private suspend fun postCashOpeningBalance(accountId: Long, openingBalance: Long, description: String) {
+        val amount = kotlin.math.abs(openingBalance)
+        if (amount == 0L) return
+        val lines = if (openingBalance > 0L) listOf(
+            JournalPoster.Line("11", debit = amount),
+            JournalPoster.Line("3", credit = amount)
+        ) else listOf(
+            JournalPoster.Line("3", debit = amount),
+            JournalPoster.Line("11", credit = amount)
+        )
+        journal.post("OPENING_CASH", accountId, PersianDate.today(), description, lines)
     }
 }
 

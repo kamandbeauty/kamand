@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package ir.javid.hesabyar.feature.parties
 
 import androidx.compose.foundation.layout.*
@@ -78,23 +80,28 @@ private fun PartyEditor(party: PartyEntity?, onDismiss: () -> Unit, onSave: (Par
     var address by remember(party) { mutableStateOf(party?.address.orEmpty()) }
     var notes by remember(party) { mutableStateOf(party?.notes.orEmpty()) }
     var balance by remember(party) { mutableStateOf(party?.let { PersianNumbers.amountWithoutCurrency(kotlin.math.abs(it.balance)) }.orEmpty()) }
+    var balanceSign by remember(party) { mutableIntStateOf(if ((party?.balance ?: 0L) < 0L) -1 else 1) }
     var type by remember(party) { mutableStateOf(party?.type ?: "CUSTOMER") }
     AlertDialog(onDismissRequest = onDismiss, title = { Text(if (party == null) "ثبت شخص" else "ویرایش شخص") }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             FormTextField(name, { name = it }, "نام و نام خانوادگی / نام کسب‌وکار")
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 listOf("CUSTOMER" to "مشتری", "SUPPLIER" to "فروشنده", "OTHER" to "سایر").forEachIndexed { index, (value, label) ->
-                    SegmentedButton(selected = type == value, onClick = { type = value }, shape = SegmentedButtonDefaults.itemShape(index, 3)) { Text(label) }
+                    SegmentedButton(selected = type == value, onClick = { type = value; if (party == null && value == "SUPPLIER") balanceSign = -1 }, shape = SegmentedButtonDefaults.itemShape(index, 3)) { Text(label) }
                 }
             }
             FormTextField(phone, { phone = it }, "شماره تماس")
             FormTextField(address, { address = it }, "آدرس", singleLine = false)
-            FormTextField(balance, { balance = it }, "مانده (${if (type == "SUPPLIER") "منفی برای بدهی به فروشنده" else "تومان"})")
+            FormTextField(balance, { balance = it }, "مانده اول دوره (تومان)")
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                SegmentedButton(selected = balanceSign > 0, onClick = { balanceSign = 1 }, shape = SegmentedButtonDefaults.itemShape(0, 2)) { Text("بدهکار به ما") }
+                SegmentedButton(selected = balanceSign < 0, onClick = { balanceSign = -1 }, shape = SegmentedButtonDefaults.itemShape(1, 2)) { Text("بستانکار از ما") }
+            }
             FormTextField(notes, { notes = it }, "توضیحات", singleLine = false)
         }
     }, confirmButton = { TextButton(onClick = {
         val rawBalance = PersianNumbers.parseDisplayedAmount(balance) ?: 0
-        val actualBalance = if (type == "SUPPLIER" && rawBalance > 0) -rawBalance else rawBalance
+        val actualBalance = rawBalance * balanceSign
         onSave((party ?: PartyEntity(name = "", type = type)).copy(name = name, type = type, phone = phone, address = address, notes = notes, balance = actualBalance))
     }) { Text("ذخیره") } }, dismissButton = { Row { onArchive?.let { TextButton(onClick = it) { Text("حذف", color = MaterialTheme.colorScheme.error) } }; TextButton(onClick = onDismiss) { Text("انصراف") } } })
 }

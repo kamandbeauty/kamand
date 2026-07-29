@@ -73,7 +73,7 @@ interface SalesDao {
     fun observeInvoices(): Flow<List<InvoiceListItem>>
     @Query("SELECT * FROM sales_invoices WHERE id = :id") suspend fun getInvoice(id: Long): SalesInvoiceEntity?
     @Query("SELECT * FROM sales_invoice_items WHERE invoiceId = :invoiceId") suspend fun getItems(invoiceId: Long): List<SalesInvoiceItemEntity>
-    @Query("SELECT COUNT(*) FROM sales_invoices WHERE dateEpochDay = :day AND status = 'FINAL'") suspend fun countForDay(day: Long): Int
+    @Query("SELECT COUNT(*) FROM sales_invoices WHERE dateEpochDay = :day") suspend fun countForDay(day: Long): Int
     @Insert suspend fun insertInvoice(invoice: SalesInvoiceEntity): Long
     @Insert suspend fun insertItems(items: List<SalesInvoiceItemEntity>)
     @Update suspend fun updateInvoice(invoice: SalesInvoiceEntity)
@@ -91,7 +91,7 @@ interface PurchaseDao {
     fun observeInvoices(): Flow<List<InvoiceListItem>>
     @Query("SELECT * FROM purchase_invoices WHERE id = :id") suspend fun getInvoice(id: Long): PurchaseInvoiceEntity?
     @Query("SELECT * FROM purchase_invoice_items WHERE invoiceId = :invoiceId") suspend fun getItems(invoiceId: Long): List<PurchaseInvoiceItemEntity>
-    @Query("SELECT COUNT(*) FROM purchase_invoices WHERE dateEpochDay = :day AND status = 'FINAL'") suspend fun countForDay(day: Long): Int
+    @Query("SELECT COUNT(*) FROM purchase_invoices WHERE dateEpochDay = :day") suspend fun countForDay(day: Long): Int
     @Insert suspend fun insertInvoice(invoice: PurchaseInvoiceEntity): Long
     @Insert suspend fun insertItems(items: List<PurchaseInvoiceItemEntity>)
     @Update suspend fun updateInvoice(invoice: PurchaseInvoiceEntity)

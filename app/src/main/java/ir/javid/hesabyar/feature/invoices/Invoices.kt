@@ -29,6 +29,7 @@ import ir.javid.hesabyar.core.common.PersianNumbers
 import ir.javid.hesabyar.core.model.InvoiceInput
 import ir.javid.hesabyar.core.model.InvoiceKind
 import ir.javid.hesabyar.core.model.InvoiceLineInput
+import ir.javid.hesabyar.domain.usecase.InvoiceCalculator
 import ir.javid.hesabyar.core.ui.*
 import ir.javid.hesabyar.data.local.dao.InvoiceListItem
 import ir.javid.hesabyar.data.local.entity.CashAccountEntity
@@ -141,10 +142,19 @@ private fun InvoiceEditor(
     var partyExpanded by remember { mutableStateOf(false) }
     var accountExpanded by remember { mutableStateOf(false) }
     var taxEnabled by remember { mutableStateOf(defaultTaxEnabled) }
-    val subtotal = lines.sumOf { (it.quantity * it.unitPrice).toLong() }
     val discountAmount = PersianNumbers.parseDisplayedAmount(discount) ?: 0L
-    val taxAmount = if (taxEnabled) ((subtotal - discountAmount).coerceAtLeast(0) * taxRate / 100).toLong() else 0L
-    val total = (subtotal - discountAmount).coerceAtLeast(0) + taxAmount
+    val preview = runCatching {
+        InvoiceCalculator.calculate(
+            InvoiceInput(
+                dateEpochDay = PersianDate.today(),
+                lines = lines.toList(),
+                discountAmount = discountAmount,
+                taxEnabled = taxEnabled,
+                taxRate = taxRate
+            )
+        )
+    }.getOrNull()
+    val total = preview?.totalAmount ?: 0L
     AlertDialog(onDismissRequest = onDismiss, title = { Text("فاکتور ${if (kind == InvoiceKind.SALE) "فروش" else "خرید"} جدید") }, text = {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("تاریخ: ${PersianDate.format(PersianDate.today())}", color = MaterialTheme.colorScheme.onSurfaceVariant)

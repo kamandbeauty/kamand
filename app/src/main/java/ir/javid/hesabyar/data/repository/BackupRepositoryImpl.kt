@@ -1,7 +1,7 @@
 package ir.javid.hesabyar.data.repository
 
 import android.content.Context
-import androidx.room.withTransaction
+import android.database.sqlite.SQLiteDatabase
 import dagger.hilt.android.qualifiers.ApplicationContext
 import ir.javid.hesabyar.data.local.HesabyarDatabase
 import ir.javid.hesabyar.domain.repository.BackupRepository
@@ -18,12 +18,11 @@ class BackupRepositoryImpl @Inject constructor(
     private val databaseFile: File get() = context.getDatabasePath(HesabyarDatabase.DATABASE_NAME)
 
     override suspend fun exportTo(output: OutputStream): Result<Unit> = runCatching {
-        database.withTransaction {
-            database.openHelper.writableDatabase.execSQL("PRAGMA wal_checkpoint(FULL)")
-            require(databaseFile.exists()) { "فایل اطلاعات پیدا نشد" }
-            databaseFile.inputStream().use { source -> source.copyTo(output) }
-            output.flush()
-        }
+        // A checkpoint must run outside a write transaction; otherwise SQLite can report a locked WAL.
+        database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").use { }
+        require(databaseFile.exists()) { "فایل اطلاعات پیدا نشد" }
+        databaseFile.inputStream().use { source -> source.copyTo(output) }
+        output.flush()
     }
 
     override suspend fun restoreFrom(input: InputStream): Result<Unit> = runCatching {
@@ -33,16 +32,37 @@ class BackupRepositoryImpl @Inject constructor(
             val header = ByteArray(16)
             temporary.inputStream().use { it.read(header) }
             require(String(header, Charsets.US_ASCII).startsWith("SQLite format 3")) { "فایل انتخاب‌شده یک نسخه پشتیبان معتبر نیست" }
+            verifySchema(temporary)
             database.close()
             databaseFile.parentFile?.mkdirs()
             val replacement = File(databaseFile.parentFile, "${databaseFile.name}.restoring")
             temporary.copyTo(replacement, overwrite = true)
-            if (databaseFile.exists()) databaseFile.delete()
+            val previous = File(databaseFile.parentFile, "${databaseFile.name}.before_restore")
+            previous.delete()
             File("${databaseFile.path}-wal").delete()
             File("${databaseFile.path}-shm").delete()
-            require(replacement.renameTo(databaseFile)) { "جایگزینی فایل پشتیبان انجام نشد" }
+            if (databaseFile.exists()) require(databaseFile.renameTo(previous)) { "آماده‌سازی بازیابی انجام نشد" }
+            if (!replacement.renameTo(databaseFile)) {
+                previous.renameTo(databaseFile)
+                error("جایگزینی فایل پشتیبان انجام نشد")
+            }
+            previous.delete()
         } finally {
             temporary.delete()
+        }
+    }
+
+    private fun verifySchema(file: File) {
+        val requiredTables = setOf("products", "parties", "sales_invoices", "purchase_invoices", "journal_entries", "journal_items")
+        val database = SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READONLY)
+        try {
+            val tables = mutableSetOf<String>()
+            database.rawQuery("SELECT name FROM sqlite_master WHERE type = 'table'", null).use { cursor ->
+                while (cursor.moveToNext()) tables += cursor.getString(0)
+            }
+            require(tables.containsAll(requiredTables)) { "این فایل مربوط به حسابیار جاوید نیست یا کامل نیست" }
+        } finally {
+            database.close()
         }
     }
 }
