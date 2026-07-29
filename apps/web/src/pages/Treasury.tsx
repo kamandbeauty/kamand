@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  balanceOf, defaultTreasuryAccount, postCheque, SYSTEM_ACCOUNTS as A,
+  balanceOf, SYSTEM_ACCOUNTS as A,
   toPersianDigits, uuid, type Cheque, type ChequeDirection, type Transaction, type TransactionKind, type Treasury as T,
 } from '@javid/core';
 
