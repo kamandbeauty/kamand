@@ -4,11 +4,11 @@
 
 **نرم‌افزار حسابداری کسب‌وکارهای ایرانی — آفلاین-اول، فارسی، متن‌باز**
 
-[![tests](https://img.shields.io/badge/آزمون‌ها-۳۹۴%20موفق-16a34a)](packages/core/test)
+[![tests](https://img.shields.io/badge/آزمون‌ها-۴۲۵%20موفق-16a34a)](packages/core/test)
 [![core](https://img.shields.io/badge/هسته-TypeScript-0f766e)](packages/core)
 [![offline](https://img.shields.io/badge/آفلاین--اول-✓-16a34a)](#تعهد-دوم-بدون-اینترنت-هم-کار-میکند)
 [![pwa](https://img.shields.io/badge/PWA-قابل%20نصب-7c3aed)](#نصب-روی-گوشی)
-[![size](https://img.shields.io/badge/حجم-۱۱۱KB%20gzip-2563eb)](apps/web)
+[![size](https://img.shields.io/badge/حجم-۱۱۴KB%20gzip-2563eb)](apps/web)
 
 </div>
 
@@ -126,6 +126,10 @@
 - PWA با آیکن اختصاصی و اجرای تمام‌صفحه
 - کارکرد کامل بدون اینترنت
 
+**🚦 مرکز هشدار**
+- یازده نوع هشدار با اولویت‌بندی
+- راهنمای گام‌به‌گام روز اول
+
 **📈 تحلیل فروش**
 - سود و حاشیهٔ هر کالا
 - عملکرد مشتریان و روند ماهانه
@@ -169,6 +173,7 @@ packages/core/          هستهٔ حسابداری — بدون وابستگی 
   audit.ts              ردّ ممیزی و قفل دورهٔ مالی
   closing.ts            بستن سال مالی و بررسی سلامت دفتر
   analytics.ts          تحلیل فروش، سود کالا و روند
+  health.ts             مرکز هشدار و راهنمای راه‌اندازی
   workspace.ts          چند کسب‌وکاره، نقش و جداسازی داده
   escpos.ts             چاپ حرارتی + شکل‌دهی حروف فارسی
   subscription.ts       🔒 تعهد ۱
@@ -217,7 +222,7 @@ apps/server/            سرور همگام‌سازی (Node + node:sqlite)
 
 ```bash
 npm install
-npm test          # ۳۹۴ آزمون
+npm test          # ۴۲۵ آزمون
 npm run dev       # اجرای برنامهٔ وب
 npm run server    # اجرای سرور همگام‌سازی (اختیاری)
 npm run build     # ساخت نسخهٔ تولید
@@ -248,7 +253,7 @@ SMS_PROVIDER=kavenegar KAVENEGAR_API_KEY=... npm run server
 ## آزمون‌ها
 
 ```
-هسته                    ۲۳۶
+هسته                    ۲۵۴
   پول، تاریخ جلالی، سند دوطرفه، فاکتور، موجودی
   تعهدات معماری (۱۹)، سامانهٔ مؤدیان (۳۶)، چاپ فارسی (۱۹)
   ممیزی و دسترسی (۳۷)، بستن سال و سلامت دفتر (۳۴)
@@ -262,7 +267,7 @@ SMS_PROVIDER=kavenegar KAVENEGAR_API_KEY=... npm run server
   ذخیره‌سازی، بارکد، PWA، چند کسب‌وکاره
   همگام‌سازی سرتاسری دو دستگاه
 ────────────────────────────
-جمع                     ۳۹۴
+جمع                     ۴۲۵
 ```
 
 سه آزمون از بقیه مهم‌ترند:
