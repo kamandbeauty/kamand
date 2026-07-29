@@ -5,14 +5,19 @@ import {
   toPersianDigits,
 } from '@javid/core';
 import {
-  dismissSetup, healthOf, indexOf, isSetupDismissed, setupOf, type DB,
+  dismissSetup, healthOf, indexOf, isSetupDismissed, setupOf,
+  storageEstimate, type DB,
 } from '../store';
 import { Badge, Banner, Card, JDate, Money, Num, Stat, Empty } from '../ui';
 
 const toFa = (n: number) => toPersianDigits(n);
 
 export function Dashboard({ db, onNav }: { db: DB; onNav: (p: string) => void }) {
-  const health = useMemo(() => healthOf(db), [db]);
+  // سنجش فضا ناهمزمان است، پس جدا نگه داشته می‌شود
+  const [quota, setQuota] = React.useState<{ usage: number; quota: number } | null>(null);
+  React.useEffect(() => { void storageEstimate().then(setQuota); }, []);
+
+  const health = useMemo(() => healthOf(db, quota), [db, quota]);
   const setup = useMemo(() => setupOf(db), [db]);
   const [setupHidden, setSetupHidden] = React.useState(() => isSetupDismissed(db.business.id));
   const index = indexOf(db);

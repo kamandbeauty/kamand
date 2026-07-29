@@ -30,7 +30,8 @@ export type AlertKind =
   | 'overdue_invoice'
   | 'unsent_tax_invoice'
   | 'subscription_expiring'
-  | 'no_backup';
+  | 'no_backup'
+  | 'storage_pressure';
 
 export interface Alert {
   kind: AlertKind;
@@ -227,6 +228,29 @@ export const alerts = {
       page: 'settings',
       action: 'تمدید اشتراک',
       count: days,
+    };
+  },
+
+  /**
+   * فشار حافظه.
+   *
+   * دادهٔ مالی روی دستگاه کاربر ذخیره می‌شود و سقف دارد. اگر کاربر
+   * بی‌خبر به سقف برسد، ذخیره‌سازی بی‌صدا شکست می‌خورد — بدترین
+   * حالت ممکن برای دفتر حساب.
+   */
+  storagePressure(usedMb: number, quotaMb: number): Alert {
+    const percent = quotaMb > 0 ? Math.round((usedMb / quotaMb) * 100) : 0;
+    return {
+      kind: 'storage_pressure',
+      severity: percent >= 90 ? 'critical' : 'warning',
+      title: 'فضای ذخیره‌سازی رو به اتمام',
+      detail:
+        `${fa(percent)} درصد فضای مجاز مرورگر پر شده است ` +
+        `(${fa(Math.round(usedMb))} از ${fa(Math.round(quotaMb))} مگابایت). ` +
+        'یک نسخهٔ پشتیبان بگیرید و در صورت نیاز سال‌های قدیمی را بایگانی کنید.',
+      page: 'settings',
+      action: 'دریافت پشتیبان',
+      count: percent,
     };
   },
 

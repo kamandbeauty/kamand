@@ -1518,9 +1518,17 @@ export function activeTransactions(db: DB): Transaction[] {
  * خطای دفتر. ولی هرکدام فقط در صفحهٔ خودش دیده می‌شد و کاربر
  * باید تک‌تک صفحات را می‌گشت تا بفهمد مشکلی هست.
  */
-export function healthOf(db: DB): HealthSummary {
+export function healthOf(db: DB, storage?: { usage: number; quota: number } | null): HealthSummary {
   const out: Alert[] = [];
   const todayStr = today();
+
+  // فشار حافظه — دادهٔ مالی روی دستگاه سقف دارد
+  if (storage && storage.quota > 0) {
+    const percent = (storage.usage / storage.quota) * 100;
+    if (percent >= 75) {
+      out.push(makeAlert.storagePressure(storage.usage / 1048576, storage.quota / 1048576));
+    }
+  }
 
   // مانده اول دوره
   const pendingOpening = pendingOpeningBalances(db);

@@ -71,6 +71,7 @@ describe('محتوای هشدارها', () => {
       alerts.unsentTaxInvoice(1),
       alerts.subscriptionExpiring(5),
       alerts.noBackup(30),
+      alerts.storagePressure(4, 5),
     ];
     for (const a of all) {
       assert.ok(a.title, `${a.kind} عنوان ندارد`);
@@ -83,6 +84,18 @@ describe('محتوای هشدارها', () => {
 
   test('ارزش منفی موجودی قدرمطلق می‌شود', () => {
     assert.equal(alerts.negativeInventory(-500_000).amount, 500_000);
+  });
+
+  test('فشار حافظه با درصد بالا بحرانی می‌شود', () => {
+    assert.equal(alerts.storagePressure(4.6, 5).severity, 'critical');
+    assert.equal(alerts.storagePressure(3.8, 5).severity, 'warning');
+  });
+
+  test('هشدار حافظه درصد و مقدار را نشان می‌دهد', () => {
+    const a = alerts.storagePressure(4, 5);
+    assert.match(a.detail, /[۰-۹]/);
+    assert.match(a.detail, /مگابایت/);
+    assert.match(a.detail, /پشتیبان/);
   });
 
   test('اشتراک نزدیک انقضا بحرانی می‌شود', () => {

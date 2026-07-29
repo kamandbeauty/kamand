@@ -101,6 +101,63 @@ export interface AuditInput {
   summary?: string;
 }
 
+/**
+ * فیلدهایی که برای شناسایی یک رکورد کافی‌اند.
+ *
+ * ⚠️ چرا خلاصه‌سازی لازم است: پیش‌تر هنگام ایجاد، **کل رکورد** در
+ * ردّ ممیزی کپی می‌شد. یعنی هر فاکتور دو بار ذخیره می‌گشت و ردّ
+ * ممیزی به بزرگ‌ترین مصرف‌کنندهٔ حافظه تبدیل می‌شد — با ۱۰۰۰ فاکتور
+ * حدود ۱.۵ مگابایت، بیشتر از خود فاکتورها.
+ *
+ * ردّ ممیزی باید بگوید «چه کسی چه کاری کرد»، نه اینکه نسخهٔ دوم
+ * دادگان باشد.
+ */
+const SUMMARY_KEYS = [
+  'number', 'name', 'date', 'total', 'amount', 'status',
+  'type', 'kind', 'phone', 'barcode', 'dueDate', 'description',
+];
+
+const MAX_SNAPSHOT_KEYS = 12;
+
+/** خلاصهٔ رکورد برای ثبت در ردّ ممیزی */
+export function summarizeRecord(
+  record: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null {
+  if (!record) return null;
+
+  const out: Record<string, unknown> = {};
+
+  // فیلدهای شناسایی‌کننده در اولویت‌اند
+  for (const key of SUMMARY_KEYS) {
+    if (key in record && record[key] !== undefined && record[key] !== null) {
+      out[key] = redact(record[key]);
+    }
+  }
+
+  // فیلدهای سادهٔ دیگر تا سقف مشخص.
+  // آرایه و شیء تودرتو حذف می‌شوند مگر فیلد حساس باشند — آن‌ها
+  // باید صریحاً «حذف‌شده» علامت بخورند تا نبودشان عمدی به نظر برسد.
+  for (const [k, v] of Object.entries(record)) {
+    if (k in out || k === 'id' || k === 'businessId') continue;
+    if (v === null || v === undefined) continue;
+
+    if (REDACTED_KEYS.has(k)) {
+      out[k] = '‹حذف‌شده›';
+      continue;
+    }
+    if (Object.keys(out).length >= MAX_SNAPSHOT_KEYS) continue;
+    if (typeof v === 'object') {
+      // شیء تودرتو ذخیره نمی‌شود، ولی اگر داخلش راز باشد رد پایش می‌ماند
+      const inner = redact(v);
+      if (JSON.stringify(inner).includes('‹حذف‌شده›')) out[k] = inner;
+      continue;
+    }
+    out[k] = v;
+  }
+
+  return out;
+}
+
 export function createAuditLog(input: AuditInput, id: ID, now: string): AuditLog {
   const changes = input.action === 'update'
     ? diffRecords(input.before, input.after)
@@ -113,8 +170,8 @@ export function createAuditLog(input: AuditInput, id: ID, now: string): AuditLog
     action: input.action,
     entity: input.entity,
     entityId: input.entityId,
-    before: input.action === 'update' ? changes : redact(input.before ?? null),
-    after: input.action === 'update' ? undefined : redact(input.after ?? null),
+    before: input.action === 'update' ? changes : summarizeRecord(input.before),
+    after: input.action === 'update' ? undefined : summarizeRecord(input.after),
     at: now,
   };
 }

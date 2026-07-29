@@ -995,5 +995,60 @@ for (const [k, v] of taxChecks) {
   }
 }
 
+// کارایی و حجم با دادهٔ واقعی
+{
+  let dp = createEmptyDB('مقیاس');
+  const ppid = uuid();
+  dp = upsertParty(dp, { id: ppid, businessId: dp.business.id, kind: 'customer', name: 'م', openingBalance: 0 });
+  const pprods: string[] = [];
+  for (let i = 0; i < 20; i++) {
+    const id = uuid(); pprods.push(id);
+    dp = upsertProduct(dp, { id, businessId: dp.business.id, kind: 'goods', name: `کالا ${i + 1}`,
+      unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000, openingQty: 10_000, openingCost: 100_000 });
+  }
+
+  const tp2 = new Date().toISOString(), dp2 = tp2.slice(0, 10);
+  const started = Date.now();
+  for (let i = 0; i < 500; i++) {
+    dp = postInvoiceToDB(dp, { id: uuid(), businessId: dp.business.id, type: 'sale',
+      number: `F-${i}`, partyId: ppid, date: dp2, isOfficial: false,
+      lines: Array.from({ length: 5 }, (_, k) => ({ id: uuid(), productId: pprods[k % 20]!,
+        qty: 1, unit: 'ع', unitPrice: 300_000, discount: 0, vatRate: 0 })),
+      discount: 0, shipping: 0, status: 'open', createdAt: tp2, updatedAt: tp2 });
+  }
+  const buildMs = Date.now() - started;
+
+  const auditSize = JSON.stringify(dp.auditLogs).length;
+  const invoiceSize = JSON.stringify(dp.invoices).length;
+
+  const t1 = Date.now(); healthOf(dp); const healthMs = Date.now() - t1;
+  const t2 = Date.now(); searchAll(dp, 'کالا'); const searchMs = Date.now() - t2;
+
+  const checks: [string, boolean][] = [
+    ['۵۰۰ فاکتور زیر ۱۰ ثانیه ثبت می‌شود', buildMs < 10_000],
+    ['محاسبهٔ هشدارها زیر ۵۰۰ میلی‌ثانیه', healthMs < 500],
+    ['جستجو زیر ۵۰۰ میلی‌ثانیه', searchMs < 500],
+    ['ردّ ممیزی از فاکتورها کوچک‌تر است', auditSize < invoiceSize],
+    ['ردّ ممیزی کل رکورد را کپی نمی‌کند', auditSize < invoiceSize * 0.8],
+    ['سقف ردّ ممیزی رعایت می‌شود', dp.auditLogs.length <= 2000],
+  ];
+
+  // هشدار فشار حافظه
+  const nearFull = healthOf(dp, { usage: 4.6 * 1048576, quota: 5 * 1048576 });
+  const plenty = healthOf(dp, { usage: 1 * 1048576, quota: 5 * 1048576 });
+  checks.push(['فضای پر هشدار بحرانی می‌دهد',
+    nearFull.alerts.some((a) => a.kind === 'storage_pressure' && a.severity === 'critical')]);
+  checks.push(['فضای کافی هشدار نمی‌دهد',
+    !plenty.alerts.some((a) => a.kind === 'storage_pressure')]);
+  checks.push(['بدون اطلاع فضا، هشداری ساخته نمی‌شود',
+    !healthOf(dp).alerts.some((a) => a.kind === 'storage_pressure')]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+  console.log(`   (ثبت ${buildMs}ms · هشدار ${healthMs}ms · جستجو ${searchMs}ms · ممیزی ${(auditSize/1024).toFixed(0)}KB)`);
+}
+
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
 process.exit(failed === 0 ? 0 : 1);
