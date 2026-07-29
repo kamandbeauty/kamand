@@ -4,11 +4,11 @@
 
 **نرم‌افزار حسابداری کسب‌وکارهای ایرانی — آفلاین-اول، فارسی، متن‌باز**
 
-[![tests](https://img.shields.io/badge/آزمون‌ها-۳۴۲%20موفق-16a34a)](packages/core/test)
+[![tests](https://img.shields.io/badge/آزمون‌ها-۳۶۴%20موفق-16a34a)](packages/core/test)
 [![core](https://img.shields.io/badge/هسته-TypeScript-0f766e)](packages/core)
 [![offline](https://img.shields.io/badge/آفلاین--اول-✓-16a34a)](#تعهد-دوم-بدون-اینترنت-هم-کار-میکند)
 [![pwa](https://img.shields.io/badge/PWA-قابل%20نصب-7c3aed)](#نصب-روی-گوشی)
-[![size](https://img.shields.io/badge/حجم-۱۰۱KB%20gzip-2563eb)](apps/web)
+[![size](https://img.shields.io/badge/حجم-۱۰۳KB%20gzip-2563eb)](apps/web)
 
 </div>
 
@@ -111,6 +111,10 @@
 - بلوتوث، USB یا دریافت فایل
 - بارکدخوان سخت‌افزاری و دوربین
 
+**🏪 چند کسب‌وکاره**
+- هر کسب‌وکار با اطلاعات کاملاً جدا
+- جابه‌جایی سریع از نوار کناری
+
 **☁️ همگام‌سازی چنددستگاهی**
 - ورود با شمارهٔ موبایل و کد یک‌بارمصرف
 - چند کاربر با سطح دسترسی مجزا
@@ -172,6 +176,7 @@ apps/web/               رابط کاربری React + Vite
   api.ts                کلاینت HTTP
   syncEngine.ts         ادغام و حل تعارض سمت کلاینت
   pwa.ts                نصب و سرویس‌ورکر
+  workspaces.ts         چند کسب‌وکاره و مهاجرت خودکار
 
 apps/server/            سرور همگام‌سازی (Node + node:sqlite)
   db.ts                 دفتر تغییرات فقط-افزودنی
@@ -204,7 +209,7 @@ apps/server/            سرور همگام‌سازی (Node + node:sqlite)
 
 ```bash
 npm install
-npm test          # ۳۴۲ آزمون
+npm test          # ۳۶۴ آزمون
 npm run dev       # اجرای برنامهٔ وب
 npm run server    # اجرای سرور همگام‌سازی (اختیاری)
 npm run build     # ساخت نسخهٔ تولید
@@ -245,10 +250,11 @@ SMS_PROVIDER=kavenegar KAVENEGAR_API_KEY=... npm run server
   همگام‌سازی، حل تعارض، اتمی بودن، احراز هویت، دسترسی
   نرمال‌سازی و امضای سامانه، رمزگذاری، پیامک
 
-وب                       ۳۶
-  ذخیره‌سازی، بارکد، PWA، همگام‌سازی سرتاسری دو دستگاه
+وب                       ۵۸
+  ذخیره‌سازی، بارکد، PWA، چند کسب‌وکاره
+  همگام‌سازی سرتاسری دو دستگاه
 ────────────────────────────
-جمع                     ۳۴۲
+جمع                     ۳۶۴
 ```
 
 سه آزمون از بقیه مهم‌ترند:
