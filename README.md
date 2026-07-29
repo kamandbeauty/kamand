@@ -8,7 +8,7 @@
 [![core](https://img.shields.io/badge/هسته-TypeScript-0f766e)](packages/core)
 [![offline](https://img.shields.io/badge/آفلاین--اول-✓-16a34a)](#تعهد-دوم-بدون-اینترنت-هم-کار-میکند)
 [![pwa](https://img.shields.io/badge/PWA-قابل%20نصب-7c3aed)](#نصب-روی-گوشی)
-[![size](https://img.shields.io/badge/حجم-۹۷KB%20gzip-2563eb)](apps/web)
+[![size](https://img.shields.io/badge/حجم-۱۰۰KB%20gzip-2563eb)](apps/web)
 
 </div>
 
@@ -123,6 +123,10 @@
 - ردّ ممیزی خودکار با تفاوت‌گیری فیلدها
 - قفل دورهٔ مالی پس از بستن سال
 - نقش و اجازهٔ دقیق برای هر کاربر
+
+**📒 دفتر و اسناد**
+- سند دستی با اعتبارسنجی توازن
+- مانده‌های اول دوره و سند افتتاحیه
 
 **🔒 بستن سال مالی**
 - سند اختتامیه، تسهیم سود و افتتاحیهٔ سال بعد
