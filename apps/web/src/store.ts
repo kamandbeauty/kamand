@@ -130,7 +130,68 @@ export function migrate(db: DB): DB {
   if (!out.role) out.role = 'owner';
   if (!Array.isArray(out.movements)) out.movements = [];
   if (!Array.isArray(out.entries)) out.entries = [];
+
+  migrateClosingSummaryAccount(out);
+  migrateCarryForward(out);
+
   return out;
+}
+
+/** حساب واسط تراز اختتامیه برای کسب‌وکارهای قدیمی وجود ندارد */
+function migrateClosingSummaryAccount(out: DB): void {
+  if (!Array.isArray(out.accounts) || out.accounts.length === 0) return;
+  if (out.accounts.some((a) => a.code === SYSTEM_ACCOUNTS.CLOSING_SUMMARY)) return;
+
+  const equityParent = out.accounts.find((a) => a.code === '3000');
+  out.accounts.push({
+    id: uuid(),
+    businessId: out.business.id,
+    code: SYSTEM_ACCOUNTS.CLOSING_SUMMARY,
+    name: 'تراز اختتامیه و افتتاحیه',
+    type: 'equity',
+    parentId: equityParent?.id ?? null,
+    isSystem: true,
+  });
+}
+
+/**
+ * اصلاح مانده‌های دوبرابرشدهٔ نسخهٔ قبل.
+ *
+ * ⚠️ نسخهٔ قبلی هنگام بستن سال فقط یک «سند افتتاحیه» می‌نوشت. چون
+ * ردیف‌های سال گذشته هم در دفتر بودند، هر مانده در گزارش تجمعی دو
+ * برابر می‌شد. اکنون برای هر سند افتتاحیهٔ قدیمی، یک سند قرینه در
+ * روز قبل ثبت می‌شود تا جمع کل درست شود — بدون حذف هیچ داده‌ای.
+ */
+function migrateCarryForward(out: DB): void {
+  const legacy = out.entries.filter(
+    (e) => e.sourceType === 'opening' && e.description.includes('سال مالی'),
+  );
+  if (legacy.length === 0) return;
+
+  const fixes: JournalEntry[] = [];
+  const retyped = new Map<ID, JournalEntry>();
+
+  for (const e of legacy) {
+    // از این پس نوع جداگانه دارد تا ثبت مجدد مانده‌های اول دوره پاکش نکند
+    retyped.set(e.id, { ...e, sourceType: 'carryforward' });
+
+    const prev = new Date(e.date);
+    prev.setDate(prev.getDate() - 1);
+
+    fixes.push({
+      id: uuid(),
+      businessId: e.businessId,
+      date: prev.toISOString().slice(0, 10),
+      sourceType: 'carryforward',
+      sourceId: e.id,
+      description: 'بستن حساب‌های دائمی پایان سال',
+      lines: e.lines.map((l) => ({ ...l, debit: l.credit, credit: l.debit })),
+      createdAt: e.createdAt,
+      deletedAt: null,
+    });
+  }
+
+  out.entries = [...out.entries.map((e) => retyped.get(e.id) ?? e), ...fixes];
 }
 
 /**
@@ -576,8 +637,12 @@ export function closeYear(db: DB, jy: number, distributeProfit: boolean): DB {
     alreadyClosed: closedYears(db).includes(jy),
   });
 
-  const added = [result.closingEntry, result.distributionEntry, result.openingEntry]
-    .filter((e): e is NonNullable<typeof e> => e !== null);
+  const added = [
+    result.closingEntry,
+    result.distributionEntry,
+    result.carryCloseEntry,
+    result.openingEntry,
+  ].filter((e): e is NonNullable<typeof e> => e !== null);
 
   for (const e of added) track('entry', e.id, e);
 

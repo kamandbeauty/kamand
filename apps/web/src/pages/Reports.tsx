@@ -132,6 +132,10 @@ function BalanceReport({ db, index, filter }: Ctx) {
 
   return (
     <>
+      <div className="small muted no-print" style={{ marginBottom: 8 }}>
+        ترازنامه تصویر لحظه‌ای است و وضعیت را <strong>تا تاریخ <JDate value={filter.to} /></strong> نشان
+        می‌دهد؛ «از تاریخ» روی آن اثری ندارد.
+      </div>
       {!r.balanced && (
         <Banner tone="critical" title="ترازنامه متوازن نیست">
           این نشانهٔ خطای داده است. لطفاً با پشتیبانی تماس بگیرید.
@@ -205,6 +209,10 @@ function TrialReport({ db, index, filter }: Ctx) {
 function DebtorsReport({ db, index, filter }: Ctx) {
   const r = debtorsAndCreditors(db.entries, index, db.parties, filter);
   return (
+    <>
+    <div className="small muted no-print" style={{ marginBottom: 8 }}>
+      مانده تا <strong><JDate value={filter.to} /></strong> — شامل طلب سال‌های گذشته که هنوز وصول نشده.
+    </div>
     <div className="grid grid-2">
       <Card title={`بدهکاران (${fa(r.debtors.length)})`}>
         {r.debtors.length === 0 ? <Empty icon="✅" text="بدهکاری وجود ندارد" /> : (
@@ -237,6 +245,7 @@ function DebtorsReport({ db, index, filter }: Ctx) {
         )}
       </Card>
     </div>
+    </>
   );
 }
 
@@ -357,6 +366,9 @@ function CapitalReport({ db, index, filter }: Ctx) {
       <table>
         <tbody>
           <tr><td>سرمایهٔ اول دوره</td><td className="end"><Money value={r.opening} /></td></tr>
+          {r.contributed > 0 && (
+            <tr><td>سرمایهٔ آوردهٔ دوره</td><td className="end money-pos"><Money value={r.contributed} /></td></tr>
+          )}
           <tr><td>سود (زیان) دوره</td><td className="end"><Money value={r.netProfit} sign /></td></tr>
           {r.drawings > 0 && <tr><td>برداشت شخصی</td><td className="end money-neg">(<Money value={r.drawings} />)</td></tr>}
           <tr className="report-total"><td>سرمایهٔ پایان دوره</td><td className="end"><Money value={r.closing} sign /></td></tr>

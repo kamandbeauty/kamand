@@ -1050,5 +1050,96 @@ for (const [k, v] of taxChecks) {
   console.log(`   (ثبت ${buildMs}ms · هشدار ${healthMs}ms · جستجو ${searchMs}ms · ممیزی ${(auditSize/1024).toFixed(0)}KB)`);
 }
 
+
+// ─────────── چرخهٔ کامل بستن سال از دید کاربر ───────────
+{
+  const {
+    balanceSheet, debtorsAndCreditors, incomeStatement, balanceOf,
+    currentFiscalYear, SYSTEM_ACCOUNTS: A,
+  } = await import('@javid/core');
+  const { migrate } = await import('../src/store');
+
+  // کسب‌وکاری با یک فروش نسیه در سال مالی گذشته
+  let dy = createEmptyDB('فروشگاه سال‌بند');
+  const cy = { id: uuid(), businessId: dy.business.id, kind: 'customer' as const,
+    name: 'خریدار نسیه', openingBalance: 0 };
+  dy = upsertParty(dy, cy);
+  const py = { id: uuid(), businessId: dy.business.id, kind: 'goods' as const, name: 'کالا',
+    unitMain: 'عدد', buyPrice: 600_000, sellPrice: 1_000_000,
+    openingQty: 10, openingCost: 600_000, minQty: 0, vatRate: 0 };
+  dy = upsertProduct(dy, py);
+  dy = postOpeningBalances(dy);
+
+  const lastYear = new Date(); lastYear.setFullYear(lastYear.getFullYear() - 1);
+  const lyDate = lastYear.toISOString().slice(0, 10);
+  const nowY = new Date().toISOString();
+  dy = postInvoiceToDB(dy, { id: uuid(), businessId: dy.business.id, type: 'sale',
+    number: 'S-1', partyId: cy.id, date: lyDate, isOfficial: false,
+    lines: [{ id: uuid(), productId: py.id, qty: 3, unit: 'عدد', unitPrice: 1_000_000, discount: 0, vatRate: 0 }],
+    discount: 0, shipping: 0, status: 'open', createdAt: nowY, updatedAt: nowY });
+
+  const idxY = indexOf(dy);
+  const debtBefore = debtorsAndCreditors(dy.entries, idxY, dy.parties).totalDebt;
+  const profitBefore = incomeStatement(dy.entries, idxY, {
+    from: closingPreviewFor(dy, currentFiscalYear(lastYear, 1)).bounds.from,
+    to: closingPreviewFor(dy, currentFiscalYear(lastYear, 1)).bounds.to,
+  }).netProfit;
+
+  const jy = currentFiscalYear(lastYear, dy.business.fiscalYearStartMonth);
+  const closed = closeYear(dy, jy, false);
+
+  const idxC = indexOf(closed);
+  const debtAfter = debtorsAndCreditors(closed.entries, idxC, closed.parties).totalDebt;
+  const profitAfter = incomeStatement(closed.entries, idxC, {
+    from: closingPreviewFor(closed, jy).bounds.from,
+    to: closingPreviewFor(closed, jy).bounds.to,
+  }).netProfit;
+  const bsAfter = balanceSheet(closed.entries, idxC, {});
+
+  const checks: [string, boolean][] = [
+    ['طلب مشتری پس از بستن سال تغییر نمی‌کند', debtAfter === debtBefore && debtBefore === 3_000_000],
+    ['سود سالِ بسته‌شده هنوز گزارش می‌شود', profitAfter === profitBefore && profitBefore > 0],
+    ['ترازنامه پس از بستن سال متوازن است', bsAfter.balanced],
+    ['حساب واسط اختتامیه صفر است',
+      balanceOf(closed.entries, idxC.id(A.CLOSING_SUMMARY)) === 0],
+    ['دفتر پس از بستن سال خطای جدی ندارد',
+      integrityOf(closed).filter((i) => i.severity === 'error').length === 0],
+    ['سال در فهرست سال‌های بسته‌شده می‌آید', closedYears(closed).includes(jy)],
+  ];
+
+  // ثبت دوبارهٔ مانده‌های اول دوره نباید انتقال سال مالی را پاک کند
+  const reposted = postOpeningBalances(closed);
+  checks.push(['ثبت مجدد مانده اول دوره، انتقال سال را پاک نمی‌کند',
+    reposted.entries.filter((e) => e.sourceType === 'carryforward').length ===
+    closed.entries.filter((e) => e.sourceType === 'carryforward').length]);
+  checks.push(['طلب پس از ثبت مجدد مانده‌ها دست‌نخورده می‌ماند',
+    debtorsAndCreditors(reposted.entries, indexOf(reposted), reposted.parties).totalDebt === 3_000_000]);
+
+  // مهاجرت دادهٔ نسخهٔ قدیمی: سند افتتاحیهٔ یک‌طرفه که مانده را دو برابر کرده بود
+  const legacy = JSON.parse(JSON.stringify(closed)) as DB;
+  legacy.entries = legacy.entries
+    .filter((e) => !(e.sourceType === 'carryforward' && e.description.includes('بستن')))
+    .map((e) => e.sourceType === 'carryforward'
+      ? { ...e, sourceType: 'opening', description: 'سند افتتاحیه سال مالی ۱۴۰۵' }
+      : e);
+  legacy.accounts = legacy.accounts.filter((a) => a.code !== A.CLOSING_SUMMARY);
+
+  const brokenDebt = debtorsAndCreditors(legacy.entries, indexOf(legacy), legacy.parties).totalDebt;
+  const healed = migrate(JSON.parse(JSON.stringify(legacy)) as DB);
+  const healedDebt = debtorsAndCreditors(healed.entries, indexOf(healed), healed.parties).totalDebt;
+
+  checks.push(['دادهٔ نسخهٔ قدیمی واقعاً دو برابر شده بود', brokenDebt === 6_000_000]);
+  checks.push(['مهاجرت خودکار مانده را اصلاح می‌کند', healedDebt === 3_000_000]);
+  checks.push(['مهاجرت حساب واسط را اضافه می‌کند',
+    healed.accounts.some((a) => a.code === A.CLOSING_SUMMARY)]);
+  checks.push(['مهاجرت دوباره اجرا شود چیزی خراب نمی‌شود',
+    debtorsAndCreditors(migrate(healed).entries, indexOf(healed), healed.parties).totalDebt === 3_000_000]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
 process.exit(failed === 0 ? 0 : 1);

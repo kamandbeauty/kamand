@@ -21,6 +21,13 @@ export const SYSTEM_ACCOUNTS = {
   CAPITAL: '3010',
   DRAWINGS: '3020',
   RETAINED: '3030',
+  /**
+   * حساب واسط تراز اختتامیه/افتتاحیه.
+   * سند اختتامیه همهٔ حساب‌های دائمی را در این حساب می‌بندد و سند
+   * افتتاحیهٔ سال بعد آن‌ها را از همین حساب باز می‌کند. چون این دو
+   * یکدیگر را خنثی می‌کنند، مانده‌اش همیشه باید صفر باشد.
+   */
+  CLOSING_SUMMARY: '3900',
 
   SALES: '4010',
   SALES_RETURN: '4020',
@@ -62,6 +69,7 @@ const SEED: Seed[] = [
   { code: '3010', name: 'سرمایهٔ اولیه', type: 'equity', parent: '3000' },
   { code: '3020', name: 'برداشت شخصی', type: 'equity', parent: '3000' },
   { code: '3030', name: 'سود انباشته', type: 'equity', parent: '3000' },
+  { code: '3900', name: 'تراز اختتامیه و افتتاحیه', type: 'equity', parent: '3000' },
 
   { code: '4000', name: 'درآمدها', type: 'income' },
   { code: '4010', name: 'فروش', type: 'income', parent: '4000' },

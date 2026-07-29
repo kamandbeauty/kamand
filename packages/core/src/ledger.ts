@@ -116,6 +116,12 @@ export interface LedgerFilter {
   accountIds?: ID[];
   partyId?: ID;
   treasuryId?: ID;
+  /**
+   * منابعی که در محاسبه نادیده گرفته می‌شوند.
+   * کاربرد اصلی: صورت سود و زیان نباید سند اختتامیه را بشمارد،
+   * وگرنه سود سالِ بسته‌شده صفر گزارش می‌شود.
+   */
+  excludeSources?: JournalSource[];
 }
 
 function inRange(date: string, f?: string, t?: string): boolean {
@@ -126,7 +132,10 @@ function inRange(date: string, f?: string, t?: string): boolean {
 
 export function activeEntries(entries: JournalEntry[], filter: LedgerFilter = {}): JournalEntry[] {
   return entries.filter(
-    (e) => !e.deletedAt && inRange(e.date, filter.from, filter.to),
+    (e) =>
+      !e.deletedAt &&
+      inRange(e.date, filter.from, filter.to) &&
+      !filter.excludeSources?.includes(e.sourceType),
   );
 }
 

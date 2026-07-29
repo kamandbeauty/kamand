@@ -48,6 +48,7 @@ const SOURCE_LABELS: Record<string, string> = {
   cheque: 'چک',
   opening: 'افتتاحیه',
   closing: 'اختتامیه',
+  carryforward: 'انتقال به سال بعد',
   manual: 'دستی',
 };
 

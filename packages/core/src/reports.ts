@@ -63,12 +63,23 @@ export interface IncomeStatement {
   netProfit: Rial;
 }
 
+/**
+ * صورت سود و زیان.
+ *
+ * ⚠️ سند اختتامیه عمداً کنار گذاشته می‌شود. آن سند حساب‌های درآمد و
+ * هزینه را صفر می‌کند، پس اگر شمرده شود سود هر سالِ بسته‌شده صفر
+ * گزارش می‌گردد — یعنی کاربر پس از بستن سال دیگر نمی‌تواند ببیند
+ * همان سال چقدر سود داشته است.
+ */
 export function incomeStatement(
   entries: JournalEntry[],
   index: AccountIndex,
   filter: LedgerFilter = {},
 ): IncomeStatement {
-  const balances = accountBalances(entries, index, filter);
+  const balances = accountBalances(entries, index, {
+    ...filter,
+    excludeSources: [...(filter.excludeSources ?? []), 'closing'],
+  });
   const find = (code: string) => balances.find((b) => b.code === code)?.balance ?? 0;
 
   const revenue = find(A.SALES);
@@ -117,12 +128,21 @@ export interface BalanceSheet {
   balanced: boolean;
 }
 
+/**
+ * ترازنامه — تصویر لحظه‌ای، نه گزارش دوره‌ای.
+ *
+ * ⚠️ `from` عمداً نادیده گرفته می‌شود. ترازنامه وضعیت دارایی و بدهی را
+ * **در یک تاریخ** نشان می‌دهد، نه گردش یک بازه. اگر بازه اعمال شود،
+ * طلب سال گذشته از ترازنامه حذف می‌گردد و کاربر فکر می‌کند پولش را
+ * گرفته است.
+ */
 export function balanceSheet(
   entries: JournalEntry[],
   index: AccountIndex,
   filter: LedgerFilter = {},
 ): BalanceSheet {
-  const balances = accountBalances(entries, index, filter);
+  const asOf: LedgerFilter = { ...filter, from: undefined };
+  const balances = accountBalances(entries, index, asOf);
   const leaf = (t: AccountType) =>
     balances
       .filter((b) => b.type === t && b.balance !== 0)
@@ -139,9 +159,21 @@ export function balanceSheet(
     total: addMoney(...liabilityItems.map((i) => i.amount)),
   };
 
-  // سود دوره تا زمانی که بسته نشده، بخشی از حقوق صاحبان سرمایه است
-  const pl = incomeStatement(entries, index, filter);
-  const equityTotal = addMoney(...equityItems.map((i) => i.amount), pl.netProfit);
+  /**
+   * سود دوره تا زمانی که بسته نشده، بخشی از حقوق صاحبان سرمایه است.
+   *
+   * ⚠️ اینجا برخلاف گزارش سود و زیان، سند اختتامیه **باید** شمرده شود.
+   * پس از بستن سال، سود به «سود انباشته» منتقل شده و در `equityItems`
+   * آمده است؛ اگر دوباره از صورت سود و زیان جمع شود، سرمایه دو برابر
+   * می‌شود و ترازنامه از توازن خارج می‌گردد. مانده‌های زیر شامل سند
+   * اختتامیه‌اند، پس فقط سود **بسته‌نشده** باقی می‌ماند.
+   */
+  const unclosedProfit = balances
+    .filter((b) => b.type === 'income' || b.type === 'expense')
+    .filter((b) => index.children(b.accountId).length === 0)
+    .reduce((s, b) => (b.type === 'income' ? s + b.balance : s - b.balance), 0);
+
+  const equityTotal = addMoney(...equityItems.map((i) => i.amount), unclosedProfit);
   const equity = { items: equityItems, total: equityTotal };
 
   const totalLiabilitiesAndEquity = addMoney(liabilities.total, equity.total);
@@ -150,7 +182,7 @@ export function balanceSheet(
     assets,
     liabilities,
     equity,
-    netProfit: pl.netProfit,
+    netProfit: unclosedProfit,
     totalLiabilitiesAndEquity,
     balanced: assets.total === totalLiabilitiesAndEquity,
   };
@@ -175,6 +207,13 @@ export interface DebtorsCreditors {
   net: Rial;
 }
 
+/**
+ * بدهکاران و بستانکاران — مانده‌ای، نه دوره‌ای.
+ *
+ * ⚠️ `from` عمداً نادیده گرفته می‌شود. طلب یک مانده است نه گردش؛ اگر
+ * بازه اعمال شود، فاکتور نسیهٔ سال گذشته از فهرست بدهکاران غایب
+ * می‌شود و کاربر پول وصول‌نشده را طلبکار نمی‌ماند.
+ */
 export function debtorsAndCreditors(
   entries: JournalEntry[],
   index: AccountIndex,
@@ -187,7 +226,9 @@ export function debtorsAndCreditors(
     index.id(A.CHEQUE_RECEIVED),
     index.id(A.CHEQUE_ISSUED),
   ];
-  const map = partyBalances(entries, accountIds, filter);
+  // سند انتقال به سال بعد قرینه دارد و در مانده خنثی است، ولی کنار
+  // گذاشتنش از دوباره‌شماری در بازه‌های نیم‌بند جلوگیری می‌کند
+  const map = partyBalances(entries, accountIds, { ...filter, from: undefined });
 
   const rows: PartyBalanceRow[] = [];
   for (const p of parties) {
@@ -291,23 +332,59 @@ export function accountOverview(
 // ─────────────────── صورتحساب سرمایه ───────────────────
 
 export interface CapitalStatement {
+  /** مانده سرمایه و سود انباشته پیش از آغاز بازه */
   opening: Rial;
+  /** سرمایهٔ آوردهٔ همین دوره */
+  contributed: Rial;
   netProfit: Rial;
   drawings: Rial;
   closing: Rial;
 }
 
+/**
+ * صورتحساب سرمایه.
+ *
+ * ⚠️ «سرمایهٔ اول دوره» یعنی مانده **پیش از شروع** بازه، نه گردش داخل
+ * آن. قبلاً با همان فیلتر بازه محاسبه می‌شد و همیشه صفر درمی‌آمد، پس
+ * سرمایهٔ آوردهٔ سال‌های قبل در گزارش دیده نمی‌شد.
+ */
 export function capitalStatement(
   entries: JournalEntry[],
   index: AccountIndex,
   filter: LedgerFilter = {},
 ): CapitalStatement {
-  const balances = accountBalances(entries, index, filter);
-  const find = (code: string) => balances.find((b) => b.code === code)?.balance ?? 0;
-  const opening = find(A.CAPITAL) + find(A.RETAINED);
-  const drawings = Math.abs(find(A.DRAWINGS));
+  const equityOf = (f: LedgerFilter) => {
+    const b = accountBalances(entries, index, f);
+    const find = (code: string) => b.find((x) => x.code === code)?.balance ?? 0;
+    return { capital: find(A.CAPITAL), retained: find(A.RETAINED), drawings: find(A.DRAWINGS) };
+  };
+
+  // مانده تا یک روز پیش از آغاز بازه
+  let openingTo: string | undefined;
+  if (filter.from) {
+    const d = new Date(filter.from);
+    d.setDate(d.getDate() - 1);
+    openingTo = d.toISOString().slice(0, 10);
+  }
+
+  const before = filter.from
+    ? equityOf({ ...filter, from: undefined, to: openingTo })
+    : { capital: 0, retained: 0, drawings: 0 };
+  const during = equityOf(filter);
+
+  const opening = before.capital + before.retained;
+  // برداشت و آوردهٔ همین دوره
+  const drawings = Math.abs(during.drawings);
   const netProfit = incomeStatement(entries, index, filter).netProfit;
-  return { opening, netProfit, drawings, closing: opening + netProfit - drawings };
+  const contributed = during.capital;
+
+  return {
+    opening,
+    contributed,
+    netProfit,
+    drawings,
+    closing: opening + contributed + netProfit - drawings,
+  };
 }
 
 // ─────────────────── داشبورد ───────────────────

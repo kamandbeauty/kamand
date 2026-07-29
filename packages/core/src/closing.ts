@@ -1,7 +1,7 @@
 import { addMoney, type Rial } from './money.js';
 import { EntryBuilder } from './ledger.js';
 import { SYSTEM_ACCOUNTS as A, type AccountIndex } from './accounts.js';
-import { accountBalances, balanceOf } from './ledger.js';
+import { accountBalances, activeEntries, balanceOf } from './ledger.js';
 import { incomeStatement, trialBalance } from './reports.js';
 import { formatJalali, dateToJalali, jalaliToDate, jalaliMonthLength } from './jalali.js';
 import type { ID, JournalEntry, Party } from './types.js';
@@ -164,6 +164,9 @@ export function previewClosing(
  *
  * همهٔ حساب‌های درآمد و هزینه با قید معکوس صفر می‌شوند و اختلاف
  * (یعنی سود یا زیان دوره) به سود انباشته می‌رود.
+ *
+ * ⚠️ این سند فقط حساب‌های **موقت** را می‌بندد. حساب‌های دائمی در
+ * `buildCarryForwardEntry` بسته و دوباره باز می‌شوند.
  */
 export function buildClosingEntry(
   entries: JournalEntry[],
@@ -235,46 +238,115 @@ export function buildProfitDistributionEntry(
 }
 
 /**
- * سند افتتاحیهٔ دورهٔ بعد.
+ * انتقال مانده‌های دائمی به سال بعد — دو سند قرینه.
  *
- * مانده‌های دائمی به سال جدید منتقل می‌شوند. حساب‌های موقت منتقل
- * نمی‌شوند چون در سند اختتامیه صفر شده‌اند.
+ * ⚠️ چرا دو سند و نه یکی؟ گزارش‌ها روی بازهٔ تاریخ کار می‌کنند و
+ * مانده را از جمع ردیف‌ها می‌سازند. اگر فقط یک سند افتتاحیه بنویسیم،
+ * ردیف‌های اصلی سال گذشته **و** ردیف‌های افتتاحیه هر دو در بازهٔ
+ * «از ابتدا تا امروز» جمع می‌شوند و هر مانده دو برابر می‌شود:
+ * دریافتنی ۳٬۰۰۰٬۰۰۰ → ۶٬۰۰۰٬۰۰۰. با هر بار بستن سال یک برابر
+ * دیگر هم اضافه می‌شد.
+ *
+ * راه‌حل استاندارد حسابداری: نخست حساب‌های دائمی در **آخرین روز سال**
+ * بسته می‌شوند (قید معکوس در برابر حساب واسط ۳۹۰۰) و سپس در
+ * **اولین روز سال بعد** دوباره باز می‌گردند. جمع کل همیشه درست است،
+ * چون بستن و بازکردن یکدیگر را خنثی می‌کنند.
  */
-export function buildNextYearOpeningEntry(
+export function buildCarryForwardEntry(
   entries: JournalEntry[],
   ctx: ClosingContext,
   opts: { through: string; openingDate: string; label?: string },
-): JournalEntry | null {
+): { closeEntry: JournalEntry | null; openEntry: JournalEntry | null } {
   const { index } = ctx;
-  const b = new EntryBuilder(
+  const summary = index.id(A.CLOSING_SUMMARY);
+
+  const closeB = new EntryBuilder(
+    ctx.businessId,
+    opts.through,
+    'بستن حساب‌های دائمی پایان سال',
+    'carryforward',
+    null,
+  );
+  const openB = new EntryBuilder(
     ctx.businessId,
     opts.openingDate,
     `سند افتتاحیه ${opts.label ?? ''}`.trim(),
-    'opening',
+    'carryforward',
     null,
   );
 
-  // مانده‌ها تا پایان دورهٔ قبل، شامل سند اختتامیه
-  const balances = accountBalances(entries, index, { to: opts.through });
+  /**
+   * تفکیک مانده به ازای «حساب × شخص × خزانه».
+   *
+   * ⚠️ اگر فقط بر حسب حساب جمع بزنیم، طلب هر مشتری و موجودی هر صندوق
+   * در انتقال گم می‌شود: همهٔ بدهکاران زیر یک ردیف بی‌نام می‌روند و
+   * دفتر تفصیلی سال جدید خالی می‌ماند.
+   */
+  const buckets = new Map<
+    string,
+    { accountId: ID; partyId: ID | null; treasuryId: ID | null; net: Rial }
+  >();
 
-  for (const acc of balances) {
-    if (acc.type === 'income' || acc.type === 'expense') continue;
-    if (index.children(acc.accountId).length > 0) continue;
+  for (const e of activeEntries(entries, { to: opts.through })) {
+    for (const l of e.lines) {
+      const acc = index.get(l.accountId);
+      if (!acc) continue;
+      if (acc.type === 'income' || acc.type === 'expense') continue;
+      if (l.accountId === summary) continue;
 
-    const raw = acc.debit - acc.credit;
-    if (raw === 0) continue;
-
-    if (raw > 0) b.debit(acc.accountId, raw);
-    else b.credit(acc.accountId, -raw);
+      const partyId = l.partyId ?? null;
+      const treasuryId = l.treasuryId ?? null;
+      const key = `${l.accountId}|${partyId ?? ''}|${treasuryId ?? ''}`;
+      const cur = buckets.get(key) ?? { accountId: l.accountId, partyId, treasuryId, net: 0 };
+      cur.net += l.debit - l.credit;
+      buckets.set(key, cur);
+    }
   }
 
-  if (b.isEmpty()) return null;
-  return b.build(ctx.idGen(), ctx.now);
+  let net = 0;
+
+  for (const b of [...buckets.values()].sort((x, y) => {
+    const ax = index.get(x.accountId)!.code;
+    const ay = index.get(y.accountId)!.code;
+    return ax === ay ? (x.partyId ?? '').localeCompare(y.partyId ?? '') : ax.localeCompare(ay);
+  })) {
+    if (b.net === 0) continue;
+    const tag = { partyId: b.partyId, treasuryId: b.treasuryId };
+
+    // بستن: قید معکوس تا حساب در پایان سال صفر شود
+    if (b.net > 0) closeB.credit(b.accountId, b.net, tag);
+    else closeB.debit(b.accountId, -b.net, tag);
+
+    // بازکردن: همان مانده در روز اول سال بعد
+    if (b.net > 0) openB.debit(b.accountId, b.net, tag);
+    else openB.credit(b.accountId, -b.net, tag);
+
+    net += b.net;
+  }
+
+  if (closeB.isEmpty()) return { closeEntry: null, openEntry: null };
+
+  // طرف مقابل هر دو سند، حساب واسط است تا هرکدام جداگانه متوازن بماند
+  if (net > 0) {
+    closeB.debit(summary, net);
+    openB.credit(summary, net);
+  } else if (net < 0) {
+    closeB.credit(summary, -net);
+    openB.debit(summary, -net);
+  }
+
+  return {
+    closeEntry: closeB.build(ctx.idGen(), ctx.now),
+    openEntry: openB.build(ctx.idGen(), ctx.now),
+  };
 }
 
 export interface ClosingResult {
   closingEntry: JournalEntry | null;
   distributionEntry: JournalEntry | null;
+  /** بستن حساب‌های دائمی در آخرین روز سال */
+  carryCloseEntry: JournalEntry | null;
+  /** بازکردن همان مانده‌ها در اولین روز سال بعد */
   openingEntry: JournalEntry | null;
   netProfit: Rial;
   lockThrough: string;
@@ -321,15 +393,16 @@ export function closeFiscalYear(
   const openingDate = next.toISOString().slice(0, 10);
 
   const nextLabel = `سال مالی ${formatJalali(next, 'short').slice(0, 4)}`;
-  const openingEntry = buildNextYearOpeningEntry(withDistribution, ctx, {
-    through: opts.to,
-    openingDate,
-    label: nextLabel,
-  });
+  const { closeEntry: carryCloseEntry, openEntry: openingEntry } = buildCarryForwardEntry(
+    withDistribution,
+    ctx,
+    { through: opts.to, openingDate, label: nextLabel },
+  );
 
   return {
     closingEntry,
     distributionEntry,
+    carryCloseEntry,
     openingEntry,
     netProfit: preview.netProfit,
     lockThrough: opts.to,
@@ -431,6 +504,20 @@ export function checkIntegrity(
         code: 'invalid_date',
         message: `سند «${e.description}» تاریخ نامعتبر دارد`,
         entityId: e.id,
+      });
+    }
+  }
+
+  // حساب واسط اختتامیه باید همیشه صفر باشد
+  const summary = index.byCodeOrNull(A.CLOSING_SUMMARY);
+  if (summary) {
+    const bal = balanceOf(entries, summary.id);
+    if (bal !== 0) {
+      issues.push({
+        severity: 'error',
+        code: 'unbalanced_carryforward',
+        message:
+          'حساب تراز اختتامیه صفر نیست — انتقال مانده به سال بعد ناقص انجام شده است',
       });
     }
   }

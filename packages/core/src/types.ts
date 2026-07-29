@@ -197,8 +197,16 @@ export type JournalSource =
   | 'invoice'
   | 'transaction'
   | 'cheque'
+  /** سند افتتاحیهٔ کسب‌وکار — مانده‌های اول دوره که کاربر وارد کرده */
   | 'opening'
+  /** سند اختتامیهٔ سال مالی */
   | 'closing'
+  /**
+   * سند انتقال مانده به سال بعد.
+   * از `opening` جداست چون ثبت دوبارهٔ مانده‌های اول دوره، سند
+   * افتتاحیهٔ قبلی را جایگزین می‌کند و نباید انتقال سال مالی را پاک کند.
+   */
+  | 'carryforward'
   | 'manual';
 
 export interface JournalEntry {

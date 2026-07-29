@@ -2,10 +2,14 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { AccountIndex, createChartOfAccounts, SYSTEM_ACCOUNTS as A } from '../dist/accounts.js';
 import { defaultTreasuryAccount, postInvoice, postTransaction } from '../dist/posting.js';
-import { assertBalanced, accountBalances, balanceOf } from '../dist/ledger.js';
-import { balanceSheet, incomeStatement, trialBalance } from '../dist/reports.js';
 import {
-  buildClosingEntry, buildNextYearOpeningEntry, buildProfitDistributionEntry,
+  assertBalanced, accountBalances, balanceOf, treasuryBalance, EntryBuilder,
+} from '../dist/ledger.js';
+import {
+  balanceSheet, capitalStatement, debtorsAndCreditors, incomeStatement, trialBalance,
+} from '../dist/reports.js';
+import {
+  buildCarryForwardEntry, buildClosingEntry, buildProfitDistributionEntry,
   checkIntegrity, closeFiscalYear, currentFiscalYear, fiscalYearBounds,
   integritySummary, previewClosing,
 } from '../dist/closing.js';
@@ -204,11 +208,20 @@ describe('سند اختتامیه', () => {
     assert.equal(-retained, 700_000, 'سود انباشته باید برابر سود دوره باشد');
   });
 
-  test('صورت سود و زیان پس از اختتامیه صفر می‌شود', () => {
+  /**
+   * این آزمون قبلاً برعکس بود و انتظار صفر داشت — یعنی باگ را تثبیت
+   * کرده بود. حساب‌های دفتر باید صفر شوند (آزمون بالا)، ولی *گزارش*
+   * سود و زیان باید همچنان سود واقعی همان سال را نشان دهد؛ وگرنه
+   * کاربر پس از بستن سال دیگر نمی‌فهمد آن سال چقدر سود داشته است.
+   */
+  test('گزارش سود و زیان پس از اختتامیه هنوز سود واقعی را نشان می‌دهد', () => {
     const { index, ctx, entries } = yearOfTrading();
+    const before = incomeStatement(entries, index, { from: FY.from, to: FY.to }).netProfit;
     const after = [...entries, buildClosingEntry(entries, ctx, FY)!];
     const pl = incomeStatement(after, index, { from: FY.from, to: FY.to });
-    assert.equal(pl.netProfit, 0, 'پس از بستن، سود دوره باید صفر شود');
+
+    assert.equal(before, 700_000);
+    assert.equal(pl.netProfit, 700_000, 'سود سالِ بسته‌شده نباید صفر گزارش شود');
   });
 
   test('تراز آزمایشی پس از اختتامیه همچنان متوازن است', () => {
@@ -274,12 +287,13 @@ describe('سند افتتاحیهٔ دورهٔ بعد', () => {
     const { index, ctx, entries } = yearOfTrading();
     const after = [...entries, buildClosingEntry(entries, ctx, FY)!];
 
-    const opening = buildNextYearOpeningEntry(after, ctx, {
+    const { closeEntry, openEntry: opening } = buildCarryForwardEntry(after, ctx, {
       through: FY.to, openingDate: '2027-03-21',
-    })!;
-    assertBalanced(opening.lines);
+    });
+    assertBalanced(opening!.lines);
+    assertBalanced(closeEntry!.lines);
 
-    for (const l of opening.lines) {
+    for (const l of opening!.lines) {
       const acc = index.get(l.accountId)!;
       assert.ok(
         acc.type !== 'income' && acc.type !== 'expense',
@@ -291,12 +305,12 @@ describe('سند افتتاحیهٔ دورهٔ بعد', () => {
   test('مانده‌های سال جدید با پایان سال قبل یکی است', () => {
     const { index, ctx, entries } = yearOfTrading();
     const after = [...entries, buildClosingEntry(entries, ctx, FY)!];
-    const opening = buildNextYearOpeningEntry(after, ctx, {
+    const { openEntry: opening } = buildCarryForwardEntry(after, ctx, {
       through: FY.to, openingDate: '2027-03-21',
-    })!;
+    });
 
     const before = balanceOf(after, index.id(A.RECEIVABLE), { to: FY.to });
-    const carried = opening.lines
+    const carried = opening!.lines
       .filter((l) => l.accountId === index.id(A.RECEIVABLE))
       .reduce((s, l) => s + l.debit - l.credit, 0);
 
@@ -431,5 +445,232 @@ describe('بررسی سلامت دفتر', () => {
     const { index, entries } = yearOfTrading();
     const s = integritySummary(checkIntegrity(entries, index));
     assert.match(s.message, /[\u0600-\u06FF]/);
+  });
+});
+
+// ─────────── انتقال مانده به سال بعد ───────────
+
+/**
+ * دستهٔ باگی که آزمون توازن هرگز نگرفت.
+ *
+ * همهٔ اسناد اختتامیه و افتتاحیه هرکدام جداگانه متوازن‌اند، پس
+ * «دارایی = بدهی + سرمایه» همیشه برقرار بود و سبز می‌ماند — در حالی
+ * که مانده‌ها دو برابر شده بودند. تنها راه گرفتنش مقایسهٔ **عدد
+ * واقعی با عدد انتظاری** است، نه بررسی ساختار.
+ */
+describe('انتقال مانده به سال بعد', () => {
+  /** یک سال ساده: فروش نسیهٔ ۳٬۰۰۰٬۰۰۰ با بهای ۱٬۸۰۰٬۰۰۰ */
+  function oneYear() {
+    const { index, ctx } = setup();
+    const postCtx = { ...ctx, treasuryAccount: defaultTreasuryAccount(index) };
+    const entries = [
+      postInvoice(saleInvoice({
+        date: '2026-06-01',
+        lines: [{ id: 'l1', productId: 'p1', qty: 3, unit: 'ع', unitPrice: 1_000_000, discount: 0, vatRate: 0 }],
+      }), 1_800_000, postCtx)!,
+    ];
+    return { index, ctx, entries };
+  }
+
+  function afterClosing(entries: JournalEntry[], ctx: ReturnType<typeof setup>['ctx']) {
+    const r = closeFiscalYear(entries, ctx, FY);
+    return [entries, r.closingEntry, r.carryCloseEntry, r.openingEntry]
+      .flat()
+      .filter((e): e is JournalEntry => e != null);
+  }
+
+  test('مانده پس از بستن سال دو برابر نمی‌شود', () => {
+    const { index, ctx, entries } = oneYear();
+    const before = balanceOf(entries, index.id(A.RECEIVABLE), { to: FY.to });
+    const all = afterClosing(entries, ctx);
+    const after = balanceOf(all, index.id(A.RECEIVABLE), { to: '2027-06-01' });
+
+    assert.equal(before, 3_000_000);
+    assert.equal(after, 3_000_000, `طلب پس از بستن سال ${after} شد — نباید تغییر کند`);
+  });
+
+  test('بستن دو سال پیاپی مانده را سه برابر نمی‌کند', () => {
+    const { index, ctx, entries } = oneYear();
+    const firstYear = afterClosing(entries, ctx);
+
+    // سال دوم: یک فروش کوچک تا دوره خالی نباشد
+    const postCtx = { ...ctx, treasuryAccount: defaultTreasuryAccount(index) };
+    const second = [...firstYear, postInvoice(saleInvoice({
+      date: '2027-06-01', number: 'F-2',
+      lines: [{ id: 'l2', productId: 'p1', qty: 1, unit: 'ع', unitPrice: 500_000, discount: 0, vatRate: 0 }],
+    }), 300_000, postCtx)!];
+
+    const FY2 = { from: '2027-03-21', to: '2028-03-20', label: 'سال مالی ۱۴۰۶' };
+    const r2 = closeFiscalYear(second, ctx, FY2);
+    const all = [second, r2.closingEntry, r2.carryCloseEntry, r2.openingEntry]
+      .flat()
+      .filter((e): e is JournalEntry => e != null);
+
+    const receivable = balanceOf(all, index.id(A.RECEIVABLE), { to: '2028-06-01' });
+    assert.equal(receivable, 3_500_000, 'طلب کل باید مجموع دو فروش باشد');
+
+    const retained = -balanceOf(all, index.id(A.RETAINED), { to: '2028-06-01' });
+    assert.equal(retained, 1_400_000, 'سود انباشته باید جمع سود دو سال باشد');
+  });
+
+  test('حساب واسط اختتامیه پس از انتقال صفر است', () => {
+    const { index, ctx, entries } = oneYear();
+    const all = afterClosing(entries, ctx);
+    const summary = balanceOf(all, index.id(A.CLOSING_SUMMARY), { to: '2027-06-01' });
+    assert.equal(summary, 0, 'بستن و بازکردن باید یکدیگر را خنثی کنند');
+  });
+
+  test('سند بستن دائمی‌ها و سند افتتاحیه قرینهٔ هم‌اند', () => {
+    const { ctx, entries } = oneYear();
+    const r = closeFiscalYear(entries, ctx, FY);
+
+    assertBalanced(r.carryCloseEntry!.lines);
+    assertBalanced(r.openingEntry!.lines);
+    assert.equal(r.carryCloseEntry!.date, FY.to, 'بستن در آخرین روز سال');
+    assert.equal(r.openingEntry!.date, '2027-03-21', 'بازکردن در اولین روز سال بعد');
+  });
+
+  test('نوع سند انتقال از افتتاحیهٔ کسب‌وکار جداست', () => {
+    const { ctx, entries } = oneYear();
+    const r = closeFiscalYear(entries, ctx, FY);
+    // وگرنه ثبت مجدد مانده‌های اول دوره، انتقال سال مالی را پاک می‌کند
+    assert.equal(r.openingEntry!.sourceType, 'carryforward');
+    assert.equal(r.carryCloseEntry!.sourceType, 'carryforward');
+  });
+
+  test('ترازنامهٔ پس از بستن سال سرمایه را دو بار نمی‌شمارد', () => {
+    const { index, ctx, entries } = oneYear();
+    const all = afterClosing(entries, ctx);
+    const bs = balanceSheet(all, index, { to: '2027-06-01' });
+
+    assert.equal(bs.assets.total, 1_200_000, 'دارایی خالص: ۳٬۰۰۰٬۰۰۰ طلب منهای ۱٬۸۰۰٬۰۰۰ کالا');
+    assert.equal(bs.equity.total, 1_200_000, 'سرمایه باید برابر دارایی باشد');
+    assert.equal(bs.balanced, true);
+  });
+});
+
+// ─────────── گزارش‌های مانده‌ای در برابر دوره‌ای ───────────
+
+/**
+ * ترازنامه و فهرست بدهکاران **مانده** هستند نه **گردش**. اگر فیلتر
+ * بازه روی آن‌ها اعمال شود، طلب سال گذشته ناپدید می‌گردد و کاربر
+ * پولی را که هنوز نگرفته، وصول‌شده می‌پندارد.
+ */
+describe('گزارش مانده‌ای بازه را نادیده می‌گیرد', () => {
+  function twoYears() {
+    const { index, ctx } = setup();
+    const postCtx = { ...ctx, treasuryAccount: defaultTreasuryAccount(index) };
+    const mk = (date: string, price: number, number: string) =>
+      postInvoice(saleInvoice({
+        date, number,
+        lines: [{ id: `l-${number}`, productId: 'p1', qty: 1, unit: 'ع', unitPrice: price, discount: 0, vatRate: 0 }],
+      }), Math.round(price * 0.6), postCtx)!;
+
+    return { index, entries: [mk('2025-09-01', 5_000_000, 'F-1'), mk('2026-06-01', 2_000_000, 'F-2')] };
+  }
+
+  const parties: Party[] = [
+    { id: 'cust', businessId: BIZ, kind: 'customer', name: 'حسن', openingBalance: 0 },
+  ];
+
+  test('طلب سال گذشته از فهرست بدهکاران حذف نمی‌شود', () => {
+    const { index, entries } = twoYears();
+    const scoped = debtorsAndCreditors(entries, index, parties, { from: FY.from, to: FY.to });
+    assert.equal(scoped.totalDebt, 7_000_000, 'طلب کل باید شامل فاکتور سال قبل باشد');
+  });
+
+  test('ترازنامه با بازهٔ سال جاری هم کل دارایی را نشان می‌دهد', () => {
+    const { index, entries } = twoYears();
+    const scoped = balanceSheet(entries, index, { from: FY.from, to: FY.to });
+    const cumulative = balanceSheet(entries, index, { to: FY.to });
+    assert.equal(scoped.assets.total, cumulative.assets.total);
+    assert.equal(scoped.balanced, true);
+  });
+
+  test('سود و زیان برخلاف ترازنامه دوره‌ای می‌ماند', () => {
+    const { index, entries } = twoYears();
+    const pl = incomeStatement(entries, index, { from: FY.from, to: FY.to });
+    // فقط فاکتور ۲٬۰۰۰٬۰۰۰ در این بازه است
+    assert.equal(pl.revenue, 2_000_000, 'درآمد باید فقط مربوط به همین دوره باشد');
+  });
+
+  test('سرمایهٔ اول دوره از سال‌های قبل می‌آید', () => {
+    const { index, ctx } = setup();
+    const b = new EntryBuilder(BIZ, '2025-05-01', 'آوردهٔ نقدی', 'manual', null);
+    b.debit(index.id(A.CASH), 10_000_000);
+    b.credit(index.id(A.CAPITAL), 10_000_000);
+    const entries = [b.build(ctx.idGen(), NOW)];
+
+    const cs = capitalStatement(entries, index, { from: FY.from, to: FY.to });
+    assert.equal(cs.opening, 10_000_000, 'سرمایهٔ آوردهٔ سال قبل نباید صفر شود');
+  });
+});
+
+// ─────────── تفصیل در انتقال سال ───────────
+
+/**
+ * انتقال مانده باید تفکیک شخص و خزانه را حفظ کند. اگر فقط بر حسب
+ * حساب کل جمع بسته شود، سال جدید با یک ردیف بی‌نام «بدهکاران» آغاز
+ * می‌شود و معلوم نیست کدام مشتری چقدر بدهکار است.
+ */
+describe('تفصیل در انتقال سال', () => {
+  test('طلب هر مشتری جداگانه منتقل می‌شود', () => {
+    const { index, ctx } = setup();
+    const postCtx = { ...ctx, treasuryAccount: defaultTreasuryAccount(index) };
+
+    const entries = [
+      postInvoice(saleInvoice({
+        partyId: 'cust-a', number: 'A-1', date: '2026-05-01',
+        lines: [{ id: 'la', productId: 'p1', qty: 1, unit: 'ع', unitPrice: 1_000_000, discount: 0, vatRate: 0 }],
+      }), 600_000, postCtx)!,
+      postInvoice(saleInvoice({
+        partyId: 'cust-b', number: 'B-1', date: '2026-05-02',
+        lines: [{ id: 'lb', productId: 'p1', qty: 1, unit: 'ع', unitPrice: 4_000_000, discount: 0, vatRate: 0 }],
+      }), 2_400_000, postCtx)!,
+    ];
+
+    const r = closeFiscalYear(entries, ctx, FY);
+    const all = [entries, r.closingEntry, r.carryCloseEntry, r.openingEntry]
+      .flat()
+      .filter((e): e is JournalEntry => e != null);
+
+    const parties: Party[] = [
+      { id: 'cust-a', businessId: BIZ, kind: 'customer', name: 'الف', openingBalance: 0 },
+      { id: 'cust-b', businessId: BIZ, kind: 'customer', name: 'ب', openingBalance: 0 },
+    ];
+
+    const dc = debtorsAndCreditors(all, index, parties, { from: '2027-03-21', to: '2027-06-01' });
+    const byName = Object.fromEntries(dc.debtors.map((d) => [d.name, d.balance]));
+
+    assert.equal(byName['الف'], 1_000_000, 'طلب مشتری الف باید جداگانه منتقل شود');
+    assert.equal(byName['ب'], 4_000_000, 'طلب مشتری ب باید جداگانه منتقل شود');
+  });
+
+  test('موجودی هر صندوق جداگانه منتقل می‌شود', () => {
+    const { index, ctx } = setup();
+    const t1: Treasury = { id: 'box1', businessId: BIZ, kind: 'cash', name: 'صندوق ۱', openingBalance: 0 };
+    const t2: Treasury = { id: 'box2', businessId: BIZ, kind: 'cash', name: 'صندوق ۲', openingBalance: 0 };
+    const postCtx = { ...ctx, treasuryAccount: defaultTreasuryAccount(index) };
+
+    const entries = [
+      postTransaction({
+        id: idGen(), businessId: BIZ, kind: 'income', treasuryId: t1.id,
+        accountId: index.id(A.OTHER_INCOME), amount: 700_000,
+        date: '2026-05-01', method: 'cash', createdAt: NOW,
+      }, t1, null, postCtx)!,
+      postTransaction({
+        id: idGen(), businessId: BIZ, kind: 'income', treasuryId: t2.id,
+        accountId: index.id(A.OTHER_INCOME), amount: 300_000,
+        date: '2026-05-02', method: 'cash', createdAt: NOW,
+      }, t2, null, postCtx)!,
+    ];
+
+    const r = closeFiscalYear(entries, ctx, FY);
+    const all = [entries, r.closingEntry, r.carryCloseEntry, r.openingEntry]
+      .flat()
+      .filter((e): e is JournalEntry => e != null);
+
+    assert.equal(treasuryBalance(all, t1.id, { to: '2027-06-01' }), 700_000);
+    assert.equal(treasuryBalance(all, t2.id, { to: '2027-06-01' }), 300_000);
   });
 });
