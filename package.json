@@ -1,0 +1,12 @@
+{
+  "name": "javid",
+  "version": "0.1.0",
+  "private": true,
+  "description": "جاوید — حسابداری آفلاین-اول برای کسب‌وکارهای ایرانی",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "test": "npm run test --workspace @javid/core",
+    "build": "npm run build --workspace @javid/core && npm run build --workspace @javid/web",
+    "dev": "npm run dev --workspace @javid/web"
+  }
+}
