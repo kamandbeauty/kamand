@@ -7,8 +7,8 @@ import {
 } from '@javid/core';
 import {
   convertQuote, createReturnFor, invoiceTotal, isFullyReturned, paidOf,
-  postInvoiceToDB, recordHistory, recordInvoicePayment, returnedQtyOf,
-  settlementOf, stockOf, type DB,
+  invoiceEditability, postInvoiceToDB, recordHistory, recordInvoicePayment,
+  returnedQtyOf, settlementOf, stockOf, voidInvoice, type DB,
 } from '../store';
 import { availableMethods, METHOD_LABELS, printReceipt, receiptFor, type PrintMethod } from '../printer';
 import { attachHardwareScanner } from '../barcode';
@@ -35,6 +35,7 @@ export function Invoices({ db, setDB, canWrite }: {
   const [viewing, setViewing] = useState<Invoice | null>(null);
   const [returning, setReturning] = useState<Invoice | null>(null);
   const [settling, setSettling] = useState<Invoice | null>(null);
+  const [deleting, setDeleting] = useState<Invoice | null>(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
@@ -160,6 +161,15 @@ export function Invoices({ db, setDB, canWrite }: {
                       {canWrite && inv.type !== 'quote' && total - paid > 0 && (
                         <button className="btn btn-sm" onClick={() => setSettling(inv)}>تسویه</button>
                       )}
+                      {canWrite && (() => {
+                        const e = invoiceEditability(db, inv.id);
+                        return e.ok ? (
+                          <>
+                            <button className="btn btn-sm btn-ghost" onClick={() => setEditing(inv)}>ویرایش</button>
+                            <button className="btn btn-sm btn-ghost" onClick={() => setDeleting(inv)}>حذف</button>
+                          </>
+                        ) : null;
+                      })()}
                       {canWrite && (inv.type === 'sale' || inv.type === 'purchase')
                         && !isFullyReturned(db, inv.id) && (
                         <button className="btn btn-sm btn-ghost" onClick={() => setReturning(inv)}>برگشت</button>
@@ -186,6 +196,37 @@ export function Invoices({ db, setDB, canWrite }: {
       )}
 
       {viewing && <InvoiceView db={db} invoice={viewing} onClose={() => setViewing(null)} />}
+
+      {deleting && (
+        <Modal
+          title={`حذف فاکتور ${deleting.number}`}
+          onClose={() => setDeleting(null)}
+          footer={
+            <>
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  try {
+                    setDB(voidInvoice(db, deleting.id));
+                    setDeleting(null);
+                    setNotice('فاکتور حذف شد');
+                    setError('');
+                  } catch (e) {
+                    setError((e as Error).message);
+                    setDeleting(null);
+                  }
+                }}
+              >تأیید حذف</button>
+              <button className="btn" onClick={() => setDeleting(null)}>انصراف</button>
+            </>
+          }
+        >
+          <Banner tone="warning" title="اثر این فاکتور از دفتر برداشته می‌شود">
+            سند حسابداری و حرکت انبار مربوط به این فاکتور حذف می‌شود.
+            خود فاکتور برای ردّ ممیزی باقی می‌ماند.
+          </Banner>
+        </Modal>
+      )}
 
       {settling && (
         <SettleDialog

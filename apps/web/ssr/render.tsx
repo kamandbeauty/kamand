@@ -13,7 +13,7 @@ import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
-import { allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -503,6 +503,72 @@ for (const [k, v] of taxChecks) {
     treasuryId: d8.treasuries[0]!.id, date: dd, method: 'cash' });
   console.log(extra.unallocated === 350_000 ? '✅ مازاد علی‌الحساب ثبت می‌شود' : `❌ مازاد: ${extra.unallocated}`);
   if (extra.unallocated !== 350_000) failed++;
+}
+
+// ویرایش فاکتور نباید اثر را دو بار بشمارد
+{
+  const { incomeStatement, balanceSheet, trialBalance, stockByProduct } = await import('@javid/core');
+
+  let d9 = createEmptyDB('آزمون ویرایش');
+  const pid = uuid(), prod = uuid();
+  d9 = upsertParty(d9, { id: pid, businessId: d9.business.id, kind: 'customer', name: 'م', openingBalance: 0 });
+  d9 = upsertProduct(d9, { id: prod, businessId: d9.business.id, kind: 'goods', name: 'ک',
+    unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000, openingQty: 50, openingCost: 100_000 });
+
+  const tt = new Date().toISOString(), dd = tt.slice(0, 10);
+  const inv: Invoice = { id: uuid(), businessId: d9.business.id, type: 'sale', number: 'F-1',
+    partyId: pid, date: dd, isOfficial: false,
+    lines: [{ id: 'L1', productId: prod, qty: 1, unit: 'ع', unitPrice: 300_000, discount: 0, vatRate: 0 }],
+    discount: 0, shipping: 0, status: 'open', createdAt: tt, updatedAt: tt };
+
+  d9 = postInvoiceToDB(d9, inv);
+  const stockAfterFirst = stockByProduct(d9.movements, 'fifo').get(prod)!.qty;
+
+  // ویرایش: مقدار ۱ → ۲
+  d9 = postInvoiceToDB(d9, { ...inv, lines: [{ ...inv.lines[0]!, qty: 2 }] });
+
+  const rev = incomeStatement(d9.entries, indexOf(d9)).revenue;
+  const entryCount = d9.entries.filter((e) => e.sourceType === 'invoice' && e.sourceId === inv.id).length;
+  const stockNow = stockByProduct(d9.movements, 'fifo').get(prod)!.qty;
+
+  const checks: [string, boolean][] = [
+    ['ویرایش فروش را دو بار نمی‌شمارد', rev === 600_000],
+    ['فقط یک سند برای فاکتور می‌ماند', entryCount === 1],
+    ['موجودی انبار درست است', stockNow === 48],
+    ['موجودی پس از ثبت اول درست بود', stockAfterFirst === 49],
+    ['ترازنامه پس از ویرایش متوازن است', balanceSheet(d9.entries, indexOf(d9)).balanced],
+    ['تراز آزمایشی متوازن است', trialBalance(d9.entries, indexOf(d9)).balanced],
+  ];
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k} (فروش ${rev}, سند ${entryCount}, موجودی ${stockNow})`);
+    if (!v) failed++;
+  }
+
+  // حذف فاکتور اثرش را برمی‌دارد
+  const d10 = voidInvoice(d9, inv.id);
+  const afterVoid = incomeStatement(d10.entries, indexOf(d10)).revenue;
+  const stockRestored = stockByProduct(d10.movements, 'fifo').get(prod)!.qty;
+
+  console.log(afterVoid === 0 ? '✅ حذف فاکتور اثر مالی را برمی‌دارد' : `❌ پس از حذف: ${afterVoid}`);
+  if (afterVoid !== 0) failed++;
+  console.log(stockRestored === 50 ? '✅ موجودی پس از حذف برمی‌گردد' : `❌ موجودی: ${stockRestored}`);
+  if (stockRestored !== 50) failed++;
+  console.log(d10.invoices.find((i) => i.id === inv.id)?.deletedAt ? '✅ فاکتور برای ممیزی می‌ماند' : '❌ فاکتور کاملاً پاک شد');
+
+  // محافظ‌ها
+  let d11 = postInvoiceToDB(createEmptyDBFor(d9), inv);
+  function createEmptyDBFor(src: typeof d9) { return { ...src, invoices: [], entries: [], movements: [], transactions: [] }; }
+  d11 = recordInvoicePayment(d11, { invoiceId: inv.id, amount: 50_000,
+    treasuryId: d11.treasuries[0]!.id, date: dd, method: 'cash' });
+
+  const paidEdit = invoiceEditability(d11, inv.id);
+  console.log(!paidEdit.ok ? '✅ فاکتور پرداخت‌شده قابل ویرایش نیست' : '❌ فاکتور پرداخت‌شده ویرایش شد');
+  if (paidEdit.ok) failed++;
+
+  let blocked = false;
+  try { voidInvoice(d11, inv.id); } catch { blocked = true; }
+  console.log(blocked ? '✅ فاکتور پرداخت‌شده حذف نمی‌شود' : '❌ حذف شد');
+  if (!blocked) failed++;
 }
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);

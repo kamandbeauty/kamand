@@ -5,7 +5,7 @@ import {
   buildElectronicInvoice, nextSerial, validateForTaxSystem,
   buildCorrection, historyOf, INVOICE_SUBJECTS, SUBJECT_LABELS,
   type InvoiceSubject,
-  assertNotLocked, createAuditLog, hasPermission,
+  assertNotLocked, createAuditLog, hasPermission, isDateLocked,
   checkIntegrity, closeFiscalYear, fiscalYearBounds, previewClosing, currentFiscalYear,
   postOpening, SYSTEM_ACCOUNTS, EntryBuilder, assertBalanced,
   createReturn, quoteToSale, nextInvoiceNumber,
@@ -265,11 +265,27 @@ export function postInvoiceToDB(db: DB, invoice: Invoice): DB {
   track('invoice', withCosts.id, withCosts);
 
   const existing = db.invoices.find((i) => i.id === withCosts.id);
+
+  /**
+   * ⚠️ ویرایش فاکتور: اثر قبلی باید کاملاً برداشته شود.
+   *
+   * بدون این، سند و حرکت انبار جدید روی قبلی انباشته می‌شد و
+   * فروش دو بار شمرده می‌شد. چون سند و حرکت با `sourceId` به فاکتور
+   * گره خورده‌اند، حذف آن‌ها امن است.
+   */
+  const staleEntries = existing
+    ? db.entries.filter((e) => !(e.sourceType === 'invoice' && e.sourceId === withCosts.id))
+    : db.entries;
+
+  const staleMovements = existing
+    ? db.movements.filter((m) => !(m.sourceType === 'invoice' && m.sourceId === withCosts.id))
+    : db.movements;
+
   const next: DB = {
     ...db,
     invoices: [...db.invoices.filter((i) => i.id !== withCosts.id), withCosts],
-    entries: entry ? [...db.entries, entry] : db.entries,
-    movements: [...db.movements, ...movements],
+    entries: entry ? [...staleEntries, entry] : staleEntries,
+    movements: [...staleMovements, ...movements],
   };
 
   return audit(next, existing ? 'update' : 'create', 'invoice', withCosts.id, {
@@ -1086,4 +1102,77 @@ export function settlementOf(db: DB, invoiceId: ID): {
     status: invoice.type === 'quote' ? 'draft' : paymentStatus(total, paid),
     payments: db.transactions.filter((t) => t.invoiceId === invoiceId && !t.deletedAt),
   };
+}
+
+
+// ─────────── حذف فاکتور ───────────
+
+/**
+ * حذف نرم فاکتور به همراه برداشتن اثر آن از دفتر و انبار.
+ *
+ * فاکتور خودش با پرچم حذف باقی می‌ماند (ردّ ممیزی)، ولی سند و
+ * حرکت انبارش برداشته می‌شود تا گزارش‌ها درست بمانند.
+ */
+export function voidInvoice(db: DB, invoiceId: ID): DB {
+  const invoice = db.invoices.find((i) => i.id === invoiceId);
+  if (!invoice) throw new Error('فاکتور یافت نشد');
+  if (invoice.deletedAt) throw new Error('این فاکتور قبلاً حذف شده است');
+
+  guardPeriod(db, invoice.date);
+
+  const paid = paidOf(db, invoiceId);
+  if (paid > 0) {
+    throw new Error(
+      'این فاکتور پرداخت ثبت‌شده دارد؛ ابتدا پرداخت‌ها را حذف کنید یا فاکتور برگشتی صادر کنید',
+    );
+  }
+
+  const submitted = db.taxSubmissions.some(
+    (s) => s.invoiceId === invoiceId && s.status !== 'cancelled',
+  );
+  if (submitted) {
+    throw new Error(
+      'این فاکتور به سامانهٔ مؤدیان ارسال شده؛ به‌جای حذف، صورتحساب ابطالی صادر کنید',
+    );
+  }
+
+  const next: DB = {
+    ...db,
+    invoices: db.invoices.map((i) =>
+      i.id === invoiceId ? { ...i, deletedAt: nowIso() } : i,
+    ),
+    entries: db.entries.filter(
+      (e) => !(e.sourceType === 'invoice' && e.sourceId === invoiceId),
+    ),
+    movements: db.movements.filter(
+      (m) => !(m.sourceType === 'invoice' && m.sourceId === invoiceId),
+    ),
+  };
+
+  track('invoice', invoiceId, { ...invoice, deletedAt: nowIso() });
+
+  return audit(next, 'delete', 'invoice', invoiceId, {
+    before: { شماره: invoice.number, تاریخ: invoice.date },
+  });
+}
+
+/** آیا فاکتور قابل ویرایش یا حذف است؟ */
+export function invoiceEditability(db: DB, invoiceId: ID): { ok: boolean; reason?: string } {
+  const invoice = db.invoices.find((i) => i.id === invoiceId);
+  if (!invoice) return { ok: false, reason: 'فاکتور یافت نشد' };
+  if (invoice.deletedAt) return { ok: false, reason: 'فاکتور حذف شده است' };
+
+  if (isDateLocked(invoice.date, db.periodLock)) {
+    return { ok: false, reason: 'دورهٔ مالی این فاکتور بسته است' };
+  }
+  if (paidOf(db, invoiceId) > 0) {
+    return { ok: false, reason: 'فاکتور پرداخت ثبت‌شده دارد' };
+  }
+  if (db.taxSubmissions.some((s) => s.invoiceId === invoiceId && s.status !== 'cancelled')) {
+    return { ok: false, reason: 'فاکتور به سامانهٔ مؤدیان ارسال شده است' };
+  }
+  if (db.invoices.some((i) => i.sourceInvoiceId === invoiceId && !i.deletedAt)) {
+    return { ok: false, reason: 'برای این فاکتور برگشتی صادر شده است' };
+  }
+  return { ok: true };
 }
