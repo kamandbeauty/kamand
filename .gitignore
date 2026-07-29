@@ -1,0 +1,15 @@
+# Android Studio / Gradle
+.gradle/
+local.properties
+*.iml
+.idea/
+/build/
+/app/build/
+
+# Signing credentials and locally exported customer data
+*.jks
+*.keystore
+*.db
+*.sqlite
+*.sqlite3
+hesabyar_backup_*.db
