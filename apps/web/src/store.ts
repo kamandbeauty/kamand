@@ -8,7 +8,8 @@ import {
   assertNotLocked, createAuditLog, hasPermission, isDateLocked,
   checkIntegrity, closeFiscalYear, fiscalYearBounds, previewClosing, currentFiscalYear,
   postOpening, SYSTEM_ACCOUNTS, EntryBuilder, assertBalanced,
-  createReturn, quoteToSale, nextInvoiceNumber,
+  createReturn, quoteToSale, nextInvoiceNumber, postCheque,
+  type ChequeStatus,
   type JournalLine,
   type AuditLog, type AuditedEntity, type PeriodLock, type Permission, type Role,
   type Business, type Cheque, type Invoice, type JournalEntry, type Party,
@@ -1175,4 +1176,124 @@ export function invoiceEditability(db: DB, invoiceId: ID): { ok: boolean; reason
     return { ok: false, reason: 'برای این فاکتور برگشتی صادر شده است' };
   }
   return { ok: true };
+}
+
+
+// ─────────── چرخهٔ چک ───────────
+
+/**
+ * تغییر وضعیت چک با ثبت سند حسابداری.
+ *
+ * ⚠️ سه محافظی که نبود:
+ *  ۱. **وصول تکراری** — کاربر دوبار دکمه می‌زد و پول خیالی ساخته
+ *     می‌شد. فقط چک «در جریان» قابل وصول یا برگشت است.
+ *  ۲. **قفل دوره** — چک در دورهٔ بسته ثبت می‌شد.
+ *  ۳. **ردّ ممیزی** — تغییر وضعیت چک ثبت نمی‌شد.
+ */
+const CHEQUE_TRANSITIONS: Record<ChequeStatus, ChequeStatus[]> = {
+  pending: ['cashed', 'bounced', 'spent', 'void'],
+  cashed: [],
+  bounced: ['pending'],
+  spent: [],
+  void: [],
+};
+
+export const CHEQUE_STATUS_LABELS: Record<ChequeStatus, string> = {
+  pending: 'در جریان',
+  cashed: 'وصول شده',
+  bounced: 'برگشتی',
+  spent: 'خرج شده',
+  void: 'باطل',
+};
+
+export function canChangeChequeStatus(
+  cheque: Cheque,
+  next: ChequeStatus,
+): { ok: boolean; reason?: string } {
+  if (cheque.status === next) {
+    return { ok: false, reason: `این چک هم‌اکنون «${CHEQUE_STATUS_LABELS[next]}» است` };
+  }
+  const allowed = CHEQUE_TRANSITIONS[cheque.status] ?? [];
+  if (!allowed.includes(next)) {
+    return {
+      ok: false,
+      reason: `چک «${CHEQUE_STATUS_LABELS[cheque.status]}» را نمی‌توان به «${CHEQUE_STATUS_LABELS[next]}» تغییر داد`,
+    };
+  }
+  return { ok: true };
+}
+
+/** ثبت چک جدید */
+export function registerCheque(db: DB, cheque: Cheque): DB {
+  guardPeriod(db, cheque.createdAt.slice(0, 10));
+
+  const entry = postCheque(cheque, 'register', null, ctxOf(db));
+  const next = upsertCheque(db, cheque);
+  const withEntry: DB = {
+    ...next,
+    entries: entry ? [...next.entries, entry] : next.entries,
+  };
+
+  return audit(withEntry, 'create', 'cheque', cheque.id, {
+    after: {
+      شماره: cheque.number,
+      مبلغ: cheque.amount,
+      سررسید: cheque.dueDate,
+      نوع: cheque.direction === 'received' ? 'دریافتی' : 'پرداختی',
+    },
+  });
+}
+
+/** وصول یا برگشت چک */
+export function settleCheque(
+  db: DB,
+  chequeId: ID,
+  event: 'cash' | 'bounce',
+  treasuryId?: ID,
+): DB {
+  const cheque = db.cheques.find((c) => c.id === chequeId);
+  if (!cheque) throw new Error('چک یافت نشد');
+
+  const target: ChequeStatus = event === 'cash' ? 'cashed' : 'bounced';
+  const check = canChangeChequeStatus(cheque, target);
+  if (!check.ok) throw new Error(check.reason!);
+
+  guardPeriod(db, cheque.dueDate);
+
+  const treasury = treasuryId
+    ? db.treasuries.find((t) => t.id === treasuryId)
+    : db.treasuries.find((t) => t.kind === 'bank') ?? db.treasuries[0];
+
+  if (event === 'cash' && !treasury) throw new Error('حساب بانکی برای وصول چک مشخص نیست');
+
+  const entry = postCheque(cheque, event, treasury ?? null, ctxOf(db));
+  const updated: Cheque = { ...cheque, status: target, treasuryId: treasury?.id ?? cheque.treasuryId };
+
+  const next = upsertCheque(db, updated);
+  const withEntry: DB = {
+    ...next,
+    entries: entry ? [...next.entries, entry] : next.entries,
+  };
+
+  return audit(withEntry, 'update', 'cheque', chequeId, {
+    before: { وضعیت: CHEQUE_STATUS_LABELS[cheque.status] },
+    after: { وضعیت: CHEQUE_STATUS_LABELS[target] },
+  });
+}
+
+/** چک‌های سررسید گذشته یا نزدیک */
+export function chequeAlerts(db: DB, withinDays = 7): {
+  overdue: Cheque[];
+  dueSoon: Cheque[];
+} {
+  const today = new Date().toISOString().slice(0, 10);
+  const limit = new Date();
+  limit.setDate(limit.getDate() + withinDays);
+  const limitStr = limit.toISOString().slice(0, 10);
+
+  const pending = db.cheques.filter((c) => c.status === 'pending');
+  return {
+    overdue: pending.filter((c) => c.dueDate < today),
+    dueSoon: pending.filter((c) => c.dueDate >= today && c.dueDate <= limitStr),
+  };
 }

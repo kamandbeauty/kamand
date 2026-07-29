@@ -13,7 +13,7 @@ import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
-import { invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -569,6 +569,79 @@ for (const [k, v] of taxChecks) {
   try { voidInvoice(d11, inv.id); } catch { blocked = true; }
   console.log(blocked ? '✅ فاکتور پرداخت‌شده حذف نمی‌شود' : '❌ حذف شد');
   if (!blocked) failed++;
+}
+
+// چرخهٔ چک — سه باگ
+{
+  const { balanceOf, SYSTEM_ACCOUNTS: A, trialBalance } = await import('@javid/core');
+
+  let dc = createEmptyDB('آزمون چک');
+  const pid = uuid();
+  dc = upsertParty(dc, { id: pid, businessId: dc.business.id, kind: 'customer', name: 'م', openingBalance: 0 });
+
+  const tc = new Date().toISOString(), dcd = tc.slice(0, 10);
+  const mkChq = (id: string) => ({
+    id, businessId: dc.business.id, direction: 'received' as const,
+    number: '123', bankName: 'ملت', amount: 1_000_000,
+    dueDate: dcd, partyId: pid, status: 'pending' as const, createdAt: tc,
+  });
+
+  const c1 = mkChq(uuid());
+  dc = registerCheque(dc, c1);
+  const idxc = indexOf(dc);
+
+  const afterRegister = balanceOf(dc.entries, idxc.id(A.CHEQUE_RECEIVED));
+  dc = settleCheque(dc, c1.id, 'cash');
+  const bankAfter = balanceOf(dc.entries, idxc.id(A.BANK));
+
+  const checks: [string, boolean][] = [
+    ['ثبت چک اسناد دریافتنی را بدهکار می‌کند', afterRegister === 1_000_000],
+    ['وصول، اسناد دریافتنی را صفر می‌کند', balanceOf(dc.entries, idxc.id(A.CHEQUE_RECEIVED)) === 0],
+    ['وصول پول را به بانک می‌برد', bankAfter === 1_000_000],
+    ['تراز پس از چرخهٔ چک متوازن است', trialBalance(dc.entries, idxc).balanced],
+    ['ثبت چک در ردّ ممیزی می‌آید', dc.auditLogs.some((l) => l.entity === 'cheque')],
+  ];
+
+  // 🔴 باگ اصلی: وصول تکراری
+  let dupBlocked = false;
+  try { settleCheque(dc, c1.id, 'cash'); } catch { dupBlocked = true; }
+  checks.push(['وصول تکراری مسدود می‌شود', dupBlocked]);
+  checks.push(['بانک پس از تلاش تکراری تغییر نمی‌کند', balanceOf(dc.entries, idxc.id(A.BANK)) === 1_000_000]);
+
+  // چک وصول‌شده برگشت نمی‌خورد
+  let bounceBlocked = false;
+  try { settleCheque(dc, c1.id, 'bounce'); } catch { bounceBlocked = true; }
+  checks.push(['چک وصول‌شده برگشت نمی‌خورد', bounceBlocked]);
+
+  // برگشت → دوباره در جریان (مسیر مجاز)
+  const c2 = mkChq(uuid());
+  let dc2 = registerCheque(dc, c2);
+  dc2 = settleCheque(dc2, c2.id, 'bounce');
+  checks.push(['برگشت چک ثبت می‌شود', dc2.cheques.find((c) => c.id === c2.id)?.status === 'bounced']);
+  checks.push(['چک برگشتی دوباره در جریان می‌شود', canChangeChequeStatus(
+    dc2.cheques.find((c) => c.id === c2.id)!, 'pending').ok]);
+
+  // 🔴 قفل دوره
+  const lockedDb = lockPeriod(dc2, dcd, 'آزمون');
+  let lockBlocked = false;
+  try { registerCheque(lockedDb, mkChq(uuid())); } catch { lockBlocked = true; }
+  checks.push(['چک در دورهٔ بسته ثبت نمی‌شود', lockBlocked]);
+
+  // یادآوری
+  const past = new Date(); past.setDate(past.getDate() - 5);
+  const soon = new Date(); soon.setDate(soon.getDate() + 3);
+  const withAlerts = { ...dc, cheques: [
+    { ...mkChq(uuid()), dueDate: past.toISOString().slice(0, 10) },
+    { ...mkChq(uuid()), dueDate: soon.toISOString().slice(0, 10) },
+  ] };
+  const alerts = chequeAlerts(withAlerts);
+  checks.push(['چک سررسید گذشته تشخیص داده می‌شود', alerts.overdue.length === 1]);
+  checks.push(['چک نزدیک سررسید تشخیص داده می‌شود', alerts.dueSoon.length === 1]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
 }
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);

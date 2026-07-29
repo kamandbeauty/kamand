@@ -5,7 +5,10 @@ import {
 } from '@javid/core';
 
 const fa = (n: number) => toPersianDigits(n);
-import { allocatePayment, indexOf, openInvoicesOf, postTransactionToDB, upsertCheque, type DB } from '../store';
+import {
+  allocatePayment, canChangeChequeStatus, chequeAlerts, CHEQUE_STATUS_LABELS,
+  indexOf, openInvoicesOf, postTransactionToDB, registerCheque, settleCheque, type DB,
+} from '../store';
 import { Badge, Banner, Card, DateInput, Empty, Field, JDate, Modal, Money, MoneyInput, Tabs } from '../ui';
 
 export function Treasury({ db, setDB, canWrite }: {
@@ -16,6 +19,16 @@ export function Treasury({ db, setDB, canWrite }: {
   const [tab, setTab] = useState<'accounts' | 'transactions' | 'cheques'>('accounts');
   const [txModal, setTxModal] = useState<TransactionKind | null>(null);
   const [chqModal, setChqModal] = useState<ChequeDirection | null>(null);
+  const [error, setError] = useState('');
+
+  function act(chequeId: string, event: 'cash' | 'bounce') {
+    try {
+      setDB(settleCheque(db, chequeId, event));
+      setError('');
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
 
   const index = indexOf(db);
   const today = new Date().toISOString().slice(0, 10);
@@ -43,6 +56,23 @@ export function Treasury({ db, setDB, canWrite }: {
           </>
         )}
       </div>
+
+      {error && (
+        <Banner tone="critical" action={<button className="btn btn-sm" onClick={() => setError('')}>بستن</button>}>
+          {error}
+        </Banner>
+      )}
+
+      {(() => {
+        const a = chequeAlerts(db);
+        if (a.overdue.length === 0 && a.dueSoon.length === 0) return null;
+        return (
+          <Banner tone={a.overdue.length > 0 ? 'critical' : 'warning'} title="یادآوری چک">
+            {a.overdue.length > 0 && <>{fa(a.overdue.length)} چک سررسید گذشته دارید. </>}
+            {a.dueSoon.length > 0 && <>{fa(a.dueSoon.length)} چک تا هفتهٔ آینده سررسید می‌شود.</>}
+          </Banner>
+        );
+      })()}
 
       <div className="grid grid-3" style={{ marginBottom: 18 }}>
         <div className="card stat">
@@ -150,7 +180,7 @@ export function Treasury({ db, setDB, canWrite }: {
                           c.status === 'cashed' ? 'green' : c.status === 'bounced' ? 'red'
                             : c.status === 'pending' ? 'amber' : 'gray'
                         }>
-                          {{ pending: 'در جریان', cashed: 'وصول شده', bounced: 'برگشتی', spent: 'خرج شده', void: 'باطل' }[c.status]}
+                          {CHEQUE_STATUS_LABELS[c.status]}
                         </Badge>
                       </td>
                       <td className="end no-print">
@@ -158,11 +188,11 @@ export function Treasury({ db, setDB, canWrite }: {
                           <>
                             <button
                               className="btn btn-sm btn-ghost"
-                              onClick={() => setDB(cashCheque(db, c, 'cash'))}
+                              onClick={() => act(c.id, 'cash')}
                             >وصول</button>
                             <button
                               className="btn btn-sm btn-ghost"
-                              onClick={() => setDB(cashCheque(db, c, 'bounce'))}
+                              onClick={() => act(c.id, 'bounce')}
                             >برگشت</button>
                           </>
                         )}
@@ -206,38 +236,19 @@ export function Treasury({ db, setDB, canWrite }: {
           direction={chqModal}
           onClose={() => setChqModal(null)}
           onSave={(c) => {
-            setDB(registerCheque(db, c));
-            setChqModal(null);
+            try {
+              setDB(registerCheque(db, c));
+              setChqModal(null);
+              setError('');
+            } catch (e) {
+              setError((e as Error).message);
+              setChqModal(null);
+            }
           }}
         />
       )}
     </>
   );
-}
-
-function ctxOf(db: DB) {
-  const index = indexOf(db);
-  return {
-    index,
-    businessId: db.business.id,
-    idGen: uuid,
-    now: new Date().toISOString(),
-    treasuryAccount: defaultTreasuryAccount(index),
-  };
-}
-
-function registerCheque(db: DB, c: Cheque): DB {
-  const entry = postCheque(c, 'register', null, ctxOf(db));
-  const next = upsertCheque(db, c);
-  return { ...next, entries: entry ? [...next.entries, entry] : next.entries };
-}
-
-function cashCheque(db: DB, c: Cheque, event: 'cash' | 'bounce'): DB {
-  const treasury = db.treasuries.find((t) => t.kind === 'bank') ?? db.treasuries[0] ?? null;
-  const updated: Cheque = { ...c, status: event === 'cash' ? 'cashed' : 'bounced' };
-  const entry = postCheque(c, event, treasury, ctxOf(db));
-  const next = upsertCheque(db, updated);
-  return { ...next, entries: entry ? [...next.entries, entry] : next.entries };
 }
 
 function TxModal({ db, kind, onClose, onSave }: {
