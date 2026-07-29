@@ -13,6 +13,7 @@ import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
+import { Analytics } from '../src/pages/Analytics';
 import { activeTransactions, voidTransaction, postStockCount, stockCountPreview, unpostedOpeningStock, postOpeningBalances as _pob, canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
@@ -838,6 +839,39 @@ for (const [k, v] of taxChecks) {
   try { voidTransaction(lockedT, dt.transactions[1]!.id); } catch { lockedDel = true; }
   checks.push(['حذف در دورهٔ بسته مسدود است', lockedDel]);
 
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
+// تحلیل فروش با دادهٔ واقعی
+{
+  const { productPerformance, customerPerformance, salesSummary,
+    staleProducts, stockByProduct, monthlyTrend } = await import('@javid/core');
+
+  const pm = new Map(db.products.map((p) => [p.id, p]));
+  const qm = new Map(db.parties.map((p) => [p.id, p]));
+  const perf = productPerformance(db.invoices, pm);
+  const cust = customerPerformance(db.invoices, qm);
+  const sum = salesSummary(db.invoices, pm, qm);
+
+  const checks: [string, boolean][] = [
+    ['عملکرد کالا محاسبه می‌شود', perf.length > 0],
+    ['سود کالا با فروش می‌خواند', perf[0] !== undefined && perf[0].profit === perf[0].revenue - perf[0].cogs],
+    ['عملکرد مشتری محاسبه می‌شود', cust.length > 0],
+    ['خلاصه پرسودترین کالا را می‌دهد', !!sum.topProduct],
+    ['خلاصه پرفروش‌ترین مشتری را می‌دهد', !!sum.topCustomer],
+    ['حاشیهٔ سود عددی معتبر است', Number.isFinite(sum.margin)],
+    ['روند ۱۲ ماه برمی‌گردد', monthlyTrend(db.invoices, {}, 12).length === 12],
+    ['جمع سود کالاها با خلاصه می‌خواند',
+      Math.abs(perf.reduce((s2, r) => s2 + r.profit, 0) - sum.profit) <= 1],
+    ['جمع فروش مشتریان با خلاصه می‌خواند',
+      Math.abs(cust.reduce((s2, r) => s2 + r.revenue, 0) - sum.revenue) <= 1],
+    ['کالای راکد بدون خطا محاسبه می‌شود',
+      Array.isArray(staleProducts(db.invoices, db.products,
+        stockByProduct(db.movements, 'fifo', { allowNegative: true }), { minDays: 0 }))],
+  ];
   for (const [k, v] of checks) {
     console.log(v ? `✅ ${k}` : `❌ ${k}`);
     if (!v) failed++;

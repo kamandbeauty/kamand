@@ -19,8 +19,9 @@ import { Account } from './pages/Account';
 import { Audit } from './pages/Audit';
 import { YearEnd } from './pages/YearEnd';
 import { Ledger } from './pages/Ledger';
+import { Analytics } from './pages/Analytics';
 
-type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'tax' | 'reports' | 'ledger' | 'audit' | 'yearend' | 'account' | 'settings';
+type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'tax' | 'reports' | 'ledger' | 'analytics' | 'audit' | 'yearend' | 'account' | 'settings';
 
 const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }[] = [
   {
@@ -42,6 +43,7 @@ const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }
     items: [
       { id: 'ledger', label: 'دفتر و اسناد', icon: '📒' },
       { id: 'reports', label: 'گزارش‌ها', icon: '📊' },
+      { id: 'analytics', label: 'تحلیل فروش', icon: '📈' },
       { id: 'audit', label: 'ممیزی و دوره', icon: '📜' },
       { id: 'yearend', label: 'بستن سال', icon: '🔒' },
       { id: 'account', label: 'حساب و همگام‌سازی', icon: '☁️' },
@@ -59,6 +61,7 @@ const TITLES: Record<Page, string> = {
   tax: 'سامانهٔ مؤدیان',
   ledger: 'دفتر و اسناد',
   reports: 'گزارش‌ها',
+  analytics: 'تحلیل فروش',
   audit: 'ردّ ممیزی و دورهٔ مالی',
   yearend: 'بستن سال مالی',
   account: 'حساب کاربری و همگام‌سازی',
@@ -247,6 +250,7 @@ export default function App() {
           {page === 'tax' && <Tax db={db} setDB={setDB} canWrite={canWrite} />}
           {page === 'ledger' && <Ledger db={db} setDB={setDB} />}
           {page === 'reports' && <Reports db={db} />}
+          {page === 'analytics' && <Analytics db={db} />}
           {page === 'audit' && <Audit db={db} setDB={setDB} />}
           {page === 'yearend' && <YearEnd db={db} setDB={setDB} />}
           {page === 'account' && <Account db={db} setDB={setDB} />}
