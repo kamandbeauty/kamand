@@ -12,3 +12,6 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
+
+# خروجی بسته‌بندی (در گیت کامیت نمی‌شود)
+/dist/
