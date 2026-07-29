@@ -9,7 +9,8 @@ import {
   assertNotLocked, createAuditLog, hasPermission, isDateLocked,
   checkIntegrity, closeFiscalYear, fiscalYearBounds, previewClosing, currentFiscalYear,
   alerts as makeAlert, summarizeHealth, setupProgress, subscriptionNotice,
-  type Alert, type HealthSummary, type SetupProgress,
+  globalSearch, type Alert, type HealthSummary, type SetupProgress,
+  type SearchHit, type InvoiceStatusInfo,
   postOpening, SYSTEM_ACCOUNTS, EntryBuilder, assertBalanced,
   createReturn, quoteToSale, nextInvoiceNumber, postCheque,
   type ChequeStatus,
@@ -1620,4 +1621,36 @@ export function isSetupDismissed(businessId: ID): boolean {
 
 export function dismissSetup(businessId: ID): void {
   storage.setItemSync(`${SETUP_KEY}:${businessId}`, '1');
+}
+
+
+// ─────────── جستجوی سراسری ───────────
+
+/** جستجو در فاکتور، شخص، کالا و چک */
+export function searchAll(db: DB, query: string, limit = 20): SearchHit[] {
+  const partyById = new Map(db.parties.map((p) => [p.id, p.name]));
+  return globalSearch(
+    {
+      invoices: db.invoices,
+      parties: db.parties,
+      products: db.products,
+      cheques: db.cheques,
+      invoiceTotal,
+      partyName: (id) => (id ? partyById.get(id) : undefined),
+    },
+    query,
+    limit,
+  );
+}
+
+/** وضعیت پرداخت یک فاکتور — ورودی فیلترها */
+export function paymentInfoOf(db: DB, inv: Invoice): InvoiceStatusInfo {
+  const total = invoiceTotal(inv);
+  const paid = paidOf(db, inv.id);
+  return {
+    total,
+    paid,
+    remaining: total - paid,
+    isOverdue: !!inv.dueDate && inv.dueDate < today() && total - paid > 0,
+  };
 }

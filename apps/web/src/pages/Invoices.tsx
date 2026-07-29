@@ -2,13 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   computeInvoice, INVOICE_TYPE_LABELS, invoiceProfit, nextInvoiceNumber,
   paymentStatus, uuid, validateInvoice, formatMoney, moneyToWords, toPersianDigits,
-  ACTION_LABELS,
+  ACTION_LABELS, filterByPayment, paymentSummary,
+  PAYMENT_FILTER_LABELS, type PaymentFilter,
   type Invoice, type InvoiceLine, type InvoiceType,
 } from '@javid/core';
 import {
   convertQuote, createReturnFor, invoiceTotal, isFullyReturned, paidOf,
-  invoiceEditability, postInvoiceToDB, recordHistory, recordInvoicePayment,
-  returnedQtyOf, settlementOf, stockOf, voidInvoice, type DB,
+  invoiceEditability, paymentInfoOf, postInvoiceToDB, recordHistory,
+  recordInvoicePayment, returnedQtyOf, settlementOf, stockOf, voidInvoice, type DB,
 } from '../store';
 import { availableMethods, METHOD_LABELS, printReceipt, receiptFor, type PrintMethod } from '../printer';
 import { attachHardwareScanner } from '../barcode';
@@ -30,6 +31,7 @@ export function Invoices({ db, setDB, canWrite }: {
   canWrite: boolean;
 }) {
   const [tab, setTab] = useState<'all' | InvoiceType>('all');
+  const [payFilter, setPayFilter] = useState<PaymentFilter>('all');
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Invoice | null>(null);
   const [viewing, setViewing] = useState<Invoice | null>(null);
@@ -50,10 +52,17 @@ export function Invoices({ db, setDB, canWrite }: {
     }
   }
 
+  const info = useMemo(() => (inv: Invoice) => paymentInfoOf(db, inv), [db]);
+  const summary = useMemo(() => paymentSummary(db.invoices, info), [db.invoices, info]);
+
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return db.invoices
-      .filter((i) => !i.deletedAt)
+    const byPayment = filterByPayment(
+      db.invoices.filter((i) => !i.deletedAt),
+      payFilter,
+      info,
+    );
+    return byPayment
       .filter((i) => tab === 'all' || i.type === tab)
       .filter((i) => {
         if (!term) return true;
@@ -61,7 +70,7 @@ export function Invoices({ db, setDB, canWrite }: {
         return i.number.toLowerCase().includes(term) || (party?.name.toLowerCase().includes(term) ?? false);
       })
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
-  }, [db.invoices, db.parties, tab, q]);
+  }, [db.invoices, db.parties, tab, q, payFilter, info]);
 
   function newInvoice(type: InvoiceType) {
     const prefix = { sale: 'F', purchase: 'P', quote: 'Q', sale_return: 'RS', purchase_return: 'RP', waste: 'W' }[type];
@@ -85,8 +94,34 @@ export function Invoices({ db, setDB, canWrite }: {
 
   return (
     <>
+      {summary.unpaidCount > 0 && (
+        <div className="grid grid-2" style={{ marginBottom: 14 }}>
+          <div className="card stat">
+            <div className="label">تسویه‌نشده</div>
+            <div className="value"><Money value={summary.unpaidAmount} /></div>
+            <div className="sub">{toPersianDigits(summary.unpaidCount)} فاکتور</div>
+          </div>
+          <div className={`card stat ${summary.overdueCount > 0 ? 'neg' : ''}`}>
+            <div className="label">سررسید گذشته</div>
+            <div className="value"><Money value={summary.overdueAmount} /></div>
+            <div className="sub">{toPersianDigits(summary.overdueCount)} فاکتور</div>
+          </div>
+        </div>
+      )}
+
       <div className="toolbar no-print">
         <Search value={q} onChange={setQ} placeholder="جستجوی شماره یا طرف حساب…" />
+        <select
+          className="select"
+          style={{ maxWidth: 160 }}
+          value={payFilter}
+          onChange={(e) => setPayFilter(e.target.value as PaymentFilter)}
+          aria-label="فیلتر وضعیت پرداخت"
+        >
+          {(Object.keys(PAYMENT_FILTER_LABELS) as PaymentFilter[]).map((f) => (
+            <option key={f} value={f}>{PAYMENT_FILTER_LABELS[f]}</option>
+          ))}
+        </select>
         <div style={{ flex: 1 }} />
         {canWrite && (
           <>

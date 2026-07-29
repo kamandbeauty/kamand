@@ -7,6 +7,7 @@ import {
 } from './workspaces';
 import { startAutoSync } from './syncEngine';
 import { Banner } from './ui';
+import { GlobalSearch, useSearchShortcut } from './GlobalSearch';
 import { Dashboard } from './pages/Dashboard';
 import { Invoices } from './pages/Invoices';
 import { Parties } from './pages/Parties';
@@ -72,6 +73,7 @@ export default function App() {
   const [db, setDBState] = useState<DB | null>(null);
   const [workspaces, setWorkspaces] = useState<WorkspaceEntry[]>([]);
   const [switching, setSwitching] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [page, setPage] = useState<Page>('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
@@ -160,6 +162,7 @@ export default function App() {
   const notice = subscriptionNotice(db.subscription, now);
   const canWrite = can('write', db.subscription, now);
   const sync = syncStatus(online, queue);
+  useSearchShortcut(() => setSearchOpen(true));
 
   const dot = sync.state === 'synced' ? 'green' : sync.state === 'error' ? 'red' : 'amber';
 
@@ -214,6 +217,11 @@ export default function App() {
           >☰</button>
           <h2>{TITLES[page]}</h2>
           <div className="spacer" />
+          <button
+            className="btn btn-sm"
+            onClick={() => setSearchOpen(true)}
+            title="جستجوی سراسری (Ctrl+K)"
+          >🔍 جستجو</button>
           <span className="sync-pill" title={sync.message}>
             <span className={`dot ${dot}`} />
             {sync.state === 'offline' ? 'آفلاین' : sync.state === 'synced' ? 'همگام' : `${sync.pendingCount} در صف`}
@@ -259,6 +267,13 @@ export default function App() {
           )}
         </main>
       </div>
+
+      <GlobalSearch
+        db={db}
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={(p) => setPage(p as Page)}
+      />
     </div>
   );
 }

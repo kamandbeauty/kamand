@@ -32,6 +32,7 @@ export * from './workspace.js';
 export * from './closing.js';
 export * from './analytics.js';
 export * from './health.js';
+export * from './search.js';
 
 export const VERSION = '0.1.0';
 export const APP_NAME = 'جاوید';

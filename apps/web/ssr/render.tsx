@@ -14,7 +14,7 @@ import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
 import { Analytics } from '../src/pages/Analytics';
-import { healthOf, setupOf, activeTransactions, voidTransaction, postStockCount, stockCountPreview, unpostedOpeningStock, postOpeningBalances as _pob, canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { searchAll, paymentInfoOf, healthOf, setupOf, activeTransactions, voidTransaction, postStockCount, stockCountPreview, unpostedOpeningStock, postOpeningBalances as _pob, canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -933,6 +933,61 @@ for (const [k, v] of taxChecks) {
 
   const spClean = setupOf(clean);
   checks.push(['کسب‌وکار خالی گام‌های کمتری دارد', spClean.completed < sp.completed]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
+// جستجوی سراسری و فیلتر پرداخت روی مغازهٔ شلوغ
+{
+  const { filterByPayment, paymentSummary } = await import('@javid/core');
+
+  let ds = createEmptyDB('مغازهٔ شلوغ');
+  const sprod = uuid();
+  ds = upsertProduct(ds, { id: sprod, businessId: ds.business.id, kind: 'goods',
+    name: 'پیراهن مردانه', barcode: '6260123456789',
+    unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000, openingQty: 1000, openingCost: 100_000 });
+
+  const ts = new Date().toISOString(), dsd = ts.slice(0, 10);
+  const firstParty = uuid();
+  for (let i = 0; i < 30; i++) {
+    const pid = i === 0 ? firstParty : uuid();
+    ds = upsertParty(ds, { id: pid, businessId: ds.business.id, kind: 'customer',
+      name: i === 0 ? 'آقای رضایی' : `مشتری ${i + 1}`,
+      phone: `0912${String(1000000 + i)}`, openingBalance: 0 });
+    ds = postInvoiceToDB(ds, { id: uuid(), businessId: ds.business.id, type: 'sale',
+      number: `F-${1000 + i}`, partyId: pid, date: dsd, isOfficial: false,
+      lines: [{ id: uuid(), productId: sprod, qty: 1, unit: 'ع', unitPrice: 300_000, discount: 0, vatRate: 0 }],
+      discount: 0, shipping: 0, status: 'open', createdAt: ts, updatedAt: ts });
+  }
+
+  // یکی را تسویه می‌کنیم
+  const target = ds.invoices[0]!;
+  ds = recordInvoicePayment(ds, { invoiceId: target.id, amount: 300_000,
+    treasuryId: ds.treasuries[0]!.id, date: dsd, method: 'cash' });
+
+  const info = (inv: typeof target) => paymentInfoOf(ds, inv);
+  const summary = paymentSummary(ds.invoices, info);
+
+  const checks: [string, boolean][] = [
+    ['جستجو نام مشتری را پیدا می‌کند', searchAll(ds, 'رضایی').some((h) => h.kind === 'party')],
+    ['جستجو فاکتور همان مشتری را هم می‌آورد', searchAll(ds, 'رضایی').some((h) => h.kind === 'invoice')],
+    ['جستجو با شمارهٔ فاکتور کار می‌کند', searchAll(ds, 'F-1005').some((h) => h.kind === 'invoice')],
+    ['جستجو با بارکد کالا را می‌آورد', searchAll(ds, '6260123456789').some((h) => h.kind === 'product')],
+    ['جستجو با ارقام فارسی کار می‌کند', searchAll(ds, '۰۹۱۲۱۰۰۰۰۰۰').length > 0],
+    ['جستجوی بی‌نتیجه خالی برمی‌گردد', searchAll(ds, 'چیزی که نیست').length === 0],
+    ['نتایج محدود می‌شوند', searchAll(ds, 'مشتری', 5).length <= 5],
+    ['خلاصه تسویه‌نشده‌ها را می‌شمارد', summary.unpaidCount === 29],
+    ['فیلتر تسویه‌شده یکی می‌دهد',
+      filterByPayment(ds.invoices, 'paid', info).length === 1],
+    ['فیلتر تسویه‌نشده بقیه را می‌دهد',
+      filterByPayment(ds.invoices, 'unpaid', info).length === 29],
+    ['مجموع دو فیلتر برابر کل است',
+      filterByPayment(ds.invoices, 'paid', info).length +
+      filterByPayment(ds.invoices, 'unpaid', info).length === ds.invoices.length],
+  ];
 
   for (const [k, v] of checks) {
     console.log(v ? `✅ ${k}` : `❌ ${k}`);
