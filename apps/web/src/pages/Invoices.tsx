@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   computeInvoice, INVOICE_TYPE_LABELS, invoiceProfit, nextInvoiceNumber,
   paymentStatus, uuid, validateInvoice, formatMoney, moneyToWords,
   type Invoice, type InvoiceLine, type InvoiceType,
 } from '@javid/core';
 import { invoiceTotal, paidOf, postInvoiceToDB, stockOf, type DB } from '../store';
+import { availableMethods, METHOD_LABELS, printReceipt, receiptFor, type PrintMethod } from '../printer';
+import { attachHardwareScanner } from '../barcode';
 import {
   Badge, Banner, Card, DateInput, Empty, Field, JDate, Modal,
   Money, MoneyInput, NumberInput, Search, Tabs,
@@ -165,8 +167,46 @@ function InvoiceEditor({ db, invoice, onClose, onSave }: {
 }) {
   const [inv, setInv] = useState<Invoice>(invoice);
   const [errors, setErrors] = useState<string[]>([]);
+  const [scanned, setScanned] = useState<string>('');
   const totals = computeInvoice(inv);
   const isSale = inv.type === 'sale' || inv.type === 'quote' || inv.type === 'sale_return';
+
+  // اسکنر سخت‌افزاری: بارکد را می‌خواند و کالا را به فاکتور اضافه می‌کند
+  const invRef = useRef(inv);
+  invRef.current = inv;
+
+  useEffect(() => {
+    return attachHardwareScanner({
+      onScan: (code) => {
+        const p = db.products.find((x) => x.barcode === code && !x.archived);
+        if (!p) {
+          setScanned(`کالایی با بارکد ${code} یافت نشد`);
+          setTimeout(() => setScanned(''), 3000);
+          return;
+        }
+        const cur = invRef.current;
+        const existing = cur.lines.find((l) => l.productId === p.id);
+        if (existing) {
+          setInv({
+            ...cur,
+            lines: cur.lines.map((l) => (l.id === existing.id ? { ...l, qty: l.qty + 1 } : l)),
+          });
+        } else {
+          setInv({
+            ...cur,
+            lines: [...cur.lines, {
+              id: uuid(), productId: p.id, qty: 1, unit: p.unitMain,
+              unitPrice: cur.type === 'purchase' ? p.buyPrice : p.sellPrice,
+              discount: 0,
+              vatRate: cur.isOfficial ? (p.vatRate ?? db.business.defaultVatRate) : 0,
+            }],
+          });
+        }
+        setScanned(`${p.name} افزوده شد`);
+        setTimeout(() => setScanned(''), 2000);
+      },
+    });
+  }, [db.products, db.business.defaultVatRate]);
 
   function addLine(productId?: string) {
     const p = db.products.find((x) => x.id === productId) ?? db.products[0];
@@ -221,6 +261,12 @@ function InvoiceEditor({ db, invoice, onClose, onSave }: {
       {db.products.length === 0 && (
         <Banner tone="warning">ابتدا از بخش «کالاها» حداقل یک کالا تعریف کنید.</Banner>
       )}
+
+      {scanned && <Banner tone={scanned.includes('یافت نشد') ? 'warning' : 'success'}>{scanned}</Banner>}
+
+      <div className="small muted" style={{ marginBottom: 10 }}>
+        📷 بارکدخوان فعال است — کافی است بارکد کالا را اسکن کنید.
+      </div>
 
       <div className="row">
         <Field label="طرف حساب">
@@ -373,6 +419,7 @@ function InvoiceEditor({ db, invoice, onClose, onSave }: {
 // ─────────── نمایش و چاپ فاکتور ───────────
 
 function InvoiceView({ db, invoice, onClose }: { db: DB; invoice: Invoice; onClose: () => void }) {
+  const [thermal, setThermal] = useState(false);
   const t = computeInvoice(invoice);
   const party = db.parties.find((p) => p.id === invoice.partyId);
   const paid = paidOf(db, invoice.id);
@@ -386,11 +433,13 @@ function InvoiceView({ db, invoice, onClose }: { db: DB; invoice: Invoice; onClo
       onClose={onClose}
       footer={
         <>
-          <button className="btn btn-primary" onClick={() => window.print()}>🖨 چاپ</button>
+          <button className="btn btn-primary" onClick={() => window.print()}>🖨 چاپ A4</button>
+          <button className="btn" onClick={() => setThermal(true)}>🧾 چاپ حرارتی</button>
           <button className="btn" onClick={onClose}>بستن</button>
         </>
       }
     >
+      {thermal && <ThermalDialog db={db} invoiceId={invoice.id} onClose={() => setThermal(false)} />}
       <div id="print-area">
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
@@ -477,6 +526,81 @@ function InvoiceView({ db, invoice, onClose }: { db: DB; invoice: Invoice; onClo
           </div>
         )}
       </div>
+    </Modal>
+  );
+}
+
+
+// ─────────── چاپ حرارتی ───────────
+
+function ThermalDialog({ db, invoiceId, onClose }: {
+  db: DB;
+  invoiceId: string;
+  onClose: () => void;
+}) {
+  const methods = availableMethods();
+  const [method, setMethod] = useState<PrintMethod>(methods[0]!);
+  const [width, setWidth] = useState<32 | 48>(48);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const preview = useMemo(() => {
+    try {
+      return receiptFor(db, invoiceId, { width, shapeArabic: false }).preview();
+    } catch {
+      return '';
+    }
+  }, [db, invoiceId, width]);
+
+  async function doPrint() {
+    setBusy(true);
+    setError('');
+    try {
+      await printReceipt(db, invoiceId, method, { width });
+      onClose();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      title="چاپ رسید حرارتی"
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn btn-primary" onClick={() => void doPrint()} disabled={busy}>
+            {busy ? 'در حال ارسال…' : 'چاپ'}
+          </button>
+          <button className="btn" onClick={onClose}>انصراف</button>
+        </>
+      }
+    >
+      {error && <Banner tone="critical">{error}</Banner>}
+
+      <div className="row">
+        <Field label="روش چاپ">
+          <select className="select" value={method} onChange={(e) => setMethod(e.target.value as PrintMethod)}>
+            {methods.map((m) => <option key={m} value={m}>{METHOD_LABELS[m]}</option>)}
+          </select>
+        </Field>
+        <Field label="عرض کاغذ">
+          <select className="select" value={width} onChange={(e) => setWidth(Number(e.target.value) as 32 | 48)}>
+            <option value={48}>۸۰ میلی‌متر</option>
+            <option value={32}>۵۸ میلی‌متر</option>
+          </select>
+        </Field>
+      </div>
+
+      <Field label="پیش‌نمایش">
+        <pre style={{
+          background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 8,
+          padding: 12, fontSize: 11, lineHeight: 1.5, overflowX: 'auto',
+          fontFamily: 'monospace', direction: 'rtl', whiteSpace: 'pre',
+        }}>{preview}</pre>
+      </Field>
     </Modal>
   );
 }
