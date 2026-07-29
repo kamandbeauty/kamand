@@ -146,9 +146,16 @@ export function validateInvoice(invoice: Invoice): string[] {
   if (invoice.discount < 0) errors.push('تخفیف کلی نمی‌تواند منفی باشد');
   if (invoice.shipping < 0) errors.push('هزینهٔ حمل نمی‌تواند منفی باشد');
 
+  /**
+   * ⚠️ طرف حساب برای فروش/خرید نقدی الزامی نیست.
+   *
+   * مغازه‌دار سرِ پیشخوان اسم مشتری عابر را نمی‌داند و نباید مجبور
+   * شود برای هر فروش نقدی یک «شخص» بسازد. فقط نسیه طرف حساب
+   * می‌خواهد، چون طلب باید به نام کسی ثبت شود.
+   */
   const needsParty: InvoiceType[] = ['sale', 'purchase', 'sale_return', 'purchase_return'];
-  if (needsParty.includes(invoice.type) && !invoice.partyId) {
-    errors.push('انتخاب طرف حساب الزامی است');
+  if (needsParty.includes(invoice.type) && !invoice.partyId && !invoice.isCash) {
+    errors.push('برای فاکتور نسیه انتخاب طرف حساب الزامی است');
   }
 
   if (invoice.isOfficial) {

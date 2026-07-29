@@ -24,27 +24,36 @@ import { Analytics } from './pages/Analytics';
 
 type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'tax' | 'reports' | 'ledger' | 'analytics' | 'audit' | 'yearend' | 'account' | 'settings';
 
+/**
+ * منو دو سطحی است: پنج کار روزمرهٔ مغازه همیشه دیده می‌شوند و بقیه
+ * زیر «بیشتر» جمع شده‌اند.
+ *
+ * ⚠️ چرا؟ سیزده آیتم هم‌سطح، مغازه‌دار را وادار می‌کرد هر بار میان
+ * «دفتر و اسناد»، «ممیزی» و «بستن سال» دنبال دکمهٔ فروش بگردد —
+ * حال آنکه ۹۰٪ کارش فقط فاکتور و خزانه است. کارهای سالانه پنهان
+ * نشده‌اند، فقط از سر راه کنار رفته‌اند.
+ */
 const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }[] = [
   {
     group: '',
     items: [{ id: 'dashboard', label: 'داشبورد', icon: '🏠' }],
   },
   {
-    group: 'عملیات',
+    group: 'کارهای روزمره',
     items: [
       { id: 'invoices', label: 'فاکتورها', icon: '🧾' },
-      { id: 'parties', label: 'اشخاص', icon: '👥' },
       { id: 'products', label: 'کالاها', icon: '📦' },
-      { id: 'treasury', label: 'خزانه و چک', icon: '💳' },
-      { id: 'tax', label: 'سامانهٔ مؤدیان', icon: '🏛' },
+      { id: 'parties', label: 'اشخاص', icon: '👥' },
+      { id: 'treasury', label: 'صندوق و چک', icon: '💳' },
+      { id: 'reports', label: 'گزارش‌ها', icon: '📊' },
     ],
   },
   {
-    group: 'تحلیل',
+    group: 'بیشتر',
     items: [
-      { id: 'ledger', label: 'دفتر و اسناد', icon: '📒' },
-      { id: 'reports', label: 'گزارش‌ها', icon: '📊' },
       { id: 'analytics', label: 'تحلیل فروش', icon: '📈' },
+      { id: 'tax', label: 'سامانهٔ مؤدیان', icon: '🏛' },
+      { id: 'ledger', label: 'دفتر و اسناد', icon: '📒' },
       { id: 'audit', label: 'ممیزی و دوره', icon: '📜' },
       { id: 'yearend', label: 'بستن سال', icon: '🔒' },
       { id: 'account', label: 'حساب و همگام‌سازی', icon: '☁️' },
@@ -76,6 +85,7 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [page, setPage] = useState<Page>('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const [dismissed, setDismissed] = useState(false);
 
@@ -189,21 +199,37 @@ export default function App() {
           )}
         </div>
         <nav className="nav">
-          {NAV.map((g, i) => (
-            <div className="nav-group" key={i}>
-              {g.group && <div className="nav-label">{g.group}</div>}
-              {g.items.map((item) => (
-                <button
-                  key={item.id}
-                  className={`nav-item ${page === item.id ? 'active' : ''}`}
-                  onClick={() => { setPage(item.id); setMenuOpen(false); }}
-                >
-                  <span className="ico">{item.icon}</span>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          ))}
+          {NAV.map((g, i) => {
+            const collapsible = g.group === 'بیشتر';
+            const holdsPage = g.items.some((it) => it.id === page);
+            const shown = !collapsible || moreOpen || holdsPage;
+            return (
+              <div className="nav-group" key={i}>
+                {g.group && !collapsible && <div className="nav-label">{g.group}</div>}
+                {collapsible && (
+                  <button
+                    className="nav-item"
+                    onClick={() => setMoreOpen((v) => !v)}
+                    aria-expanded={shown}
+                  >
+                    <span className="ico">{shown ? '▾' : '▸'}</span>
+                    {g.group}
+                  </button>
+                )}
+                {shown && g.items.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`nav-item ${page === item.id ? 'active' : ''}`}
+                    style={collapsible ? { paddingInlineStart: 28 } : undefined}
+                    onClick={() => { setPage(item.id); setMenuOpen(false); }}
+                  >
+                    <span className="ico">{item.icon}</span>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
         </nav>
       </aside>
 

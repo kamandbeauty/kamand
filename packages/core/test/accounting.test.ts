@@ -1,7 +1,10 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { AccountIndex, createChartOfAccounts, SYSTEM_ACCOUNTS as A } from '../dist/accounts.js';
-import { assertBalanced, EntryBuilder, sumCredit, sumDebit, UnbalancedEntryError } from '../dist/ledger.js';
+import {
+  assertBalanced, balanceOf, EntryBuilder, sumCredit, sumDebit, treasuryBalance,
+  UnbalancedEntryError,
+} from '../dist/ledger.js';
 import { computeInvoice, invoiceProfit, nextInvoiceNumber, validateInvoice } from '../dist/invoice.js';
 import { consumeStock, replayProduct } from '../dist/inventory.js';
 import { defaultTreasuryAccount, postInvoice, postTransaction, postOpening } from '../dist/posting.js';
@@ -283,5 +286,85 @@ describe('گزارش‌ها', () => {
     // ۱٬۱۰۰٬۰۰۰ فاکتور منهای ۵۰۰٬۰۰۰ دریافتی
     assert.equal(dc.totalDebt, 600_000);
     assert.equal(dc.debtors[0]?.name, 'مشتری الف');
+  });
+});
+
+// ─────────── فروش نقدی سرِ پیشخوان ───────────
+
+/**
+ * رایج‌ترین کار یک مغازه: مشتری عابر می‌آید، پول نقد می‌دهد، می‌رود.
+ * نه اسمی، نه شماره‌ای، نه طلبی.
+ *
+ * ⚠️ پیش از این، طرف حساب برای هر فروشی اجباری بود و مغازه‌دار
+ * مجبور می‌شد برای هر مشتری عابر یک «شخص» بسازد — یا بدتر، فروش را
+ * به نام یک مشتری بی‌ربط ثبت کند. ضمناً فروش نقدی هم به حساب
+ * دریافتنی می‌نشست و فهرست بدهکاران را پر از طلب خیالی می‌کرد.
+ */
+describe('فروش نقدی مغازه', () => {
+  const BOX: Treasury = {
+    id: 'box', businessId: BIZ, kind: 'cash', name: 'صندوق مغازه', openingBalance: 0,
+  };
+
+  function cashSale(over: Partial<Invoice> = {}): Invoice {
+    return {
+      id: 'inv-cash', businessId: BIZ, type: 'sale', number: 'F-1',
+      partyId: null, date: '2026-06-01', isOfficial: false, isCash: true,
+      lines: [{ id: 'l1', productId: 'p1', qty: 1, unit: 'عدد', unitPrice: 250_000, discount: 0, vatRate: 0 }],
+      discount: 0, shipping: 0, status: 'open',
+      createdAt: '2026-06-01T00:00:00.000Z', updatedAt: '2026-06-01T00:00:00.000Z',
+      ...over,
+    };
+  }
+
+  test('فروش نقدی بدون طرف حساب معتبر است', () => {
+    assert.deepEqual(validateInvoice(cashSale()), []);
+  });
+
+  test('فروش نسیه هنوز طرف حساب می‌خواهد', () => {
+    const errs = validateInvoice(cashSale({ isCash: false }));
+    assert.ok(errs.some((e) => e.includes('نسیه')), `خطای نسیه نیامد: ${errs.join('،')}`);
+  });
+
+  test('پول فروش نقدی به صندوق می‌رود نه حساب دریافتنی', () => {
+    const { index, ctx } = setup();
+    const entry = postInvoice(cashSale(), 150_000, ctx, BOX)!;
+
+    assert.equal(treasuryBalance([entry], BOX.id), 250_000, 'پول باید در صندوق باشد');
+    assert.equal(balanceOf([entry], index.id(A.RECEIVABLE)), 0, 'نباید طلبی ساخته شود');
+    assert.equal(-balanceOf([entry], index.id(A.SALES)), 250_000);
+    assertBalanced(entry.lines);
+  });
+
+  test('فروش نسیه همچنان به حساب دریافتنی می‌نشیند', () => {
+    const { index, ctx } = setup();
+    const entry = postInvoice(
+      cashSale({ isCash: false, partyId: 'cust' }), 150_000, ctx, null,
+    )!;
+    assert.equal(balanceOf([entry], index.id(A.RECEIVABLE)), 250_000);
+    assert.equal(treasuryBalance([entry], BOX.id), 0);
+  });
+
+  test('خرید نقدی از صندوق کم می‌کند', () => {
+    const { index, ctx } = setup();
+    const entry = postInvoice(cashSale({
+      id: 'inv-buy', type: 'purchase', number: 'P-1',
+      lines: [{ id: 'l1', productId: 'p1', qty: 2, unit: 'عدد', unitPrice: 100_000, discount: 0, vatRate: 0 }],
+    }), 0, ctx, BOX)!;
+
+    assert.equal(treasuryBalance([entry], BOX.id), -200_000, 'پول باید از صندوق خارج شود');
+    assert.equal(balanceOf([entry], index.id(A.PAYABLE)), 0, 'نباید بدهی ساخته شود');
+    assert.equal(balanceOf([entry], index.id(A.INVENTORY)), 200_000);
+  });
+
+  test('برگشت از فروش نقدی پول را از صندوق برمی‌گرداند', () => {
+    const { index, ctx } = setup();
+    const entry = postInvoice(cashSale({
+      id: 'inv-ret', type: 'sale_return', number: 'RS-1',
+      lines: [{ id: 'l1', productId: 'p1', qty: 1, unit: 'عدد', unitPrice: 250_000, discount: 0, vatRate: 0, cogs: 150_000 }],
+    }), 150_000, ctx, BOX)!;
+
+    assert.equal(treasuryBalance([entry], BOX.id), -250_000);
+    assert.equal(balanceOf([entry], index.id(A.RECEIVABLE)), 0);
+    assertBalanced(entry.lines);
   });
 });

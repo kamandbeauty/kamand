@@ -1141,5 +1141,72 @@ for (const [k, v] of taxChecks) {
   }
 }
 
+
+// ─────────── روز کاری یک مغازه ───────────
+{
+  const { debtorsAndCreditors, treasuryBalance, incomeStatement } = await import('@javid/core');
+
+  // مغازه‌دار تازه‌کار: فقط یک کالا تعریف کرده، هیچ مشتری‌ای نساخته
+  let sh = createEmptyDB('سوپرمارکت محله');
+  const item = { id: uuid(), businessId: sh.business.id, kind: 'goods' as const,
+    name: 'نوشابه', unitMain: 'عدد', buyPrice: 15_000, sellPrice: 25_000,
+    openingQty: 100, openingCost: 15_000, minQty: 10, vatRate: 0 };
+  sh = upsertProduct(sh, item);
+  sh = postOpeningBalances(sh);
+
+  const box = sh.treasuries.find((t) => t.kind === 'cash')!;
+  const nowS = new Date().toISOString();
+  const todayS = nowS.slice(0, 10);
+
+  // مشتری عابر، پول نقد، بدون اسم — رایج‌ترین فروش مغازه
+  const walkIn = {
+    id: uuid(), businessId: sh.business.id, type: 'sale' as const, number: 'F-0001',
+    partyId: null, date: todayS, isOfficial: false, isCash: true,
+    treasuryId: box.id,
+    lines: [{ id: uuid(), productId: item.id, qty: 2, unit: 'عدد', unitPrice: 25_000, discount: 0, vatRate: 0 }],
+    discount: 0, shipping: 0, status: 'open' as const, createdAt: nowS, updatedAt: nowS,
+  };
+
+  const checks: [string, boolean][] = [];
+  let ok = true;
+  try {
+    sh = postInvoiceToDB(sh, walkIn);
+  } catch {
+    ok = false;
+  }
+  checks.push(['فروش نقدی بدون ساختن مشتری ثبت می‌شود', ok]);
+  checks.push(['پول در صندوق مغازه نشست',
+    treasuryBalance(sh.entries, box.id) === 50_000]);
+  checks.push(['فروش نقدی طلب خیالی نمی‌سازد',
+    debtorsAndCreditors(sh.entries, indexOf(sh), sh.parties).totalDebt === 0]);
+  checks.push(['فاکتور نقدی تسویه‌شده شمرده می‌شود',
+    paymentInfoOf(sh, sh.invoices[sh.invoices.length - 1]!).remaining === 0]);
+  checks.push(['سود فروش درست است',
+    incomeStatement(sh.entries, indexOf(sh), {}).netProfit === 20_000]);
+
+  // حالا یک فروش نسیه به مشتری شناخته‌شده
+  const reg = { id: uuid(), businessId: sh.business.id, kind: 'customer' as const,
+    name: 'حاج آقا', openingBalance: 0 };
+  sh = upsertParty(sh, reg);
+  sh = postInvoiceToDB(sh, {
+    id: uuid(), businessId: sh.business.id, type: 'sale', number: 'F-0002',
+    partyId: reg.id, date: todayS, isOfficial: false, isCash: false,
+    lines: [{ id: uuid(), productId: item.id, qty: 4, unit: 'عدد', unitPrice: 25_000, discount: 0, vatRate: 0 }],
+    discount: 0, shipping: 0, status: 'open', createdAt: nowS, updatedAt: nowS,
+  });
+
+  checks.push(['فروش نسیه به نام مشتری ثبت می‌شود',
+    debtorsAndCreditors(sh.entries, indexOf(sh), sh.parties).totalDebt === 100_000]);
+  checks.push(['نسیه پولی به صندوق اضافه نمی‌کند',
+    treasuryBalance(sh.entries, box.id) === 50_000]);
+  checks.push(['دفتر مغازه سالم است',
+    integrityOf(sh).filter((i) => i.severity === 'error').length === 0]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
 process.exit(failed === 0 ? 0 : 1);

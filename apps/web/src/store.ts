@@ -320,7 +320,13 @@ export function postInvoiceToDB(db: DB, invoice: Invoice): DB {
   };
 
   const ctx = ctxOf(db);
-  const entry = postInvoice(withCosts, cogsTotal, ctx);
+  // فاکتور نقدی به صندوق انتخابی می‌نشیند، وگرنه صندوق اصلی مغازه
+  const cashTreasury = withCosts.isCash
+    ? db.treasuries.find((t) => t.id === withCosts.treasuryId && !t.archived)
+      ?? db.treasuries.find((t) => t.kind === 'cash' && !t.archived)
+      ?? db.treasuries[0] ?? null
+    : null;
+  const entry = postInvoice(withCosts, cogsTotal, ctx, cashTreasury);
 
   const movements = stockMovementsFor(
     withCosts,
@@ -1719,11 +1725,12 @@ export function searchAll(db: DB, query: string, limit = 20): SearchHit[] {
 /** وضعیت پرداخت یک فاکتور — ورودی فیلترها */
 export function paymentInfoOf(db: DB, inv: Invoice): InvoiceStatusInfo {
   const total = invoiceTotal(inv);
-  const paid = paidOf(db, inv.id);
+  // فاکتور نقدی همان لحظه تسویه شده — نباید در فهرست طلب‌ها بماند
+  const paid = inv.isCash ? total : paidOf(db, inv.id);
   return {
     total,
     paid,
     remaining: total - paid,
-    isOverdue: !!inv.dueDate && inv.dueDate < today() && total - paid > 0,
+    isOverdue: !inv.isCash && !!inv.dueDate && inv.dueDate < today() && total - paid > 0,
   };
 }

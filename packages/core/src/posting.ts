@@ -73,6 +73,8 @@ export function postInvoice(
   invoice: Invoice,
   cogsTotal: Rial,
   ctx: PostingContext,
+  /** صندوق مقصد در فاکتور نقدی — اگر ندهند، حساب صندوق پیش‌فرض */
+  cashTreasury?: Treasury | null,
 ): JournalEntry | null {
   if (invoice.type === 'quote' || invoice.status === 'void') return null;
 
@@ -82,9 +84,21 @@ export function postInvoice(
   const b = new EntryBuilder(ctx.businessId, invoice.date, desc, 'invoice', invoice.id);
   const party = invoice.partyId ?? null;
 
+  /**
+   * در فاکتور نقدی، طرف مقابل صندوق است نه حساب دریافتنی/پرداختنی.
+   * برچسب treasuryId لازم است تا موجودی همان صندوق درست دربیاید.
+   */
+  const cash = invoice.isCash === true;
+  const cashAccount = cashTreasury
+    ? ctx.treasuryAccount(cashTreasury)
+    : index.id(A.CASH);
+  const cashTag = { treasuryId: cashTreasury?.id ?? null, partyId: party };
+
   switch (invoice.type) {
     case 'sale': {
-      b.debit(index.id(A.RECEIVABLE), addMoney(t.net, t.vat, t.shipping), { partyId: party });
+      const total = addMoney(t.net, t.vat, t.shipping);
+      if (cash) b.debit(cashAccount, total, cashTag);
+      else b.debit(index.id(A.RECEIVABLE), total, { partyId: party });
       b.credit(index.id(A.SALES), t.net);
       b.credit(index.id(A.VAT_PAYABLE), t.vat);
       b.credit(index.id(A.OTHER_INCOME), t.shipping);
@@ -99,14 +113,19 @@ export function postInvoice(
       b.debit(index.id(A.INVENTORY), t.net);
       b.debit(index.id(A.VAT_CREDIT), t.vat);
       b.debit(index.id(A.SHIPPING_EXPENSE), t.shipping);
-      b.credit(index.id(A.PAYABLE), addMoney(t.net, t.vat, t.shipping), { partyId: party });
+      const owed = addMoney(t.net, t.vat, t.shipping);
+      if (cash) b.credit(cashAccount, owed, cashTag);
+      else b.credit(index.id(A.PAYABLE), owed, { partyId: party });
       break;
     }
 
     case 'sale_return': {
       b.debit(index.id(A.SALES_RETURN), t.net);
       b.debit(index.id(A.VAT_PAYABLE), t.vat);
-      b.credit(index.id(A.RECEIVABLE), addMoney(t.net, t.vat), { partyId: party });
+      // پول برگشت از فروش نقدی از همان صندوق پرداخت می‌شود
+      const refund = addMoney(t.net, t.vat);
+      if (cash) b.credit(cashAccount, refund, cashTag);
+      else b.credit(index.id(A.RECEIVABLE), refund, { partyId: party });
       // کالا با بهای تمام‌شده به انبار برمی‌گردد و بهای فروش معکوس می‌شود
       if (cogsTotal > 0) {
         b.debit(index.id(A.INVENTORY), cogsTotal);
@@ -116,7 +135,9 @@ export function postInvoice(
     }
 
     case 'purchase_return': {
-      b.debit(index.id(A.PAYABLE), addMoney(t.net, t.vat), { partyId: party });
+      const back = addMoney(t.net, t.vat);
+      if (cash) b.debit(cashAccount, back, cashTag);
+      else b.debit(index.id(A.PAYABLE), back, { partyId: party });
       b.credit(index.id(A.PURCHASE_RETURN), t.net);
       b.credit(index.id(A.VAT_CREDIT), t.vat);
       break;

@@ -80,8 +80,12 @@ export function Invoices({ db, setDB, canWrite }: {
       businessId: db.business.id,
       type,
       number,
-      partyId: db.parties[0]?.id ?? null,
+      // ⚠️ قبلاً اولین شخص فهرست خودکار انتخاب می‌شد — یعنی فروش به
+      // اشتباه به نام کسی ثبت می‌شد که مغازه‌دار انتخابش نکرده بود.
+      partyId: null,
       date: new Date().toISOString().slice(0, 10),
+      // فروش و خرید پیش‌فرض نقدی است؛ حالت رایج مغازه
+      isCash: type === 'sale' || type === 'purchase',
       isOfficial: false,
       lines: [],
       discount: 0,
@@ -416,23 +420,65 @@ function InvoiceEditor({ db, invoice, onClose, onSave }: {
         📷 بارکدخوان فعال است — کافی است بارکد کالا را اسکن کنید.
       </div>
 
+      {/* نقدی یا نسیه — نخستین تصمیم هر فروش سرِ پیشخوان */}
+      {(inv.type === 'sale' || inv.type === 'purchase') && (
+        <div className="row" style={{ marginBottom: 12 }}>
+          <Field label="نحوهٔ پرداخت">
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className={`btn ${inv.isCash !== false ? 'btn-primary' : ''}`}
+                onClick={() => setInv({ ...inv, isCash: true })}
+              >
+                💵 نقدی
+              </button>
+              <button
+                type="button"
+                className={`btn ${inv.isCash === false ? 'btn-primary' : ''}`}
+                onClick={() => setInv({ ...inv, isCash: false })}
+              >
+                📝 نسیه
+              </button>
+            </div>
+          </Field>
+          {inv.isCash !== false && db.treasuries.filter((t) => !t.archived).length > 1 && (
+            <Field label="به صندوق">
+              <select
+                className="select"
+                value={inv.treasuryId ?? ''}
+                onChange={(e) => setInv({ ...inv, treasuryId: e.target.value || null })}
+              >
+                <option value="">صندوق اصلی</option>
+                {db.treasuries.filter((t) => !t.archived).map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </div>
+      )}
+
       <div className="row">
-        <Field label="طرف حساب">
+        <Field label={inv.isCash !== false ? 'طرف حساب (اختیاری)' : 'طرف حساب'}>
           <select
             className="select"
             value={inv.partyId ?? ''}
             onChange={(e) => setInv({ ...inv, partyId: e.target.value || null })}
           >
-            <option value="">— انتخاب کنید —</option>
+            <option value="">
+              {inv.isCash !== false ? '— مشتری عابر —' : '— انتخاب کنید —'}
+            </option>
             {db.parties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </Field>
         <Field label="تاریخ">
           <DateInput value={inv.date} onChange={(d) => setInv({ ...inv, date: d })} />
         </Field>
-        <Field label="سررسید">
-          <DateInput value={inv.dueDate ?? ''} onChange={(d) => setInv({ ...inv, dueDate: d })} />
-        </Field>
+        {inv.isCash === false && (
+          <Field label="سررسید">
+            <DateInput value={inv.dueDate ?? ''} onChange={(d) => setInv({ ...inv, dueDate: d })} />
+          </Field>
+        )}
       </div>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
