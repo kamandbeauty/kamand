@@ -1,15 +1,20 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   dashboard, debtorsAndCreditors, fiscalYearRange, formatJalali,
   incomeStatement, stockByProduct, computeInvoice, INVOICE_TYPE_LABELS,
   toPersianDigits,
 } from '@javid/core';
-import { indexOf, type DB } from '../store';
-import { Badge, Card, JDate, Money, Num, Stat, Empty } from '../ui';
+import {
+  dismissSetup, healthOf, indexOf, isSetupDismissed, setupOf, type DB,
+} from '../store';
+import { Badge, Banner, Card, JDate, Money, Num, Stat, Empty } from '../ui';
 
 const toFa = (n: number) => toPersianDigits(n);
 
 export function Dashboard({ db, onNav }: { db: DB; onNav: (p: string) => void }) {
+  const health = useMemo(() => healthOf(db), [db]);
+  const setup = useMemo(() => setupOf(db), [db]);
+  const [setupHidden, setSetupHidden] = React.useState(() => isSetupDismissed(db.business.id));
   const index = indexOf(db);
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -54,6 +59,85 @@ export function Dashboard({ db, onNav }: { db: DB; onNav: (p: string) => void })
 
   return (
     <div style={{ display: 'grid', gap: 18 }}>
+      {/* راهنمای روز اول — تا وقتی مراحل تمام نشده */}
+      {!setup.finished && !setupHidden && (
+        <Card
+          title={`راه‌اندازی کسب‌وکار — ${toFa(setup.completed)} از ${toFa(setup.total)}`}
+          action={
+            <button className="btn btn-sm btn-ghost" onClick={() => {
+              dismissSetup(db.business.id);
+              setSetupHidden(true);
+            }}>بستن راهنما</button>
+          }
+        >
+          <div style={{
+            height: 6, borderRadius: 3, background: 'var(--line)',
+            marginBottom: 14, overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%', width: `${setup.percent}%`,
+              background: 'var(--teal-500)', transition: 'width .3s',
+            }} />
+          </div>
+          <table>
+            <tbody>
+              {setup.steps.map((st) => (
+                <tr key={st.id}>
+                  <td style={{ width: 32 }}>
+                    {st.done
+                      ? <span style={{ color: 'var(--green)' }}>✓</span>
+                      : <span className="muted">○</span>}
+                  </td>
+                  <td>
+                    <div className={st.done ? 'muted' : 'strong'}>{st.title}</div>
+                    {!st.done && <div className="small muted">{st.detail}</div>}
+                  </td>
+                  <td className="end">
+                    {!st.done && (
+                      <button className="btn btn-sm" onClick={() => onNav(st.page)}>
+                        {st.action}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
+      {/* هشدارهای کسب‌وکار */}
+      {health.alerts.length > 0 && (
+        <Card
+          title="نیازمند رسیدگی"
+          action={
+            <Badge tone={health.critical > 0 ? 'red' : 'amber'}>{health.message}</Badge>
+          }
+        >
+          <div style={{ display: 'grid', gap: 10 }}>
+            {health.alerts.map((a) => (
+              <Banner
+                key={a.kind}
+                tone={a.severity === 'critical' ? 'critical' : a.severity === 'warning' ? 'warning' : 'info'}
+                title={a.title}
+                action={
+                  a.page ? (
+                    <button className="btn btn-sm" onClick={() => onNav(a.page!)}>
+                      {a.action ?? 'مشاهده'}
+                    </button>
+                  ) : undefined
+                }
+              >
+                {a.detail}
+                {a.amount !== undefined && a.amount > 0 && (
+                  <> <strong><Money value={a.amount} /></strong></>
+                )}
+              </Banner>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-4">
         <Stat label="فروش امروز" value={<Money value={d.todaySales} />} sub={formatJalali(now, 'long')} />
         <Stat label="فروش این ماه" value={<Money value={d.monthSales} />} />

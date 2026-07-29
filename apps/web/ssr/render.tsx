@@ -14,7 +14,7 @@ import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
 import { Analytics } from '../src/pages/Analytics';
-import { activeTransactions, voidTransaction, postStockCount, stockCountPreview, unpostedOpeningStock, postOpeningBalances as _pob, canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { healthOf, setupOf, activeTransactions, voidTransaction, postStockCount, stockCountPreview, unpostedOpeningStock, postOpeningBalances as _pob, canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -872,6 +872,68 @@ for (const [k, v] of taxChecks) {
       Array.isArray(staleProducts(db.invoices, db.products,
         stockByProduct(db.movements, 'fifo', { allowNegative: true }), { minDays: 0 }))],
   ];
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
+// مرکز هشدار — همان تله‌هایی که در دورهای قبل پیدا شدند
+{
+  let dh = createEmptyDB('مغازهٔ تازه');
+  const hp = uuid(), hprod = uuid();
+  dh = upsertParty(dh, { id: hp, businessId: dh.business.id, kind: 'customer',
+    name: 'بدهکار قبلی', openingBalance: 5_000_000 });
+  dh = upsertProduct(dh, { id: hprod, businessId: dh.business.id, kind: 'goods', name: 'کالا',
+    unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000,
+    openingQty: 100, openingCost: 100_000, minQty: 200 });
+
+  const th = new Date().toISOString(), dhd = th.slice(0, 10);
+  dh = postInvoiceToDB(dh, { id: uuid(), businessId: dh.business.id, type: 'sale', number: 'F-H',
+    partyId: hp, date: dhd, isOfficial: false,
+    lines: [{ id: uuid(), productId: hprod, qty: 10, unit: 'ع', unitPrice: 300_000, discount: 0, vatRate: 0 }],
+    discount: 0, shipping: 0, status: 'open', createdAt: th, updatedAt: th });
+
+  const pastD = new Date(); pastD.setDate(pastD.getDate() - 10);
+  dh = registerCheque(dh, { id: uuid(), businessId: dh.business.id, direction: 'received',
+    number: '99', bankName: 'ملت', amount: 2_000_000,
+    dueDate: pastD.toISOString().slice(0, 10), partyId: hp, status: 'pending', createdAt: th });
+
+  const h = healthOf(dh);
+  const kinds = h.alerts.map((a) => a.kind);
+
+  const checks: [string, boolean][] = [
+    ['مانده اول دورهٔ ثبت‌نشده هشدار می‌دهد', kinds.includes('unposted_opening')],
+    ['موجودی اولیهٔ بدون سند هشدار می‌دهد', kinds.includes('unposted_inventory')],
+    ['چک سررسید گذشته هشدار می‌دهد', kinds.includes('overdue_cheque')],
+    ['کالای رو به اتمام هشدار می‌دهد', kinds.includes('low_stock')],
+    ['هشدار بحرانی وجود دارد', h.critical > 0],
+    ['کسب‌وکار آمادهٔ کار نیست', h.ready === false],
+    ['هر هشدار مقصد دارد', h.alerts.every((a) => !!a.page)],
+    ['بحرانی‌ها اول فهرست‌اند', h.alerts[0]?.severity === 'critical'],
+  ];
+
+  // پس از رفع، هشدارها برداشته می‌شوند
+  const fixed = postOpeningBalances(dh);
+  const h2 = healthOf(fixed);
+  checks.push(['پس از ثبت افتتاحیه، هشدار مانده برداشته می‌شود',
+    !h2.alerts.some((a) => a.kind === 'unposted_opening')]);
+  checks.push(['پس از ثبت افتتاحیه، هشدار موجودی برداشته می‌شود',
+    !h2.alerts.some((a) => a.kind === 'unposted_inventory')]);
+
+  // کسب‌وکار سالم
+  const clean = createEmptyDB('تمیز');
+  const hc = healthOf(clean);
+  checks.push(['کسب‌وکار خالی هشدار بحرانی ندارد', hc.critical === 0]);
+
+  // راهنمای راه‌اندازی
+  const sp = setupOf(dh);
+  checks.push(['راهنما گام‌های انجام‌شده را تشخیص می‌دهد', sp.completed >= 3]);
+  checks.push(['راهنما هنوز تمام نشده', sp.finished === false]);
+
+  const spClean = setupOf(clean);
+  checks.push(['کسب‌وکار خالی گام‌های کمتری دارد', spClean.completed < sp.completed]);
+
   for (const [k, v] of checks) {
     console.log(v ? `✅ ${k}` : `❌ ${k}`);
     if (!v) failed++;

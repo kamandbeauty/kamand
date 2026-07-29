@@ -2,12 +2,14 @@ import {
   AccountIndex, createChartOfAccounts, defaultTreasuryAccount, LamportClock,
   MemorySyncQueue, postInvoice, postTransaction, stockMovementsFor,
   replayProduct, uuid, computeInvoice, consumeStock, invoiceLineUnitCost, paymentStatus,
-  stockByProduct, type StockMovement as _SM,
+  stockByProduct, balanceOf, type StockMovement as _SM,
   buildElectronicInvoice, nextSerial, validateForTaxSystem,
   buildCorrection, historyOf, INVOICE_SUBJECTS, SUBJECT_LABELS,
   type InvoiceSubject,
   assertNotLocked, createAuditLog, hasPermission, isDateLocked,
   checkIntegrity, closeFiscalYear, fiscalYearBounds, previewClosing, currentFiscalYear,
+  alerts as makeAlert, summarizeHealth, setupProgress, subscriptionNotice,
+  type Alert, type HealthSummary, type SetupProgress,
   postOpening, SYSTEM_ACCOUNTS, EntryBuilder, assertBalanced,
   createReturn, quoteToSale, nextInvoiceNumber, postCheque,
   type ChequeStatus,
@@ -1502,4 +1504,120 @@ export function voidTransaction(db: DB, txId: ID): DB {
 /** تراکنش‌های فعال (حذف‌نشده) */
 export function activeTransactions(db: DB): Transaction[] {
   return db.transactions.filter((t) => !t.deletedAt);
+}
+
+
+// ─────────── مرکز هشدار ───────────
+
+/**
+ * جمع‌آوری همهٔ هشدارهای کسب‌وکار در یک جا.
+ *
+ * ⚠️ چرا لازم بود: در طول توسعه چند محافظ ساختیم — تشخیص مانده
+ * اول دورهٔ ثبت‌نشده، موجودی اولیهٔ بدون سند، چک سررسید گذشته،
+ * خطای دفتر. ولی هرکدام فقط در صفحهٔ خودش دیده می‌شد و کاربر
+ * باید تک‌تک صفحات را می‌گشت تا بفهمد مشکلی هست.
+ */
+export function healthOf(db: DB): HealthSummary {
+  const out: Alert[] = [];
+  const todayStr = today();
+
+  // مانده اول دوره
+  const pendingOpening = pendingOpeningBalances(db);
+  if (!hasOpeningEntry(db) && pendingOpening.total > 0) {
+    out.push(makeAlert.unpostedOpening(pendingOpening.total));
+  }
+
+  // موجودی اولیهٔ بدون سند
+  const unposted = unpostedOpeningStock(db);
+  if (unposted.length > 0) {
+    out.push(makeAlert.unpostedInventory(
+      unposted.length,
+      unposted.reduce((s2, x) => s2 + x.value, 0),
+    ));
+  }
+
+  // ارزش منفی موجودی
+  const invValue = balanceOf(db.entries, indexOf(db).id(SYSTEM_ACCOUNTS.INVENTORY));
+  if (invValue < 0 && unposted.length === 0) {
+    out.push(makeAlert.negativeInventory(invValue));
+  }
+
+  // خطای دفتر
+  const errors = integrityOf(db).filter((i) => i.severity === 'error');
+  if (errors.length > 0) out.push(makeAlert.ledgerError(errors.length));
+
+  // چک‌ها
+  const chq = chequeAlerts(db);
+  if (chq.overdue.length > 0) {
+    out.push(makeAlert.overdueCheque(
+      chq.overdue.length,
+      chq.overdue.reduce((s2, c) => s2 + c.amount, 0),
+    ));
+  }
+  if (chq.dueSoon.length > 0) {
+    out.push(makeAlert.dueSoonCheque(
+      chq.dueSoon.length,
+      chq.dueSoon.reduce((s2, c) => s2 + c.amount, 0),
+    ));
+  }
+
+  // کالای رو به اتمام
+  const stock = stockByProduct(db.movements, db.business.costingMethod, { allowNegative: true });
+  const low = db.products.filter((p) => {
+    if (p.kind !== 'goods' || p.archived || p.minQty === undefined) return false;
+    return (stock.get(p.id)?.qty ?? 0) <= p.minQty;
+  });
+  if (low.length > 0) out.push(makeAlert.lowStock(low.length));
+
+  // فاکتور سررسید گذشته
+  const overdueInvoices = db.invoices.filter((i) => {
+    if (i.deletedAt || i.type === 'quote' || !i.dueDate) return false;
+    if (i.dueDate >= todayStr) return false;
+    return invoiceTotal(i) - paidOf(db, i.id) > 0;
+  });
+  if (overdueInvoices.length > 0) {
+    out.push(makeAlert.overdueInvoice(
+      overdueInvoices.length,
+      overdueInvoices.reduce((s2, i) => s2 + (invoiceTotal(i) - paidOf(db, i.id)), 0),
+    ));
+  }
+
+  // صورتحساب ارسال‌نشده
+  const unsent = db.invoices.filter(
+    (i) => !i.deletedAt && i.isOfficial && i.type === 'sale' && !submissionFor(db, i.id),
+  );
+  if (unsent.length > 0 && db.taxProfile.memoryId) {
+    out.push(makeAlert.unsentTaxInvoice(unsent.length));
+  }
+
+  // اشتراک
+  const notice = subscriptionNotice(db.subscription, new Date());
+  if (notice.level === 'warning' || notice.level === 'critical') {
+    out.push(makeAlert.subscriptionExpiring(Math.max(0, notice.daysRemaining)));
+  }
+
+  return summarizeHealth(out);
+}
+
+/** پیشرفت راه‌اندازی اولیه */
+export function setupOf(db: DB): SetupProgress {
+  const b = db.business;
+  return setupProgress({
+    hasBusinessInfo: !!(b.address?.trim() || b.phone?.trim()),
+    hasProducts: db.products.some((p) => !p.archived),
+    hasParties: db.parties.some((p) => !p.archived),
+    hasOpeningEntry: hasOpeningEntry(db),
+    hasInvoice: db.invoices.some((i) => !i.deletedAt && i.type !== 'quote'),
+    needsOpening: pendingOpeningBalances(db).total > 0 || unpostedOpeningStock(db).length > 0,
+  });
+}
+
+const SETUP_KEY = 'javid:setupDismissed';
+
+export function isSetupDismissed(businessId: ID): boolean {
+  return storage.getItemSync(`${SETUP_KEY}:${businessId}`) === '1';
+}
+
+export function dismissSetup(businessId: ID): void {
+  storage.setItemSync(`${SETUP_KEY}:${businessId}`, '1');
 }
