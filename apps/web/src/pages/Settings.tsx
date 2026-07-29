@@ -3,7 +3,7 @@ import {
   createBackup, parseBackup, serializeBackup, subscriptionNotice, toExcelXML,
   toPersianDigits, type Business, type CostingMethod,
 } from '@javid/core';
-import { clearDB, queue, type DB } from '../store';
+import { clearDB, flushDB, queue, STORAGE_LABELS, storageEstimate, storageKind, type DB } from '../store';
 import { Badge, Banner, Card, Field, JDate, Modal, download } from '../ui';
 
 export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
@@ -11,6 +11,9 @@ export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const notice = subscriptionNotice(db.subscription, new Date());
+  const [quota, setQuota] = useState<{ usage: number; quota: number } | null>(null);
+
+  React.useEffect(() => { void storageEstimate().then(setQuota); }, []);
 
   function save() {
     setDB({ ...db, business: biz });
@@ -19,6 +22,7 @@ export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
   }
 
   function exportAll() {
+    void flushDB();
     const backup = createBackup(db.business, {
       parties: db.parties,
       products: db.products,
@@ -227,8 +231,16 @@ export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
             </tr>
             <tr>
               <td>محل ذخیره</td>
-              <td className="end small muted">حافظهٔ محلی این دستگاه</td>
+              <td className="end small muted">{STORAGE_LABELS[storageKind()]}</td>
             </tr>
+            {quota && (
+              <tr>
+                <td>فضای مصرف‌شده</td>
+                <td className="end small num">
+                  {(quota.usage / 1048576).toFixed(1)} از {(quota.quota / 1048576).toFixed(0)} مگابایت
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         <div className="small muted" style={{ marginTop: 10 }}>
@@ -252,7 +264,7 @@ export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
             <>
               <button
                 className="btn btn-danger"
-                onClick={() => { clearDB(); location.reload(); }}
+                onClick={() => { void clearDB().then(() => location.reload()); }}
               >بله، پاک کن</button>
               <button className="btn" onClick={() => setConfirmReset(false)}>انصراف</button>
             </>

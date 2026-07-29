@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { can, subscriptionNotice, syncStatus } from '@javid/core';
-import { createEmptyDB, loadDB, queue, saveDB, type DB } from './store';
+import { createEmptyDB, flushDB, initStorage, loadDB, queue, saveDB, type DB } from './store';
 import { Banner } from './ui';
 import { Dashboard } from './pages/Dashboard';
 import { Invoices } from './pages/Invoices';
@@ -56,7 +56,27 @@ export default function App() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    setDBState(loadDB() ?? createEmptyDB());
+    let cancelled = false;
+    (async () => {
+      await initStorage();
+      const existing = await loadDB();
+      if (!cancelled) setDBState(existing ?? createEmptyDB());
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // نوشتن معلق پیش از بستن صفحه از دست نرود
+  useEffect(() => {
+    const flush = () => { void flushDB(); };
+    window.addEventListener('beforeunload', flush);
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flush();
+    });
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      window.removeEventListener('pagehide', flush);
+    };
   }, []);
 
   useEffect(() => {

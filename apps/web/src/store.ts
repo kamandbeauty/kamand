@@ -9,45 +9,17 @@ import {
   type TaxProfile, type TaxSubmission, type InvoiceSubjectType,
 } from '@javid/core';
 
+import * as storage from './storage.js';
+
+export { initStorage, storageKind, STORAGE_LABELS, storageEstimate } from './storage.js';
+
 /**
  * لایهٔ داده — آفلاین-اول.
  * همهٔ نوشتن‌ها ابتدا محلی ذخیره می‌شوند، سپس در صف همگام‌سازی می‌روند.
- * localStorage فعلاً به‌جای IndexedDB/SQLite است؛ رابط یکسان می‌ماند.
+ * ذخیره‌سازی روی IndexedDB با سقوط تدریجی به localStorage و حافظهٔ موقت.
  */
 
 const KEY = 'javid:db:v1';
-
-/**
- * دسترسی امن به حافظهٔ محلی.
- * در محیط‌هایی مثل رندر سمت سرور یا حالت خصوصی مرورگر، localStorage
- * ممکن است نباشد یا خطا بدهد؛ در آن صورت به حافظهٔ موقت برمی‌گردیم
- * تا برنامه هرگز به‌خاطر ذخیره‌سازی از کار نیفتد.
- */
-const memoryStore = new Map<string, string>();
-
-const storage = {
-  get(key: string): string | null {
-    try {
-      if (typeof localStorage !== 'undefined') return localStorage.getItem(key);
-    } catch { /* حالت خصوصی یا محدودیت دسترسی */ }
-    return memoryStore.get(key) ?? null;
-  },
-  set(key: string, value: string): void {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(key, value);
-        return;
-      }
-    } catch { /* سهمیهٔ پر یا دسترسی مسدود */ }
-    memoryStore.set(key, value);
-  },
-  remove(key: string): void {
-    try {
-      if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
-    } catch { /* نادیده */ }
-    memoryStore.delete(key);
-  },
-};
 
 export interface DB {
   business: Business;
@@ -112,9 +84,9 @@ export function createEmptyDB(name = 'کسب‌وکار من'): DB {
   };
 }
 
-export function loadDB(): DB | null {
+export async function loadDB(): Promise<DB | null> {
   try {
-    const raw = storage.get(KEY);
+    const raw = await storage.getItem(KEY);
     if (!raw) return null;
     return migrate(JSON.parse(raw) as DB);
   } catch {
@@ -138,16 +110,36 @@ export function migrate(db: DB): DB {
   return out;
 }
 
+/**
+ * ذخیره‌سازی با فشرده‌سازی نوشتن‌های پیاپی.
+ * تایپ سریع کاربر نباید ده‌ها نوشتن پشت‌سرهم روی دیسک ایجاد کند.
+ */
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingSave: DB | null = null;
+
 export function saveDB(db: DB): void {
+  pendingSave = db;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { void flushDB(); }, 250);
+}
+
+/** نوشتن فوری — پیش از بستن صفحه یا خروجی گرفتن */
+export async function flushDB(): Promise<void> {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  const db = pendingSave;
+  if (!db) return;
+  pendingSave = null;
   try {
-    storage.set(KEY, JSON.stringify(db));
+    await storage.setItem(KEY, JSON.stringify(db));
   } catch (e) {
     console.error('ذخیرهٔ محلی ناموفق بود', e);
   }
 }
 
-export function clearDB(): void {
-  storage.remove(KEY);
+export async function clearDB(): Promise<void> {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  pendingSave = null;
+  await storage.removeItem(KEY);
 }
 
 // ─────────── همگام‌سازی ───────────
@@ -165,10 +157,10 @@ function track(entity: string, entityId: ID, payload: unknown, op: 'put' | 'dele
 }
 
 export function deviceId(): string {
-  let id = storage.get('javid:device');
+  let id = storage.getItemSync('javid:device');
   if (!id) {
     id = uuid();
-    storage.set('javid:device', id);
+    storage.setItemSync('javid:device', id);
   }
   return id;
 }
