@@ -6,8 +6,17 @@ import {
 import { clearDB, flushDB, queue, STORAGE_LABELS, storageEstimate, storageKind, type DB } from '../store';
 import { Badge, Banner, Card, Field, JDate, Modal, download } from '../ui';
 import { canInstall, installHint, isStandalone, onInstallAvailable, promptInstall } from '../pwa';
+import {
+  createWorkspace, deleteWorkspace, listWorkspaces, renameWorkspace,
+  type WorkspaceEntry,
+} from '../workspaces';
 
-export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
+export function Settings({ db, setDB, onWorkspacesChanged, onSwitch }: {
+  db: DB;
+  setDB: (d: DB) => void;
+  onWorkspacesChanged?: () => void | Promise<void>;
+  onSwitch?: (id: string) => void | Promise<void>;
+}) {
   const [biz, setBiz] = useState<Business>(db.business);
   const [saved, setSaved] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -227,6 +236,12 @@ export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
         </table>
       </Card>
 
+      <WorkspacesCard
+        db={db}
+        onChanged={onWorkspacesChanged}
+        onSwitch={onSwitch}
+      />
+
       <Card title="نصب برنامه">
         {standalone ? (
           <Banner tone="success">
@@ -310,5 +325,187 @@ export function Settings({ db, setDB }: { db: DB; setDB: (d: DB) => void }) {
         </Modal>
       )}
     </div>
+  );
+}
+
+
+// ─────────── مدیریت کسب‌وکارها ───────────
+
+/**
+ * چند کسب‌وکاره.
+ *
+ * هر کسب‌وکار پایگاه دادهٔ جداگانه دارد؛ هیچ داده‌ای بین آن‌ها
+ * مشترک نیست. این ساده‌ترین تضمین نبود نشتی است.
+ */
+function WorkspacesCard({ db, onChanged, onSwitch }: {
+  db: DB;
+  onChanged?: () => void | Promise<void>;
+  onSwitch?: (id: string) => void | Promise<void>;
+}) {
+  const [list, setList] = React.useState<WorkspaceEntry[]>([]);
+  const [creating, setCreating] = React.useState(false);
+  const [name, setName] = React.useState('');
+  const [renaming, setRenaming] = React.useState<WorkspaceEntry | null>(null);
+  const [removing, setRemoving] = React.useState<WorkspaceEntry | null>(null);
+  const [error, setError] = React.useState('');
+
+  const reload = React.useCallback(async () => {
+    setList(await listWorkspaces());
+    await onChanged?.();
+  }, [onChanged]);
+
+  React.useEffect(() => { void reload(); }, [reload]);
+
+  async function add() {
+    try {
+      const { entry } = await createWorkspace(name);
+      setName('');
+      setCreating(false);
+      setError('');
+      await reload();
+      await onSwitch?.(entry.id);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function rename(entry: WorkspaceEntry, next: string) {
+    try {
+      await renameWorkspace(entry.id, next);
+      setRenaming(null);
+      setError('');
+      await reload();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function remove(entry: WorkspaceEntry) {
+    try {
+      const { backup } = await deleteWorkspace(entry.id);
+      // پیش از حذف، پشتیبان به کاربر داده می‌شود
+      download(`javid-${entry.name}-backup.json`, backup, 'application/json');
+      setRemoving(null);
+      setError('');
+      await reload();
+      const rest = await listWorkspaces();
+      if (rest[0]) await onSwitch?.(rest[0].id);
+    } catch (e) {
+      setError((e as Error).message);
+      setRemoving(null);
+    }
+  }
+
+  return (
+    <Card
+      title="کسب‌وکارها"
+      action={<button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>+ کسب‌وکار جدید</button>}
+    >
+      {error && <Banner tone="critical">{error}</Banner>}
+
+      <p className="small muted" style={{ marginBottom: 12 }}>
+        هر کسب‌وکار اطلاعات کاملاً جدا دارد. برای جابه‌جایی از فهرست
+        بالای نوار کناری استفاده کنید.
+      </p>
+
+      <table>
+        <tbody>
+          {list.map((w) => (
+            <tr key={w.id}>
+              <td>
+                {w.name}
+                {w.id === db.business.id && <> <Badge tone="green">فعال</Badge></>}
+              </td>
+              <td className="end no-print">
+                {w.id !== db.business.id && (
+                  <button className="btn btn-sm btn-ghost" onClick={() => { void onSwitch?.(w.id); }}>
+                    باز کردن
+                  </button>
+                )}
+                <button className="btn btn-sm btn-ghost" onClick={() => setRenaming(w)}>تغییر نام</button>
+                {list.length > 1 && (
+                  <button className="btn btn-sm btn-ghost" onClick={() => setRemoving(w)}>حذف</button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {creating && (
+        <Modal
+          title="کسب‌وکار جدید"
+          onClose={() => { setCreating(false); setError(''); }}
+          footer={
+            <>
+              <button className="btn btn-primary" onClick={() => void add()}>ایجاد</button>
+              <button className="btn" onClick={() => { setCreating(false); setError(''); }}>انصراف</button>
+            </>
+          }
+        >
+          <Field label="نام کسب‌وکار">
+            <input
+              className="input"
+              value={name}
+              onChange={(e) => { setName(e.target.value); setError(''); }}
+              placeholder="مثلاً: شعبهٔ دوم"
+              autoFocus
+            />
+          </Field>
+        </Modal>
+      )}
+
+      {renaming && (
+        <RenameDialog
+          entry={renaming}
+          onClose={() => setRenaming(null)}
+          onSave={(n) => void rename(renaming, n)}
+        />
+      )}
+
+      {removing && (
+        <Modal
+          title={`حذف ${removing.name}`}
+          onClose={() => setRemoving(null)}
+          footer={
+            <>
+              <button className="btn btn-danger" onClick={() => void remove(removing)}>
+                دریافت پشتیبان و حذف
+              </button>
+              <button className="btn" onClick={() => setRemoving(null)}>انصراف</button>
+            </>
+          }
+        >
+          <Banner tone="critical" title="این عمل قابل بازگشت نیست">
+            همهٔ اطلاعات «{removing.name}» از این دستگاه پاک می‌شود.
+            پیش از حذف، یک فایل پشتیبان کامل برای شما دانلود می‌گردد.
+          </Banner>
+        </Modal>
+      )}
+    </Card>
+  );
+}
+
+function RenameDialog({ entry, onClose, onSave }: {
+  entry: WorkspaceEntry;
+  onClose: () => void;
+  onSave: (name: string) => void;
+}) {
+  const [value, setValue] = React.useState(entry.name);
+  return (
+    <Modal
+      title="تغییر نام کسب‌وکار"
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn btn-primary" onClick={() => onSave(value)}>ذخیره</button>
+          <button className="btn" onClick={onClose}>انصراف</button>
+        </>
+      }
+    >
+      <Field label="نام جدید">
+        <input className="input" value={value} onChange={(e) => setValue(e.target.value)} autoFocus />
+      </Field>
+    </Modal>
   );
 }

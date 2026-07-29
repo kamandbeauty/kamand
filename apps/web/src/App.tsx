@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { can, subscriptionNotice, syncStatus } from '@javid/core';
-import { createEmptyDB, flushDB, initStorage, loadDB, queue, saveDB, type DB } from './store';
+import { flushDB, initStorage, queue, type DB } from './store';
+import {
+  listWorkspaces, openActiveWorkspace, saveWorkspace, switchWorkspace,
+  type WorkspaceEntry,
+} from './workspaces';
 import { startAutoSync } from './syncEngine';
 import { Banner } from './ui';
 import { Dashboard } from './pages/Dashboard';
@@ -63,6 +67,8 @@ const TITLES: Record<Page, string> = {
 
 export default function App() {
   const [db, setDBState] = useState<DB | null>(null);
+  const [workspaces, setWorkspaces] = useState<WorkspaceEntry[]>([]);
+  const [switching, setSwitching] = useState(false);
   const [page, setPage] = useState<Page>('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
@@ -72,11 +78,35 @@ export default function App() {
     let cancelled = false;
     (async () => {
       await initStorage();
-      const existing = await loadDB();
-      if (!cancelled) setDBState(existing ?? createEmptyDB());
+      const { db: opened } = await openActiveWorkspace();
+      const list = await listWorkspaces();
+      if (!cancelled) {
+        setDBState(opened);
+        setWorkspaces(list);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
+
+  /** جابه‌جایی بین کسب‌وکارها */
+  async function changeWorkspace(id: string) {
+    if (!db || id === db.business.id) return;
+    setSwitching(true);
+    try {
+      await flushDB();
+      const next = await switchWorkspace(id);
+      if (next) {
+        setDBState(next);
+        setPage('dashboard');
+      }
+    } finally {
+      setSwitching(false);
+    }
+  }
+
+  async function refreshWorkspaces() {
+    setWorkspaces(await listWorkspaces());
+  }
 
   // همگام‌سازی خودکار — فقط اگر کاربر آن را پیکربندی کرده باشد
   const dbRef = React.useRef<DB | null>(null);
@@ -85,7 +115,7 @@ export default function App() {
   useEffect(() => {
     return startAutoSync({
       getDB: () => dbRef.current,
-      applyDB: (next) => { setDBState(next); saveDB(next); },
+      applyDB: (next) => { setDBState(next); void saveWorkspace(next); },
     });
   }, []);
 
@@ -116,7 +146,7 @@ export default function App() {
 
   function setDB(next: DB) {
     setDBState(next);
-    saveDB(next);
+    void saveWorkspace(next);
   }
 
   if (!db) {
@@ -135,7 +165,22 @@ export default function App() {
       <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="brand">
           <h1>جاوید</h1>
-          <span>{db.business.name}</span>
+          {workspaces.length > 1 ? (
+            <select
+              className="select"
+              style={{ marginTop: 6, fontSize: 12, padding: '5px 8px' }}
+              value={db.business.id}
+              disabled={switching}
+              onChange={(e) => { void changeWorkspace(e.target.value); }}
+              aria-label="انتخاب کسب‌وکار"
+            >
+              {workspaces.map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          ) : (
+            <span>{db.business.name}</span>
+          )}
         </div>
         <nav className="nav">
           {NAV.map((g, i) => (
@@ -205,7 +250,9 @@ export default function App() {
           {page === 'audit' && <Audit db={db} setDB={setDB} />}
           {page === 'yearend' && <YearEnd db={db} setDB={setDB} />}
           {page === 'account' && <Account db={db} setDB={setDB} />}
-          {page === 'settings' && <Settings db={db} setDB={setDB} />}
+          {page === 'settings' && (
+            <Settings db={db} setDB={setDB} onWorkspacesChanged={refreshWorkspaces} onSwitch={changeWorkspace} />
+          )}
         </main>
       </div>
     </div>

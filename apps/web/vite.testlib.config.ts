@@ -12,6 +12,7 @@ export default defineConfig({
         storage: 'src/storage.ts',
         barcode: 'src/barcode.ts',
         syncEngine: 'src/syncEngine.ts',
+        workspaces: 'src/workspaces.ts',
       },
       output: { entryFileNames: '[name].js' },
     },
