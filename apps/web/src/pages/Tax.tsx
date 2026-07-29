@@ -1,11 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import {
-  computeInvoice, isValidMemoryId, MEMORY_ID_ALPHABET, SUBJECT_LABELS,
+  computeInvoice, INVOICE_SUBJECTS, isValidMemoryId, MEMORY_ID_ALPHABET, SUBJECT_LABELS,
   SUBMISSION_LABELS, TAX_API_BASE, TAX_SPEC_VERSION, taxQuarter, toCSV,
   toPersianDigits, validateTaxId, validateTransportConfig, vatReport,
   type TaxProfile,
 } from '@javid/core';
-import { issueElectronicInvoice, submissionFor, taxReadiness, updateTaxProfile, type DB } from '../store';
+import {
+  canCorrect, correctionsOf, issueCorrection, issueElectronicInvoice,
+  submissionFor, taxReadiness, updateTaxProfile, type DB,
+} from '../store';
 import {
   Badge, Banner, Card, DateInput, Empty, Field, JDate,
   Modal, Money, Search, Tabs, download,
@@ -167,22 +170,60 @@ function TaxInvoices({ db, setDB, canWrite }: { db: DB; setDB: (d: DB) => void; 
         )}
       </Card>
 
-      {detail && <SubmissionDetail db={db} id={detail} onClose={() => setDetail(null)} />}
+      {detail && (
+        <SubmissionDetail
+          db={db}
+          id={detail}
+          onClose={() => setDetail(null)}
+          onCorrect={canWrite ? (subject) => {
+            try {
+              const r = issueCorrection(db, detail, subject);
+              setDB(r.db);
+              setDetail(r.submission.id);
+              setError(null);
+            } catch (e) {
+              setError([(e as Error).message]);
+              setDetail(null);
+            }
+          } : undefined}
+        />
+      )}
     </>
   );
 }
 
-function SubmissionDetail({ db, id, onClose }: { db: DB; id: string; onClose: () => void }) {
+function SubmissionDetail({ db, id, onClose, onCorrect }: {
+  db: DB;
+  id: string;
+  onClose: () => void;
+  onCorrect?: (subject: 2 | 3 | 4) => void;
+}) {
   const sub = db.taxSubmissions.find((s) => s.id === id);
   if (!sub) return null;
   const inv = db.invoices.find((i) => i.id === sub.invoiceId);
   const valid = validateTaxId(sub.taxId);
+  const correctable = canCorrect(db, id);
+  const corrections = correctionsOf(db, id);
 
   return (
     <Modal
       title="جزئیات صورتحساب الکترونیکی"
       onClose={onClose}
-      footer={<button className="btn" onClick={onClose}>بستن</button>}
+      footer={
+        <>
+          {onCorrect && correctable.ok && (
+            <>
+              <button className="btn" onClick={() => onCorrect(INVOICE_SUBJECTS.CORRECTIVE)}>
+                صدور اصلاحیه
+              </button>
+              <button className="btn btn-danger" onClick={() => onCorrect(INVOICE_SUBJECTS.CANCELLING)}>
+                ابطال
+              </button>
+            </>
+          )}
+          <button className="btn" onClick={onClose}>بستن</button>
+        </>
+      }
     >
       <table>
         <tbody>
@@ -213,6 +254,31 @@ function SubmissionDetail({ db, id, onClose }: { db: DB; id: string; onClose: ()
           )}
         </tbody>
       </table>
+
+      {!correctable.ok && sub.status !== 'queued' && (
+        <Banner tone="info">{correctable.reason}</Banner>
+      )}
+
+      {corrections.length > 0 && (
+        <>
+          <div className="small strong" style={{ marginTop: 14, marginBottom: 8 }}>
+            صورتحساب‌های مرتبط
+          </div>
+          <table>
+            <tbody>
+              {corrections.map((c) => (
+                <tr key={c.id}>
+                  <td className="small">{SUBJECT_LABELS[c.subject]}</td>
+                  <td className="num small" style={{ direction: 'ltr' }}>{c.taxId}</td>
+                  <td className="end">
+                    <Badge tone={STATUS_TONE[c.status]}>{SUBMISSION_LABELS[c.status]}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
 
       {sub.status === 'queued' && (
         <Banner tone="info">

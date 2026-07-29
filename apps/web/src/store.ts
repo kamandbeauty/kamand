@@ -3,6 +3,8 @@ import {
   MemorySyncQueue, postInvoice, postTransaction, stockMovementsFor,
   replayProduct, uuid, computeInvoice, consumeStock, invoiceLineUnitCost,
   buildElectronicInvoice, nextSerial, validateForTaxSystem,
+  buildCorrection, historyOf, INVOICE_SUBJECTS, SUBJECT_LABELS,
+  type InvoiceSubject,
   assertNotLocked, createAuditLog, hasPermission,
   checkIntegrity, closeFiscalYear, fiscalYearBounds, previewClosing, currentFiscalYear,
   postOpening, SYSTEM_ACCOUNTS, EntryBuilder, assertBalanced,
@@ -828,4 +830,111 @@ export function isFullyReturned(db: DB, invoiceId: ID): boolean {
   if (!inv) return false;
   const returned = returnedQtyOf(db, invoiceId);
   return inv.lines.every((l) => (returned.get(l.id) ?? 0) >= l.qty);
+}
+
+
+// ─────────── اصلاحیه و ابطالیهٔ سامانهٔ مؤدیان ───────────
+
+/**
+ * صدور صورتحساب اصلاحی، ابطالی یا برگشت از فروش.
+ *
+ * ⚠️ چرا لازم است: وقتی سامانه صورتحسابی را رد می‌کند یا کاربر
+ * متوجه اشتباه می‌شود، تنها راه قانونی اصلاح، صدور صورتحساب جدید
+ * با ارجاع به شمارهٔ مالیاتی اصلی است. بدون آن کاربر در بن‌بست
+ * می‌ماند: خطا را می‌بیند ولی کاری نمی‌تواند بکند.
+ */
+export function issueCorrection(
+  db: DB,
+  originalSubmissionId: ID,
+  subject: Extract<InvoiceSubject, 2 | 3 | 4>,
+  replacementInvoiceId?: ID,
+): { db: DB; submission: TaxSubmission } {
+  const original = db.taxSubmissions.find((s) => s.id === originalSubmissionId);
+  if (!original) throw new Error('صورتحساب اصلی یافت نشد');
+
+  // برای اصلاحیه می‌توان فاکتور جایگزین داد؛ برای ابطالیه همان اصلی
+  const invoiceId = replacementInvoiceId ?? original.invoiceId;
+  const invoice = db.invoices.find((i) => i.id === invoiceId);
+  if (!invoice) throw new Error('فاکتور مرتبط یافت نشد');
+
+  const buyer = db.parties.find((p) => p.id === invoice.partyId) ?? null;
+  const products = new Map(db.products.map((p) => [p.id, p]));
+  const serial = nextSerial(db.taxProfile);
+
+  const doc = buildCorrection(original, subject, {
+    invoice,
+    business: db.business,
+    buyer,
+    products,
+    profile: db.taxProfile,
+    serial,
+    subjectType: original.subjectType,
+  });
+
+  const submission: TaxSubmission = {
+    id: uuid(),
+    businessId: db.business.id,
+    invoiceId,
+    taxId: doc.header.taxid,
+    serial,
+    subject,
+    pattern: doc.header.inp,
+    subjectType: original.subjectType,
+    status: 'queued',
+    referencedTaxId: original.taxId,
+    createdAt: nowIso(),
+  };
+
+  track('tax_submission', submission.id, { submission, doc });
+
+  // ابطالیه، صورتحساب اصلی را باطل می‌کند
+  const updatedSubmissions = db.taxSubmissions.map((s) =>
+    s.id === originalSubmissionId && subject === INVOICE_SUBJECTS.CANCELLING
+      ? { ...s, status: 'cancelled' as const }
+      : s,
+  );
+
+  const next: DB = {
+    ...db,
+    taxProfile: { ...db.taxProfile, lastSerial: serial },
+    taxSubmissions: [...updatedSubmissions, submission],
+  };
+
+  const audited = audit(next, 'create', 'invoice', invoiceId, {
+    after: {
+      عملیات: SUBJECT_LABELS[subject],
+      شماره_مالیاتی: submission.taxId,
+      ارجاع_به: original.taxId,
+    },
+  });
+
+  return { db: audited, submission };
+}
+
+/** آیا این صورتحساب اصلاحیه یا ابطالیه دارد؟ */
+export function correctionsOf(db: DB, submissionId: ID): TaxSubmission[] {
+  const original = db.taxSubmissions.find((s) => s.id === submissionId);
+  if (!original) return [];
+  return db.taxSubmissions.filter((s) => s.referencedTaxId === original.taxId);
+}
+
+/**
+ * آیا صورتحساب قابل اصلاح است؟
+ * فقط صورتحساب پذیرفته‌شده و باطل‌نشده.
+ */
+export function canCorrect(db: DB, submissionId: ID): { ok: boolean; reason?: string } {
+  const s = db.taxSubmissions.find((x) => x.id === submissionId);
+  if (!s) return { ok: false, reason: 'صورتحساب یافت نشد' };
+  if (s.status === 'cancelled') return { ok: false, reason: 'این صورتحساب قبلاً باطل شده است' };
+  if (s.status !== 'accepted') {
+    return { ok: false, reason: 'فقط صورتحساب پذیرفته‌شده در سامانه قابل اصلاح یا ابطال است' };
+  }
+  return { ok: true };
+}
+
+// ─────────── تاریخچهٔ رکورد ───────────
+
+/** تاریخچهٔ تغییرات یک رکورد مشخص — «این فاکتور چه اتفاقی برایش افتاده؟» */
+export function recordHistory(db: DB, entity: AuditedEntity, entityId: ID) {
+  return historyOf(db.auditLogs, entity, entityId);
 }

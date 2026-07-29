@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   computeInvoice, INVOICE_TYPE_LABELS, invoiceProfit, nextInvoiceNumber,
   paymentStatus, uuid, validateInvoice, formatMoney, moneyToWords, toPersianDigits,
+  ACTION_LABELS,
   type Invoice, type InvoiceLine, type InvoiceType,
 } from '@javid/core';
 import {
   convertQuote, createReturnFor, invoiceTotal, isFullyReturned, paidOf,
-  postInvoiceToDB, returnedQtyOf, stockOf, type DB,
+  postInvoiceToDB, recordHistory, returnedQtyOf, stockOf, type DB,
 } from '../store';
 import { availableMethods, METHOD_LABELS, printReceipt, receiptFor, type PrintMethod } from '../printer';
 import { attachHardwareScanner } from '../barcode';
@@ -467,6 +468,7 @@ function InvoiceEditor({ db, invoice, onClose, onSave }: {
 
 function InvoiceView({ db, invoice, onClose }: { db: DB; invoice: Invoice; onClose: () => void }) {
   const [thermal, setThermal] = useState(false);
+  const [history, setHistory] = useState(false);
   const t = computeInvoice(invoice);
   const party = db.parties.find((p) => p.id === invoice.partyId);
   const paid = paidOf(db, invoice.id);
@@ -482,11 +484,13 @@ function InvoiceView({ db, invoice, onClose }: { db: DB; invoice: Invoice; onClo
         <>
           <button className="btn btn-primary" onClick={() => window.print()}>🖨 چاپ A4</button>
           <button className="btn" onClick={() => setThermal(true)}>🧾 چاپ حرارتی</button>
+          <button className="btn btn-ghost" onClick={() => setHistory(true)}>📜 تاریخچه</button>
           <button className="btn" onClick={onClose}>بستن</button>
         </>
       }
     >
       {thermal && <ThermalDialog db={db} invoiceId={invoice.id} onClose={() => setThermal(false)} />}
+      {history && <HistoryDialog db={db} invoiceId={invoice.id} onClose={() => setHistory(false)} />}
       <div id="print-area">
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
@@ -750,6 +754,61 @@ function ReturnDialog({ db, source, onClose, onSubmit }: {
           })}
         </tbody>
       </table>
+    </Modal>
+  );
+}
+
+
+// ─────────── تاریخچهٔ فاکتور ───────────
+
+/** «این فاکتور چه اتفاقی برایش افتاده؟» — از ردّ ممیزی */
+function HistoryDialog({ db, invoiceId, onClose }: {
+  db: DB;
+  invoiceId: string;
+  onClose: () => void;
+}) {
+  const logs = useMemo(() => recordHistory(db, 'invoice', invoiceId), [db, invoiceId]);
+
+  return (
+    <Modal
+      title="تاریخچهٔ این فاکتور"
+      onClose={onClose}
+      footer={<button className="btn" onClick={onClose}>بستن</button>}
+    >
+      {logs.length === 0 ? (
+        <div className="empty">
+          <span className="ico">📜</span>
+          <p>رویدادی برای این فاکتور ثبت نشده است</p>
+        </div>
+      ) : (
+        <table>
+          <thead>
+            <tr><th>زمان</th><th>رویداد</th><th>تغییرات</th></tr>
+          </thead>
+          <tbody>
+            {logs.map((l) => {
+              const changes = l.action === 'update'
+                ? (l.before as { field: string }[] | undefined)
+                : undefined;
+              return (
+                <tr key={l.id}>
+                  <td><JDate value={l.at} /></td>
+                  <td>
+                    <Badge tone={l.action === 'create' ? 'green' : l.action === 'delete' ? 'red' : 'blue'}>
+                      {ACTION_LABELS[l.action]}
+                    </Badge>
+                  </td>
+                  <td className="small muted">
+                    {changes?.length
+                      ? changes.map((c) => c.field).join('، ')
+                      : '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </Modal>
   );
 }

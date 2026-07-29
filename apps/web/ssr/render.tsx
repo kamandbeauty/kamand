@@ -13,7 +13,7 @@ import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
-import { convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -358,6 +358,65 @@ for (const [k, v] of taxChecks) {
   console.log(made?.type === 'sale' ? '✅ پیش‌فاکتور به فاکتور تبدیل شد' : '❌ تبدیل نشد');
   if (made?.type !== 'sale') failed++;
   console.log(made?.number.startsWith('F-') ? '✅ شمارهٔ جدید فروش گرفت' : '❌ شماره اشتباه');
+}
+
+// اصلاحیه و ابطالیهٔ سامانهٔ مؤدیان
+{
+  const { INVOICE_SUBJECTS, validateTaxId } = await import('@javid/core');
+  const sub0 = db.taxSubmissions[0]!;
+
+  // در صف، هنوز قابل اصلاح نیست
+  const queued = canCorrect(db, sub0.id);
+  console.log(!queued.ok ? '✅ صورتحساب در صف قابل اصلاح نیست' : '❌ صف قابل اصلاح شد');
+  if (queued.ok) failed++;
+
+  // سامانه پذیرفت
+  let d6: typeof db = {
+    ...db,
+    taxSubmissions: db.taxSubmissions.map((s) =>
+      s.id === sub0.id ? { ...s, status: 'accepted' as const } : s),
+  };
+  console.log(canCorrect(d6, sub0.id).ok ? '✅ صورتحساب پذیرفته‌شده قابل اصلاح است' : '❌ قابل اصلاح نشد');
+  if (!canCorrect(d6, sub0.id).ok) failed++;
+
+  // اصلاحیه
+  const corr = issueCorrection(d6, sub0.id, INVOICE_SUBJECTS.CORRECTIVE);
+  d6 = corr.db;
+  const checks: [string, boolean][] = [
+    ['اصلاحیه صادر شد', !!corr.submission],
+    ['شمارهٔ مالیاتی جدید معتبر است', validateTaxId(corr.submission.taxId)],
+    ['شمارهٔ جدید با اصلی فرق دارد', corr.submission.taxId !== sub0.taxId],
+    ['اصلاحیه به اصلی ارجاع دارد', corr.submission.referencedTaxId === sub0.taxId],
+    ['سریال افزایش یافت', d6.taxProfile.lastSerial > db.taxProfile.lastSerial],
+    ['اصلاحیه در فهرست مرتبط دیده می‌شود', correctionsOf(d6, sub0.id).length === 1],
+    ['رویداد در ردّ ممیزی ثبت شد', d6.auditLogs.length > db.auditLogs.length],
+  ];
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+
+  // ابطالیه، اصلی را باطل می‌کند
+  const cancel = issueCorrection(d6, sub0.id, INVOICE_SUBJECTS.CANCELLING);
+  const original = cancel.db.taxSubmissions.find((s) => s.id === sub0.id);
+  console.log(original?.status === 'cancelled' ? '✅ ابطالیه صورتحساب اصلی را باطل کرد' : '❌ اصلی باطل نشد');
+  if (original?.status !== 'cancelled') failed++;
+
+  const twice = canCorrect(cancel.db, sub0.id);
+  console.log(!twice.ok ? '✅ صورتحساب باطل‌شده دوباره اصلاح نمی‌شود' : '❌ باطل‌شده اصلاح شد');
+  if (twice.ok) failed++;
+}
+
+// تاریخچهٔ رکورد
+{
+  const inv = db.invoices[0]!;
+  const hist = recordHistory(db, 'invoice', inv.id);
+  console.log(hist.length > 0 ? '✅ تاریخچهٔ فاکتور در دسترس است' : '❌ تاریخچه خالی');
+  if (hist.length === 0) failed++;
+
+  const other = recordHistory(db, 'invoice', 'ghost-id');
+  console.log(other.length === 0 ? '✅ تاریخچه فقط رکورد خودش را می‌دهد' : '❌ نشتی تاریخچه');
+  if (other.length !== 0) failed++;
 }
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
