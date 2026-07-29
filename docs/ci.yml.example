@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: نصب وابستگی‌ها
+        run: npm ci
+
+      - name: بررسی نوع‌ها
+        run: |
+          npx tsc -p packages/core/tsconfig.json --noEmit
+          npx tsc -b apps/web/tsconfig.json
+
+      - name: آزمون‌ها
+        run: npm test
+
+      - name: ساخت نسخهٔ تولید
+        run: npm run build
+
+# ─────────────────────────────────────────────────────────────
+# این فایل به صورت نمونه اینجا نگهداری می‌شود.
+# برای فعال‌سازی، آن را به مسیر .github/workflows/ci.yml منتقل کنید.
+# (ابزار خودکار اجازهٔ نوشتن مستقیم در پوشهٔ workflows را نداشت.)
+# ─────────────────────────────────────────────────────────────
