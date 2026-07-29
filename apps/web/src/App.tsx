@@ -13,8 +13,9 @@ import { Settings } from './pages/Settings';
 import { Tax } from './pages/Tax';
 import { Account } from './pages/Account';
 import { Audit } from './pages/Audit';
+import { YearEnd } from './pages/YearEnd';
 
-type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'tax' | 'reports' | 'audit' | 'account' | 'settings';
+type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'tax' | 'reports' | 'audit' | 'yearend' | 'account' | 'settings';
 
 const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }[] = [
   {
@@ -36,6 +37,7 @@ const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }
     items: [
       { id: 'reports', label: 'گزارش‌ها', icon: '📊' },
       { id: 'audit', label: 'ممیزی و دوره', icon: '📜' },
+      { id: 'yearend', label: 'بستن سال', icon: '🔒' },
       { id: 'account', label: 'حساب و همگام‌سازی', icon: '☁️' },
       { id: 'settings', label: 'تنظیمات', icon: '⚙️' },
     ],
@@ -51,6 +53,7 @@ const TITLES: Record<Page, string> = {
   tax: 'سامانهٔ مؤدیان',
   reports: 'گزارش‌ها',
   audit: 'ردّ ممیزی و دورهٔ مالی',
+  yearend: 'بستن سال مالی',
   account: 'حساب کاربری و همگام‌سازی',
   settings: 'تنظیمات',
 };
@@ -196,6 +199,7 @@ export default function App() {
           {page === 'tax' && <Tax db={db} setDB={setDB} canWrite={canWrite} />}
           {page === 'reports' && <Reports db={db} />}
           {page === 'audit' && <Audit db={db} setDB={setDB} />}
+          {page === 'yearend' && <YearEnd db={db} setDB={setDB} />}
           {page === 'account' && <Account db={db} setDB={setDB} />}
           {page === 'settings' && <Settings db={db} setDB={setDB} />}
         </main>

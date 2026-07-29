@@ -4,6 +4,7 @@ import {
   replayProduct, uuid, computeInvoice, consumeStock, invoiceLineUnitCost,
   buildElectronicInvoice, nextSerial, validateForTaxSystem,
   assertNotLocked, createAuditLog, hasPermission,
+  checkIntegrity, closeFiscalYear, fiscalYearBounds, previewClosing, currentFiscalYear,
   type AuditLog, type AuditedEntity, type PeriodLock, type Permission, type Role,
   type Business, type Cheque, type Invoice, type JournalEntry, type Party,
   type Product, type StockMovement, type Subscription, type Transaction,
@@ -508,4 +509,66 @@ export function unlockPeriod(db: DB, reason: string): DB {
     before: { lockedThrough: before },
     after: { lockedThrough: null, reason },
   });
+}
+
+
+// ─────────── بستن سال مالی ───────────
+
+/** سال‌های مالی بسته‌شده */
+export function closedYears(db: DB): number[] {
+  return db.entries
+    .filter((e) => e.sourceType === 'closing' && !e.deletedAt)
+    .map((e) => currentFiscalYear(new Date(e.date), db.business.fiscalYearStartMonth));
+}
+
+export function closingPreviewFor(db: DB, jy: number) {
+  const bounds = fiscalYearBounds(jy, db.business.fiscalYearStartMonth);
+  return {
+    bounds,
+    preview: previewClosing(db.entries, indexOf(db), {
+      ...bounds,
+      shareholders: db.parties.filter((p) => p.kind === 'shareholder'),
+      today: today(),
+      alreadyClosed: closedYears(db).includes(jy),
+    }),
+  };
+}
+
+/**
+ * اجرای بستن سال.
+ * پس از موفقیت، دوره خودکار قفل می‌شود تا اسناد بسته‌شده تغییر نکنند.
+ */
+export function closeYear(db: DB, jy: number, distributeProfit: boolean): DB {
+  const bounds = fiscalYearBounds(jy, db.business.fiscalYearStartMonth);
+  const ctx = { index: indexOf(db), businessId: db.business.id, idGen: uuid, now: nowIso() };
+
+  const result = closeFiscalYear(db.entries, ctx, {
+    ...bounds,
+    shareholders: db.parties.filter((p) => p.kind === 'shareholder'),
+    distributeProfit,
+    today: today(),
+    alreadyClosed: closedYears(db).includes(jy),
+  });
+
+  const added = [result.closingEntry, result.distributionEntry, result.openingEntry]
+    .filter((e): e is NonNullable<typeof e> => e !== null);
+
+  for (const e of added) track('entry', e.id, e);
+
+  const withEntries: DB = { ...db, entries: [...db.entries, ...added] };
+  const locked = lockPeriod(withEntries, result.lockThrough, `بستن ${bounds.label}`);
+
+  return audit(locked, 'create', 'entry', added[0]?.id ?? db.business.id, {
+    after: {
+      عملیات: 'بستن سال مالی',
+      سال: bounds.label,
+      سود: result.netProfit,
+      تعداد_سند: added.length,
+    },
+  });
+}
+
+/** بررسی سلامت دفتر */
+export function integrityOf(db: DB) {
+  return checkIntegrity(db.entries, indexOf(db));
 }

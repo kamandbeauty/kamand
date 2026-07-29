@@ -11,7 +11,8 @@ import { Settings } from '../src/pages/Settings';
 import { Tax } from '../src/pages/Tax';
 import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
-import { createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { YearEnd } from '../src/pages/YearEnd';
+import { closedYears, closeYear, closingPreviewFor, integrityOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -63,6 +64,7 @@ const pages: [string, React.ReactElement][] = [
   ['گزارش‌ها', <Reports db={db} />],
   ['سامانهٔ مؤدیان', <Tax db={db} setDB={noop} canWrite />],
   ['ممیزی و دوره', <Audit db={db} setDB={noop} />],
+  ['بستن سال', <YearEnd db={db} setDB={noop} />],
   ['حساب و همگام‌سازی', <Account db={db} setDB={noop} />],
   ['تنظیمات', <Settings db={db} setDB={noop} />],
   ['حالت فقط-خواندنی', <Invoices db={db} setDB={noop} canWrite={false} />],
@@ -164,6 +166,35 @@ for (const [k, v] of taxChecks) {
   } catch { /* نباید رخ دهد */ }
   console.log(allowed ? '✅ خارج دورهٔ قفل ثبت آزاد است' : '❌ قفل بیش از حد سخت‌گیر است');
   if (!allowed) failed++;
+}
+
+// بستن سال مالی در جریان واقعی
+{
+  const { currentFiscalYear, balanceSheet, incomeStatement } = await import('@javid/core');
+  const { indexOf } = await import('../src/store');
+
+  // دفتر باید سالم باشد
+  const health = integrityOf(db);
+  const errs = health.filter((i) => i.severity === 'error');
+  console.log(errs.length === 0 ? '✅ دفتر بدون خطای جدی است' : `❌ ${errs.length} خطای دفتر`);
+  if (errs.length > 0) failed++;
+
+  // سال گذشته را می‌بندیم (سال جاری هنوز تمام نشده)
+  const thisYear = currentFiscalYear(new Date(), db.business.fiscalYearStartMonth);
+  const target = thisYear - 1;
+
+  const { preview } = closingPreviewFor(db, target);
+  // دورهٔ گذشته داده ندارد، پس نباید قابل بستن باشد
+  console.log(!preview.canClose ? '✅ سال بدون تراکنش بسته نمی‌شود' : '❌ سال خالی بسته شد');
+  if (preview.canClose) failed++;
+
+  // حالا سال جاری با داده — باید به‌خاطر تمام‌نشدن رد شود
+  const { preview: cur } = closingPreviewFor(db, thisYear);
+  const rejectsFuture = !cur.canClose && cur.issues.some((i) => i.includes('تمام نشده'));
+  console.log(rejectsFuture ? '✅ سال تمام‌نشده بسته نمی‌شود' : '❌ سال جاری بسته شد');
+  if (!rejectsFuture) failed++;
+
+  console.log(closedYears(db).length === 0 ? '✅ هنوز سالی بسته نشده' : '❌ سال ناخواسته بسته شد');
 }
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
