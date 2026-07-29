@@ -1031,8 +1031,13 @@ export function recordInvoicePayment(
 }
 
 /**
- * تخصیص خودکار یک دریافت به قدیمی‌ترین فاکتورهای باز.
+ * تخصیص خودکار پرداخت به قدیمی‌ترین فاکتورهای باز.
+ *
  * روش رایج در مغازه: مشتری مبلغی می‌دهد، از قدیمی‌ترین بدهی کم می‌شود.
+ *
+ * ⚠️ جهت پول بر اساس نوع فاکتورهای باز تعیین می‌شود، نه فرض ثابت.
+ * پیش‌تر مازاد همیشه «دریافت» ثبت می‌شد؛ در پرداخت به تأمین‌کننده
+ * این یعنی پول به‌جای خروج، وارد صندوق می‌شد.
  */
 export function allocatePayment(
   db: DB,
@@ -1064,18 +1069,27 @@ export function allocatePayment(
     remaining -= portion;
   }
 
-  // باقی‌مانده به عنوان دریافت عمومی ثبت می‌شود (علی‌الحساب)
+  // باقی‌مانده به صورت علی‌الحساب ثبت می‌شود.
+  // جهت از نوع شخص و فاکتورهای باز او استنتاج می‌شود.
   if (remaining > 0) {
+    const party = db.parties.find((p) => p.id === input.partyId);
+    const openRows = openInvoicesOf(db, input.partyId);
+
+    // اگر فاکتور باز دارد، جهت را از آن می‌گیریم؛ وگرنه از نوع شخص
+    const outgoing = openRows.length > 0
+      ? openRows.every((r) => r.invoice.type === 'purchase' || r.invoice.type === 'sale_return')
+      : party?.kind === 'vendor';
+
     working = postTransactionToDB(working, {
       id: uuid(),
       businessId: db.business.id,
-      kind: 'receive',
+      kind: outgoing ? 'pay' : 'receive',
       treasuryId: input.treasuryId,
       partyId: input.partyId,
       amount: remaining,
       date: input.date,
       method: input.method,
-      description: 'دریافت علی‌الحساب',
+      description: outgoing ? 'پرداخت علی‌الحساب' : 'دریافت علی‌الحساب',
       createdAt: nowIso(),
     });
   }

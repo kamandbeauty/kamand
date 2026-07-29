@@ -708,5 +708,69 @@ for (const [k, v] of taxChecks) {
   }
 }
 
+// جهت پول در تخصیص خودکار
+{
+  const { balanceOf, SYSTEM_ACCOUNTS: A, accountLedger, debtorsAndCreditors } = await import('@javid/core');
+
+  const mkBase = (kind: 'customer' | 'vendor', partyId: string) => {
+    let x = createEmptyDB(`جهت-${kind}`);
+    x = upsertParty(x, { id: partyId, businessId: x.business.id, kind, name: 'ط', openingBalance: 0 });
+    x = upsertProduct(x, { id: 'pr', businessId: x.business.id, kind: 'goods', name: 'ک',
+      unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000, openingQty: 100, openingCost: 100_000 });
+    return x;
+  };
+  const tp = new Date().toISOString(), dp = tp.slice(0, 10);
+  const mkInv = (biz: string, type: Invoice['type'], party: string, price: number): Invoice => ({
+    id: uuid(), businessId: biz, type, number: 'X', partyId: party, date: dp, isOfficial: false,
+    lines: [{ id: uuid(), productId: 'pr', qty: 10, unit: 'ع', unitPrice: price, discount: 0, vatRate: 0 }],
+    discount: 0, shipping: 0, status: 'open', createdAt: tp, updatedAt: tp,
+  });
+
+  // 🔴 پرداخت مازاد به تأمین‌کننده باید خروج پول باشد
+  const vid = uuid();
+  let dv = mkBase('vendor', vid);
+  dv = postInvoiceToDB(dv, mkInv(dv.business.id, 'purchase', vid, 100_000));
+  const rv = allocatePayment(dv, { partyId: vid, amount: 1_500_000,
+    treasuryId: dv.treasuries[0]!.id, date: dp, method: 'cash' });
+  const cashV = balanceOf(rv.db.entries, indexOf(rv.db).id(A.CASH));
+
+  // دریافت مازاد از مشتری باید ورود پول باشد
+  const cid = uuid();
+  let dcst = mkBase('customer', cid);
+  dcst = postInvoiceToDB(dcst, mkInv(dcst.business.id, 'sale', cid, 100_000));
+  const rc = allocatePayment(dcst, { partyId: cid, amount: 1_500_000,
+    treasuryId: dcst.treasuries[0]!.id, date: dp, method: 'cash' });
+  const cashC = balanceOf(rc.db.entries, indexOf(rc.db).id(A.CASH));
+
+  // شخص بدون فاکتور باز
+  const nid = uuid();
+  const dn = mkBase('vendor', nid);
+  const rn = allocatePayment(dn, { partyId: nid, amount: 200_000,
+    treasuryId: dn.treasuries[0]!.id, date: dp, method: 'cash' });
+  const cashN = balanceOf(rn.db.entries, indexOf(rn.db).id(A.CASH));
+
+  const checks: [string, boolean][] = [
+    ['مازاد پرداخت به تأمین‌کننده خروج پول است', cashV === -1_500_000],
+    ['مازاد دریافت از مشتری ورود پول است', cashC === 1_500_000],
+    ['بدون فاکتور باز، جهت از نوع شخص گرفته می‌شود', cashN === -200_000],
+    ['مازاد گزارش می‌شود', rv.unallocated === 500_000],
+  ];
+
+  // صورتحساب و گزارش بدهکاران یک عدد می‌دهند
+  const idxc = indexOf(rc.db);
+  const stmt = [
+    ...accountLedger(rc.db.entries, idxc.id(A.RECEIVABLE), 0, { partyId: cid }),
+    ...accountLedger(rc.db.entries, idxc.id(A.PAYABLE), 0, { partyId: cid }),
+  ].reduce((sum, r) => sum + r.debit - r.credit, 0);
+  const report = debtorsAndCreditors(rc.db.entries, idxc, rc.db.parties);
+  const fromReport = [...report.debtors, ...report.creditors].find((r) => r.partyId === cid)?.balance ?? 0;
+  checks.push(['صورتحساب شخص با گزارش بدهکاران می‌خواند', stmt === fromReport]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
 process.exit(failed === 0 ? 0 : 1);
