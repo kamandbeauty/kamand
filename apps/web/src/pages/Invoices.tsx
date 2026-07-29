@@ -185,7 +185,11 @@ export function Invoices({ db, setDB, canWrite }: {
                       {INVOICE_TYPE_LABELS[inv.type]}
                       {inv.isOfficial && <> <Badge tone="blue">رسمی</Badge></>}
                     </td>
-                    <td>{db.parties.find((p) => p.id === inv.partyId)?.name ?? <span className="muted">—</span>}</td>
+                    <td>
+                      {db.parties.find((p) => p.id === inv.partyId)?.name
+                        ?? <span className="muted">{inv.isCash ? 'مشتری عابر' : '—'}</span>}
+                      {inv.isCash && <span className="badge green" style={{ marginInlineStart: 6 }}>نقدی</span>}
+                    </td>
                     <td><JDate value={inv.date} /></td>
                     <td className="end"><Money value={total} /></td>
                     <td className="end">
