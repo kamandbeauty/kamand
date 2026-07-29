@@ -13,7 +13,7 @@ import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
-import { canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { postStockCount, stockCountPreview, unpostedOpeningStock, postOpeningBalances as _pob, canChangeChequeStatus, chequeAlerts, registerCheque, settleCheque, invoiceEditability, voidInvoice, allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -637,6 +637,70 @@ for (const [k, v] of taxChecks) {
   const alerts = chequeAlerts(withAlerts);
   checks.push(['چک سررسید گذشته تشخیص داده می‌شود', alerts.overdue.length === 1]);
   checks.push(['چک نزدیک سررسید تشخیص داده می‌شود', alerts.dueSoon.length === 1]);
+
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+}
+
+// انبارگردانی و موجودی اولیه
+{
+  const { stockByProduct, balanceOf, SYSTEM_ACCOUNTS: A, trialBalance, incomeStatement } = await import('@javid/core');
+
+  let ds = createEmptyDB('آزمون انبار');
+  const prodId = uuid();
+  ds = upsertProduct(ds, { id: prodId, businessId: ds.business.id, kind: 'goods', name: 'کالا',
+    unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000, openingQty: 100, openingCost: 100_000 });
+
+  // 🔴 باگ ۲: موجودی اولیه سند ندارد
+  const pendingBefore = unpostedOpeningStock(ds);
+  console.log(pendingBefore.length === 1 ? '✅ موجودی اولیهٔ ثبت‌نشده تشخیص داده می‌شود' : '❌ تشخیص نداد');
+  if (pendingBefore.length !== 1) failed++;
+
+  ds = postOpeningBalances(ds);
+  const invBal = balanceOf(ds.entries, indexOf(ds).id(A.INVENTORY));
+  console.log(invBal === 10_000_000 ? '✅ سند افتتاحیه حساب موجودی را درست می‌کند' : `❌ موجودی کالا: ${invBal}`);
+  if (invBal !== 10_000_000) failed++;
+  console.log(unpostedOpeningStock(ds).length === 0 ? '✅ پس از ثبت، هشدار برداشته می‌شود' : '❌ هشدار ماند');
+
+  // 🔴 باگ ۱: انبارگردانی
+  const sysQty = stockByProduct(ds.movements, 'fifo').get(prodId)!.qty;
+  const preview = stockCountPreview(ds, [{ productId: prodId, counted: 95 }]);
+
+  const checks: [string, boolean][] = [
+    ['موجودی سیستم درست خوانده می‌شود', sysQty === 100],
+    ['اختلاف محاسبه می‌شود', preview.rows[0]?.diff === -5],
+    ['کسری ارزش‌گذاری می‌شود', preview.shortage === 500_000],
+  ];
+
+  ds = postStockCount(ds, [{ productId: prodId, counted: 95 }]);
+  const after = stockByProduct(ds.movements, 'fifo').get(prodId)!;
+
+  checks.push(['موجودی پس از اصلاح با شمارش می‌خواند', after.qty === 95]);
+  checks.push(['حرکت اصلاحی در انبار ثبت می‌شود',
+    ds.movements.some((m) => m.sourceType === 'adjustment')]);
+  checks.push(['کسری به حساب ضایعات می‌رود',
+    balanceOf(ds.entries, indexOf(ds).id(A.WASTE)) === 500_000]);
+  checks.push(['تراز پس از انبارگردانی متوازن است', trialBalance(ds.entries, indexOf(ds)).balanced]);
+
+  // اضافی
+  let ds2 = postStockCount(ds, [{ productId: prodId, counted: 98 }]);
+  checks.push(['اضافی هم ثبت می‌شود',
+    stockByProduct(ds2.movements, 'fifo').get(prodId)!.qty === 98]);
+  checks.push(['اضافی به درآمد متفرقه می‌رود',
+    incomeStatement(ds2.entries, indexOf(ds2)).otherIncome > 0]);
+
+  // بدون اختلاف → خطا
+  let noDiff = false;
+  try { postStockCount(ds, [{ productId: prodId, counted: 95 }]); } catch { noDiff = true; }
+  checks.push(['شمارش بدون اختلاف رد می‌شود', noDiff]);
+
+  // قفل دوره
+  const lockedS = lockPeriod(ds, new Date().toISOString().slice(0, 10), 'آزمون');
+  let lockedCount = false;
+  try { postStockCount(lockedS, [{ productId: prodId, counted: 90 }]); } catch { lockedCount = true; }
+  checks.push(['انبارگردانی در دورهٔ بسته مسدود است', lockedCount]);
 
   for (const [k, v] of checks) {
     console.log(v ? `✅ ${k}` : `❌ ${k}`);

@@ -1,9 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { kardex, stockByProduct, toCSV, toPersianDigits, uuid, type Product, type ProductKind } from '@javid/core';
+import { formatMoney, kardex, stockByProduct, toCSV, toPersianDigits, uuid, type Product, type ProductKind } from '@javid/core';
 
 const fa = (n: number) => toPersianDigits(n);
-import { upsertProduct, type DB } from '../store';
-import { Badge, Card, Empty, Field, JDate, Modal, Money, MoneyInput, NumberInput, Search, Tabs, download } from '../ui';
+import {
+  can, postStockCount, stockCountPreview, unpostedOpeningStock,
+  upsertProduct, type DB, type StockCountLine,
+} from '../store';
+import { Badge, Banner, Card, Empty, Field, JDate, Modal, Money, MoneyInput, NumberInput, Search, Tabs, download } from '../ui';
 
 export function Products({ db, setDB, canWrite }: {
   db: DB;
@@ -14,6 +17,8 @@ export function Products({ db, setDB, canWrite }: {
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const [viewing, setViewing] = useState<Product | null>(null);
+  const [counting, setCounting] = useState(false);
+  const [countError, setCountError] = useState('');
 
   const stock = stockByProduct(db.movements, db.business.costingMethod, { allowNegative: true });
 
@@ -58,9 +63,31 @@ export function Products({ db, setDB, canWrite }: {
 
   return (
     <>
+      {(() => {
+        const pending = unpostedOpeningStock(db);
+        if (pending.length === 0) return null;
+        const total = pending.reduce((s2, x) => s2 + x.value, 0);
+        return (
+          <Banner tone="warning" title="موجودی اولیه هنوز در دفتر ثبت نشده">
+            {fa(pending.length)} کالا با موجودی اولیه به ارزش <Money value={total} /> دارید
+            که سند حسابداری‌شان ثبت نشده است. از بخش «دفتر و اسناد ← مانده‌های اول دوره»
+            سند افتتاحیه را ثبت کنید تا حساب موجودی کالا درست شود.
+          </Banner>
+        );
+      })()}
+
+      {countError && (
+        <Banner tone="critical" action={<button className="btn btn-sm" onClick={() => setCountError('')}>بستن</button>}>
+          {countError}
+        </Banner>
+      )}
+
       <div className="toolbar no-print">
         <Search value={q} onChange={setQ} placeholder="جستجوی نام یا بارکد…" />
         <div style={{ flex: 1 }} />
+        {canWrite && (
+          <button className="btn" onClick={() => setCounting(true)}>📋 انبارگردانی</button>
+        )}
         <button className="btn" onClick={exportCSV}>⬇ خروجی</button>
         {canWrite && <button className="btn btn-primary" onClick={() => setEditing(blank())}>+ کالای جدید</button>}
       </div>
@@ -163,6 +190,23 @@ export function Products({ db, setDB, canWrite }: {
       )}
 
       {viewing && <Kardex db={db} product={viewing} onClose={() => setViewing(null)} />}
+
+      {counting && (
+        <StockCountDialog
+          db={db}
+          onClose={() => setCounting(false)}
+          onSubmit={(lines) => {
+            try {
+              setDB(postStockCount(db, lines));
+              setCounting(false);
+              setCountError('');
+            } catch (e) {
+              setCountError((e as Error).message);
+              setCounting(false);
+            }
+          }}
+        />
+      )}
     </>
   );
 }
@@ -307,6 +351,130 @@ function Kardex({ db, product, onClose }: { db: DB; product: Product; onClose: (
           </tbody>
         </table>
       )}
+    </Modal>
+  );
+}
+
+
+// ─────────── انبارگردانی ───────────
+
+/**
+ * شمارش فیزیکی و اصلاح موجودی.
+ *
+ * کاربر موجودی واقعی هر کالا را وارد می‌کند؛ اختلاف با سیستم
+ * محاسبه و به صورت کسری (ضایعات) یا اضافی (درآمد) ثبت می‌شود.
+ */
+function StockCountDialog({ db, onClose, onSubmit }: {
+  db: DB;
+  onClose: () => void;
+  onSubmit: (lines: StockCountLine[]) => void;
+}) {
+  const stock = useMemo(
+    () => stockByProduct(db.movements, db.business.costingMethod, { allowNegative: true }),
+    [db.movements, db.business.costingMethod],
+  );
+
+  const goods = useMemo(
+    () => db.products.filter((p) => p.kind === 'goods' && !p.archived),
+    [db.products],
+  );
+
+  // پیش‌فرض: شمارش برابر سیستم، یعنی بدون اختلاف
+  const [counted, setCounted] = useState<Map<string, number>>(
+    () => new Map(goods.map((p) => [p.id, stock.get(p.id)?.qty ?? 0])),
+  );
+
+  const lines: StockCountLine[] = goods.map((p) => ({
+    productId: p.id,
+    counted: counted.get(p.id) ?? 0,
+  }));
+
+  const preview = stockCountPreview(db, lines);
+
+  return (
+    <Modal
+      wide
+      title="انبارگردانی — شمارش فیزیکی"
+      onClose={onClose}
+      footer={
+        <>
+          <button
+            className="btn btn-primary"
+            disabled={preview.rows.length === 0}
+            onClick={() => onSubmit(lines)}
+          >ثبت اصلاح موجودی</button>
+          <button className="btn" onClick={onClose}>انصراف</button>
+          <div style={{ flex: 1 }} />
+          <div style={{ textAlign: 'end' }}>
+            <div className="small muted">اثر مالی</div>
+            <div className={`num strong ${preview.net >= 0 ? 'money-pos' : 'money-neg'}`}>
+              {formatMoney(Math.abs(preview.net))}
+            </div>
+          </div>
+        </>
+      }
+    >
+      <Banner tone="info">
+        موجودی واقعی هر کالا را وارد کنید. کسری به حساب ضایعات و
+        اضافی به درآمد متفرقه ثبت می‌شود.
+      </Banner>
+
+      {preview.rows.length === 0 ? (
+        <div className="small muted" style={{ marginBottom: 12 }}>
+          هنوز اختلافی وارد نشده است.
+        </div>
+      ) : (
+        <div className="grid grid-3" style={{ marginBottom: 14 }}>
+          <div className="card stat">
+            <div className="label">اقلام دارای اختلاف</div>
+            <div className="value"><span className="num">{fa(preview.rows.length)}</span></div>
+          </div>
+          <div className="card stat pos">
+            <div className="label">اضافی</div>
+            <div className="value"><Money value={preview.surplus} /></div>
+          </div>
+          <div className="card stat neg">
+            <div className="label">کسری</div>
+            <div className="value"><Money value={preview.shortage} /></div>
+          </div>
+        </div>
+      )}
+
+      <table>
+        <thead>
+          <tr>
+            <th>کالا</th>
+            <th className="end">موجودی سیستم</th>
+            <th style={{ width: 130 }}>شمارش فیزیکی</th>
+            <th className="end">اختلاف</th>
+            <th className="end">اثر مالی</th>
+          </tr>
+        </thead>
+        <tbody>
+          {goods.map((p) => {
+            const system = stock.get(p.id)?.qty ?? 0;
+            const c = counted.get(p.id) ?? 0;
+            const diff = c - system;
+            const row = preview.rows.find((r) => r.product.id === p.id);
+            return (
+              <tr key={p.id}>
+                <td>{p.name}</td>
+                <td className="end num">{fa(system)} <span className="muted small">{p.unitMain}</span></td>
+                <td>
+                  <NumberInput
+                    value={c}
+                    onChange={(v) => setCounted((m) => new Map(m).set(p.id, v))}
+                  />
+                </td>
+                <td className={`end num ${diff > 0 ? 'money-pos' : diff < 0 ? 'money-neg' : 'muted'}`}>
+                  {diff === 0 ? '—' : `${diff > 0 ? '+' : ''}${fa(diff)}`}
+                </td>
+                <td className="end">{row ? <Money value={Math.abs(row.value)} /> : '—'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </Modal>
   );
 }

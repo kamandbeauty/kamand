@@ -2,6 +2,7 @@ import {
   AccountIndex, createChartOfAccounts, defaultTreasuryAccount, LamportClock,
   MemorySyncQueue, postInvoice, postTransaction, stockMovementsFor,
   replayProduct, uuid, computeInvoice, consumeStock, invoiceLineUnitCost, paymentStatus,
+  stockByProduct, type StockMovement as _SM,
   buildElectronicInvoice, nextSerial, validateForTaxSystem,
   buildCorrection, historyOf, INVOICE_SUBJECTS, SUBJECT_LABELS,
   type InvoiceSubject,
@@ -1296,4 +1297,152 @@ export function chequeAlerts(db: DB, withinDays = 7): {
     overdue: pending.filter((c) => c.dueDate < today),
     dueSoon: pending.filter((c) => c.dueDate >= today && c.dueDate <= limitStr),
   };
+}
+
+
+// ─────────── انبارگردانی و اصلاح موجودی ───────────
+
+export interface StockCountLine {
+  productId: ID;
+  /** موجودی شمارش‌شدهٔ فیزیکی */
+  counted: number;
+  note?: string;
+}
+
+export interface StockCountRow {
+  product: Product;
+  system: number;
+  counted: number;
+  diff: number;
+  unitCost: Rial;
+  value: Rial;
+}
+
+/** مقایسهٔ موجودی سیستم با شمارش فیزیکی */
+export function stockCountPreview(db: DB, lines: StockCountLine[]): {
+  rows: StockCountRow[];
+  surplus: Rial;
+  shortage: Rial;
+  net: Rial;
+} {
+  const stock = stockByProduct(db.movements, db.business.costingMethod, { allowNegative: true });
+  const rows: StockCountRow[] = [];
+
+  for (const line of lines) {
+    const product = db.products.find((p) => p.id === line.productId);
+    if (!product || product.kind !== 'goods') continue;
+
+    const state = stock.get(product.id);
+    const system = state?.qty ?? 0;
+    const diff = line.counted - system;
+    if (diff === 0) continue;
+
+    // بهای واحد از ارزش جاری انبار؛ اگر انبار خالی است از قیمت خرید
+    const unitCost = state && state.qty > 0
+      ? Math.round(state.value / state.qty)
+      : product.buyPrice;
+
+    rows.push({ product, system, counted: line.counted, diff, unitCost, value: Math.round(unitCost * diff) });
+  }
+
+  const surplus = rows.filter((r) => r.diff > 0).reduce((s, r) => s + r.value, 0);
+  const shortage = Math.abs(rows.filter((r) => r.diff < 0).reduce((s, r) => s + r.value, 0));
+
+  return { rows, surplus, shortage, net: surplus - shortage };
+}
+
+/**
+ * ثبت انبارگردانی.
+ *
+ * ⚠️ چرا لازم است: نوع حرکت `adjustment` در هسته تعریف شده و کاردکس
+ * نمایشش می‌دهد، ولی هیچ راهی برای ساختنش نبود. مغازه‌داری که پس از
+ * شمارش فیزیکی کسری یا اضافی داشت، نمی‌توانست موجودی سیستم را با
+ * واقعیت هماهنگ کند.
+ *
+ * اثر حسابداری: کسری به حساب ضایعات، اضافی به درآمد متفرقه.
+ */
+export function postStockCount(
+  db: DB,
+  lines: StockCountLine[],
+  opts: { date?: string; description?: string } = {},
+): DB {
+  const date = opts.date ?? today();
+  guardPeriod(db, date);
+
+  const preview = stockCountPreview(db, lines);
+  if (preview.rows.length === 0) {
+    throw new Error('هیچ اختلافی بین موجودی سیستم و شمارش فیزیکی وجود ندارد');
+  }
+
+  const index = indexOf(db);
+  const movements: StockMovement[] = preview.rows.map((r) => ({
+    id: uuid(),
+    businessId: db.business.id,
+    productId: r.product.id,
+    qty: r.diff,
+    unitCost: r.unitCost,
+    date,
+    sourceType: 'adjustment' as const,
+    sourceId: null,
+  }));
+
+  const b = new EntryBuilder(
+    db.business.id,
+    date,
+    opts.description ?? 'اصلاح موجودی پس از انبارگردانی',
+    'manual',
+    null,
+  );
+
+  // اضافی: موجودی بدهکار، درآمد متفرقه بستانکار
+  if (preview.surplus > 0) {
+    b.debit(index.id(SYSTEM_ACCOUNTS.INVENTORY), preview.surplus);
+    b.credit(index.id(SYSTEM_ACCOUNTS.OTHER_INCOME), preview.surplus);
+  }
+  // کسری: ضایعات بدهکار، موجودی بستانکار
+  if (preview.shortage > 0) {
+    b.debit(index.id(SYSTEM_ACCOUNTS.WASTE), preview.shortage);
+    b.credit(index.id(SYSTEM_ACCOUNTS.INVENTORY), preview.shortage);
+  }
+
+  const entry = b.isEmpty() ? null : b.build(uuid(), nowIso());
+  if (entry) assertBalanced(entry.lines);
+
+  for (const m of movements) track('movement', m.id, m);
+
+  const next: DB = {
+    ...db,
+    movements: [...db.movements, ...movements],
+    entries: entry ? [...db.entries, entry] : db.entries,
+  };
+
+  return audit(next, 'update', 'product', preview.rows[0]!.product.id, {
+    after: {
+      عملیات: 'انبارگردانی',
+      تعداد_قلم: preview.rows.length,
+      اضافی: preview.surplus,
+      کسری: preview.shortage,
+    },
+  });
+}
+
+/**
+ * ثبت سند موجودی اولیه برای کالاهای تازه‌تعریف‌شده.
+ *
+ * 🔴 باگ: هنگام ساخت کالا با موجودی اولیه، فقط حرکت انبار ساخته
+ * می‌شد و سند حسابداری نه. نتیجه: حساب «موجودی کالا» منفی می‌شد
+ * چون فروش از آن کم می‌کرد ولی چیزی به آن اضافه نشده بود.
+ */
+export function unpostedOpeningStock(db: DB): { product: Product; value: Rial }[] {
+  // حرکاتی از نوع opening که سند افتتاحیه پوششان نداده
+  if (hasOpeningEntry(db)) return [];
+
+  const out: { product: Product; value: Rial }[] = [];
+  for (const m of db.movements) {
+    if (m.sourceType !== 'opening') continue;
+    const product = db.products.find((p) => p.id === m.productId);
+    if (!product) continue;
+    out.push({ product, value: Math.round(m.unitCost * m.qty) });
+  }
+  return out;
 }
