@@ -8,7 +8,7 @@
 [![core](https://img.shields.io/badge/هسته-TypeScript-0f766e)](packages/core)
 [![offline](https://img.shields.io/badge/آفلاین--اول-✓-16a34a)](#تعهد-دوم-بدون-اینترنت-هم-کار-میکند)
 [![pwa](https://img.shields.io/badge/PWA-قابل%20نصب-7c3aed)](#نصب-روی-گوشی)
-[![size](https://img.shields.io/badge/حجم-۱۰۰KB%20gzip-2563eb)](apps/web)
+[![size](https://img.shields.io/badge/حجم-۱۰۱KB%20gzip-2563eb)](apps/web)
 
 </div>
 
@@ -78,6 +78,7 @@
 - رسمی و غیررسمی با مالیات بر ارزش افزوده
 - سرشکن کردن دقیق تخفیف کلی بین سطرها
 - محاسبهٔ سود هر فاکتور
+- تبدیل پیش‌فاکتور و برگشت جزئی با بهای اصلی
 - چاپ با مبلغ به حروف فارسی
 
 **📦 کالا و انبار**
