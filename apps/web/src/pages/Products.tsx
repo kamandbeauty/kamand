@@ -230,6 +230,14 @@ function ProductEditor({ product, isNew, onClose, onSave }: {
         </Field>
       </div>
 
+      <Field label="شناسهٔ کالا/خدمت (سامانهٔ مؤدیان)" hint="برای صدور صورتحساب الکترونیکی الزامی است">
+        <input
+          className="input num-input"
+          value={p.taxCode ?? ''}
+          onChange={(e) => setP({ ...p, taxCode: e.target.value })}
+        />
+      </Field>
+
       <div className="row">
         <Field label="قیمت خرید">
           <MoneyInput value={p.buyPrice} onChange={(v) => setP({ ...p, buyPrice: v })} />

@@ -2,9 +2,11 @@ import {
   AccountIndex, createChartOfAccounts, defaultTreasuryAccount, LamportClock,
   MemorySyncQueue, postInvoice, postTransaction, stockMovementsFor,
   replayProduct, uuid, computeInvoice, consumeStock, invoiceLineUnitCost,
+  buildElectronicInvoice, nextSerial, validateForTaxSystem,
   type Business, type Cheque, type Invoice, type JournalEntry, type Party,
   type Product, type StockMovement, type Subscription, type Transaction,
   type Treasury, type Account, type ID, type Rial,
+  type TaxProfile, type TaxSubmission, type InvoiceSubjectType,
 } from '@javid/core';
 
 /**
@@ -59,6 +61,8 @@ export interface DB {
   entries: JournalEntry[];
   movements: StockMovement[];
   subscription: Subscription;
+  taxProfile: TaxProfile;
+  taxSubmissions: TaxSubmission[];
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -103,16 +107,35 @@ export function createEmptyDB(name = 'کسب‌وکار من'): DB {
       expiresAt: expires.toISOString(),
       status: 'trial',
     },
+    taxProfile: { memoryId: '', sellerTin: '', sellerType: 2, lastSerial: 0 },
+    taxSubmissions: [],
   };
 }
 
 export function loadDB(): DB | null {
   try {
     const raw = storage.get(KEY);
-    return raw ? (JSON.parse(raw) as DB) : null;
+    if (!raw) return null;
+    return migrate(JSON.parse(raw) as DB);
   } catch {
     return null;
   }
+}
+
+/**
+ * مهاجرت خودکار دادهٔ ذخیره‌شده به شکل جدید.
+ * درس‌گرفته از رقبا: مهاجرت باید خودکار و بی‌صدا باشد، نه یک فرم درخواست
+ * که کاربر منتظر بماند تا پشتیبانی انجامش دهد.
+ */
+export function migrate(db: DB): DB {
+  const out = { ...db };
+  if (!out.taxProfile) {
+    out.taxProfile = { memoryId: '', sellerTin: '', sellerType: 2, lastSerial: 0 };
+  }
+  if (!Array.isArray(out.taxSubmissions)) out.taxSubmissions = [];
+  if (!Array.isArray(out.movements)) out.movements = [];
+  if (!Array.isArray(out.entries)) out.entries = [];
+  return out;
 }
 
 export function saveDB(db: DB): void {
@@ -314,4 +337,67 @@ export function paidOf(db: DB, invoiceId: ID): Rial {
 
 export function invoiceTotal(inv: Invoice): Rial {
   return computeInvoice(inv).grandTotal;
+}
+
+
+// ─────────── سامانهٔ مؤدیان ───────────
+
+/** آیا این فاکتور آمادهٔ ارسال به سامانه است؟ */
+export function taxReadiness(db: DB, invoice: Invoice, subjectType: InvoiceSubjectType = 1) {
+  const buyer = db.parties.find((p) => p.id === invoice.partyId) ?? null;
+  const products = new Map(db.products.map((p) => [p.id, p]));
+  return validateForTaxSystem(invoice, buyer, products, db.taxProfile, subjectType);
+}
+
+export function submissionFor(db: DB, invoiceId: ID): TaxSubmission | undefined {
+  return db.taxSubmissions.find((s) => s.invoiceId === invoiceId && s.status !== 'cancelled');
+}
+
+/**
+ * صدور صورتحساب الکترونیکی و قرار دادن آن در صف ارسال.
+ * ارسال واقعی به سامانه در فاز بک‌اند انجام می‌شود؛ اینجا سند ساخته،
+ * اعتبارسنجی و صف می‌شود تا آفلاین هم کار کند.
+ */
+export function issueElectronicInvoice(
+  db: DB,
+  invoice: Invoice,
+  subjectType: InvoiceSubjectType = 1,
+): { db: DB; submission: TaxSubmission } {
+  const buyer = db.parties.find((p) => p.id === invoice.partyId) ?? null;
+  const products = new Map(db.products.map((p) => [p.id, p]));
+  const serial = nextSerial(db.taxProfile);
+
+  const doc = buildElectronicInvoice({
+    invoice, business: db.business, buyer, products,
+    profile: db.taxProfile, serial, subjectType,
+  });
+
+  const submission: TaxSubmission = {
+    id: uuid(),
+    businessId: db.business.id,
+    invoiceId: invoice.id,
+    taxId: doc.header.taxid,
+    serial,
+    subject: doc.header.ins,
+    pattern: doc.header.inp,
+    subjectType,
+    status: 'queued',
+    createdAt: nowIso(),
+  };
+
+  track('tax_submission', submission.id, { submission, doc });
+
+  return {
+    db: {
+      ...db,
+      taxProfile: { ...db.taxProfile, lastSerial: serial },
+      taxSubmissions: [...db.taxSubmissions, submission],
+    },
+    submission,
+  };
+}
+
+export function updateTaxProfile(db: DB, profile: TaxProfile): DB {
+  track('tax_profile', db.business.id, profile);
+  return { ...db, taxProfile: profile };
 }

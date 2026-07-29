@@ -9,8 +9,9 @@ import { Products } from './pages/Products';
 import { Reports } from './pages/Reports';
 import { Treasury } from './pages/Treasury';
 import { Settings } from './pages/Settings';
+import { Tax } from './pages/Tax';
 
-type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'reports' | 'settings';
+type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'tax' | 'reports' | 'settings';
 
 const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }[] = [
   {
@@ -24,6 +25,7 @@ const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }
       { id: 'parties', label: 'اشخاص', icon: '👥' },
       { id: 'products', label: 'کالاها', icon: '📦' },
       { id: 'treasury', label: 'خزانه و چک', icon: '💳' },
+      { id: 'tax', label: 'سامانهٔ مؤدیان', icon: '🏛' },
     ],
   },
   {
@@ -41,6 +43,7 @@ const TITLES: Record<Page, string> = {
   parties: 'اشخاص',
   products: 'کالاها و خدمات',
   treasury: 'خزانه‌داری و چک',
+  tax: 'سامانهٔ مؤدیان',
   reports: 'گزارش‌ها',
   settings: 'تنظیمات',
 };
@@ -152,6 +155,7 @@ export default function App() {
           {page === 'parties' && <Parties db={db} setDB={setDB} canWrite={canWrite} />}
           {page === 'products' && <Products db={db} setDB={setDB} canWrite={canWrite} />}
           {page === 'treasury' && <Treasury db={db} setDB={setDB} canWrite={canWrite} />}
+          {page === 'tax' && <Tax db={db} setDB={setDB} canWrite={canWrite} />}
           {page === 'reports' && <Reports db={db} />}
           {page === 'settings' && <Settings db={db} setDB={setDB} />}
         </main>

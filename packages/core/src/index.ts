@@ -23,6 +23,7 @@ export * from './reports.js';
 export * from './subscription.js';
 export * from './sync.js';
 export * from './export.js';
+export * from './tax.js';
 
 export const VERSION = '0.1.0';
 export const APP_NAME = 'جاوید';

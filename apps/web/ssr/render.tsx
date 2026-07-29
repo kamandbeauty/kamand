@@ -8,13 +8,14 @@ import { Products } from '../src/pages/Products';
 import { Reports } from '../src/pages/Reports';
 import { Treasury } from '../src/pages/Treasury';
 import { Settings } from '../src/pages/Settings';
-import { createEmptyDB, postInvoiceToDB, postTransactionToDB, upsertParty, upsertProduct, type DB } from '../src/store';
+import { Tax } from '../src/pages/Tax';
+import { createEmptyDB, issueElectronicInvoice, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
   let db = createEmptyDB('فروشگاه آزمون');
 
-  const cust = { id: uuid(), businessId: db.business.id, kind: 'customer' as const, name: 'مشتری الف', phone: '09120000000', openingBalance: 0 };
+  const cust = { id: uuid(), businessId: db.business.id, kind: 'customer' as const, name: 'مشتری الف', phone: '09120000000', economicCode: '411222333444', openingBalance: 0 };
   const vend = { id: uuid(), businessId: db.business.id, kind: 'vendor' as const, name: 'تأمین‌کننده ب', openingBalance: 0 };
   db = upsertParty(db, cust);
   db = upsertParty(db, vend);
@@ -23,6 +24,7 @@ function seed(): DB {
     id: uuid(), businessId: db.business.id, kind: 'goods' as const, name: 'کالای نمونه',
     barcode: '6260000000001', unitMain: 'عدد', buyPrice: 100_000, sellPrice: 150_000,
     openingQty: 50, openingCost: 100_000, minQty: 5, vatRate: 10,
+    taxCode: '2710000000001',
   };
   db = upsertProduct(db, prod);
 
@@ -34,6 +36,9 @@ function seed(): DB {
     discount: 0, shipping: 0, status: 'open', createdAt: now, updatedAt: now,
   };
   db = postInvoiceToDB(db, sale);
+
+  db = updateTaxProfile(db, { memoryId: 'A1D2E3', sellerTin: '411111111111', sellerType: 2, lastSerial: 0 });
+  db = issueElectronicInvoice(db, db.invoices[db.invoices.length - 1]!).db;
 
   db = postTransactionToDB(db, {
     id: uuid(), businessId: db.business.id, kind: 'receive',
@@ -54,6 +59,7 @@ const pages: [string, React.ReactElement][] = [
   ['کالاها', <Products db={db} setDB={noop} canWrite />],
   ['خزانه', <Treasury db={db} setDB={noop} canWrite />],
   ['گزارش‌ها', <Reports db={db} />],
+  ['سامانهٔ مؤدیان', <Tax db={db} setDB={noop} canWrite />],
   ['تنظیمات', <Settings db={db} setDB={noop} />],
   ['حالت فقط-خواندنی', <Invoices db={db} setDB={noop} canWrite={false} />],
 ];
@@ -96,6 +102,21 @@ const roParties = renderToString(<Parties db={db} setDB={noop} canWrite={false} 
 const expOk = roParties.includes('خروجی');
 console.log(expOk ? '✅ خروجی گرفتن در حالت فقط-خواندنی آزاد است' : '❌ خروجی قفل شده');
 if (!expOk) failed++;
+
+// بررسی سامانهٔ مؤدیان
+const taxHtml = renderToString(<Tax db={db} setDB={noop} canWrite />);
+const sub = db.taxSubmissions[0];
+const taxChecks: [string, boolean][] = [
+  ['صورتحساب الکترونیکی صادر شد', !!sub],
+  ['شمارهٔ مالیاتی ۲۲ کاراکتری', sub?.taxId.length === 22],
+  ['شمارهٔ مالیاتی در صفحه دیده می‌شود', !!sub && taxHtml.includes(sub.taxId)],
+  ['سریال افزایش یافت', db.taxProfile.lastSerial === 1],
+  ['بدون هشدار پیکربندی', !taxHtml.includes('هنوز پیکربندی نشده')],
+];
+for (const [k, v] of taxChecks) {
+  console.log(v ? `✅ ${k}` : `❌ ${k}`);
+  if (!v) failed++;
+}
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
 process.exit(failed === 0 ? 0 : 1);
