@@ -6,6 +6,7 @@ import {
   assertNotLocked, createAuditLog, hasPermission,
   checkIntegrity, closeFiscalYear, fiscalYearBounds, previewClosing, currentFiscalYear,
   postOpening, SYSTEM_ACCOUNTS, EntryBuilder, assertBalanced,
+  createReturn, quoteToSale, nextInvoiceNumber,
   type JournalLine,
   type AuditLog, type AuditedEntity, type PeriodLock, type Permission, type Role,
   type Business, type Cheque, type Invoice, type JournalEntry, type Party,
@@ -755,4 +756,76 @@ export function voidManualEntry(db: DB, entryId: ID): DB {
   return audit(next, 'delete', 'entry', entryId, {
     before: { شرح: entry.description, تاریخ: entry.date },
   });
+}
+
+
+// ─────────── تبدیل و برگشت فاکتور ───────────
+
+const NUMBER_PREFIX: Record<Invoice['type'], string> = {
+  sale: 'F', purchase: 'P', quote: 'Q',
+  sale_return: 'RS', purchase_return: 'RP', waste: 'W',
+};
+
+export function nextNumberFor(db: DB, type: Invoice['type']): string {
+  return nextInvoiceNumber(
+    db.invoices.filter((i) => i.type === type).map((i) => i.number),
+    NUMBER_PREFIX[type],
+  );
+}
+
+/** تبدیل پیش‌فاکتور به فاکتور فروش */
+export function convertQuote(db: DB, quoteId: ID): { db: DB; invoiceId: ID } {
+  const quote = db.invoices.find((i) => i.id === quoteId);
+  if (!quote) throw new Error('پیش‌فاکتور یافت نشد');
+  if (quote.type !== 'quote') throw new Error('فقط پیش‌فاکتور قابل تبدیل است');
+
+  const sale = quoteToSale(quote, uuid(), nextNumberFor(db, 'sale'), nowIso());
+  const next = postInvoiceToDB(db, sale);
+
+  return { db: next, invoiceId: sale.id };
+}
+
+/**
+ * ساخت فاکتور برگشتی از روی فاکتور اصلی.
+ *
+ * ⚠️ چرا حتماً باید از فاکتور اصلی ساخته شود:
+ * فاکتور برگشتی باید **بهای تمام‌شدهٔ اصلی** را با خود ببرد. اگر کاربر
+ * برگشت را دستی بسازد، بهای جاری انبار استفاده می‌شود و اگر قیمت خرید
+ * بین فروش و برگشت تغییر کرده باشد، سود دوره اشتباه محاسبه می‌گردد.
+ */
+export function createReturnFor(
+  db: DB,
+  sourceId: ID,
+  lineQtys?: Map<ID, number>,
+): { db: DB; invoiceId: ID } {
+  const source = db.invoices.find((i) => i.id === sourceId);
+  if (!source) throw new Error('فاکتور اصلی یافت نشد');
+  if (source.type !== 'sale' && source.type !== 'purchase') {
+    throw new Error('فقط از فاکتور فروش یا خرید می‌توان برگشت ساخت');
+  }
+
+  const type: Invoice['type'] = source.type === 'sale' ? 'sale_return' : 'purchase_return';
+  const ret = createReturn(source, uuid(), nextNumberFor(db, type), nowIso(), lineQtys);
+
+  return { db: postInvoiceToDB(db, ret), invoiceId: ret.id };
+}
+
+/** مقدار قبلاً برگشت‌خوردهٔ هر ردیف از یک فاکتور */
+export function returnedQtyOf(db: DB, sourceId: ID): Map<ID, number> {
+  const out = new Map<ID, number>();
+  for (const inv of db.invoices) {
+    if (inv.sourceInvoiceId !== sourceId || inv.deletedAt) continue;
+    for (const l of inv.lines) {
+      out.set(l.id, (out.get(l.id) ?? 0) + l.qty);
+    }
+  }
+  return out;
+}
+
+/** آیا این فاکتور کاملاً برگشت خورده؟ */
+export function isFullyReturned(db: DB, invoiceId: ID): boolean {
+  const inv = db.invoices.find((i) => i.id === invoiceId);
+  if (!inv) return false;
+  const returned = returnedQtyOf(db, invoiceId);
+  return inv.lines.every((l) => (returned.get(l.id) ?? 0) >= l.qty);
 }

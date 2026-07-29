@@ -13,7 +13,7 @@ import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
-import { closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -278,6 +278,86 @@ for (const [k, v] of taxChecks) {
   try { voidManualEntry(db, auto.id); } catch { blocked = true; }
   console.log(blocked ? '✅ سند خودکار قابل حذف نیست' : '❌ سند خودکار حذف شد');
   if (!blocked) failed++;
+}
+
+// برگشت باید بهای اصلی را ببرد، حتی اگر قیمت خرید تغییر کرده باشد
+{
+  const { incomeStatement } = await import('@javid/core');
+
+  let d4 = createEmptyDB('آزمون برگشت');
+  const pid = uuid(), prod = uuid();
+  d4 = upsertParty(d4, { id: pid, businessId: d4.business.id, kind: 'customer', name: 'م', openingBalance: 0 });
+  d4 = upsertProduct(d4, {
+    id: prod, businessId: d4.business.id, kind: 'goods', name: 'کالا',
+    unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000,
+    openingQty: 10, openingCost: 100_000,
+  });
+
+  const t = new Date().toISOString(); const dd = t.slice(0, 10);
+  const mk = (o: Partial<Invoice>): Invoice => ({
+    id: uuid(), businessId: d4.business.id, type: 'sale', number: 'X', partyId: pid,
+    date: dd, isOfficial: false, lines: [], discount: 0, shipping: 0, status: 'open',
+    createdAt: t, updatedAt: t, ...o,
+  });
+
+  // فروش ۵ عدد با بهای ۱۰۰٬۰۰۰
+  const sale = mk({ type: 'sale', number: 'F-1',
+    lines: [{ id: uuid(), productId: prod, qty: 5, unit: 'ع', unitPrice: 300_000, discount: 0, vatRate: 0 }] });
+  d4 = postInvoiceToDB(d4, sale);
+
+  // قیمت خرید بالا می‌رود
+  d4 = postInvoiceToDB(d4, mk({ type: 'purchase', number: 'P-1',
+    lines: [{ id: uuid(), productId: prod, qty: 10, unit: 'ع', unitPrice: 250_000, discount: 0, vatRate: 0 }] }));
+
+  // برگشت کامل از روی فاکتور اصلی
+  const r = createReturnFor(d4, sale.id);
+  d4 = r.db;
+
+  const profit = incomeStatement(d4.entries, indexOf(d4)).netProfit;
+  const checks: [string, boolean][] = [
+    ['برگشت کامل سود را صفر می‌کند', profit === 0],
+    ['فاکتور برگشتی به اصلی ارجاع دارد', d4.invoices.find((i) => i.id === r.invoiceId)?.sourceInvoiceId === sale.id],
+    ['فاکتور کاملاً برگشت‌خورده شناسایی می‌شود', isFullyReturned(d4, sale.id)],
+    ['مقدار برگشتی ردیابی می‌شود', [...returnedQtyOf(d4, sale.id).values()][0] === 5],
+  ];
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k} (سود ${profit})`);
+    if (!v) failed++;
+  }
+
+  // برگشت جزئی
+  let d5 = createEmptyDB('جزئی');
+  d5 = upsertParty(d5, { id: pid, businessId: d5.business.id, kind: 'customer', name: 'م', openingBalance: 0 });
+  d5 = upsertProduct(d5, { id: prod, businessId: d5.business.id, kind: 'goods', name: 'ک',
+    unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000, openingQty: 10, openingCost: 100_000 });
+  const s2 = { ...mk({ type: 'sale', number: 'F-2',
+    lines: [{ id: 'ln1', productId: prod, qty: 4, unit: 'ع', unitPrice: 300_000, discount: 0, vatRate: 0 }] }), businessId: d5.business.id };
+  d5 = postInvoiceToDB(d5, s2);
+  d5 = createReturnFor(d5, s2.id, new Map([['ln1', 1]])).db;
+
+  const partial = incomeStatement(d5.entries, indexOf(d5)).netProfit;
+  // ۳ عدد باقی‌مانده × (۳۰۰٬۰۰۰ − ۱۰۰٬۰۰۰) = ۶۰۰٬۰۰۰
+  console.log(partial === 600_000 ? '✅ برگشت جزئی سود را درست کم می‌کند' : `❌ برگشت جزئی: ${partial}`);
+  if (partial !== 600_000) failed++;
+  console.log(!isFullyReturned(d5, s2.id) ? '✅ برگشت جزئی، کامل شمرده نمی‌شود' : '❌ اشتباه کامل شمرده شد');
+}
+
+// تبدیل پیش‌فاکتور
+{
+  const q = {
+    id: uuid(), businessId: db.business.id, type: 'quote' as const, number: 'Q-1',
+    partyId: db.parties[0]!.id, date: new Date().toISOString().slice(0, 10), isOfficial: false,
+    lines: [{ id: uuid(), productId: db.products[0]!.id, qty: 2, unit: 'عدد', unitPrice: 150_000, discount: 0, vatRate: 0 }],
+    discount: 0, shipping: 0, status: 'draft' as const,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  const withQuote = { ...db, invoices: [...db.invoices, q] };
+  const conv = convertQuote(withQuote, q.id);
+  const made = conv.db.invoices.find((i) => i.id === conv.invoiceId);
+
+  console.log(made?.type === 'sale' ? '✅ پیش‌فاکتور به فاکتور تبدیل شد' : '❌ تبدیل نشد');
+  if (made?.type !== 'sale') failed++;
+  console.log(made?.number.startsWith('F-') ? '✅ شمارهٔ جدید فروش گرفت' : '❌ شماره اشتباه');
 }
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);

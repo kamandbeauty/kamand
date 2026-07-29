@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   computeInvoice, INVOICE_TYPE_LABELS, invoiceProfit, nextInvoiceNumber,
-  paymentStatus, uuid, validateInvoice, formatMoney, moneyToWords,
+  paymentStatus, uuid, validateInvoice, formatMoney, moneyToWords, toPersianDigits,
   type Invoice, type InvoiceLine, type InvoiceType,
 } from '@javid/core';
-import { invoiceTotal, paidOf, postInvoiceToDB, stockOf, type DB } from '../store';
+import {
+  convertQuote, createReturnFor, invoiceTotal, isFullyReturned, paidOf,
+  postInvoiceToDB, returnedQtyOf, stockOf, type DB,
+} from '../store';
 import { availableMethods, METHOD_LABELS, printReceipt, receiptFor, type PrintMethod } from '../printer';
 import { attachHardwareScanner } from '../barcode';
 import {
@@ -28,6 +31,20 @@ export function Invoices({ db, setDB, canWrite }: {
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Invoice | null>(null);
   const [viewing, setViewing] = useState<Invoice | null>(null);
+  const [returning, setReturning] = useState<Invoice | null>(null);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+
+  function convert(id: string) {
+    try {
+      const r = convertQuote(db, id);
+      setDB(r.db);
+      setNotice('پیش‌فاکتور به فاکتور فروش تبدیل شد');
+      setError('');
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
 
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -75,6 +92,9 @@ export function Invoices({ db, setDB, canWrite }: {
           </>
         )}
       </div>
+
+      {notice && <Banner tone="success" action={<button className="btn btn-sm" onClick={() => setNotice('')}>بستن</button>}>{notice}</Banner>}
+      {error && <Banner tone="critical" action={<button className="btn btn-sm" onClick={() => setError('')}>بستن</button>}>{error}</Banner>}
 
       <Tabs
         active={tab}
@@ -131,6 +151,13 @@ export function Invoices({ db, setDB, canWrite }: {
                     <td className="center"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td>
                     <td className="end no-print">
                       <button className="btn btn-sm btn-ghost" onClick={() => setViewing(inv)}>مشاهده</button>
+                      {canWrite && inv.type === 'quote' && (
+                        <button className="btn btn-sm" onClick={() => convert(inv.id)}>تبدیل به فاکتور</button>
+                      )}
+                      {canWrite && (inv.type === 'sale' || inv.type === 'purchase')
+                        && !isFullyReturned(db, inv.id) && (
+                        <button className="btn btn-sm btn-ghost" onClick={() => setReturning(inv)}>برگشت</button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -153,6 +180,26 @@ export function Invoices({ db, setDB, canWrite }: {
       )}
 
       {viewing && <InvoiceView db={db} invoice={viewing} onClose={() => setViewing(null)} />}
+
+      {returning && (
+        <ReturnDialog
+          db={db}
+          source={returning}
+          onClose={() => setReturning(null)}
+          onSubmit={(qtys) => {
+            try {
+              const r = createReturnFor(db, returning.id, qtys);
+              setDB(r.db);
+              setReturning(null);
+              setNotice('فاکتور برگشتی ثبت شد');
+              setError('');
+            } catch (e) {
+              setError((e as Error).message);
+              setReturning(null);
+            }
+          }}
+        />
+      )}
     </>
   );
 }
@@ -601,6 +648,108 @@ function ThermalDialog({ db, invoiceId, onClose }: {
           fontFamily: 'monospace', direction: 'rtl', whiteSpace: 'pre',
         }}>{preview}</pre>
       </Field>
+    </Modal>
+  );
+}
+
+
+// ─────────── فاکتور برگشتی ───────────
+
+/**
+ * ساخت برگشت از روی فاکتور اصلی.
+ *
+ * مقدار قابل برگشت = مقدار فاکتور منهای آنچه قبلاً برگشت خورده.
+ * این جلوی برگشت بیش از فروش را می‌گیرد.
+ */
+function ReturnDialog({ db, source, onClose, onSubmit }: {
+  db: DB;
+  source: Invoice;
+  onClose: () => void;
+  onSubmit: (qtys: Map<string, number>) => void;
+}) {
+  const alreadyReturned = useMemo(() => returnedQtyOf(db, source.id), [db, source.id]);
+
+  const [qtys, setQtys] = useState<Map<string, number>>(() => {
+    const m = new Map<string, number>();
+    for (const l of source.lines) {
+      m.set(l.id, Math.max(0, l.qty - (alreadyReturned.get(l.id) ?? 0)));
+    }
+    return m;
+  });
+
+  const totals = computeInvoice(source);
+  const anySelected = [...qtys.values()].some((q) => q > 0);
+
+  const refundTotal = source.lines.reduce((sum, l, i) => {
+    const q = qtys.get(l.id) ?? 0;
+    if (q <= 0 || l.qty === 0) return sum;
+    return sum + Math.round(((totals.lines[i]?.total ?? 0) * q) / l.qty);
+  }, 0);
+
+  return (
+    <Modal
+      wide
+      title={`برگشت از فاکتور ${source.number}`}
+      onClose={onClose}
+      footer={
+        <>
+          <button
+            className="btn btn-primary"
+            disabled={!anySelected}
+            onClick={() => onSubmit(new Map([...qtys].filter(([, q]) => q > 0)))}
+          >ثبت برگشت</button>
+          <button className="btn" onClick={onClose}>انصراف</button>
+          <div style={{ flex: 1 }} />
+          <div style={{ textAlign: 'end' }}>
+            <div className="small muted">مبلغ برگشتی</div>
+            <div style={{ fontSize: 17, fontWeight: 700 }}><Money value={refundTotal} /></div>
+          </div>
+        </>
+      }
+    >
+      <Banner tone="info">
+        بهای تمام‌شدهٔ اصلی همراه برگشت منتقل می‌شود تا سود دوره درست
+        محاسبه شود، حتی اگر قیمت خرید از زمان فروش تغییر کرده باشد.
+      </Banner>
+
+      <table>
+        <thead>
+          <tr>
+            <th>کالا</th>
+            <th className="end">فروخته</th>
+            <th className="end">قبلاً برگشتی</th>
+            <th style={{ width: 120 }}>مقدار برگشت</th>
+            <th className="end">مبلغ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {source.lines.map((l, i) => {
+            const done = alreadyReturned.get(l.id) ?? 0;
+            const max = Math.max(0, l.qty - done);
+            const q = qtys.get(l.id) ?? 0;
+            const amount = l.qty > 0 ? Math.round(((totals.lines[i]?.total ?? 0) * q) / l.qty) : 0;
+            return (
+              <tr key={l.id}>
+                <td>{db.products.find((p) => p.id === l.productId)?.name ?? '—'}</td>
+                <td className="end num">{toPersianDigits(l.qty)}</td>
+                <td className="end num muted">{done ? toPersianDigits(done) : '—'}</td>
+                <td>
+                  <NumberInput
+                    value={q}
+                    disabled={max === 0}
+                    onChange={(v) => {
+                      const clamped = Math.min(Math.max(0, v), max);
+                      setQtys((m) => new Map(m).set(l.id, clamped));
+                    }}
+                  />
+                  {max === 0 && <div className="small muted">کاملاً برگشت خورده</div>}
+                </td>
+                <td className="end"><Money value={amount} /></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </Modal>
   );
 }
