@@ -8,7 +8,7 @@
 [![core](https://img.shields.io/badge/هسته-TypeScript-0f766e)](packages/core)
 [![offline](https://img.shields.io/badge/آفلاین--اول-✓-16a34a)](#تعهد-دوم-بدون-اینترنت-هم-کار-میکند)
 [![pwa](https://img.shields.io/badge/PWA-قابل%20نصب-7c3aed)](#نصب-روی-گوشی)
-[![size](https://img.shields.io/badge/حجم-۱۰۶KB%20gzip-2563eb)](apps/web)
+[![size](https://img.shields.io/badge/حجم-۱۰۸KB%20gzip-2563eb)](apps/web)
 
 </div>
 
@@ -84,6 +84,7 @@
 **📦 کالا و انبار**
 - کالا و خدمت، بارکد، دو واحدی با ضریب تبدیل
 - کاردکس با مانده تجمعی
+- انبارگردانی و اصلاح موجودی
 - هشدار حداقل موجودی
 
 </td><td width="50%" valign="top">
