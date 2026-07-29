@@ -196,7 +196,14 @@ export function createReturn(
   const lines = source.lines
     .map((l) => {
       const qty = lineQtys ? lineQtys.get(l.id) ?? 0 : l.qty;
-      return qty > 0 ? { ...l, qty } : null;
+      if (qty <= 0) return null;
+      // بهای تمام‌شده به نسبت مقدار برگشتی از فاکتور اصلی می‌آید،
+      // تا کالا با همان بهایی که خارج شده بود به انبار بازگردد.
+      const line: InvoiceLine = { ...l, qty };
+      if (l.cogs !== undefined && l.qty > 0) {
+        line.cogs = bankersRound((l.cogs * qty) / l.qty);
+      }
+      return line;
     })
     .filter((l): l is InvoiceLine => l !== null);
 
@@ -211,6 +218,7 @@ export function createReturn(
     discount: 0,
     shipping: 0,
     status: 'open',
+    sourceInvoiceId: source.id,
     note: `برگشت از فاکتور ${source.number}`,
     createdAt: now,
     updatedAt: now,

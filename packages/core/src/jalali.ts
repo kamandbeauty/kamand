@@ -169,5 +169,6 @@ export function fiscalYearRange(date: Date, startMonth = 1): { from: Date; to: D
   const endYear = startMonth === 1 ? jy : jy + 1;
   const to = jalaliToDate({ jy: endYear, jm: endMonth, jd: jalaliMonthLength(endYear, endMonth) });
   to.setHours(23, 59, 59, 999);
-  return { from, to, label: `سال مالی ${jy}` };
+  const label = `سال مالی ${String(jy).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]!)}`;
+  return { from, to, label };
 }

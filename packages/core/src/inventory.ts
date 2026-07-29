@@ -190,3 +190,18 @@ export function kardex(
   }
   return rows;
 }
+
+/**
+ * بهای بازگشت کالا به انبار.
+ * قاعده: کالای برگشتی باید با همان بهایی که خارج شده بود بازگردد،
+ * نه با قیمت فروش. در غیر این صورت ارزش انبار و سود متورم می‌شود.
+ */
+export function returnUnitCost(
+  line: { qty: number; cogs?: Rial; unitPrice: Rial },
+  fallbackCost?: Rial,
+): Rial {
+  if (line.cogs !== undefined && line.qty > 0) {
+    return bankersRound(line.cogs / line.qty);
+  }
+  return fallbackCost ?? line.unitPrice;
+}

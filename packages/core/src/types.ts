@@ -110,6 +110,8 @@ export interface Invoice {
   shipping: Rial;
   status: InvoiceStatus;
   note?: string;
+  /** فاکتور اصلی، در فاکتورهای برگشتی — برای بازگرداندن کالا با بهای اصلی */
+  sourceInvoiceId?: ID | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;

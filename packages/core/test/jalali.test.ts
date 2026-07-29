@@ -55,6 +55,6 @@ describe('تاریخ جلالی', () => {
     assert.equal(dateToJalali(r.from).jy, 1405);
     assert.equal(dateToJalali(r.from).jm, 1);
     assert.equal(dateToJalali(r.to).jm, 12);
-    assert.equal(r.label, 'سال مالی 1405');
+    assert.equal(r.label, 'سال مالی ۱۴۰۵');
   });
 });

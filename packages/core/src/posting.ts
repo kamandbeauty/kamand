@@ -41,6 +41,34 @@ export function defaultTreasuryAccount(index: AccountIndex) {
  *        بدهکار بهای تمام‌شده / بستانکار موجودی کالا
  * خرید:  بدهکار موجودی کالا + مالیات خرید / بستانکار پرداختنی
  */
+/**
+ * بهای واحد هر ردیف برای حرکت انبار.
+ * خرید و برگشت از خرید → قیمت خرید همان فاکتور
+ * برگشت از فروش → بهای تمام‌شدهٔ ثبت‌شده روی ردیف (نه قیمت فروش)
+ * فروش و ضایعات → بهای مصرف‌شده از لایه‌های انبار
+ */
+export function invoiceLineUnitCost(
+  invoice: Invoice,
+  line: Invoice['lines'][number],
+  consumedCogs?: Rial,
+): Rial {
+  if (invoice.type === 'purchase' || invoice.type === 'purchase_return') {
+    return line.unitPrice;
+  }
+  if (line.cogs !== undefined && line.qty > 0) {
+    return Math.round(line.cogs / line.qty);
+  }
+  if (consumedCogs !== undefined && line.qty > 0) {
+    return Math.round(consumedCogs / line.qty);
+  }
+  return line.unitPrice;
+}
+
+/** جمع بهای تمام‌شدهٔ ردیف‌های یک فاکتور برگشت از فروش */
+export function returnCogsTotal(invoice: Invoice): Rial {
+  return addMoney(...invoice.lines.map((l) => l.cogs ?? 0));
+}
+
 export function postInvoice(
   invoice: Invoice,
   cogsTotal: Rial,
@@ -79,6 +107,7 @@ export function postInvoice(
       b.debit(index.id(A.SALES_RETURN), t.net);
       b.debit(index.id(A.VAT_PAYABLE), t.vat);
       b.credit(index.id(A.RECEIVABLE), addMoney(t.net, t.vat), { partyId: party });
+      // کالا با بهای تمام‌شده به انبار برمی‌گردد و بهای فروش معکوس می‌شود
       if (cogsTotal > 0) {
         b.debit(index.id(A.INVENTORY), cogsTotal);
         b.credit(index.id(A.COGS), cogsTotal);
@@ -107,6 +136,13 @@ export function postInvoice(
 }
 
 /** حرکات انبار ناشی از فاکتور */
+/**
+ * حرکات انبار ناشی از فاکتور.
+ *
+ * ⚠️ نکتهٔ مهم: در «برگشت از فروش» کالا باید با **بهای تمام‌شده** به انبار
+ * بازگردد، نه با قیمت فروش. اگر با قیمت فروش برگردد، هم ارزش انبار و هم
+ * سود دوره متورم می‌شود. تابع `returnCostOf` این را تضمین می‌کند.
+ */
 export function stockMovementsFor(
   invoice: Invoice,
   ctx: { businessId: ID; idGen: () => ID },
