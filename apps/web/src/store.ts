@@ -1,7 +1,7 @@
 import {
   AccountIndex, createChartOfAccounts, defaultTreasuryAccount, LamportClock,
   MemorySyncQueue, postInvoice, postTransaction, stockMovementsFor,
-  replayProduct, uuid, computeInvoice, consumeStock, invoiceLineUnitCost,
+  replayProduct, uuid, computeInvoice, consumeStock, invoiceLineUnitCost, paymentStatus,
   buildElectronicInvoice, nextSerial, validateForTaxSystem,
   buildCorrection, historyOf, INVOICE_SUBJECTS, SUBJECT_LABELS,
   type InvoiceSubject,
@@ -13,7 +13,7 @@ import {
   type AuditLog, type AuditedEntity, type PeriodLock, type Permission, type Role,
   type Business, type Cheque, type Invoice, type JournalEntry, type Party,
   type Product, type StockMovement, type Subscription, type Transaction,
-  type Treasury, type Account, type ID, type Rial,
+  type Treasury, type Account, type ID, type Rial, type PaymentMethod,
   type TaxProfile, type TaxSubmission, type InvoiceSubjectType,
 } from '@javid/core';
 
@@ -937,4 +937,153 @@ export function canCorrect(db: DB, submissionId: ID): { ok: boolean; reason?: st
 /** تاریخچهٔ تغییرات یک رکورد مشخص — «این فاکتور چه اتفاقی برایش افتاده؟» */
 export function recordHistory(db: DB, entity: AuditedEntity, entityId: ID) {
   return historyOf(db.auditLogs, entity, entityId);
+}
+
+
+// ─────────── تسویهٔ فاکتور ───────────
+
+/** فاکتورهای باز یک شخص، برای تخصیص پرداخت */
+export function openInvoicesOf(db: DB, partyId: ID | null): {
+  invoice: Invoice;
+  total: Rial;
+  paid: Rial;
+  remaining: Rial;
+}[] {
+  return db.invoices
+    .filter((i) => !i.deletedAt && i.type !== 'quote')
+    .filter((i) => (partyId ? i.partyId === partyId : true))
+    .map((invoice) => {
+      const total = invoiceTotal(invoice);
+      const paid = paidOf(db, invoice.id);
+      return { invoice, total, paid, remaining: total - paid };
+    })
+    .filter((r) => r.remaining > 0)
+    .sort((a, b) => a.invoice.date.localeCompare(b.invoice.date));
+}
+
+/**
+ * ثبت پرداخت روی یک فاکتور مشخص.
+ *
+ * ⚠️ چرا لازم است: `paidOf` تراکنش‌ها را با `invoiceId` فیلتر می‌کند،
+ * ولی تراکنشی که از صفحهٔ خزانه ثبت می‌شد این فیلد را نداشت. نتیجه:
+ * مغازه‌دار پول را می‌گرفت ولی فاکتور تا ابد «باز» می‌ماند و در
+ * گزارش مانده‌دار باقی می‌شد.
+ */
+export function recordInvoicePayment(
+  db: DB,
+  input: {
+    invoiceId: ID;
+    amount: Rial;
+    treasuryId: ID;
+    date: string;
+    method: PaymentMethod;
+    description?: string;
+  },
+): DB {
+  const invoice = db.invoices.find((i) => i.id === input.invoiceId);
+  if (!invoice) throw new Error('فاکتور یافت نشد');
+  if (invoice.type === 'quote') throw new Error('پیش‌فاکتور قابل تسویه نیست');
+  if (input.amount <= 0) throw new Error('مبلغ باید بزرگ‌تر از صفر باشد');
+
+  const remaining = invoiceTotal(invoice) - paidOf(db, input.invoiceId);
+  if (input.amount > remaining) {
+    throw new Error(
+      `مبلغ پرداخت از مانده فاکتور بیشتر است (مانده: ${remaining.toLocaleString('en-US')})`,
+    );
+  }
+
+  // خرید و برگشت از فروش پرداخت خروجی‌اند، فروش دریافتی
+  const outgoing = invoice.type === 'purchase' || invoice.type === 'sale_return';
+
+  const tx: Transaction = {
+    id: uuid(),
+    businessId: db.business.id,
+    kind: outgoing ? 'pay' : 'receive',
+    treasuryId: input.treasuryId,
+    partyId: invoice.partyId ?? null,
+    invoiceId: input.invoiceId,
+    amount: input.amount,
+    date: input.date,
+    method: input.method,
+    description: input.description ?? `تسویهٔ فاکتور ${invoice.number}`,
+    createdAt: nowIso(),
+  };
+
+  return postTransactionToDB(db, tx);
+}
+
+/**
+ * تخصیص خودکار یک دریافت به قدیمی‌ترین فاکتورهای باز.
+ * روش رایج در مغازه: مشتری مبلغی می‌دهد، از قدیمی‌ترین بدهی کم می‌شود.
+ */
+export function allocatePayment(
+  db: DB,
+  input: {
+    partyId: ID;
+    amount: Rial;
+    treasuryId: ID;
+    date: string;
+    method: PaymentMethod;
+  },
+): { db: DB; allocations: { invoiceId: ID; number: string; amount: Rial }[]; unallocated: Rial } {
+  let remaining = input.amount;
+  let working = db;
+  const allocations: { invoiceId: ID; number: string; amount: Rial }[] = [];
+
+  for (const row of openInvoicesOf(db, input.partyId)) {
+    if (remaining <= 0) break;
+    const portion = Math.min(remaining, row.remaining);
+
+    working = recordInvoicePayment(working, {
+      invoiceId: row.invoice.id,
+      amount: portion,
+      treasuryId: input.treasuryId,
+      date: input.date,
+      method: input.method,
+    });
+
+    allocations.push({ invoiceId: row.invoice.id, number: row.invoice.number, amount: portion });
+    remaining -= portion;
+  }
+
+  // باقی‌مانده به عنوان دریافت عمومی ثبت می‌شود (علی‌الحساب)
+  if (remaining > 0) {
+    working = postTransactionToDB(working, {
+      id: uuid(),
+      businessId: db.business.id,
+      kind: 'receive',
+      treasuryId: input.treasuryId,
+      partyId: input.partyId,
+      amount: remaining,
+      date: input.date,
+      method: input.method,
+      description: 'دریافت علی‌الحساب',
+      createdAt: nowIso(),
+    });
+  }
+
+  return { db: working, allocations, unallocated: remaining };
+}
+
+/** وضعیت تسویهٔ فاکتور */
+export function settlementOf(db: DB, invoiceId: ID): {
+  total: Rial;
+  paid: Rial;
+  remaining: Rial;
+  status: Invoice['status'];
+  payments: Transaction[];
+} {
+  const invoice = db.invoices.find((i) => i.id === invoiceId);
+  if (!invoice) throw new Error('فاکتور یافت نشد');
+
+  const total = invoiceTotal(invoice);
+  const paid = paidOf(db, invoiceId);
+
+  return {
+    total,
+    paid,
+    remaining: total - paid,
+    status: invoice.type === 'quote' ? 'draft' : paymentStatus(total, paid),
+    payments: db.transactions.filter((t) => t.invoiceId === invoiceId && !t.deletedAt),
+  };
 }

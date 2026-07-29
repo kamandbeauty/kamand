@@ -5,7 +5,7 @@ import {
 } from '@javid/core';
 
 const fa = (n: number) => toPersianDigits(n);
-import { indexOf, postTransactionToDB, upsertCheque, type DB } from '../store';
+import { allocatePayment, indexOf, openInvoicesOf, postTransactionToDB, upsertCheque, type DB } from '../store';
 import { Badge, Banner, Card, DateInput, Empty, Field, JDate, Modal, Money, MoneyInput, Tabs } from '../ui';
 
 export function Treasury({ db, setDB, canWrite }: {
@@ -181,8 +181,20 @@ export function Treasury({ db, setDB, canWrite }: {
           db={db}
           kind={txModal}
           onClose={() => setTxModal(null)}
-          onSave={(tx) => {
-            setDB(postTransactionToDB(db, tx));
+          onSave={(tx, autoAllocate) => {
+            // دریافت از مشتری می‌تواند خودکار به فاکتورهای باز تخصیص یابد
+            if (autoAllocate && tx.kind === 'receive' && tx.partyId) {
+              const r = allocatePayment(db, {
+                partyId: tx.partyId,
+                amount: tx.amount,
+                treasuryId: tx.treasuryId,
+                date: tx.date,
+                method: tx.method,
+              });
+              setDB(r.db);
+            } else {
+              setDB(postTransactionToDB(db, tx));
+            }
             setTxModal(null);
           }}
         />
@@ -232,8 +244,9 @@ function TxModal({ db, kind, onClose, onSave }: {
   db: DB;
   kind: TransactionKind;
   onClose: () => void;
-  onSave: (tx: Transaction) => void;
+  onSave: (tx: Transaction, autoAllocate: boolean) => void;
 }) {
+  const [autoAllocate, setAutoAllocate] = useState(true);
   const [tx, setTx] = useState<Transaction>({
     id: uuid(),
     businessId: db.business.id,
@@ -260,7 +273,7 @@ function TxModal({ db, kind, onClose, onSave }: {
             onClick={() => {
               if (tx.amount <= 0) return setErr('مبلغ باید بزرگ‌تر از صفر باشد');
               if (kind === 'transfer' && !tx.toTreasuryId) return setErr('حساب مقصد را انتخاب کنید');
-              onSave(tx);
+              onSave(tx, autoAllocate);
             }}
           >ثبت</button>
           <button className="btn" onClick={onClose}>انصراف</button>
@@ -306,6 +319,39 @@ function TxModal({ db, kind, onClose, onSave }: {
           </Field>
         )}
       </div>
+
+      {kind === 'receive' && tx.partyId && (() => {
+        const open = openInvoicesOf(db, tx.partyId);
+        if (open.length === 0) return null;
+        const totalOpen = open.reduce((s2, r) => s2 + r.remaining, 0);
+        return (
+          <div className="card" style={{ padding: 12, marginBottom: 14 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <input
+                type="checkbox"
+                checked={autoAllocate}
+                onChange={(e) => setAutoAllocate(e.target.checked)}
+              />
+              <span>تخصیص خودکار به فاکتورهای باز</span>
+            </label>
+            <div className="small muted" style={{ marginBottom: 8 }}>
+              {fa(open.length)} فاکتور باز با مجموع مانده <Money value={totalOpen} /> —
+              مبلغ از قدیمی‌ترین کم می‌شود.
+            </div>
+            <table>
+              <tbody>
+                {open.slice(0, 5).map((r) => (
+                  <tr key={r.invoice.id}>
+                    <td className="num small">{r.invoice.number}</td>
+                    <td><JDate value={r.invoice.date} /></td>
+                    <td className="end"><Money value={r.remaining} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
 
       <Field label="شرح">
         <input className="input" value={tx.description ?? ''} onChange={(e) => setTx({ ...tx, description: e.target.value })} />

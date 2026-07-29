@@ -7,7 +7,8 @@ import {
 } from '@javid/core';
 import {
   convertQuote, createReturnFor, invoiceTotal, isFullyReturned, paidOf,
-  postInvoiceToDB, recordHistory, returnedQtyOf, stockOf, type DB,
+  postInvoiceToDB, recordHistory, recordInvoicePayment, returnedQtyOf,
+  settlementOf, stockOf, type DB,
 } from '../store';
 import { availableMethods, METHOD_LABELS, printReceipt, receiptFor, type PrintMethod } from '../printer';
 import { attachHardwareScanner } from '../barcode';
@@ -33,6 +34,7 @@ export function Invoices({ db, setDB, canWrite }: {
   const [editing, setEditing] = useState<Invoice | null>(null);
   const [viewing, setViewing] = useState<Invoice | null>(null);
   const [returning, setReturning] = useState<Invoice | null>(null);
+  const [settling, setSettling] = useState<Invoice | null>(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
@@ -155,6 +157,9 @@ export function Invoices({ db, setDB, canWrite }: {
                       {canWrite && inv.type === 'quote' && (
                         <button className="btn btn-sm" onClick={() => convert(inv.id)}>تبدیل به فاکتور</button>
                       )}
+                      {canWrite && inv.type !== 'quote' && total - paid > 0 && (
+                        <button className="btn btn-sm" onClick={() => setSettling(inv)}>تسویه</button>
+                      )}
                       {canWrite && (inv.type === 'sale' || inv.type === 'purchase')
                         && !isFullyReturned(db, inv.id) && (
                         <button className="btn btn-sm btn-ghost" onClick={() => setReturning(inv)}>برگشت</button>
@@ -181,6 +186,25 @@ export function Invoices({ db, setDB, canWrite }: {
       )}
 
       {viewing && <InvoiceView db={db} invoice={viewing} onClose={() => setViewing(null)} />}
+
+      {settling && (
+        <SettleDialog
+          db={db}
+          invoice={settling}
+          onClose={() => setSettling(null)}
+          onSubmit={(input) => {
+            try {
+              setDB(recordInvoicePayment(db, { ...input, invoiceId: settling.id }));
+              setSettling(null);
+              setNotice('پرداخت ثبت شد');
+              setError('');
+            } catch (e) {
+              setError((e as Error).message);
+              setSettling(null);
+            }
+          }}
+        />
+      )}
 
       {returning && (
         <ReturnDialog
@@ -808,6 +832,107 @@ function HistoryDialog({ db, invoiceId, onClose }: {
             })}
           </tbody>
         </table>
+      )}
+    </Modal>
+  );
+}
+
+
+// ─────────── تسویهٔ فاکتور ───────────
+
+/**
+ * ثبت پرداخت روی فاکتور.
+ *
+ * تراکنش با شناسهٔ فاکتور ثبت می‌شود تا وضعیت پرداخت بروز شود —
+ * چیزی که پیش‌تر از صفحهٔ خزانه ممکن نبود.
+ */
+function SettleDialog({ db, invoice, onClose, onSubmit }: {
+  db: DB;
+  invoice: Invoice;
+  onClose: () => void;
+  onSubmit: (input: {
+    amount: number; treasuryId: string; date: string; method: 'cash' | 'bank' | 'cheque';
+  }) => void;
+}) {
+  const s = useMemo(() => settlementOf(db, invoice.id), [db, invoice.id]);
+
+  const [amount, setAmount] = useState(s.remaining);
+  const [treasuryId, setTreasuryId] = useState(db.treasuries[0]?.id ?? '');
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [method, setMethod] = useState<'cash' | 'bank' | 'cheque'>('cash');
+
+  const outgoing = invoice.type === 'purchase' || invoice.type === 'sale_return';
+  const tooMuch = amount > s.remaining;
+
+  return (
+    <Modal
+      title={`تسویهٔ فاکتور ${invoice.number}`}
+      onClose={onClose}
+      footer={
+        <>
+          <button
+            className="btn btn-primary"
+            disabled={amount <= 0 || tooMuch || !treasuryId}
+            onClick={() => onSubmit({ amount, treasuryId, date, method })}
+          >{outgoing ? 'ثبت پرداخت' : 'ثبت دریافت'}</button>
+          <button className="btn" onClick={onClose}>انصراف</button>
+        </>
+      }
+    >
+      <table style={{ marginBottom: 14 }}>
+        <tbody>
+          <tr><td>مبلغ فاکتور</td><td className="end"><Money value={s.total} /></td></tr>
+          <tr><td>پرداخت‌شده</td><td className="end"><Money value={s.paid} /></td></tr>
+          <tr className="report-total">
+            <td>مانده</td>
+            <td className="end"><Money value={s.remaining} sign /></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div className="row">
+        <Field label="مبلغ">
+          <MoneyInput value={amount} onChange={setAmount} />
+        </Field>
+        <Field label="تاریخ">
+          <DateInput value={date} onChange={setDate} />
+        </Field>
+      </div>
+
+      {tooMuch && (
+        <Banner tone="critical">مبلغ از مانده فاکتور بیشتر است.</Banner>
+      )}
+
+      <div className="row">
+        <Field label="حساب">
+          <select className="select" value={treasuryId} onChange={(e) => setTreasuryId(e.target.value)}>
+            {db.treasuries.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </Field>
+        <Field label="روش">
+          <select className="select" value={method} onChange={(e) => setMethod(e.target.value as 'cash')}>
+            <option value="cash">نقدی</option>
+            <option value="bank">بانکی</option>
+            <option value="cheque">چک</option>
+          </select>
+        </Field>
+      </div>
+
+      {s.payments.length > 0 && (
+        <>
+          <div className="small strong" style={{ marginTop: 10, marginBottom: 6 }}>پرداخت‌های قبلی</div>
+          <table>
+            <tbody>
+              {s.payments.map((p) => (
+                <tr key={p.id}>
+                  <td><JDate value={p.date} /></td>
+                  <td className="small muted">{p.description}</td>
+                  <td className="end"><Money value={p.amount} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
     </Modal>
   );

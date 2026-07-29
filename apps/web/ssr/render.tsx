@@ -13,7 +13,7 @@ import { Account } from '../src/pages/Account';
 import { Audit } from '../src/pages/Audit';
 import { YearEnd } from '../src/pages/YearEnd';
 import { Ledger } from '../src/pages/Ledger';
-import { canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
+import { allocatePayment, openInvoicesOf, recordInvoicePayment, settlementOf, canCorrect, correctionsOf, issueCorrection, recordHistory, convertQuote, createReturnFor, isFullyReturned, returnedQtyOf, upsertProduct as _up, closedYears, closeYear, closingPreviewFor, integrityOf, hasOpeningEntry, postManualEntry, postOpeningBalances, validateManualEntry, voidManualEntry, indexOf, createEmptyDB, issueElectronicInvoice, lockPeriod, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
 function seed(): DB {
@@ -417,6 +417,92 @@ for (const [k, v] of taxChecks) {
   const other = recordHistory(db, 'invoice', 'ghost-id');
   console.log(other.length === 0 ? '✅ تاریخچه فقط رکورد خودش را می‌دهد' : '❌ نشتی تاریخچه');
   if (other.length !== 0) failed++;
+}
+
+// تسویهٔ فاکتور — باگی که پیدا شد
+{
+  let d7 = createEmptyDB('آزمون تسویه');
+  const pid = uuid(), prod = uuid();
+  d7 = upsertParty(d7, { id: pid, businessId: d7.business.id, kind: 'customer', name: 'م', openingBalance: 0 });
+  d7 = upsertProduct(d7, { id: prod, businessId: d7.business.id, kind: 'goods', name: 'ک',
+    unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000, openingQty: 20, openingCost: 100_000 });
+
+  const tt = new Date().toISOString(), dd = tt.slice(0, 10);
+  const mkInv = (num: string, qty: number): Invoice => ({
+    id: uuid(), businessId: d7.business.id, type: 'sale', number: num, partyId: pid,
+    date: dd, isOfficial: false,
+    lines: [{ id: uuid(), productId: prod, qty, unit: 'ع', unitPrice: 300_000, discount: 0, vatRate: 0 }],
+    discount: 0, shipping: 0, status: 'open', createdAt: tt, updatedAt: tt,
+  });
+
+  const i1 = mkInv('F-1', 1);
+  d7 = postInvoiceToDB(d7, i1);
+
+  // پرداخت جزئی
+  d7 = recordInvoicePayment(d7, { invoiceId: i1.id, amount: 100_000,
+    treasuryId: d7.treasuries[0]!.id, date: dd, method: 'cash' });
+  const partial = settlementOf(d7, i1.id);
+
+  // تسویهٔ کامل
+  d7 = recordInvoicePayment(d7, { invoiceId: i1.id, amount: 200_000,
+    treasuryId: d7.treasuries[0]!.id, date: dd, method: 'cash' });
+  const full = settlementOf(d7, i1.id);
+
+  const checks: [string, boolean][] = [
+    ['پرداخت جزئی ثبت می‌شود', partial.paid === 100_000],
+    ['وضعیت «پرداخت جزئی» می‌شود', partial.status === 'partial'],
+    ['تسویهٔ کامل شناسایی می‌شود', full.paid === 300_000 && full.status === 'paid'],
+    ['مانده صفر می‌شود', full.remaining === 0],
+    ['فاکتور تسویه‌شده از فهرست باز خارج می‌شود', openInvoicesOf(d7, pid).length === 0],
+    ['پرداخت‌ها ردیابی می‌شوند', full.payments.length === 2],
+  ];
+  for (const [k, v] of checks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+
+  // پرداخت بیش از مانده رد می‌شود
+  let over = false;
+  try {
+    recordInvoicePayment(d7, { invoiceId: i1.id, amount: 1,
+      treasuryId: d7.treasuries[0]!.id, date: dd, method: 'cash' });
+  } catch { over = true; }
+  console.log(over ? '✅ پرداخت بیش از مانده رد می‌شود' : '❌ اضافه‌پرداخت پذیرفته شد');
+  if (!over) failed++;
+
+  // تخصیص خودکار به چند فاکتور
+  let d8 = createEmptyDB('تخصیص');
+  d8 = upsertParty(d8, { id: pid, businessId: d8.business.id, kind: 'customer', name: 'م', openingBalance: 0 });
+  d8 = upsertProduct(d8, { id: prod, businessId: d8.business.id, kind: 'goods', name: 'ک',
+    unitMain: 'ع', buyPrice: 100_000, sellPrice: 300_000, openingQty: 20, openingCost: 100_000 });
+
+  const a1 = { ...mkInv('F-A', 1), businessId: d8.business.id, date: '2026-01-01' };
+  const a2 = { ...mkInv('F-B', 1), businessId: d8.business.id, date: '2026-02-01' };
+  d8 = postInvoiceToDB(d8, a1);
+  d8 = postInvoiceToDB(d8, a2);
+
+  // ۴۵۰٬۰۰۰ می‌دهد: اولی کامل، دومی نیمه
+  const alloc = allocatePayment(d8, { partyId: pid, amount: 450_000,
+    treasuryId: d8.treasuries[0]!.id, date: dd, method: 'cash' });
+  d8 = alloc.db;
+
+  const s1 = settlementOf(d8, a1.id), s2 = settlementOf(d8, a2.id);
+  const allocChecks: [string, boolean][] = [
+    ['قدیمی‌ترین فاکتور اول تسویه می‌شود', s1.status === 'paid'],
+    ['باقی‌مانده به فاکتور بعدی می‌رود', s2.paid === 150_000],
+    ['تخصیص گزارش می‌شود', alloc.allocations.length === 2],
+    ['چیزی تخصیص‌نیافته نمی‌ماند', alloc.unallocated === 0],
+  ];
+  for (const [k, v] of allocChecks) {
+    console.log(v ? `✅ ${k}` : `❌ ${k}`);
+    if (!v) failed++;
+  }
+
+  // مازاد علی‌الحساب
+  const extra = allocatePayment(d8, { partyId: pid, amount: 500_000,
+    treasuryId: d8.treasuries[0]!.id, date: dd, method: 'cash' });
+  console.log(extra.unallocated === 350_000 ? '✅ مازاد علی‌الحساب ثبت می‌شود' : `❌ مازاد: ${extra.unallocated}`);
+  if (extra.unallocated !== 350_000) failed++;
 }
 
 console.log(failed === 0 ? '\n🟢 همهٔ صفحات سالم رندر شدند' : `\n🔴 ${failed} مورد ناموفق`);
