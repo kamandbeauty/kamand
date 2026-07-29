@@ -4,11 +4,11 @@
 
 **نرم‌افزار حسابداری کسب‌وکارهای ایرانی — آفلاین-اول، فارسی، متن‌باز**
 
-[![tests](https://img.shields.io/badge/آزمون‌ها-۲۷۱%20موفق-16a34a)](packages/core/test)
+[![tests](https://img.shields.io/badge/آزمون‌ها-۳۰۸%20موفق-16a34a)](packages/core/test)
 [![core](https://img.shields.io/badge/هسته-TypeScript-0f766e)](packages/core)
 [![offline](https://img.shields.io/badge/آفلاین--اول-✓-16a34a)](#تعهد-دوم-بدون-اینترنت-هم-کار-میکند)
 [![pwa](https://img.shields.io/badge/PWA-قابل%20نصب-7c3aed)](#نصب-روی-گوشی)
-[![size](https://img.shields.io/badge/حجم-۸۹KB%20gzip-2563eb)](apps/web)
+[![size](https://img.shields.io/badge/حجم-۹۳KB%20gzip-2563eb)](apps/web)
 
 </div>
 
@@ -119,6 +119,11 @@
 - PWA با آیکن اختصاصی و اجرای تمام‌صفحه
 - کارکرد کامل بدون اینترنت
 
+**📜 ممیزی و کنترل**
+- ردّ ممیزی خودکار با تفاوت‌گیری فیلدها
+- قفل دورهٔ مالی پس از بستن سال
+- نقش و اجازهٔ دقیق برای هر کاربر
+
 </td></tr>
 </table>
 
@@ -140,6 +145,8 @@ packages/core/          هستهٔ حسابداری — بدون وابستگی 
   reports.ts            نُه گزارش، همه مشتق از دفتر
   tax.ts                ⭐ سامانهٔ مؤدیان — Verhoeff، شمارهٔ مالیاتی، صورتحساب
   tax-transport.ts      نرمال‌سازی، امضا و رمزگذاری بستهٔ ارسالی
+  audit.ts              ردّ ممیزی و قفل دورهٔ مالی
+  workspace.ts          چند کسب‌وکاره، نقش و جداسازی داده
   escpos.ts             چاپ حرارتی + شکل‌دهی حروف فارسی
   subscription.ts       🔒 تعهد ۱
   sync.ts               🔒 تعهد ۲
@@ -186,7 +193,7 @@ apps/server/            سرور همگام‌سازی (Node + node:sqlite)
 
 ```bash
 npm install
-npm test          # ۲۷۱ آزمون
+npm test          # ۳۰۸ آزمون
 npm run dev       # اجرای برنامهٔ وب
 npm run server    # اجرای سرور همگام‌سازی (اختیاری)
 npm run build     # ساخت نسخهٔ تولید
@@ -217,10 +224,10 @@ SMS_PROVIDER=kavenegar KAVENEGAR_API_KEY=... npm run server
 ## آزمون‌ها
 
 ```
-هسته                    ۱۳۵
+هسته                    ۱۷۲
   پول، تاریخ جلالی، سند دوطرفه، فاکتور، موجودی
   تعهدات معماری (۱۹)، سامانهٔ مؤدیان (۳۶)، چاپ فارسی (۱۹)
-  سناریوی واقعی مغازه (۱۴)
+  ممیزی، قفل دوره و دسترسی (۳۷)، سناریوی واقعی مغازه (۱۴)
 
 سرور                    ۱۰۰
   همگام‌سازی، حل تعارض، اتمی بودن، احراز هویت، دسترسی
@@ -229,7 +236,7 @@ SMS_PROVIDER=kavenegar KAVENEGAR_API_KEY=... npm run server
 وب                       ۳۶
   ذخیره‌سازی، بارکد، PWA، همگام‌سازی سرتاسری دو دستگاه
 ────────────────────────────
-جمع                     ۲۷۱
+جمع                     ۳۰۸
 ```
 
 سه آزمون از بقیه مهم‌ترند:
