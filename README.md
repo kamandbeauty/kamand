@@ -4,7 +4,7 @@
 
 **نرم‌افزار حسابداری کسب‌وکارهای ایرانی — آفلاین-اول، فارسی، متن‌باز**
 
-[![tests](https://img.shields.io/badge/آزمون‌ها-۴۶۶%20موفق-16a34a)](packages/core/test)
+[![tests](https://img.shields.io/badge/آزمون‌ها-۴۶۸%20موفق-16a34a)](packages/core/test)
 [![core](https://img.shields.io/badge/هسته-TypeScript-0f766e)](packages/core)
 [![offline](https://img.shields.io/badge/آفلاین--اول-✓-16a34a)](#تعهد-دوم-بدون-اینترنت-هم-کار-میکند)
 [![pwa](https://img.shields.io/badge/PWA-قابل%20نصب-7c3aed)](#نصب-روی-گوشی)
@@ -227,7 +227,7 @@ apps/server/            سرور همگام‌سازی (Node + node:sqlite)
 
 ```bash
 npm install
-npm test          # ۴۶۶ آزمون
+npm test          # ۴۶۸ آزمون
 npm run dev       # اجرای برنامهٔ وب
 npm run server    # اجرای سرور همگام‌سازی (اختیاری)
 npm run build     # ساخت نسخهٔ تولید
@@ -258,7 +258,7 @@ SMS_PROVIDER=kavenegar KAVENEGAR_API_KEY=... npm run server
 ## آزمون‌ها
 
 ```
-هسته                    ۲۹۵
+هسته                    ۲۹۷
   پول، تاریخ جلالی، سند دوطرفه، فاکتور، موجودی
   تعهدات معماری (۱۹)، سامانهٔ مؤدیان (۳۶)، چاپ فارسی (۱۹)
   ممیزی و دسترسی (۳۷)، بستن سال و سلامت دفتر (۳۴)
@@ -272,7 +272,7 @@ SMS_PROVIDER=kavenegar KAVENEGAR_API_KEY=... npm run server
   ذخیره‌سازی، بارکد، PWA، چند کسب‌وکاره
   همگام‌سازی سرتاسری دو دستگاه
 ────────────────────────────
-جمع                     ۴۶۶
+جمع                     ۴۶۸
 ```
 
 سه آزمون از بقیه مهم‌ترند:
