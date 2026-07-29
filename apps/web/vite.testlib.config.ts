@@ -8,7 +8,11 @@ export default defineConfig({
     target: 'node22',
     ssr: true,
     rollupOptions: {
-      input: { storage: 'src/storage.ts', barcode: 'src/barcode.ts' },
+      input: {
+        storage: 'src/storage.ts',
+        barcode: 'src/barcode.ts',
+        syncEngine: 'src/syncEngine.ts',
+      },
       output: { entryFileNames: '[name].js' },
     },
   },

@@ -8,10 +8,12 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @javid/core && npm run build --workspace @javid/web",
+    "build": "npm run build --workspace @javid/core && npm run build --workspace @javid/server && npm run build --workspace @javid/web",
     "dev": "npm run dev --workspace @javid/web",
-    "test": "npm run test:core && npm run test:web",
+    "server": "npm run start --workspace @javid/server",
+    "test": "npm run test:core && npm run test:server && npm run test:web",
     "test:core": "npm run test --workspace @javid/core",
+    "test:server": "npm run test --workspace @javid/server",
     "test:web": "npm run test --workspace @javid/web"
   }
 }

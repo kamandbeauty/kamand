@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { can, subscriptionNotice, syncStatus } from '@javid/core';
 import { createEmptyDB, flushDB, initStorage, loadDB, queue, saveDB, type DB } from './store';
+import { startAutoSync } from './syncEngine';
 import { Banner } from './ui';
 import { Dashboard } from './pages/Dashboard';
 import { Invoices } from './pages/Invoices';
@@ -10,8 +11,9 @@ import { Reports } from './pages/Reports';
 import { Treasury } from './pages/Treasury';
 import { Settings } from './pages/Settings';
 import { Tax } from './pages/Tax';
+import { Account } from './pages/Account';
 
-type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'tax' | 'reports' | 'settings';
+type Page = 'dashboard' | 'invoices' | 'parties' | 'products' | 'treasury' | 'tax' | 'reports' | 'account' | 'settings';
 
 const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }[] = [
   {
@@ -32,6 +34,7 @@ const NAV: { group: string; items: { id: Page; label: string; icon: string }[] }
     group: 'تحلیل',
     items: [
       { id: 'reports', label: 'گزارش‌ها', icon: '📊' },
+      { id: 'account', label: 'حساب و همگام‌سازی', icon: '☁️' },
       { id: 'settings', label: 'تنظیمات', icon: '⚙️' },
     ],
   },
@@ -45,6 +48,7 @@ const TITLES: Record<Page, string> = {
   treasury: 'خزانه‌داری و چک',
   tax: 'سامانهٔ مؤدیان',
   reports: 'گزارش‌ها',
+  account: 'حساب کاربری و همگام‌سازی',
   settings: 'تنظیمات',
 };
 
@@ -63,6 +67,17 @@ export default function App() {
       if (!cancelled) setDBState(existing ?? createEmptyDB());
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  // همگام‌سازی خودکار — فقط اگر کاربر آن را پیکربندی کرده باشد
+  const dbRef = React.useRef<DB | null>(null);
+  dbRef.current = db;
+
+  useEffect(() => {
+    return startAutoSync({
+      getDB: () => dbRef.current,
+      applyDB: (next) => { setDBState(next); saveDB(next); },
+    });
   }, []);
 
   // نوشتن معلق پیش از بستن صفحه از دست نرود
@@ -177,6 +192,7 @@ export default function App() {
           {page === 'treasury' && <Treasury db={db} setDB={setDB} canWrite={canWrite} />}
           {page === 'tax' && <Tax db={db} setDB={setDB} canWrite={canWrite} />}
           {page === 'reports' && <Reports db={db} />}
+          {page === 'account' && <Account db={db} setDB={setDB} />}
           {page === 'settings' && <Settings db={db} setDB={setDB} />}
         </main>
       </div>

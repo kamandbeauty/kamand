@@ -10,3 +10,6 @@ coverage/
 ssr-out/
 preview.html
 test-out/
+apps/server/dist/
+*.sqlite
+*.sqlite-*

@@ -9,6 +9,7 @@ import { Reports } from '../src/pages/Reports';
 import { Treasury } from '../src/pages/Treasury';
 import { Settings } from '../src/pages/Settings';
 import { Tax } from '../src/pages/Tax';
+import { Account } from '../src/pages/Account';
 import { createEmptyDB, issueElectronicInvoice, postInvoiceToDB, postTransactionToDB, taxReadiness, updateTaxProfile, upsertParty, upsertProduct, type DB } from '../src/store';
 import { uuid, type Invoice } from '@javid/core';
 
@@ -60,6 +61,7 @@ const pages: [string, React.ReactElement][] = [
   ['خزانه', <Treasury db={db} setDB={noop} canWrite />],
   ['گزارش‌ها', <Reports db={db} />],
   ['سامانهٔ مؤدیان', <Tax db={db} setDB={noop} canWrite />],
+  ['حساب و همگام‌سازی', <Account db={db} setDB={noop} />],
   ['تنظیمات', <Settings db={db} setDB={noop} />],
   ['حالت فقط-خواندنی', <Invoices db={db} setDB={noop} canWrite={false} />],
 ];
