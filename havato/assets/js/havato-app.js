@@ -1100,7 +1100,12 @@
 	 */
 	function openSuggestEvent(venues) {
 		if (!venues.length) {
-			toast(t('dash_no_venues'), 'error');
+			// Two different reasons for an empty list, and telling them apart
+			// matters: "no cafés in your city yet" is nothing the guest can
+			// act on, while "set your city first" is.
+			var known = S.data.dashboard && S.data.dashboard.city;
+			toast(t(known ? 'dash_no_venues' : 'dash_set_city_first'), 'error');
+			if (!known) { setTab('profile'); }
 			return;
 		}
 

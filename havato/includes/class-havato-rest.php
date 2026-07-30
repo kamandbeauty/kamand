@@ -733,20 +733,23 @@ class Havato_REST {
 		}
 
 		// Cafés the guest can address a suggestion to: their own city only,
-		// and verified, exactly like Explore.
-		$city  = self::viewer_city();
-		$sql   = "SELECT id, name FROM $venues WHERE verified = 1";
-		$args  = array();
-		if ( $city ) {
-			$sql   .= ' AND city = %s';
-			$args[] = $city;
-		}
-		$sql .= ' ORDER BY name ASC LIMIT 200';
+		// and verified, exactly like Explore. A guest whose city is not set
+		// yet gets an empty list rather than every café on the platform —
+		// the endpoint would refuse those anyway, so offering them would only
+		// produce an error after the form was filled in.
+		$city       = havato_valid_city( $profile['country'], $profile['city'] ) ? (string) $profile['city'] : '';
+		$venue_rows = array();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$venue_rows = $args
-			? $wpdb->get_results( $wpdb->prepare( $sql, $args ), ARRAY_A )
-			: $wpdb->get_results( $sql, ARRAY_A );
+		if ( '' !== $city ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$venue_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT id, name FROM $venues WHERE verified = 1 AND city = %s ORDER BY name ASC LIMIT 200",
+					$city
+				),
+				ARRAY_A
+			);
+		}
 
 		return self::ok(
 			array(
@@ -759,6 +762,9 @@ class Havato_REST {
 				'upcoming'  => $upcoming,
 				'requests'  => $requests,
 				'venues'    => $venue_rows ? $venue_rows : array(),
+				// Lets the app tell "no cafés here yet" apart from "you have
+				// not told us where you are" when the list comes back empty.
+				'city'      => $city,
 				'max_seats' => havato_max_seats(),
 			)
 		);
@@ -804,8 +810,17 @@ class Havato_REST {
 			return new WP_Error( 'havato_past_date', Havato_I18N::t( 'request_past_date' ), array( 'status' => 400 ) );
 		}
 
-		// The café must exist, be verified, and — like everything else the
-		// guest sees — be in their own city.
+		// A guest may only ask a café in their OWN city. That means the city
+		// has to be known first: an incomplete profile used to skip the check
+		// entirely, because `$city && …` is false when the city is empty, and
+		// an empty city would then match no café anyway. Require it instead.
+		$profile = havato_get_profile( $user_id );
+		if ( ! havato_valid_city( $profile['country'], $profile['city'] ) ) {
+			return new WP_Error( 'havato_no_details', Havato_I18N::t( 'need_details_first' ), array( 'status' => 400 ) );
+		}
+		$city = (string) $profile['city'];
+
+		// The café must exist, be verified, and be in that same city.
 		$venues = Havato_DB::table( 'venues' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$venue = $wpdb->get_row( $wpdb->prepare( "SELECT id, city, verified FROM $venues WHERE id=%s", $venue_id ), ARRAY_A );
@@ -814,9 +829,8 @@ class Havato_REST {
 			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
 		}
 
-		$city = self::viewer_city();
-		if ( $city && $venue['city'] !== $city ) {
-			return new WP_Error( 'havato_wrong_city', Havato_I18N::t( 'error_generic' ), array( 'status' => 403 ) );
+		if ( (string) $venue['city'] !== $city ) {
+			return new WP_Error( 'havato_wrong_city', Havato_I18N::t( 'request_other_city' ), array( 'status' => 403 ) );
 		}
 
 		$table = Havato_DB::table( 'event_requests' );

@@ -150,7 +150,55 @@ t('a past date is refused', /havato_past_date/.test(rest));
 t('an empty subject is refused', /'' === \$subject/.test(rest));
 t('free text is clamped', /havato_clamp_text\( sanitize_textarea_field\( \(string\) \$req->get_param\( 'note' \) \), 1000 \)/.test(rest));
 t('the café must exist and be verified', /! \$venue \|\| ! \(int\) \$venue\['verified'\]/.test(rest));
-t('…and be in the guest\'s own city', /\$city && \$venue\['city'\] !== \$city/.test(rest));
+t('…and be in the guest\'s own city', /if \( \(string\) \$venue\['city'\] !== \$city \)/.test(rest));
+
+// A guest may only ask a café in their own city. The first version wrote
+// `$city && $venue['city'] !== $city`, which skipped the whole check when the
+// profile had no city yet — and an unset city is precisely the state a brand
+// new account is in.
+(() => {
+  const CITIES = { ir: ['tehran', 'isfahan'], tr: ['istanbul'] };
+  const validCity = (c, city) => !!(CITIES[c] && CITIES[c].indexOf(city) !== -1);
+
+  const oldGuard = (p, venueCity) => (p.city && venueCity !== p.city) ? 'REFUSED' : 'ALLOWED';
+  const newGuard = (p, venueCity) => {
+    if (!validCity(p.country, p.city)) { return 'NEED DETAILS'; }
+    return String(venueCity) === String(p.city) ? 'ALLOWED' : 'REFUSED';
+  };
+
+  const nobody = { country: '', city: '' };
+  t('the old guard let a city-less guest reach any café (the hole)',
+    oldGuard(nobody, 'istanbul') === 'ALLOWED');
+  t('…and the new one stops them', newGuard(nobody, 'istanbul') === 'NEED DETAILS');
+
+  const tehrani = { country: 'ir', city: 'tehran' };
+  t('own city is allowed', newGuard(tehrani, 'tehran') === 'ALLOWED');
+  t('another city in the same country is refused', newGuard(tehrani, 'isfahan') === 'REFUSED');
+  t('another country is refused', newGuard(tehrani, 'istanbul') === 'REFUSED');
+
+  const istanbullu = { country: 'tr', city: 'istanbul' };
+  t('a Turkish guest reaches their own café', newGuard(istanbullu, 'istanbul') === 'ALLOWED');
+  t('…but not an Iranian one', newGuard(istanbullu, 'tehran') === 'REFUSED');
+
+  t('a country with no city is refused', newGuard({ country: 'ir', city: '' }, 'tehran') === 'NEED DETAILS');
+  t('a city that is not on the list is refused', newGuard({ country: 'ir', city: 'paris' }, 'paris') === 'NEED DETAILS');
+})();
+
+t('the endpoint validates the city rather than trusting it is set',
+  /havato_valid_city\( \$profile\['country'\], \$profile\['city'\] \)[\s\S]{0,160}need_details_first/.test(rest));
+t('the refusal explains itself instead of a generic error', /'request_other_city'/.test(rest));
+t('…and that message is trilingual',
+  /'request_other_city'\s*=> array\( 'fa' =>.*'en' =>.*'tr' =>/.test(i18n));
+
+// The picker must not offer a café the endpoint would refuse.
+t('the café list is filtered to that city', /WHERE verified = 1 AND city = %s ORDER BY name ASC/.test(rest));
+t('a guest with no city is offered nothing, not everything',
+  /\$venue_rows = array\(\);[\s\S]{0,120}if \( '' !== \$city \)/.test(rest));
+t('the app is told which city was used', /'city'      => \$city,/.test(rest));
+t('an empty list says which of the two reasons applies', /dash_set_city_first/.test(js));
+t('…and sends them where they can fix it', /if \(!known\) \{ setTab\('profile'\); \}/.test(js));
+t('that message is trilingual',
+  /'dash_set_city_first'\s*=> array\( 'fa' =>.*'en' =>.*'tr' =>/.test(i18n));
 t('a repeat suggestion is refused rather than queued twice', /havato_duplicate_request/.test(rest));
 t('the duplicate check is scoped to pending only', /AND status='pending'/.test(rest));
 t('the action is logged', /suggested a gathering at venue/.test(rest));

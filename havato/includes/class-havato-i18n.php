@@ -314,6 +314,8 @@ class Havato_I18N {
 			'request_sent'          => array( 'fa' => 'پیشنهاد شما برای کافه ارسال شد.', 'en' => 'Your suggestion was sent to the café.', 'tr' => 'Öneriniz kafeye gönderildi.' ),
 			'request_duplicate'     => array( 'fa' => 'برای همین کافه و همین روز قبلاً پیشنهاد داده‌اید.', 'en' => 'You have already suggested this café for that day.', 'tr' => 'Bu kafe için o güne zaten öneri gönderdiniz.' ),
 			'request_past_date'     => array( 'fa' => 'روز انتخابی گذشته است.', 'en' => 'That day has already passed.', 'tr' => 'Seçilen gün geçmişte kalmış.' ),
+			'request_other_city'    => array( 'fa' => 'فقط می‌توانید به کافه‌های شهر خودتان پیشنهاد بدهید.', 'en' => 'You can only suggest a gathering to a café in your own city.', 'tr' => 'Yalnızca kendi şehrinizdeki bir kafeye buluşma önerebilirsiniz.' ),
+			'dash_set_city_first'   => array( 'fa' => 'برای پیشنهاد دورهمی، اول شهرتان را در مشخصات ثبت کنید.', 'en' => 'Set your city in your details before suggesting a gathering.', 'tr' => 'Buluşma önermeden önce bilgilerinizde şehrinizi belirtin.' ),
 			'request_pending'       => array( 'fa' => 'در انتظار پاسخ', 'en' => 'Awaiting reply', 'tr' => 'Yanıt bekleniyor' ),
 			'request_accepted'      => array( 'fa' => 'پذیرفته شد', 'en' => 'Accepted', 'tr' => 'Kabul edildi' ),
 			'request_declined'      => array( 'fa' => 'پذیرفته نشد', 'en' => 'Declined', 'tr' => 'Reddedildi' ),

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.28.0
+Stable tag: 1.28.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,21 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.28.1 =
+* Fixed: a guest whose city was not set yet could suggest a gathering to any
+  café on the platform, including one in another country. The check read
+  "if a city is known and it differs, refuse", so an unset city skipped it
+  entirely — and an unset city is exactly the state a new account is in. The
+  city is now required and validated before the café is compared, and the
+  comparison is exact.
+* The café picker no longer lists every café to such a guest. It shows the
+  cafés of their own city or nothing at all, so the form can never offer a
+  café the server would then refuse.
+* An empty picker now tells the guest which of the two reasons applies —
+  "no cafés in your city yet" versus "set your city first" — and the second
+  takes them to their details, where they can fix it.
+* Refusing a café in another city now says so, instead of a generic error.
 
 = 1.28.0 =
 * Corrects how an accepted suggestion becomes a gathering. A guest asks for a
