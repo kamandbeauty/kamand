@@ -47,66 +47,77 @@ t('the admin screen offers no accept/decline buttons',
  * ================================================================== */
 console.log('\n--- 2. accepting a suggestion creates a pending gathering ---');
 
-t('a helper builds the event', /private static function event_from_request/.test(owner));
-t('accepting calls it', /self::event_from_request\( \$request, \$venue_row \)/.test(owner));
+// The guest asks for a day and a subject; the café decides how many seats to
+// open. So accepting must NOT build the event on its own — it hands the café
+// the event form with the guest's wishes already in it.
+t('accepting does not create an event by itself',
+  !/private static function event_from_request/.test(owner));
+t('nothing inserts into the events table from the request handler',
+  !/case 'request_status':[\s\S]{0,1400}Havato_DB::table\( 'events' \)/.test(owner));
+t('no seating plan is invented from every table the café owns',
+  !/case 'request_status':[\s\S]{0,1400}event_tables/.test(owner));
+
+t('accepting sends the café to the event form', /\$page  = 'havato-venue-events';/.test(owner));
+t('…carrying the suggestion with it', /\$extra = array\( 'from_request' => \$request_id \)/.test(owner));
+t('…and says what to do next', /request_accepted_pick_tables/.test(owner));
 t('declining does not', /if \( 'accepted' === \$new_status \) \{/.test(owner));
 
-t('the new event is not visible yet', /'status'       => 'pending_admin',/.test(owner));
+console.log('\n--- 2b. the form arrives pre-filled, seats still chosen by the café ---');
+
+t('the form reads the suggestion', /\$from_request = isset\( \$_GET\['from_request'\] \)/.test(owner));
+t('…scoped by venue so another café\'s queue cannot be read',
+  /SELECT \* FROM \$requests_t WHERE id=%d AND venue_id=%s/.test(owner));
+t('the subject is pre-filled', /value="' \. esc_attr\( \$prefill\['title'\] \)/.test(owner));
+t('the requested day is pre-filled', /'' !== \$prefill\['date'\] \? \$prefill\['date'\]/.test(owner));
+t('the requested time is pre-filled', /'' !== \$prefill\['time'\] \? \$prefill\['time'\]/.test(owner));
+t('the note becomes the description', /esc_textarea\( \$prefill\['note'\] \)/.test(owner));
+t('a normal new event still gets sensible defaults',
+  /gmdate\( 'Y-m-d', strtotime\( '\+1 day' \) \)/.test(owner) && /: '19:00'/.test(owner));
+t('the café is told why the form is filled in', /request_prefilled/.test(owner));
+
+// The whole point: seats come from ticking tables, not from the suggestion.
+t('the table picker is still the thing that sets capacity',
+  /name="tables\[%1\$d\]\[use\]"/.test(owner));
+t('the suggestion carries no seat count at all',
+  !/preferred_seats|requested_seats|'seats'/.test(rd('includes/class-havato-db.php')
+    .slice(rd('includes/class-havato-db.php').indexOf('CREATE TABLE {$p}event_requests'),
+           rd('includes/class-havato-db.php').indexOf('CREATE TABLE {$p}event_requests') + 700)));
+t('capacity is derived from the chosen tables', /\$capacity \+= \(int\) \$available\[ \$tid \]\['seats'\] \* \$qty;/.test(rest));
+
+t('the created event still waits for admin approval',
+  /'status'       => \$venue\['verified'\] \? 'open' : 'pending_admin',/.test(rest));
 t('…and Explore only lists open and matched', /e\.status IN \('open','matched'\)/.test(rest));
 t('approving the café publishes it', /UPDATE \$events SET status='open' WHERE venue_id=%s AND status='pending_admin'/.test(rest));
-
-t('the subject carries over', /'title'        => \$request\['subject'\]/.test(owner));
-t('the note becomes the description', /'description'  => isset\( \$request\['note'\] \)/.test(owner));
-t('the requested day is used', /'event_date'   => \$request\['preferred_date'\]/.test(owner));
-t('…and the requested time', /'event_time'   => \$request\['preferred_time'\]/.test(owner));
-t('the café tables are attached', /Havato_DB::table\( 'event_tables' \)/.test(owner));
-t('the action is logged', /accepted guest suggestion %d; event %s awaits approval/.test(owner));
-
-(() => {
-  // Capacity is derived from real furniture, never typed in.
-  const seat = tables => tables.reduce((n, [s, q]) => n + s * Math.max(1, q), 0);
-
-  t('three 4-seaters give 12', seat([[4, 1], [4, 1], [4, 1]]) === 12);
-  t('quantities are honoured', seat([[4, 3]]) === 12);
-  t('a zero quantity still counts as one table', seat([[6, 0]]) === 6);
-  t('mixed furniture adds up', seat([[4, 2], [6, 1]]) === 14);
-
-  // A café with nothing on file cannot seat anyone.
-  const wouldCreate = cap => cap >= 2;
-  t('no tables means no event is invented', wouldCreate(seat([])) === false);
-  t('…and the café is told why', /request_need_tables/.test(owner));
-  t('a café with tables does create one', wouldCreate(seat([[4, 1]])) === true);
-})();
-
-t('the guard is in the code too', /if \( \$capacity < 2 \) \{\s*\n\s*return false;/.test(owner));
 
 // Re-reading the row scoped by venue prevents answering another café's queue.
 t('the suggestion is re-read scoped by venue',
   /WHERE id=%d AND venue_id=%s AND status='pending'/.test(owner));
-t('…so a stale double-submit cannot create two events',
-  /AND status='pending'/.test(owner));
+t('…and only a pending one can be answered', /AND status='pending'/.test(owner));
 
 (() => {
-  // wpdb->insert() pairs values with formats by position.
-  const from = owner.indexOf('private static function event_from_request');
-  const block = owner.slice(from, owner.indexOf('$event_tables =', from));
-  const values = (block.match(/'\w+'\s*=>/g) || []).length;
-  const formats = ((block.match(/array\( '%[sd]'[^)]*\)/) || [''])[0].match(/%[sd]/g) || []).length;
-  t('the insert lines up (' + values + ' values vs ' + formats + ' formats)',
-    values === formats && values > 0);
+  // Capacity is derived from ticked furniture. Model the same sum.
+  const seat = tables => tables.reduce((n, [s, q]) => n + s * Math.max(1, q), 0);
 
-  const fmt = (block.match(/array\( '%[sd]'[^)]*\)/) || [''])[0].match(/%[sd]/g) || [];
-  const names = [...block.matchAll(/'(\w+)'\s*=>/g)].map(m => m[1]);
-  t('status is written as a string, not a number', fmt[names.indexOf('status')] === '%s');
+  t('ticking three 4-seaters gives 12', seat([[4, 1], [4, 1], [4, 1]]) === 12);
+  t('ticking one gives 4, not the whole café', seat([[4, 1]]) === 4);
+  t('mixed furniture adds up', seat([[4, 2], [6, 1]]) === 14);
+  t('ticking nothing gives nothing', seat([]) === 0);
+  t('…which the endpoint refuses', /if \( \$capacity < 2 \) \{[\s\S]{0,140}event_need_tables/.test(rest));
 })();
 
 for (const k of ['admin_requests_hint', 'show_all', 'show_pending',
-                 'request_became_event', 'request_need_tables']) {
+                 'request_accepted_pick_tables', 'request_prefilled']) {
   t('i18n "' + k + '" trilingual',
     new RegExp("'" + k + "'\\s*=> array\\( 'fa' =>.*'en' =>.*'tr' =>").test(i18n));
 }
-t('the café hint no longer claims nothing is created',
-  !/Accepting does not create the event/.test(i18n));
+t('the café hint no longer promises an auto-built event',
+  !/Accepting creates the gathering with all your tables/.test(i18n));
+// The time input was labelled "quiet hours", which is a café-wide setting,
+// not this event's start time.
+t('the time field is labelled as a time',
+  /Havato_I18N::t\( 'event_time' \)[\s\S]{0,20}<input type="time" name="event_time"/.test(owner));
+t('…and no longer as quiet hours',
+  !/Havato_I18N::t\( 'quiet_hours' \) \.\s*\n?\s*'<input type="time"/.test(owner));
 
 /* =====================================================================
  * 3. The language dropdown

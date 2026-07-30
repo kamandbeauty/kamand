@@ -401,80 +401,6 @@ class Havato_Owner_Admin {
 	}
 
 	/**
-	 * Turn an accepted suggestion into a real gathering.
-	 *
-	 * It is created from every table the café currently owns, because the
-	 * suggestion carries no seating plan — the café can trim it afterwards on
-	 * the Events screen. It always lands as `pending_admin`, so an accepted
-	 * suggestion never reaches Explore until the administrator approves it,
-	 * exactly like any other new table.
-	 *
-	 * @param array $request Suggestion row.
-	 * @param array $venue   Venue row.
-	 * @return bool Whether an event was created.
-	 */
-	private static function event_from_request( $request, $venue ) {
-		global $wpdb;
-
-		$tables   = Havato_REST::venue_tables( $venue['id'] );
-		$capacity = 0;
-		foreach ( $tables as $tbl ) {
-			$capacity += (int) $tbl['seats'] * max( 1, (int) $tbl['quantity'] );
-		}
-
-		// A café with no furniture on file cannot seat anyone, so there is
-		// nothing to create yet. The status change still stands.
-		if ( $capacity < 2 ) {
-			return false;
-		}
-
-		$event_id = havato_uid( 'e' );
-		$events   = Havato_DB::table( 'events' );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->insert(
-			$events,
-			array(
-				'id'           => $event_id,
-				'venue_id'     => $venue['id'],
-				'title'        => $request['subject'],
-				'theme'        => '',
-				'description'  => isset( $request['note'] ) ? (string) $request['note'] : '',
-				'image'        => '',
-				'event_date'   => $request['preferred_date'],
-				'event_time'   => $request['preferred_time'],
-				'budget_tier'  => $venue['budget_tier'],
-				'max_capacity' => $capacity,
-				'status'       => 'pending_admin',
-				'created_at'   => havato_now(),
-			),
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
-		);
-
-		$event_tables = Havato_DB::table( 'event_tables' );
-		foreach ( $tables as $tbl ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->insert(
-				$event_tables,
-				array(
-					'event_id' => $event_id,
-					'table_id' => (int) $tbl['id'],
-					'seats'    => (int) $tbl['seats'],
-					'quantity' => max( 1, (int) $tbl['quantity'] ),
-				),
-				array( '%s', '%d', '%d', '%d' )
-			);
-		}
-
-		Havato_Logger::log(
-			sprintf( 'Venue %s accepted guest suggestion %d; event %s awaits approval.', $venue['id'], (int) $request['id'], $event_id ),
-			'info'
-		);
-
-		return true;
-	}
-
-	/**
 	 * Gatherings guests have asked this café to host.
 	 *
 	 * A suggestion is only useful if the café sees it, so it sits on the
@@ -629,9 +555,46 @@ class Havato_Owner_Admin {
 			return;
 		}
 
+		// Arriving from an accepted suggestion: pre-fill the form with what the
+		// guest asked for. Only the day and the subject come across — the seat
+		// count is the café's decision and is made below, by ticking tables.
+		$prefill = array( 'title' => '', 'date' => '', 'time' => '', 'note' => '' );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$from_request = isset( $_GET['from_request'] ) ? (int) $_GET['from_request'] : 0;
+
+		if ( $from_request ) {
+			$requests_t = Havato_DB::table( 'event_requests' );
+			// Scoped by venue: a café must not be able to read another's queue
+			// by guessing an id in the URL.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$req_row = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM $requests_t WHERE id=%d AND venue_id=%s",
+					$from_request,
+					$venue['id']
+				),
+				ARRAY_A
+			);
+
+			if ( $req_row ) {
+				$prefill = array(
+					'title' => $req_row['subject'],
+					'date'  => $req_row['preferred_date'],
+					'time'  => substr( (string) $req_row['preferred_time'], 0, 5 ),
+					'note'  => (string) $req_row['note'],
+				);
+			}
+		}
+
 		// New-table form.
 		echo '<div class="hv-adm-card">';
 		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'add_item' ) ) . '</h2>';
+
+		if ( '' !== $prefill['title'] ) {
+			echo '<div class="hv-adm-note"><p>' .
+				esc_html( Havato_I18N::t( 'request_prefilled' ) ) . '</p></div>';
+		}
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'havato_owner', 'havato_owner_nonce' );
 		echo '<input type="hidden" name="action" value="havato_owner_action">';
@@ -639,12 +602,14 @@ class Havato_Owner_Admin {
 		echo '<div class="hv-adm-inline-form">';
 
 		echo '<label class="hv-adm-grow">' . esc_html( Havato_I18N::t( 'event_title' ) ) .
-			'<input type="text" name="title" maxlength="120" placeholder="' .
+			'<input type="text" name="title" maxlength="120" value="' . esc_attr( $prefill['title'] ) . '" placeholder="' .
 			esc_attr( Havato_I18N::t( 'event_title_hint' ) ) . '"></label>';
 		echo '<label>' . esc_html( Havato_I18N::t( 'col_date' ) ) .
-			'<input type="date" name="event_date" required value="' . esc_attr( gmdate( 'Y-m-d', strtotime( '+1 day' ) ) ) . '"></label>';
-		echo '<label>' . esc_html( Havato_I18N::t( 'quiet_hours' ) ) .
-			'<input type="time" name="event_time" required value="19:00"></label>';
+			'<input type="date" name="event_date" required value="' .
+			esc_attr( '' !== $prefill['date'] ? $prefill['date'] : gmdate( 'Y-m-d', strtotime( '+1 day' ) ) ) . '"></label>';
+		echo '<label>' . esc_html( Havato_I18N::t( 'event_time' ) ) .
+			'<input type="time" name="event_time" required value="' .
+			esc_attr( '' !== $prefill['time'] ? $prefill['time'] : '19:00' ) . '"></label>';
 		// Table pickers, or a plain seat count if no furniture is defined yet.
 		$tables = Havato_REST::venue_tables( $venue['id'] );
 
@@ -670,7 +635,8 @@ class Havato_Owner_Admin {
 		// Shown on the event page a guest reads before booking a seat.
 		echo '<label class="hv-adm-grow">' . esc_html( Havato_I18N::t( 'event_about' ) ) .
 			'<textarea name="description" rows="3" maxlength="1000" placeholder="' .
-			esc_attr( Havato_I18N::t( 'event_desc_hint' ) ) . '"></textarea></label>';
+			esc_attr( Havato_I18N::t( 'event_desc_hint' ) ) . '">' .
+			esc_textarea( $prefill['note'] ) . '</textarea></label>';
 
 		// Optional event photo (falls back to the café cover).
 		echo '<label>' . esc_html( Havato_I18N::t( 'event_image' ) ) .
@@ -1197,10 +1163,14 @@ class Havato_Owner_Admin {
 						);
 
 						if ( 'accepted' === $new_status ) {
-							$created = self::event_from_request( $request, $venue_row );
-							$msg     = $created
-								? Havato_I18N::t( 'request_became_event' )
-								: Havato_I18N::t( 'request_need_tables' );
+							// The guest asked for a day and a subject; the café
+							// decides how many seats to open. So accepting does
+							// not build the event behind their back — it takes
+							// them to the event form with the guest's wishes
+							// already filled in, where the tables are chosen.
+							$page  = 'havato-venue-events';
+							$extra = array( 'from_request' => $request_id );
+							$msg   = Havato_I18N::t( 'request_accepted_pick_tables' );
 						}
 					}
 				}

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.27.0
+Stable tag: 1.28.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,23 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.28.0 =
+* Corrects how an accepted suggestion becomes a gathering. A guest asks for a
+  day and a subject; how many seats to open is the café's decision, not
+  something to be inferred. 1.27.0 built the event automatically from every
+  table the café owned, which quietly made that choice on their behalf.
+* Accepting now takes the café to the event form with the guest's subject,
+  day, time and note already filled in, and the table picker empty. Ticking
+  tables is what sets the number of seats, exactly as when the café creates a
+  gathering itself. A short note on the form explains where the values came
+  from.
+* The suggestion is read back scoped to the café, so another café's queue
+  cannot be read by guessing an id in the URL.
+* Nothing else changed about the flow: the event still lands as "pending
+  review" and reaches Explore only after an administrator approves it.
+* Fixed: the start-time field on the event form was labelled "Quiet hours",
+  which is a café-wide setting rather than this event's start time.
 
 = 1.27.0 =
 * The administrator now sees guest suggestions from every café, on the
