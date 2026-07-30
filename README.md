@@ -77,6 +77,24 @@ cp gradle/init.mirror.gradle.kts ~/.gradle/init.d/mirror.gradle.kts
 
 **اگر Gradle از قبل نصب است:** اصلاً نیازی به دانلود توزیع نیست — `gradle wrapper --gradle-version 8.10.2` بزنید.
 
+#### خطای ۴۰۴ هنگام دانلود توزیع Gradle
+
+میرورها ساختار مسیر متفاوتی دارند و ممکن است نسخهٔ خاصی را نداشته باشند. اسکریپت زیر همهٔ آدرس‌ها را تست می‌کند و اولین آدرس سالم را خودکار در `gradle-wrapper.properties` می‌نویسد:
+
+```bash
+bash scripts/pick-gradle-mirror.sh          # نسخه پیش‌فرض 8.10.2
+bash scripts/pick-gradle-mirror.sh 8.9      # نسخهٔ دیگر
+```
+
+آدرس‌های تست‌شونده به ترتیب:
+
+| میرور | الگوی آدرس |
+|---|---|
+| جامکو | `download.jamko.ir/gradle-distributions/gradle-<ver>-bin.zip` |
+| کارگادان | `mirror.kargadan.ir/gradle/distributions/gradle-<ver>-bin.zip` |
+| مخزن ملی ITO | `archive.ito.gov.ir/gradle/distributions/gradle-<ver>-bin.zip` |
+| رسمی | `services.gradle.org/distributions/gradle-<ver>-bin.zip` |
+
 ## راه‌اندازی برای انتشار
 
 1. **فونت وزیرمتن** (OFL): فایل‌های `vazirmatn_regular/medium/bold.ttf` را در `core/ui/src/main/res/font/` قرار داده و در `FactorYarTheme.kt` مقدار `FyFontFamily` را با `FontFamily(Font(R.font.vazirmatn_regular))…` پر کنید.
