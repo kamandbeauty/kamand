@@ -90,10 +90,12 @@ bash scripts/pick-gradle-mirror.sh 8.9      # نسخهٔ دیگر
 
 | میرور | الگوی آدرس |
 |---|---|
-| جامکو | `download.jamko.ir/gradle-distributions/gradle-<ver>-bin.zip` |
+| **مایکت** (پیش‌فرض) | `maven.myket.ir/gradle/distributions/gradle-<ver>-bin.zip` |
 | کارگادان | `mirror.kargadan.ir/gradle/distributions/gradle-<ver>-bin.zip` |
 | مخزن ملی ITO | `archive.ito.gov.ir/gradle/distributions/gradle-<ver>-bin.zip` |
 | رسمی | `services.gradle.org/distributions/gradle-<ver>-bin.zip` |
+
+مستندات رسمی مایکت: <https://maven.myket.ir/services/gradle-wrapper.html>
 
 ## راه‌اندازی برای انتشار
 
