@@ -51,9 +51,17 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 				</svg>
 			</button>
 
-			<button type="button" class="hv-lang-btn" id="hv-lang-btn" aria-label="language">
-				<span id="hv-lang-label">EN</span>
-			</button>
+			<!-- Cycling through three languages one tap at a time meant a
+			     Persian speaker had to pass through English to reach Turkish.
+			     The button opens a list instead, so any language is one tap. -->
+			<div class="hv-lang-wrap">
+				<button type="button" class="hv-lang-btn" id="hv-lang-btn"
+					aria-label="language" aria-haspopup="listbox" aria-expanded="false">
+					<span id="hv-lang-label">EN</span>
+					<span class="hv-lang-caret" aria-hidden="true">▾</span>
+				</button>
+				<ul class="hv-lang-menu" id="hv-lang-menu" role="listbox" hidden></ul>
+			</div>
 		</div>
 
 		<!-- Floating status bar (green / orange) — mockup "Nearby Location" pill -->

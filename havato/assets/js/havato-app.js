@@ -461,9 +461,9 @@
 
 	// Order defines the cycle of the header button. `dir` drives the RTL flip.
 	var LANGS = [
-		{ code: 'fa', dir: 'rtl', short: 'فا' },
-		{ code: 'en', dir: 'ltr', short: 'EN' },
-		{ code: 'tr', dir: 'ltr', short: 'TR' }
+		{ code: 'fa', dir: 'rtl', short: 'فا', name: 'فارسی' },
+		{ code: 'en', dir: 'ltr', short: 'EN', name: 'English' },
+		{ code: 'tr', dir: 'ltr', short: 'TR', name: 'Türkçe' }
 	];
 
 	function langInfo(code) {
@@ -473,7 +473,11 @@
 		return LANGS[0];
 	}
 
-	/** The button shows the language it will switch TO, not the current one. */
+	/**
+	 * The button used to show the language it would switch TO, because one tap
+	 * cycled. It opens a list now, so it shows the language you are actually
+	 * reading — which is what a closed dropdown is expected to display.
+	 */
 	function nextLang(code) {
 		for (var i = 0; i < LANGS.length; i++) {
 			if (LANGS[i].code === code) { return LANGS[(i + 1) % LANGS.length]; }
@@ -489,7 +493,51 @@
 		el.root.setAttribute('data-lang', S.lang);
 		el.root.classList.toggle('hv-dir-rtl', S.dir === 'rtl');
 		el.root.classList.toggle('hv-dir-ltr', S.dir === 'ltr');
-		if (el.langLabel) { el.langLabel.textContent = nextLang(S.lang).short; }
+		if (el.langLabel) { el.langLabel.textContent = info.short; }
+		renderLangMenu();
+	}
+
+	/** Fill the dropdown and mark the active entry. */
+	function renderLangMenu() {
+		if (!el.langMenu) { return; }
+
+		el.langMenu.innerHTML = LANGS.map(function (lang) {
+			var active = lang.code === S.lang;
+			return '<li role="option" aria-selected="' + (active ? 'true' : 'false') + '">' +
+				'<button type="button" class="hv-lang-option' + (active ? ' is-active' : '') + '" ' +
+					'data-lang="' + esc(lang.code) + '" dir="' + esc(lang.dir) + '">' +
+					'<span>' + esc(lang.name) + '</span>' +
+					(active ? '<span aria-hidden="true">✓</span>' : '') +
+				'</button></li>';
+		}).join('');
+
+		$$('[data-lang]', el.langMenu).forEach(function (btn) {
+			btn.onclick = function () {
+				closeLangMenu();
+				// Re-rendering while the same language is already active would
+				// throw away the current screen for nothing.
+				if (btn.dataset.lang === S.lang) { return; }
+				chooseLang(btn.dataset.lang);
+			};
+		});
+	}
+
+	function openLangMenu() {
+		if (!el.langMenu) { return; }
+		el.langMenu.hidden = false;
+		el.langBtn.setAttribute('aria-expanded', 'true');
+		el.langBtn.classList.add('is-open');
+	}
+
+	function closeLangMenu() {
+		if (!el.langMenu) { return; }
+		el.langMenu.hidden = true;
+		el.langBtn.setAttribute('aria-expanded', 'false');
+		el.langBtn.classList.remove('is-open');
+	}
+
+	function toggleLangMenu() {
+		if (el.langMenu && el.langMenu.hidden) { openLangMenu(); } else { closeLangMenu(); }
 	}
 
 	function applyLang(lang) {
@@ -499,10 +547,14 @@
 		render();
 	}
 
+	function chooseLang(code) {
+		applyLang(code);
+		api('lang', { method: 'POST', body: { value: code } }).catch(function () {});
+	}
+
+	/** Kept for the auth wall, which has no room for a dropdown. */
 	function toggleLang() {
-		var next = nextLang(S.lang).code;
-		applyLang(next);
-		api('lang', { method: 'POST', body: { value: next } }).catch(function () {});
+		chooseLang(nextLang(S.lang).code);
 	}
 
 	/* =====================================================================
@@ -2931,6 +2983,8 @@
 		el.headerAvatar = $('#hv-header-avatar');
 		el.avatarFallback = $('#hv-avatar-fallback');
 		el.langLabel = $('#hv-lang-label');
+		el.langBtn = $('#hv-lang-btn');
+		el.langMenu = $('#hv-lang-menu');
 		el.strip = $('#hv-status-strip');
 		el.main = $('#main-tab-content');
 		el.bottomNav = $('#hv-bottom-nav');
@@ -2950,7 +3004,21 @@
 			if (btn) { setTab(btn.dataset.tab); }
 		});
 
-		$('#hv-lang-btn').onclick = toggleLang;
+		el.langBtn.onclick = function (event) {
+			event.stopPropagation();
+			toggleLangMenu();
+		};
+
+		// Tapping anywhere else closes it. Without this the list would stay
+		// open behind whatever the guest went on to do.
+		document.addEventListener('click', function (event) {
+			if (el.langMenu && !el.langMenu.hidden && !event.target.closest('.hv-lang-wrap')) {
+				closeLangMenu();
+			}
+		});
+		document.addEventListener('keydown', function (event) {
+			if ('Escape' === event.key) { closeLangMenu(); }
+		});
 		$('#hv-avatar-btn').onclick = function () {
 			if (!S.loggedIn) { return; }
 			setTab('profile');

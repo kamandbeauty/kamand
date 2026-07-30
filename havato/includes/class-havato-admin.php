@@ -372,9 +372,105 @@ class Havato_Admin {
 		echo '</div>';
 
 		self::render_menu_queue();
+		self::render_event_requests();
 		self::render_photo_reports();
 
 		self::foot();
+	}
+
+	/**
+	 * Every guest suggestion on the platform, across all cafés.
+	 *
+	 * The café sees its own on its dashboard. The administrator sees all of
+	 * them, which is the only place the pattern shows: a café that keeps
+	 * receiving requests and never turns one into a gathering is worth a
+	 * phone call.
+	 */
+	private static function render_event_requests() {
+		global $wpdb;
+
+		$requests = Havato_DB::table( 'event_requests' );
+		$venues   = Havato_DB::table( 'venues' );
+		$lang     = Havato_I18N::current_lang();
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$only_pending = ! isset( $_GET['requests'] ) || 'all' !== $_GET['requests'];
+
+		$where = $only_pending ? "WHERE q.status = 'pending'" : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$pending_total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $requests WHERE status = 'pending'" );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT q.*, v.name AS venue_name, v.city AS venue_city
+			 FROM $requests q
+			 LEFT JOIN $venues v ON v.id = q.venue_id
+			 $where
+			 ORDER BY FIELD(q.status,'pending','accepted','declined'), q.preferred_date ASC
+			 LIMIT 100",
+			ARRAY_A
+		);
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'guest_requests' ) ) . '</h2>';
+		echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'admin_requests_hint' ) ) . '</p>';
+
+		printf(
+			'<p><a class="hv-adm-btn hv-adm-btn-ghost" href="%s">%s</a> ' .
+			'<span class="hv-adm-badge is-yellow">%s %s</span></p>',
+			esc_url(
+				add_query_arg(
+					array( 'page' => 'havato-approvals', 'requests' => $only_pending ? 'all' : 'pending' ),
+					admin_url( 'admin.php' )
+				)
+			),
+			esc_html( Havato_I18N::t( $only_pending ? 'show_all' : 'show_pending' ) ),
+			esc_html( number_format_i18n( $pending_total ) ),
+			esc_html( Havato_I18N::t( 'request_pending' ) )
+		);
+
+		if ( empty( $rows ) ) {
+			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
+			return;
+		}
+
+		echo '<table class="hv-adm-table"><thead><tr>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_date' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'venue_name' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'event_subject' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_manager' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $rows as $row ) {
+			$badge = 'pending' === $row['status'] ? 'is-yellow'
+				: ( 'accepted' === $row['status'] ? 'is-green' : 'is-gray' );
+			$city  = havato_city_label( (string) $row['venue_city'] );
+
+			echo '<tr>';
+			echo '<td><strong>' . esc_html( Havato_Jalali::format( $row['preferred_date'], $lang ) ) . '</strong><br>' .
+				'<span class="hv-adm-muted">' . esc_html( substr( (string) $row['preferred_time'], 0, 5 ) ) . '</span></td>';
+
+			echo '<td>' . esc_html( $row['venue_name'] );
+			if ( ! empty( $city[ $lang ] ) ) {
+				echo '<br><span class="hv-adm-muted">' . esc_html( $city[ $lang ] ) . '</span>';
+			}
+			echo '</td>';
+
+			echo '<td>' . esc_html( $row['subject'] );
+			if ( ! empty( $row['note'] ) ) {
+				echo '<br><span class="hv-adm-muted">' . esc_html( $row['note'] ) . '</span>';
+			}
+			echo '</td>';
+
+			echo '<td>' . esc_html( havato_display_name( (int) $row['user_id'] ) ) . '</td>';
+			echo '<td><span class="hv-adm-badge ' . esc_attr( $badge ) . '">' .
+				esc_html( Havato_I18N::t( 'request_' . $row['status'] ) ) . '</span></td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
 	}
 
 	/* =====================================================================

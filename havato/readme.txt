@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.26.0
+Stable tag: 1.27.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,31 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.27.0 =
+* The administrator now sees guest suggestions from every café, on the
+  Approvals screen. It opens on the pending ones with a count, and a toggle
+  shows the rest. The café's city is listed beside its name so two cafés with
+  similar names are told apart. This is the only place the pattern is visible:
+  a café that keeps receiving suggestions and never creates a gathering is
+  worth a phone call. The screen is read-only — the decision stays with the
+  café.
+* Accepting a suggestion now creates the gathering, rather than only marking
+  the suggestion answered. It is built from the café's current tables and
+  carries the guest's subject, note, day and time.
+* The new gathering lands as "pending review" and does not appear in Explore
+  until an administrator approves it, exactly like any other new table. A café
+  that has not defined any tables yet gets a clear message instead of an event
+  with nowhere to sit.
+* The suggestion is re-read scoped to the café before anything is written, so
+  a café cannot answer another café's queue, and only a still-pending one can
+  be answered — a stale double-submit cannot create the same event twice.
+* The language button opens a list instead of cycling. Reaching Turkish from
+  Persian used to take two taps and a pass through English; every language is
+  now one tap, shown in its own script. The closed button now shows the
+  language you are reading rather than the one it would switch to, which is
+  what a dropdown is expected to display. Tapping elsewhere or pressing Escape
+  closes it.
 
 = 1.26.0 =
 * The round button in the bottom bar changed meaning with every tab — filter

@@ -170,11 +170,12 @@ t('the handler exists', /case 'request_status':/.test(owner));
 t('it is nonce-protected', /check_admin_referer\( 'havato_owner', 'havato_owner_nonce' \)/.test(owner));
 t('only known statuses are stored', /in_array\( \$new_status, array\( 'accepted', 'declined' \), true \)/.test(owner));
 
-// A café must not be able to answer another café's suggestion.
-t('the update is scoped by venue as well as row id',
-  /array\( 'id' => \$request_id, 'venue_id' => \$venue_row\['id'\] \)/.test(owner));
-t('accepting does not silently create an event',
-  !/case 'request_status':[\s\S]{0,900}Havato_DB::table\( 'events' \)/.test(owner));
+// A café must not be able to answer another café's suggestion. Since 1.27.0
+// the row is re-read scoped by venue before anything is written, so the guard
+// sits on the SELECT rather than the UPDATE.
+t('the suggestion is fetched scoped by venue as well as row id',
+  /WHERE id=%d AND venue_id=%s AND status='pending'/.test(owner));
+t('…and only a pending one can be answered', /AND status='pending'/.test(owner));
 t('the screen says so in words', /guest_requests_hint/.test(owner));
 t('the guest sees the status back on their dashboard', /request_' \+ rq\.status/.test(js));
 

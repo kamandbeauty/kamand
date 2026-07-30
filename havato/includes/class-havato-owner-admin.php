@@ -401,6 +401,80 @@ class Havato_Owner_Admin {
 	}
 
 	/**
+	 * Turn an accepted suggestion into a real gathering.
+	 *
+	 * It is created from every table the café currently owns, because the
+	 * suggestion carries no seating plan — the café can trim it afterwards on
+	 * the Events screen. It always lands as `pending_admin`, so an accepted
+	 * suggestion never reaches Explore until the administrator approves it,
+	 * exactly like any other new table.
+	 *
+	 * @param array $request Suggestion row.
+	 * @param array $venue   Venue row.
+	 * @return bool Whether an event was created.
+	 */
+	private static function event_from_request( $request, $venue ) {
+		global $wpdb;
+
+		$tables   = Havato_REST::venue_tables( $venue['id'] );
+		$capacity = 0;
+		foreach ( $tables as $tbl ) {
+			$capacity += (int) $tbl['seats'] * max( 1, (int) $tbl['quantity'] );
+		}
+
+		// A café with no furniture on file cannot seat anyone, so there is
+		// nothing to create yet. The status change still stands.
+		if ( $capacity < 2 ) {
+			return false;
+		}
+
+		$event_id = havato_uid( 'e' );
+		$events   = Havato_DB::table( 'events' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$events,
+			array(
+				'id'           => $event_id,
+				'venue_id'     => $venue['id'],
+				'title'        => $request['subject'],
+				'theme'        => '',
+				'description'  => isset( $request['note'] ) ? (string) $request['note'] : '',
+				'image'        => '',
+				'event_date'   => $request['preferred_date'],
+				'event_time'   => $request['preferred_time'],
+				'budget_tier'  => $venue['budget_tier'],
+				'max_capacity' => $capacity,
+				'status'       => 'pending_admin',
+				'created_at'   => havato_now(),
+			),
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
+		);
+
+		$event_tables = Havato_DB::table( 'event_tables' );
+		foreach ( $tables as $tbl ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->insert(
+				$event_tables,
+				array(
+					'event_id' => $event_id,
+					'table_id' => (int) $tbl['id'],
+					'seats'    => (int) $tbl['seats'],
+					'quantity' => max( 1, (int) $tbl['quantity'] ),
+				),
+				array( '%s', '%d', '%d', '%d' )
+			);
+		}
+
+		Havato_Logger::log(
+			sprintf( 'Venue %s accepted guest suggestion %d; event %s awaits approval.', $venue['id'], (int) $request['id'], $event_id ),
+			'info'
+		);
+
+		return true;
+	}
+
+	/**
 	 * Gatherings guests have asked this café to host.
 	 *
 	 * A suggestion is only useful if the café sees it, so it sits on the
@@ -1099,17 +1173,36 @@ class Havato_Owner_Admin {
 					global $wpdb;
 					$requests = Havato_DB::table( 'event_requests' );
 
-					// Scoped by venue_id as well as the row id: a café must not
-					// be able to answer a suggestion addressed to another café
-					// by editing the hidden field.
-					// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->update(
-						$requests,
-						array( 'status' => $new_status ),
-						array( 'id' => $request_id, 'venue_id' => $venue_row['id'] ),
-						array( '%s' ),
-						array( '%d', '%s' )
+					// Read it back scoped by venue: a café must not be able to
+					// answer a suggestion addressed to another café by editing
+					// the hidden field.
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$request = $wpdb->get_row(
+						$wpdb->prepare(
+							"SELECT * FROM $requests WHERE id=%d AND venue_id=%s AND status='pending'",
+							$request_id,
+							$venue_row['id']
+						),
+						ARRAY_A
 					);
+
+					if ( $request ) {
+						// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+						$wpdb->update(
+							$requests,
+							array( 'status' => $new_status ),
+							array( 'id' => $request_id ),
+							array( '%s' ),
+							array( '%d' )
+						);
+
+						if ( 'accepted' === $new_status ) {
+							$created = self::event_from_request( $request, $venue_row );
+							$msg     = $created
+								? Havato_I18N::t( 'request_became_event' )
+								: Havato_I18N::t( 'request_need_tables' );
+						}
+					}
 				}
 
 				$page = 'havato-venue';
