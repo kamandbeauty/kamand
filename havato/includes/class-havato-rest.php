@@ -603,6 +603,14 @@ class Havato_REST {
 		$venues = Havato_DB::table( 'venues' );
 		$regs   = Havato_DB::table( 'event_registrations' );
 
+		// Bookings that still lie ahead, soonest first. This used to return
+		// everything the guest had ever attended, newest first, so the profile
+		// listed finished gatherings as though they were coming up.
+		//
+		// Filtered on the date rather than the booking cutoff: a seat you
+		// already hold at a table starting in an hour is exactly what you
+		// need on screen, even though nobody may join it any more.
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
@@ -613,8 +621,11 @@ class Havato_REST {
 				 FROM $regs r
 				 INNER JOIN $events e ON e.id = r.event_id
 				 LEFT JOIN $venues v ON v.id = e.venue_id
-				 WHERE r.user_id = %d AND r.status <> 'cancelled'
-				 ORDER BY e.event_date DESC LIMIT 40",
+				 WHERE r.user_id = %d
+				   AND r.status <> 'cancelled'
+				   AND e.status <> 'cancelled'
+				   AND e.event_date >= CURDATE()
+				 ORDER BY e.event_date ASC, e.event_time ASC LIMIT 40",
 				$user_id
 			),
 			ARRAY_A
@@ -942,12 +953,40 @@ class Havato_REST {
 			return new WP_Error( 'havato_no_event', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
 		}
 
+		// Explore hides a finished or nearly-started table, but this endpoint
+		// takes an id straight from the URL, so the page behind it stayed
+		// reachable — a bookmark or a shared link would still open last
+		// week's gathering with a live "reserve" button.
+		//
+		// Someone holding a seat is the exception: they need the address and
+		// the directions button right up to the moment they sit down.
+		$user_id = get_current_user_id();
+		$starts  = $row['event_date'] . ' ' . $row['event_time'];
+
+		if ( $starts < havato_booking_cutoff() || 'cancelled' === (string) $row['status'] ) {
+			$mine = false;
+			if ( $user_id ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$mine = (bool) $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM $regs WHERE event_id=%s AND user_id=%d AND status<>'cancelled'",
+						$row['id'],
+						$user_id
+					)
+				);
+			}
+
+			if ( ! $mine ) {
+				return new WP_Error( 'havato_event_over', Havato_I18N::t( 'event_over' ), array( 'status' => 410 ) );
+			}
+		}
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$venue = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $venues WHERE id=%s", $row['venue_id'] ), ARRAY_A );
 
 		return self::ok(
 			array(
-				'event' => self::event_payload( $row, get_current_user_id() ),
+				'event' => self::event_payload( $row, $user_id ),
 				// $private stays false: this is a guest-facing screen, so the
 				// café's contact number is not included.
 				'venue' => $venue ? self::venue_payload( $venue, false ) : null,

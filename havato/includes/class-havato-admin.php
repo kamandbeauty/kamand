@@ -1765,7 +1765,15 @@ class Havato_Admin {
 			esc_html__( 'Mark the event completed N hours after start', 'havato' ),
 			(int) $s['auto_complete_hours']
 		);
+		printf(
+			'<label>%s<input type="number" name="booking_cutoff_hours" value="%d" min="0" max="72"></label>',
+			esc_html__( 'Stop showing and accepting a table N hours before it starts', 'havato' ),
+			(int) $s['booking_cutoff_hours']
+		);
 		echo '</div>';
+		echo '<p class="hv-adm-muted">' .
+			esc_html__( 'A table nobody can still reach in time is worse than no table: the matcher would seat a party that never arrives, and every empty seat costs the others a penalty. Set 0 to keep a table listed until the moment it starts.', 'havato' ) .
+			'</p>';
 
 		echo '<button type="submit" class="hv-adm-btn hv-adm-btn-blue">' . esc_html( Havato_I18N::t( 'save' ) ) . '</button>';
 		echo '</form>';
@@ -2527,6 +2535,7 @@ class Havato_Admin {
 					'w_location', 'w_time', 'w_density', 'w_shared_interest', 'w_speaker_listener',
 					'w_intro_extro', 'w_ambivert', 'w_same_vibe', 'w_age_penalty', 'w_age_threshold',
 					'w_rating', 'w_gender_balance', 'cron_lead_hours', 'auto_complete_hours',
+					'booking_cutoff_hours',
 					'w_trait_humor', 'w_trait_energy', 'w_trait_empathy',
 					'penalty_no_show', 'penalty_empty_seat', 'penalty_floor',
 				);

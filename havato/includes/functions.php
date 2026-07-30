@@ -742,7 +742,8 @@ function havato_max_seats() {
  * @return int Hours.
  */
 function havato_booking_cutoff_hours() {
-	$hours = (int) apply_filters( 'havato_booking_cutoff_hours', 5 );
+	$hours = (int) Havato_Settings::get( 'booking_cutoff_hours', 5 );
+	$hours = (int) apply_filters( 'havato_booking_cutoff_hours', $hours );
 	return max( 0, $hours );
 }
 

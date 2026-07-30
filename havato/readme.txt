@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.29.0
+Stable tag: 1.30.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,25 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.30.0 =
+* The booking cutoff is now a setting on the Matching weights screen, next to
+  the other timing values, instead of only a code filter. It still defaults to
+  five hours, and 0 keeps a table listed until the moment it starts. The
+  `havato_booking_cutoff_hours` filter still overrides it.
+* Fixed: a finished gathering was still reachable by its own link. The listing
+  hid it, but the event page took an id straight from the URL, so a bookmark
+  or a shared link opened last week's gathering with a working "reserve"
+  button. That page now answers "no longer available".
+* Fixed: the profile listed every gathering the guest had ever attended,
+  newest first, under a heading that reads as upcoming. It now shows only
+  what still lies ahead, soonest first, and drops cancelled ones.
+* Someone who holds a seat is exempt from both: they can still open their own
+  gathering — with its address and directions — right up to the moment they
+  sit down, and afterwards. What you may still join and what you have already
+  booked are different questions.
+* The café and administrator panels are unaffected: a café needs to see this
+  evening's tables and the administrator needs the full history.
 
 = 1.29.0 =
 * Fixed: the language dropdown showed white text on a white panel, so the list

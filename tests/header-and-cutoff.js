@@ -79,7 +79,9 @@ t('the dropdown still anchors to its own button', /\.hv-lang-wrap \{ position: r
 console.log('\n--- 3. the five-hour booking cutoff ---');
 
 t('a cutoff helper exists', /function havato_booking_cutoff_hours/.test(fn));
-t('it defaults to five hours', /apply_filters\( 'havato_booking_cutoff_hours', 5 \)/.test(fn));
+// The default moved from the filter call into the stored setting in 1.30.0,
+// so assert the value rather than where it is written.
+t('it defaults to five hours', /Havato_Settings::get\( 'booking_cutoff_hours', 5 \)/.test(fn));
 t('…and is filterable', /apply_filters\( 'havato_booking_cutoff_hours'/.test(fn));
 t('it cannot go negative', /return max\( 0, \$hours \);/.test(fn));
 t('the cutoff is a datetime, not just a date', /function havato_booking_cutoff\(\)/.test(fn));
@@ -127,6 +129,69 @@ t('that message is trilingual', /'event_too_soon'\s*=> array\( 'fa' =>.*'en' =>.
 t('the dashboard still shows a seat you already hold today',
   /AND e\.event_date >= CURDATE\(\)[\s\S]{0,120}ORDER BY e\.event_date ASC/.test(rest));
 t('…and the reason is recorded', /a seat the guest already holds/.test(rest));
+
+/* =====================================================================
+ * 4. No finished gathering reaches the client by any route
+ * ================================================================== */
+console.log('\n--- 4. every guest-facing route is closed ---');
+
+// Hiding the card was only the listing. The event page took an id from the
+// URL, so a bookmark or a shared link still opened last week's gathering
+// with a live reserve button.
+t('the event page applies the cutoff', /if \( \$starts < havato_booking_cutoff\(\) \|\| 'cancelled' === \(string\) \$row\['status'\] \)/.test(rest));
+t('…and answers 410 rather than rendering it', /'havato_event_over'[\s\S]{0,120}410/.test(rest));
+t('the message is trilingual', /'event_over'\s*=> array\( 'fa' =>.*'en' =>.*'tr' =>/.test(i18n));
+t('someone holding a seat is exempted', /\$mine = \(bool\) \$wpdb->get_var/.test(rest));
+t('…and that exemption checks their own booking',
+  /SELECT id FROM \$regs WHERE event_id=%s AND user_id=%d AND status<>'cancelled'/.test(rest));
+
+// The profile listed every gathering ever attended, newest first, under a
+// heading that reads as "upcoming".
+t('my_events drops finished gatherings', /AND e\.event_date >= CURDATE\(\)[\s\S]{0,80}ORDER BY e\.event_date ASC, e\.event_time ASC LIMIT 40/.test(rest));
+t('…and cancelled ones', /AND r\.status <> 'cancelled'\s*\n\s*AND e\.status <> 'cancelled'/.test(rest));
+t('…and orders soonest first, not newest first',
+  !/WHERE r\.user_id = %d AND r\.status <> 'cancelled'\s*\n\s*ORDER BY e\.event_date DESC/.test(rest));
+
+(() => {
+  // Drive the gate the event page now applies.
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+  const NOW = new Date('2026-07-30T20:41:00');
+  const cutoff = fmt(new Date(NOW.getTime() + 5 * 3600e3));
+  const at = (d, h, m = 0) => {
+    const x = new Date(NOW); x.setDate(x.getDate() + d); x.setHours(h, m, 0, 0); return x;
+  };
+  const gate = (start, status, holdsSeat) =>
+    (fmt(start) < cutoff || status === 'cancelled')
+      ? (holdsSeat ? 'OPEN' : 'GONE')
+      : 'OPEN';
+
+  t('last week is gone for a stranger', gate(at(-7, 19), 'completed', false) === 'GONE');
+  t('…but an attendee can still open it', gate(at(-7, 19), 'completed', true) === 'OPEN');
+  t('earlier today is gone', gate(at(0, 18), 'open', false) === 'GONE');
+  t('starting in 1h19 is gone for a stranger', gate(at(0, 22), 'open', false) === 'GONE');
+  t('…and open for whoever booked it', gate(at(0, 22), 'open', true) === 'OPEN');
+  t('a cancelled future table is gone', gate(at(2, 19), 'cancelled', false) === 'GONE');
+  t('a real future table is open', gate(at(2, 19), 'open', false) === 'OPEN');
+  t('exactly at the cutoff it is open', gate(at(1, 1, 41), 'open', false) === 'OPEN');
+})();
+
+/* =====================================================================
+ * 5. The window is set from the admin panel
+ * ================================================================== */
+console.log('\n--- 5. the cutoff is configurable ---');
+
+const settings = rd('includes/class-havato-settings.php');
+const admin = rd('includes/class-havato-admin.php');
+
+t('a setting exists with the previous default', /'booking_cutoff_hours' => 5,/.test(settings));
+t('the helper reads it', /Havato_Settings::get\( 'booking_cutoff_hours', 5 \)/.test(fn));
+t('the filter still wins over it', /\$hours = \(int\) apply_filters\( 'havato_booking_cutoff_hours', \$hours \);/.test(fn));
+t('a field is rendered', /name="booking_cutoff_hours"/.test(admin));
+t('zero is allowed, so a site can switch it off', /name="booking_cutoff_hours" value="%d" min="0"/.test(admin));
+t('the save handler persists it', /'booking_cutoff_hours',/.test(admin));
+t('the screen explains the consequence', /every empty seat costs the others a penalty/.test(admin));
 
 console.log(f ? `\n❌ ${f} failing` : '\n✅ dropdown readable, buttons stacked, stale gatherings hidden');
 process.exit(f ? 1 : 0);

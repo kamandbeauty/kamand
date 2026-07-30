@@ -69,6 +69,7 @@ class Havato_Settings {
 			// Cron & lifecycle.
 			'cron_lead_hours'      => 2,     // Force matching N hours before the event.
 			'auto_complete_hours'  => 3,     // Mark event completed N hours after start.
+			'booking_cutoff_hours' => 5,     // Stop listing/accepting a table N hours before it starts.
 
 			// Google sign-in.
 			'google_client_id'     => '',
