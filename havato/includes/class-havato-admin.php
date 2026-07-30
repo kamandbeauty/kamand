@@ -761,6 +761,11 @@ class Havato_Admin {
 			esc_html( Havato_I18N::t( 'event_theme' ) ),
 			esc_attr( $row['theme'] )
 		);
+		printf(
+			'<label>%s<textarea name="description" rows="3" maxlength="1000">%s</textarea></label>',
+			esc_html( Havato_I18N::t( 'event_about' ) ),
+			esc_textarea( isset( $row['description'] ) ? (string) $row['description'] : '' )
+		);
 		// Gregorian in the admin form: a date input speaks ISO, and the list
 		// screen already renders the Jalali equivalent.
 		printf(
@@ -2473,14 +2478,15 @@ class Havato_Admin {
 					$wpdb->update(
 						Havato_DB::table( 'events' ),
 						array(
-							'title'      => isset( $_POST['title'] ) ? havato_clamp_text( sanitize_text_field( wp_unslash( $_POST['title'] ) ), 191 ) : '',
-							'theme'      => isset( $_POST['theme'] ) ? havato_clamp_text( sanitize_text_field( wp_unslash( $_POST['theme'] ) ), 191 ) : '',
-							'event_date' => $date,
-							'event_time' => $time,
-							'status'     => $state,
+							'title'       => isset( $_POST['title'] ) ? havato_clamp_text( sanitize_text_field( wp_unslash( $_POST['title'] ) ), 191 ) : '',
+							'theme'       => isset( $_POST['theme'] ) ? havato_clamp_text( sanitize_text_field( wp_unslash( $_POST['theme'] ) ), 191 ) : '',
+							'description' => isset( $_POST['description'] ) ? havato_clamp_text( sanitize_textarea_field( wp_unslash( $_POST['description'] ) ), 1000 ) : '',
+							'event_date'  => $date,
+							'event_time'  => $time,
+							'status'      => $state,
 						),
 						array( 'id' => $event_id ),
-						array( '%s', '%s', '%s', '%s', '%s' ),
+						array( '%s', '%s', '%s', '%s', '%s', '%s' ),
 						array( '%s' )
 					);
 

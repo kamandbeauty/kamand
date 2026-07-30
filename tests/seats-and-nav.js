@@ -121,10 +121,15 @@ t('…with a helpful message', /'party_max_seats'/.test(i18n));
 })();
 
 console.log('\n--- 7. cards show the title and theme ---');
-t('title rendered when present', /event\.title \? '<p class="hv-event-title">/.test(js));
+// Since 1.25.0 the line under the café name is the labelled subject, which
+// falls back to the theme when the café left the title blank. Assert that
+// behaviour rather than the old bare-title markup.
+t('the subject line is rendered', /\(subject \? '<p class="hv-event-title">/.test(js));
+t('it prefers the title and falls back to the theme',
+  /var subject = \(event\.title && String\(event\.title\)\.trim\(\)\) \|\| event\.theme \|\| '';/.test(js));
 t('theme rendered as its own badge', /event\.theme \? '<span class="hv-badge hv-badge-pink">/.test(js));
-t('both are optional, so untitled events still render',
-  /\(event\.title \?/.test(js) && /\(event\.theme \?/.test(js));
+t('both are optional, so an event with neither still renders',
+  /\(subject \?/.test(js) && /\(event\.theme \?/.test(js));
 t('the server already sent them', /'title'\s*=>\s*\$row\['title'\]/.test(rest) && /'theme'\s*=>/.test(rest));
 t('title has a style', /\.hv-event-title \{/.test(css));
 

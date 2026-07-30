@@ -143,7 +143,14 @@ t('every string is still trilingual', (() => {
   const tr = [...b.matchAll(/'([a-z0-9_]+)'\s*=>\s*array\([\s\S]{0,800}?'tr'\s*=>/g)].map(m => m[1]);
   return [...new Set(keys)].every(k => tr.includes(k));
 })());
-t('schema bumped for the flag columns', /HAVATO_DB_VERSION', '1\.13\.0'/.test(main));
+// The flag columns landed in schema 1.13.0. Later releases keep bumping this,
+// so assert it is at or past that point rather than pinning the exact value.
+t('schema is at or past the flag columns', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) { return false; }
+  const [, major, minor] = m.map(Number);
+  return major > 1 || (major === 1 && minor >= 13);
+})());
 
 console.log(f ? `\n❌ ${f} failing` : '\n✅ silent flagging, admin review markers and platform bans all working');
 process.exit(f ? 1 : 0);

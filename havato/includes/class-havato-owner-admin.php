@@ -506,6 +506,11 @@ class Havato_Owner_Admin {
 			'<input type="text" name="theme" maxlength="120" placeholder="' .
 			esc_attr( Havato_I18N::t( 'event_theme_hint' ) ) . '"></label>';
 
+		// Shown on the event page a guest reads before booking a seat.
+		echo '<label class="hv-adm-grow">' . esc_html( Havato_I18N::t( 'event_about' ) ) .
+			'<textarea name="description" rows="3" maxlength="1000" placeholder="' .
+			esc_attr( Havato_I18N::t( 'event_desc_hint' ) ) . '"></textarea></label>';
+
 		// Optional event photo (falls back to the café cover).
 		echo '<label>' . esc_html( Havato_I18N::t( 'event_image' ) ) .
 			'<span class="hv-adm-imgpick">' .
@@ -1003,6 +1008,12 @@ class Havato_Owner_Admin {
 				foreach ( array( 'title', 'theme', 'event_date', 'event_time', 'budget_tier' ) as $key ) {
 					$req->set_param( $key, isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '' );
 				}
+				// Free text, so it keeps its line breaks and is clamped rather
+				// than flattened by sanitize_text_field().
+				$req->set_param(
+					'description',
+					isset( $_POST['description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['description'] ) ) : ''
+				);
 				$req->set_param( 'image', isset( $_POST['image'] ) ? esc_url_raw( wp_unslash( $_POST['image'] ) ) : '' );
 				$req->set_param( 'max_capacity', isset( $_POST['max_capacity'] ) ? (int) $_POST['max_capacity'] : 6 );
 

@@ -135,6 +135,31 @@ class Havato_Seeder {
 		$tiers   = array( 'low', 'medium', 'high' );
 		$themes  = array( 'موسیقی', 'کتاب', 'استارتاپ', 'Board games', 'Film' );
 
+		// Paired with $themes by index, so a "کتاب" evening gets the book
+		// subject rather than a random one.
+		$subjects = array(
+			array(
+				'title' => 'شب موسیقی و گفتگو',
+				'desc'  => 'یک عصر آرام برای حرف زدن درباره موسیقی؛ هرکس یک آهنگ می‌آورد و درباره‌اش می‌گوید. لازم نیست چیزی بلد باشید، فقط گوش دادن هم کافی است.',
+			),
+			array(
+				'title' => 'باشگاه کتاب',
+				'desc'  => 'درباره کتابی که این ماه خوانده‌اید حرف بزنید و پیشنهاد تازه بگیرید. اگر کتابی نخوانده‌اید هم بیایید؛ فهرست خواندنی‌تان پر می‌شود.',
+			),
+			array(
+				'title' => 'میز استارتاپ',
+				'desc'  => 'دورهمی آدم‌هایی که روی ایده یا کسب‌وکاری کار می‌کنند. جای پیچ دادن نیست؛ جای پرسیدن سؤال‌های سختی است که خودتان از خودتان نمی‌پرسید.',
+			),
+			array(
+				'title' => 'شب بازی‌های رومیزی',
+				'desc'  => 'بازی‌ها روی میز هست و قاعده‌ها را سر جا یاد می‌گیرید. بهترین راه برای آشنا شدن وقتی حرف زدن با غریبه سخت است.',
+			),
+			array(
+				'title' => 'قرار فیلم‌بازها',
+				'desc'  => 'یک فیلم را بهانه می‌کنیم برای گفتگو. طرفدار سینمای هنری باشید یا فیلم‌های پرفروش، هر دو سر این میز جا دارند.',
+			),
+		);
+
 		$created_venues = 0;
 		$created_events = 0;
 		$skipped        = 0;
@@ -215,8 +240,12 @@ class Havato_Seeder {
 					array(
 						'id'           => $event_id,
 						'venue_id'     => $venue_id,
-						'title'        => '',
+						// Demo events used to carry an empty title, so the card
+						// showed only the theme and every evening at a café
+						// looked identical. Give each one a real subject.
+						'title'        => $subjects[ ( $index + $d ) % count( $subjects ) ]['title'],
 						'theme'        => $themes[ ( $index + $d ) % count( $themes ) ],
+						'description'  => $subjects[ ( $index + $d ) % count( $subjects ) ]['desc'],
 						'image'        => '',
 						'event_date'   => $date,
 						'event_time'   => $time,
@@ -226,7 +255,8 @@ class Havato_Seeder {
 						'is_demo'      => 1,
 						'created_at'   => havato_now(),
 					),
-					array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s' )
+					// 13 columns, 13 formats — see the note in owner_create_event().
+					array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%s' )
 				);
 
 				// Attach the café's tables to the event.

@@ -325,6 +325,7 @@ class Havato_I18N {
 			'event_capacity_preview' => array( 'fa' => 'ظرفیت این دورهمی: %d نفر', 'en' => 'Capacity for this event: %d guests', 'tr' => 'Bu etkinliğin kapasitesi: %d misafir' ),
 			'event_need_tables'     => array( 'fa' => 'حداقل یک میز را انتخاب کنید.', 'en' => 'Please select at least one table.', 'tr' => 'Lütfen en az bir masa seçin.' ),
 			'event_theme_hint'      => array( 'fa' => 'مثلاً موسیقی، کتاب، بازی', 'en' => 'e.g. Music, Books, Games', 'tr' => 'örn. Müzik, Kitap, Oyun' ),
+			'event_desc_hint'       => array( 'fa' => 'در چند خط بنویسید این دورهمی درباره چیست تا مهمان پیش از رزرو بداند.', 'en' => 'A few lines on what this gathering is, so guests know before they book.', 'tr' => 'Misafirler rezervasyon yapmadan önce bilsin diye bu buluşmanın ne olduğunu birkaç satırda yazın.' ),
 			'event_image'           => array( 'fa' => 'عکس دورهمی (اختیاری)', 'en' => 'Event photo (optional)', 'tr' => 'Etkinlik fotoğrafı (isteğe bağlı)' ),
 			'tab_venue_settings'    => array( 'fa' => 'تنظیمات کافه', 'en' => 'Venue Settings', 'tr' => 'Mekân Ayarları' ),
 
@@ -367,6 +368,15 @@ class Havato_I18N {
 			'stat_no_shows'         => array( 'fa' => 'عدم حضور', 'en' => 'No-shows', 'tr' => 'Gelmeyenler' ),
 			'stat_empty_seats'      => array( 'fa' => 'صندلی خالی‌مانده', 'en' => 'Empty seats left', 'tr' => 'Boş kalan koltuk' ),
 			'event_theme'           => array( 'fa' => 'موضوع', 'en' => 'Theme', 'tr' => 'Tema' ),
+			'event_subject'         => array( 'fa' => 'موضوع رویداد', 'en' => 'Subject', 'tr' => 'Konu' ),
+			'event_about'           => array( 'fa' => 'درباره این دورهمی', 'en' => 'About this gathering', 'tr' => 'Bu buluşma hakkında' ),
+			'about_venue'           => array( 'fa' => 'درباره کافه', 'en' => 'About the café', 'tr' => 'Kafe hakkında' ),
+			'starts_in'             => array( 'fa' => 'تا شروع', 'en' => 'Starts in', 'tr' => 'Başlamasına' ),
+			'event_started'         => array( 'fa' => 'شروع شده است', 'en' => 'Already started', 'tr' => 'Başladı' ),
+			'unit_day'              => array( 'fa' => 'روز', 'en' => 'd', 'tr' => 'g' ),
+			'unit_hour'             => array( 'fa' => 'ساعت', 'en' => 'h', 'tr' => 's' ),
+			'unit_minute'           => array( 'fa' => 'دقیقه', 'en' => 'm', 'tr' => 'dk' ),
+			'unit_second'           => array( 'fa' => 'ثانیه', 'en' => 's', 'tr' => 'sn' ),
 			'joined_event'          => array( 'fa' => 'در صف این میز هستید', 'en' => 'You are in the queue', 'tr' => 'Sıradasınız' ),
 			'event_full'            => array( 'fa' => 'ظرفیت تکمیل است', 'en' => 'Table is full', 'tr' => 'Masa dolu' ),
 			// Atmosphere, not price. The plugin never handles money, so these

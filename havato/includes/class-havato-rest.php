@@ -140,6 +140,7 @@ class Havato_REST {
 
 			// Explore / events.
 			'events'             => array( 'GET', 'get_events', $pub ),
+			'event'              => array( 'GET', 'get_event', $pub ),
 			'events/join'        => array( 'POST', 'join_event', $auth ),
 			'events/mine'        => array( 'GET', 'my_events', $auth ),
 
@@ -653,6 +654,57 @@ class Havato_REST {
 	 * @param WP_REST_Request $req Request.
 	 * @return WP_REST_Response|WP_Error
 	 */
+	/**
+	 * One event plus the café hosting it.
+	 *
+	 * Returned together so the event page can render in a single request:
+	 * fetching the event and then the venue would leave the menu popping in
+	 * after the rest of the page had already drawn.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function get_event( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$events = Havato_DB::table( 'events' );
+		$venues = Havato_DB::table( 'venues' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+		$id     = sanitize_text_field( (string) $req->get_param( 'id' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
+						v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
+						(SELECT COALESCE(SUM(r.seats),0) FROM $regs r
+						 WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
+				 FROM $events e
+				 INNER JOIN $venues v ON v.id = e.venue_id
+				 WHERE e.id = %s",
+				$id
+			),
+			ARRAY_A
+		);
+
+		if ( ! $row ) {
+			return new WP_Error( 'havato_no_event', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$venue = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $venues WHERE id=%s", $row['venue_id'] ), ARRAY_A );
+
+		return self::ok(
+			array(
+				'event' => self::event_payload( $row, get_current_user_id() ),
+				// $private stays false: this is a guest-facing screen, so the
+				// café's contact number is not included.
+				'venue' => $venue ? self::venue_payload( $venue, false ) : null,
+			)
+		);
+	}
+
 	public static function get_venue( $req ) {
 		self::boot( $req );
 
@@ -2530,6 +2582,13 @@ class Havato_REST {
 		$theme = sanitize_text_field( (string) $req->get_param( 'theme' ) );
 		$image = esc_url_raw( (string) $req->get_param( 'image' ) );
 
+		// Guest-facing free text: clamped like every other free field so a
+		// single request cannot write megabytes into a TEXT column.
+		$description = havato_clamp_text(
+			sanitize_textarea_field( (string) $req->get_param( 'description' ) ),
+			1000
+		);
+
 		$event_id = havato_uid( 'e' );
 		$events   = Havato_DB::table( 'events' );
 
@@ -2541,6 +2600,7 @@ class Havato_REST {
 				'venue_id'     => $venue['id'],
 				'title'        => sanitize_text_field( (string) $req->get_param( 'title' ) ),
 				'theme'        => $theme,
+				'description'  => $description,
 				'image'        => $image,
 				'event_date'   => $date,
 				'event_time'   => $time,
@@ -2549,7 +2609,10 @@ class Havato_REST {
 				'status'       => $venue['verified'] ? 'open' : 'pending_admin',
 				'created_at'   => havato_now(),
 			),
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s' )
+			// 12 columns, 12 formats. wpdb pairs these by position, so an
+			// extra entry shifts every later column onto the wrong type —
+			// `status` would have been written as %d, turning 'open' into 0.
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' )
 		);
 
 		// Persist the chosen furniture for the matcher and the guest list.
@@ -3089,6 +3152,27 @@ class Havato_REST {
 	 * @param int   $user_id Viewer.
 	 * @return array
 	 */
+	/**
+	 * Seconds between now and the start of an event.
+	 *
+	 * Uses the site's configured timezone on both sides of the subtraction,
+	 * so the answer does not shift with the server's UTC offset.
+	 *
+	 * @param string $date Event date (Y-m-d).
+	 * @param string $time Event time (H:i:s).
+	 * @return int Seconds remaining, or 0 once it has started.
+	 */
+	private static function seconds_until( $date, $time ) {
+		$starts = strtotime( $date . ' ' . substr( (string) $time, 0, 8 ) );
+		$now    = strtotime( havato_now() );
+
+		if ( ! $starts || ! $now ) {
+			return 0;
+		}
+
+		return max( 0, $starts - $now );
+	}
+
 	private static function event_payload( $row, $user_id ) {
 		global $wpdb;
 
@@ -3113,6 +3197,7 @@ class Havato_REST {
 			// The event's own photo is optional; fall back to the café's.
 			'image'       => ! empty( $row['image'] ) ? $row['image'] : ( isset( $row['venue_image'] ) ? $row['venue_image'] : '' ),
 			'theme'       => isset( $row['theme'] ) ? $row['theme'] : '',
+			'description' => isset( $row['description'] ) ? (string) $row['description'] : '',
 			'address'     => isset( $row['venue_address'] ) ? $row['venue_address'] : '',
 			'title'       => $row['title'],
 			'date'        => havato_date_pair( $row['event_date'] ),
@@ -3121,6 +3206,11 @@ class Havato_REST {
 				'en' => Havato_Jalali::week_day( $row['event_date'], 'en' ),
 			),
 			'time'        => substr( (string) $row['event_time'], 0, 5 ),
+			// Seconds until the doors open, worked out on the server against
+			// the site's own clock. Sending a timestamp instead would make the
+			// countdown wrong for anyone whose phone clock or timezone drifts,
+			// and a guest in Istanbul reads the same page as one in Tehran.
+			'starts_in'   => self::seconds_until( $row['event_date'], $row['event_time'] ),
 			'budget_tier' => $row['budget_tier'],
 			'capacity'    => $capacity,
 			'taken'       => $taken,

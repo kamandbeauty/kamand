@@ -42,6 +42,7 @@
 		lastMsgId: 0,
 		chatFetching: false, // one chat read in flight at a time
 		chatSending: false,  // …and one write, so a double-tap cannot post twice
+		countdownTimer: null, // ticks on the event page only
 		map: null,
 		mapMarkers: [],
 		meMarker: null,   // "you are here" dot, recreated with each map
@@ -402,6 +403,10 @@
 	}
 
 	function closeModal() {
+		// The event page runs a one-second timer. Closing the modal destroys
+		// the node it writes into, so the interval has to go with it or it
+		// keeps firing against nothing for the rest of the session.
+		stopCountdown();
 		el.modalHost.hidden = true;
 		el.modalBody.innerHTML = '';
 	}
@@ -828,7 +833,11 @@
 				'</div>';
 
 			$$('[data-event-join]').forEach(function (btn) {
-				btn.onclick = function () { openReserve(btn.dataset.eventJoin, parseInt(btn.dataset.seatsLeft, 10)); };
+				// Opens the event's own page. Booking a seat is a commitment
+				// with a no-show penalty attached, so the guest should be able
+				// to read what the evening is, see the café and its menu, and
+				// know how long they have — before the seat picker appears.
+				btn.onclick = function () { openEvent(btn.dataset.eventJoin); };
 			});
 			$$('[data-venue-open]').forEach(function (node) {
 				node.onclick = function () { openVenue(node.dataset.venueOpen); };
@@ -839,6 +848,7 @@
 	function eventCard(event) {
 		var full = event.seats_left <= 0;
 		var pct = event.capacity ? Math.round((event.taken / event.capacity) * 100) : 0;
+		var subject = (event.title && String(event.title).trim()) || event.theme || '';
 
 		var action;
 		if (event.joined) {
@@ -861,7 +871,12 @@
 					'<div class="hv-event-thumb" data-venue-open="' + esc(event.venue_id) + '">' + thumb + '</div>' +
 					'<div class="hv-event-info">' +
 						'<h3 class="hv-event-name" data-venue-open="' + esc(event.venue_id) + '">' + esc(pick(event.venue)) + '</h3>' +
-						(event.title ? '<p class="hv-event-title">' + esc(event.title) + '</p>' : '') +
+						// The line under the café name says what the gathering
+						// is actually about. The theme is the fallback: a café
+						// may leave the title blank, but every event has one or
+						// the other, and "Board games" alone told the guest
+						// nothing about which evening they were looking at.
+						(subject ? '<p class="hv-event-title">' + esc(t('event_subject')) + ': ' + esc(subject) + '</p>' : '') +
 						'<p class="hv-event-when">' + esc(pick(event.weekday)) + ' · ' + esc(pick(event.date)) + ' · ' + num(event.time) + '</p>' +
 						'<div class="hv-row" style="margin-top:7px">' +
 							statusBadge(event.status) +
@@ -879,6 +894,165 @@
 					action +
 				'</div>' +
 			'</article>';
+	}
+
+	/**
+	 * The event's own page: what the evening is, which café is hosting it,
+	 * their menu, when it starts, how long is left, and the reserve button.
+	 *
+	 * Booking carries a no-show penalty, so the guest should be able to read
+	 * all of this before committing rather than after.
+	 */
+	function openEvent(eventId) {
+		if (!eventId) { return; }
+
+		api('event', { params: { id: eventId } }).then(function (res) {
+			var event = res.event || {};
+			var venue = res.venue || {};
+			var subject = (event.title && String(event.title).trim()) || event.theme || '';
+
+			var hero = event.image
+				? '<img class="hv-modal-hero" src="' + esc(event.image) + '" alt="">'
+				: '<div class="hv-modal-hero"></div>';
+
+			var menu = (venue.menu || []).length
+				? (venue.menu || []).map(function (item) {
+					return '<div class="hv-menu-item">' +
+						(item.image
+							? '<img class="hv-menu-thumb" src="' + esc(item.image) + '" alt="">'
+							: '<span class="hv-menu-thumb">' + icon('cup') + '</span>') +
+						'<div class="hv-menu-body">' +
+							'<div class="hv-menu-name">' + esc(item.name) + '</div>' +
+							(item.desc ? '<div class="hv-menu-desc">' + esc(item.desc) + '</div>' : '') +
+						'</div>' +
+						'<div class="hv-menu-price">' + esc(pick(item.price_label)) + '</div>' +
+					'</div>';
+				}).join('')
+				: '<p class="hv-muted">' + esc(t('empty_state')) + '</p>';
+
+			var full = event.seats_left <= 0;
+			var action;
+			if (event.joined) {
+				action = '<div class="hv-alert hv-alert-green hv-mt">' + esc(t('joined_event')) + '</div>';
+			} else if (full || event.status !== 'open') {
+				action = '<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" disabled>' +
+					esc(t('event_full')) + '</button>';
+			} else {
+				action = '<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-event-reserve">' +
+					esc(t('join_event')) + '</button>';
+			}
+
+			openModal(
+				hero +
+				'<h3 class="hv-modal-title">' + esc(pick(venue.name) || pick(event.venue)) + '</h3>' +
+				(subject
+					? '<p class="hv-event-subject">' + esc(t('event_subject')) + ': ' + esc(subject) + '</p>'
+					: '') +
+
+				'<div class="hv-row" style="margin:10px 0 12px">' +
+					statusBadge(event.status) +
+					(venue.verified ? '<span class="hv-badge hv-badge-green">✓ ' + esc(t('verified_venue')) + '</span>' : '') +
+					'<span class="hv-badge hv-badge-indigo">' + esc(budgetLabel(event.budget_tier)) + '</span>' +
+				'</div>' +
+
+				// When
+				'<div class="hv-event-when-box">' +
+					'<div class="hv-when-line">' +
+						esc(pick(event.weekday)) + ' · ' + esc(pick(event.date)) + ' · ' + num(event.time) +
+					'</div>' +
+					'<div class="hv-countdown" id="hv-countdown" data-starts-in="' +
+						(parseInt(event.starts_in, 10) || 0) + '"></div>' +
+				'</div>' +
+
+				// Seats
+				'<p class="hv-muted hv-mt">' + num(event.seats_left) + ' ' + esc(t('seats_left')) +
+					' · <span class="hv-free">' + esc(t('free')) + '</span></p>' +
+
+				// About this gathering
+				(event.description
+					? '<h4 class="hv-section-title">' + esc(t('event_about')) + '</h4>' +
+						'<p class="hv-event-desc">' + esc(event.description) + '</p>'
+					: '') +
+
+				// The café
+				'<h4 class="hv-section-title">' + esc(t('about_venue')) + '</h4>' +
+				(venue.address ? '<p class="hv-muted">' + esc(venue.address) + '</p>' : '') +
+				(venue.quiet_hours
+					? '<p class="hv-muted">' + esc(t('quiet_hours')) + ': ' + num(venue.quiet_hours) + '</p>'
+					: '') +
+
+				// Menu
+				'<h4 class="hv-section-title">' + esc(t('venue_menu')) + '</h4>' +
+				'<div class="hv-alert hv-alert-blue">' + esc(t('menu_display_only')) + '</div>' +
+				menu +
+
+				action +
+				'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
+					esc(t('close')) + '</button>'
+			);
+
+			startCountdown();
+
+			var go = $('#hv-event-reserve');
+			if (go) {
+				go.onclick = function () {
+					stopCountdown();
+					openReserve(event.id, parseInt(event.seats_left, 10) || 0);
+				};
+			}
+		}).catch(function (err) { toast(err.message, 'error'); });
+	}
+
+	/**
+	 * Live countdown to the start of an event.
+	 *
+	 * Counts down from the server's own figure rather than from a timestamp,
+	 * so a phone with a wrong clock or a different timezone still shows the
+	 * same number of hours as everyone else.
+	 */
+	function startCountdown() {
+		stopCountdown();
+
+		var node = $('#hv-countdown');
+		if (!node) { return; }
+
+		var left = parseInt(node.dataset.startsIn, 10) || 0;
+
+		function paint() {
+			if (left <= 0) {
+				node.textContent = t('event_started');
+				node.classList.add('is-live');
+				stopCountdown();
+				return;
+			}
+
+			var days = Math.floor(left / 86400);
+			var hours = Math.floor((left % 86400) / 3600);
+			var mins = Math.floor((left % 3600) / 60);
+			var secs = left % 60;
+
+			var parts = [];
+			if (days) { parts.push(num(days) + ' ' + t('unit_day')); }
+			if (days || hours) { parts.push(num(hours) + ' ' + t('unit_hour')); }
+			parts.push(num(mins) + ' ' + t('unit_minute'));
+			// Seconds only matter once the wait is short enough to watch.
+			if (!days && !hours) { parts.push(num(secs) + ' ' + t('unit_second')); }
+
+			node.textContent = t('starts_in') + ': ' + parts.join(' ');
+		}
+
+		paint();
+		S.countdownTimer = setInterval(function () {
+			left -= 1;
+			paint();
+		}, 1000);
+	}
+
+	function stopCountdown() {
+		if (S.countdownTimer) {
+			clearInterval(S.countdownTimer);
+			S.countdownTimer = null;
+		}
 	}
 
 	/**

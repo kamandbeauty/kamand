@@ -141,6 +141,7 @@ class Havato_DB {
 			event_date date NOT NULL DEFAULT '0000-00-00',
 			event_time time NOT NULL DEFAULT '00:00:00',
 			theme varchar(191) NOT NULL DEFAULT '',
+			description text NULL,
 			image varchar(255) NOT NULL DEFAULT '',
 			budget_tier varchar(20) NOT NULL DEFAULT 'medium',
 			max_capacity int(11) NOT NULL DEFAULT 6,

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.24.0
+Stable tag: 1.25.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,33 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.25.0 =
+* The line under the café name on an Explore card now says what the gathering
+  is about. It uses the event's title, falling back to its theme when the café
+  left the title blank, so a card is never just a café name and a date.
+* Reserving a seat now opens the event's own page first, instead of jumping
+  straight to the seat picker. Booking carries a no-show penalty, so the guest
+  should be able to read what they are committing to beforehand: the café and
+  its address, the full menu with prices, a description of the gathering, the
+  weekday, date and time, how many seats are left, and a live countdown to the
+  start. The reserve button sits at the bottom of that page.
+* The countdown runs from a figure the server works out against the site's own
+  clock, so a phone with a wrong clock or in another timezone still shows the
+  same number of hours as everyone else. It switches to "already started"
+  rather than counting upwards, and its interval is cleared when the page
+  closes.
+* Events can now carry a description. Cafés write it when creating an event
+  and administrators can edit it; it is clamped like every other free-text
+  field. Schema 1.14.0 adds the column.
+* Demo events used to be created with an empty title, which is why every
+  evening at a café looked identical on the cards. Each now has a real subject
+  and description, paired with its theme.
+* Fixed two `wpdb->insert()` calls on the events table whose format arrays had
+  one entry more than they had columns. Because wpdb pairs them by position,
+  everything after that point was written with the wrong type — `status`
+  would have been stored as a number, turning "open" into 0. Found by a test
+  that counts both sides rather than reading the code.
 
 = 1.24.0 =
 * New "Blocklists" section on the Chats & reports screen. It lists every block
