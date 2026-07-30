@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.25.0
+Stable tag: 1.26.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,33 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.26.0 =
+* The round button in the bottom bar changed meaning with every tab — filter
+  on Explore, locate on the map, upload on the profile — with nothing on
+  screen saying which. That per-tab action has moved into the header, beside
+  the language switch, where it now carries a name for screen readers and a
+  tooltip for everyone else. No action was dropped in the move.
+* The round button now has one fixed job: it opens the guest's own dashboard.
+* The dashboard shows the guest's name, photo and behaviour score, their
+  upcoming bookings soonest-first, and their suggestions. Tapping a booking
+  opens that event's page. Past and cancelled bookings are left out — a
+  dashboard is about what happens next.
+* Each booking carries a Directions button that hands the café's coordinates
+  to the phone's own navigation app: a `geo:` URI on Android, which Google
+  Maps, Waze and Neshan all answer, and a Google Maps URL on iOS, which
+  ignores `geo:`. A café with no coordinates simply shows no button.
+* New "Suggest a gathering": a guest picks a café in their city, a subject, a
+  day and a time, and asks for it. This is explicitly not a booking — nothing
+  is seated and no seat is held. The café sees the suggestion on its own
+  dashboard and can accept or decline; accepting does not create the event,
+  the café still builds it on the Events screen where the tables are chosen.
+* A suggestion is refused if the date has passed, the café is unverified or in
+  another city, or the same guest already has a pending suggestion for that
+  café on that day. Schema 1.15.0 adds the event_requests table.
+* Fixed: the round button never set a text colour, so the dashboard glyph —
+  which paints with currentColor — could have inherited a colour from the
+  surrounding theme and disappeared against the blue.
 
 = 1.25.0 =
 * The line under the café name on an Explore card now says what the gathering

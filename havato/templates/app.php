@@ -42,6 +42,15 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 				<h1 class="hv-header-title" id="hv-header-title">Havato</h1>
 			</div>
 
+			<!-- The per-tab action used to live on the round button in the
+			     bottom bar, where nothing said what it would do. It sits in
+			     the header now; the round button is the dashboard. -->
+			<button type="button" class="hv-header-action" id="hv-header-action" hidden>
+				<svg class="hv-header-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+					<use href="#hv-i-filter"></use>
+				</svg>
+			</button>
+
 			<button type="button" class="hv-lang-btn" id="hv-lang-btn" aria-label="language">
 				<span id="hv-lang-label">EN</span>
 			</button>
@@ -79,9 +88,9 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 				fill="url(#hvWaveGrad)"></path>
 		</svg>
 
-		<button type="button" class="hv-fab" id="hv-fab" aria-label="action">
+		<button type="button" class="hv-fab" id="hv-fab" aria-label="dashboard">
 			<svg class="hv-fab-icon" viewBox="0 0 24 24" aria-hidden="true">
-				<use href="#hv-i-filter"></use>
+				<use href="#hv-i-nav-dashboard"></use>
 			</svg>
 		</button>
 

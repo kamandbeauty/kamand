@@ -395,7 +395,94 @@ class Havato_Owner_Admin {
 		self::events_table( $rows, $lang, false );
 		echo '</div>';
 
+		self::render_requests( $venue, $lang );
+
 		self::foot();
+	}
+
+	/**
+	 * Gatherings guests have asked this café to host.
+	 *
+	 * A suggestion is only useful if the café sees it, so it sits on the
+	 * dashboard rather than behind another menu item. Marking one accepted
+	 * does not create the event — the café still builds it on the Events
+	 * screen, where the tables are chosen — it just clears the queue and
+	 * lets the guest know somebody read it.
+	 *
+	 * @param array  $venue Venue row.
+	 * @param string $lang  Language.
+	 */
+	private static function render_requests( $venue, $lang ) {
+		global $wpdb;
+
+		$table = Havato_DB::table( 'event_requests' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM $table WHERE venue_id = %s
+				 ORDER BY FIELD(status,'pending','accepted','declined'), preferred_date ASC
+				 LIMIT 50",
+				$venue['id']
+			),
+			ARRAY_A
+		);
+
+		echo '<div class="hv-adm-card">';
+		echo '<h2 class="hv-adm-card-title">' . esc_html( Havato_I18N::t( 'guest_requests' ) ) . '</h2>';
+		echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'guest_requests_hint' ) ) . '</p>';
+
+		if ( empty( $rows ) ) {
+			echo '<p class="hv-adm-muted">' . esc_html( Havato_I18N::t( 'empty_state' ) ) . '</p></div>';
+			return;
+		}
+
+		echo '<table class="hv-adm-table"><thead><tr>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_date' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'event_subject' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_manager' ) ) . '</th>';
+		echo '<th>' . esc_html( Havato_I18N::t( 'col_status' ) ) . '</th>';
+		echo '<th></th></tr></thead><tbody>';
+
+		foreach ( $rows as $row ) {
+			$badge = 'pending' === $row['status'] ? 'is-yellow'
+				: ( 'accepted' === $row['status'] ? 'is-green' : 'is-gray' );
+
+			echo '<tr>';
+			echo '<td><strong>' . esc_html( Havato_Jalali::format( $row['preferred_date'], $lang ) ) . '</strong><br>' .
+				'<span class="hv-adm-muted">' . esc_html( substr( (string) $row['preferred_time'], 0, 5 ) ) . '</span></td>';
+
+			echo '<td>' . esc_html( $row['subject'] );
+			if ( ! empty( $row['note'] ) ) {
+				echo '<br><span class="hv-adm-muted">' . esc_html( $row['note'] ) . '</span>';
+			}
+			echo '</td>';
+
+			echo '<td>' . esc_html( havato_display_name( (int) $row['user_id'] ) ) . '</td>';
+			echo '<td><span class="hv-adm-badge ' . esc_attr( $badge ) . '">' .
+				esc_html( Havato_I18N::t( 'request_' . $row['status'] ) ) . '</span></td>';
+
+			echo '<td class="hv-adm-actions">';
+			if ( 'pending' === $row['status'] ) {
+				foreach ( array( 'accepted' => 'accept', 'declined' => 'decline' ) as $state => $label ) {
+					echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline">';
+					wp_nonce_field( 'havato_owner', 'havato_owner_nonce' );
+					echo '<input type="hidden" name="action" value="havato_owner_action">';
+					echo '<input type="hidden" name="havato_action" value="request_status">';
+					echo '<input type="hidden" name="request_id" value="' . esc_attr( $row['id'] ) . '">';
+					echo '<input type="hidden" name="new_status" value="' . esc_attr( $state ) . '">';
+					printf(
+						'<button type="submit" class="hv-adm-btn %s">%s</button> ',
+						'accepted' === $state ? 'hv-adm-btn-blue' : 'hv-adm-btn-ghost',
+						esc_html( Havato_I18N::t( 'accepted' === $state ? 'request_accept' : 'request_decline' ) )
+					);
+					echo '</form>';
+				}
+			}
+			echo '</td></tr>';
+		}
+
+		echo '</tbody></table></div>';
 	}
 
 	/**
@@ -1003,6 +1090,31 @@ class Havato_Owner_Admin {
 		$extra  = array();
 
 		switch ( $action ) {
+			case 'request_status':
+				$request_id = isset( $_POST['request_id'] ) ? (int) $_POST['request_id'] : 0;
+				$new_status = isset( $_POST['new_status'] ) ? sanitize_key( wp_unslash( $_POST['new_status'] ) ) : '';
+				$venue_row  = self::venue();
+
+				if ( $request_id && $venue_row && in_array( $new_status, array( 'accepted', 'declined' ), true ) ) {
+					global $wpdb;
+					$requests = Havato_DB::table( 'event_requests' );
+
+					// Scoped by venue_id as well as the row id: a café must not
+					// be able to answer a suggestion addressed to another café
+					// by editing the hidden field.
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->update(
+						$requests,
+						array( 'status' => $new_status ),
+						array( 'id' => $request_id, 'venue_id' => $venue_row['id'] ),
+						array( '%s' ),
+						array( '%d', '%s' )
+					);
+				}
+
+				$page = 'havato-venue';
+				break;
+
 			case 'create_event':
 				$req = new WP_REST_Request( 'POST' );
 				foreach ( array( 'title', 'theme', 'event_date', 'event_time', 'budget_tier' ) as $key ) {

@@ -132,7 +132,14 @@ for (const k of ['starts_in', 'event_started', 'unit_day', 'unit_hour', 'unit_mi
 console.log('\n--- 5. the description is real data, not a placeholder ---');
 
 t('a column exists', /description text NULL/.test(db));
-t('the schema version was bumped', /HAVATO_DB_VERSION', '1\.14\.0'/.test(main));
+// The description column landed in schema 1.14.0. Later releases keep
+// bumping this, so assert it is at or past that point.
+t('the schema is at or past the description column', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) { return false; }
+  const [, major, minor] = m.map(Number);
+  return major > 1 || (major === 1 && minor >= 14);
+})());
 t('it is in the event payload', /'description' => isset\( \$row\['description'\] \)/.test(rest));
 t('the café can write one', /name="description"/.test(owner));
 t('…and it reaches the endpoint', /\$req->set_param\(\s*\n?\s*'description',/.test(owner));

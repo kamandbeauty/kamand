@@ -141,6 +141,8 @@ class Havato_REST {
 			// Explore / events.
 			'events'             => array( 'GET', 'get_events', $pub ),
 			'event'              => array( 'GET', 'get_event', $pub ),
+			'dashboard'          => array( 'GET', 'user_dashboard', $auth ),
+			'event/request'      => array( 'POST', 'request_event', $auth ),
 			'events/join'        => array( 'POST', 'join_event', $auth ),
 			'events/mine'        => array( 'GET', 'my_events', $auth ),
 
@@ -654,6 +656,217 @@ class Havato_REST {
 	 * @param WP_REST_Request $req Request.
 	 * @return WP_REST_Response|WP_Error
 	 */
+	/**
+	 * Everything the guest's own dashboard needs, in one request.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public static function user_dashboard( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$profile = havato_get_profile( $user_id );
+
+		$events = Havato_DB::table( 'events' );
+		$venues = Havato_DB::table( 'venues' );
+		$regs   = Havato_DB::table( 'event_registrations' );
+
+		// Only bookings that still lie ahead, soonest first: a dashboard is
+		// about what happens next, not a history log.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
+						v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
+						r.status AS my_status, r.checked_in, r.seats AS my_seats,
+						(SELECT COALESCE(SUM(r2.seats),0) FROM $regs r2
+						 WHERE r2.event_id = e.id AND r2.status <> 'cancelled') AS taken
+				 FROM $regs r
+				 INNER JOIN $events e ON e.id = r.event_id
+				 LEFT JOIN $venues v ON v.id = e.venue_id
+				 WHERE r.user_id = %d
+				   AND r.status <> 'cancelled'
+				   AND e.status <> 'cancelled'
+				   AND e.event_date >= CURDATE()
+				 ORDER BY e.event_date ASC, e.event_time ASC
+				 LIMIT 40",
+				$user_id
+			),
+			ARRAY_A
+		);
+
+		$upcoming = array();
+		foreach ( (array) $rows as $row ) {
+			$payload               = self::event_payload( $row, $user_id );
+			$payload['checked_in'] = (bool) $row['checked_in'];
+			$payload['my_seats']   = (int) $row['my_seats'];
+			$upcoming[]            = $payload;
+		}
+
+		// The guest's own suggestions, so they can see one is being looked at
+		// rather than wondering whether it was sent at all.
+		$requests_t = Havato_DB::table( 'event_requests' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$request_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT q.*, v.name AS venue_name FROM $requests_t q
+				 LEFT JOIN $venues v ON v.id = q.venue_id
+				 WHERE q.user_id = %d
+				 ORDER BY q.id DESC LIMIT 20",
+				$user_id
+			),
+			ARRAY_A
+		);
+
+		$requests = array();
+		foreach ( (array) $request_rows as $row ) {
+			$requests[] = array(
+				'id'      => (int) $row['id'],
+				'venue'   => isset( $row['venue_name'] ) ? $row['venue_name'] : '',
+				'subject' => $row['subject'],
+				'date'    => havato_date_pair( $row['preferred_date'] ),
+				'time'    => substr( (string) $row['preferred_time'], 0, 5 ),
+				'status'  => $row['status'],
+			);
+		}
+
+		// Cafés the guest can address a suggestion to: their own city only,
+		// and verified, exactly like Explore.
+		$city  = self::viewer_city();
+		$sql   = "SELECT id, name FROM $venues WHERE verified = 1";
+		$args  = array();
+		if ( $city ) {
+			$sql   .= ' AND city = %s';
+			$args[] = $city;
+		}
+		$sql .= ' ORDER BY name ASC LIMIT 200';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$venue_rows = $args
+			? $wpdb->get_results( $wpdb->prepare( $sql, $args ), ARRAY_A )
+			: $wpdb->get_results( $sql, ARRAY_A );
+
+		return self::ok(
+			array(
+				'user'      => self::user_card( $user_id ),
+				'stats'     => array(
+					'upcoming'  => count( $upcoming ),
+					'rating'    => round( havato_effective_rating( $profile ), 1 ),
+					'requests'  => count( $requests ),
+				),
+				'upcoming'  => $upcoming,
+				'requests'  => $requests,
+				'venues'    => $venue_rows ? $venue_rows : array(),
+				'max_seats' => havato_max_seats(),
+			)
+		);
+	}
+
+	/**
+	 * A guest asks a café for a gathering on a particular day.
+	 *
+	 * This is a suggestion, not a booking: it creates nothing in `events` and
+	 * seats nobody. The café (or an administrator) decides whether to turn it
+	 * into a real gathering.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function request_event( $req ) {
+		self::boot( $req );
+
+		global $wpdb;
+		$user_id = get_current_user_id();
+
+		$venue_id = sanitize_text_field( (string) $req->get_param( 'venue_id' ) );
+		$date     = sanitize_text_field( (string) $req->get_param( 'preferred_date' ) );
+		$time     = sanitize_text_field( (string) $req->get_param( 'preferred_time' ) );
+		$subject  = havato_clamp_text( sanitize_text_field( (string) $req->get_param( 'subject' ) ), 191 );
+		$note     = havato_clamp_text( sanitize_textarea_field( (string) $req->get_param( 'note' ) ), 1000 );
+
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+			return new WP_Error( 'havato_bad_date', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+		if ( ! preg_match( '/^\d{2}:\d{2}(:\d{2})?$/', $time ) ) {
+			return new WP_Error( 'havato_bad_time', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+		if ( 5 === strlen( $time ) ) {
+			$time .= ':00';
+		}
+		if ( '' === $subject ) {
+			return new WP_Error( 'havato_bad_input', Havato_I18N::t( 'error_generic' ), array( 'status' => 400 ) );
+		}
+
+		// A date in the past is a typo, not a request.
+		if ( strtotime( $date ) < strtotime( gmdate( 'Y-m-d', strtotime( havato_now() ) ) ) ) {
+			return new WP_Error( 'havato_past_date', Havato_I18N::t( 'request_past_date' ), array( 'status' => 400 ) );
+		}
+
+		// The café must exist, be verified, and — like everything else the
+		// guest sees — be in their own city.
+		$venues = Havato_DB::table( 'venues' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$venue = $wpdb->get_row( $wpdb->prepare( "SELECT id, city, verified FROM $venues WHERE id=%s", $venue_id ), ARRAY_A );
+
+		if ( ! $venue || ! (int) $venue['verified'] ) {
+			return new WP_Error( 'havato_no_venue', Havato_I18N::t( 'error_generic' ), array( 'status' => 404 ) );
+		}
+
+		$city = self::viewer_city();
+		if ( $city && $venue['city'] !== $city ) {
+			return new WP_Error( 'havato_wrong_city', Havato_I18N::t( 'error_generic' ), array( 'status' => 403 ) );
+		}
+
+		$table = Havato_DB::table( 'event_requests' );
+
+		// One pending suggestion per café per day per guest: tapping twice
+		// should not fill the café's queue with the same wish.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$exists = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM $table
+				 WHERE user_id=%d AND venue_id=%s AND preferred_date=%s AND status='pending'",
+				$user_id,
+				$venue_id,
+				$date
+			)
+		);
+
+		if ( $exists ) {
+			return new WP_Error( 'havato_duplicate_request', Havato_I18N::t( 'request_duplicate' ), array( 'status' => 409 ) );
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$table,
+			array(
+				'user_id'        => $user_id,
+				'venue_id'       => $venue_id,
+				'preferred_date' => $date,
+				'preferred_time' => $time,
+				'subject'        => $subject,
+				'note'           => $note,
+				'status'         => 'pending',
+				'created_at'     => havato_now(),
+			),
+			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+		);
+
+		Havato_Logger::log(
+			sprintf( 'Guest %d suggested a gathering at venue %s on %s.', $user_id, $venue_id, $date ),
+			'info'
+		);
+
+		return self::ok(
+			array(
+				'requested' => true,
+				'message'   => Havato_I18N::t( 'request_sent' ),
+			)
+		);
+	}
+
 	/**
 	 * One event plus the café hosting it.
 	 *

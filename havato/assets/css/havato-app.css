@@ -352,6 +352,79 @@ body.havato-standalone #havato-app { border-radius: 0; }
 }
 .hv-lang-btn:active { transform: scale(0.94); }
 
+/* The per-tab action, moved here from the round button in the bottom bar. */
+.hv-header-action {
+	flex: 0 0 auto;
+	inline-size: 44px;
+	block-size: 44px;
+	display: grid;
+	place-items: center;
+	border-radius: 14px;
+	border: 1px solid rgba(255, 255, 255, 0.42);
+	background: rgba(255, 255, 255, 0.16);
+	backdrop-filter: blur(14px);
+	-webkit-backdrop-filter: blur(14px);
+	color: #fff;
+	cursor: pointer;
+	transition: transform 0.15s ease, background 0.15s ease;
+}
+.hv-header-action:active { transform: scale(0.94); }
+#havato-app .hv-header-action[hidden] { display: none !important; }
+.hv-header-action-icon {
+	inline-size: 21px;
+	block-size: 21px;
+	/* The symbol paints with currentColor, so it follows the button. */
+	color: #fff;
+}
+
+/* ---------------------------------------------------- dashboard -------- */
+.hv-dash-head { display: flex; align-items: center; gap: 12px; }
+.hv-dash-avatar {
+	inline-size: 54px;
+	block-size: 54px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex: 0 0 auto;
+}
+.hv-dash-stats {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
+	margin-block-start: 14px;
+}
+.hv-dash-stat {
+	background: var(--hv-surface-2, #f1f4fd);
+	border-radius: 14px;
+	padding: 12px 6px;
+	text-align: center;
+}
+.hv-dash-stat b {
+	display: block;
+	font-size: 1.25rem;
+	color: var(--hv-indigo);
+	font-variant-numeric: tabular-nums;
+}
+.hv-dash-stat span { font-size: 0.68rem; color: var(--hv-text-soft); }
+
+.hv-dash-event,
+.hv-dash-request {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: #fff;
+	border-radius: 16px;
+	padding: 12px 14px;
+	margin-block-end: 8px;
+	box-shadow: var(--hv-shadow-soft);
+}
+.hv-dash-event-main { flex: 1 1 auto; cursor: pointer; min-inline-size: 0; }
+.hv-dash-event-name { font-weight: 800; font-size: 0.92rem; }
+.hv-dash-event-subject { font-size: 0.8rem; font-weight: 700; color: var(--hv-blue); margin-block-start: 2px; }
+.hv-dash-event-when { font-size: 0.78rem; color: var(--hv-text-soft); margin-block-start: 3px; }
+.hv-dash-event-seats { font-size: 0.75rem; color: var(--hv-indigo); margin-block-start: 3px; }
+.hv-dash-event-actions { flex: 0 0 auto; }
+.hv-dash-request { justify-content: space-between; }
+
 /* Floating status strip — mockup "Nearby Location" / "Inventory" pills */
 .hv-status-strip {
 	position: relative;
@@ -943,6 +1016,12 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-fab:active { transform: translateX(-50%) scale(0.93); }
 .hv-dir-rtl .hv-fab:active { transform: translateX(50%) scale(0.93); }
 .hv-fab-icon { inline-size: 26px; block-size: 26px; }
+/* The dashboard symbol paints with currentColor. The button never set one,
+   so the glyph would have inherited whatever the surrounding theme gave it
+   and could vanish against the blue. Pin it on the button, which is the
+   element the <use> clone inherits from. */
+#havato-app .hv-fab { color: #fff; }
+#havato-app .hv-fab .hv-fab-icon { color: #fff; }
 
 /* =========================================================================
    8. Map

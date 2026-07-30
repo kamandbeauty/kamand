@@ -587,20 +587,45 @@
 	}
 
 	/* =====================================================================
-	 * Floating action button — bound to the primary action of each tab
+	 * Header action + dashboard button
+	 *
+	 * The round button in the bottom bar used to change meaning with every
+	 * tab, with nothing on screen saying what it would do. That per-tab
+	 * action now lives in the header, next to the language switch, and the
+	 * round button has one fixed job: open the guest's dashboard.
 	 * ================================================================== */
-	function updateFab() {
+	function updateHeaderAction() {
 		var conf = {
-			explore: { icon: 'filter', action: showFilters },
-			map: { icon: 'map', action: locateMe },
-			chats: { icon: 'chat', action: function () { S.chatRoom = null; render(); } },
-			profile: { icon: 'plus', action: pickGalleryPhoto },
-		}[S.tab] || { icon: 'filter', action: function () { loadTab(true); } };
+			explore: { icon: 'filter', label: 'filter', action: showFilters },
+			map: { icon: 'map', label: 'locate_me', action: locateMe },
+			chats: { icon: 'chat', label: 'chats_title', action: function () { S.chatRoom = null; render(); } },
+			profile: { icon: 'plus', label: 'upload_photo', action: pickGalleryPhoto }
+		}[S.tab];
 
-		el.fab.querySelector('use').setAttribute('href', '#hv-i-' + conf.icon);
+		if (!el.headerAction) { return; }
+
+		if (!conf || !S.loggedIn) {
+			el.headerAction.hidden = true;
+			el.headerAction.onclick = null;
+			return;
+		}
+
+		el.headerAction.hidden = false;
+		el.headerAction.querySelector('use').setAttribute('href', '#hv-i-' + conf.icon);
+		// The icon alone is not self-explanatory, so give it a real label for
+		// screen readers and a tooltip for everyone else.
+		el.headerAction.setAttribute('aria-label', t(conf.label));
+		el.headerAction.title = t(conf.label);
+		el.headerAction.onclick = conf.action;
+	}
+
+	function updateFab() {
+		el.fab.querySelector('use').setAttribute('href', '#hv-i-nav-dashboard');
+		el.fab.setAttribute('aria-label', t('dashboard_title'));
+		el.fab.title = t('dashboard_title');
 		el.fab.onclick = function () {
 			if (!S.loggedIn) { return; }
-			conf.action();
+			openDashboard();
 		};
 	}
 
@@ -620,6 +645,7 @@
 		el.bottomNav.style.display = '';
 		el.header.style.display = '';
 		updateFab();
+		updateHeaderAction();
 		renderHeaderUser();
 		loadTab(false);
 	}
@@ -894,6 +920,212 @@
 					action +
 				'</div>' +
 			'</article>';
+	}
+
+	/* =====================================================================
+	 * The guest's dashboard — behind the round button in the bottom bar
+	 * ================================================================== */
+
+	/**
+	 * Turn a venue's coordinates into a link the phone's own map app opens.
+	 *
+	 * A `geo:` URI is the Android convention and Google Maps, Waze and Neshan
+	 * all register for it. iOS ignores geo:, so fall back to a plain Google
+	 * Maps URL there, which iOS hands to Apple Maps or Google Maps.
+	 */
+	function directionsUrl(lat, lng, label) {
+		lat = parseFloat(lat);
+		lng = parseFloat(lng);
+		if (!lat || !lng) { return ''; }
+
+		var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '');
+		if (isIOS) {
+			return 'https://maps.google.com/?q=' + lat + ',' + lng;
+		}
+		return 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng +
+			(label ? '(' + encodeURIComponent(label) + ')' : '');
+	}
+
+	function openDashboard() {
+		api('dashboard').then(function (res) {
+			S.data.dashboard = res;
+
+			var user = res.user || {};
+			var stats = res.stats || {};
+
+			var upcoming = (res.upcoming || []).length
+				? (res.upcoming || []).map(function (ev) {
+					var subject = (ev.title && String(ev.title).trim()) || ev.theme || '';
+					var maps = directionsUrl(ev.lat, ev.lng, pick(ev.venue));
+
+					return '<div class="hv-dash-event">' +
+						'<div class="hv-dash-event-main" data-dash-event="' + esc(ev.id) + '">' +
+							'<div class="hv-dash-event-name">' + esc(pick(ev.venue)) + '</div>' +
+							(subject
+								? '<div class="hv-dash-event-subject">' + esc(t('event_subject')) + ': ' + esc(subject) + '</div>'
+								: '') +
+							'<div class="hv-dash-event-when">' +
+								esc(pick(ev.weekday)) + ' · ' + esc(pick(ev.date)) + ' · ' + num(ev.time) +
+							'</div>' +
+							(ev.my_seats > 1
+								? '<div class="hv-dash-event-seats">' + esc(t('seats_booked').replace('%s', num(ev.my_seats))) + '</div>'
+								: '') +
+						'</div>' +
+						'<div class="hv-dash-event-actions">' +
+							(maps
+								// Opens the phone's own navigation app rather
+								// than a map inside the web-app.
+								? '<a class="hv-btn hv-btn-ghost hv-btn-sm" href="' + esc(maps) + '" ' +
+									'target="_blank" rel="noopener">' + esc(t('directions')) + '</a>'
+								: '') +
+						'</div>' +
+					'</div>';
+				}).join('')
+				: '<p class="hv-muted">' + esc(t('dash_no_events')) + '</p>';
+
+			var requests = (res.requests || []).length
+				? (res.requests || []).map(function (rq) {
+					var badge = 'hv-badge-orange';
+					if ('accepted' === rq.status) { badge = 'hv-badge-green'; }
+					if ('declined' === rq.status) { badge = 'hv-badge-gray'; }
+
+					return '<div class="hv-dash-request">' +
+						'<div>' +
+							'<div class="hv-dash-event-name">' + esc(rq.venue) + '</div>' +
+							'<div class="hv-dash-event-when">' + esc(rq.subject) + ' · ' +
+								esc(pick(rq.date)) + ' · ' + num(rq.time) + '</div>' +
+						'</div>' +
+						'<span class="hv-badge ' + badge + '">' + esc(t('request_' + rq.status)) + '</span>' +
+					'</div>';
+				}).join('')
+				: '';
+
+			openModal(
+				'<div class="hv-dash-head">' +
+					(user.avatar ? '<img class="hv-dash-avatar" src="' + esc(user.avatar) + '" alt="">' : '') +
+					'<div>' +
+						'<h3 class="hv-modal-title">' + esc(user.name || '') + '</h3>' +
+						'<p class="hv-muted">★ ' + num(user.rating) + '</p>' +
+					'</div>' +
+				'</div>' +
+
+				'<div class="hv-dash-stats">' +
+					'<div class="hv-dash-stat"><b>' + num(stats.upcoming || 0) + '</b>' +
+						'<span>' + esc(t('dash_upcoming')) + '</span></div>' +
+					'<div class="hv-dash-stat"><b>' + num(stats.rating || 0) + '</b>' +
+						'<span>' + esc(t('rating_score')) + '</span></div>' +
+					'<div class="hv-dash-stat"><b>' + num(stats.requests || 0) + '</b>' +
+						'<span>' + esc(t('dash_requests')) + '</span></div>' +
+				'</div>' +
+
+				'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-dash-suggest">' +
+					esc(t('suggest_event')) + '</button>' +
+
+				'<h4 class="hv-section-title">' + esc(t('dash_upcoming')) + '</h4>' +
+				upcoming +
+
+				(requests
+					? '<h4 class="hv-section-title">' + esc(t('dash_requests')) + '</h4>' + requests
+					: '') +
+
+				'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
+					esc(t('close')) + '</button>'
+			);
+
+			$('#hv-dash-suggest').onclick = function () { openSuggestEvent(res.venues || []); };
+
+			$$('[data-dash-event]').forEach(function (node) {
+				node.onclick = function () { openEvent(node.dataset.dashEvent); };
+			});
+		}).catch(function (err) { toast(err.message, 'error'); });
+	}
+
+	/**
+	 * Suggest a gathering to a café on a particular day.
+	 *
+	 * This is a wish, not a booking: nothing is seated and no seat is held.
+	 * The café decides whether to turn it into a real gathering.
+	 */
+	function openSuggestEvent(venues) {
+		if (!venues.length) {
+			toast(t('dash_no_venues'), 'error');
+			return;
+		}
+
+		// A date input speaks ISO, so bound it to today at the earliest.
+		var today = new Date();
+		var min = today.getFullYear() + '-' +
+			String(today.getMonth() + 1).padStart(2, '0') + '-' +
+			String(today.getDate()).padStart(2, '0');
+
+		openModal(
+			'<h3 class="hv-modal-title">' + esc(t('suggest_event')) + '</h3>' +
+			'<p class="hv-muted">' + esc(t('suggest_hint')) + '</p>' +
+
+			'<div class="hv-field hv-mt">' +
+				'<label for="hv-sg-venue">' + esc(t('venue_name')) + '</label>' +
+				'<select class="hv-select" id="hv-sg-venue">' +
+					venues.map(function (v) {
+						return '<option value="' + esc(v.id) + '">' + esc(v.name) + '</option>';
+					}).join('') +
+				'</select>' +
+			'</div>' +
+
+			'<div class="hv-field hv-mt">' +
+				'<label for="hv-sg-subject">' + esc(t('event_subject')) + '</label>' +
+				'<input type="text" class="hv-input" id="hv-sg-subject" maxlength="191">' +
+			'</div>' +
+
+			'<div class="hv-field hv-mt">' +
+				'<label for="hv-sg-date">' + esc(t('col_date')) + '</label>' +
+				'<input type="date" class="hv-input" id="hv-sg-date" min="' + esc(min) + '">' +
+			'</div>' +
+
+			'<div class="hv-field hv-mt">' +
+				'<label for="hv-sg-time">' + esc(t('event_time')) + '</label>' +
+				'<input type="time" class="hv-input" id="hv-sg-time" value="18:00">' +
+			'</div>' +
+
+			'<div class="hv-field hv-mt">' +
+				'<label for="hv-sg-note">' + esc(t('event_about')) + '</label>' +
+				'<textarea class="hv-textarea" id="hv-sg-note" rows="3" maxlength="1000"></textarea>' +
+			'</div>' +
+
+			'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" id="hv-sg-send">' +
+				esc(t('send_request')) + '</button>' +
+			'<button type="button" class="hv-btn hv-btn-ghost hv-btn-block hv-mt" data-close="1">' +
+				esc(t('cancel')) + '</button>'
+		);
+
+		$('#hv-sg-send').onclick = function () {
+			var go = $('#hv-sg-send');
+			var subject = $('#hv-sg-subject').value.trim();
+			var date = $('#hv-sg-date').value;
+			var time = $('#hv-sg-time').value;
+
+			if (!subject || !date || !time) {
+				toast(t('error_generic'), 'error');
+				return;
+			}
+
+			go.disabled = true;
+			api('event/request', {
+				method: 'POST',
+				body: {
+					venue_id: $('#hv-sg-venue').value,
+					subject: subject,
+					preferred_date: date,
+					preferred_time: time,
+					note: $('#hv-sg-note').value.trim()
+				}
+			}).then(function (res) {
+				closeModal();
+				toast(res.message || t('saved'), 'ok');
+			}).catch(function (err) {
+				go.disabled = false;
+				toast(err.message, 'error');
+			});
+		};
 	}
 
 	/**
@@ -2704,6 +2936,7 @@
 		el.bottomNav = $('#hv-bottom-nav');
 		el.tabs = $('#hv-tabs');
 		el.fab = $('#hv-fab');
+		el.headerAction = $('#hv-header-action');
 		el.modalHost = $('#hv-modal-host');
 		el.modalBody = $('#hv-modal-body');
 		el.toastHost = $('#hv-toast-host');

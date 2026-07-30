@@ -42,6 +42,7 @@ class Havato_DB {
 			'message_reports',
 			'venue_tables',
 			'event_tables',
+			'event_requests',
 		);
 	}
 
@@ -384,6 +385,27 @@ class Havato_DB {
 			PRIMARY KEY  (id),
 			KEY event_id (event_id),
 			KEY table_id (table_id)
+		) $charset;";
+
+		// 17. Guest suggestions: "I would like a gathering at this café on
+		// this day". Kept apart from `events` on purpose — a suggestion is a
+		// wish, not a bookable table, and letting one sit in the events table
+		// with some pending status would risk it being seated or listed.
+		$queries[] = "CREATE TABLE {$p}event_requests (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			venue_id varchar(64) NOT NULL DEFAULT '',
+			preferred_date date NOT NULL DEFAULT '0000-00-00',
+			preferred_time time NOT NULL DEFAULT '00:00:00',
+			subject varchar(191) NOT NULL DEFAULT '',
+			note text NULL,
+			status varchar(24) NOT NULL DEFAULT 'pending',
+			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			PRIMARY KEY  (id),
+			KEY user_id (user_id),
+			KEY venue_id (venue_id),
+			KEY status (status),
+			KEY preferred_date (preferred_date)
 		) $charset;";
 
 		foreach ( $queries as $sql ) {
