@@ -360,7 +360,17 @@ class Havato_REST {
 		$regs   = Havato_DB::table( 'event_registrations' );
 
 		$tier = sanitize_text_field( (string) $req->get_param( 'budget' ) );
-		$where = "e.status IN ('open','matched') AND v.verified = 1 AND e.event_date >= CURDATE()";
+
+		// Hide anything that has started or is about to. Comparing the date
+		// alone left a gathering from earlier the same morning on the board,
+		// and a table nobody can reach in time is worse than no table: the
+		// matcher would seat a party that never arrives, and every empty seat
+		// costs the others a penalty.
+		$where = $wpdb->prepare(
+			"e.status IN ('open','matched') AND v.verified = 1
+			 AND CONCAT(e.event_date, ' ', e.event_time) >= %s",
+			havato_booking_cutoff()
+		);
 		if ( in_array( $tier, array( 'low', 'medium', 'high' ), true ) ) {
 			$where .= $wpdb->prepare( ' AND e.budget_tier = %s', $tier );
 		}
@@ -423,6 +433,14 @@ class Havato_REST {
 		// already over.
 		if ( ! in_array( (string) $event['status'], array( 'open', 'matched' ), true ) ) {
 			return new WP_Error( 'havato_event_closed', Havato_I18N::t( 'event_not_open' ), array( 'status' => 409 ) );
+		}
+
+		// Same cutoff Explore applies. Hiding the card is presentation only:
+		// a tab left open since this morning still holds a working id, so the
+		// rule has to live here too.
+		$starts = $event['event_date'] . ' ' . $event['event_time'];
+		if ( $starts < havato_booking_cutoff() ) {
+			return new WP_Error( 'havato_too_late', Havato_I18N::t( 'event_too_soon' ), array( 'status' => 409 ) );
 		}
 
 		// Joining is free. What it does require is a usable profile: the
@@ -675,6 +693,11 @@ class Havato_REST {
 
 		// Only bookings that still lie ahead, soonest first: a dashboard is
 		// about what happens next, not a history log.
+		//
+		// Filtered on the plain date rather than the booking cutoff, unlike
+		// Explore: this is a seat the guest already holds. A table starting
+		// in an hour is exactly what they need on screen — with its
+		// directions button — even though nobody may join it any more.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(

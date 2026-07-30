@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.28.1
+Stable tag: 1.29.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,28 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.29.0 =
+* Fixed: the language dropdown showed white text on a white panel, so the list
+  was invisible. The menu is a light panel living inside the dark header, and
+  the rule that forces white text on everything inside the header caught it
+  too — that rule is id-scoped, so it outranked the menu's own colour. The
+  menu is now excluded from it and its colours are pinned at the same weight,
+  which also means a site theme cannot undo them.
+* The per-tab action button now sits underneath the language button instead of
+  beside it. Side by side the two took enough width to truncate the page title
+  on a narrow phone.
+* Gatherings that have already started, or start within the next five hours,
+  are no longer listed. The old filter compared the date only, so a table from
+  earlier the same morning stayed on the board. A table nobody can reach in
+  time is worse than no table: the matcher would seat a party that never
+  arrives, and every empty seat costs the others a penalty.
+* The same cutoff is enforced when booking, not just when listing — a tab left
+  open since the morning still holds a working event id.
+* The window is filterable via `havato_booking_cutoff_hours`.
+* Your own dashboard still shows a seat you already hold today, including one
+  starting within the cutoff, with its directions button. What you can no
+  longer join is a different question from what you have already booked.
 
 = 1.28.1 =
 * Fixed: a guest whose city was not set yet could suggest a gathering to any

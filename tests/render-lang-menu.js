@@ -64,18 +64,18 @@ s += `<circle cx="${W - 56}" cy="72" r="30" fill="url(#av)"/>`;
 s += rtl(W - 100, 66, 'هواتو', 15, 400, '#ffffff', 0.8);
 s += rtl(W - 100, 94, 'دورهمی‌های این هفته', 25, 700, '#ffffff');
 
-// header action (filter)
-s += `<rect x="96" y="50" width="46" height="46" rx="14" fill="#ffffff" fill-opacity="0.18" stroke="#ffffff" stroke-opacity="0.42"/>`;
-s += `<path d="M108,64 h22 l-8.5,10 v7 l-5,2.5 v-9.5 z" fill="#ffffff"/>`;
-
-// language button, open
+// language button on top, open
 const bx = 20, bw = 68;
-s += `<rect x="${bx}" y="50" width="${bw}" height="46" rx="14" fill="#ffffff" fill-opacity="0.3" stroke="#ffffff" stroke-opacity="0.5"/>`;
-s += ctr(bx + 30, 80, LANGS[0].short, 16, 700, '#ffffff');
-s += ltr(bx + 48, 82, '▾', 12, 700, '#ffffff');
+s += `<rect x="${bx}" y="46" width="${bw}" height="46" rx="14" fill="#ffffff" fill-opacity="0.3" stroke="#ffffff" stroke-opacity="0.5"/>`;
+s += ctr(bx + 30, 76, LANGS[0].short, 16, 700, '#ffffff');
+s += ltr(bx + 48, 78, '▾', 12, 700, '#ffffff');
 
-// the dropdown, anchored under the button
-const mx = bx, my = 104, mw = 176, rowH = 46;
+// the per-tab action, now BENEATH the language button
+s += `<rect x="${bx}" y="98" width="46" height="46" rx="14" fill="#ffffff" fill-opacity="0.18" stroke="#ffffff" stroke-opacity="0.42"/>`;
+s += `<path d="M32,112 h22 l-8.5,10 v7 l-5,2.5 v-9.5 z" fill="#ffffff"/>`;
+
+// the dropdown, anchored under the language button
+const mx = bx + 76, my = 98, mw = 176, rowH = 46;
 const mh = LANGS.length * rowH + 12;
 s += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="14" fill="#ffffff"/>`;
 

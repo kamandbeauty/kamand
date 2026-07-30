@@ -42,25 +42,29 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 				<h1 class="hv-header-title" id="hv-header-title">Havato</h1>
 			</div>
 
-			<!-- The per-tab action used to live on the round button in the
-			     bottom bar, where nothing said what it would do. It sits in
-			     the header now; the round button is the dashboard. -->
-			<button type="button" class="hv-header-action" id="hv-header-action" hidden>
-				<svg class="hv-header-action-icon" viewBox="0 0 24 24" aria-hidden="true">
-					<use href="#hv-i-filter"></use>
-				</svg>
-			</button>
+			<!-- Language on top, the per-tab action beneath it. Side by side
+			     these two took enough width to truncate the page title on a
+			     narrow phone; stacked, the title gets that space back. -->
+			<div class="hv-header-tools">
+				<!-- Cycling through three languages one tap at a time meant a
+				     Persian speaker had to pass through English to reach
+				     Turkish. The button opens a list instead. -->
+				<div class="hv-lang-wrap">
+					<button type="button" class="hv-lang-btn" id="hv-lang-btn"
+						aria-label="language" aria-haspopup="listbox" aria-expanded="false">
+						<span id="hv-lang-label">EN</span>
+						<span class="hv-lang-caret" aria-hidden="true">▾</span>
+					</button>
+					<ul class="hv-lang-menu" id="hv-lang-menu" role="listbox" hidden></ul>
+				</div>
 
-			<!-- Cycling through three languages one tap at a time meant a
-			     Persian speaker had to pass through English to reach Turkish.
-			     The button opens a list instead, so any language is one tap. -->
-			<div class="hv-lang-wrap">
-				<button type="button" class="hv-lang-btn" id="hv-lang-btn"
-					aria-label="language" aria-haspopup="listbox" aria-expanded="false">
-					<span id="hv-lang-label">EN</span>
-					<span class="hv-lang-caret" aria-hidden="true">▾</span>
+				<!-- The per-tab action used to live on the round button in the
+				     bottom bar, where nothing said what it would do. -->
+				<button type="button" class="hv-header-action" id="hv-header-action" hidden>
+					<svg class="hv-header-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+						<use href="#hv-i-filter"></use>
+					</svg>
 				</button>
-				<ul class="hv-lang-menu" id="hv-lang-menu" role="listbox" hidden></ul>
 			</div>
 		</div>
 

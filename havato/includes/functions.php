@@ -733,6 +733,34 @@ function havato_max_seats() {
 }
 
 /**
+ * How many hours before a gathering it stops accepting new guests.
+ *
+ * A table is only worth sitting at if the matcher can still seat people
+ * sensibly and everyone has time to travel. Booking ten minutes before the
+ * doors open helps nobody, so the listing closes ahead of the start.
+ *
+ * @return int Hours.
+ */
+function havato_booking_cutoff_hours() {
+	$hours = (int) apply_filters( 'havato_booking_cutoff_hours', 5 );
+	return max( 0, $hours );
+}
+
+/**
+ * The earliest start time a gathering may still have to be listed.
+ *
+ * Returned as a MySQL datetime in the site's own timezone, so it can be
+ * compared against the event's own date and time columns without either side
+ * drifting to UTC.
+ *
+ * @return string
+ */
+function havato_booking_cutoff() {
+	$now = strtotime( havato_now() );
+	return gmdate( 'Y-m-d H:i:s', $now + ( havato_booking_cutoff_hours() * HOUR_IN_SECONDS ) );
+}
+
+/**
  * Predefined interest tags (bilingual).
  *
  * @return array

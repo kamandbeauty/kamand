@@ -117,7 +117,7 @@
    forces white on its descendants. Chips, badges, buttons and form controls
    carry their own palette and are excluded. */
 #havato-app .hv-header,
-#havato-app .hv-header :not(.hv-badge):not(.hv-chip):not(.hv-btn):not(.hv-badge *):not(.hv-chip *):not(.hv-btn *),
+#havato-app .hv-header :not(.hv-badge):not(.hv-chip):not(.hv-btn):not(.hv-lang-menu):not(.hv-badge *):not(.hv-chip *):not(.hv-btn *):not(.hv-lang-menu *),
 #havato-app .hv-profile-head,
 #havato-app .hv-profile-head :not(.hv-badge):not(.hv-btn):not(.hv-badge *):not(.hv-btn *),
 #havato-app .hv-glass,
@@ -288,11 +288,16 @@ body.havato-standalone #havato-app { border-radius: 0; }
 }
 .hv-header-inner {
 	display: flex;
-	align-items: center;
+	/* The tools column is taller than the avatar and title, so align to the
+	   top rather than centring: centred, the stack pushed the title down. */
+	align-items: flex-start;
 	gap: 12px;
 	min-height: 64px;
 	padding-block: 10px;
 }
+/* Keep the avatar and the title optically level with the language button. */
+.hv-header-inner > .hv-avatar-btn,
+.hv-header-titles { margin-block-start: 2px; }
 .hv-header-titles {
 	flex: 1 1 auto;
 	min-width: 0;
@@ -392,7 +397,31 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	cursor: pointer;
 }
 .hv-lang-option:active { background: rgba(0, 0, 0, 0.06); }
-.hv-lang-option.is-active { background: var(--hv-surface-2, #f1f4fd); color: var(--hv-indigo); }
+
+/* The menu is a WHITE panel that lives inside the dark header, so the
+   dark-surface guard above would paint its text white too — white on white,
+   an invisible list. The guard now excludes it, and these id-scoped rules
+   pin the colours at the same specificity so a site theme cannot undo them
+   either. */
+#havato-app .hv-lang-menu { background: #fff; }
+#havato-app .hv-lang-option,
+#havato-app .hv-lang-option span { color: var(--hv-text, #16204a); }
+#havato-app .hv-lang-option.is-active,
+#havato-app .hv-lang-option.is-active span {
+	background: var(--hv-surface-2, #f1f4fd);
+	color: var(--hv-indigo);
+}
+
+/* Language above, per-tab action below. Stacking them gives the page title
+   back the width the two of them took side by side, which was truncating it
+   on a narrow phone. */
+.hv-header-tools {
+	flex: 0 0 auto;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+}
 
 /* The per-tab action, moved here from the round button in the bottom bar. */
 .hv-header-action {

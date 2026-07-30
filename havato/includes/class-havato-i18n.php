@@ -425,6 +425,7 @@ class Havato_I18N {
 			'event_cancel_confirm_guests' => array( 'fa' => 'این رویداد %s رزرو دارد. با لغو آن، همه‌ی رزروها هم لغو می‌شوند. ادامه می‌دهید؟', 'en' => 'This event has %s bookings. Cancelling it will cancel them all. Continue?', 'tr' => 'Bu etkinlikte %s rezervasyon var. İptal ederseniz hepsi iptal olur. Devam edilsin mi?' ),
 			'event_cancelled_done'  => array( 'fa' => 'رویداد لغو شد.', 'en' => 'Event cancelled.', 'tr' => 'Etkinlik iptal edildi.' ),
 			'event_not_open'        => array( 'fa' => 'این دورهمی دیگر پذیرای رزرو نیست.', 'en' => 'This gathering is no longer taking bookings.', 'tr' => 'Bu buluşma artık rezervasyon almıyor.' ),
+			'event_too_soon'        => array( 'fa' => 'مهلت رزرو این دورهمی تمام شده است.', 'en' => 'Bookings for this gathering have closed.', 'tr' => 'Bu buluşma için rezervasyonlar kapandı.' ),
 			'event_time'            => array( 'fa' => 'ساعت', 'en' => 'Time', 'tr' => 'Saat' ),
 			'seats_reserved'        => array( 'fa' => 'صندلی رزروشده', 'en' => 'Seats reserved', 'tr' => 'Ayrılan koltuk' ),
 			'need_profile_first'    => array( 'fa' => 'ابتدا تست شخصیت‌شناسی ۳۰ ثانیه‌ای را کامل کنید.', 'en' => 'Please complete the 30-second personality test first.', 'tr' => 'Lütfen önce 30 saniyelik kişilik testini tamamlayın.' ),
