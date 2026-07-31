@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.31.0
+Stable tag: 1.31.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,24 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.31.1 =
+* Fixed: the bottom bar still divided itself into four columns after gaining
+  a fifth tab, so Profile wrapped onto a second row underneath the others.
+  The tabs now share the width between however many there are, and a label
+  too long for its share is trimmed with an ellipsis instead of wrapping.
+* Event cards are rebuilt in reading order: the name of the gathering, then
+  the weekday, date and time, then the café and its address, then the faces
+  of the people who have already taken a seat. The cover image sits across
+  the top instead of as a small square beside the text.
+* Cards now show up to four attendee avatars with a "+N" for the rest. Only
+  the avatar is sent — no names, no ids — because a card is read by anyone
+  browsing.
+* Fixed: a gathering in Iran was dated in the Gregorian calendar for anyone
+  reading the app in English or Turkish. The date now follows the country the
+  café trades in, so an Iranian gathering is always shown in Jalali — the
+  same date the café has on its door, and the one everyone at the table will
+  say out loud. The same reasoning already governs prices.
 
 = 1.31.0 =
 * New "Galaxy" theme: a dark violet night palette, added alongside the six

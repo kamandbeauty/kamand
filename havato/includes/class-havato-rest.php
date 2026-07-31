@@ -385,7 +385,7 @@ class Havato_REST {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
-					v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
+					v.address AS venue_address, v.country AS venue_country, v.lat, v.lng, v.quiet_hours, v.verified,
 					(SELECT COALESCE(SUM(r.seats),0) FROM $regs r WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
 			 FROM $events e
 			 INNER JOIN $venues v ON v.id = e.venue_id
@@ -615,7 +615,7 @@ class Havato_REST {
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
-						v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
+						v.address AS venue_address, v.country AS venue_country, v.lat, v.lng, v.quiet_hours, v.verified,
 						r.status AS my_status, r.checked_in,
 						(SELECT COALESCE(SUM(r2.seats),0) FROM $regs r2 WHERE r2.event_id = e.id AND r2.status <> 'cancelled') AS taken
 				 FROM $regs r
@@ -713,7 +713,7 @@ class Havato_REST {
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
-						v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
+						v.address AS venue_address, v.country AS venue_country, v.lat, v.lng, v.quiet_hours, v.verified,
 						r.status AS my_status, r.checked_in, r.seats AS my_seats,
 						(SELECT COALESCE(SUM(r2.seats),0) FROM $regs r2
 						 WHERE r2.event_id = e.id AND r2.status <> 'cancelled') AS taken
@@ -938,7 +938,7 @@ class Havato_REST {
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT e.*, v.name AS venue_name, v.image AS venue_image,
-						v.address AS venue_address, v.lat, v.lng, v.quiet_hours, v.verified,
+						v.address AS venue_address, v.country AS venue_country, v.lat, v.lng, v.quiet_hours, v.verified,
 						(SELECT COALESCE(SUM(r.seats),0) FROM $regs r
 						 WHERE r.event_id = e.id AND r.status <> 'cancelled') AS taken
 				 FROM $events e
@@ -3462,6 +3462,50 @@ class Havato_REST {
 		return max( 0, $starts - $now );
 	}
 
+	/**
+	 * Avatars of the people who have taken a seat, for the card.
+	 *
+	 * Capped at four: the card shows the faces and a "+N" for the rest, so
+	 * fetching the whole guest list for every card in a scrolling feed would
+	 * be work nobody sees.
+	 *
+	 * @param string $event_id Event id.
+	 * @return array{avatars:string[],total:int}
+	 */
+	private static function event_faces( $event_id ) {
+		global $wpdb;
+
+		$regs = Havato_DB::table( 'event_registrations' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT user_id FROM $regs
+				 WHERE event_id = %s AND status <> 'cancelled'
+				 ORDER BY id ASC LIMIT 4",
+				$event_id
+			)
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM $regs WHERE event_id = %s AND status <> 'cancelled'",
+				$event_id
+			)
+		);
+
+		$avatars = array();
+		foreach ( (array) $ids as $id ) {
+			$avatars[] = havato_avatar( (int) $id );
+		}
+
+		return array(
+			'avatars' => $avatars,
+			'total'   => $total,
+		);
+	}
+
 	private static function event_payload( $row, $user_id ) {
 		global $wpdb;
 
@@ -3489,12 +3533,24 @@ class Havato_REST {
 			'description' => isset( $row['description'] ) ? (string) $row['description'] : '',
 			'address'     => isset( $row['venue_address'] ) ? $row['venue_address'] : '',
 			'title'       => $row['title'],
+			// The country the café trades in. A gathering in Iran is dated in
+			// the Jalali calendar for every reader — the same reasoning as
+			// prices, which follow the till rather than the interface
+			// language. Without this an English or Turkish reader saw a
+			// Gregorian date for a Tehran café, which is not the date printed
+			// on the door.
+			'country'     => isset( $row['venue_country'] ) ? (string) $row['venue_country'] : '',
 			'date'        => havato_date_pair( $row['event_date'] ),
 			'weekday'     => array(
 				'fa' => Havato_Jalali::week_day( $row['event_date'], 'fa' ),
 				'en' => Havato_Jalali::week_day( $row['event_date'], 'en' ),
+				'tr' => Havato_Jalali::week_day( $row['event_date'], 'en' ),
 			),
 			'time'        => substr( (string) $row['event_time'], 0, 5 ),
+			// A few faces of the people already coming. Nothing identifying
+			// beyond the avatar the guest chose to show publicly — no names,
+			// no ids — because a card is read by anyone browsing.
+			'faces'       => self::event_faces( $row['id'] ),
 			// Seconds until the doors open, worked out on the server against
 			// the site's own clock. Sending a timestamp instead would make the
 			// countdown wrong for anyone whose phone clock or timezone drifts,

@@ -91,6 +91,31 @@
 		return value === undefined || value === null ? '' : value;
 	}
 
+	/**
+	 * A gathering's date, in the calendar the venue's country actually uses.
+	 *
+	 * pick() follows the reader's language, which is right for labels and
+	 * wrong for a date: a Tehran café prints a Jalali date on its door, and
+	 * showing an English reader "Aug 1" for it names a different day from
+	 * the one everyone at the table will say out loud. Same reasoning as
+	 * prices, which follow the till rather than the interface.
+	 */
+	function eventDate(ev) {
+		if (!ev || !ev.date) { return ''; }
+		if ('ir' === String(ev.country || '').toLowerCase()) {
+			return ev.date.fa || pick(ev.date);
+		}
+		return pick(ev.date);
+	}
+
+	function eventWeekday(ev) {
+		if (!ev || !ev.weekday) { return ''; }
+		if ('ir' === String(ev.country || '').toLowerCase()) {
+			return ev.weekday.fa || pick(ev.weekday);
+		}
+		return pick(ev.weekday);
+	}
+
 	function esc(str) {
 		return String(str === undefined || str === null ? '' : str)
 			.replace(/&/g, '&amp;')
@@ -983,29 +1008,61 @@
 		});
 	}
 
-	/** The hero card: the gathering the guest is going to next. */
+	/**
+	 * The row of faces already coming, plus a "+N" for the rest.
+	 *
+	 * Overlapping circles, so a full table still fits the width of a card.
+	 */
+	function faceStack(ev) {
+		var faces = (ev.faces && ev.faces.avatars) || [];
+		var total = (ev.faces && ev.faces.total) || 0;
+		if (!faces.length) { return ''; }
+
+		var extra = total - faces.length;
+
+		return '<div class="hv-faces">' +
+			faces.map(function (src) {
+				return '<span class="hv-face"><img src="' + esc(src) + '" alt="" loading="lazy"></span>';
+			}).join('') +
+			(extra > 0 ? '<span class="hv-face is-more">+' + num(extra) + '</span>' : '') +
+		'</div>';
+	}
+
+	/**
+	 * The event card, laid out in the order the information is read:
+	 * what it is, when, where, and who is already going.
+	 */
 	function nextTableCard(ev) {
 		var subject = (ev.title && String(ev.title).trim()) || ev.theme || '';
-		var thumb = ev.image
+		var cover = ev.image
 			? '<img src="' + esc(ev.image) + '" alt="">'
 			: icon('cup');
 
 		return '' +
 			'<article class="hv-next-card" data-open-event="' + esc(ev.id) + '">' +
-				'<div class="hv-next-thumb">' + thumb + '</div>' +
+				'<div class="hv-next-cover">' + cover + '</div>' +
 				'<div class="hv-next-body">' +
-					'<h4 class="hv-next-venue">' + esc(pick(ev.venue)) + '</h4>' +
-					'<div class="hv-next-when">' +
-						'<span>' + esc(pick(ev.date)) + '</span>' +
-						'<span class="hv-next-dot">·</span>' +
-						'<span>' + num(ev.time) + '</span>' +
+
+					// 1. the name of the gathering
+					'<h4 class="hv-next-name">' + esc(subject || pick(ev.venue)) + '</h4>' +
+
+					// 2. weekday, date and time on one line
+					'<div class="hv-next-row">' +
+						icon('calendar', 'hv-next-icon') +
+						'<span>' + esc(eventWeekday(ev)) + ' · ' + esc(eventDate(ev)) +
+							' · ' + num(ev.time) + '</span>' +
 					'</div>' +
-					(subject
-						? '<div class="hv-next-topic">' +
-							'<span class="hv-next-topic-label">' + esc(t('event_subject')) + '</span>' +
-							'<span class="hv-next-topic-value">' + esc(subject) + '</span>' +
-						'</div>'
-						: '') +
+
+					// 3. the café and its address
+					'<div class="hv-next-row">' +
+						icon('map', 'hv-next-icon') +
+						'<span>' + esc(pick(ev.venue)) +
+							(ev.address ? '، ' + esc(ev.address) : '') + '</span>' +
+					'</div>' +
+
+					// 4. who has already taken a seat
+					faceStack(ev) +
+
 					'<div class="hv-next-foot">' +
 						'<span class="hv-badge hv-badge-green">' + esc(t('joined_event')) + '</span>' +
 						(ev.my_seats > 1
@@ -1030,8 +1087,11 @@
 				'</div>' +
 				'<div class="hv-tile-body">' +
 					'<h4 class="hv-tile-title">' + esc(subject || pick(ev.venue)) + '</h4>' +
-					'<div class="hv-tile-meta">' + esc(pick(ev.date)) + ' · ' + num(ev.time) + '</div>' +
+					'<div class="hv-tile-meta">' +
+						esc(eventWeekday(ev)) + ' · ' + esc(eventDate(ev)) + ' · ' + num(ev.time) +
+					'</div>' +
 					'<div class="hv-tile-meta">' + esc(pick(ev.venue)) + '</div>' +
+					faceStack(ev) +
 					(full
 						? '<button type="button" class="hv-btn hv-btn-ghost hv-btn-sm hv-tile-btn" disabled>' +
 							esc(t('event_full')) + '</button>'
@@ -1186,7 +1246,7 @@
 						// the other, and "Board games" alone told the guest
 						// nothing about which evening they were looking at.
 						(subject ? '<p class="hv-event-title">' + esc(t('event_subject')) + ': ' + esc(subject) + '</p>' : '') +
-						'<p class="hv-event-when">' + esc(pick(event.weekday)) + ' · ' + esc(pick(event.date)) + ' · ' + num(event.time) + '</p>' +
+						'<p class="hv-event-when">' + esc(eventWeekday(event)) + ' · ' + esc(eventDate(event)) + ' · ' + num(event.time) + '</p>' +
 						'<div class="hv-row" style="margin-top:7px">' +
 							statusBadge(event.status) +
 							(event.theme ? '<span class="hv-badge hv-badge-pink">' + esc(event.theme) + '</span>' : '') +
@@ -1248,7 +1308,7 @@
 								? '<div class="hv-dash-event-subject">' + esc(t('event_subject')) + ': ' + esc(subject) + '</div>'
 								: '') +
 							'<div class="hv-dash-event-when">' +
-								esc(pick(ev.weekday)) + ' · ' + esc(pick(ev.date)) + ' · ' + num(ev.time) +
+								esc(eventWeekday(ev)) + ' · ' + esc(eventDate(ev)) + ' · ' + num(ev.time) +
 							'</div>' +
 							(ev.my_seats > 1
 								? '<div class="hv-dash-event-seats">' + esc(t('seats_booked').replace('%s', num(ev.my_seats))) + '</div>'
@@ -1478,7 +1538,7 @@
 				// When
 				'<div class="hv-event-when-box">' +
 					'<div class="hv-when-line">' +
-						esc(pick(event.weekday)) + ' · ' + esc(pick(event.date)) + ' · ' + num(event.time) +
+						esc(eventWeekday(event)) + ' · ' + esc(eventDate(event)) + ' · ' + num(event.time) +
 					'</div>' +
 					'<div class="hv-countdown" id="hv-countdown" data-starts-in="' +
 						(parseInt(event.starts_in, 10) || 0) + '"></div>' +
@@ -2606,7 +2666,7 @@
 						'</span>' +
 						'<span class="hv-list-body">' +
 							'<span class="hv-list-title">' + esc(pick(event.venue)) + '</span>' +
-							'<span class="hv-list-sub">' + esc(pick(event.date)) + ' · ' + num(event.time) + '</span>' +
+							'<span class="hv-list-sub">' + esc(eventDate(event)) + ' · ' + num(event.time) + '</span>' +
 						'</span>' +
 						'<span class="hv-list-meta">' +
 							statusBadge(event.status) +

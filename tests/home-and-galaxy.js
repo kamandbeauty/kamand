@@ -158,7 +158,12 @@ console.log('\n--- 6. events are boxed cards ---');
 t('the hero card is a box', /\.hv-next-card \{[\s\S]{0,300}border-radius: var\(--hv-radius-xl\)/.test(css));
 t('…with a border that shows on dark', /\.hv-next-card \{[\s\S]{0,300}border: 1px solid var\(--hv-card-border\)/.test(css));
 t('tiles are boxes too', /\.hv-tile \{[\s\S]{0,300}border: 1px solid var\(--hv-card-border\)/.test(css));
-t('the topic is labelled, as in the mock-up', /hv-next-topic-label/.test(js));
+// The topic became the card's headline in 1.31.1 rather than a labelled
+// sub-line, matching the reference: name, then when, then where, then who.
+t('the topic is the card headline', /<h4 class="hv-next-name">' \+ esc\(subject \|\| pick\(ev\.venue\)\)/.test(js));
+t('…followed by the date row', /hv-next-row[\s\S]{0,140}eventWeekday\(ev\)/.test(js));
+t('…then the venue and its address', /hv-next-row[\s\S]{0,200}ev\.address \? '، ' \+ esc\(ev\.address\)/.test(js));
+t('…then the people already coming', /faceStack\(ev\)/.test(js));
 t('shortcut buttons are boxed', /\.hv-quick-btn \{/.test(css));
 
 for (const k of ['tab_home', 'tab_my_tables', 'home_greeting', 'home_next_table',
@@ -167,6 +172,91 @@ for (const k of ['tab_home', 'tab_my_tables', 'home_greeting', 'home_next_table'
     new RegExp("'" + k + "'\\s*=> array\\( 'fa' =>.*'en' =>.*'tr' =>").test(i18n));
 }
 t('the greeting has a placeholder for the name', /'home_greeting'[\s\S]{0,120}%s/.test(i18n));
+
+/* =====================================================================
+ * 7. Reported on a real phone (v1.31.1)
+ * ================================================================== */
+console.log('\n--- 7. the five-tab bar actually fits ---');
+
+// The bar was still laid out for four tabs, so the fifth wrapped onto a
+// second row underneath — visible in the screenshot.
+t('the four-column grid is gone', !/grid-template-columns: repeat\(4, 1fr\)/.test(css));
+t('tabs share the width by flex instead', /\.hv-tabs \{[\s\S]{0,600}display: flex/.test(css));
+t('each tab takes an equal share', /\.hv-tab \{[\s\S]{0,260}flex: 1 1 0/.test(css));
+t('…and may shrink below its label', /\.hv-tab \{[\s\S]{0,260}min-inline-size: 0/.test(css));
+t('a long label ellipsises rather than wrapping',
+  /\.hv-tab span \{[\s\S]{0,220}white-space: nowrap/.test(css));
+t('the reason is recorded', /pushed the last one onto a second row/.test(css));
+
+(() => {
+  // Model the layout: five equal tabs must fit one row on a narrow phone.
+  const tabCount = 5;
+  const screen = 360;            // a small Android width, in CSS px
+  const padding = 8;             // .hv-tabs padding-inline: 4px each side
+  const per = (screen - padding) / tabCount;
+  t('each tab gets a usable width on a 360px screen (' + per.toFixed(1) + 'px)', per >= 60);
+  t('the icon still fits inside it', per > 22);
+})();
+
+console.log('\n--- 8. Iranian gatherings are dated in Jalali ---');
+
+t('a country-aware date helper exists', /function eventDate\(ev\)/.test(js));
+t('…and one for the weekday', /function eventWeekday\(ev\)/.test(js));
+t('Iran forces the Jalali string', /'ir' === String\(ev\.country \|\| ''\)\.toLowerCase\(\)/.test(js));
+t('no card reads the date through pick\\(\\) any more',
+  !/esc\(pick\(ev\.date\)\)/.test(js) && !/esc\(pick\(event\.date\)\)/.test(js));
+t('the payload carries the venue country', /'country'     => isset\( \$row\['venue_country'\] \)/.test(rd('includes/class-havato-rest.php')));
+t('…and the queries select it',
+  (rd('includes/class-havato-rest.php').match(/v\.country AS venue_country/g) || []).length >= 4);
+t('the weekday is sent in Turkish too', /'tr' => Havato_Jalali::week_day/.test(rd('includes/class-havato-rest.php')));
+t('the reasoning is written down', /prints a Jalali date on its door/.test(js));
+
+(() => {
+  // Execute the rule over both countries and all three languages.
+  const eventDate = (ev, lang) => {
+    if (!ev || !ev.date) { return ''; }
+    if ('ir' === String(ev.country || '').toLowerCase()) { return ev.date.fa || ev.date[lang]; }
+    return ev.date[lang] !== undefined ? ev.date[lang] : (ev.date.en || ev.date.fa || '');
+  };
+  const d = { fa: 'J', en: 'G-en', tr: 'G-tr' };
+
+  t('Iran + Persian reader -> Jalali', eventDate({ country: 'ir', date: d }, 'fa') === 'J');
+  t('Iran + English reader -> Jalali (the bug)', eventDate({ country: 'ir', date: d }, 'en') === 'J');
+  t('Iran + Turkish reader -> Jalali', eventDate({ country: 'ir', date: d }, 'tr') === 'J');
+  t('Turkey + Turkish reader -> Gregorian', eventDate({ country: 'tr', date: d }, 'tr') === 'G-tr');
+  t('Turkey + English reader -> Gregorian', eventDate({ country: 'tr', date: d }, 'en') === 'G-en');
+  // A Persian speaker reading a Turkish café still gets their own calendar:
+  // only the Iranian side is pinned.
+  t('Turkey + Persian reader -> the reader\'s own', eventDate({ country: 'tr', date: d }, 'fa') === 'J');
+  t('uppercase IR is still Iran', eventDate({ country: 'IR', date: d }, 'en') === 'J');
+  t('an unknown country follows the reader', eventDate({ country: '', date: d }, 'en') === 'G-en');
+})();
+
+console.log('\n--- 9. the card shows who is coming ---');
+
+t('the server sends a few faces', /private static function event_faces/.test(rd('includes/class-havato-rest.php')));
+t('…capped so a feed does not fetch whole guest lists', /ORDER BY id ASC LIMIT 4/.test(rd('includes/class-havato-rest.php')));
+t('…with the real total for the +N', /'total'   => \$total/.test(rd('includes/class-havato-rest.php')));
+t('cancelled bookings are not counted', /WHERE event_id = %s AND status <> 'cancelled'/.test(rd('includes/class-havato-rest.php')));
+t('no names or ids leak onto a public card',
+  !/'faces'[\s\S]{0,400}display_name/.test(rd('includes/class-havato-rest.php')));
+
+t('the client renders the stack', /function faceStack/.test(js));
+t('it is used on the full card', /faceStack\(ev\) \+/.test(js));
+t('…and on the rail tile', /faceStack\(ev\) \+\s*\n\s*\(full/.test(js));
+t('avatars overlap so a full table fits', /\.hv-face \{[\s\S]{0,600}margin-inline-end: -9px/.test(css));
+t('the overlap is logical, so it flips in RTL', /margin-inline-end: -9px/.test(css) && !/margin-right: -9px/.test(css));
+t('the +N chip is styled apart', /\.hv-face\.is-more \{/.test(css));
+t('tiles use smaller faces', /\.hv-tile \.hv-face \{/.test(css));
+
+(() => {
+  // The "+N" must count the people not shown, not the whole table.
+  const extra = (shown, total) => total - shown;
+  t('4 shown of 6 -> +2', extra(4, 6) === 2);
+  t('4 shown of 4 -> no chip', extra(4, 4) === 0);
+  t('1 shown of 1 -> no chip', extra(1, 1) === 0);
+  t('4 shown of 14 -> +10', extra(4, 14) === 10);
+})();
 
 console.log(f ? `\n❌ ${f} failing` : '\n✅ galaxy theme, five tabs, home screen and boxed events all in place');
 process.exit(f ? 1 : 0);

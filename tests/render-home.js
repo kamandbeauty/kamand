@@ -98,18 +98,26 @@ s += rtl(W - 104, 80, fa('home_greeting').replace('%s', 'جاوید'), 24, 700, 
 let y = 140;
 s += rtl(W - 28, y, fa('home_next_table'), 20, 800, T.text);
 
-// ---- hero card ----
+// ---- hero card: cover, name, when, where, who ----
 y += 20;
-const cardH = 168;
+const cardH = 300;
 s += `<rect x="28" y="${y}" width="${W - 56}" height="${cardH}" rx="26" fill="${T.card}" stroke="${T.light}" stroke-opacity="0.28"/>`;
-s += `<rect x="${W - 28 - 116}" y="${y + 22}" width="94" height="94" rx="20" fill="url(#thumb)"/>`;
-s += ctr(W - 28 - 69, y + 78, '☕', 40, 400, '#ffffff');
-s += rtl(W - 160, y + 46, 'کافه دالون', 24, 800, T.text);
-s += rtl(W - 160, y + 76, 'جمعه ۹ مرداد · ۱۸:۰۰', 16, 400, T.soft);
-s += rtl(W - 160, y + 104, fa('event_subject'), 12, 400, T.soft);
-s += rtl(W - 160, y + 128, 'شب موسیقی و گفتگو', 19, 800, T.accent);
-s += `<rect x="${W - 160 - 96}" y="${y + 138}" width="96" height="24" rx="12" fill="#12b981" fill-opacity="0.22"/>`;
-s += ctr(W - 160 - 48, y + 155, fa('joined_event'), 13, 700, '#5ee7b5');
+// cover strip
+s += `<path d="M28,${y + 26} a26,26 0 0 1 26,-26 h${W - 108} a26,26 0 0 1 26,26 v106 h-${W - 56} z" fill="url(#thumb)"/>`;
+s += ctr(W / 2, y + 82, '☕', 40, 400, '#ffffff');
+let by = y + 132;
+s += rtl(W - 46, by + 30, 'شب موسیقی و گفتگو', 24, 800, T.text);
+s += rtl(W - 46, by + 62, '🗓  جمعه · ۹ مرداد ۱۴۰۵ · ۱۸:۰۰', 15, 400, T.soft);
+s += rtl(W - 46, by + 88, '📍 کافه دالون، خیابان ولیعصر', 15, 400, T.soft);
+// faces already coming
+const fx = W - 46;
+for (let i = 0; i < 4; i++) {
+  s += `<circle cx="${fx - 16 - i * 23}" cy="${by + 118}" r="16" fill="url(#thumb)" stroke="${T.card}" stroke-width="2"/>`;
+}
+s += `<circle cx="${fx - 16 - 4 * 23}" cy="${by + 118}" r="16" fill="none" stroke="${T.accent}" stroke-width="2" stroke-dasharray="3 3"/>`;
+s += ctr(fx - 16 - 4 * 23, by + 123, '+۲', 12, 800, T.accent);
+s += `<rect x="${W - 46 - 96}" y="${by + 140}" width="96" height="24" rx="12" fill="#12b981" fill-opacity="0.22"/>`;
+s += ctr(W - 46 - 48, by + 157, fa('joined_event'), 13, 700, '#5ee7b5');
 
 // ---- discover ----
 y += cardH + 34;
@@ -117,7 +125,7 @@ s += rtl(W - 28, y, fa('home_discover'), 20, 800, T.text);
 s += `<text x="28" y="${y}" font-family="Vazirmatn" font-size="15" font-weight="700" fill="${T.accent}">‹ ${esc(fa('view_all'))}</text>`;
 
 y += 18;
-const tileW = 218, tileH = 240, gap = 14;
+const tileW = 218, tileH = 266, gap = 14;
 ['شب موسیقی و گفتگو', 'باشگاه کتاب', 'میز استارتاپ'].forEach((title, i) => {
   const x = W - 28 - tileW - i * (tileW + gap);
   s += `<rect x="${x}" y="${y}" width="${tileW}" height="${tileH}" rx="22" fill="${T.card}" stroke="${T.light}" stroke-opacity="0.28"/>`;
@@ -126,8 +134,11 @@ const tileW = 218, tileH = 240, gap = 14;
   s += rtl(x + tileW - 16, y + 138, title, 17, 800, T.text);
   s += rtl(x + tileW - 16, y + 164, 'جمعه ۹ مرداد · ۱۸:۰۰', 13, 400, T.soft);
   s += rtl(x + tileW - 16, y + 186, 'کافه دالون', 13, 400, T.soft);
-  s += `<rect x="${x + 16}" y="${y + 198}" width="${tileW - 32}" height="30" rx="15" fill="${T.base}"/>`;
-  s += ctr(x + tileW / 2, y + 219, fa('join_event'), 14, 700, '#ffffff');
+  for (let k = 0; k < 3; k++) {
+    s += `<circle cx="${x + tileW - 29 - k * 19}" cy="${y + 205}" r="13" fill="url(#thumb)" stroke="${T.card}" stroke-width="2"/>`;
+  }
+  s += `<rect x="${x + 16}" y="${y + 224}" width="${tileW - 32}" height="30" rx="15" fill="${T.base}"/>`;
+  s += ctr(x + tileW / 2, y + 245, fa('join_event'), 14, 700, '#ffffff');
 });
 
 // ---- shortcuts ----

@@ -65,7 +65,10 @@ t('the client makes one call', /api\('event', \{ params: \{ id: eventId \} \}\)/
 console.log('\n--- 3. what the page shows ---');
 t('the café name', /esc\(pick\(venue\.name\) \|\| pick\(event\.venue\)\)/.test(js));
 t('the subject', /hv-event-subject/.test(js));
-t('the date, weekday and time', /pick\(event\.weekday\)\) \+ ' · ' \+ esc\(pick\(event\.date\)\) \+ ' · ' \+ num\(event\.time\)/.test(js));
+// Routed through the country-aware helpers since 1.31.1, so an Iranian
+// gathering is dated in Jalali whatever language the page is being read in.
+t('the date, weekday and time',
+  /eventWeekday\(event\)\) \+ ' · ' \+ esc\(eventDate\(event\)\) \+ ' · ' \+ num\(event\.time\)/.test(js));
 t('the description', /event\.description[\s\S]{0,160}hv-event-desc/.test(js));
 t('the café address', /venue\.address \? '<p class="hv-muted">'/.test(js));
 t('the menu', /venue\.menu \|\| \[\]/.test(js));

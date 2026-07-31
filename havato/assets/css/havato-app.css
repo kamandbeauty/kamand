@@ -995,30 +995,46 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	inset-inline: 0;
 	inset-block-end: calc(env(safe-area-inset-bottom) + 4px);
 	block-size: calc(var(--hv-nav-h) - 20px);
-	display: grid;
-	grid-template-columns: repeat(4, 1fr);
+	/* Flex, not a fixed column count: the bar went from four tabs to five in
+	   1.31.0 and a hardcoded repeat(4) pushed the last one onto a second row.
+	   Equal flex basis keeps every tab the same width whatever the count. */
+	display: flex;
 	align-items: center;
 	pointer-events: auto;
-	padding-inline: 6px;
+	padding-inline: 4px;
 }
 .hv-tab {
 	position: relative;
+	/* Each tab takes an equal share and may shrink below its label width,
+	   which is what stops five of them wrapping on a narrow phone. */
+	flex: 1 1 0;
+	min-inline-size: 0;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	gap: 3px;
 	min-block-size: 46px;
-	padding: 4px 2px;
+	padding: 4px 1px;
 	background: none;
 	border: 0;
 	color: rgba(255, 255, 255, 0.72);
-	font-size: 0.62rem;
+	font-size: 0.6rem;
 	font-weight: 600;
 	cursor: pointer;
 	transition: color 0.18s ease, transform 0.18s ease;
 }
-.hv-tab svg { inline-size: 24px; block-size: 24px; }
+.hv-tab svg { inline-size: 22px; block-size: 22px; flex: 0 0 auto; }
+/* One line only. A long label ellipsises rather than wrapping and shoving
+   the icon out of alignment with its neighbours. */
+.hv-tab span {
+	inline-size: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: center;
+	line-height: 1.25;
+}
 
 /* NOTE: a `.hv-tab svg *` rule looks like the obvious fix here, but <use>
    clones the symbol into a shadow tree and descendant selectors cannot pierce
@@ -1666,63 +1682,88 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 .hv-home-empty { text-align: center; }
 
-/* ---- the hero "your next table" card ---- */
+/* ---- the event card: cover on top, then name / when / where / who ---- */
 .hv-next-card {
-	display: flex;
-	gap: 12px;
-	align-items: stretch;
+	display: block;
 	background: var(--hv-card);
 	border: 1px solid var(--hv-card-border);
 	border-radius: var(--hv-radius-xl);
-	padding: 14px;
-	margin-block-end: 10px;
+	overflow: hidden;
+	margin-block-end: 12px;
 	box-shadow: var(--hv-shadow-card);
 	cursor: pointer;
 }
-.hv-next-thumb {
-	inline-size: 84px;
-	block-size: 84px;
-	flex: 0 0 auto;
-	border-radius: 18px;
-	overflow: hidden;
+.hv-next-cover {
+	block-size: 132px;
 	display: grid;
 	place-items: center;
 	background: linear-gradient(140deg, var(--hv-indigo-2), var(--hv-indigo));
 	color: #fff;
 }
-.hv-next-thumb img { inline-size: 100%; block-size: 100%; object-fit: cover; }
-.hv-next-body { flex: 1 1 auto; min-inline-size: 0; }
-.hv-next-venue { font-size: 1.05rem; font-weight: 800; }
-.hv-next-when {
+.hv-next-cover img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.hv-next-cover svg { inline-size: 42px; block-size: 42px; }
+.hv-next-body { padding: 14px; }
+.hv-next-name {
+	font-size: 1.08rem;
+	font-weight: 800;
+	line-height: 1.4;
+	margin-block-end: 8px;
+}
+/* Each fact on its own line with its own icon, so the eye can find the
+   time without reading the address first. */
+.hv-next-row {
 	display: flex;
-	align-items: center;
-	gap: 6px;
+	align-items: flex-start;
+	gap: 7px;
 	font-size: 0.82rem;
 	color: var(--hv-text-soft);
-	margin-block-start: 4px;
+	margin-block-start: 5px;
+	line-height: 1.7;
 }
-.hv-next-dot { opacity: 0.5; }
-.hv-next-topic { margin-block-start: 8px; }
-.hv-next-topic-label {
-	display: block;
-	font-size: 0.66rem;
-	letter-spacing: 0.06em;
-	text-transform: uppercase;
-	color: var(--hv-text-soft);
-}
-.hv-next-topic-value {
-	display: block;
-	font-size: 0.95rem;
-	font-weight: 800;
+.hv-next-icon {
+	inline-size: 15px;
+	block-size: 15px;
+	flex: 0 0 auto;
+	margin-block-start: 3px;
 	color: var(--hv-indigo);
-	margin-block-start: 1px;
 }
 .hv-next-foot {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	flex-wrap: wrap;
-	margin-block-start: 10px;
+	margin-block-start: 12px;
+}
+
+/* ---- overlapping avatars of the people already coming ---- */
+.hv-faces {
+	display: flex;
+	align-items: center;
+	margin-block-start: 11px;
+}
+.hv-face {
+	inline-size: 32px;
+	block-size: 32px;
+	border-radius: 50%;
+	overflow: hidden;
+	flex: 0 0 auto;
+	border: 2px solid var(--hv-card);
+	background: var(--hv-card-2);
+	display: grid;
+	place-items: center;
+	/* Overlap so a full table still fits on one line. The negative margin is
+	   logical, so it flips with the writing direction. */
+	margin-inline-end: -9px;
+}
+.hv-face:last-child { margin-inline-end: 0; }
+.hv-face img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.hv-face.is-more {
+	font-size: 0.68rem;
+	font-weight: 800;
+	color: var(--hv-indigo);
+	border-style: dashed;
+	border-color: var(--hv-indigo);
+	background: transparent;
 }
 
 /* ---- horizontal discover rail ---- */
@@ -1769,6 +1810,9 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	overflow: hidden;
 }
 .hv-tile-meta { font-size: 0.76rem; color: var(--hv-text-soft); }
+/* Smaller faces on a tile than on the full card — the tile is 63% as wide. */
+.hv-tile .hv-faces { margin-block-start: 8px; }
+.hv-tile .hv-face { inline-size: 26px; block-size: 26px; margin-inline-end: -7px; }
 .hv-tile-btn { margin-block-start: auto; inline-size: 100%; }
 
 /* ---- shortcut row ---- */
