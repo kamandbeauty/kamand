@@ -134,6 +134,27 @@ class Havato_Themes {
 				'text'       => '#141d33',
 				'text_soft'  => '#6a7590',
 			),
+			'galaxy' => array(
+				'label'      => array( 'fa' => 'کهکشان', 'en' => 'Galaxy', 'tr' => 'Galaksi' ),
+				'note'       => array(
+					'fa' => 'تم تیره‌ی بنفش با حال‌وهوای شب؛ کارت‌ها روشن‌تر از زمینه‌اند و متن‌ها روشن.',
+					'en' => 'A deep violet night theme. Cards sit lighter than the page and the text is light.',
+					'tr' => 'Derin mor bir gece teması. Kartlar sayfadan açık, yazılar açık renk.',
+				),
+				// Marked explicitly rather than left to the luminance test, so
+				// the intent survives even if the canvas is edited later.
+				'dark'       => true,
+				'light'      => '#a855f7',
+				'base'       => '#7c3aed',
+				'deep'       => '#3b1a78',
+				'ink'        => '#150a2e',
+				'accent'     => '#c084fc',
+				'accent_2'   => '#f0a92b',
+				'canvas'     => '#0d0620',
+				'card'       => '#1b1038',
+				'text'       => '#f2edff',
+				'text_soft'  => '#a99cc9',
+			),
 			'raspberry' => array(
 				'label'      => array( 'fa' => 'تمشکی', 'en' => 'Raspberry', 'tr' => 'Ahududu' ),
 				'note'       => array(
@@ -300,6 +321,14 @@ class Havato_Themes {
 			'canvas'    => self::hex( isset( $theme['canvas'] ) ? $theme['canvas'] : '', self::tint( $base, 0.94 ) ),
 			'text'      => self::hex( isset( $theme['text'] ) ? $theme['text'] : '', self::darken( $base, 0.7 ) ),
 			'text_soft' => self::hex( isset( $theme['text_soft'] ) ? $theme['text_soft'] : '', self::mix( $base, '#7c8398', 0.7 ) ),
+			// A dark palette inverts the surfaces: cards become lighter than
+			// the page instead of white, and borders have to become visible.
+			// Derived from the canvas rather than declared, so a custom theme
+			// built from one colour gets it right without extra fields.
+			'dark'      => isset( $theme['dark'] )
+				? (bool) $theme['dark']
+				: ( self::luminance( self::hex( isset( $theme['canvas'] ) ? $theme['canvas'] : '', '#eef1fb' ) ) < 0.4 ),
+			'card'      => isset( $theme['card'] ) ? self::hex( $theme['card'], '' ) : '',
 		);
 
 		// Hard guarantee: white body text sits on `base` all over the app
@@ -318,6 +347,35 @@ class Havato_Themes {
 		}
 		if ( self::luminance( $out['ink'] ) >= self::luminance( $out['deep'] ) ) {
 			$out['ink'] = self::darken( $out['deep'], 0.35 );
+		}
+
+		// Card surface. On a light theme this is plain white; on a dark one it
+		// has to be LIGHTER than the canvas or every card would disappear into
+		// the page. Only computed when the palette did not supply one.
+		if ( '' === $out['card'] ) {
+			$out['card'] = $out['dark']
+				? self::lighten( $out['canvas'], 0.07 )
+				: '#ffffff';
+		}
+
+		// Body text must clear AA against the surface it actually sits on —
+		// the card, not the canvas. A dark theme that inherited a near-black
+		// `text` would otherwise be unreadable on its own cards.
+		$guard = 0;
+		while ( self::contrast( $out['text'], $out['card'] ) < 4.5 && $guard < 24 ) {
+			$out['text'] = $out['dark']
+				? self::lighten( $out['text'], 0.08 )
+				: self::darken( $out['text'], 0.08 );
+			$guard++;
+		}
+
+		// Secondary text may recede, but 3:1 is the floor for it to stay legible.
+		$guard = 0;
+		while ( self::contrast( $out['text_soft'], $out['card'] ) < 3 && $guard < 24 ) {
+			$out['text_soft'] = $out['dark']
+				? self::lighten( $out['text_soft'], 0.08 )
+				: self::darken( $out['text_soft'], 0.08 );
+			$guard++;
 		}
 
 		return $out;
@@ -498,10 +556,20 @@ class Havato_Themes {
 			'--hv-orange'      => $t['accent_2'],
 			'--hv-orange-soft' => self::tint( $t['accent_2'], 0.9 ),
 			'--hv-bg'          => $t['canvas'],
-			'--hv-card-2'      => self::tint( $t['base'], 0.96 ),
+			'--hv-card'        => $t['card'],
+			// The secondary surface sits between the canvas and the card.
+			'--hv-card-2'      => $t['dark']
+				? self::lighten( $t['canvas'], 0.12 )
+				: self::tint( $t['base'], 0.96 ),
+			'--hv-card-danger' => $t['dark']
+				? self::mix( $t['card'], '#ff5470', 0.88 )
+				: '#fffafa',
+			// Invisible on a light theme, a faint glow on a dark one — cards
+			// need an edge once they are no longer white on grey.
+			'--hv-card-border' => $t['dark'] ? self::rgba( $t['light'], 0.28 ) : 'transparent',
 			'--hv-text'        => $t['text'],
 			'--hv-text-soft'   => $t['text_soft'],
-			'--hv-line'        => self::rgba( $t['base'], 0.1 ),
+			'--hv-line'        => $t['dark'] ? self::rgba( $t['light'], 0.22 ) : self::rgba( $t['base'], 0.1 ),
 			'--hv-shadow-card' => '0 10px 30px ' . self::rgba( $t['ink'], 0.1 ),
 			'--hv-shadow-soft' => '0 4px 16px ' . self::rgba( $t['ink'], 0.08 ),
 			'--hv-shadow-fab'  => '0 12px 26px ' . self::rgba( $t['accent'], 0.45 ),

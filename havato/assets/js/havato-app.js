@@ -564,36 +564,62 @@
 		// nav-* icons are the monochrome variants: they paint with
 		// currentColor so the tab state (translucent vs solid white) actually
 		// drives them on the dark indigo bar.
+		//
+		// Five tabs since v1.31.0. Home took over from the round floating
+		// button, which changed meaning per tab and said nothing about what
+		// it would do. Map is no longer a tab of its own — it is a sub-tab of
+		// Explore, so the two ways of browsing the same tables sit together.
 		return [
+			{ id: 'home', label: 'tab_home', icon: 'nav-dashboard' },
 			{ id: 'explore', label: 'tab_explore', icon: 'nav-explore' },
-			{ id: 'map', label: 'tab_map', icon: 'nav-map' },
+			{ id: 'tables', label: 'tab_my_tables', icon: 'nav-calendar' },
 			{ id: 'chats', label: 'tab_chats', icon: 'nav-chat' },
 			{ id: 'profile', label: 'tab_profile', icon: 'nav-profile' }
 		];
 	}
 
+	/**
+	 * Views that are reachable but own no tab of their own.
+	 *
+	 * The map is browsed from inside Explore, so it has to be routable while
+	 * lighting up the Explore tab rather than none of them.
+	 */
+	var TAB_ALIASES = { map: 'explore' };
+
+	function navTabFor(id) {
+		return TAB_ALIASES[id] || id;
+	}
+
 	function buildTabs() {
 		S.tabs = tabsFor(S.role);
-		if (!S.tab || !S.tabs.some(function (tab) { return tab.id === S.tab; })) {
+		if (!S.tab || !isRoutable(S.tab)) {
 			S.tab = S.tabs[0].id;
 		}
 
+		var active = navTabFor(S.tab);
+
 		el.tabs.innerHTML = S.tabs.map(function (tab) {
-			return '<button type="button" class="hv-tab' + (tab.id === S.tab ? ' is-active' : '') +
+			return '<button type="button" class="hv-tab' + (tab.id === active ? ' is-active' : '') +
 				'" data-tab="' + tab.id + '" role="tab">' +
 				icon(tab.icon) + '<span>' + esc(t(tab.label)) + '</span></button>';
 		}).join('');
 	}
 
+	function isRoutable(id) {
+		if (TAB_ALIASES[id]) { return true; }
+		return S.tabs.some(function (tab) { return tab.id === id; });
+	}
+
 	function setTab(id, push) {
-		if (!S.tabs.some(function (tab) { return tab.id === id; })) { return; }
+		if (!isRoutable(id)) { return; }
 		S.tab = id;
 		S.chatRoom = null;
 		if ('profile' !== id) { S.viewingUser = 0; }
 		stopPolling();
 
+		var active = navTabFor(id);
 		$$('.hv-tab', el.tabs).forEach(function (btn) {
-			btn.classList.toggle('is-active', btn.dataset.tab === id);
+			btn.classList.toggle('is-active', btn.dataset.tab === active);
 		});
 
 		if (push !== false) {
@@ -671,15 +697,6 @@
 		el.headerAction.onclick = conf.action;
 	}
 
-	function updateFab() {
-		el.fab.querySelector('use').setAttribute('href', '#hv-i-nav-dashboard');
-		el.fab.setAttribute('aria-label', t('dashboard_title'));
-		el.fab.title = t('dashboard_title');
-		el.fab.onclick = function () {
-			if (!S.loggedIn) { return; }
-			openDashboard();
-		};
-	}
 
 	/* =====================================================================
 	 * Renderer
@@ -696,7 +713,6 @@
 
 		el.bottomNav.style.display = '';
 		el.header.style.display = '';
-		updateFab();
 		updateHeaderAction();
 		renderHeaderUser();
 		loadTab(false);
@@ -720,13 +736,17 @@
 		loading();
 
 		var loaders = {
+			home: viewHome,
 			explore: viewExplore,
+			// Reachable as a sub-tab of Explore, and still routable directly
+			// so an old bookmark to #hv-map keeps working.
 			map: viewMap,
+			tables: viewMyTables,
 			chats: viewChats,
 			profile: viewProfile
 		};
 
-		var fn = loaders[tab] || viewExplore;
+		var fn = loaders[tab] || viewHome;
 		fn(force).catch(function (err) {
 			el.main.innerHTML = emptyState(err.message || t('error_generic'));
 		});
@@ -887,8 +907,213 @@
 	}
 
 	/* =====================================================================
-	 * TAB: EXPLORE
+	 * TAB: HOME
+	 *
+	 * The landing screen: the guest's next table in full, then a horizontal
+	 * rail of tables to discover, then the shortcuts. Everything here is a
+	 * summary — each card leads to the screen that owns the detail.
 	 * ================================================================== */
+	function viewHome() {
+		setHeader(t('home_greeting').replace('%s', (S.user && S.user.name) || ''), t('app_name'));
+		setStatusStrip('');
+
+		// One request each: the dashboard already knows the guest's bookings,
+		// and Explore knows what is open. Asking in parallel keeps the screen
+		// from drawing in two stages.
+		return Promise.all([
+			api('dashboard').catch(function () { return {}; }),
+			api('events').catch(function () { return {}; })
+		]).then(function (res) {
+			var dash = res[0] || {};
+			var events = (res[1] && res[1].events) || [];
+
+			S.data.dashboard = dash;
+			S.data.events = events;
+
+			var next = (dash.upcoming || [])[0] || null;
+
+			// Tables the guest has not already booked — no point offering a
+			// seat they are already holding.
+			var discover = events.filter(function (ev) { return !ev.joined; }).slice(0, 8);
+
+			el.main.innerHTML =
+				(next
+					? '<h3 class="hv-home-title">' + esc(t('home_next_table')) + '</h3>' +
+						nextTableCard(next)
+					: '<h3 class="hv-home-title">' + esc(t('home_next_table')) + '</h3>' +
+						'<div class="hv-card hv-home-empty">' +
+							'<p class="hv-muted">' + esc(t('dash_no_events')) + '</p>' +
+							'<button type="button" class="hv-btn hv-btn-primary hv-btn-sm hv-mt" data-go-explore>' +
+								esc(t('tab_explore')) + '</button>' +
+						'</div>') +
+
+				'<div class="hv-home-head">' +
+					'<h3 class="hv-home-title">' + esc(t('home_discover')) + '</h3>' +
+					'<button type="button" class="hv-home-viewall" data-go-explore>' +
+						esc(t('view_all')) + ' ›</button>' +
+				'</div>' +
+				(discover.length
+					? '<div class="hv-rail">' + discover.map(discoverTile).join('') + '</div>'
+					: '<p class="hv-muted">' + esc(S.city ? t('city_empty') : t('explore_empty')) + '</p>') +
+
+				'<div class="hv-quick">' +
+					'<button type="button" class="hv-quick-btn" data-quick="suggest">' +
+						icon('plus') + '<span>' + esc(t('suggest_event')) + '</span></button>' +
+					'<button type="button" class="hv-quick-btn" data-quick="tables">' +
+						icon('calendar') + '<span>' + esc(t('tab_my_tables')) + '</span></button>' +
+					'<button type="button" class="hv-quick-btn" data-quick="chats">' +
+						icon('chat') + '<span>' + esc(t('tab_chats')) + '</span></button>' +
+				'</div>';
+
+			$$('[data-go-explore]').forEach(function (b) {
+				b.onclick = function () { setTab('explore'); };
+			});
+			$$('[data-open-event]').forEach(function (node) {
+				node.onclick = function () { openEvent(node.dataset.openEvent); };
+			});
+			$$('[data-quick]').forEach(function (b) {
+				b.onclick = function () {
+					if ('suggest' === b.dataset.quick) {
+						openSuggestEvent((S.data.dashboard && S.data.dashboard.venues) || []);
+						return;
+					}
+					setTab(b.dataset.quick);
+				};
+			});
+		});
+	}
+
+	/** The hero card: the gathering the guest is going to next. */
+	function nextTableCard(ev) {
+		var subject = (ev.title && String(ev.title).trim()) || ev.theme || '';
+		var thumb = ev.image
+			? '<img src="' + esc(ev.image) + '" alt="">'
+			: icon('cup');
+
+		return '' +
+			'<article class="hv-next-card" data-open-event="' + esc(ev.id) + '">' +
+				'<div class="hv-next-thumb">' + thumb + '</div>' +
+				'<div class="hv-next-body">' +
+					'<h4 class="hv-next-venue">' + esc(pick(ev.venue)) + '</h4>' +
+					'<div class="hv-next-when">' +
+						'<span>' + esc(pick(ev.date)) + '</span>' +
+						'<span class="hv-next-dot">·</span>' +
+						'<span>' + num(ev.time) + '</span>' +
+					'</div>' +
+					(subject
+						? '<div class="hv-next-topic">' +
+							'<span class="hv-next-topic-label">' + esc(t('event_subject')) + '</span>' +
+							'<span class="hv-next-topic-value">' + esc(subject) + '</span>' +
+						'</div>'
+						: '') +
+					'<div class="hv-next-foot">' +
+						'<span class="hv-badge hv-badge-green">' + esc(t('joined_event')) + '</span>' +
+						(ev.my_seats > 1
+							? '<span class="hv-muted">' + esc(t('seats_booked').replace('%s', num(ev.my_seats))) + '</span>'
+							: '') +
+					'</div>' +
+				'</div>' +
+			'</article>';
+	}
+
+	/** One tile in the horizontal Discover rail. */
+	function discoverTile(ev) {
+		var subject = (ev.title && String(ev.title).trim()) || ev.theme || '';
+		var full = ev.seats_left <= 0;
+
+		return '' +
+			'<article class="hv-tile">' +
+				'<div class="hv-tile-top">' +
+					(ev.image
+						? '<img class="hv-tile-img" src="' + esc(ev.image) + '" alt="">'
+						: '<span class="hv-tile-img is-empty">' + icon('cup') + '</span>') +
+				'</div>' +
+				'<div class="hv-tile-body">' +
+					'<h4 class="hv-tile-title">' + esc(subject || pick(ev.venue)) + '</h4>' +
+					'<div class="hv-tile-meta">' + esc(pick(ev.date)) + ' · ' + num(ev.time) + '</div>' +
+					'<div class="hv-tile-meta">' + esc(pick(ev.venue)) + '</div>' +
+					(full
+						? '<button type="button" class="hv-btn hv-btn-ghost hv-btn-sm hv-tile-btn" disabled>' +
+							esc(t('event_full')) + '</button>'
+						: '<button type="button" class="hv-btn hv-btn-primary hv-btn-sm hv-tile-btn" ' +
+							'data-open-event="' + esc(ev.id) + '">' + esc(t('join_event')) + '</button>') +
+				'</div>' +
+			'</article>';
+	}
+
+	/* =====================================================================
+	 * TAB: MY TABLES
+	 * ================================================================== */
+	function viewMyTables() {
+		setHeader(t('tab_my_tables'), t('app_name'));
+		setStatusStrip('');
+
+		return api('dashboard').then(function (res) {
+			S.data.dashboard = res;
+			var upcoming = res.upcoming || [];
+			var requests = res.requests || [];
+
+			el.main.innerHTML =
+				'<h3 class="hv-home-title">' + esc(t('dash_upcoming')) + '</h3>' +
+				(upcoming.length
+					? upcoming.map(nextTableCard).join('')
+					: '<div class="hv-card"><p class="hv-muted">' + esc(t('dash_no_events')) + '</p></div>') +
+
+				'<button type="button" class="hv-btn hv-btn-primary hv-btn-block hv-mt" data-quick="suggest">' +
+					esc(t('suggest_event')) + '</button>' +
+
+				(requests.length
+					? '<h3 class="hv-home-title hv-mt">' + esc(t('dash_requests')) + '</h3>' +
+						requests.map(function (rq) {
+							var badge = 'hv-badge-orange';
+							if ('accepted' === rq.status) { badge = 'hv-badge-green'; }
+							if ('declined' === rq.status) { badge = 'hv-badge-gray'; }
+							return '<div class="hv-dash-request">' +
+								'<div>' +
+									'<div class="hv-dash-event-name">' + esc(rq.venue) + '</div>' +
+									'<div class="hv-dash-event-when">' + esc(rq.subject) + ' · ' +
+										esc(pick(rq.date)) + ' · ' + num(rq.time) + '</div>' +
+								'</div>' +
+								'<span class="hv-badge ' + badge + '">' + esc(t('request_' + rq.status)) + '</span>' +
+							'</div>';
+						}).join('')
+					: '');
+
+			$$('[data-open-event]').forEach(function (node) {
+				node.onclick = function () { openEvent(node.dataset.openEvent); };
+			});
+			$$('[data-quick]').forEach(function (b) {
+				b.onclick = function () { openSuggestEvent(res.venues || []); };
+			});
+		});
+	}
+
+	/* =====================================================================
+	 * TAB: EXPLORE
+	 *
+	 * The map used to be a tab of its own. It is the same set of tables seen
+	 * a different way, so it lives here as a sub-tab instead of costing a
+	 * slot in a nav bar that now has five.
+	 * ================================================================== */
+	function exploreSubtabs(active) {
+		return '<div class="hv-subtabs">' +
+			'<button type="button" class="hv-subtab' + ('list' === active ? ' is-active' : '') +
+				'" data-exploreview="list">' + esc(t('tab_explore')) + '</button>' +
+			'<button type="button" class="hv-subtab' + ('map' === active ? ' is-active' : '') +
+				'" data-exploreview="map">' + esc(t('tab_map')) + '</button>' +
+		'</div>';
+	}
+
+	function bindExploreSubtabs() {
+		$$('[data-exploreview]').forEach(function (btn) {
+			btn.onclick = function () {
+				// Routed through setTab so the Back button and the address
+				// hash stay in step with what is on screen.
+				setTab('map' === btn.dataset.exploreview ? 'map' : 'explore');
+			};
+		});
+	}
+
 	function viewExplore() {
 		setHeader(t('explore_title'), t('app_name'));
 		setStatusStrip('');
@@ -900,15 +1125,21 @@
 			S.data.events = res.events || [];
 
 			if (!S.data.events.length) {
-				// Results are scoped to the user's city, so say so.
-				el.main.innerHTML = emptyState(S.city ? t('city_empty') : t('explore_empty'), 'explore');
+				// Results are scoped to the user's city, so say so. The
+				// sub-tabs stay, or there would be no way back to the map.
+				el.main.innerHTML = exploreSubtabs('list') +
+					emptyState(S.city ? t('city_empty') : t('explore_empty'), 'explore');
+				bindExploreSubtabs();
 				return;
 			}
 
 			el.main.innerHTML =
+				exploreSubtabs('list') +
 				'<div class="hv-section">' +
 					S.data.events.map(eventCard).join('') +
 				'</div>';
+
+			bindExploreSubtabs();
 
 			$$('[data-event-join]').forEach(function (btn) {
 				// Opens the event's own page. Booking a seat is a commitment
@@ -1464,6 +1695,7 @@
 			S.data.venues = res.venues || [];
 
 			el.main.innerHTML =
+				exploreSubtabs('map') +
 				'<div class="hv-map-wrap">' +
 					'<div class="hv-map-strip">' +
 						// The green pill is a real control: tapping it centres the
@@ -1479,6 +1711,8 @@
 				'<div class="hv-section hv-mt">' +
 					S.data.venues.map(venueListCard).join('') +
 				'</div>';
+
+			bindExploreSubtabs();
 
 			$$('[data-venue-open]').forEach(function (node) {
 				node.onclick = function () { openVenue(node.dataset.venueOpen); };
@@ -2994,7 +3228,6 @@
 		el.main = $('#main-tab-content');
 		el.bottomNav = $('#hv-bottom-nav');
 		el.tabs = $('#hv-tabs');
-		el.fab = $('#hv-fab');
 		el.headerAction = $('#hv-header-action');
 		el.modalHost = $('#hv-modal-host');
 		el.modalBody = $('#hv-modal-body');

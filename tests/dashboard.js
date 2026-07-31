@@ -28,7 +28,10 @@ console.log('--- 1. the per-tab action is in the header now ---');
 t('a header action button exists', /id="hv-header-action"/.test(tpl));
 t('it starts hidden', /id="hv-header-action" hidden/.test(tpl));
 t('the app wires it up', /function updateHeaderAction/.test(js));
-t('it is refreshed whenever the view renders', /updateFab\(\);\s*\n\s*updateHeaderAction\(\);/.test(js));
+// Anchored on the call itself: the updateFab() line it used to sit beside
+// was removed with the floating button in 1.31.0.
+t('it is refreshed whenever the view renders',
+  /el\.header\.style\.display = '';\s*\n\s*updateHeaderAction\(\);/.test(js));
 t('the icon changes per tab', /el\.headerAction\.querySelector\('use'\)\.setAttribute/.test(js));
 
 // An icon on its own says nothing; it needs a name.
@@ -51,21 +54,20 @@ t('it is styled to match the language button', /\.hv-header-action \{/.test(css)
 /* =====================================================================
  * 2. The round button is the dashboard
  * ================================================================== */
-console.log('\n--- 2. the round button opens the dashboard ---');
+console.log('\n--- 2. the dashboard is the Home tab now ---');
 
-t('the template points at the dashboard icon', /id="hv-fab"[\s\S]{0,160}#hv-i-nav-dashboard/.test(tpl));
-t('its label says so', /aria-label="dashboard"/.test(tpl));
-t('the button opens the dashboard', /el\.fab\.onclick = function \(\) \{[\s\S]{0,120}openDashboard\(\);/.test(js));
-t('it no longer changes meaning per tab',
-  !/explore: \{ icon: 'filter', action: showFilters \},[\s\S]{0,200}el\.fab\.querySelector/.test(js));
-t('a logged-out visitor cannot trigger it', /if \(!S\.loggedIn\) \{ return; \}[\s\S]{0,60}openDashboard/.test(js));
+// v1.31.0: the floating button is gone. Its job — the guest's dashboard —
+// became a real tab, so it has a label instead of an unexplained glyph.
+t('the floating button is gone from the template', !/id="hv-fab"/.test(tpl));
+t('…and from the app', !/el\.fab/.test(js));
+t('…and its styles were removed', !/\.hv-fab \{/.test(css));
+t('Home is the first tab', /\{ id: 'home', label: 'tab_home', icon: 'nav-dashboard' \}/.test(js));
+t('it lands on the dashboard view', /home: viewHome/.test(js));
+t('an unknown tab falls back to Home, not Explore', /\|\| viewHome;/.test(js));
 
-// The dashboard glyph paints with currentColor. The nav-icon bug we hit
-// before was exactly this: no colour set on the owning element.
-t('the button pins a colour so the glyph cannot vanish', /#havato-app \.hv-fab \{ color: #fff; \}/.test(css));
-t('…on the icon too', /#havato-app \.hv-fab \.hv-fab-icon \{ color: #fff; \}/.test(css));
-t('the symbol really does use currentColor',
-  /id="hv-i-nav-dashboard"[\s\S]{0,400}currentColor/.test(rd('templates/parts/icons.php')));
+// The sizing class two other buttons borrowed must survive the removal.
+t('the borrowed icon size still exists', /\.hv-fab-icon \{ inline-size: 26px/.test(css));
+t('…and is still used', /icon\('brain', 'hv-fab-icon'\)/.test(js));
 
 /* =====================================================================
  * 3. What the dashboard shows

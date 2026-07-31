@@ -23,12 +23,17 @@ t('icons are fully white on every tab', /\.hv-tab svg \{ opacity: 1; \}/.test(no
   t('labels clear WCAG AA (4.5:1)', worst>=4.5);
 }
 
-console.log('\n--- 2. notch matches the floating button ---');
+console.log('\n--- 2. the bar is a plain panel (no notch since 1.31.0) ---');
 t('solid nav surface painted via ::before', /\.hv-bottom-nav::before \{/.test(noC));
-t('notch cut with a mask, not a stretched path', /mask:\s*\n?\s*radial-gradient/.test(noC));
-t('notch radius derives from --hv-fab-size', /--hv-notch: calc\(\(var\(--hv-fab-size\) \/ 2\) \+ 5px\)/.test(noC));
-t('legacy stretched SVG hidden', /\.hv-wave \{[^}]*opacity:\s*0/s.test(noC));
-t('@supports fallback keeps the bar visible', /@supports not \(\(-webkit-mask/.test(noC) && /\.hv-wave \{ opacity: 1; \}/.test(noC));
+// The notch existed only to seat the floating button. With five tabs and no
+// button it would cut a hole above the middle tab, so it is gone.
+t('the mask is gone', !/mask:\s*\n?\s*radial-gradient/.test(noC));
+t('…and so is the notch variable', !/--hv-notch/.test(noC));
+// Checked against the raw CSS and template: `noC` has comments stripped.
+t('the reason is recorded', /notch existed only to seat the floating button/.test(css + tpl));
+t('the SVG path no longer carries a carved-out curve', !/M0,16 L157,16 C168,16/.test(tpl));
+t('it is a plain rectangle now', /M0,16 L390,16 L390,84 L0,84 Z/.test(tpl));
+t('legacy stretched SVG still hidden', /\.hv-wave \{[^}]*opacity:\s*0/s.test(noC));
 {
   // notch now scales WITH the button, so the gap is constant on every device
   const clamp=(a,b,c)=>Math.min(Math.max(b,a),c);

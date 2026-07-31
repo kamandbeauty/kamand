@@ -299,6 +299,12 @@ class Havato_I18N {
 			'logout'                => array( 'fa' => 'خروج از حساب', 'en' => 'Sign out', 'tr' => 'Çıkış yap' ),
 
 			// Tabs (gatherer).
+			'tab_home'              => array( 'fa' => 'خانه', 'en' => 'Home', 'tr' => 'Ana sayfa' ),
+			'tab_my_tables'         => array( 'fa' => 'میزهای من', 'en' => 'My Tables', 'tr' => 'Masalarım' ),
+			'home_greeting'         => array( 'fa' => 'خوش آمدی، %s', 'en' => 'Welcome back, %s', 'tr' => 'Tekrar hoş geldin, %s' ),
+			'home_next_table'       => array( 'fa' => 'میز بعدی شما', 'en' => 'Your next table', 'tr' => 'Sıradaki masanız' ),
+			'home_discover'         => array( 'fa' => 'کشف میزها', 'en' => 'Discover tables', 'tr' => 'Masaları keşfet' ),
+			'view_all'              => array( 'fa' => 'همه', 'en' => 'View all', 'tr' => 'Tümü' ),
 			'tab_explore'           => array( 'fa' => 'کاوش', 'en' => 'Explore', 'tr' => 'Keşfet' ),
 			'tab_map'               => array( 'fa' => 'نقشه', 'en' => 'Map', 'tr' => 'Harita' ),
 			'tab_chats'             => array( 'fa' => 'گفتگوها', 'en' => 'Chats', 'tr' => 'Sohbetler' ),

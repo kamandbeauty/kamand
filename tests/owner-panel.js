@@ -30,8 +30,13 @@ t('owners can still reach the portal (shortcode intact)',
   /havato_owner_auth/.test(rd('includes/class-havato-owner-auth.php')));
 t('wp-login still redirects owners to it',
   /guard_wp_login/.test(rd('includes/class-havato-owner-auth.php')));
-t('web app still has the 4 guest tabs',
-  /nav-explore/.test(js)&&/nav-map/.test(js)&&/nav-chat/.test(js)&&/nav-profile/.test(js));
+// Five tabs since 1.31.0: Home took the floating button's place and Map
+// became a sub-tab of Explore rather than a slot of its own.
+t('web app still has the guest tabs',
+  /nav-dashboard/.test(js) && /nav-explore/.test(js) && /nav-calendar/.test(js) &&
+  /nav-chat/.test(js) && /nav-profile/.test(js));
+t('the map is still reachable, just not as a tab',
+  /TAB_ALIASES = \{ map: 'explore' \}/.test(js) && /map: viewMap/.test(js));
 
 console.log('\n--- 2. wp-admin owner panel ---');
 t('class loaded in admin', /class-havato-owner-admin\.php/.test(main) && /Havato_Owner_Admin::init\(\)/.test(main));

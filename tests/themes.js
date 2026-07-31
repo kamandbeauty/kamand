@@ -45,9 +45,44 @@ while ((m = reTheme.exec(block))) {
 console.log('--- 1. every shipped palette is present and complete ---');
 // 'raspberry' joined in 1.15.0; the list is asserted by content, not length,
 // so adding a theme is not a breaking change.
-const want = ['azure', 'emerald', 'espresso', 'midnight', 'coral', 'raspberry'];
+const want = ['azure', 'emerald', 'espresso', 'midnight', 'coral', 'raspberry', 'galaxy'];
 t('all agreed themes ship', want.every(k => cat[k]));
 t('no unexpected extras', Object.keys(cat).every(k => want.includes(k)));
+
+// Galaxy is the first dark palette, so the surface tokens invert. Verify it
+// rather than assuming the light-theme assertions below still cover it.
+(() => {
+  const src = fs.readFileSync(R + 'includes/class-havato-themes.php', 'utf8');
+  const block = src.slice(src.indexOf("'galaxy' => array("), src.indexOf("'raspberry' => array("));
+
+  t('galaxy declares itself dark', /'dark'\s*=> true/.test(block));
+  t('…and names its own card colour', /'card'\s*=> '#1b1038'/.test(block));
+
+  const hex = h => { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+  const lum = h => {
+    const [r, g, b] = hex(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const l1 = lum(a), l2 = lum(b);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  };
+
+  const g = { canvas: '#0d0620', card: '#1b1038', text: '#f2edff', soft: '#a99cc9', base: '#7c3aed' };
+  t('galaxy body text clears AA on its cards', ratio(g.text, g.card) >= 4.5);
+  t('…and on the page itself', ratio(g.text, g.canvas) >= 4.5);
+  t('secondary text clears 3:1', ratio(g.soft, g.card) >= 3);
+  t('white still readable on the primary button', ratio('#ffffff', g.base) >= 4.5);
+  // A dark card that matches the page would make every card vanish.
+  t('cards are distinguishable from the page', lum(g.card) > lum(g.canvas));
+
+  t('the engine derives darkness when a theme does not declare it',
+    /luminance\( self::hex\( isset\( \$theme\['canvas'\] \)[\s\S]{0,80}< 0\.4/.test(src));
+  t('a dark theme lightens its card instead of using white',
+    /\$out\['dark'\]\s*\n?\s*\? self::lighten\( \$out\['canvas'\], 0\.07 \)/.test(src));
+  t('text is corrected against the card, not the canvas',
+    /self::contrast\( \$out\['text'\], \$out\['card'\] \) < 4\.5/.test(src));
+})();
 for (const id of want) {
   const c = cat[id];
   t(`${id}: every colour parsed`, c && Object.values(c).every(v => /^#[0-9a-f]{6}$/.test(v || '')));
@@ -73,8 +108,13 @@ for (const id of want) {
 
 console.log('\n--- 3. the purple complaint is genuinely resolved ---');
 // 230..280 is where indigo/violet is perceived; the old #1b1fbf sat at 239.
+// The complaint was about the DEFAULT looking like every other fintech app,
+// so the ban applies to the themes offered as alternatives to it. Galaxy is
+// exempt: it was requested as a violet night theme, and it is opt-in.
 t('the old violet base is gone from the catalogue', !/#1b1fbf/i.test(block));
+const violetExempt = ['galaxy'];
 for (const id of want) {
+  if (violetExempt.includes(id)) { continue; }
   const h = hue(cat[id].base);
   const violet = h >= 230 && h <= 280;
   t(`${id}: base hue ${h}° is not violet`, !violet);

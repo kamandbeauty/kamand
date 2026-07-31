@@ -48,7 +48,9 @@ console.log('--- 1. white-on-white in the language menu ---');
     pinned.id === guard.id && /#havato-app \.hv-lang-option,/.test(css));
 })();
 
-t('the panel background is pinned too', /#havato-app \.hv-lang-menu \{ background: #fff; \}/.test(css));
+// Tokenised in 1.31.0 so a dark palette gets a dark panel. What matters is
+// that the background is pinned at id weight, not that it is literally white.
+t('the panel background is pinned too', /#havato-app \.hv-lang-menu \{ background: var\(--hv-card\); \}/.test(css));
 t('option text is dark, not inherited', /#havato-app \.hv-lang-option,[\s\S]{0,120}color: var\(--hv-text/.test(css));
 t('the active row keeps its own colour', /#havato-app \.hv-lang-option\.is-active,[\s\S]{0,200}color: var\(--hv-indigo\)/.test(css));
 t('the reason is written down for the next person', /white on white/.test(css));

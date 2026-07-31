@@ -38,9 +38,15 @@
 	--hv-bg: #eef1fb;
 	--hv-card: #ffffff;
 	--hv-card-2: #f4f6fc;
+	/* Danger surfaces are a hair warmer than a plain card. Tokenised so a
+	   dark palette can supply its own instead of a near-white pink. */
+	--hv-card-danger: #fffafa;
 	--hv-text: #16204a;
 	--hv-text-soft: #6b74a0;
 	--hv-line: rgba(27, 31, 191, 0.1);
+	/* Borders are invisible on a dark canvas unless the palette says
+	   otherwise, so cards carry an optional outline token. */
+	--hv-card-border: transparent;
 
 	--hv-radius-xl: 24px;
 	--hv-radius-lg: 20px;
@@ -53,6 +59,8 @@
 
 	--hv-header-h: clamp(104px, 20dvh, 168px);
 	--hv-nav-h: clamp(72px, 11dvh, 92px);
+	/* The floating button is gone, but two buttons still borrow this icon
+	   size (the personality-test CTA and the gallery upload). */
 	--hv-fab-size: clamp(56px, 15vw, 64px);
 	--hv-gutter: clamp(14px, 4.2vw, 22px);
 
@@ -185,7 +193,7 @@ body.havato-page { overflow: hidden; }
 #havato-app .hv-tab,
 #havato-app .hv-tab:focus,
 #havato-app .hv-tab:active,
-#havato-app .hv-fab:focus:not(:focus-visible) {
+#havato-app .hv-tab:focus:not(:focus-visible) {
 	outline: none;
 	background-color: transparent;
 	border: 0;
@@ -369,7 +377,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	margin: 0;
 	padding: 6px;
 	list-style: none;
-	background: #fff;
+	background: var(--hv-card);
 	border-radius: 14px;
 	box-shadow: 0 14px 34px rgba(20, 26, 110, 0.22);
 	/* Above the header's own stacking context, or the list would be clipped
@@ -403,7 +411,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
    an invisible list. The guard now excludes it, and these id-scoped rules
    pin the colours at the same specificity so a site theme cannot undo them
    either. */
-#havato-app .hv-lang-menu { background: #fff; }
+#havato-app .hv-lang-menu { background: var(--hv-card); }
 #havato-app .hv-lang-option,
 #havato-app .hv-lang-option span { color: var(--hv-text, #16204a); }
 #havato-app .hv-lang-option.is-active,
@@ -482,7 +490,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	background: #fff;
+	background: var(--hv-card);
 	border-radius: 16px;
 	padding: 12px 14px;
 	margin-block-end: 8px;
@@ -518,7 +526,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	inline-size: 9px;
 	block-size: 9px;
 	border-radius: 50%;
-	background: #fff;
+	background: var(--hv-card);
 	box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28);
 	flex: 0 0 auto;
 }
@@ -542,7 +550,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	   rises ~34% of the nav height above it. Without the FAB allowance the
 	   last form field ends up underneath the circular button. */
 	padding: 26px var(--hv-gutter)
-		calc(var(--hv-nav-h) + (var(--hv-fab-size) * 0.6) + env(safe-area-inset-bottom) + 16px);
+		calc(var(--hv-nav-h) + env(safe-area-inset-bottom) + 20px);
 	scrollbar-width: thin;
 }
 .hv-main::-webkit-scrollbar { inline-size: 4px; }
@@ -890,7 +898,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-google-slot { display: flex; justify-content: center; min-block-size: 46px; }
 .hv-btn-google {
 	inline-size: 100%;
-	background: #fff;
+	background: var(--hv-card);
 	color: #1f2937;
 	box-shadow: 0 10px 24px rgba(15, 20, 64, 0.26);
 }
@@ -913,7 +921,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	padding: 11px 14px;
 	border-radius: 14px;
 	border: 1px solid rgba(27, 31, 191, 0.16);
-	background: #fff;
+	background: var(--hv-card);
 	color: var(--hv-text);
 	font-size: 0.9rem;
 	outline: none;
@@ -973,22 +981,15 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	background: linear-gradient(135deg, #232AD1 0%, #1B1FBF 55%, #141A6E 100%);
 	box-shadow: 0 -8px 22px rgba(20, 26, 110, 0.26);
 	pointer-events: none;
-	/* Radius = half the button + a 5px breathing ring. */
-	--hv-notch: calc((var(--hv-fab-size) / 2) + 5px);
-	-webkit-mask:
-		radial-gradient(var(--hv-notch) at 50% 0, transparent 99%, #000 100%);
-	mask:
-		radial-gradient(var(--hv-notch) at 50% 0, transparent 99%, #000 100%);
+	/* No mask any more: the notch existed only to seat the floating button,
+	   and with five tabs it would cut a hole above the middle one. */
 	border-start-start-radius: 22px;
 	border-start-end-radius: 22px;
 }
-/* Safety: if mask isn't supported the notch simply is not cut — the bar still
-   paints, so the nav can never disappear. Hide the legacy SVG only when we
-   know the replacement will render. */
-@supports not ((-webkit-mask: radial-gradient(1px at 0 0, #000 99%, #000)) or (mask: radial-gradient(1px at 0 0, #000 99%, #000))) {
-	.hv-wave { opacity: 1; }
-	.hv-bottom-nav::before { display: none; }
-}
+/* Still used by the personality-test CTA and the gallery upload button,
+   which borrowed this size from the old floating button. */
+.hv-fab-icon { inline-size: 26px; block-size: 26px; }
+
 .hv-tabs {
 	position: absolute;
 	inset-inline: 0;
@@ -1061,38 +1062,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	background: #9fc9ff;
 	box-shadow: 0 0 8px rgba(159, 201, 255, 0.9);
 }
-/* Third slot is reserved for the FAB notch */
-.hv-tab:nth-child(2) { margin-inline-end: 16px; }
-.hv-tab:nth-child(3) { margin-inline-start: 16px; }
 
-.hv-fab {
-	position: absolute;
-	inset-block-start: calc(var(--hv-nav-h) * -0.34);
-	inset-inline-start: 50%;
-	transform: translateX(-50%);
-	inline-size: var(--hv-fab-size);
-	block-size: var(--hv-fab-size);
-	border-radius: 50%;
-	border: 4px solid rgba(255, 255, 255, 0.9);
-	background: linear-gradient(140deg, #6bb3ff, var(--hv-blue));
-	box-shadow: var(--hv-shadow-fab);
-	display: grid;
-	place-items: center;
-	cursor: pointer;
-	pointer-events: auto;
-	transition: transform 0.18s ease;
-	z-index: 3;
-}
-.hv-dir-rtl .hv-fab { transform: translateX(50%); }
-.hv-fab:active { transform: translateX(-50%) scale(0.93); }
-.hv-dir-rtl .hv-fab:active { transform: translateX(50%) scale(0.93); }
-.hv-fab-icon { inline-size: 26px; block-size: 26px; }
-/* The dashboard symbol paints with currentColor. The button never set one,
-   so the glyph would have inherited whatever the surrounding theme gave it
-   and could vanish against the blue. Pin it on the button, which is the
-   element the <use> clone inherits from. */
-#havato-app .hv-fab { color: #fff; }
-#havato-app .hv-fab .hv-fab-icon { color: #fff; }
 
 /* =========================================================================
    8. Map
@@ -1202,7 +1172,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	cursor: pointer;
 }
 .hv-subtab.is-active {
-	background: #fff;
+	background: var(--hv-card);
 	color: var(--hv-indigo);
 	box-shadow: var(--hv-shadow-soft);
 }
@@ -1214,7 +1184,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	gap: 10px;
 	padding: 10px 12px;
 	border-radius: var(--hv-radius-lg);
-	background: #fff;
+	background: var(--hv-card);
 	box-shadow: var(--hv-shadow-soft);
 }
 .hv-chat-log {
@@ -1235,7 +1205,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	border-radius: 16px;
 	font-size: 0.85rem;
 	line-height: 1.7;
-	background: #fff;
+	background: var(--hv-card);
 	box-shadow: var(--hv-shadow-soft);
 	word-break: break-word;
 }
@@ -1271,7 +1241,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 .hv-msg.has-avatar .hv-msg-bubble {
 	display: block;
-	background: #fff;
+	background: var(--hv-card);
 	border-radius: 16px;
 	padding: 9px 13px;
 	box-shadow: var(--hv-shadow-soft);
@@ -1288,7 +1258,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	gap: 4px;
 	padding: 8px;
 	margin-block-start: 6px;
-	background: #fff;
+	background: var(--hv-card);
 	border-radius: 14px;
 	box-shadow: var(--hv-shadow-soft);
 	max-block-size: 34vh;
@@ -1396,7 +1366,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	margin-block-end: 14px;
 }
 .hv-stat {
-	background: #fff;
+	background: var(--hv-card);
 	border-radius: var(--hv-radius-lg);
 	box-shadow: var(--hv-shadow-soft);
 	padding: 13px 12px;
@@ -1438,7 +1408,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	justify-content: space-between;
 	gap: 4px;
 	padding: 7px 8px;
-	background: #fff;
+	background: var(--hv-card);
 }
 .hv-photo-btn {
 	display: inline-flex;
@@ -1515,7 +1485,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	block-size: 26px;
 	margin-block-start: -9px;
 	border-radius: 50%;
-	background: #fff;
+	background: var(--hv-card);
 	border: 3px solid var(--hv-blue);
 	box-shadow: 0 4px 12px rgba(62, 139, 255, 0.4);
 }
@@ -1523,7 +1493,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	inline-size: 22px;
 	block-size: 22px;
 	border-radius: 50%;
-	background: #fff;
+	background: var(--hv-card);
 	border: 3px solid var(--hv-blue);
 }
 .hv-range-scale {
@@ -1550,7 +1520,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	min-block-size: 52px;
 	border-radius: 16px;
 	border: 1.5px solid rgba(27, 31, 191, 0.16);
-	background: #fff;
+	background: var(--hv-card);
 	color: var(--hv-text);
 	font-size: 0.86rem;
 	font-weight: 700;
@@ -1580,7 +1550,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 /* Danger zone: visually separated so account deletion is never a stray tap. */
 .hv-danger {
 	border: 1.5px solid #fecaca;
-	background: #fffafa;
+	background: var(--hv-card-danger);
 }
 .hv-danger-title { color: #b91c1c; }
 #havato-app .hv-btn-danger {
@@ -1650,7 +1620,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
    ====================================================================== */
 .hv-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 11px; }
 .hv-kpi {
-	background: #fff;
+	background: var(--hv-card);
 	border-radius: var(--hv-radius-xl);
 	box-shadow: var(--hv-shadow-card);
 	padding: 15px;
@@ -1667,6 +1637,164 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	margin-block-start: 9px;
 }
 .hv-progress span { display: block; block-size: 100%; background: linear-gradient(90deg, var(--hv-blue), var(--hv-indigo)); }
+
+/* =========================================================================
+   HOME
+   ====================================================================== */
+.hv-home-title {
+	font-size: 1.02rem;
+	font-weight: 800;
+	margin-block: 4px 10px;
+}
+.hv-home-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-block-start: 20px;
+}
+.hv-home-head .hv-home-title { margin-block: 0; }
+.hv-home-viewall {
+	border: 0;
+	background: transparent;
+	color: var(--hv-indigo);
+	font-family: inherit;
+	font-size: 0.82rem;
+	font-weight: 700;
+	cursor: pointer;
+	padding: 4px 2px;
+}
+.hv-home-empty { text-align: center; }
+
+/* ---- the hero "your next table" card ---- */
+.hv-next-card {
+	display: flex;
+	gap: 12px;
+	align-items: stretch;
+	background: var(--hv-card);
+	border: 1px solid var(--hv-card-border);
+	border-radius: var(--hv-radius-xl);
+	padding: 14px;
+	margin-block-end: 10px;
+	box-shadow: var(--hv-shadow-card);
+	cursor: pointer;
+}
+.hv-next-thumb {
+	inline-size: 84px;
+	block-size: 84px;
+	flex: 0 0 auto;
+	border-radius: 18px;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: linear-gradient(140deg, var(--hv-indigo-2), var(--hv-indigo));
+	color: #fff;
+}
+.hv-next-thumb img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.hv-next-body { flex: 1 1 auto; min-inline-size: 0; }
+.hv-next-venue { font-size: 1.05rem; font-weight: 800; }
+.hv-next-when {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.82rem;
+	color: var(--hv-text-soft);
+	margin-block-start: 4px;
+}
+.hv-next-dot { opacity: 0.5; }
+.hv-next-topic { margin-block-start: 8px; }
+.hv-next-topic-label {
+	display: block;
+	font-size: 0.66rem;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--hv-text-soft);
+}
+.hv-next-topic-value {
+	display: block;
+	font-size: 0.95rem;
+	font-weight: 800;
+	color: var(--hv-indigo);
+	margin-block-start: 1px;
+}
+.hv-next-foot {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-block-start: 10px;
+}
+
+/* ---- horizontal discover rail ---- */
+.hv-rail {
+	display: flex;
+	gap: 12px;
+	overflow-x: auto;
+	padding-block-end: 6px;
+	/* Each tile snaps into place so a swipe never leaves one half-shown. */
+	scroll-snap-type: x mandatory;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+}
+.hv-rail::-webkit-scrollbar { display: none; }
+.hv-tile {
+	flex: 0 0 auto;
+	inline-size: 63%;
+	max-inline-size: 230px;
+	scroll-snap-align: start;
+	background: var(--hv-card);
+	border: 1px solid var(--hv-card-border);
+	border-radius: var(--hv-radius-xl);
+	overflow: hidden;
+	box-shadow: var(--hv-shadow-card);
+	display: flex;
+	flex-direction: column;
+}
+.hv-tile-top { block-size: 108px; overflow: hidden; }
+.hv-tile-img { inline-size: 100%; block-size: 100%; object-fit: cover; display: block; }
+.hv-tile-img.is-empty {
+	display: grid;
+	place-items: center;
+	background: linear-gradient(140deg, var(--hv-indigo-2), var(--hv-indigo));
+	color: #fff;
+}
+.hv-tile-body { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; }
+.hv-tile-title {
+	font-size: 0.94rem;
+	font-weight: 800;
+	/* Two lines maximum, so tiles in a row keep the same height. */
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.hv-tile-meta { font-size: 0.76rem; color: var(--hv-text-soft); }
+.hv-tile-btn { margin-block-start: auto; inline-size: 100%; }
+
+/* ---- shortcut row ---- */
+.hv-quick {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 10px;
+	margin-block-start: 20px;
+}
+.hv-quick-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 14px 6px;
+	border: 1px solid var(--hv-line);
+	border-radius: 18px;
+	background: var(--hv-card);
+	color: var(--hv-text);
+	font-family: inherit;
+	font-size: 0.74rem;
+	font-weight: 700;
+	cursor: pointer;
+}
+.hv-quick-btn svg { inline-size: 22px; block-size: 22px; color: var(--hv-indigo); }
+.hv-quick-btn:active { transform: scale(0.97); }
 
 /* ------------------------------------------------- event page ---------- */
 .hv-event-subject {
@@ -1702,7 +1830,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	gap: 11px;
 	padding: 11px;
 	border-radius: var(--hv-radius-lg);
-	background: #fff;
+	background: var(--hv-card);
 	box-shadow: var(--hv-shadow-soft);
 	margin-block-end: 10px;
 }
@@ -1789,7 +1917,7 @@ img.hv-menu-thumb {
 }
 .hv-input-flush:hover { background: var(--hv-card-2); }
 .hv-input-flush:focus {
-	background: #fff;
+	background: var(--hv-card);
 	border-color: var(--hv-blue);
 }
 .hv-menu-edit-price .hv-input-flush { font-weight: 600; color: var(--hv-indigo); }

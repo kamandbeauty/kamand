@@ -79,7 +79,8 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 		</div>
 	</main>
 
-	<!-- Wave-shaped bottom navigation with the floating action button -->
+	<!-- Bottom navigation. The bar is a plain rounded panel since v1.31.0 —
+	     the notch existed only to seat the floating button. -->
 	<nav class="hv-bottom-nav" id="hv-bottom-nav" aria-label="main">
 		<svg class="hv-wave" viewBox="0 0 390 84" preserveAspectRatio="none" aria-hidden="true">
 			<defs>
@@ -92,20 +93,14 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 					<stop class="hv-wave-3" offset="100%" stop-color="#141A6E"/>
 				</linearGradient>
 			</defs>
-			<!-- The notch is deliberately only slightly wider than the floating
-			     button (which is ~59px on a 390pt phone). The previous curve was
-			     118px wide, so the page background showed through on both sides
-			     of the button and read as a pale box behind the active tab. -->
-			<path d="M0,16 L157,16 C168,16 170,3 180,1 C185,0 205,0 210,1 C220,3 222,16 233,16 L390,16 L390,84 L0,84 Z"
-				fill="url(#hvWaveGrad)"></path>
+			<!-- Flat top edge: the notch was cut for the floating button and
+			     would now show the page through a gap above the middle tab. -->
+			<path d="M0,16 L390,16 L390,84 L0,84 Z" fill="url(#hvWaveGrad)"></path>
 		</svg>
 
-		<button type="button" class="hv-fab" id="hv-fab" aria-label="dashboard">
-			<svg class="hv-fab-icon" viewBox="0 0 24 24" aria-hidden="true">
-				<use href="#hv-i-nav-dashboard"></use>
-			</svg>
-		</button>
-
+		<!-- The floating button is gone as of v1.31.0: its job (the guest's
+		     dashboard) became the Home tab, and five tabs leave no room for
+		     a notch in the middle of the bar. -->
 		<div class="hv-tabs" id="hv-tabs" role="tablist"></div>
 	</nav>
 

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.30.0
+Stable tag: 1.31.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,32 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.31.0 =
+* New "Galaxy" theme: a dark violet night palette, added alongside the six
+  light ones rather than replacing them. Azure remains the default, so
+  nothing changes until an administrator picks Galaxy on the Appearance
+  screen — and switching back is one click.
+* The theme engine now supports dark palettes properly. A palette can declare
+  itself dark (or be detected from a dark canvas) and the surfaces invert:
+  cards become lighter than the page instead of white, borders become
+  visible, and body text is corrected for contrast against the card it sits
+  on rather than the page behind it. Twenty hardcoded white backgrounds in
+  the stylesheet became tokens, so every panel follows the palette.
+* The bottom bar has five tabs — Home, Explore, My Tables, Chats, Profile —
+  and the floating round button is gone. That button changed meaning on every
+  tab with nothing on screen to say what it would do; its last job, the
+  dashboard, is now a labelled tab. The notch it sat in has been removed too,
+  since with five tabs it would cut a hole above the middle one.
+* The map is no longer a tab of its own. It is the same tables seen another
+  way, so it is a sub-tab of Explore. Old links to it still work and light up
+  the Explore tab rather than none of them.
+* New Home screen: your next table as a full card, a horizontal rail of
+  tables to discover, and three shortcuts. Tables you have already booked are
+  not offered again in the rail.
+* New "My Tables" tab: your upcoming bookings and the suggestions you have
+  sent, with the café's reply.
+* Events are now boxed cards throughout, with the topic labelled.
 
 = 1.30.0 =
 * The booking cutoff is now a setting on the Matching weights screen, next to

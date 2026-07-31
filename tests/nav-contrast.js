@@ -29,11 +29,20 @@ t('colourful sprite kept for cards elsewhere', /url\(#hvGradPink\)/.test(ico));
 
 console.log('\n--- tabs actually reference them ---');
 // Only guest tabs remain in the web app; the café owner panel is in wp-admin.
-for (const [tab,icon] of [['explore','nav-explore'],['map','nav-map'],['chats','nav-chat'],
+// Five tabs since 1.31.0 — map moved inside Explore and no longer has one.
+for (const [tab,icon] of [['home','nav-dashboard'],['explore','nav-explore'],
+                          ['tables','nav-calendar'],['chats','nav-chat'],
                           ['profile','nav-profile']])
   t(`${tab} -> ${icon}`, new RegExp(`id: '${tab}'[^}]*icon: '${icon}'`).test(js));
 t('no tab still points at a gradient icon',
-  !/id: '(explore|map|chats|profile)'[^}]*icon: '(explore|map|chat|profile)'/.test(js));
+  !/id: '(home|explore|tables|chats|profile)'[^}]*icon: '(explore|map|chat|profile|dashboard|calendar)'/.test(js));
+
+// Every nav icon must paint with currentColor, or the active/inactive state
+// cannot drive it on the dark bar.
+for (const sym of ['nav-dashboard','nav-explore','nav-calendar','nav-chat','nav-profile']) {
+  const block = ico.slice(ico.indexOf(`id="hv-i-${sym}"`), ico.indexOf('</symbol>', ico.indexOf(`id="hv-i-${sym}"`)));
+  t(`${sym} uses currentColor`, /currentColor/.test(block));
+}
 
 console.log('\n--- computed contrast on the nav gradient ---');
 const lum=([r,g,b])=>{const a=[r,g,b].map(v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
