@@ -130,7 +130,14 @@ console.log('\n--- 5. a guest suggests a gathering ---');
 
 t('a table stores suggestions', /CREATE TABLE \{\$p\}event_requests/.test(db));
 t('it is registered so it gets created', /'event_requests',/.test(db));
-t('the schema was bumped', /HAVATO_DB_VERSION', '1\.15\.0'/.test(main));
+// event_requests landed in schema 1.15.0. Later releases keep bumping this,
+// so assert the floor rather than pinning the exact value.
+t('the schema is at or past the event_requests table', (() => {
+  const m = /HAVATO_DB_VERSION', '(\d+)\.(\d+)\.(\d+)'/.exec(main);
+  if (!m) { return false; }
+  const [, major, minor] = m.map(Number);
+  return major > 1 || (major === 1 && minor >= 15);
+})());
 t('an endpoint receives them', /'event\/request'      => array\( 'POST', 'request_event', \$auth \)/.test(rest));
 t('the handler exists', /public static function request_event/.test(rest));
 

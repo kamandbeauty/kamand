@@ -1066,6 +1066,14 @@ class Havato_Owner_Admin {
 			esc_textarea( $venue['address'] )
 		);
 
+		// Shown to a guest on the event page, before they decide to book.
+		printf(
+			'<label class="hv-adm-block-label">%s<textarea name="description" rows="4" maxlength="1000" placeholder="%s">%s</textarea></label>',
+			esc_html( Havato_I18N::t( 'venue_about' ) ),
+			esc_attr( Havato_I18N::t( 'venue_about_hint' ) ),
+			esc_textarea( isset( $venue['description'] ) ? (string) $venue['description'] : '' )
+		);
+
 		// Cover image via the WordPress media library.
 		echo '<div class="hv-adm-cover">';
 		echo '<label class="hv-adm-block-label">' . esc_html( Havato_I18N::t( 'cover_image' ) ) . '</label>';
@@ -1244,8 +1252,10 @@ class Havato_Owner_Admin {
 						$req->set_param( $key, sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) );
 					}
 				}
-				if ( isset( $_POST['address'] ) ) {
-					$req->set_param( 'address', sanitize_textarea_field( wp_unslash( $_POST['address'] ) ) );
+				foreach ( array( 'address', 'description' ) as $key ) {
+					if ( isset( $_POST[ $key ] ) ) {
+						$req->set_param( $key, sanitize_textarea_field( wp_unslash( $_POST[ $key ] ) ) );
+					}
 				}
 				if ( isset( $_POST['image'] ) ) {
 					$req->set_param( 'image', esc_url_raw( wp_unslash( $_POST['image'] ) ) );

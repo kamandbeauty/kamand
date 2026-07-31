@@ -113,6 +113,7 @@ class Havato_DB {
 			country varchar(8) NOT NULL DEFAULT 'ir',
 			city varchar(32) NOT NULL DEFAULT 'tehran',
 			address text NULL,
+			description text NULL,
 			lat double NOT NULL DEFAULT 0,
 			lng double NOT NULL DEFAULT 0,
 			image varchar(255) NOT NULL DEFAULT '',

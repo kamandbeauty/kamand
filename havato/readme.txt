@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.33.0
+Stable tag: 1.34.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,20 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.34.0 =
+* Fixed: the profile photo could not be changed from anywhere in the app. The
+  upload code was intact, but the button it binds to disappeared in 1.17.0
+  when the profile header was consolidated, leaving the feature unreachable.
+  Your own profile now has a photo card showing the current picture, or your
+  initials if you have none, with a "Change photo" button beside it.
+* Cafés can now write a description of themselves, shown on the event page
+  above the address. Previously the page described the gathering but said
+  nothing about the venue beyond a street address, which is thin for someone
+  deciding whether to spend an evening there. Schema 1.16.0 adds the column.
+* The event page therefore now carries both descriptions: what the gathering
+  is, and what the café is like. Either is left out if empty, rather than
+  printing a heading over nothing.
 
 = 1.33.0 =
 * The event page now shows the café's written address in its own block,

@@ -1898,6 +1898,30 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	font-variant-numeric: tabular-nums;
 }
 .hv-countdown.is-live { color: #067a55; }
+/* ---- profile photo card ---- */
+.hv-avatar-card {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.hv-avatar-preview {
+	inline-size: 56px;
+	block-size: 56px;
+	flex: 0 0 auto;
+	border-radius: 50%;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: linear-gradient(140deg, var(--hv-indigo-2), var(--hv-indigo));
+	color: #fff;
+	font-weight: 800;
+	font-size: 1.2rem;
+}
+.hv-avatar-preview img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.hv-avatar-card-body { flex: 1 1 auto; min-inline-size: 0; }
+.hv-avatar-card-title { font-size: 0.92rem; font-weight: 800; }
+.hv-avatar-card-body p { font-size: 0.76rem; margin-block-start: 2px; }
+
 /* The café's written address and the way out to a navigation app. Boxed so
    the address and its button read as one thing rather than a stray line. */
 .hv-venue-block {

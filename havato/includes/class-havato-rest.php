@@ -3097,6 +3097,7 @@ class Havato_REST {
 			'country'      => '%s',
 			'city'         => '%s',
 			'address'     => '%s',
+			'description' => '%s',
 			'image'       => '%s',
 			'storefront_photo' => '%s',
 			'quiet_hours' => '%s',
@@ -3116,6 +3117,10 @@ class Havato_REST {
 				$fields[ $key ] = esc_url_raw( (string) $value );
 			} elseif ( 'address' === $key ) {
 				$fields[ $key ] = havato_clamp_text( sanitize_textarea_field( (string) $value ), 300 );
+			} elseif ( 'description' === $key ) {
+				// Free text shown to guests: clamped like every other, and a
+				// little longer than the address since it is a description.
+				$fields[ $key ] = havato_clamp_text( sanitize_textarea_field( (string) $value ), 1000 );
 			} elseif ( 'manager_name' === $key ) {
 				$fields[ $key ] = sanitize_text_field( (string) $value );
 			} elseif ( 'manager_phone' === $key ) {
@@ -3603,6 +3608,9 @@ class Havato_REST {
 			'storefront'    => isset( $row['storefront_photo'] ) ? $row['storefront_photo'] : '',
 			'city_label'    => havato_city_label( isset( $row['city'] ) ? $row['city'] : '' ),
 			'address'       => $row['address'],
+			// The café's own words about itself, shown to a guest deciding
+			// whether to book. Public, so it goes out regardless of $private.
+			'description'   => isset( $row['description'] ) ? (string) $row['description'] : '',
 			'lat'           => (float) $row['lat'],
 			'lng'           => (float) $row['lng'],
 			'image'         => $row['image'],

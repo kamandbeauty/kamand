@@ -1600,8 +1600,12 @@
 						'<p class="hv-event-desc">' + esc(event.description) + '</p>'
 					: '') +
 
-				// The café, its written address, and a way to be taken there.
+				// The café: what it says about itself, then where it is and
+				// how to get there.
 				'<h4 class="hv-section-title">' + esc(t('about_venue')) + '</h4>' +
+				(venue.description
+					? '<p class="hv-event-desc">' + esc(venue.description) + '</p>'
+					: '') +
 				'<div class="hv-venue-block">' +
 					'<div class="hv-venue-line">' +
 						icon('map', 'hv-venue-icon') +
@@ -2479,6 +2483,24 @@
 			html += profileHeadMarkup(profile);
 
 			if (profile.is_self) {
+				// The profile photo. The upload handler has existed since the
+				// beginning, but the button it looks for was lost in 1.17.0
+				// when the profile header was consolidated — so the avatar
+				// could not be changed from anywhere in the app.
+				html += '<div class="hv-card hv-avatar-card">' +
+					'<span class="hv-avatar-preview">' +
+						(profile.user && profile.user.avatar
+							? '<img src="' + esc(profile.user.avatar) + '" alt="">'
+							: '<span class="hv-avatar-fallback">' + esc(initials(profile.user && profile.user.name)) + '</span>') +
+					'</span>' +
+					'<div class="hv-avatar-card-body">' +
+						'<div class="hv-avatar-card-title">' + esc(t('profile_photo')) + '</div>' +
+						'<p class="hv-muted">' + esc(t('profile_photo_hint')) + '</p>' +
+					'</div>' +
+					'<button type="button" class="hv-btn hv-btn-ghost hv-btn-sm" id="hv-avatar-upload">' +
+						esc(t('change_photo')) + '</button>' +
+				'</div>';
+
 				html += statsMarkup(profile);
 
 				// "Edit my details" is permanent: name/age/city change over
