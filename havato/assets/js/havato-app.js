@@ -981,13 +981,22 @@
 					? '<div class="hv-rail">' + discover.map(discoverTile).join('') + '</div>'
 					: '<p class="hv-muted">' + esc(S.city ? t('city_empty') : t('explore_empty')) + '</p>') +
 
+				// Four shortcuts in a 2x2 grid. Each carries an arrow so it
+				// reads as somewhere to go rather than a button that acts.
+				'<h3 class="hv-home-title hv-mt">' + esc(t('quick_actions')) + '</h3>' +
 				'<div class="hv-quick">' +
-					'<button type="button" class="hv-quick-btn" data-quick="suggest">' +
-						icon('plus') + '<span>' + esc(t('suggest_event')) + '</span></button>' +
-					'<button type="button" class="hv-quick-btn" data-quick="tables">' +
-						icon('calendar') + '<span>' + esc(t('tab_my_tables')) + '</span></button>' +
-					'<button type="button" class="hv-quick-btn" data-quick="chats">' +
-						icon('chat') + '<span>' + esc(t('tab_chats')) + '</span></button>' +
+					quickCard('explore', 'explore', t('quick_browse')) +
+					quickCard('suggest', 'plus', t('quick_host')) +
+					quickCard('tables', 'users', t('tab_my_tables')) +
+					quickCard('chats', 'chat', t('tab_chats')) +
+				'</div>' +
+
+				// A short activity summary. Deliberately only two numbers:
+				// what is coming up, and what has actually been attended.
+				'<h3 class="hv-home-title hv-mt">' + esc(t('activity_summary')) + '</h3>' +
+				'<div class="hv-summary">' +
+					summaryRow('calendar', t('dash_upcoming'), dash.stats && dash.stats.upcoming) +
+					summaryRow('users', t('stat_attended'), dash.stats && dash.stats.attended) +
 				'</div>';
 
 			$$('[data-go-explore]').forEach(function (b) {
@@ -1071,6 +1080,27 @@
 					'</div>' +
 				'</div>' +
 			'</article>';
+	}
+
+	/** One shortcut card: an icon, a label, and an arrow into that screen. */
+	function quickCard(target, iconId, label) {
+		// The arrow points the way the language runs, so it never appears to
+		// send an RTL reader backwards.
+		var arrow = 'rtl' === S.dir ? '←' : '→';
+		return '<button type="button" class="hv-quick-btn" data-quick="' + esc(target) + '">' +
+			'<span class="hv-quick-icon">' + icon(iconId) + '</span>' +
+			'<span class="hv-quick-label">' + esc(label) + '</span>' +
+			'<span class="hv-quick-arrow" aria-hidden="true">' + arrow + '</span>' +
+		'</button>';
+	}
+
+	/** One line of the activity summary. */
+	function summaryRow(iconId, label, value) {
+		return '<div class="hv-summary-row">' +
+			'<span class="hv-summary-icon">' + icon(iconId) + '</span>' +
+			'<span class="hv-summary-label">' + esc(label) + '</span>' +
+			'<span class="hv-summary-value">' + num(parseInt(value, 10) || 0) + '</span>' +
+		'</div>';
 	}
 
 	/** One tile in the horizontal Discover rail. */

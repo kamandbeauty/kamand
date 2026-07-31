@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.31.1
+Stable tag: 1.32.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,19 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.32.0 =
+* The Home screen gains a "Quick actions" block: four cards in a 2x2 grid —
+  browse gatherings, host one, my tables, chats — each with an arrow, so they
+  read as somewhere to go rather than buttons that act. The arrow points the
+  way the language runs, so it never appears to send a Persian reader
+  backwards.
+* Below it, an "Activity summary": how many gatherings are coming up, and how
+  many have actually been attended. The second figure is counted when a café
+  checks the guest in rather than when they book, so it cannot flatter
+  somebody who reserves a seat and never turns up.
+* A missing figure shows zero rather than an empty space, and the two numbers
+  use tabular figures so they line up between rows.
 
 = 1.31.1 =
 * Fixed: the bottom bar still divided itself into four columns after gaining

@@ -792,6 +792,10 @@ class Havato_REST {
 					'upcoming'  => count( $upcoming ),
 					'rating'    => round( havato_effective_rating( $profile ), 1 ),
 					'requests'  => count( $requests ),
+					// Gatherings actually sat through, counted when the café
+					// checks the guest in — not the number booked, which would
+					// flatter anyone who books and never turns up.
+					'attended'  => (int) $profile['attended_count'],
 				),
 				'upcoming'  => $upcoming,
 				'requests'  => $requests,

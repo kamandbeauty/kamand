@@ -64,7 +64,7 @@ const rtl = (x, y, s, sz, w, fill, op) =>
 const ctr = (x, y, s, sz, w, fill, op) =>
   `<text x="${x}" y="${y}" font-family="Vazirmatn" font-size="${sz}" font-weight="${w}" fill="${fill}"${op ? ` fill-opacity="${op}"` : ''} direction="rtl" text-anchor="middle">${esc(s)}</text>`;
 
-const W = 760, H = 1450;
+const W = 760, H = 1620;
 let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
 s += `<defs>
   <linearGradient id="thumb" x1="0" y1="0" x2="1" y2="1">
@@ -141,15 +141,33 @@ const tileW = 218, tileH = 266, gap = 14;
   s += ctr(x + tileW / 2, y + 245, fa('join_event'), 14, 700, '#ffffff');
 });
 
-// ---- shortcuts ----
-y += tileH + 30;
-const qw = (W - 56 - 20) / 3;
-[[fa('suggest_event'), '＋'], [fa('tab_my_tables'), '▤'], [fa('tab_chats'), '💬']].forEach(([label, glyph], i) => {
-  const x = 28 + (2 - i) * (qw + 10);
-  s += `<rect x="${x}" y="${y}" width="${qw}" height="82" rx="20" fill="${T.card}" stroke="${T.light}" stroke-opacity="0.28"/>`;
-  s += ctr(x + qw / 2, y + 38, glyph, 22, 700, T.accent);
-  s += ctr(x + qw / 2, y + 64, label, 13, 700, T.text);
+// ---- quick actions: 2x2 cards with arrows ----
+y += tileH + 34;
+s += rtl(W - 28, y, fa('quick_actions'), 20, 800, T.text);
+y += 18;
+const qw2 = (W - 56 - 12) / 2, qh = 104;
+[[fa('quick_browse'), '✧'], [fa('quick_host'), '＋'],
+ [fa('tab_my_tables'), '👥'], [fa('tab_chats'), '💬']].forEach(([label, glyph], i) => {
+  const col = i % 2, row = Math.floor(i / 2);
+  const x = 28 + (1 - col) * (qw2 + 12);          // RTL: first card on the right
+  const cy = y + row * (qh + 12);
+  s += `<rect x="${x}" y="${cy}" width="${qw2}" height="${qh}" rx="20" fill="${T.card}" stroke="${T.light}" stroke-opacity="0.28"/>`;
+  s += rtl(x + qw2 - 16, cy + 34, glyph, 19, 700, T.accent);
+  s += rtl(x + qw2 - 16, cy + 64, label, 15, 700, T.text);
+  s += rtl(x + qw2 - 16, cy + 88, '←', 15, 700, T.accent);
 });
+
+// ---- activity summary ----
+y += qh * 2 + 12 + 34;
+s += rtl(W - 28, y, fa('activity_summary'), 20, 800, T.text);
+y += 18;
+[[fa('dash_upcoming'), '۲', '🗓'], [fa('stat_attended'), '۵', '👥']].forEach(([label, value, glyph], i) => {
+  const ry = y + i * 82;
+  s += `<rect x="28" y="${ry}" width="${W - 56}" height="70" rx="20" fill="${T.card}" stroke="${T.light}" stroke-opacity="0.28"/>`;
+  s += rtl(W - 46, ry + 43, glyph + '  ' + label, 16, 700, T.text);
+  s += `<text x="52" y="${ry + 47}" font-family="Vazirmatn" font-size="26" font-weight="800" fill="${T.text}">${value}</text>`;
+});
+y += 82 * 2;
 
 // ---- five-tab bar ----
 const navH = 112;

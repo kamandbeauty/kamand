@@ -145,7 +145,33 @@ t('the rail is capped', /\.slice\(0, 8\)/.test(js));
 t('a guest with no bookings is told what to do', /dash_no_events[\s\S]{0,200}tab_explore/.test(js));
 t('View all goes to Explore', /data-go-explore/.test(js) && /setTab\('explore'\)/.test(js));
 t('a card opens the event page', /openEvent\(node\.dataset\.openEvent\)/.test(js));
-t('three shortcuts are rendered', (js.match(/data-quick="/g) || []).length >= 3);
+// Four shortcut cards since 1.31.2, in a 2x2 grid, each with an arrow.
+(() => {
+  const block = js.slice(js.indexOf("'<div class=\"hv-quick\">'"), js.indexOf("'</div>' +", js.indexOf("'<div class=\"hv-quick\">'")));
+  const cards = [...block.matchAll(/quickCard\('(\w+)'/g)].map(m => m[1]);
+  t('four shortcuts are rendered (' + cards.join(', ') + ')', cards.length === 4);
+  t('they cover browse, host, my tables and chat',
+    cards.join(',') === 'explore,suggest,tables,chats');
+})();
+t('each carries an arrow into its screen', /hv-quick-arrow/.test(js));
+t('the arrow follows the writing direction', /'rtl' === S\.dir \? '←' : '→'/.test(js));
+t('they sit two per row', /\.hv-quick \{[\s\S]{0,320}grid-template-columns: repeat\(2, 1fr\)/.test(css));
+t('a long label is clamped so the row keeps one height', /\.hv-quick-label \{[\s\S]{0,220}-webkit-line-clamp: 2/.test(css));
+
+console.log('\n--- 4b. the activity summary ---');
+t('a summary section is rendered', /hv-summary/.test(js));
+t('it has a heading', /activity_summary/.test(js));
+t('it shows what is coming up', /summaryRow\('calendar', t\('dash_upcoming'\)/.test(js));
+t('…and what was actually attended', /summaryRow\('users', t\('stat_attended'\)/.test(js));
+t('the server sends the attended count', /'attended'  => \(int\) \$profile\['attended_count'\]/.test(rd('includes/class-havato-rest.php')));
+t('…counted at check-in, not at booking', /flatter anyone who books and never turns up/.test(rd('includes/class-havato-rest.php')));
+t('a missing figure shows zero rather than blank', /num\(parseInt\(value, 10\) \|\| 0\)/.test(js));
+t('the numbers line up between rows', /\.hv-summary-value \{[\s\S]{0,220}tabular-nums/.test(css));
+
+for (const k of ['quick_actions', 'activity_summary', 'quick_browse', 'quick_host']) {
+  t('i18n "' + k + '" trilingual',
+    new RegExp("'" + k + "'\\s*=> array\\( 'fa' =>.*'en' =>.*'tr' =>").test(i18n));
+}
 t('the suggest shortcut opens the suggestion form', /openSuggestEvent\(\(S\.data\.dashboard && S\.data\.dashboard\.venues\) \|\| \[\]\)/.test(js));
 
 console.log('\n--- 5. My Tables ---');

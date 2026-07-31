@@ -1818,27 +1818,63 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 /* ---- shortcut row ---- */
 .hv-quick {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	/* Two per row: four shortcuts on one line would leave labels like
+	   "پیشنهاد دورهمی به کافه" too narrow to read. */
+	grid-template-columns: repeat(2, 1fr);
 	gap: 10px;
-	margin-block-start: 20px;
 }
 .hv-quick-btn {
 	display: flex;
 	flex-direction: column;
-	align-items: center;
-	gap: 6px;
-	padding: 14px 6px;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 16px 14px;
 	border: 1px solid var(--hv-line);
-	border-radius: 18px;
+	border-radius: 20px;
 	background: var(--hv-card);
 	color: var(--hv-text);
 	font-family: inherit;
-	font-size: 0.74rem;
+	font-size: 0.82rem;
 	font-weight: 700;
+	text-align: start;
 	cursor: pointer;
 }
-.hv-quick-btn svg { inline-size: 22px; block-size: 22px; color: var(--hv-indigo); }
+.hv-quick-icon svg { inline-size: 22px; block-size: 22px; color: var(--hv-indigo); }
+.hv-quick-label {
+	/* Two lines maximum so the cards in a row keep the same height. */
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	line-height: 1.5;
+}
+.hv-quick-arrow {
+	margin-block-start: auto;
+	font-size: 0.95rem;
+	color: var(--hv-indigo);
+	line-height: 1;
+}
 .hv-quick-btn:active { transform: scale(0.97); }
+
+/* ---- activity summary ---- */
+.hv-summary { display: grid; gap: 10px; }
+.hv-summary-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 16px 16px;
+	border: 1px solid var(--hv-line);
+	border-radius: 20px;
+	background: var(--hv-card);
+}
+.hv-summary-icon svg { inline-size: 20px; block-size: 20px; color: var(--hv-indigo); display: block; }
+.hv-summary-label { flex: 1 1 auto; font-size: 0.86rem; font-weight: 700; }
+.hv-summary-value {
+	font-size: 1.5rem;
+	font-weight: 800;
+	/* Tabular figures so two rows of numbers line up. */
+	font-variant-numeric: tabular-nums;
+}
 
 /* ------------------------------------------------- event page ---------- */
 .hv-event-subject {
