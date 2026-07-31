@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.32.0
+Stable tag: 1.33.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,20 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.33.0 =
+* The event page now shows the café's written address in its own block,
+  together with a Directions button that hands the venue to whatever
+  navigation app the phone has — Google Maps, Waze or Neshan on Android, and
+  Apple or Google Maps on iOS. Previously the address was a single grey line
+  with no way to act on it, so a guest had to copy it out by hand.
+* A café that has not been placed on the map yet still gets a working button:
+  the typed address is handed over as a search instead of coordinates. Only a
+  café with neither a pin nor an address shows no button, and in that case
+  the page says the address is missing rather than leaving a blank space.
+* Persian addresses are percent-encoded before going into the URL. A raw
+  right-to-left string in a `geo:` link is mishandled by some Android
+  launchers, which would open the map app on nothing.
 
 = 1.32.0 =
 * The Home screen gains a "Quick actions" block: four cards in a 2x2 grid —

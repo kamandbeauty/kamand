@@ -70,7 +70,54 @@ t('the subject', /hv-event-subject/.test(js));
 t('the date, weekday and time',
   /eventWeekday\(event\)\) \+ ' · ' \+ esc\(eventDate\(event\)\) \+ ' · ' \+ num\(event\.time\)/.test(js));
 t('the description', /event\.description[\s\S]{0,160}hv-event-desc/.test(js));
-t('the café address', /venue\.address \? '<p class="hv-muted">'/.test(js));
+console.log('\n--- 3b. the address and the way there (v1.33.0) ---');
+
+t('the café address is shown', /hv-venue-address/.test(js));
+t('…in its own block with the name', /hv-venue-name/.test(js) && /hv-venue-block/.test(js));
+t('a café with no address says so rather than showing a gap', /address_missing/.test(js));
+t('…and that message is trilingual',
+  /'address_missing'\s*=> array\( 'fa' =>.*'en' =>.*'tr' =>/.test(i18n));
+t('a directions button is offered', /esc\(t\('directions'\)\)/.test(js));
+t('it is built from the venue pin and address',
+  /directionsUrl\(venue\.lat, venue\.lng,[\s\S]{0,80}venue\.address\)/.test(js));
+t('it opens outside the app', /target="_blank" rel="noopener"/.test(js));
+t('a long address wraps instead of widening the card', /overflow-wrap: anywhere/.test(css));
+
+(() => {
+  // A café that has never been placed on the map still has a typed address,
+  // and that is enough for a map app to search — so the button must not
+  // simply disappear.
+  function url(lat, lng, label, address, isIOS) {
+    lat = parseFloat(lat); lng = parseFloat(lng);
+    if (!lat || !lng) {
+      var q = String(address || '').trim();
+      if (!q) { return ''; }
+      if (label) { q = label + '، ' + q; }
+      return isIOS ? 'https://maps.google.com/?q=' + encodeURIComponent(q)
+                   : 'geo:0,0?q=' + encodeURIComponent(q);
+    }
+    if (isIOS) { return 'https://maps.google.com/?q=' + lat + ',' + lng; }
+    return 'geo:' + lat + ',' + lng + '?q=' + lat + ',' + lng +
+      (label ? '(' + encodeURIComponent(label) + ')' : '');
+  }
+  const ADDR = 'تهران، خیابان ولیعصر';
+
+  t('a pinned café gets a geo: URI on Android',
+    url(35.7219, 51.3347, 'کافه', ADDR, false).indexOf('geo:35.7219,51.3347') === 0);
+  t('…and an https URL on iOS, which ignores geo:',
+    url(35.7219, 51.3347, 'کافه', ADDR, true).indexOf('https://maps.google.com/') === 0);
+  t('an unpinned café falls back to searching the address',
+    url(0, 0, 'کافه', ADDR, false).indexOf('geo:0,0?q=') === 0);
+  t('…on iOS too', url(0, 0, 'کافه', ADDR, true).indexOf('https://maps.google.com/?q=') === 0);
+  t('with neither pin nor address there is no button', url(0, 0, '', '', false) === '');
+
+  // A raw Persian address in a URL breaks on some Android launchers.
+  const android = url(0, 0, 'کافه', ADDR, false);
+  t('the address is percent-encoded, never raw', !/[\u0600-\u06FF]/.test(android));
+  t('…and the café name travels with it', android.indexOf('%') !== -1);
+})();
+
+t('the fallback is explained', /A typed address is still enough for a map app/.test(js));
 t('the menu', /venue\.menu \|\| \[\]/.test(js));
 t('…with prices', /pick\(item\.price_label\)/.test(js));
 t('…and the display-only notice', /menu_display_only/.test(js));

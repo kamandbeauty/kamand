@@ -1306,12 +1306,24 @@
 	 * all register for it. iOS ignores geo:, so fall back to a plain Google
 	 * Maps URL there, which iOS hands to Apple Maps or Google Maps.
 	 */
-	function directionsUrl(lat, lng, label) {
+	function directionsUrl(lat, lng, label, address) {
 		lat = parseFloat(lat);
 		lng = parseFloat(lng);
-		if (!lat || !lng) { return ''; }
 
 		var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '');
+
+		// No pin on file. A typed address is still enough for a map app to
+		// search, and it is what the café actually wrote — better than no
+		// button at all on a venue nobody has placed on the map yet.
+		if (!lat || !lng) {
+			var query = String(address || '').trim();
+			if (!query) { return ''; }
+			if (label) { query = label + '، ' + query; }
+			return isIOS
+				? 'https://maps.google.com/?q=' + encodeURIComponent(query)
+				: 'geo:0,0?q=' + encodeURIComponent(query);
+		}
+
 		if (isIOS) {
 			return 'https://maps.google.com/?q=' + lat + ',' + lng;
 		}
@@ -1520,6 +1532,10 @@
 			var event = res.event || {};
 			var venue = res.venue || {};
 			var subject = (event.title && String(event.title).trim()) || event.theme || '';
+			// Prefer the venue's own pin; fall back to the typed address so a
+			// café that has not been placed on the map is still findable.
+			var maps = directionsUrl(venue.lat, venue.lng,
+				pick(venue.name) || pick(event.venue), venue.address);
 
 			var hero = event.image
 				? '<img class="hv-modal-hero" src="' + esc(event.image) + '" alt="">'
@@ -1584,11 +1600,27 @@
 						'<p class="hv-event-desc">' + esc(event.description) + '</p>'
 					: '') +
 
-				// The café
+				// The café, its written address, and a way to be taken there.
 				'<h4 class="hv-section-title">' + esc(t('about_venue')) + '</h4>' +
-				(venue.address ? '<p class="hv-muted">' + esc(venue.address) + '</p>' : '') +
+				'<div class="hv-venue-block">' +
+					'<div class="hv-venue-line">' +
+						icon('map', 'hv-venue-icon') +
+						'<div>' +
+							'<div class="hv-venue-name">' + esc(pick(venue.name) || pick(event.venue)) + '</div>' +
+							(venue.address
+								? '<div class="hv-venue-address">' + esc(venue.address) + '</div>'
+								: '<div class="hv-venue-address hv-muted">' + esc(t('address_missing')) + '</div>') +
+						'</div>' +
+					'</div>' +
+					(maps
+						// Hands the café off to whatever navigation app the
+						// phone actually has, rather than a map inside here.
+						? '<a class="hv-btn hv-btn-blue hv-btn-block hv-mt" href="' + esc(maps) + '" ' +
+							'target="_blank" rel="noopener">' + esc(t('directions')) + '</a>'
+						: '') +
+				'</div>' +
 				(venue.quiet_hours
-					? '<p class="hv-muted">' + esc(t('quiet_hours')) + ': ' + num(venue.quiet_hours) + '</p>'
+					? '<p class="hv-muted hv-mt">' + esc(t('quiet_hours')) + ': ' + num(venue.quiet_hours) + '</p>'
 					: '') +
 
 				// Menu

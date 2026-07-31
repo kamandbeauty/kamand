@@ -63,7 +63,7 @@ function wrap(text, perLine) {
   return lines;
 }
 
-const W = 720, H = 1480;
+const W = 720, H = 1600;
 const RASP = { base: '#c2185b', deep: '#8e1246', canvas: '#fff5f8' };
 const INDIGO = '#4a2fd6';
 
@@ -146,11 +146,18 @@ wrap(firstDesc, 46).slice(0, 3).forEach(line => {
   s += rtl(W - 48, iy, line, 16, 400, '#16204a');
 });
 
-// venue
+// venue: name, typed address, and a directions button
 iy += 40;
 s += rtl(W - 48, iy, fa('about_venue'), 19, 800, '#0a2a6b');
-iy += 28;
-s += rtl(W - 48, iy, 'تهران، خیابان ولیعصر، نبش کوچه نیلوفر', 16, 400, '#6b74a0');
+iy += 14;
+const vbH = 132;
+s += `<rect x="48" y="${iy}" width="${cardW - 48}" height="${vbH}" rx="16" fill="#f1f4fd"/>`;
+s += rtl(W - 66, iy + 32, '📍  کافه دالون', 17, 800, '#16204a');
+s += rtl(W - 66, iy + 58, 'تهران، خیابان ولیعصر، نبش کوچه', 15, 400, '#6b74a0');
+s += rtl(W - 66, iy + 80, 'نیلوفر، پلاک ۱۲', 15, 400, '#6b74a0');
+s += `<rect x="66" y="${iy + 92}" width="${cardW - 84}" height="30" rx="15" fill="${INDIGO}"/>`;
+s += ctr(W / 2, iy + 113, fa('directions'), 15, 800, '#ffffff');
+iy += vbH - 14;
 
 // menu
 iy += 42;
