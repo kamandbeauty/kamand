@@ -597,9 +597,12 @@
 		return [
 			{ id: 'home', label: 'tab_home', icon: 'nav-dashboard' },
 			{ id: 'explore', label: 'tab_explore', icon: 'nav-explore' },
-			{ id: 'tables', label: 'tab_my_tables', icon: 'nav-calendar' },
+			// Short labels: five tabs share the width, and the possessive
+			// forms ("My Tables", "My Profile") were being ellipsised into
+			// "MY TABL…". The screens themselves keep the full title.
+			{ id: 'tables', label: 'nav_tables', icon: 'nav-calendar' },
 			{ id: 'chats', label: 'tab_chats', icon: 'nav-chat' },
-			{ id: 'profile', label: 'tab_profile', icon: 'nav-profile' }
+			{ id: 'profile', label: 'nav_profile', icon: 'nav-profile' }
 		];
 	}
 

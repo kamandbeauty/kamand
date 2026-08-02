@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.34.0
+Stable tag: 1.35.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,41 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.35.0 =
+* Fixed: in the English and Turkish builds the type was oversized and the
+  layout looked scattered, with bottom-bar labels truncated to "MY TABL…" and
+  "MY PROF…". Four separate faults were stacking up, all of them invisible in
+  Persian, which is why the report only ever mentioned the English version:
+* 1. `#havato-app button { font: inherit }` used the font SHORTHAND, which
+  also resets font-size. At id weight (1-0-1) it outranked every component
+  rule in the stylesheet (`.hv-tab`, `.hv-btn`, `.hv-chip` … all 0-1-0), so
+  every button in the app ignored its own size and rendered at full body
+  size — nav labels included. Controls now inherit only the family and colour
+  at id weight; size, weight and line-height come through a zero-specificity
+  `:where()` rule that any component can still override.
+* 2. Every size was written in `rem`, which resolves against the host theme's
+  `<html>`, not against the plugin. A theme that sets `html{font-size:112.5%}`
+  — or Chrome's own text-scaling setting — inflated the whole app, and a
+  `clamp()` whose floor is in `rem` cannot clamp that, because the floor rises
+  along with the root. All 104 sizes now resolve against an internal token,
+  so the app renders identically whatever the surrounding page does.
+* 3. The host theme's `button { text-transform: uppercase }` was uppercasing
+  our labels. Persian has no letter case, so the rule was a no-op there and
+  the damage never showed; in Latin it made every label roughly 15% wider
+  before the theme's extra tracking was counted. The app now refuses
+  text-transform, small-caps, and stray word/letter-spacing inside its own
+  shell, while keeping the four places that set tracking deliberately.
+* 4. The five-tab bar carried the possessive labels "My Tables" and
+  "My Profile", which do not fit one fifth of a phone screen. The bar now uses
+  short forms (Tables / Profile, میزها / پروفایل, Masalar / Profil); the
+  screens themselves keep their full titles.
+* Latin text is also set one step smaller than Persian (15px against 16px).
+  Vazirmatn and the system UI stack have different x-heights, so matching them
+  by em made English look larger than Persian at the same nominal size.
+* Persian rendering is byte-for-byte unchanged: the new token is 16px, exactly
+  what `rem` resolved to on a default page, and the test suite asserts that
+  each converted size still computes to its previous value.
 
 = 1.34.0 =
 * Fixed: the profile photo could not be changed from anywhere in the app. The

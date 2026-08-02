@@ -66,6 +66,25 @@
 
 	--hv-font-fa: "Vazirmatn", "Vazir", "IRANSans", system-ui, sans-serif;
 	--hv-font-en: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+	/* THE TYPE SCALE THE WHOLE APP IS MEASURED IN.
+	   Every size below is `calc(N * var(--hv-fs))` rather than `Nrem`.
+	   `rem` resolves against the <html> element, which belongs to the host
+	   WordPress theme, not to us: a theme that sets `html{font-size:62.5%}`
+	   shrinks the entire app to 10px, and one that sets 112.5% — or an
+	   Android user with Chrome's text-scaling turned up — inflates it.
+	   That is exactly the "fonts are huge" report: a clamp whose FLOOR is
+	   written in rem cannot clamp anything once the root itself grows —
+	   the floor rises past the ceiling. Anchoring every size to our own
+	   token makes the app render identically on every host.
+
+	   The value is 16px because that is the root size the design was drawn
+	   against, so `calc(0.9 * var(--hv-fs))` reproduces the old `0.9rem`
+	   exactly on a default page. The token is a fixed length, not a clamp:
+	   the BODY size is the thing that flexes with the viewport (see
+	   `.hv-app` below), and letting the ratio flex too would compound the
+	   two and shrink the small print out of legibility. */
+	--hv-fs: 16px;
 }
 
 /* =========================================================================
@@ -91,7 +110,22 @@
 	box-sizing: border-box;
 }
 
-#havato-app.hv-dir-ltr { font-family: var(--hv-font-en); }
+/* English and Turkish read in Latin script. Vazirmatn does ship Latin glyphs
+   (borrowed from Roboto), but the face is metrically tuned for Persian: its
+   Latin runs sit on a larger optical body and with looser spacing than a UI
+   sans, which is why the English build looked bigger and more scattered than
+   the Persian one at the very same px value. Latin therefore gets the system
+   UI stack, and the scale is trimmed a touch to match Vazirmatn's optical
+   size rather than its em box. */
+#havato-app.hv-dir-ltr {
+	font-family: var(--hv-font-en);
+	/* 15px rather than 16px: a 6% trim. The system UI stack has a larger
+	   x-height and wider default advances than Vazirmatn at the same em, so
+	   matching the em made Latin look bigger than Persian — the reported
+	   symptom. Trimming the em matches the two optically instead. */
+	--hv-fs: 15px;
+	font-size: clamp(13.5px, 3.7vw, 15px);
+}
 
 #havato-app *,
 #havato-app *::before,
@@ -105,10 +139,92 @@
 #havato-app [hidden],
 #havato-app [hidden="hidden"] { display: none !important; }
 
+/* Form controls do not inherit the page font by default, so they must be told
+   to — but HOW matters.
+   `font: inherit` is the shorthand: it resets font-size, font-weight,
+   line-height, font-style AND font-family in one go. Written as
+   `#havato-app button` it scores 1-0-1, which beats every component rule in
+   this file (`.hv-tab`, `.hv-btn`, `.hv-chip`, `.hv-subtab` … all 0-1-0).
+   The result was that EVERY button ignored its own font-size and rendered at
+   the full body size: the five nav labels blew up until "My Tables" had to be
+   truncated to "MY TABL…", and buttons that ask for 0.8 ended up at 1.0.
+   The bug hid in Persian because Vazirmatn's Latin runs are wider, so the
+   overflow only became obvious in the English build.
+   Only family and colour actually need inheriting; the rest each component
+   owns. Kept at id weight so a host theme still cannot override the family. */
 #havato-app button,
 #havato-app input,
 #havato-app select,
-#havato-app textarea { font: inherit; color: inherit; }
+#havato-app textarea {
+	/* The family DOES want id weight: a host theme must never be able to
+	   swap Vazirmatn out from under a control. */
+	font-family: inherit;
+	color: inherit;
+}
+/* Size, weight and line-height still have to be handed down, or a control
+   with no rule of its own falls back to the UA's 13.333px Arial.
+   `:where()` contributes ZERO specificity, so this whole selector scores
+   0-0-0: it still beats the user-agent stylesheet (author origin wins over
+   UA), yet loses to every single component rule in this file. That is the
+   precise behaviour wanted — a default, not an override. */
+:where(#havato-app) :where(button, input, select, textarea) {
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+	font-style: inherit;
+	/* letter-spacing is deliberately absent: §0.1b below normalises it for
+	   every element at !important, so repeating it here would be dead code. */
+}
+
+/* =========================================================================
+   0.1b HOST-THEME TYPOGRAPHY GUARD  (fixes "English text is huge and messy")
+   =========================================================================
+   Nearly every commercial WordPress theme ships something like
+
+       button, .button, input[type="submit"] {
+           text-transform: uppercase;
+           letter-spacing: .08em;
+           font-weight: 700;
+       }
+
+   We render inside the theme's page, so those rules apply to our controls.
+   The damage is invisible in Persian — the Arabic script has no letter case,
+   so `text-transform` is a no-op and the app looks correct — but in English
+   every button label becomes SHOUTED AND TRACKED OUT. Uppercase Latin runs
+   roughly 12–18% wider than mixed case before the extra tracking is counted,
+   which is why five nav labels stopped fitting and "My Tables" was ellipsised
+   into "MY TABL…", and why the whole English build reads as bigger and more
+   scattered than the Persian one at the very same pixel size.
+
+   The app writes its own labels in the case it wants them, so the transform
+   is simply refused. `!important` is warranted: a theme rule may itself be
+   `!important`, and there is no legitimate reason for the host page to
+   restyle text inside our shell. */
+#havato-app,
+#havato-app *,
+#havato-app *::before,
+#havato-app *::after {
+	text-transform: none !important;
+	font-variant-caps: normal !important;
+	/* Word spacing tuned for a theme's display font wrecks a dense mobile UI. */
+	word-spacing: normal !important;
+}
+
+/* Letter-spacing gets the same treatment but has to be handled separately,
+   because four of our own rules legitimately set it. `!important` beats
+   `!important`, so the exceptions have to be marked too — and they are
+   listed after, at higher specificity, so ours are the ones that survive.
+   Tracking a theme applies to Persian is always wrong regardless: the script
+   is cursive and spacing it pulls the letter joins apart. */
+#havato-app,
+#havato-app *,
+#havato-app *::before,
+#havato-app *::after { letter-spacing: normal !important; }
+
+#havato-app .hv-header-eyebrow { letter-spacing: 0.02em !important; }
+#havato-app .hv-dial { letter-spacing: 0.02em !important; }
+#havato-app .hv-auth-heading { letter-spacing: 0.01em !important; }
+#havato-app.hv-dir-ltr .hv-tab { letter-spacing: -0.01em !important; }
 
 /* =========================================================================
    0.1 DARK-SURFACE TEXT GUARD  (fixes "black text on the blue card")
@@ -314,13 +430,13 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	gap: 2px;
 }
 .hv-header-eyebrow {
-	font-size: 0.72rem;
+	font-size: calc(0.72 * var(--hv-fs));
 	letter-spacing: 0.02em;
 	color: rgba(255, 255, 255, 0.85);
 }
 .hv-header-title {
 	margin: 0;
-	font-size: clamp(1.15rem, 5.2vw, 1.5rem);
+	font-size: clamp(calc(1.15 * var(--hv-fs)), 5.2vw, calc(1.5 * var(--hv-fs)));
 	font-weight: 800;
 	line-height: 1.25;
 	color: #fff;
@@ -345,7 +461,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	place-items: center;
 }
 .hv-avatar { inline-size: 100%; block-size: 100%; object-fit: cover; display: block; }
-.hv-avatar-fallback { font-weight: 800; font-size: 1.05rem; color: #fff; }
+.hv-avatar-fallback { font-weight: 800; font-size: calc(1.05 * var(--hv-fs)); color: #fff; }
 
 .hv-lang-btn {
 	flex: 0 0 auto;
@@ -359,13 +475,13 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	-webkit-backdrop-filter: blur(14px);
 	color: #fff;
 	font-weight: 700;
-	font-size: 0.82rem;
+	font-size: calc(0.82 * var(--hv-fs));
 	cursor: pointer;
 	transition: transform 0.15s ease, background 0.15s ease;
 }
 .hv-lang-btn:active { transform: scale(0.94); }
 .hv-lang-btn.is-open { background: rgba(255, 255, 255, 0.3); }
-.hv-lang-caret { font-size: 0.6rem; margin-inline-start: 4px; opacity: 0.85; }
+.hv-lang-caret { font-size: calc(0.6 * var(--hv-fs)); margin-inline-start: 4px; opacity: 0.85; }
 
 /* Language dropdown. Anchored to the button so it opens under it. */
 .hv-lang-wrap { position: relative; flex: 0 0 auto; }
@@ -399,7 +515,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	   than inheriting one that would be invisible here. */
 	color: var(--hv-text, #16204a);
 	font-family: inherit;
-	font-size: 0.86rem;
+	font-size: calc(0.86 * var(--hv-fs));
 	font-weight: 700;
 	text-align: start;
 	cursor: pointer;
@@ -479,11 +595,11 @@ body.havato-standalone #havato-app { border-radius: 0; }
 }
 .hv-dash-stat b {
 	display: block;
-	font-size: 1.25rem;
+	font-size: calc(1.25 * var(--hv-fs));
 	color: var(--hv-indigo);
 	font-variant-numeric: tabular-nums;
 }
-.hv-dash-stat span { font-size: 0.68rem; color: var(--hv-text-soft); }
+.hv-dash-stat span { font-size: calc(0.68 * var(--hv-fs)); color: var(--hv-text-soft); }
 
 .hv-dash-event,
 .hv-dash-request {
@@ -497,10 +613,10 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	box-shadow: var(--hv-shadow-soft);
 }
 .hv-dash-event-main { flex: 1 1 auto; cursor: pointer; min-inline-size: 0; }
-.hv-dash-event-name { font-weight: 800; font-size: 0.92rem; }
-.hv-dash-event-subject { font-size: 0.8rem; font-weight: 700; color: var(--hv-blue); margin-block-start: 2px; }
-.hv-dash-event-when { font-size: 0.78rem; color: var(--hv-text-soft); margin-block-start: 3px; }
-.hv-dash-event-seats { font-size: 0.75rem; color: var(--hv-indigo); margin-block-start: 3px; }
+.hv-dash-event-name { font-weight: 800; font-size: calc(0.92 * var(--hv-fs)); }
+.hv-dash-event-subject { font-size: calc(0.8 * var(--hv-fs)); font-weight: 700; color: var(--hv-blue); margin-block-start: 2px; }
+.hv-dash-event-when { font-size: calc(0.78 * var(--hv-fs)); color: var(--hv-text-soft); margin-block-start: 3px; }
+.hv-dash-event-seats { font-size: calc(0.75 * var(--hv-fs)); color: var(--hv-indigo); margin-block-start: 3px; }
 .hv-dash-event-actions { flex: 0 0 auto; }
 .hv-dash-request { justify-content: space-between; }
 
@@ -514,7 +630,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	margin-block: 4px -22px;
 	padding: 11px 14px;
 	border-radius: var(--hv-radius-md);
-	font-size: 0.8rem;
+	font-size: calc(0.8 * var(--hv-fs));
 	font-weight: 600;
 	color: #fff;
 	box-shadow: 0 10px 22px rgba(20, 26, 110, 0.22);
@@ -566,7 +682,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 }
 .hv-section-title {
 	margin: 0;
-	font-size: clamp(1rem, 4.4vw, 1.16rem);
+	font-size: clamp(calc(1 * var(--hv-fs)), 4.4vw, calc(1.16 * var(--hv-fs)));
 	font-weight: 800;
 	color: var(--hv-text);
 }
@@ -575,7 +691,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	border: 0;
 	padding: 6px 4px;
 	color: var(--hv-blue);
-	font-size: 0.82rem;
+	font-size: calc(0.82 * var(--hv-fs));
 	font-weight: 700;
 	cursor: pointer;
 }
@@ -633,7 +749,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-list-title {
 	display: block;
 	margin: 0;
-	font-size: 0.95rem;
+	font-size: calc(0.95 * var(--hv-fs));
 	font-weight: 700;
 	color: var(--hv-text);
 	overflow: hidden;
@@ -643,7 +759,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-list-sub {
 	display: block;
 	margin: 3px 0 0;
-	font-size: 0.78rem;
+	font-size: calc(0.78 * var(--hv-fs));
 	color: var(--hv-text-soft);
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -685,7 +801,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 .hv-event-info { flex: 1 1 auto; min-inline-size: 0; }
 .hv-event-name {
 	margin: 0;
-	font-size: 1rem;
+	font-size: calc(1 * var(--hv-fs));
 	font-weight: 800;
 	color: var(--hv-text);
 	overflow: hidden;
@@ -695,16 +811,16 @@ body.havato-standalone #havato-app { border-radius: 0; }
 /* The gathering's own title, under the café name. */
 .hv-event-title {
 	margin: 2px 0 0;
-	font-size: 0.86rem;
+	font-size: calc(0.86 * var(--hv-fs));
 	font-weight: 700;
 	color: var(--hv-indigo);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.hv-event-when { margin: 3px 0 0; font-size: 0.79rem; color: var(--hv-text-soft); }
+.hv-event-when { margin: 3px 0 0; font-size: calc(0.79 * var(--hv-fs)); color: var(--hv-text-soft); }
 /* Everything is free; this replaces where a price used to be shown. */
-.hv-free { font-weight: 800; color: var(--hv-green); font-size: 0.82rem; margin-block-start: 2px; }
+.hv-free { font-weight: 800; color: var(--hv-green); font-size: calc(0.82 * var(--hv-fs)); margin-block-start: 2px; }
 
 /* Phone field: a fixed dialling prefix sits beside the input so the guest
    only types the national part and cannot double up the country code. */
@@ -729,7 +845,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	border: 1.5px solid var(--hv-line);
 	color: var(--hv-indigo);
 	font-weight: 800;
-	font-size: 0.9rem;
+	font-size: calc(0.9 * var(--hv-fs));
 	letter-spacing: 0.02em;
 }
 .hv-event-foot {
@@ -767,7 +883,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	gap: 5px;
 	padding: 4px 10px;
 	border-radius: 999px;
-	font-size: 0.7rem;
+	font-size: calc(0.7 * var(--hv-fs));
 	font-weight: 700;
 	white-space: nowrap;
 	line-height: 1.7;
@@ -790,7 +906,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	backdrop-filter: blur(14px);
 	-webkit-backdrop-filter: blur(14px);
 	color: var(--hv-indigo);
-	font-size: 0.8rem;
+	font-size: calc(0.8 * var(--hv-fs));
 	font-weight: 600;
 	cursor: pointer;
 	min-block-size: 44px;
@@ -812,7 +928,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	padding: 12px 20px;
 	border: 0;
 	border-radius: 16px;
-	font-size: 0.9rem;
+	font-size: calc(0.9 * var(--hv-fs));
 	font-weight: 700;
 	cursor: pointer;
 	transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
@@ -846,7 +962,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 }
 .hv-btn-danger { background: #fee2e2; color: #b91c1c; }
 .hv-btn-block { inline-size: 100%; }
-.hv-btn-sm { min-block-size: 44px; padding: 8px 14px; font-size: 0.8rem; border-radius: 13px; }
+.hv-btn-sm { min-block-size: 44px; padding: 8px 14px; font-size: calc(0.8 * var(--hv-fs)); border-radius: 13px; }
 
 /* =========================================================================
    6. Glass surfaces & auth wall
@@ -893,8 +1009,8 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	border: 1px solid rgba(255, 255, 255, 0.36);
 }
 .hv-auth-logo svg { inline-size: 36px; block-size: 36px; }
-.hv-auth-title { margin: 0; font-size: clamp(1.25rem, 6vw, 1.6rem); font-weight: 800; color: #fff; }
-.hv-auth-sub { margin: 0; font-size: 0.88rem; color: rgba(255, 255, 255, 0.88); line-height: 1.8; }
+.hv-auth-title { margin: 0; font-size: clamp(calc(1.25 * var(--hv-fs)), 6vw, calc(1.6 * var(--hv-fs))); font-weight: 800; color: #fff; }
+.hv-auth-sub { margin: 0; font-size: calc(0.88 * var(--hv-fs)); color: rgba(255, 255, 255, 0.88); line-height: 1.8; }
 .hv-google-slot { display: flex; justify-content: center; min-block-size: 46px; }
 .hv-btn-google {
 	inline-size: 100%;
@@ -912,7 +1028,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 
 /* Owner auth forms */
 .hv-field { display: flex; flex-direction: column; gap: 6px; text-align: start; }
-.hv-field label { font-size: 0.78rem; font-weight: 700; opacity: 0.9; }
+.hv-field label { font-size: calc(0.78 * var(--hv-fs)); font-weight: 700; opacity: 0.9; }
 .hv-input,
 .hv-select,
 .hv-textarea {
@@ -923,7 +1039,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	border: 1px solid rgba(27, 31, 191, 0.16);
 	background: var(--hv-card);
 	color: var(--hv-text);
-	font-size: 0.9rem;
+	font-size: calc(0.9 * var(--hv-fs));
 	outline: none;
 	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -1019,11 +1135,14 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	background: none;
 	border: 0;
 	color: rgba(255, 255, 255, 0.72);
-	font-size: 0.6rem;
+	font-size: calc(0.62 * var(--hv-fs));
 	font-weight: 600;
 	cursor: pointer;
 	transition: color 0.18s ease, transform 0.18s ease;
 }
+/* NOTE: the slight negative tracking for Latin tab labels lives with the
+   host-theme guard in §0.1b, because that guard has to be `!important` to
+   beat a theme and therefore so does every exception to it. */
 .hv-tab svg { inline-size: 22px; block-size: 22px; flex: 0 0 auto; }
 /* One line only. A long label ellipsises rather than wrapping and shoving
    the icon out of alignment with its neighbours. */
@@ -1102,7 +1221,7 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	-webkit-backdrop-filter: blur(18px);
 	box-shadow: 0 12px 28px rgba(20, 26, 110, 0.2);
 }
-.leaflet-popup-content { margin: 12px 14px; font-size: 0.85rem; }
+.leaflet-popup-content { margin: 12px 14px; font-size: calc(0.85 * var(--hv-fs)); }
 .hv-map-strip {
 	position: absolute;
 	inset-block-start: 12px;
@@ -1136,7 +1255,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	gap: 7px;
 	padding: 9px 13px;
 	border-radius: 14px;
-	font-size: 0.75rem;
+	font-size: calc(0.75 * var(--hv-fs));
 	font-weight: 700;
 	color: #fff;
 	box-shadow: 0 8px 18px rgba(20, 26, 110, 0.24);
@@ -1183,7 +1302,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	border-radius: 12px;
 	background: transparent;
 	color: var(--hv-text-soft);
-	font-size: 0.83rem;
+	font-size: calc(0.83 * var(--hv-fs));
 	font-weight: 700;
 	cursor: pointer;
 }
@@ -1219,14 +1338,14 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	max-inline-size: 82%;
 	padding: 9px 13px;
 	border-radius: 16px;
-	font-size: 0.85rem;
+	font-size: calc(0.85 * var(--hv-fs));
 	line-height: 1.7;
 	background: var(--hv-card);
 	box-shadow: var(--hv-shadow-soft);
 	word-break: break-word;
 }
-.hv-msg-name { display: block; font-size: 0.68rem; font-weight: 700; color: var(--hv-blue); margin-block-end: 2px; }
-.hv-msg-time { display: block; font-size: 0.62rem; color: var(--hv-text-soft); margin-block-start: 3px; }
+.hv-msg-name { display: block; font-size: calc(0.68 * var(--hv-fs)); font-weight: 700; color: var(--hv-blue); margin-block-end: 2px; }
+.hv-msg-time { display: block; font-size: calc(0.62 * var(--hv-fs)); color: var(--hv-text-soft); margin-block-start: 3px; }
 .hv-msg-text { display: block; }
 .hv-msg.is-mine {
 	align-self: flex-end;
@@ -1282,7 +1401,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 #havato-app .hv-sticker-tray[hidden] { display: none !important; }
 .hv-sticker {
-	font-size: 1.35rem;
+	font-size: calc(1.35 * var(--hv-fs));
 	line-height: 1;
 	padding: 7px 0;
 	border: 0;
@@ -1299,7 +1418,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	border-radius: 50%;
 	background: rgba(0, 0, 0, 0.05);
 	color: var(--hv-text, #16204a);
-	font-size: 1.15rem;
+	font-size: calc(1.15 * var(--hv-fs));
 	line-height: 1;
 	cursor: pointer;
 }
@@ -1311,7 +1430,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	position: absolute;
 	inset-block-start: 6px;
 	inset-inline-end: 8px;
-	font-size: 0.9rem;
+	font-size: calc(0.9 * var(--hv-fs));
 	line-height: 1;
 	opacity: 0.4;
 }
@@ -1323,7 +1442,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	text-align: center;
 	background: rgba(27, 31, 191, 0.08);
 	color: var(--hv-indigo);
-	font-size: 0.76rem;
+	font-size: calc(0.76 * var(--hv-fs));
 	box-shadow: none;
 }
 .hv-chat-form {
@@ -1340,7 +1459,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	border: 0;
 	background: linear-gradient(140deg, #6bb3ff, var(--hv-blue));
 	color: #fff;
-	font-size: 1.1rem;
+	font-size: calc(1.1 * var(--hv-fs));
 	cursor: pointer;
 	box-shadow: var(--hv-shadow-fab);
 }
@@ -1372,8 +1491,8 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
    `opacity` is deliberately avoided on the meta line: it dims the text as a
    whole and on a saturated background that reads as muddy grey rather than
    soft white. A translucent white keeps the glyph edges crisp. */
-.hv-profile-name { margin: 0; font-size: 1.1rem; font-weight: 800; color: #fff; }
-.hv-profile-meta { margin: 3px 0 0; font-size: 0.78rem; color: rgba(255, 255, 255, 0.88); }
+.hv-profile-name { margin: 0; font-size: calc(1.1 * var(--hv-fs)); font-weight: 800; color: #fff; }
+.hv-profile-meta { margin: 3px 0 0; font-size: calc(0.78 * var(--hv-fs)); color: rgba(255, 255, 255, 0.88); }
 
 .hv-stat-grid {
 	display: grid;
@@ -1402,8 +1521,8 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 .hv-stat-icon.is-green  { background: var(--hv-green-soft); }
 .hv-stat-icon.is-orange { background: var(--hv-orange-soft); }
 .hv-stat-icon.is-pink   { background: var(--hv-pink-soft); }
-.hv-stat-value { font-size: 1.05rem; font-weight: 800; color: var(--hv-text); }
-.hv-stat-label { font-size: 0.68rem; color: var(--hv-text-soft); }
+.hv-stat-value { font-size: calc(1.05 * var(--hv-fs)); font-weight: 800; color: var(--hv-text); }
+.hv-stat-label { font-size: calc(0.68 * var(--hv-fs)); color: var(--hv-text-soft); }
 
 .hv-gallery {
 	display: grid;
@@ -1439,7 +1558,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	border-radius: 10px;
 	background: rgba(27, 31, 191, 0.06);
 	color: var(--hv-text-soft);
-	font-size: 0.72rem;
+	font-size: calc(0.72 * var(--hv-fs));
 	font-weight: 700;
 	cursor: pointer;
 }
@@ -1459,7 +1578,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	border: 2px dashed rgba(27, 31, 191, 0.24);
 	background: rgba(255, 255, 255, 0.6);
 	color: var(--hv-indigo);
-	font-size: 0.78rem;
+	font-size: calc(0.78 * var(--hv-fs));
 	font-weight: 700;
 	cursor: pointer;
 }
@@ -1474,7 +1593,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	background: rgba(27, 31, 191, 0.14);
 }
 .hv-stepper-dots i.is-done { background: linear-gradient(90deg, var(--hv-blue), var(--hv-indigo)); }
-.hv-step-q { font-size: 1rem; font-weight: 800; margin-block-end: 14px; }
+.hv-step-q { font-size: calc(1 * var(--hv-fs)); font-weight: 800; margin-block-end: 14px; }
 
 .hv-range {
 	inline-size: 100%;
@@ -1515,7 +1634,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 .hv-range-scale {
 	display: flex;
 	justify-content: space-between;
-	font-size: 0.72rem;
+	font-size: calc(0.72 * var(--hv-fs));
 	color: var(--hv-text-soft);
 	margin-block-start: 2px;
 }
@@ -1527,7 +1646,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	background: var(--hv-blue-soft);
 	color: var(--hv-indigo);
 	font-weight: 800;
-	font-size: 0.8rem;
+	font-size: calc(0.8 * var(--hv-fs));
 	text-align: center;
 }
 
@@ -1538,7 +1657,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	border: 1.5px solid rgba(27, 31, 191, 0.16);
 	background: var(--hv-card);
 	color: var(--hv-text);
-	font-size: 0.86rem;
+	font-size: calc(0.86 * var(--hv-fs));
 	font-weight: 700;
 	cursor: pointer;
 }
@@ -1558,7 +1677,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	-webkit-backdrop-filter: blur(14px);
 	border: 1px solid rgba(27, 31, 191, 0.16);
 	color: var(--hv-indigo);
-	font-size: 0.76rem;
+	font-size: calc(0.76 * var(--hv-fs));
 	font-weight: 700;
 }
 
@@ -1589,8 +1708,8 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 .hv-trait-label {
 	flex: 0 0 auto;
-	inline-size: 5.5rem;
-	font-size: 0.78rem;
+	inline-size: calc(5.5 * var(--hv-fs));
+	font-size: calc(0.78 * var(--hv-fs));
 	font-weight: 700;
 	color: var(--hv-text);
 }
@@ -1609,9 +1728,9 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 .hv-trait-value {
 	flex: 0 0 auto;
-	inline-size: 1.6rem;
+	inline-size: calc(1.6 * var(--hv-fs));
 	text-align: center;
-	font-size: 0.76rem;
+	font-size: calc(0.76 * var(--hv-fs));
 	font-weight: 800;
 	color: var(--hv-text-soft);
 }
@@ -1624,7 +1743,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	border: 0;
 	background: none;
 	cursor: pointer;
-	font-size: 1.2rem;
+	font-size: calc(1.2 * var(--hv-fs));
 	line-height: 1;
 	color: #d7dcec;
 	padding: 0;
@@ -1642,8 +1761,8 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	padding: 15px;
 }
 .hv-kpi-top { display: flex; align-items: center; gap: 10px; margin-block-end: 9px; }
-.hv-kpi-value { font-size: 1.5rem; font-weight: 800; color: var(--hv-text); line-height: 1.2; }
-.hv-kpi-label { font-size: 0.75rem; color: var(--hv-text-soft); }
+.hv-kpi-value { font-size: calc(1.5 * var(--hv-fs)); font-weight: 800; color: var(--hv-text); line-height: 1.2; }
+.hv-kpi-label { font-size: calc(0.75 * var(--hv-fs)); color: var(--hv-text-soft); }
 .hv-progress {
 	inline-size: 100%;
 	block-size: 8px;
@@ -1658,7 +1777,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
    HOME
    ====================================================================== */
 .hv-home-title {
-	font-size: 1.02rem;
+	font-size: calc(1.02 * var(--hv-fs));
 	font-weight: 800;
 	margin-block: 4px 10px;
 }
@@ -1675,7 +1794,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	background: transparent;
 	color: var(--hv-indigo);
 	font-family: inherit;
-	font-size: 0.82rem;
+	font-size: calc(0.82 * var(--hv-fs));
 	font-weight: 700;
 	cursor: pointer;
 	padding: 4px 2px;
@@ -1704,7 +1823,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 .hv-next-cover svg { inline-size: 42px; block-size: 42px; }
 .hv-next-body { padding: 14px; }
 .hv-next-name {
-	font-size: 1.08rem;
+	font-size: calc(1.08 * var(--hv-fs));
 	font-weight: 800;
 	line-height: 1.4;
 	margin-block-end: 8px;
@@ -1715,7 +1834,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	display: flex;
 	align-items: flex-start;
 	gap: 7px;
-	font-size: 0.82rem;
+	font-size: calc(0.82 * var(--hv-fs));
 	color: var(--hv-text-soft);
 	margin-block-start: 5px;
 	line-height: 1.7;
@@ -1758,7 +1877,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 .hv-face:last-child { margin-inline-end: 0; }
 .hv-face img { inline-size: 100%; block-size: 100%; object-fit: cover; }
 .hv-face.is-more {
-	font-size: 0.68rem;
+	font-size: calc(0.68 * var(--hv-fs));
 	font-weight: 800;
 	color: var(--hv-indigo);
 	border-style: dashed;
@@ -1801,7 +1920,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 .hv-tile-body { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; }
 .hv-tile-title {
-	font-size: 0.94rem;
+	font-size: calc(0.94 * var(--hv-fs));
 	font-weight: 800;
 	/* Two lines maximum, so tiles in a row keep the same height. */
 	display: -webkit-box;
@@ -1809,7 +1928,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 }
-.hv-tile-meta { font-size: 0.76rem; color: var(--hv-text-soft); }
+.hv-tile-meta { font-size: calc(0.76 * var(--hv-fs)); color: var(--hv-text-soft); }
 /* Smaller faces on a tile than on the full card — the tile is 63% as wide. */
 .hv-tile .hv-faces { margin-block-start: 8px; }
 .hv-tile .hv-face { inline-size: 26px; block-size: 26px; margin-inline-end: -7px; }
@@ -1834,7 +1953,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	background: var(--hv-card);
 	color: var(--hv-text);
 	font-family: inherit;
-	font-size: 0.82rem;
+	font-size: calc(0.82 * var(--hv-fs));
 	font-weight: 700;
 	text-align: start;
 	cursor: pointer;
@@ -1850,7 +1969,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 .hv-quick-arrow {
 	margin-block-start: auto;
-	font-size: 0.95rem;
+	font-size: calc(0.95 * var(--hv-fs));
 	color: var(--hv-indigo);
 	line-height: 1;
 }
@@ -1868,9 +1987,9 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	background: var(--hv-card);
 }
 .hv-summary-icon svg { inline-size: 20px; block-size: 20px; color: var(--hv-indigo); display: block; }
-.hv-summary-label { flex: 1 1 auto; font-size: 0.86rem; font-weight: 700; }
+.hv-summary-label { flex: 1 1 auto; font-size: calc(0.86 * var(--hv-fs)); font-weight: 700; }
 .hv-summary-value {
-	font-size: 1.5rem;
+	font-size: calc(1.5 * var(--hv-fs));
 	font-weight: 800;
 	/* Tabular figures so two rows of numbers line up. */
 	font-variant-numeric: tabular-nums;
@@ -1878,7 +1997,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 
 /* ------------------------------------------------- event page ---------- */
 .hv-event-subject {
-	font-size: 0.92rem;
+	font-size: calc(0.92 * var(--hv-fs));
 	font-weight: 700;
 	color: var(--hv-blue);
 	margin-block-start: 2px;
@@ -1889,10 +2008,10 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	padding: 12px 14px;
 	margin-block-start: 4px;
 }
-.hv-when-line { font-size: 0.9rem; font-weight: 700; }
+.hv-when-line { font-size: calc(0.9 * var(--hv-fs)); font-weight: 700; }
 .hv-countdown {
 	margin-block-start: 6px;
-	font-size: 0.86rem;
+	font-size: calc(0.86 * var(--hv-fs));
 	font-weight: 800;
 	color: var(--hv-indigo);
 	font-variant-numeric: tabular-nums;
@@ -1915,12 +2034,12 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	background: linear-gradient(140deg, var(--hv-indigo-2), var(--hv-indigo));
 	color: #fff;
 	font-weight: 800;
-	font-size: 1.2rem;
+	font-size: calc(1.2 * var(--hv-fs));
 }
 .hv-avatar-preview img { inline-size: 100%; block-size: 100%; object-fit: cover; }
 .hv-avatar-card-body { flex: 1 1 auto; min-inline-size: 0; }
-.hv-avatar-card-title { font-size: 0.92rem; font-weight: 800; }
-.hv-avatar-card-body p { font-size: 0.76rem; margin-block-start: 2px; }
+.hv-avatar-card-title { font-size: calc(0.92 * var(--hv-fs)); font-weight: 800; }
+.hv-avatar-card-body p { font-size: calc(0.76 * var(--hv-fs)); margin-block-start: 2px; }
 
 /* The café's written address and the way out to a navigation app. Boxed so
    the address and its button read as one thing rather than a stray line. */
@@ -1938,9 +2057,9 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	margin-block-start: 3px;
 	color: var(--hv-indigo);
 }
-.hv-venue-name { font-size: 0.92rem; font-weight: 800; }
+.hv-venue-name { font-size: calc(0.92 * var(--hv-fs)); font-weight: 800; }
 .hv-venue-address {
-	font-size: 0.84rem;
+	font-size: calc(0.84 * var(--hv-fs));
 	line-height: 1.8;
 	color: var(--hv-text-soft);
 	margin-block-start: 2px;
@@ -1950,7 +2069,7 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 }
 
 .hv-event-desc {
-	font-size: 0.88rem;
+	font-size: calc(0.88 * var(--hv-fs));
 	line-height: 1.9;
 	white-space: pre-line;
 }
@@ -2007,9 +2126,9 @@ img.hv-menu-thumb {
 	border-radius: inherit;
 }
 .hv-menu-body { flex: 1 1 auto; min-inline-size: 0; }
-.hv-menu-name { font-weight: 700; font-size: 0.9rem; }
-.hv-menu-desc { font-size: 0.75rem; color: var(--hv-text-soft); }
-.hv-menu-price { font-weight: 800; color: var(--hv-indigo); font-size: 0.85rem; white-space: nowrap; }
+.hv-menu-name { font-weight: 700; font-size: calc(0.9 * var(--hv-fs)); }
+.hv-menu-desc { font-size: calc(0.75 * var(--hv-fs)); color: var(--hv-text-soft); }
+.hv-menu-price { font-weight: 800; color: var(--hv-indigo); font-size: calc(0.85 * var(--hv-fs)); white-space: nowrap; }
 
 /* Menu Builder: one compact row per product (restaurant-menu style) */
 .hv-menu-edit {
@@ -2065,7 +2184,7 @@ img.hv-menu-thumb {
 	border-radius: 12px;
 	background: rgba(27, 31, 191, 0.07);
 	color: var(--hv-indigo);
-	font-size: 0.85rem;
+	font-size: calc(0.85 * var(--hv-fs));
 	cursor: pointer;
 	display: grid;
 	place-items: center;
@@ -2078,7 +2197,7 @@ img.hv-menu-thumb {
 }
 .hv-menu-edit-desc label {
 	display: block;
-	font-size: 0.75rem;
+	font-size: calc(0.75 * var(--hv-fs));
 	font-weight: 700;
 	color: var(--hv-text-soft);
 	margin-block-end: 4px;
@@ -2086,7 +2205,7 @@ img.hv-menu-thumb {
 .hv-menu-edit-hint {
 	margin: 8px 0 0;
 	padding-inline-start: 66px;
-	font-size: 0.76rem;
+	font-size: calc(0.76 * var(--hv-fs));
 	color: var(--hv-text-soft);
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -2158,11 +2277,11 @@ img.hv-menu-thumb {
 	border: 0;
 	background: rgba(27, 31, 191, 0.08);
 	color: var(--hv-indigo);
-	font-size: 0.9rem;
+	font-size: calc(0.9 * var(--hv-fs));
 	cursor: pointer;
 	z-index: 2;
 }
-.hv-modal-title { margin: 0 0 12px; font-size: 1.1rem; font-weight: 800; padding-inline-end: 40px; color: var(--hv-text); }
+.hv-modal-title { margin: 0 0 12px; font-size: calc(1.1 * var(--hv-fs)); font-weight: 800; padding-inline-end: 40px; color: var(--hv-text); }
 .hv-modal-hero {
 	inline-size: 100%;
 	block-size: clamp(120px, 24dvh, 190px);
@@ -2209,7 +2328,7 @@ img.hv-menu-thumb {
 	margin-block-end: 9px;
 }
 .hv-progress-label {
-	font-size: 0.83rem;
+	font-size: calc(0.83 * var(--hv-fs));
 	font-weight: 700;
 	color: var(--hv-text);
 	overflow: hidden;
@@ -2218,7 +2337,7 @@ img.hv-menu-thumb {
 }
 .hv-progress-pct {
 	flex: 0 0 auto;
-	font-size: 0.8rem;
+	font-size: calc(0.8 * var(--hv-fs));
 	font-weight: 800;
 	color: var(--hv-indigo);
 	font-variant-numeric: tabular-nums;
@@ -2264,7 +2383,7 @@ img.hv-menu-thumb {
 	border-radius: 12px;
 	background: rgba(27, 31, 191, 0.07);
 	color: var(--hv-indigo);
-	font-size: 0.8rem;
+	font-size: calc(0.8 * var(--hv-fs));
 	font-weight: 700;
 	cursor: pointer;
 }
@@ -2298,7 +2417,7 @@ img.hv-menu-thumb {
 	padding: 12px 15px;
 	border-radius: 15px;
 	color: #fff;
-	font-size: 0.83rem;
+	font-size: calc(0.83 * var(--hv-fs));
 	font-weight: 600;
 	box-shadow: 0 12px 26px rgba(15, 20, 64, 0.3);
 	animation: hv-slide-down 0.24s ease;
@@ -2346,7 +2465,7 @@ img.hv-menu-thumb {
 	padding: 34px 18px;
 	text-align: center;
 	color: var(--hv-text-soft);
-	font-size: 0.87rem;
+	font-size: calc(0.87 * var(--hv-fs));
 }
 .hv-empty svg { inline-size: 54px; block-size: 54px; opacity: 0.65; }
 
@@ -2356,7 +2475,7 @@ img.hv-menu-thumb {
 	gap: 9px;
 	padding: 12px 14px;
 	border-radius: var(--hv-radius-md);
-	font-size: 0.82rem;
+	font-size: calc(0.82 * var(--hv-fs));
 	font-weight: 600;
 	margin-block-end: 13px;
 	line-height: 1.7;
@@ -2368,7 +2487,7 @@ img.hv-menu-thumb {
 .hv-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .hv-row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .hv-stack { display: flex; flex-direction: column; gap: 11px; }
-.hv-muted { color: var(--hv-text-soft); font-size: 0.8rem; }
+.hv-muted { color: var(--hv-text-soft); font-size: calc(0.8 * var(--hv-fs)); }
 .hv-hidden { display: none !important; }
 .hv-mt { margin-block-start: 12px; }
 
@@ -2377,11 +2496,11 @@ img.hv-menu-thumb {
    ====================================================================== */
 @media (max-width: 380px) {
 	#havato-app { --hv-gutter: 13px; }
-	.hv-tab { font-size: 0.58rem; }
+	.hv-tab { font-size: calc(0.58 * var(--hv-fs)); }
 	.hv-tab svg { inline-size: 22px; block-size: 22px; }
 	.hv-stat-grid { grid-template-columns: repeat(2, 1fr); }
 	.hv-kpi-grid { grid-template-columns: repeat(2, 1fr); }
-	.hv-kpi-value { font-size: 1.25rem; }
+	.hv-kpi-value { font-size: calc(1.25 * var(--hv-fs)); }
 	.hv-event-thumb { inline-size: 50px; block-size: 50px; }
 }
 
@@ -2411,7 +2530,7 @@ img.hv-menu-thumb {
 		--hv-header-h: 84px;
 		--hv-nav-h: 62px;
 	}
-	.hv-header-title { font-size: 1rem; }
+	.hv-header-title { font-size: calc(1 * var(--hv-fs)); }
 	.hv-chat-log { max-block-size: 42dvh; }
 }
 
@@ -2473,7 +2592,7 @@ img.hv-menu-thumb {
 .hv-owner-auth .hv-select option { color: #16204a; }
 .hv-owner-auth .hv-auth-small {
 	margin: 12px 0 0;
-	font-size: 0.78rem;
+	font-size: calc(0.78 * var(--hv-fs));
 	color: rgba(255, 255, 255, 0.82);
 	text-align: center;
 	line-height: 1.8;
@@ -2484,7 +2603,7 @@ img.hv-menu-thumb {
 /* "User sign-in" heading above the Google button */
 .hv-auth-heading {
 	margin: 6px 0 2px;
-	font-size: clamp(1.05rem, 4.6vw, 1.25rem);
+	font-size: clamp(calc(1.05 * var(--hv-fs)), 4.6vw, calc(1.25 * var(--hv-fs)));
 	font-weight: 800;
 	color: #fff;
 	letter-spacing: 0.01em;

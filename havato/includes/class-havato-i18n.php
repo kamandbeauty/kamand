@@ -313,6 +313,18 @@ class Havato_I18N {
 			'tab_map'               => array( 'fa' => 'نقشه', 'en' => 'Map', 'tr' => 'Harita' ),
 			'tab_chats'             => array( 'fa' => 'گفتگوها', 'en' => 'Chats', 'tr' => 'Sohbetler' ),
 			'tab_profile'           => array( 'fa' => 'پروفایل من', 'en' => 'My Profile', 'tr' => 'Profilim' ),
+
+			/*
+			 * Short forms, used ONLY by the five-tab bar.
+			 *
+			 * A tab gets one fifth of the screen — about 74px on a 375px
+			 * phone, less the gutter. "My Tables" and "My Profile" do not
+			 * fit and were ellipsised into "MY TABL…" / "MY PROF…", which
+			 * reads as broken rather than abbreviated. Screen titles keep
+			 * the possessive full form; only the bar drops it.
+			 */
+			'nav_tables'            => array( 'fa' => 'میزها', 'en' => 'Tables', 'tr' => 'Masalar' ),
+			'nav_profile'           => array( 'fa' => 'پروفایل', 'en' => 'Profile', 'tr' => 'Profil' ),
 			'dashboard_title'       => array( 'fa' => 'داشبورد من', 'en' => 'My dashboard', 'tr' => 'Panelim' ),
 			'dash_upcoming'         => array( 'fa' => 'رزروهای پیش رو', 'en' => 'Upcoming bookings', 'tr' => 'Yaklaşan rezervasyonlar' ),
 			'dash_requests'         => array( 'fa' => 'پیشنهادهای من', 'en' => 'My suggestions', 'tr' => 'Önerilerim' ),
