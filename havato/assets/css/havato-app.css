@@ -1707,7 +1707,78 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	font-weight: 700;
 }
 
-/* Personality trait bars (the five sliders added to the test). */
+/* ------------------------------------------------- interest picker -----
+   86 tags in one flat heap is a wall, so they are grouped and searchable.
+   The search row sticks to the top of the scroller: with this many chips the
+   box would otherwise scroll away and leave no way back to it. */
+.hv-interest-bar {
+	position: sticky;
+	inset-block-start: 0;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding-block: 6px 10px;
+	/* The picker lives inside .hv-modal-card, whose background is a
+	   translucent blur. Reusing --hv-card here would paint a solid panel that
+	   does not match it, so the sticky row instead fades from the card colour
+	   to transparent — chips slide out of view under it rather than showing
+	   through a mismatched block. */
+	background: linear-gradient(
+		to bottom,
+		var(--hv-card) 0%,
+		var(--hv-card) 72%,
+		transparent 100%
+	);
+}
+.hv-interest-search { flex: 1 1 auto; min-inline-size: 0; }
+.hv-interest-count {
+	flex: 0 0 auto;
+	font-size: calc(0.74 * var(--hv-fs));
+	font-weight: 800;
+	color: var(--hv-indigo);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+.hv-interest-group { margin-block-end: 14px; }
+.hv-interest-cat {
+	margin: 0 0 8px;
+	font-size: calc(0.78 * var(--hv-fs));
+	font-weight: 800;
+	color: var(--hv-text-soft);
+}
+/* The last group needs room to clear the step's Next button. */
+.hv-interest-scroll-pad { block-size: 4px; }
+
+/* -------------------------------------------------- penalty summary -----
+   The no-show warning reads as two clear blocks: the sentence, then the
+   numbers. It used to be one run of text with the three figures joined by
+   interpuncts inside a flex alert, so the line broke wherever it ran out of
+   room — a label could end up on one line and its own value on the next,
+   which is what made it hard to read on a phone. Each label/value pair is now
+   an unbreakable unit and the group wraps between pairs only. */
+.hv-penalty { flex-direction: column; align-items: stretch; gap: 10px; }
+.hv-penalty-text { margin: 0; }
+.hv-penalty-stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 10px;
+	padding-block-start: 9px;
+	border-block-start: 1px dashed rgba(180, 83, 9, 0.28);
+}
+.hv-penalty-stat {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 6px;
+	/* The pair never splits across lines. */
+	white-space: nowrap;
+}
+.hv-penalty-label { font-weight: 600; opacity: 0.9; }
+.hv-penalty-value {
+	font-weight: 800;
+	font-variant-numeric: tabular-nums;
+}
+
 /* Danger zone: visually separated so account deletion is never a stray tap. */
 .hv-danger {
 	border: 1.5px solid #fecaca;
@@ -1719,46 +1790,6 @@ button.hv-map-pill.is-busy { opacity: 0.65; }
 	color: #fff;
 	text-shadow: 0 1px 2px rgba(10, 14, 48, 0.45);
 	box-shadow: 0 10px 22px rgba(185, 28, 28, 0.28);
-}
-
-.hv-traits {
-	display: flex;
-	flex-direction: column;
-	gap: 9px;
-	margin-block-start: 14px;
-}
-.hv-trait {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-}
-.hv-trait-label {
-	flex: 0 0 auto;
-	inline-size: calc(5.5 * var(--hv-fs));
-	font-size: calc(0.78 * var(--hv-fs));
-	font-weight: 700;
-	color: var(--hv-text);
-}
-.hv-trait-bar {
-	flex: 1 1 auto;
-	block-size: 8px;
-	border-radius: 999px;
-	background: rgba(27, 31, 191, 0.1);
-	overflow: hidden;
-}
-.hv-trait-bar i {
-	display: block;
-	block-size: 100%;
-	border-radius: 999px;
-	background: linear-gradient(90deg, var(--hv-indigo-2), var(--hv-blue));
-}
-.hv-trait-value {
-	flex: 0 0 auto;
-	inline-size: calc(1.6 * var(--hv-fs));
-	text-align: center;
-	font-size: calc(0.76 * var(--hv-fs));
-	font-weight: 800;
-	color: var(--hv-text-soft);
 }
 
 /* Rating stars */

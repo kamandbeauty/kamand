@@ -39,6 +39,19 @@ function fa(key) {
   return m[1].replace(/\\'/g, "'");
 }
 
+// Interest categories and tags, straight from functions.php so the mock-up
+// cannot drift from the real list.
+const FN_SRC = fs.readFileSync(path.join(__dirname, '..', 'havato', 'includes', 'functions.php'), 'utf8');
+const _catStart = FN_SRC.indexOf('function havato_interest_categories');
+const CATS = [...FN_SRC.slice(_catStart, FN_SRC.indexOf('\n}', _catStart))
+  .matchAll(/^\t\t'([a-z_]+)'\s*=> array\( 'fa' => '([^']*)'/gm)]
+  .map((m) => ({ key: m[1], label: m[2] }));
+const _tagStart = FN_SRC.indexOf('function havato_interest_tags');
+const TAGS = [...FN_SRC.slice(_tagStart, FN_SRC.indexOf('\n}', _tagStart))
+  .matchAll(/^\t\t'([a-z_]+)'\s*=> array\( 'cat' => '(\w+)', 'fa' => '([^']*)'/gm)]
+  .map((m) => ({ key: m[1], cat: m[2], label: m[3] }));
+if (!CATS.length || TAGS.length < 80) { throw new Error('could not read interests'); }
+
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const rtl = (x, y, s, sz, w, fill, op) =>
   `<text x="${x}" y="${y}" font-family="Vazirmatn" font-size="${sz}" font-weight="${w}" fill="${fill}"${op ? ` fill-opacity="${op}"` : ''} direction="rtl" text-anchor="end">${esc(s)}</text>`;
@@ -175,21 +188,32 @@ function testScreen() {
   s += `<rect x="${x + 26 + bw + 12}" y="${iy}" width="${bw * 2}" height="56" rx="15" fill="url(#btn)"/>`;
   s += ctr(x + 26 + bw + 12 + bw, iy + 37, fa('next'), 19, 700, '#ffffff');
 
-  // trait preview card
+  // Interest picker preview: grouped chips with a search row. This replaces
+  // the old trait-bar card — the personality result is private as of 1.36.0,
+  // so a mock-up showing it would advertise a screen that no longer exists.
   const cy = y + 590;
   s += `<rect x="${x}" y="${cy}" width="${w}" height="300" rx="30" fill="#ffffff"/>`;
-  s += rtl(x + w - 26, cy + 50, fa('behaviour_id'), 22, 700, '#16204a');
-  const bars = [
-    [fa('trait_openness'), 7], [fa('trait_humor'), 8], [fa('trait_energy'), 5],
-    [fa('trait_planning'), 4], [fa('trait_empathy'), 9]
-  ];
-  bars.forEach((b, i) => {
-    const by = cy + 84 + i * 40;
-    s += rtl(x + w - 26, by + 14, b[0], 16, 700, '#16204a');
-    const bx = x + 40, bwid = w - 200;
-    s += `<rect x="${bx}" y="${by + 5}" width="${bwid}" height="9" rx="5" fill="#e4eaf8"/>`;
-    s += `<rect x="${bx + bwid * (1 - b[1] / 10)}" y="${by + 5}" width="${bwid * (b[1] / 10)}" height="9" rx="5" fill="url(#btn)"/>`;
-    s += `<text x="${bx - 8}" y="${by + 15}" font-family="Vazirmatn" font-size="15" font-weight="800" fill="#6b74a0" text-anchor="end">${esc(String(b[1]))}</text>`;
+  s += rtl(x + w - 26, cy + 46, fa('q_interests'), 21, 700, '#16204a');
+
+  // search row + live count
+  s += `<rect x="${x + 26}" y="${cy + 64}" width="${w - 200}" height="44" rx="14" fill="#f4f6fc" stroke="#dfe4f3"/>`;
+  s += rtl(x + w - 40, cy + 92, fa('interests_search'), 15, 400, '#8b93b8');
+  s += rtl(x + 150, cy + 92, fa('interests_chosen').replace('%s', '۱۱'), 15, 800, '#1b1fbf');
+
+  // two real categories with their real tags, read from functions.php
+  let ly = cy + 128;
+  CATS.slice(0, 2).forEach((cat) => {
+    s += rtl(x + w - 26, ly, cat.label, 15, 800, '#6b74a0');
+    ly += 24;
+    let cx2 = x + w - 26;
+    TAGS.filter((tg) => tg.cat === cat.key).slice(0, 5).forEach((tg) => {
+      const cw = tg.label.length * 15 * 0.5 + 26;
+      if (cx2 - cw < x + 26) { cx2 = x + w - 26; ly += 44; }
+      s += `<rect x="${cx2 - cw}" y="${ly - 20}" width="${cw}" height="34" rx="17" fill="#ece9fb" stroke="#d8d2f5"/>`;
+      s += rtl(cx2 - 13, ly + 3, tg.label, 14, 700, '#4c1d95');
+      cx2 -= cw + 8;
+    });
+    ly += 52;
   });
 
   return shell(s, fa('test_intro_title'));

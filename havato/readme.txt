@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.35.1
+Stable tag: 1.36.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,40 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.36.0 =
+* The no-show warning on your profile now reads as two tidy blocks — the
+  sentence, then the three figures — instead of one run of text in which a
+  label could wrap onto a different line from its own number. Each
+  label/value pair is now unbreakable.
+* The personality-test RESULT is no longer shown to anyone. The profile used
+  to print an introvert/extrovert score out of ten, talker vs listener, the
+  vibe and five trait bars. The test exists so the matcher can seat
+  compatible people together; showing the numbers turns a matching input into
+  a verdict the guest reads about themselves. The scores still drive matching
+  exactly as before — they are simply no longer published.
+* Security: those scores were also being sent to ANY viewer, not just the
+  owner, so opening someone's profile handed you a psychological read of them
+  over the network even before this change hid the card. The REST response now
+  includes them only when you are viewing your own profile, which is still
+  needed so "edit" can re-open the test with your stored answers.
+* The card is retitled "Interests" and shows what it actually contains: your
+  interests, plus age and city. Ten now-orphaned strings and forty lines of
+  dead trait-bar CSS were removed with it.
+* The interest list grew from 36 to 86 tags, covering music and live gigs,
+  anime, dance, museums, architecture, podcasts, politics, economics,
+  astronomy, environment, design, crypto, freelancing, medicine, law,
+  engineering, six more sports, camping, skiing, tea, baking, cafés,
+  vegetarian food, chess, cards, puzzles, escape rooms, karaoke, stand-up,
+  gardening, décor, parenting, wellbeing, collecting and more.
+* Because 86 chips in one heap is not a list anyone reads to the end, the
+  picker now groups them under seven headings and adds a search box. Search
+  matches all three languages at once, so a Persian speaker using the English
+  interface can still find a tag by its Persian name. A live counter shows how
+  many you have chosen.
+* Every one of the 36 original interest keys was kept. Choices are stored by
+  key, so renaming or dropping one would have silently erased that interest
+  from every profile that had it; the test suite asserts all 36 survive.
 
 = 1.35.1 =
 * Fixed: the bottom navigation came out too small in every language after

@@ -762,48 +762,142 @@ function havato_booking_cutoff() {
 }
 
 /**
- * Predefined interest tags (bilingual).
+ * Interest categories, in display order.
+ *
+ * The tag list grew past eighty entries, and eighty chips in one undivided
+ * heap is not a list anyone reads — people tick the first few they happen to
+ * see and give up. Grouping them lets someone go straight to the section they
+ * care about, so the interests they pick actually describe them, which is
+ * what the matcher scores on.
+ *
+ * @return array Category key => trilingual label.
+ */
+function havato_interest_categories() {
+	return array(
+		'culture' => array( 'fa' => 'هنر و فرهنگ', 'en' => 'Arts & culture', 'tr' => 'Sanat ve kültür' ),
+		'knowledge' => array( 'fa' => 'دانش و اندیشه', 'en' => 'Knowledge & ideas', 'tr' => 'Bilgi ve düşünce' ),
+		'work'    => array( 'fa' => 'کار و فناوری', 'en' => 'Work & technology', 'tr' => 'İş ve teknoloji' ),
+		'active'  => array( 'fa' => 'ورزش و طبیعت', 'en' => 'Sport & outdoors', 'tr' => 'Spor ve doğa' ),
+		'food'    => array( 'fa' => 'خوراک و نوشیدنی', 'en' => 'Food & drink', 'tr' => 'Yeme ve içme' ),
+		'play'    => array( 'fa' => 'سرگرمی و بازی', 'en' => 'Games & fun', 'tr' => 'Oyun ve eğlence' ),
+		'life'    => array( 'fa' => 'سبک زندگی', 'en' => 'Lifestyle', 'tr' => 'Yaşam tarzı' ),
+	);
+}
+
+/**
+ * Predefined interest tags (trilingual).
+ *
+ * Every tag carries a `cat` key naming the category it belongs to. The value
+ * array is otherwise the same shape as before — 'fa'/'en'/'tr' — so callers
+ * that only read the labels keep working unchanged.
+ *
+ * Keys are permanent: a guest's choices are stored by key, so renaming one
+ * would silently drop that interest from every profile that had it. Add
+ * freely, rename never.
  *
  * @return array
  */
 function havato_interest_tags() {
 	return array(
-		'music'      => array( 'fa' => 'موسیقی', 'en' => 'Music', 'tr' => 'Müzik' ),
-		'cinema'     => array( 'fa' => 'سینما', 'en' => 'Cinema', 'tr' => 'Sinema' ),
-		'series'     => array( 'fa' => 'سریال', 'en' => 'TV series', 'tr' => 'Diziler' ),
-		'books'      => array( 'fa' => 'کتاب', 'en' => 'Books', 'tr' => 'Kitap' ),
-		'writing'    => array( 'fa' => 'نویسندگی', 'en' => 'Writing', 'tr' => 'Yazarlık' ),
-		'poetry'     => array( 'fa' => 'شعر و ادبیات', 'en' => 'Poetry & literature', 'tr' => 'Şiir ve edebiyat' ),
-		'art'        => array( 'fa' => 'هنر', 'en' => 'Art', 'tr' => 'Sanat' ),
-		'photo'      => array( 'fa' => 'عکاسی', 'en' => 'Photography', 'tr' => 'Fotoğrafçılık' ),
-		'theatre'    => array( 'fa' => 'تئاتر', 'en' => 'Theatre', 'tr' => 'Tiyatro' ),
-		'startup'    => array( 'fa' => 'استارتاپ', 'en' => 'Startups', 'tr' => 'Girişimcilik' ),
-		'business'   => array( 'fa' => 'کسب‌وکار', 'en' => 'Business', 'tr' => 'İş dünyası' ),
-		'marketing'  => array( 'fa' => 'بازاریابی', 'en' => 'Marketing', 'tr' => 'Pazarlama' ),
-		'tech'       => array( 'fa' => 'تکنولوژی', 'en' => 'Technology', 'tr' => 'Teknoloji' ),
-		'programming' => array( 'fa' => 'برنامه‌نویسی', 'en' => 'Programming', 'tr' => 'Yazılım' ),
-		'ai'         => array( 'fa' => 'هوش مصنوعی', 'en' => 'AI', 'tr' => 'Yapay zekâ' ),
-		'science'    => array( 'fa' => 'علم', 'en' => 'Science', 'tr' => 'Bilim' ),
-		'philo'      => array( 'fa' => 'فلسفه', 'en' => 'Philosophy', 'tr' => 'Felsefe' ),
-		'psychology' => array( 'fa' => 'روان‌شناسی', 'en' => 'Psychology', 'tr' => 'Psikoloji' ),
-		'history'    => array( 'fa' => 'تاریخ', 'en' => 'History', 'tr' => 'Tarih' ),
-		'language'   => array( 'fa' => 'زبان‌آموزی', 'en' => 'Languages', 'tr' => 'Yabancı dil' ),
-		'travel'     => array( 'fa' => 'سفر', 'en' => 'Travel', 'tr' => 'Seyahat' ),
-		'nature'     => array( 'fa' => 'طبیعت‌گردی', 'en' => 'Nature & hiking', 'tr' => 'Doğa ve yürüyüş' ),
-		'sports'     => array( 'fa' => 'ورزش', 'en' => 'Sports', 'tr' => 'Spor' ),
-		'football'   => array( 'fa' => 'فوتبال', 'en' => 'Football', 'tr' => 'Futbol' ),
-		'fitness'    => array( 'fa' => 'تناسب اندام', 'en' => 'Fitness', 'tr' => 'Fitness' ),
-		'yoga'       => array( 'fa' => 'یوگا و مدیتیشن', 'en' => 'Yoga & meditation', 'tr' => 'Yoga ve meditasyon' ),
-		'food'       => array( 'fa' => 'آشپزی', 'en' => 'Cooking', 'tr' => 'Yemek yapmak' ),
-		'coffee'     => array( 'fa' => 'قهوه', 'en' => 'Coffee', 'tr' => 'Kahve' ),
-		'gaming'     => array( 'fa' => 'بازی ویدیویی', 'en' => 'Video games', 'tr' => 'Video oyunları' ),
-		'boardgames' => array( 'fa' => 'بازی رومیزی', 'en' => 'Board games', 'tr' => 'Kutu oyunları' ),
-		'pets'       => array( 'fa' => 'حیوانات خانگی', 'en' => 'Pets', 'tr' => 'Evcil hayvanlar' ),
-		'volunteer'  => array( 'fa' => 'کار داوطلبانه', 'en' => 'Volunteering', 'tr' => 'Gönüllülük' ),
-		'fashion'    => array( 'fa' => 'مد و استایل', 'en' => 'Fashion', 'tr' => 'Moda' ),
-		'cars'       => array( 'fa' => 'خودرو', 'en' => 'Cars', 'tr' => 'Otomobil' ),
-		'crafts'     => array( 'fa' => 'کاردستی', 'en' => 'Crafts & DIY', 'tr' => 'El işi' ),
-		'finance'    => array( 'fa' => 'سرمایه‌گذاری', 'en' => 'Investing', 'tr' => 'Yatırım' ),
+		// ---------------------------------------------- arts & culture ----
+		'music'      => array( 'cat' => 'culture', 'fa' => 'موسیقی', 'en' => 'Music', 'tr' => 'Müzik' ),
+		'live_music' => array( 'cat' => 'culture', 'fa' => 'کنسرت و موسیقی زنده', 'en' => 'Live music & gigs', 'tr' => 'Konser ve canlı müzik' ),
+		'instrument' => array( 'cat' => 'culture', 'fa' => 'نوازندگی', 'en' => 'Playing an instrument', 'tr' => 'Enstrüman çalmak' ),
+		'singing'    => array( 'cat' => 'culture', 'fa' => 'آواز', 'en' => 'Singing', 'tr' => 'Şarkı söylemek' ),
+		'cinema'     => array( 'cat' => 'culture', 'fa' => 'سینما', 'en' => 'Cinema', 'tr' => 'Sinema' ),
+		'series'     => array( 'cat' => 'culture', 'fa' => 'سریال', 'en' => 'TV series', 'tr' => 'Diziler' ),
+		'anime'      => array( 'cat' => 'culture', 'fa' => 'انیمه و انیمیشن', 'en' => 'Anime & animation', 'tr' => 'Anime ve animasyon' ),
+		'books'      => array( 'cat' => 'culture', 'fa' => 'کتاب', 'en' => 'Books', 'tr' => 'Kitap' ),
+		'writing'    => array( 'cat' => 'culture', 'fa' => 'نویسندگی', 'en' => 'Writing', 'tr' => 'Yazarlık' ),
+		'poetry'     => array( 'cat' => 'culture', 'fa' => 'شعر و ادبیات', 'en' => 'Poetry & literature', 'tr' => 'Şiir ve edebiyat' ),
+		'art'        => array( 'cat' => 'culture', 'fa' => 'هنر', 'en' => 'Art', 'tr' => 'Sanat' ),
+		'painting'   => array( 'cat' => 'culture', 'fa' => 'نقاشی', 'en' => 'Painting & drawing', 'tr' => 'Resim çizmek' ),
+		'photo'      => array( 'cat' => 'culture', 'fa' => 'عکاسی', 'en' => 'Photography', 'tr' => 'Fotoğrafçılık' ),
+		'theatre'    => array( 'cat' => 'culture', 'fa' => 'تئاتر', 'en' => 'Theatre', 'tr' => 'Tiyatro' ),
+		'dance'      => array( 'cat' => 'culture', 'fa' => 'رقص', 'en' => 'Dance', 'tr' => 'Dans' ),
+		'museums'    => array( 'cat' => 'culture', 'fa' => 'موزه و نمایشگاه', 'en' => 'Museums & exhibitions', 'tr' => 'Müze ve sergiler' ),
+		'architecture' => array( 'cat' => 'culture', 'fa' => 'معماری', 'en' => 'Architecture', 'tr' => 'Mimarlık' ),
+		'calligraphy' => array( 'cat' => 'culture', 'fa' => 'خوشنویسی', 'en' => 'Calligraphy', 'tr' => 'Hat sanatı' ),
+		'podcast'    => array( 'cat' => 'culture', 'fa' => 'پادکست', 'en' => 'Podcasts', 'tr' => 'Podcast' ),
+
+		// ------------------------------------------ knowledge & ideas ----
+		'science'    => array( 'cat' => 'knowledge', 'fa' => 'علم', 'en' => 'Science', 'tr' => 'Bilim' ),
+		'philo'      => array( 'cat' => 'knowledge', 'fa' => 'فلسفه', 'en' => 'Philosophy', 'tr' => 'Felsefe' ),
+		'psychology' => array( 'cat' => 'knowledge', 'fa' => 'روان‌شناسی', 'en' => 'Psychology', 'tr' => 'Psikoloji' ),
+		'history'    => array( 'cat' => 'knowledge', 'fa' => 'تاریخ', 'en' => 'History', 'tr' => 'Tarih' ),
+		'politics'   => array( 'cat' => 'knowledge', 'fa' => 'سیاست و جامعه', 'en' => 'Politics & society', 'tr' => 'Siyaset ve toplum' ),
+		'economics'  => array( 'cat' => 'knowledge', 'fa' => 'اقتصاد', 'en' => 'Economics', 'tr' => 'Ekonomi' ),
+		'language'   => array( 'cat' => 'knowledge', 'fa' => 'زبان‌آموزی', 'en' => 'Languages', 'tr' => 'Yabancı dil' ),
+		'space'      => array( 'cat' => 'knowledge', 'fa' => 'نجوم و فضا', 'en' => 'Astronomy & space', 'tr' => 'Astronomi ve uzay' ),
+		'environment' => array( 'cat' => 'knowledge', 'fa' => 'محیط زیست', 'en' => 'Environment', 'tr' => 'Çevre' ),
+		'debate'     => array( 'cat' => 'knowledge', 'fa' => 'گفتگو و مناظره', 'en' => 'Debate & discussion', 'tr' => 'Tartışma ve münazara' ),
+		'spirituality' => array( 'cat' => 'knowledge', 'fa' => 'معنویت', 'en' => 'Spirituality', 'tr' => 'Maneviyat' ),
+
+		// -------------------------------------------- work & technology ---
+		'startup'    => array( 'cat' => 'work', 'fa' => 'استارتاپ', 'en' => 'Startups', 'tr' => 'Girişimcilik' ),
+		'business'   => array( 'cat' => 'work', 'fa' => 'کسب‌وکار', 'en' => 'Business', 'tr' => 'İş dünyası' ),
+		'marketing'  => array( 'cat' => 'work', 'fa' => 'بازاریابی', 'en' => 'Marketing', 'tr' => 'Pazarlama' ),
+		'tech'       => array( 'cat' => 'work', 'fa' => 'تکنولوژی', 'en' => 'Technology', 'tr' => 'Teknoloji' ),
+		'programming' => array( 'cat' => 'work', 'fa' => 'برنامه‌نویسی', 'en' => 'Programming', 'tr' => 'Yazılım' ),
+		'ai'         => array( 'cat' => 'work', 'fa' => 'هوش مصنوعی', 'en' => 'AI', 'tr' => 'Yapay zekâ' ),
+		'design'     => array( 'cat' => 'work', 'fa' => 'طراحی و گرافیک', 'en' => 'Design & graphics', 'tr' => 'Tasarım ve grafik' ),
+		'finance'    => array( 'cat' => 'work', 'fa' => 'سرمایه‌گذاری', 'en' => 'Investing', 'tr' => 'Yatırım' ),
+		'crypto'     => array( 'cat' => 'work', 'fa' => 'ارز دیجیتال', 'en' => 'Crypto', 'tr' => 'Kripto' ),
+		'freelance'  => array( 'cat' => 'work', 'fa' => 'فریلنسری', 'en' => 'Freelancing', 'tr' => 'Serbest çalışma' ),
+		'teaching'   => array( 'cat' => 'work', 'fa' => 'تدریس', 'en' => 'Teaching', 'tr' => 'Öğretmenlik' ),
+		'medicine'   => array( 'cat' => 'work', 'fa' => 'پزشکی و سلامت', 'en' => 'Medicine & health', 'tr' => 'Tıp ve sağlık' ),
+		'law'        => array( 'cat' => 'work', 'fa' => 'حقوق', 'en' => 'Law', 'tr' => 'Hukuk' ),
+		'engineering' => array( 'cat' => 'work', 'fa' => 'مهندسی', 'en' => 'Engineering', 'tr' => 'Mühendislik' ),
+
+		// -------------------------------------------- sport & outdoors ----
+		'sports'     => array( 'cat' => 'active', 'fa' => 'ورزش', 'en' => 'Sports', 'tr' => 'Spor' ),
+		'football'   => array( 'cat' => 'active', 'fa' => 'فوتبال', 'en' => 'Football', 'tr' => 'Futbol' ),
+		'basketball' => array( 'cat' => 'active', 'fa' => 'بسکتبال', 'en' => 'Basketball', 'tr' => 'Basketbol' ),
+		'volleyball' => array( 'cat' => 'active', 'fa' => 'والیبال', 'en' => 'Volleyball', 'tr' => 'Voleybol' ),
+		'fitness'    => array( 'cat' => 'active', 'fa' => 'تناسب اندام', 'en' => 'Fitness', 'tr' => 'Fitness' ),
+		'running'    => array( 'cat' => 'active', 'fa' => 'دویدن', 'en' => 'Running', 'tr' => 'Koşu' ),
+		'cycling'    => array( 'cat' => 'active', 'fa' => 'دوچرخه‌سواری', 'en' => 'Cycling', 'tr' => 'Bisiklet' ),
+		'swimming'   => array( 'cat' => 'active', 'fa' => 'شنا', 'en' => 'Swimming', 'tr' => 'Yüzme' ),
+		'martial'    => array( 'cat' => 'active', 'fa' => 'ورزش‌های رزمی', 'en' => 'Martial arts', 'tr' => 'Dövüş sanatları' ),
+		'yoga'       => array( 'cat' => 'active', 'fa' => 'یوگا و مدیتیشن', 'en' => 'Yoga & meditation', 'tr' => 'Yoga ve meditasyon' ),
+		'nature'     => array( 'cat' => 'active', 'fa' => 'طبیعت‌گردی', 'en' => 'Nature & hiking', 'tr' => 'Doğa ve yürüyüş' ),
+		'mountain'   => array( 'cat' => 'active', 'fa' => 'کوهنوردی', 'en' => 'Mountaineering', 'tr' => 'Dağcılık' ),
+		'camping'    => array( 'cat' => 'active', 'fa' => 'کمپینگ', 'en' => 'Camping', 'tr' => 'Kamp' ),
+		'travel'     => array( 'cat' => 'active', 'fa' => 'سفر', 'en' => 'Travel', 'tr' => 'Seyahat' ),
+		'skiing'     => array( 'cat' => 'active', 'fa' => 'اسکی', 'en' => 'Skiing', 'tr' => 'Kayak' ),
+		'fishing'    => array( 'cat' => 'active', 'fa' => 'ماهیگیری', 'en' => 'Fishing', 'tr' => 'Balık tutmak' ),
+
+		// ------------------------------------------------ food & drink ----
+		'coffee'     => array( 'cat' => 'food', 'fa' => 'قهوه', 'en' => 'Coffee', 'tr' => 'Kahve' ),
+		'tea'        => array( 'cat' => 'food', 'fa' => 'چای و دمنوش', 'en' => 'Tea & herbal drinks', 'tr' => 'Çay ve bitki çayı' ),
+		'food'       => array( 'cat' => 'food', 'fa' => 'آشپزی', 'en' => 'Cooking', 'tr' => 'Yemek yapmak' ),
+		'baking'     => array( 'cat' => 'food', 'fa' => 'شیرینی‌پزی', 'en' => 'Baking & desserts', 'tr' => 'Pastacılık' ),
+		'foodie'     => array( 'cat' => 'food', 'fa' => 'کافه‌گردی و رستوران', 'en' => 'Cafés & restaurants', 'tr' => 'Kafe ve restoran' ),
+		'vegan'      => array( 'cat' => 'food', 'fa' => 'گیاه‌خواری', 'en' => 'Vegetarian & vegan', 'tr' => 'Vejetaryen ve vegan' ),
+
+		// ------------------------------------------------ games & fun -----
+		'gaming'     => array( 'cat' => 'play', 'fa' => 'بازی ویدیویی', 'en' => 'Video games', 'tr' => 'Video oyunları' ),
+		'boardgames' => array( 'cat' => 'play', 'fa' => 'بازی رومیزی', 'en' => 'Board games', 'tr' => 'Kutu oyunları' ),
+		'chess'      => array( 'cat' => 'play', 'fa' => 'شطرنج', 'en' => 'Chess', 'tr' => 'Satranç' ),
+		'cards'      => array( 'cat' => 'play', 'fa' => 'بازی با ورق', 'en' => 'Card games', 'tr' => 'Kart oyunları' ),
+		'puzzle'     => array( 'cat' => 'play', 'fa' => 'معما و پازل', 'en' => 'Puzzles & riddles', 'tr' => 'Bulmaca' ),
+		'escape'     => array( 'cat' => 'play', 'fa' => 'اتاق فرار', 'en' => 'Escape rooms', 'tr' => 'Kaçış odası' ),
+		'karaoke'    => array( 'cat' => 'play', 'fa' => 'کارائوکه', 'en' => 'Karaoke', 'tr' => 'Karaoke' ),
+		'standup'    => array( 'cat' => 'play', 'fa' => 'استندآپ کمدی', 'en' => 'Stand-up comedy', 'tr' => 'Stand-up' ),
+
+		// -------------------------------------------------- lifestyle -----
+		'pets'       => array( 'cat' => 'life', 'fa' => 'حیوانات خانگی', 'en' => 'Pets', 'tr' => 'Evcil hayvanlar' ),
+		'volunteer'  => array( 'cat' => 'life', 'fa' => 'کار داوطلبانه', 'en' => 'Volunteering', 'tr' => 'Gönüllülük' ),
+		'fashion'    => array( 'cat' => 'life', 'fa' => 'مد و استایل', 'en' => 'Fashion', 'tr' => 'Moda' ),
+		'cars'       => array( 'cat' => 'life', 'fa' => 'خودرو', 'en' => 'Cars', 'tr' => 'Otomobil' ),
+		'moto'       => array( 'cat' => 'life', 'fa' => 'موتورسیکلت', 'en' => 'Motorcycles', 'tr' => 'Motosiklet' ),
+		'crafts'     => array( 'cat' => 'life', 'fa' => 'کاردستی', 'en' => 'Crafts & DIY', 'tr' => 'El işi' ),
+		'gardening'  => array( 'cat' => 'life', 'fa' => 'باغبانی', 'en' => 'Gardening & plants', 'tr' => 'Bahçecilik' ),
+		'interior'   => array( 'cat' => 'life', 'fa' => 'دکوراسیون', 'en' => 'Interior & décor', 'tr' => 'Dekorasyon' ),
+		'parenting'  => array( 'cat' => 'life', 'fa' => 'فرزندپروری', 'en' => 'Parenting', 'tr' => 'Ebeveynlik' ),
+		'wellbeing'  => array( 'cat' => 'life', 'fa' => 'سلامت روان', 'en' => 'Mental wellbeing', 'tr' => 'Ruh sağlığı' ),
+		'collecting' => array( 'cat' => 'life', 'fa' => 'کلکسیون', 'en' => 'Collecting', 'tr' => 'Koleksiyon' ),
+		'astrology'  => array( 'cat' => 'life', 'fa' => 'طالع‌بینی', 'en' => 'Astrology', 'tr' => 'Astroloji' ),
 	);
 }
 

@@ -505,6 +505,10 @@ class Havato_I18N {
 			'vibe_deep'             => array( 'fa' => 'عمیق و فلسفی', 'en' => 'Deep & thoughtful', 'tr' => 'Derin ve düşündürücü' ),
 			'vibe_fun'              => array( 'fa' => 'شاد و سرگرم‌کننده', 'en' => 'Fun & light', 'tr' => 'Eğlenceli ve hafif' ),
 			'q_interests'           => array( 'fa' => 'علاقه‌مندی‌ها (چندتایی)', 'en' => 'Your interests (multi-select)', 'tr' => 'İlgi alanlarınız (çoklu seçim)' ),
+			'interests_search'      => array( 'fa' => 'جستجو در علاقه‌مندی‌ها…', 'en' => 'Search interests…', 'tr' => 'İlgi alanlarında ara…' ),
+			'interests_chosen'      => array( 'fa' => '%s انتخاب‌شده', 'en' => '%s selected', 'tr' => '%s seçildi' ),
+			'interests_none_found'  => array( 'fa' => 'موردی با این جستجو پیدا نشد.', 'en' => 'Nothing matches that search.', 'tr' => 'Bu aramayla eşleşen bir şey yok.' ),
+			'interests_other'       => array( 'fa' => 'سایر', 'en' => 'Other', 'tr' => 'Diğer' ),
 
 			// --- personality test: the five traits added in 1.11.0 ---------
 			'q_openness'            => array( 'fa' => 'با آدم‌های تازه چطور برخورد می‌کنید؟', 'en' => 'How do you approach new people?', 'tr' => 'Yeni insanlara nasıl yaklaşırsınız?' ),
@@ -528,11 +532,6 @@ class Havato_I18N {
 				'en' => 'Seven short questions about how you talk and connect. There are no right answers — the more honest you are, the better your table matches.',
 				'tr' => 'Nasıl konuştuğunuz ve bağ kurduğunuzla ilgili yedi kısa soru. Doğru cevap yok — ne kadar dürüst olursanız masa eşleşmeniz o kadar iyi olur.',
 			),
-			'trait_openness'        => array( 'fa' => 'پذیرندگی', 'en' => 'Openness', 'tr' => 'Açıklık' ),
-			'trait_humor'           => array( 'fa' => 'شوخ‌طبعی', 'en' => 'Humour', 'tr' => 'Mizah' ),
-			'trait_energy'          => array( 'fa' => 'انرژی', 'en' => 'Energy', 'tr' => 'Enerji' ),
-			'trait_planning'        => array( 'fa' => 'برنامه‌ریزی', 'en' => 'Planning', 'tr' => 'Planlılık' ),
-			'trait_empathy'         => array( 'fa' => 'همدلی', 'en' => 'Empathy', 'tr' => 'Empati' ),
 
 			// --- personal details editor -----------------------------------
 			'block_user'            => array( 'fa' => 'مسدود کردن', 'en' => 'Block', 'tr' => 'Engelle' ),
@@ -580,7 +579,14 @@ class Havato_I18N {
 			'keep_message'          => array( 'fa' => 'نگه داشتن', 'en' => 'Keep', 'tr' => 'Sakla' ),
 			'remove_message'        => array( 'fa' => 'حذف پیام', 'en' => 'Remove message', 'tr' => 'Mesajı kaldır' ),
 			'no_reports'            => array( 'fa' => 'گزارشی ثبت نشده است.', 'en' => 'No reports.', 'tr' => 'Bildirim yok.' ),
-			'edit_behaviour'        => array( 'fa' => '🧠 ویرایش شناسنامه رفتاری', 'en' => '🧠 Edit behaviour profile', 'tr' => '🧠 Davranış profilini düzenle' ),
+			'edit_behaviour'        => array( 'fa' => '🧠 ویرایش علاقه‌مندی‌ها و تست', 'en' => '🧠 Edit interests & test', 'tr' => '🧠 İlgi alanları ve testi düzenle' ),
+			/*
+			 * The profile card is titled by what it actually shows. It used to
+			 * be "Behaviour profile" and printed the personality-test result;
+			 * the scores are now kept private and only the interests remain.
+			 */
+			'interests_title'       => array( 'fa' => 'علاقه‌مندی‌ها', 'en' => 'Interests', 'tr' => 'İlgi alanları' ),
+			'interests_empty'       => array( 'fa' => 'هنوز علاقه‌مندی‌ای انتخاب نکرده‌اید. با ویرایش، علاقه‌مندی‌هایتان را اضافه کنید تا هم‌میزی‌های بهتری پیدا کنید.', 'en' => 'You have not picked any interests yet. Add some so we can seat you with people who share them.', 'tr' => 'Henüz ilgi alanı seçmediniz. Ekleyin ki sizi ortak ilgi alanına sahip kişilerle aynı masaya oturtalım.' ),
 			'delete_account'        => array( 'fa' => 'حذف حساب کاربری', 'en' => 'Delete my account', 'tr' => 'Hesabımı sil' ),
 			'delete_confirm_1'      => array(
 				'fa' => 'با حذف حساب، پروفایل، رزروها، گفتگوها و عکس‌های شما برای همیشه پاک می‌شود. این کار قابل بازگشت نیست.',
@@ -632,11 +638,6 @@ class Havato_I18N {
 			'q_country'             => array( 'fa' => 'کشور', 'en' => 'Country', 'tr' => 'Ülke' ),
 			'q_city_select'         => array( 'fa' => 'شهر', 'en' => 'City', 'tr' => 'Şehir' ),
 			'city_empty'            => array( 'fa' => 'فعلاً در شهر شما دورهمی‌ای ثبت نشده است.', 'en' => 'No tables in your city yet.', 'tr' => 'Şehrinizde henüz masa yok.' ),
-			'listener'              => array( 'fa' => 'شنونده', 'en' => 'Listener', 'tr' => 'Dinleyici' ),
-			'speaker'               => array( 'fa' => 'گوینده', 'en' => 'Speaker', 'tr' => 'Konuşkan' ),
-			'introvert'             => array( 'fa' => 'درون‌گرا', 'en' => 'Introvert', 'tr' => 'İçe dönük' ),
-			'extrovert'             => array( 'fa' => 'برون‌گرا', 'en' => 'Extrovert', 'tr' => 'Dışa dönük' ),
-			'behaviour_id'          => array( 'fa' => 'شناسنامه رفتاری', 'en' => 'Behaviour profile', 'tr' => 'Davranış profili' ),
 			'test_done'             => array( 'fa' => 'تست شخصیت‌شناسی شما ثبت شد.', 'en' => 'Your personality profile has been saved.', 'tr' => 'Kişilik profiliniz kaydedildi.' ),
 			'gallery'               => array( 'fa' => 'گالری عکس', 'en' => 'Photo gallery', 'tr' => 'Fotoğraf galerisi' ),
 			'gallery_locked'        => array( 'fa' => 'گالری عکس فقط برای دوستان تاییدشده قابل مشاهده است.', 'en' => 'The photo gallery is only visible to accepted friends.', 'tr' => 'Fotoğraf galerisi yalnızca kabul edilen arkadaşlara görünür.' ),

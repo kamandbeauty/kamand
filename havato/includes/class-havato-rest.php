@@ -250,6 +250,7 @@ class Havato_REST {
 			'map'           => self::map_center( self::viewer_city() ),
 			'max_seats'     => havato_max_seats(),
 			'interests'     => havato_interest_tags(),
+			'interest_cats' => havato_interest_categories(),
 			'locations'     => havato_locations(),
 			'city'          => self::viewer_city(),
 		);
@@ -1351,14 +1352,6 @@ class Havato_REST {
 			'city'          => isset( $profile['city'] ) ? $profile['city'] : '',
 			'city_label'    => havato_city_label( isset( $profile['city'] ) ? $profile['city'] : '' ),
 			'phone'         => $is_self ? $profile['phone'] : '',
-			'extroversion'  => (int) $profile['personality_extroversion'],
-			'talkative'     => (int) $profile['personality_talkative'],
-			'openness'      => (int) $profile['personality_openness'],
-			'humor'         => (int) $profile['personality_humor'],
-			'energy'        => (int) $profile['personality_energy'],
-			'planning'      => (int) $profile['personality_planning'],
-			'empathy'       => (int) $profile['personality_empathy'],
-			'vibe'          => $profile['personality_vibe'],
 			'interests'     => $interests,
 			'rating'        => round( havato_effective_rating( $profile ), 1 ),
 			'rating_count'  => (int) $profile['rating_count'],
@@ -1371,7 +1364,28 @@ class Havato_REST {
 			'gallery_open'  => $is_self ? true : self::can_view_gallery( $viewer, $target ),
 		);
 
+		/*
+		 * The personality scores go ONLY to their owner, and only so the
+		 * "edit" button can re-open the test pre-filled with the stored
+		 * answers.
+		 *
+		 * They used to be sent to every viewer, which handed out a
+		 * psychological read of any user to anyone who opened their profile —
+		 * introversion out of ten, talker vs listener, and five trait scores.
+		 * Nothing in the interface needs them for someone else, and the
+		 * matcher runs server-side, so it never needed them on the client at
+		 * all. Withholding them here means the data cannot be recovered from
+		 * the network tab even though the card no longer renders it.
+		 */
 		if ( $is_self ) {
+			$data['extroversion'] = (int) $profile['personality_extroversion'];
+			$data['talkative']    = (int) $profile['personality_talkative'];
+			$data['openness']     = (int) $profile['personality_openness'];
+			$data['humor']        = (int) $profile['personality_humor'];
+			$data['energy']       = (int) $profile['personality_energy'];
+			$data['planning']     = (int) $profile['personality_planning'];
+			$data['empathy']      = (int) $profile['personality_empathy'];
+			$data['vibe']         = $profile['personality_vibe'];
 		}
 
 		return self::ok( $data );

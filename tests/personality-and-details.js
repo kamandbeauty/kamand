@@ -118,9 +118,44 @@ t('the new terms respect relaxed mode', /\$score\s*\+=\s*\$closeness \* \$weight
 })();
 
 console.log('\n--- 7. presentation + i18n ---');
-t('trait bars rendered on the profile', /hv-trait-bar/.test(js) && /hv-trait-bar/.test(css));
+
+/* The personality RESULT is deliberately not shown to anyone.
+   It used to render as an "introvert 4/10" chip plus five trait bars, on the
+   viewer's own profile AND on other people's. The scores exist to feed the
+   matcher, which runs server-side; publishing them turns a matching input
+   into a verdict the guest reads about themselves, and hands out a
+   psychological read of a stranger. These assertions replace the old ones,
+   which asserted the bars were present. */
+t('trait bars are gone from the markup', !/hv-trait-bar/.test(js));
+t('trait bar CSS removed too (no dead rules)', !/hv-trait-bar/.test(css));
+t('no introvert/extrovert label on the profile',
+  !/t\('introvert'\)/.test(js) && !/t\('extrovert'\)/.test(js));
+t('no speaker/listener label on the profile',
+  !/t\('speaker'\)/.test(js) && !/t\('listener'\)/.test(js));
+t('the "behaviour profile" card is gone', !/t\('behaviour_id'\)/.test(js));
+t('the card is now titled by what it shows', /t\('interests_title'\)/.test(js));
+
+// The scores must not even reach the client for someone else's profile —
+// hiding them in the markup alone would still leak them over the network.
+{
+  const selfBlock = /if \( \$is_self \) \{([\s\S]*?)\n\t\t\}/.exec(rest);
+  t('scores are attached only inside an is_self branch', !!selfBlock);
+  for (const k of ['extroversion', 'talkative', 'openness', 'humor',
+                   'energy', 'planning', 'empathy', 'vibe']) {
+    t(`  ${k} sent only to its owner`,
+      !!selfBlock && new RegExp("\\$data\\['" + k + "'\\]").test(selfBlock[1]));
+    // ...and NOT in the unconditional payload.
+    const unconditional = rest.slice(rest.indexOf("$data = array("), rest.indexOf("if ( $is_self )"));
+    t(`  ${k} absent from the public payload`,
+      !new RegExp("'" + k + "'\\s*=>").test(unconditional));
+  }
+}
+
+// The owner still needs them, or "edit" would reset every answer to 5.
+t('the edit button re-reads the stored answers', /extroversion: p\.extroversion \|\| 5/.test(js));
+
 t('city shown on the profile card', /profile\.city_label/.test(js));
-t('bars skip traits that were never answered', /row\.value > 0/.test(js));
+t('interests still shown', /profile\.interests/.test(js));
 for (const k of ['q_openness', 'q_humor', 'q_energy', 'q_planning', 'q_empathy',
                  'edit_details', 'details_title', 'q_name', 'details_saved',
                  'err_name_short', 'err_age_range', 'test_intro_body'])

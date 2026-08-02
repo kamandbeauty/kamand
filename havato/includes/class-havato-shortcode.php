@@ -218,6 +218,7 @@ class Havato_Shortcode {
 				'logoutUrl'    => esc_url_raw( wp_logout_url( home_url( '/' ) ) ),
 				'maxSeats'     => havato_max_seats(),
 				'interests'    => havato_interest_tags(),
+				'interestCats' => havato_interest_categories(),
 				// The profile editor renders its country/city pickers straight
 				// from this map. It used to be sent only in the bootstrap REST
 				// response while the UI read it off the boot payload, so the

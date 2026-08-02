@@ -2531,16 +2531,23 @@
 			}
 
 			if (profile.is_self && (profile.penalty > 0)) {
-				html += '<div class="hv-card"><div class="hv-alert hv-alert-orange">' +
-					esc(t('penalty_notice')) +
-					'<br><strong>' + esc(t('stat_no_shows')) + ': ' + num(profile.no_shows) +
-					' · ' + esc(t('stat_empty_seats')) + ': ' + num(profile.empty_seats) +
-					' · ' + esc(t('penalty_points')) + ': ' + num(profile.penalty) + '</strong>' +
-					'</div></div>';
+				// Two clear lines: the sentence, then the three numbers as
+				// labelled pairs. They used to be one run of text separated by
+				// interpuncts, which the flex alert wrapped into a ragged block
+				// where a label could end up on a different line from its own
+				// value. Each pair is now an unbreakable unit.
+				html += '<div class="hv-card"><div class="hv-alert hv-alert-orange hv-penalty">' +
+					'<p class="hv-penalty-text">' + esc(t('penalty_notice')) + '</p>' +
+					'<div class="hv-penalty-stats">' +
+						penaltyStat(t('stat_no_shows'), profile.no_shows) +
+						penaltyStat(t('stat_empty_seats'), profile.empty_seats) +
+						penaltyStat(t('penalty_points'), profile.penalty) +
+					'</div>' +
+				'</div></div>';
 			}
 
 			if (profile.completed) {
-				html += behaviourMarkup(profile);
+				html += interestsMarkup(profile);
 			}
 
 			if ((friends.requests || []).length) {
@@ -2632,50 +2639,55 @@
 			'</div>';
 	}
 
-	function behaviourMarkup(profile) {
+	/** One "label: value" pair from the penalty summary, kept unbreakable. */
+	function penaltyStat(label, value) {
+		return '<span class="hv-penalty-stat">' +
+			'<span class="hv-penalty-label">' + esc(label) + '</span>' +
+			'<span class="hv-penalty-value">' + num(value) + '</span>' +
+		'</span>';
+	}
+
+	/**
+	 * The interests card.
+	 *
+	 * This used to be the "behaviour profile" and showed the personality-test
+	 * RESULT: an introvert/extrovert score out of ten, talker vs listener, the
+	 * vibe, and five trait bars. None of that is for the guest to read. The
+	 * test exists so the matcher can seat compatible people together; showing
+	 * someone "introvert 4/10" invites them to treat a number as a verdict on
+	 * themselves, and showing it on someone ELSE's profile hands out a
+	 * psychological read of a stranger. The scores still drive the matcher —
+	 * they are simply no longer published.
+	 *
+	 * What remains is the part the guest actually chose and benefits from
+	 * seeing: their interests, plus age and city, which are ordinary profile
+	 * facts rather than test results.
+	 */
+	function interestsMarkup(profile) {
 		var tags = (profile.interests || []).map(function (item) {
 			return '<span class="hv-behaviour-tag">' + esc(pick(item)) + '</span>';
 		}).join('');
 
-		var extro = profile.extroversion >= 7 ? t('extrovert') : (profile.extroversion <= 4 ? t('introvert') : 'Ambivert');
-		var talk = profile.talkative >= 7 ? t('speaker') : (profile.talkative <= 4 ? t('listener') : '—');
+		var facts =
+			(profile.age ? '<span class="hv-behaviour-tag">' + num(profile.age) + '</span>' : '') +
+			(pick(profile.city_label) ? '<span class="hv-behaviour-tag">' + esc(pick(profile.city_label)) + '</span>' : '');
 
-		// The five traits added with the longer test, each shown as a small
-		// labelled bar so the result reads as a profile rather than numbers.
-		var bars = [
-			{ label: t('trait_openness'), value: profile.openness },
-			{ label: t('trait_humor'),    value: profile.humor },
-			{ label: t('trait_energy'),   value: profile.energy },
-			{ label: t('trait_planning'), value: profile.planning },
-			{ label: t('trait_empathy'),  value: profile.empathy }
-		].filter(function (row) {
-			return typeof row.value === 'number' && row.value > 0;
-		}).map(function (row) {
-			return '<div class="hv-trait">' +
-				'<span class="hv-trait-label">' + esc(row.label) + '</span>' +
-				'<span class="hv-trait-bar"><i style="inline-size:' + (row.value * 10) + '%"></i></span>' +
-				'<span class="hv-trait-value">' + num(row.value) + '</span>' +
-			'</div>';
-		}).join('');
+		// Nothing to show at all: no interests picked and no age/city on file.
+		if (!tags && !facts) { return ''; }
 
 		return '' +
 			'<div class="hv-card">' +
 				'<div class="hv-section-head">' +
-					'<h3 class="hv-section-title">' + esc(t('behaviour_id')) + '</h3>' +
+					'<h3 class="hv-section-title">' + esc(t('interests_title')) + '</h3>' +
 					(profile.is_self
 						? '<button type="button" class="hv-btn hv-btn-ghost hv-btn-sm" id="hv-edit-behaviour">' +
 							esc(t('edit')) + '</button>'
 						: '') +
 				'</div>' +
-				'<div class="hv-behaviour-tags">' +
-					'<span class="hv-behaviour-tag">' + esc(extro) + ' · ' + num(profile.extroversion) + '/' + num(10) + '</span>' +
-					'<span class="hv-behaviour-tag">' + esc(talk) + '</span>' +
-					'<span class="hv-behaviour-tag">' + esc(profile.vibe === 'deep' ? t('vibe_deep') : t('vibe_fun')) + '</span>' +
-					(profile.age ? '<span class="hv-behaviour-tag">' + num(profile.age) + '</span>' : '') +
-					(pick(profile.city_label) ? '<span class="hv-behaviour-tag">' + esc(pick(profile.city_label)) + '</span>' : '') +
-					tags +
-				'</div>' +
-				(bars ? '<div class="hv-traits">' + bars + '</div>' : '') +
+				'<div class="hv-behaviour-tags">' + facts + tags + '</div>' +
+				(profile.is_self && !tags
+					? '<p class="hv-muted hv-mt">' + esc(t('interests_empty')) + '</p>'
+					: '') +
 			'</div>';
 	}
 
@@ -2819,7 +2831,7 @@
 
 		var startTest = $('#hv-start-test');
 		if (startTest) {
-			startTest.onclick = function () { S.testStep = 0; renderTestStep(); };
+			startTest.onclick = function () { S.testStep = 0; S.interestQuery = ''; renderTestStep(); };
 		}
 
 		var editDetails = $('#hv-edit-details');
@@ -2843,6 +2855,9 @@
 					interests: (p.interests || []).map(function (i) { return i.key; })
 				};
 				S.testStep = 0;
+				// A stale filter from a previous visit would hide most of the
+				// list the moment the picker opens.
+				S.interestQuery = '';
 				renderTestStep();
 			};
 		}
@@ -3112,16 +3127,70 @@
 			'</div>';
 	}
 
+	/**
+	 * The interest picker.
+	 *
+	 * The list grew from 36 to 86 tags, and 86 chips in one undivided heap is
+	 * not something anyone reads to the end — people tick whatever they see
+	 * first and move on, which leaves the matcher working from a poor picture
+	 * of them. So the chips are grouped under their category heading and a
+	 * search box filters the lot, letting someone type "chess" instead of
+	 * hunting for it. A live count shows how many they have chosen.
+	 */
 	function stepInterests() {
 		var tags = BOOT.interests || {};
-		return '<div class="hv-step-q">' + esc(t('q_interests')) + '</div>' +
-			'<div class="hv-chips">' +
-				Object.keys(tags).map(function (key) {
-					var active = S.testData.interests.indexOf(key) !== -1 ? ' is-active' : '';
-					return '<button type="button" class="hv-chip' + active + '" data-interest="' + esc(key) + '">' +
-						esc(pick(tags[key])) + '</button>';
-				}).join('') +
+		var cats = BOOT.interestCats || {};
+		var query = (S.interestQuery || '').trim().toLowerCase();
+
+		// Group the keys under their category, preserving the order the
+		// category map declares rather than the order the tags happen to sit
+		// in. Anything whose category is missing falls into a final bucket so
+		// a new tag can never silently vanish from the picker.
+		var groups = {};
+		var order = Object.keys(cats);
+		order.forEach(function (c) { groups[c] = []; });
+
+		Object.keys(tags).forEach(function (key) {
+			var tag = tags[key];
+			if (query) {
+				// Match against every language, so a Persian speaker reading
+				// the app in English can still find a tag by its Persian name.
+				var hay = [tag.fa, tag.en, tag.tr, key].join(' ').toLowerCase();
+				if (hay.indexOf(query) === -1) { return; }
+			}
+			var cat = tag.cat && groups[tag.cat] ? tag.cat : '_other';
+			if (!groups[cat]) { groups[cat] = []; order.push(cat); }
+			groups[cat].push(key);
+		});
+
+		var chosen = (S.testData.interests || []).length;
+
+		var body = order.map(function (cat) {
+			var keys = groups[cat] || [];
+			if (!keys.length) { return ''; }
+			var label = cats[cat] ? pick(cats[cat]) : t('interests_other');
+			return '<div class="hv-interest-group">' +
+				'<h4 class="hv-interest-cat">' + esc(label) + '</h4>' +
+				'<div class="hv-chips">' +
+					keys.map(function (key) {
+						var active = S.testData.interests.indexOf(key) !== -1 ? ' is-active' : '';
+						return '<button type="button" class="hv-chip' + active + '" data-interest="' + esc(key) + '">' +
+							esc(pick(tags[key])) + '</button>';
+					}).join('') +
+				'</div>' +
 			'</div>';
+		}).join('');
+
+		return '<div class="hv-step-q">' + esc(t('q_interests')) + '</div>' +
+			'<div class="hv-interest-bar">' +
+				'<input type="search" class="hv-input hv-interest-search" id="hv-interest-search" ' +
+					'placeholder="' + esc(t('interests_search')) + '" value="' + esc(S.interestQuery || '') + '">' +
+				'<span class="hv-interest-count" id="hv-interest-count">' +
+					esc(t('interests_chosen').replace('%s', num(chosen))) +
+				'</span>' +
+			'</div>' +
+			(body || '<p class="hv-muted">' + esc(t('interests_none_found')) + '</p>') +
+			'<div class="hv-interest-scroll-pad"></div>';
 	}
 
 	function bindStepEvents() {
@@ -3146,8 +3215,34 @@
 				var idx = S.testData.interests.indexOf(key);
 				if (idx === -1) { S.testData.interests.push(key); } else { S.testData.interests.splice(idx, 1); }
 				btn.classList.toggle('is-active', idx === -1);
+				// Update the counter in place. Re-rendering the whole step
+				// would rebuild the list and throw away the search box's
+				// focus and caret on every single tap.
+				var counter = $('#hv-interest-count');
+				if (counter) {
+					counter.textContent = t('interests_chosen')
+						.replace('%s', num(S.testData.interests.length));
+				}
 			};
 		});
+
+		var search = $('#hv-interest-search');
+		if (search) {
+			search.oninput = function () {
+				S.interestQuery = search.value;
+				var at = search.selectionStart;
+				renderTestStep();
+				// renderTestStep() replaces the DOM, so the field the user is
+				// typing into is destroyed mid-keystroke. Restore focus and
+				// the caret position on the new one, or every character types
+				// itself and then drops the keyboard.
+				var again = $('#hv-interest-search');
+				if (again) {
+					again.focus();
+					try { again.setSelectionRange(at, at); } catch (e) { /* not all inputs allow it */ }
+				}
+			};
+		}
 
 		var prev = $('#hv-step-prev');
 		if (prev) { prev.onclick = function () { S.testStep = Math.max(0, S.testStep - 1); renderTestStep(); }; }
