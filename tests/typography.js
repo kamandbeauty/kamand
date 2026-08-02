@@ -109,8 +109,11 @@ t('the token is not itself rem-relative', !/--hv-fs:[^;]*rem/.test(bare));
 
   if (tok) {
     // Spot-check real components against what `Nrem` used to compute to.
+    // .hv-tab is deliberately NOT in this list: its multiplier was changed
+    // on purpose in 1.35.1 (the old value was dead code that had never once
+    // been applied). Everything else must be untouched.
     const cases = [
-      ['.hv-tab', 0.62], ['.hv-btn', 0.9], ['.hv-muted', 0.8],
+      ['.hv-btn', 0.9], ['.hv-muted', 0.8],
       ['.hv-next-name', 1.08], ['.hv-modal-title', 1.1]
     ];
     for (const [name, mult] of cases) {
@@ -195,7 +198,9 @@ t('the My Tables SCREEN keeps its full title', /setHeader\(t\('tab_my_tables'\)/
 
   if (mult && en) {
     const fs = +en[1] * parseFloat(mult[1]);
-    t(`Latin tab label renders at ${fs.toFixed(1)}px — above the 9px floor`, fs >= 9);
+    // 10px is the iOS tab-bar baseline; anything under it reads as a defect,
+    // which is exactly what was reported after 1.35.0 repaired the cascade.
+    t(`Latin tab label renders at ${fs.toFixed(1)}px — at or above the 10px baseline`, fs >= 10);
 
     const labels = ['Home', 'Explore', 'Tables', 'Chats', 'Profile'];
     for (const w of [320, 360, 375, 414]) {

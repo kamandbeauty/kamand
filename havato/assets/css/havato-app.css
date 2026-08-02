@@ -369,9 +369,20 @@ body.havato-standalone #havato-app { border-radius: 0; }
    attributes. An unsized inline SVG is a replaced element, so the browser
    falls back to its default 300x150 — which once blew the little map pill up
    into a giant pin covering the whole map. Give every sprite icon a sane
-   default size; the specific rules below (.hv-tab svg, .hv-stat-icon svg, …)
-   still override it wherever a different size is wanted. */
-#havato-app svg:not(.hv-sprite):not(.hv-wave) {
+   default size.
+
+   WRITTEN WITH :where() ON PURPOSE. The obvious form,
+   `#havato-app svg:not(.hv-sprite):not(.hv-wave)`, scores 1-2-1 because the
+   arguments of :not() DO count toward specificity. That beat every component
+   rule meant to override it — `.hv-tab svg` is only 0-1-1 — so the intended
+   22px nav icons were never applied and every icon in the app silently
+   rendered at 1.25em instead, i.e. tied to the font size rather than a fixed
+   size. The bug was masked while buttons wrongly inherited the 16px body size
+   (1.25 × 16 = 20px, close enough to 22px to look right); fixing that in
+   1.35.0 dropped the icons to 1.25 × 9.9 = 12.4px and made it visible.
+   :where() contributes zero specificity, so this whole selector is 0-0-1 —
+   still a default, and now genuinely overridable. */
+:where(#havato-app svg:not(.hv-sprite):not(.hv-wave)) {
 	inline-size: 1.25em;
 	block-size: 1.25em;
 	flex: 0 0 auto;
@@ -1135,7 +1146,15 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	background: none;
 	border: 0;
 	color: rgba(255, 255, 255, 0.72);
-	font-size: calc(0.62 * var(--hv-fs));
+	/* 0.75, not 0.62. The old 0.6 was written when this rule was DEAD — the
+	   `font: inherit` shorthand overrode it, so the bar actually rendered at
+	   the 16px body size and nobody noticed the declared value was far too
+	   small. With the cascade repaired in 1.35.0 the real number applied and
+	   the bar came out at ~9.9px, below both platform baselines (iOS tab bars
+	   use 10px, Android bottom navigation 12px). 0.75 lands on 12px in
+	   Persian and 11.3px in Latin, and every label in all three languages
+	   still fits a 320px screen. */
+	font-size: calc(0.75 * var(--hv-fs));
 	font-weight: 600;
 	cursor: pointer;
 	transition: color 0.18s ease, transform 0.18s ease;
@@ -1143,7 +1162,14 @@ body.havato-standalone #havato-app { border-radius: 0; }
 /* NOTE: the slight negative tracking for Latin tab labels lives with the
    host-theme guard in §0.1b, because that guard has to be `!important` to
    beat a theme and therefore so does every exception to it. */
-.hv-tab svg { inline-size: 22px; block-size: 22px; flex: 0 0 auto; }
+/* 24px, and it finally takes effect. This rule was inert until 1.35.1: the
+   safety net above was written `#havato-app svg:not(…):not(…)`, and because
+   :not()'s ARGUMENTS count toward specificity that scored 1-2-1 against this
+   rule's 0-1-1. Every icon in the app therefore rendered at the net's 1.25em
+   — a size tied to the font rather than a fixed one. It looked plausible only
+   because buttons were separately (and wrongly) inheriting the 16px body
+   size, making the icons 20px by accident. */
+.hv-tab svg { inline-size: 24px; block-size: 24px; flex: 0 0 auto; }
 /* One line only. A long label ellipsises rather than wrapping and shoving
    the icon out of alignment with its neighbours. */
 .hv-tab span {
@@ -2496,7 +2522,12 @@ img.hv-menu-thumb {
    ====================================================================== */
 @media (max-width: 380px) {
 	#havato-app { --hv-gutter: 13px; }
-	.hv-tab { font-size: calc(0.58 * var(--hv-fs)); }
+	/* The tab labels are NOT shrunk here any more. This used to drop them to
+	   0.58 (~9.3px), which is below the platform minimum and was the "the
+	   bottom menu went tiny" report. The short labels adopted in 1.35.0 fit a
+	   320px screen at the full 0.75 in all three languages — Turkish, the
+	   longest, needs 50.6px of a 62px column — so there is nothing to gain by
+	   making them smaller. Only the icon steps down, to buy vertical room. */
 	.hv-tab svg { inline-size: 22px; block-size: 22px; }
 	.hv-stat-grid { grid-template-columns: repeat(2, 1fr); }
 	.hv-kpi-grid { grid-template-columns: repeat(2, 1fr); }

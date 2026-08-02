@@ -57,6 +57,7 @@ const OLD_LABELS = ['Home', 'Explore', en('tab_my_tables'), 'Chats', en('tab_pro
 
 // Sizes, read from the stylesheet.
 const tokEn = +(/hv-dir-ltr\s*\{[\s\S]*?--hv-fs:\s*([\d.]+)px/.exec(CSS) || [])[1];
+const tabIcon = +(/\.hv-tab svg \{[^}]*inline-size:\s*(\d+)px/s.exec(CSS) || [])[1];
 const tabMult = +(/\n\.hv-tab\s*\{[^}]*font-size:\s*calc\(([\d.]+)/s.exec(CSS) || [])[1];
 const btnMult = +(/\n\.hv-btn\s*\{[^}]*font-size:\s*calc\(([\d.]+)/s.exec(CSS) || [])[1];
 if (!tokEn || !tabMult || !btnMult) { throw new Error('could not read sizes from CSS'); }
@@ -96,7 +97,7 @@ s += `<rect width="${W}" height="${H}" fill="#eef1fb"/>`;
 
 s += ctr(W / 2, 46, 'English build — bottom bar and buttons at 375px', 21, 800, '#16204a');
 
-function panel(x, title, tint, labels, tabFs, btnFs, caps, note) {
+function panel(x, title, tint, labels, tabFs, btnFs, caps, note, iconPx) {
   let g = '';
   const top = 82;
   const ph = H - top - 40;
@@ -151,7 +152,8 @@ function panel(x, title, tint, labels, tabFs, btnFs, caps, note) {
   labels.forEach((lab, i) => {
     const cx = px + colW * (i + 0.5);
     // icon
-    g += `<rect x="${cx - 9 * S}" y="${navY + 11 * S}" width="${18 * S}" height="${18 * S}" rx="${5 * S}" ` +
+    const ic = iconPx * S;
+    g += `<rect x="${cx - ic / 2}" y="${navY + 9 * S}" width="${ic}" height="${ic}" rx="${ic * 0.28}" ` +
       `fill="none" stroke="#ffffff" stroke-width="${1.9 * S}" stroke-opacity="0.95"/>`;
 
     const text = say(lab);
@@ -164,7 +166,7 @@ function panel(x, title, tint, labels, tabFs, btnFs, caps, note) {
       ? text.slice(0, Math.max(1, Math.floor(room / (tabFs * S * 0.5)) - 1)) + '…'
       : text;
     g += `<g clip-path="url(#${cid})">` +
-      ctr(cx, navY + 44 * S, shown, tabFs * S, need > room ? 700 : 600, '#ffffff') + `</g>`;
+      ctr(cx, navY + 9 * S + ic + 13 * S, shown, tabFs * S, need > room ? 700 : 600, '#ffffff') + `</g>`;
 
     if (need > room) {
       g += `<rect x="${cx - room / 2}" y="${navY}" width="${room}" height="${navH}" fill="#ff3b30" fill-opacity="0.16"/>`;
@@ -180,10 +182,10 @@ function panel(x, title, tint, labels, tabFs, btnFs, caps, note) {
   return g;
 }
 
-s += panel(GAP, 'BEFORE', '#b91c1c', OLD_LABELS, OLD_TAB, OLD_BTN, true,
-  `labels ${OLD_TAB}px (inherited) · uppercased by the host theme`);
-s += panel(GAP * 2 + COL, 'AFTER', '#067a55', TABS.map((t) => t.label), NEW_TAB, NEW_BTN, false,
-  `labels ${NEW_TAB.toFixed(1)}px (own rule) · case as authored`);
+s += panel(GAP, 'BEFORE (v1.34)', '#b91c1c', OLD_LABELS, OLD_TAB, OLD_BTN, true,
+  `label ${OLD_TAB}px inherited · icon 20px (1.25em) · uppercased by theme`, 20);
+s += panel(GAP * 2 + COL, 'AFTER (v1.35.1)', '#067a55', TABS.map((t) => t.label), NEW_TAB, NEW_BTN, false,
+  `label ${NEW_TAB.toFixed(1)}px · icon ${tabIcon}px · case as authored`, tabIcon);
 
 s += '</svg>';
 
@@ -204,5 +206,6 @@ ensureFonts().then(() => {
   fs.writeFileSync(dst, png);
   console.log('wrote ' + dst + '  (' + png.length + ' bytes)');
   console.log(`tab label: ${OLD_TAB}px -> ${NEW_TAB.toFixed(2)}px`);
+  console.log(`tab icon : 20px (1.25em, accidental) -> ${tabIcon}px (fixed)`);
   console.log(`btn label: ${OLD_BTN}px -> ${NEW_BTN.toFixed(2)}px`);
 }).catch((e) => { console.error(e); process.exit(1); });

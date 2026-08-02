@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.35.0
+Stable tag: 1.35.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,34 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.35.1 =
+* Fixed: the bottom navigation came out too small in every language after
+  1.35.0 — both the labels and the icons. Two causes, and the first had been
+  hiding in the stylesheet since the very first release:
+* The unsized-SVG safety net was written
+  `#havato-app svg:not(.hv-sprite):not(.hv-wave)`. The arguments of `:not()`
+  count toward specificity, so that selector scores 1-2-1 and outranked every
+  rule meant to override it — `.hv-tab svg` is only 0-1-1. All 14 icon sizes
+  in the app were therefore dead code, and every icon rendered at the net's
+  `1.25em`, a size tied to the font rather than a fixed one. Nobody noticed
+  because buttons were separately (and wrongly) inheriting the 16px body size,
+  which made the icons 20px by accident — close enough to the intended 22px to
+  look correct. Repairing that inheritance in 1.35.0 removed the accident and
+  the icons collapsed to about 12px. The net is now wrapped in `:where()`, so
+  it scores 0-0-0 and every component rule finally applies. Nav icons are
+  24px; the other thirteen sizes take effect for the first time.
+* The tab label multiplier was likewise never applied, so nobody had noticed
+  it was set far too low. Applied literally it produced ~9.9px, below both
+  platform baselines (iOS tab bars 10px, Android bottom navigation 12px). It
+  now resolves to 12px in Persian and 11.3px in Latin, and all five labels
+  still fit a 320px screen in all three languages — Turkish, the longest,
+  needs 50.6px of a 62px column.
+* The narrow-screen rule that shrank tab labels further on phones under 380px
+  has been removed for the same reason; only the icon steps down there now.
+* tests/icon-sizing.js now models CSS specificity properly, including the
+  `:not()`/`:where()` asymmetry, and asserts that all 14 icon rules outrank
+  the safety net rather than pinning the sizes the bug happened to produce.
 
 = 1.35.0 =
 * Fixed: in the English and Turkish builds the type was oversized and the
