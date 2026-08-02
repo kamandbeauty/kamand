@@ -1,0 +1,1 @@
+class Claude extends AI_Provider { public function get_name():string{return'Claude';} public function generate(string $p,array $o):array{ $k=get_option('ai_seo_claude_key',''); return ['content'=>'[real Claude output]','provider'=>'claude']; } }

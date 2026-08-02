@@ -1,0 +1,1 @@
+function aiGenerate(){const p=document.getElementById("ai-prompt").value,pr=document.getElementById("ai-provider").value;jQuery.post(aiSeo.ajax_url,{action:"ai_seo_generate",nonce:aiSeo.nonce,prompt:p,provider:pr},function(r){document.getElementById("ai-result").innerText=JSON.stringify(r);});}

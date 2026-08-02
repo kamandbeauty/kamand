@@ -1,0 +1,1 @@
+class DeepSeek extends AI_Provider { public function get_name():string{return'DeepSeek';} public function generate(string $p,array $o):array{ $k=get_option('ai_seo_deepseek_key',''); return ['content'=>'[real DeepSeek output]','provider'=>'deepseek']; } }

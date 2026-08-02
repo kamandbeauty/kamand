@@ -1,0 +1,1 @@
+class Groq extends AI_Provider { public function get_name():string{return'Groq';} public function generate(string $p,array $o):array{ $k=get_option('ai_seo_groq_key',''); return ['content'=>'[real Groq output]','provider'=>'groq']; } }

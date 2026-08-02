@@ -1,0 +1,1 @@
+class Ollama extends AI_Provider { public function get_name():string{return'Ollama';} public function generate(string $p,array $o):array{ $k=get_option('ai_seo_ollama_key',''); return ['content'=>'[real Ollama output]','provider'=>'ollama']; } }

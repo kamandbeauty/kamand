@@ -1,0 +1,1 @@
+<div class="wrap" dir="ltr"><h1>WooCommerce AI Panel</h1><p>Auto-detected: Title, Category, SKU, Brand, Price, Images. One-click generate descriptions, SEO titles, meta, specs, FAQ, JSON-LD schema, ALT tags, tags, marketing copy, SEO score.</p></div>

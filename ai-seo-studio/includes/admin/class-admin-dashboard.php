@@ -1,0 +1,1 @@
+<?php namespace AISEO\Admin; class Admin_Dashboard { public function render() { echo '<div class="wrap"><h1>'.esc_html__('AI SEO Studio','ai-seo-studio').'</h1><div class="ai-card">'.esc_html__('Dashboard loaded. Providers, Prompt Library, History, Bulk Generator available.','ai-seo-studio').'</div></div>'; } }

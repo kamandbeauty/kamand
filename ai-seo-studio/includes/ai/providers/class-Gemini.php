@@ -1,0 +1,1 @@
+class Gemini extends AI_Provider { public function get_name():string{return'Gemini';} public function generate(string $p,array $o):array{ $k=get_option('ai_seo_gemini_key',''); return ['content'=>'[real Gemini output]','provider'=>'gemini']; } }

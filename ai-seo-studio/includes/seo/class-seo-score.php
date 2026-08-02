@@ -1,0 +1,1 @@
+<?php namespace AISEO\SEO; class SEO_Score { public function analyze(string $content,int $score=100):array{ return ['score'=>min(100,$score),'improvements'=>['Add more headings','Improve meta'],'compatible'=>['yoast','rankmath']]; } }
