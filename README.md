@@ -97,6 +97,36 @@ bash scripts/pick-gradle-mirror.sh 8.9      # نسخهٔ دیگر
 
 مستندات رسمی مایکت: <https://maven.myket.ir/services/gradle-wrapper.html>
 
+### خطای «Failed to download any source lists» / dl.google.com
+
+این خطا **ربطی به کد پروژه ندارد** — Gradle موفق اجرا شده ولی حالا Android Studio می‌خواهد فهرست پکیج‌های SDK را از `dl.google.com` بگیرد که در ایران مسدود است.
+
+**نکتهٔ مهم:** `maven.myket.ir` فقط میرورِ *کتابخانه‌ها* است، **نه Android SDK**. اگر آن را در «SDK Update Sites» اندروید استودیو اضافه کرده‌اید حذفش کنید — همان چیزی است که خطای `UnknownHost sys-img.xml` را تولید می‌کند.
+
+**راه‌حل — نصب دستی SDK از CSV مایکت:**
+
+```bash
+bash scripts/fetch-android-sdk.sh --list   # فقط نمایش لینک‌ها
+bash scripts/fetch-android-sdk.sh          # دانلود و نصب خودکار
+```
+
+پکیج‌های موردنیاز این پروژه:
+
+| پکیج | مسیر نصب |
+|---|---|
+| Platform API 34 | `$SDK/platforms/android-34/` |
+| Build-Tools 34.0.0 | `$SDK/build-tools/34.0.0/` |
+| Platform-Tools | `$SDK/platform-tools/` |
+| Command-line Tools | `$SDK/cmdline-tools/latest/` |
+
+سپس مسیر SDK را معرفی کنید:
+
+```bash
+echo "sdk.dir=$HOME/Android/Sdk" > local.properties
+```
+
+منبع: <https://maven.myket.ir/services/android-sdk.html> — CSV: <https://maven.myket.ir/sdk-archives.csv>
+
 ## راه‌اندازی برای انتشار
 
 1. **فونت وزیرمتن** (OFL): فایل‌های `vazirmatn_regular/medium/bold.ttf` را در `core/ui/src/main/res/font/` قرار داده و در `FactorYarTheme.kt` مقدار `FyFontFamily` را با `FontFamily(Font(R.font.vazirmatn_regular))…` پر کنید.
