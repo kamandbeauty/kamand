@@ -1,0 +1,74 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: AI SEO Content Studio 1.0.0\n"
+"Report-Msgid-Bugs-To: https://kamandbeauty.com/\n"
+"POT-Creation-Date: 2026-08-03 00:00+0000\n"
+"PO-Revision-Date: 2026-08-03 00:00+0000\n"
+"Last-Translator: Kamand Beauty\n"
+"Language-Team: Persian\n"
+"Language: fa_IR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Domain: aiseo-content-studio\n"
+
+msgid "AI SEO Content Studio"
+msgstr "استودیوی محتوای سئوی هوش مصنوعی"
+
+msgid "AI SEO Studio"
+msgstr "استودیوی سئوی AI"
+
+msgid "Generator"
+msgstr "تولیدکننده"
+
+msgid "AI Providers"
+msgstr "ارائه‌دهندگان هوش مصنوعی"
+
+msgid "Prompt Library"
+msgstr "کتابخانه پرامپت"
+
+msgid "History"
+msgstr "تاریخچه"
+
+msgid "Bulk Queue"
+msgstr "صف گروهی"
+
+msgid "AI Chat"
+msgstr "گفتگوی هوش مصنوعی"
+
+msgid "Settings"
+msgstr "تنظیمات"
+
+msgid "Generate"
+msgstr "تولید"
+
+msgid "WooCommerce Super AI"
+msgstr "سوپر هوش مصنوعی ووکامرس"
+
+msgid "One-Click Full SEO Package"
+msgstr "بسته کامل سئو با یک کلیک"
+
+msgid "SEO Product Description"
+msgstr "توضیحات سئوی محصول"
+
+msgid "Short Description"
+msgstr "توضیح کوتاه"
+
+msgid "SEO Title"
+msgstr "عنوان سئو"
+
+msgid "Meta Description"
+msgstr "توضیحات متا"
+
+msgid "Focus Keywords"
+msgstr "کلمات کلیدی کانونی"
+
+msgid "Product Slug"
+msgstr "نامک محصول"
+
+msgid "Product FAQ"
+msgstr "سوالات متداول محصول"
+
+msgid "SEO Score"
+msgstr "امتیاز سئو"
