@@ -1,6 +1,6 @@
 {
   "version": "0.4",
-  "title": "Premium WooCommerce Single Product Template",
+  "title": "قالب تک‌محصول ووکامرس — سبک مارکت‌پلیس",
   "type": "single-product",
   "content": [
     {
@@ -56,7 +56,8 @@
         "align_items": "flex-start",
         "_title": "Hero — dynamic WooCommerce product",
         "flex_direction_tablet": "column",
-        "flex_direction_mobile": "column"
+        "flex_direction_mobile": "column",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -98,7 +99,8 @@
               "left": "0",
               "isLinked": true
             },
-            "_title": "Product gallery column"
+            "_title": "Product gallery column",
+            "html_tag": "section"
           },
           "elements": [
             {
@@ -138,11 +140,11 @@
             },
             "padding": {
               "unit": "px",
-              "top": "",
-              "right": "",
-              "bottom": "",
-              "left": "",
-              "isLinked": false
+              "top": "28",
+              "right": "28",
+              "bottom": "28",
+              "left": "28",
+              "isLinked": true
             },
             "margin": {
               "unit": "px",
@@ -155,10 +157,10 @@
             "background_background": "classic",
             "border_radius": {
               "unit": "px",
-              "top": "0",
-              "right": "0",
-              "bottom": "0",
-              "left": "0",
+              "top": "12",
+              "right": "12",
+              "bottom": "12",
+              "left": "12",
               "isLinked": true
             },
             "gap": {
@@ -166,7 +168,9 @@
               "row": "16",
               "isLinked": true
             },
-            "_title": "Product purchasing details"
+            "_title": "Product purchasing details",
+            "html_tag": "section",
+            "background_color": "var(--e-global-color-secondary)"
           },
           "elements": [
             {
@@ -260,7 +264,7 @@
               "isInner": false,
               "isLocked": false,
               "settings": {
-                "title": "Product options",
+                "title": "انتخاب مدل، رنگ و سایز",
                 "header_size": "h3",
                 "size": "",
                 "title_color": "var(--e-global-color-primary)",
@@ -340,7 +344,8 @@
                 "align_items": "flex-start",
                 "_title": "Wishlist and share placeholders",
                 "flex_direction_tablet": "column",
-                "flex_direction_mobile": "column"
+                "flex_direction_mobile": "column",
+                "html_tag": "section"
               },
               "elements": [
                 {
@@ -349,7 +354,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Wishlist placeholder — editable</p>",
+                    "editor": "<p>افزودن به علاقه‌مندی‌ها — قابل ویرایش</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
@@ -362,12 +367,87 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Share placeholder — editable</p>",
+                    "editor": "<p>اشتراک‌گذاری محصول — قابل ویرایش</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
                   "elements": [],
                   "widgetType": "text-editor"
+                }
+              ]
+            },
+            {
+              "id": "mktslr01",
+              "elType": "container",
+              "isInner": false,
+              "isLocked": false,
+              "settings": {
+                "container_type": "flex",
+                "flex_direction": "column",
+                "content_width": "full",
+                "background_background": "classic",
+                "background_color": "var(--e-global-color-secondary)",
+                "padding": {
+                  "unit": "px",
+                  "top": "20",
+                  "right": "20",
+                  "bottom": "20",
+                  "left": "20",
+                  "isLinked": true
+                },
+                "margin": {
+                  "unit": "px",
+                  "top": "0",
+                  "right": "0",
+                  "bottom": "0",
+                  "left": "0",
+                  "isLinked": true
+                },
+                "border_radius": {
+                  "unit": "px",
+                  "top": "12",
+                  "right": "12",
+                  "bottom": "12",
+                  "left": "12",
+                  "isLinked": true
+                },
+                "_title": "اطلاعات فروشنده — قابل ویرایش",
+                "html_tag": "aside"
+              },
+              "elements": [
+                {
+                  "id": "mkthead1",
+                  "elType": "widget",
+                  "isInner": false,
+                  "isLocked": false,
+                  "settings": {
+                    "title": "فروشنده و وضعیت ارسال",
+                    "header_size": "h3",
+                    "title_color": "var(--e-global-color-primary)"
+                  },
+                  "elements": [],
+                  "widgetType": "heading"
+                },
+                {
+                  "id": "mkttext1",
+                  "elType": "widget",
+                  "isInner": false,
+                  "isLocked": false,
+                  "settings": {
+                    "editor": "<p>نام فروشنده، امتیاز، موجودی و شرایط تحویل را از این بخش ویرایش کنید.</p>",
+                    "text_color": "var(--e-global-color-secondary)"
+                  },
+                  "elements": [],
+                  "widgetType": "text-editor"
+                },
+                {
+                  "id": "mktmeta1",
+                  "elType": "widget",
+                  "isInner": false,
+                  "isLocked": false,
+                  "settings": {},
+                  "elements": [],
+                  "widgetType": "woocommerce-product-meta"
                 }
               ]
             },
@@ -411,7 +491,8 @@
                   "isLinked": true
                 },
                 "background_color": "var(--e-global-color-secondary)",
-                "_title": "Delivery, guarantee & payment"
+                "_title": "Delivery, guarantee & payment",
+                "html_tag": "section"
               },
               "elements": [
                 {
@@ -420,7 +501,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "title": "Delivery information",
+                    "title": "ارسال و تحویل",
                     "header_size": "h3",
                     "size": "",
                     "title_color": "var(--e-global-color-primary)",
@@ -435,7 +516,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Editable delivery, returns and availability information.</p>",
+                    "editor": "<p>زمان و روش ارسال این محصول را از این بخش ویرایش کنید.</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
@@ -448,7 +529,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "title": "Guarantee",
+                    "title": "ضمانت و اصالت کالا",
                     "header_size": "h3",
                     "size": "",
                     "title_color": "var(--e-global-color-primary)",
@@ -463,7 +544,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Editable guarantee and quality assurance information.</p>",
+                    "editor": "<p>متن قابل ویرایش برای ضمانت کیفیت و اصالت محصول.</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
@@ -476,7 +557,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "title": "Payment methods",
+                    "title": "پرداخت امن",
                     "header_size": "h3",
                     "size": "",
                     "title_color": "var(--e-global-color-primary)",
@@ -491,7 +572,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Editable secure payment methods information.</p>",
+                    "editor": "<p>روش‌های پرداخت امن را در این قسمت ویرایش کنید.</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
@@ -537,10 +618,10 @@
         "background_background": "classic",
         "border_radius": {
           "unit": "px",
-          "top": "0",
-          "right": "0",
-          "bottom": "0",
-          "left": "0",
+          "top": "12",
+          "right": "12",
+          "bottom": "12",
+          "left": "12",
           "isLinked": true
         },
         "boxed_width": {
@@ -549,7 +630,8 @@
           "sizes": []
         },
         "background_color": "var(--e-global-color-secondary)",
-        "_title": "Trust badges"
+        "_title": "Trust badges",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -558,7 +640,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Shop with confidence",
+            "title": "خرید مطمئن از فروشگاه",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -616,7 +698,8 @@
             "justify_content": "space-between",
             "_title": "Four editable trust cards",
             "flex_direction_tablet": "column",
-            "flex_direction_mobile": "column"
+            "flex_direction_mobile": "column",
+            "html_tag": "section"
           },
           "elements": [
             {
@@ -659,7 +742,8 @@
                   "isLinked": true
                 },
                 "background_color": "var(--e-global-color-secondary)",
-                "_title": "Editable trust badge card"
+                "_title": "Editable trust badge card",
+                "html_tag": "section"
               },
               "elements": [
                 {
@@ -668,7 +752,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "title": "Fast Shipping",
+                    "title": "ارسال سریع",
                     "header_size": "h3",
                     "size": "",
                     "title_color": "var(--e-global-color-primary)",
@@ -683,7 +767,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Editable shipping promise.</p>",
+                    "editor": "<p>جزئیات ارسال قابل ویرایش</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
@@ -732,7 +816,8 @@
                   "isLinked": true
                 },
                 "background_color": "var(--e-global-color-secondary)",
-                "_title": "Editable trust badge card"
+                "_title": "Editable trust badge card",
+                "html_tag": "section"
               },
               "elements": [
                 {
@@ -741,7 +826,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "title": "Original Product",
+                    "title": "تضمین اصالت کالا",
                     "header_size": "h3",
                     "size": "",
                     "title_color": "var(--e-global-color-primary)",
@@ -756,7 +841,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Editable authenticity promise.</p>",
+                    "editor": "<p>اطمینان از اصالت قابل ویرایش</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
@@ -805,7 +890,8 @@
                   "isLinked": true
                 },
                 "background_color": "var(--e-global-color-secondary)",
-                "_title": "Editable trust badge card"
+                "_title": "Editable trust badge card",
+                "html_tag": "section"
               },
               "elements": [
                 {
@@ -814,7 +900,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "title": "Secure Payment",
+                    "title": "پرداخت امن",
                     "header_size": "h3",
                     "size": "",
                     "title_color": "var(--e-global-color-primary)",
@@ -829,7 +915,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Editable checkout reassurance.</p>",
+                    "editor": "<p>پرداخت امن قابل ویرایش</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
@@ -878,7 +964,8 @@
                   "isLinked": true
                 },
                 "background_color": "var(--e-global-color-secondary)",
-                "_title": "Editable trust badge card"
+                "_title": "Editable trust badge card",
+                "html_tag": "section"
               },
               "elements": [
                 {
@@ -887,7 +974,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "title": "Dedicated Support",
+                    "title": "پشتیبانی پاسخ‌گو",
                     "header_size": "h3",
                     "size": "",
                     "title_color": "var(--e-global-color-primary)",
@@ -902,7 +989,7 @@
                   "isInner": false,
                   "isLocked": false,
                   "settings": {
-                    "editor": "<p>Editable customer support message.</p>",
+                    "editor": "<p>پیام پشتیبانی قابل ویرایش</p>",
                     "text_color": "var(--e-global-color-secondary)",
                     "_title": "Editable text"
                   },
@@ -959,7 +1046,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "Product benefits"
+        "_title": "Product benefits",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -968,7 +1056,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Why you’ll love it",
+            "title": "مزیت‌های این محصول",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -1025,7 +1113,8 @@
             "align_items": "flex-start",
             "_title": "Six editable benefits",
             "flex_direction_tablet": "column",
-            "flex_direction_mobile": "column"
+            "flex_direction_mobile": "column",
+            "html_tag": "section"
           },
           "elements": [
             {
@@ -1038,8 +1127,8 @@
                   "value": "",
                   "library": ""
                 },
-                "title_text": "Premium materials",
-                "description_text": "Editable benefit description.",
+                "title_text": "کیفیت ساخت",
+                "description_text": "توضیح مزیت محصول را از این بخش ویرایش کنید.",
                 "position": "top",
                 "title_size": "h3",
                 "primary_color": "var(--e-global-color-primary)",
@@ -1059,8 +1148,8 @@
                   "value": "",
                   "library": ""
                 },
-                "title_text": "Designed to last",
-                "description_text": "Editable benefit description.",
+                "title_text": "دوام بالا",
+                "description_text": "توضیح مزیت محصول را از این بخش ویرایش کنید.",
                 "position": "top",
                 "title_size": "h3",
                 "primary_color": "var(--e-global-color-primary)",
@@ -1080,8 +1169,8 @@
                   "value": "",
                   "library": ""
                 },
-                "title_text": "Thoughtful details",
-                "description_text": "Editable benefit description.",
+                "title_text": "جزئیات کاربردی",
+                "description_text": "توضیح مزیت محصول را از این بخش ویرایش کنید.",
                 "position": "top",
                 "title_size": "h3",
                 "primary_color": "var(--e-global-color-primary)",
@@ -1101,8 +1190,8 @@
                   "value": "",
                   "library": ""
                 },
-                "title_text": "Easy returns",
-                "description_text": "Editable benefit description.",
+                "title_text": "بازگشت آسان",
+                "description_text": "توضیح مزیت محصول را از این بخش ویرایش کنید.",
                 "position": "top",
                 "title_size": "h3",
                 "primary_color": "var(--e-global-color-primary)",
@@ -1122,8 +1211,8 @@
                   "value": "",
                   "library": ""
                 },
-                "title_text": "Responsibly made",
-                "description_text": "Editable benefit description.",
+                "title_text": "انتخاب آگاهانه",
+                "description_text": "توضیح مزیت محصول را از این بخش ویرایش کنید.",
                 "position": "top",
                 "title_size": "h3",
                 "primary_color": "var(--e-global-color-primary)",
@@ -1143,8 +1232,8 @@
                   "value": "",
                   "library": ""
                 },
-                "title_text": "Expertly curated",
-                "description_text": "Editable benefit description.",
+                "title_text": "انتخاب‌شده برای شما",
+                "description_text": "توضیح مزیت محصول را از این بخش ویرایش کنید.",
                 "position": "top",
                 "title_size": "h3",
                 "primary_color": "var(--e-global-color-primary)",
@@ -1191,10 +1280,10 @@
         "background_background": "classic",
         "border_radius": {
           "unit": "px",
-          "top": "0",
-          "right": "0",
-          "bottom": "0",
-          "left": "0",
+          "top": "12",
+          "right": "12",
+          "bottom": "12",
+          "left": "12",
           "isLinked": true
         },
         "boxed_width": {
@@ -1212,7 +1301,8 @@
         "background_color": "var(--e-global-color-secondary)",
         "_title": "Editable promotional banner",
         "flex_direction_tablet": "column",
-        "flex_direction_mobile": "column"
+        "flex_direction_mobile": "column",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -1254,7 +1344,8 @@
               "left": "18",
               "isLinked": true
             },
-            "_title": "Promotion image"
+            "_title": "Promotion image",
+            "html_tag": "section"
           },
           "elements": [
             {
@@ -1321,7 +1412,8 @@
               "row": "20",
               "isLinked": true
             },
-            "_title": "Promotion content"
+            "_title": "Promotion content",
+            "html_tag": "section"
           },
           "elements": [
             {
@@ -1330,7 +1422,7 @@
               "isInner": false,
               "isLocked": false,
               "settings": {
-                "title": "A considered choice",
+                "title": "پیشنهاد ویژه برای شما",
                 "header_size": "h2",
                 "size": "",
                 "title_color": "var(--e-global-color-primary)",
@@ -1345,7 +1437,7 @@
               "isInner": false,
               "isLocked": false,
               "settings": {
-                "editor": "<p>Use this fully editable promotional area to tell a compelling brand or collection story.</p>",
+                "editor": "<p>این فضای قابل ویرایش برای معرفی پیشنهاد، برند یا یک مجموعه ویژه است.</p>",
                 "text_color": "var(--e-global-color-secondary)",
                 "_title": "Editable text"
               },
@@ -1358,7 +1450,7 @@
               "isInner": false,
               "isLocked": false,
               "settings": {
-                "text": "Explore collection",
+                "text": "مشاهده مجموعه",
                 "button_type": "info",
                 "link": {
                   "url": "",
@@ -1425,7 +1517,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "Product video"
+        "_title": "Product video",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -1434,7 +1527,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "See it in motion",
+            "title": "ویدئوی معرفی محصول",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -1506,7 +1599,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "Description accordion"
+        "_title": "معرفی محصول accordion",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -1515,7 +1609,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Everything you need to know",
+            "title": "معرفی، جزئیات و راهنمای خرید",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -1532,18 +1626,18 @@
           "settings": {
             "accordion": [
               {
-                "tab_title": "Description",
-                "tab_content": "<p>Editable product description. This content can be replaced in Elementor.</p>",
+                "tab_title": "معرفی محصول",
+                "tab_content": "<p>توضیحات کامل و قابل ویرایش محصول را اینجا بنویسید.</p>",
                 "_id": "rxst8dhv"
               },
               {
-                "tab_title": "Materials & care",
-                "tab_content": "<p>Editable materials and care guidance.</p>",
+                "tab_title": "مشخصات و نگهداری",
+                "tab_content": "<p>راهنمای جنس، مراقبت و نگهداری قابل ویرایش.</p>",
                 "_id": "ad1gg91f"
               },
               {
-                "tab_title": "Shipping & returns",
-                "tab_content": "<p>Editable shipping and returns details.</p>",
+                "tab_title": "ارسال و بازگشت",
+                "tab_content": "<p>شرایط ارسال و بازگشت کالا را اینجا ویرایش کنید.</p>",
                 "_id": "x1oknscq"
               }
             ],
@@ -1607,7 +1701,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "Dynamic specifications"
+        "_title": "Dynamic specifications",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -1616,7 +1711,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Specifications",
+            "title": "مشخصات محصول",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -1689,10 +1784,10 @@
         "background_background": "classic",
         "border_radius": {
           "unit": "px",
-          "top": "0",
-          "right": "0",
-          "bottom": "0",
-          "left": "0",
+          "top": "12",
+          "right": "12",
+          "bottom": "12",
+          "left": "12",
           "isLinked": true
         },
         "boxed_width": {
@@ -1701,7 +1796,8 @@
           "sizes": []
         },
         "background_color": "var(--e-global-color-secondary)",
-        "_title": "Editable size guide"
+        "_title": "Editable size guide",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -1710,7 +1806,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Size guide",
+            "title": "راهنمای انتخاب سایز",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -1725,7 +1821,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "editor": "<p>Add your fully editable fit, sizing, and measurement content here. No plugin is required.</p>",
+            "editor": "<p>جدول اندازه‌ها، راهنمای انتخاب و نکات فیت محصول را اینجا وارد کنید.</p>",
             "text_color": "var(--e-global-color-secondary)",
             "_title": "Editable text"
           },
@@ -1790,7 +1886,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "Image gallery"
+        "_title": "Image gallery",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -1799,7 +1896,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "More details",
+            "title": "تصاویر بیشتر از محصول",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -1891,7 +1988,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "FAQ"
+        "_title": "FAQ",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -1900,7 +1998,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Frequently asked questions",
+            "title": "پرسش‌های متداول",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -1917,18 +2015,18 @@
           "settings": {
             "accordion": [
               {
-                "tab_title": "What should I know before ordering?",
-                "tab_content": "<p>Replace this editable answer with your own information.</p>",
+                "tab_title": "پیش از ثبت سفارش چه نکاتی را بدانم؟",
+                "tab_content": "<p>پاسخ این پرسش را به‌صورت کامل و قابل ویرایش وارد کنید.</p>",
                 "_id": "i07a46d2"
               },
               {
-                "tab_title": "How do returns work?",
-                "tab_content": "<p>Replace this editable answer with your own information.</p>",
+                "tab_title": "شرایط بازگشت کالا چیست؟",
+                "tab_content": "<p>پاسخ این پرسش را به‌صورت کامل و قابل ویرایش وارد کنید.</p>",
                 "_id": "xiaclqkh"
               },
               {
-                "tab_title": "Need help choosing?",
-                "tab_content": "<p>Replace this editable answer with your own information.</p>",
+                "tab_title": "برای انتخاب محصول راهنمایی می‌خواهم.",
+                "tab_content": "<p>پاسخ این پرسش را به‌صورت کامل و قابل ویرایش وارد کنید.</p>",
                 "_id": "y7h6rbuw"
               }
             ],
@@ -1984,7 +2082,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "WooCommerce reviews"
+        "_title": "WooCommerce reviews",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -1993,7 +2092,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Customer reviews",
+            "title": "دیدگاه خریداران",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -2059,7 +2158,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "Related products"
+        "_title": "Related products",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -2068,7 +2168,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "You may also like",
+            "title": "محصولات مشابه",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -2136,7 +2236,8 @@
           "size": 1280,
           "sizes": []
         },
-        "_title": "Upsells"
+        "_title": "Upsells",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -2145,7 +2246,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Complete the look",
+            "title": "پیشنهادهای تکمیلی",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -2214,7 +2315,8 @@
           "sizes": []
         },
         "background_color": "var(--e-global-color-secondary)",
-        "_title": "Recently viewed editable placeholder"
+        "_title": "بازدیدهای اخیر editable placeholder",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -2223,7 +2325,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Recently viewed",
+            "title": "بازدیدهای اخیر",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -2238,7 +2340,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "editor": "<p>Editable recently viewed products placeholder. Connect your preferred WooCommerce-compatible solution if needed.</p>",
+            "editor": "<p>فضای قابل ویرایش برای نمایش محصولات بازدیدشده اخیر.</p>",
             "text_color": "var(--e-global-color-secondary)",
             "_title": "Editable text"
           },
@@ -2280,10 +2382,10 @@
         "background_background": "classic",
         "border_radius": {
           "unit": "px",
-          "top": "0",
-          "right": "0",
-          "bottom": "0",
-          "left": "0",
+          "top": "12",
+          "right": "12",
+          "bottom": "12",
+          "left": "12",
           "isLinked": true
         },
         "boxed_width": {
@@ -2293,7 +2395,8 @@
         },
         "align_items": "center",
         "background_color": "var(--e-global-color-secondary)",
-        "_title": "Final editable CTA"
+        "_title": "Final editable CTA",
+        "html_tag": "section"
       },
       "elements": [
         {
@@ -2302,7 +2405,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "title": "Ready to make it yours?",
+            "title": "آماده ثبت سفارش هستید؟",
             "header_size": "h2",
             "size": "",
             "title_color": "var(--e-global-color-primary)",
@@ -2317,7 +2420,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "editor": "<p>Use this final, fully editable call to action to guide customers to their next step.</p>",
+            "editor": "<p>با انتخاب محصول مورد نظر، خریدی سریع و مطمئن را تجربه کنید.</p>",
             "text_color": "var(--e-global-color-secondary)",
             "_title": "Editable text"
           },
@@ -2330,7 +2433,7 @@
           "isInner": false,
           "isLocked": false,
           "settings": {
-            "text": "Continue shopping",
+            "text": "ادامه خرید",
             "button_type": "info",
             "link": {
               "url": "",
@@ -2408,7 +2511,8 @@
         "z_index": 100,
         "_title": "Mobile sticky purchase bar",
         "flex_direction_tablet": "column",
-        "flex_direction_mobile": "column"
+        "flex_direction_mobile": "column",
+        "html_tag": "section"
       },
       "elements": [
         {
