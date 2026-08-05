@@ -28,11 +28,21 @@ mkdir -p ~/Android/Sdk
 
 ## گام ۲ — دانلود پکیج‌ها
 
-### روش الف) خودکار (لینوکس/مک/گیت‌بش)
+### روش الف) خودکار
+
+**ویندوز (PowerShell):**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\fetch-android-sdk.ps1 -List
+powershell -ExecutionPolicy Bypass -File scripts\fetch-android-sdk.ps1
+powershell -ExecutionPolicy Bypass -File scripts\fetch-android-sdk.ps1 -Emulator
+```
+
+**لینوکس / مک:**
 
 ```bash
-bash scripts/fetch-android-sdk.sh --list   # فقط نمایش لینک‌ها
-bash scripts/fetch-android-sdk.sh          # دانلود و نصب خودکار
+bash scripts/fetch-android-sdk.sh --list
+bash scripts/fetch-android-sdk.sh
 ```
 
 ### روش ب) دستی — لینک مستقیم
@@ -170,6 +180,50 @@ APK خروجی: `app/build/outputs/apk/debug/app-debug.apk`
 
 ```bash
 ./gradlew :app:installDebug
+```
+
+---
+
+## خطای «Failed to find target with hash string 'android-34'»
+
+یعنی AGP مسیر SDK را **پیدا کرده** ولی داخلش پلتفرم ۳۴ سالم نیست.
+شایع‌ترین علت: **پوشهٔ تودرتو** بعد از extract.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\check-sdk.ps1        # بررسی
+powershell -ExecutionPolicy Bypass -File scripts\check-sdk.ps1 -Fix   # بررسی + اصلاح
+```
+
+### بررسی دستی
+
+ساختار باید **دقیقاً** این باشد:
+
+```
+Sdk\platforms\android-34\android.jar          ✅
+Sdk\platforms\android-34\source.properties    ✅
+```
+
+نه این:
+
+```
+Sdk\platforms\android-34\android-14\android.jar   ❌ لایه اضافه
+Sdk\platforms\platform-34-ext7\android.jar         ❌ نام غلط
+```
+
+### فایل source.properties
+
+بدون آن، AGP پلتفرم را نمی‌شناسد حتی اگر `android.jar` سر جایش باشد:
+
+```properties
+AndroidVersion.ApiLevel=34
+Pkg.Revision=3
+```
+
+### بعد از هر اصلاح
+
+```powershell
+.\gradlew.bat --stop
+.\gradlew.bat :app:assembleDebug
 ```
 
 ---
