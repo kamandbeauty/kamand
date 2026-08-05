@@ -125,6 +125,9 @@ bash scripts/fetch-android-sdk.sh          # دانلود و نصب خودکار
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties
 ```
 
+راهنمای کامل گام‌به‌گام (شامل لینک مستقیم هر پکیج، ساخت لایسنس و عیب‌یابی):
+**[`docs/ANDROID_SDK_SETUP.md`](docs/ANDROID_SDK_SETUP.md)**
+
 منبع: <https://maven.myket.ir/services/android-sdk.html> — CSV: <https://maven.myket.ir/sdk-archives.csv>
 
 ## راه‌اندازی برای انتشار
