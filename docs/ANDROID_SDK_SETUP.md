@@ -26,6 +26,31 @@ mkdir -p ~/Android/Sdk
 
 ---
 
+## ⚡ راه سریع (ویندوز) — توصیه‌شده
+
+یک دستور، همه‌چیز را نصب و تنظیم می‌کند (لینک‌های ثابت و تأییدشده، بدون پارس CSV):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup-sdk-windows.ps1
+```
+
+این اسکریپت:
+- Platform 34، Build-Tools 34، Platform-Tools و cmdline-tools را نصب می‌کند
+- **پوشهٔ تودرتو را خودش رفع می‌کند** (علت اصلی خطای `hash string`)
+- `source.properties`، فایل‌های لایسنس و `local.properties` را می‌سازد
+- در پایان صحت هر مورد را بررسی می‌کند
+
+گزینه‌ها: `-Force` (نصب مجدد) · `-Emulator` (امولاتور ۴۲۹MB)
+
+پس از آن حتماً:
+
+```powershell
+.\gradlew.bat --stop
+.\gradlew.bat :app:assembleDebug
+```
+
+---
+
 ## گام ۲ — دانلود پکیج‌ها
 
 ### روش الف) خودکار
