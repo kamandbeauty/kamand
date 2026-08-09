@@ -56,8 +56,43 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
+      # ابتدا فقط ارزیابی اسکریپت‌ها بررسی می‌شود تا خطای پیکربندی زود پیدا شود
+      - name: Validate Gradle configuration
+        run: |
+          set +e
+          ./gradlew help --no-daemon --no-configuration-cache 2>&1 | tee /tmp/cfg.log
+          code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then
+            {
+              echo "## ❌ خطای پیکربندی Gradle"
+              echo '```'
+              grep -A 25 -E "What went wrong|FAILURE:" /tmp/cfg.log | head -60
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $code
+
       - name: Build Debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace --no-daemon -Pandroid.builder.sdkDownload=true
+        run: |
+          set +e
+          ./gradlew :app:assembleDebug --no-daemon -Pandroid.builder.sdkDownload=true 2>&1 | tee /tmp/build.log
+          code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then
+            {
+              echo "## ❌ خطاهای بیلد"
+              echo ""
+              echo "### خطاهای کامپایل کاتلین"
+              echo '```'
+              grep -E "^e: |error:" /tmp/build.log | head -50
+              echo '```'
+              echo ""
+              echo "### پیام Gradle"
+              echo '```'
+              grep -A 20 -E "What went wrong" /tmp/build.log | head -40
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $code
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -104,7 +139,22 @@ jobs:
 
       # تست‌های واحد ماژول‌های خالص JVM (محاسبهٔ فاکتور، سود، تقویم جلالی و…)
       - name: Run unit tests
-        run: ./gradlew :core:domain:test :core:common:test --stacktrace --no-daemon -Pandroid.builder.sdkDownload=true
+        run: |
+          set +e
+          ./gradlew :core:domain:test :core:common:test --no-daemon -Pandroid.builder.sdkDownload=true 2>&1 | tee /tmp/test.log
+          code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then
+            {
+              echo "## ❌ خطای تست‌ها"
+              echo '```'
+              grep -E "^e: |error:" /tmp/test.log | head -40
+              echo '```'
+              echo '```'
+              grep -A 20 -E "What went wrong" /tmp/test.log | head -40
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $code
 
       - name: Upload test reports
         if: always()
