@@ -8,58 +8,46 @@
 //    فیلترینگ بدون تایم‌اوت انجام شود.
 //
 //  تشخیص خودکار است؛ نیازی به تغییر دستی فایل نیست.
+//
+//  ⚠️ نکتهٔ مهم Gradle: بلوک pluginManagement باید نخستین دستور اجرایی این
+//     فایل باشد. تعریف هر val یا فراخوانی قبل از آن باعث خطای
+//     «Failed to apply plugin / BuildScriptProcessor» می‌شود.
 // ─────────────────────────────────────────────────────────────────────────────
-
-val isCi = System.getenv("CI") == "true" || System.getenv("GITHUB_ACTIONS") == "true"
 
 pluginManagement {
     val ci = System.getenv("CI") == "true" || System.getenv("GITHUB_ACTIONS") == "true"
     repositories {
-        if (ci) {
-            google {
-                content {
-                    includeGroupByRegex("com\\.android.*")
-                    includeGroupByRegex("com\\.google.*")
-                    includeGroupByRegex("androidx.*")
-                }
-            }
-            gradlePluginPortal()
-            mavenCentral()
-        } else {
+        if (!ci) {
             // میرورهای داخلی (اولویت اول در ایران)
             maven("https://maven.myket.ir")
             maven("https://en-mirror.ir")
             maven("https://mirror.kargadan.ir/maven")
-
-            google {
-                content {
-                    includeGroupByRegex("com\\.android.*")
-                    includeGroupByRegex("com\\.google.*")
-                    includeGroupByRegex("androidx.*")
-                }
-            }
-            gradlePluginPortal()
-            mavenCentral()
         }
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
+        gradlePluginPortal()
+        mavenCentral()
     }
 }
 
 dependencyResolutionManagement {
+    val ci = System.getenv("CI") == "true" || System.getenv("GITHUB_ACTIONS") == "true"
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        if (isCi) {
-            google()
-            mavenCentral()
-            // JitPack: محل انتشار رسمی Poolakey (کافه‌بازار)
-            maven("https://jitpack.io")
-        } else {
+        if (!ci) {
             maven("https://maven.myket.ir")
             maven("https://en-mirror.ir")
             maven("https://mirror.kargadan.ir/maven")
-            maven("https://jitpack.io")
-            google()
-            mavenCentral()
         }
+        google()
+        mavenCentral()
+        // JitPack: محل انتشار رسمی Poolakey (کافه‌بازار)
+        maven("https://jitpack.io")
     }
 }
 

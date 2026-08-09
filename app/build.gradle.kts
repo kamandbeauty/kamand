@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,26 +18,29 @@ plugins {
 //  اگر هیچ‌کدام موجود نباشد، بیلد release با امضای debug انجام می‌شود تا
 //  CI بدون Secrets هم بتواند کامپایل را تست کند.
 // ─────────────────────────────────────────────────────────────────────────────
-val keystorePropsFile = rootProject.file("keystore.properties")
 val keystoreProps = java.util.Properties().apply {
-    if (keystorePropsFile.exists()) {
-        keystorePropsFile.inputStream().use { load(it) }
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) {
+        f.inputStream().use { load(it) }
     }
 }
 
-fun signingValue(envName: String, propName: String): String? =
-    System.getenv(envName) ?: keystoreProps.getProperty(propName)
+// خواندن مقدار از متغیر محیطی (CI) یا فایل محلی
+val storeFilePath: String? =
+    System.getenv("KEYSTORE_FILE") ?: keystoreProps.getProperty("storeFile")
+val storePasswordValue: String? =
+    System.getenv("KEYSTORE_PASSWORD") ?: keystoreProps.getProperty("storePassword")
+val keyAliasValue: String? =
+    System.getenv("KEY_ALIAS") ?: keystoreProps.getProperty("keyAlias")
+val keyPasswordValue: String? =
+    System.getenv("KEY_PASSWORD") ?: keystoreProps.getProperty("keyPassword")
 
-val storeFilePath = signingValue("KEYSTORE_FILE", "storeFile")
-val storePasswordValue = signingValue("KEYSTORE_PASSWORD", "storePassword")
-val keyAliasValue = signingValue("KEY_ALIAS", "keyAlias")
-val keyPasswordValue = signingValue("KEY_PASSWORD", "keyPassword")
-
-val hasReleaseSigning = !storeFilePath.isNullOrBlank() &&
+// توجه: بررسی وجود فایل فقط وقتی مسیر غیرخالی است، وگرنه file(null) خطا می‌دهد
+val hasReleaseSigning: Boolean = !storeFilePath.isNullOrBlank() &&
     !storePasswordValue.isNullOrBlank() &&
     !keyAliasValue.isNullOrBlank() &&
     !keyPasswordValue.isNullOrBlank() &&
-    file(storeFilePath).exists()
+    File(storeFilePath).exists()
 
 android {
     namespace = "ir.factoryar.app"
