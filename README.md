@@ -13,14 +13,15 @@
 
 > کاملاً Offline First — بدون اینترنت، سرور، API، ثبت‌نام یا لاگین. تمام داده‌ها در حافظه داخلی گوشی ذخیره می‌شود.
 
-## وضعیت فعلی (فاز ۱)
+## وضعیت فعلی (فاز ۲)
 
 - [x] اسکلت کامل پروژه (Gradle, Manifest, Theme, Navigation, Hilt, DI)
 - [x] مدل داده کامل: `customers` ،`products` ،`orders` ،`order_items`
 - [x] صفحه داشبورد: فروش امروز، سود امروز، سفارش‌های باز، تعداد مشتری‌ها، آخرین سفارش‌ها
+- [x] مدیریت مشتری‌ها: افزودن، ویرایش، حذف، جست‌وجو، جزئیات و تاریخچه سفارش‌ها
 - [x] زبان فارسی + جهت RTL + تقویم شمسی + اعداد فارسی
 
-سایر تب‌ها فعلاً Placeholder هستند و طبق نقشه راه (فایل `docs/PLAN.md`) در فازهای بعدی ساخته می‌شوند.
+تب‌های محصولات، سفارش‌ها و تنظیمات طبق نقشه راه (فایل `docs/PLAN.md`) در فازهای بعدی ساخته می‌شوند.
 
 ## نحوه Build
 
@@ -51,7 +52,7 @@ app/src/main/java/com/forushyar/app/
 │   ├── local/                  # AppDatabase + entity + dao
 │   └── repository/             # Customer / Product / Order / Dashboard
 ├── di/DatabaseModule.kt        # Hilt
-├── ui/{theme,navigation,home,common}
+├── ui/{theme,navigation,home,customers,common}
 └── util/                       # DateUtils + FormatUtils
 ```
 

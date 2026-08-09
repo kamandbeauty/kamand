@@ -11,12 +11,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.forushyar.app.ui.common.PlaceholderScreen
+import com.forushyar.app.ui.customers.CustomerDetailScreen
+import com.forushyar.app.ui.customers.CustomerFormScreen
+import com.forushyar.app.ui.customers.CustomersScreen
 import com.forushyar.app.ui.home.HomeScreen
+
+private object CustomerRoutes {
+    const val ADD = "customers/add"
+    const val DETAIL = "customers/{customerId}"
+    const val EDIT = "customers/{customerId}/edit"
+
+    fun detail(customerId: Long) = "customers/$customerId"
+    fun edit(customerId: Long) = "customers/$customerId/edit"
+}
 
 /**
  * گراف ناوبری اصلی برنامه با Bottom Navigation پنج‌تبی.
@@ -31,7 +45,8 @@ fun AppNavGraph() {
         bottomBar = {
             NavigationBar {
                 BottomNavItem.entries.forEach { item ->
-                    val selected = currentRoute == item.route
+                    val selected = currentRoute == item.route ||
+                        (item == BottomNavItem.Customers && currentRoute?.startsWith("customers/") == true)
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -62,12 +77,33 @@ fun AppNavGraph() {
         ) {
             composable(BottomNavItem.Home.route) { HomeScreen() }
 
-            // --- صفحه‌های نسخه‌های بعدی (در حال حاضر Placeholder) ---
+            // --- مسیرهای اصلی و صفحه‌های هر بخش ---
             composable(BottomNavItem.Orders.route) {
                 PlaceholderScreen(title = stringResource(BottomNavItem.Orders.labelRes))
             }
             composable(BottomNavItem.Customers.route) {
-                PlaceholderScreen(title = stringResource(BottomNavItem.Customers.labelRes))
+                CustomersScreen(
+                    onAddCustomer = { navController.navigate(CustomerRoutes.ADD) },
+                    onCustomerClick = { id -> navController.navigate(CustomerRoutes.detail(id)) }
+                )
+            }
+            composable(CustomerRoutes.ADD) {
+                CustomerFormScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = CustomerRoutes.DETAIL,
+                arguments = listOf(navArgument("customerId") { type = NavType.LongType })
+            ) {
+                CustomerDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onEdit = { id -> navController.navigate(CustomerRoutes.edit(id)) }
+                )
+            }
+            composable(
+                route = CustomerRoutes.EDIT,
+                arguments = listOf(navArgument("customerId") { type = NavType.LongType })
+            ) {
+                CustomerFormScreen(onBack = { navController.popBackStack() })
             }
             composable(BottomNavItem.Products.route) {
                 PlaceholderScreen(title = stringResource(BottomNavItem.Products.labelRes))

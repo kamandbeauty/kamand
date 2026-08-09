@@ -22,6 +22,40 @@
     <string name="empty_state">به‌زودی در نسخه‌های بعدی</string>
     <string name="currency_toman">تومان</string>
 
+    <!-- مدیریت مشتری‌ها -->
+    <string name="customers_title">مشتری‌ها</string>
+    <string name="search_customers">جست‌وجو با نام، تلفن یا اینستاگرام</string>
+    <string name="clear_search">پاک‌کردن جست‌وجو</string>
+    <string name="add_customer">افزودن مشتری</string>
+    <string name="edit_customer">ویرایش مشتری</string>
+    <string name="delete_customer">حذف مشتری</string>
+    <string name="customer_details">مشخصات مشتری</string>
+    <string name="no_customers">هنوز مشتری‌ای ثبت نشده است</string>
+    <string name="no_customer_search_result">مشتری‌ای با این مشخصات پیدا نشد</string>
+    <string name="customer_name">نام مشتری</string>
+    <string name="customer_name_required">نام مشتری را وارد کنید</string>
+    <string name="customer_phone">شماره تلفن</string>
+    <string name="customer_phone_optional">شماره تلفن (اختیاری)</string>
+    <string name="customer_instagram">شناسه اینستاگرام</string>
+    <string name="customer_instagram_optional">شناسه اینستاگرام (اختیاری)</string>
+    <string name="customer_address">نشانی</string>
+    <string name="customer_address_optional">نشانی (اختیاری)</string>
+    <string name="customer_note">یادداشت</string>
+    <string name="customer_note_optional">یادداشت (اختیاری)</string>
+    <string name="customer_created_date">تاریخ ثبت</string>
+    <string name="save_customer">ذخیره مشتری</string>
+    <string name="customer_not_found">اطلاعات این مشتری پیدا نشد</string>
+    <string name="customer_save_error">ذخیره مشتری انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="customer_delete_error">حذف مشتری انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="customer_order_history">تاریخچه سفارش‌ها</string>
+    <string name="customer_no_orders">این مشتری هنوز سفارشی ندارد</string>
+    <string name="delete_customer_title">حذف مشتری؟</string>
+    <string name="delete_customer_warning">با حذف مشتری، همه سفارش‌های ثبت‌شده برای او نیز پاک می‌شوند. این کار قابل بازگشت نیست.</string>
+    <string name="delete">حذف</string>
+    <string name="cancel">انصراف</string>
+    <string name="back">بازگشت</string>
+    <string name="order_number">سفارش شماره %1$s</string>
+
     <!-- وضعیت سفارش -->
     <string name="order_status_new">جدید</string>
     <string name="order_status_preparing">در حال آماده‌سازی</string>
