@@ -9,3 +9,7 @@
 .cxx
 local.properties
 app/build
+
+# کلیدهای امضا هرگز نباید وارد مخزن شوند
+*.jks
+*.keystore

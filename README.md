@@ -13,7 +13,7 @@
 
 > کاملاً Offline First — بدون اینترنت، سرور، API، ثبت‌نام یا لاگین. تمام داده‌ها در حافظه داخلی گوشی ذخیره می‌شود.
 
-## وضعیت فعلی (فاز ۴)
+## وضعیت فعلی (فاز ۵)
 
 - [x] اسکلت کامل پروژه (Gradle, Manifest, Theme, Navigation, Hilt, DI)
 - [x] مدل داده کامل: `customers` ،`products` ،`orders` ،`order_items`
@@ -21,27 +21,75 @@
 - [x] مدیریت مشتری‌ها: افزودن، ویرایش، حذف، جست‌وجو، جزئیات و تاریخچه سفارش‌ها
 - [x] مدیریت محصولات: افزودن، ویرایش، حذف، جست‌وجو، قیمت‌ها و موجودی
 - [x] مدیریت سفارش‌ها: ثبت چندقلمی، قیمت لحظه‌ای، جزئیات، وضعیت، سود و حذف
+- [x] گزارش‌های امروز و ماه جاری شمسی: فروش، سود و تعداد سفارش‌ها
+- [x] بیلد خودکار Debug و Release در GitHub Actions
 - [x] زبان فارسی + جهت RTL + تقویم شمسی + اعداد فارسی
 
 تب تنظیمات و امکانات تکمیلی طبق نقشه راه (فایل `docs/PLAN.md`) در فازهای بعدی ساخته می‌شوند.
 
-## نحوه Build
+## Build محلی بدون Android Studio
 
-پیش‌نیاز: **Android Studio** (نسخه‌های اخیر) + **JDK 17** + **Android SDK (Platform 34)**.
+پیش‌نیازها: **JDK 17** و **Android SDK Platform 34** با متغیر `ANDROID_HOME` یا فایل
+`local.properties`. پروژه Gradle Wrapper کامل دارد و نصب سراسری Gradle لازم نیست.
 
-1. پروژه را در Android Studio باز کنید (`File → Open`).
-2. بگذارید Gradle Sync کامل شود (وابستگی‌ها از `google()` و `mavenCentral()` دریافت می‌شوند).
-3. `Build → Build App Bundle(s)/APK(s) → Build APK(s)` یا از ترمینال:
-   ```bash
-   ./gradlew assembleDebug
-   ```
-4. خروجی: `app/build/outputs/apk/debug/app-debug.apk`
+```bash
+chmod +x gradlew
+./gradlew assembleDebug
+```
 
-### نکته برای کاربران ایران (آینه/میرور)
+خروجی Debug در مسیر زیر ساخته می‌شود:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+برای ساخت خروجی Release بدون امضا می‌توان از `./gradlew assembleRelease bundleRelease` استفاده کرد.
+نسخه قابل انتشار باید با کلید امن و ثابت فروشگاه امضا شود.
+
+## Build خودکار با GitHub Actions
+
+Workflow فایل `.github/workflows/android-build.yml` با هر Push به `main` یا شاخه‌های `arena/**`
+و همچنین هر Pull Request اجرا می‌شود. این Workflow روی `ubuntu-latest`، با JDK 17 و Gradle Cache:
+
+1. Gradle Wrapper را اعتبارسنجی می‌کند.
+2. وابستگی‌ها را از مخزن‌های استاندارد دریافت می‌کند.
+3. دستور `./gradlew assembleDebug` را اجرا می‌کند.
+4. فایل‌های `app/build/outputs/apk/debug/*.apk` را به‌عنوان Artifact ذخیره می‌کند.
+
+### دریافت APK از GitHub
+
+در صفحه مخزن وارد **Actions** شوید، آخرین اجرای موفق «بیلد خودکار نسخه Debug» را باز کنید و
+از بخش **Artifacts** فایل `forushyar-debug-*` را دانلود کنید. برای این کار Android Studio لازم نیست.
+
+## Release و امضای امن
+
+Workflow جداگانه `.github/workflows/android-release.yml` با اجرای دستی یا Push کردن Tagهایی مانند
+`v1.0.0`، هر دو خروجی `APK` و `AAB` را می‌سازد. کلید امضا نباید وارد Git شود. چهار Secret زیر را در
+`Settings → Secrets and variables → Actions` تعریف کنید:
+
+| Secret | توضیح |
+|---|---|
+| `KEYSTORE_FILE` | محتوای Base64 فایل JKS |
+| `KEYSTORE_PASSWORD` | رمز Keystore |
+| `KEY_ALIAS` | نام Alias کلید |
+| `KEY_PASSWORD` | رمز کلید |
+
+تبدیل فایل Keystore به Base64 در Linux/macOS:
+
+```bash
+base64 -w 0 forushyar-release.jks
+```
+
+در macOS در صورت پشتیبانی‌نشدن گزینه بالا از `base64 < forushyar-release.jks | tr -d '\n'` استفاده کنید.
+خروجی Release از بخش Artifacts همان اجرای Workflow قابل دریافت است. فایل‌های `*.jks` و
+`*.keystore` نیز در `.gitignore` قرار دارند.
+
+## نکته برای کاربران ایران (آینه/میرور)
 
 اگر دریافت وابستگی‌ها از مخزن‌های پیش‌فرض برای شما کند یا مسدود است، می‌توانید از طریق
 یک فایل `init.gradle` آینه‌ی ایرانی را اضافه کنید. یک نمونه آماده به‌نام `init.gradle.example`
-در ریشه پروژه قرار داده شده است. (پروژه فقط از `google()` و `mavenCentral()` استفاده می‌کند.)
+در ریشه پروژه قرار دارد. تنظیمات اصلی فقط از `google()`، `mavenCentral()` و
+`gradlePluginPortal()` استفاده می‌کنند تا GitHub Actions بدون تنظیم اختصاصی Build شود.
 
 ## ساختار
 

@@ -6,6 +6,17 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+val releaseKeystorePath = providers.environmentVariable("KEYSTORE_PATH").orNull
+val releaseKeystorePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("KEY_PASSWORD").orNull
+val hasReleaseSigning = listOf(
+    releaseKeystorePath,
+    releaseKeystorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.forushyar.app"
     compileSdk = 34
@@ -23,9 +34,21 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(checkNotNull(releaseKeystorePath))
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

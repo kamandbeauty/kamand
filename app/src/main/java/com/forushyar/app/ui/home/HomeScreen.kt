@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.LocalMall
 import androidx.compose.material.icons.outlined.PendingActions
+import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -91,6 +93,17 @@ private fun HomeContent(state: DashboardData) {
                     accent = MaterialTheme.colorScheme.primary
                 )
             }
+        }
+
+        // ---------- گزارش ماه جاری ----------
+        item {
+            Text(
+                text = stringResource(R.string.monthly_report_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            MonthlyReportCard(state)
         }
 
         // ---------- آخرین سفارش‌ها ----------
@@ -179,6 +192,60 @@ private fun MetricCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun MonthlyReportCard(state: DashboardData) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            ReportRow(
+                icon = Icons.Outlined.CalendarMonth,
+                label = stringResource(R.string.metric_month_sales),
+                value = FormatUtils.formatPrice(state.monthSales)
+            )
+            ReportRow(
+                icon = Icons.Outlined.TrendingUp,
+                label = stringResource(R.string.metric_month_profit),
+                value = FormatUtils.formatPrice(state.monthProfit)
+            )
+            ReportRow(
+                icon = Icons.Outlined.ReceiptLong,
+                label = stringResource(R.string.metric_month_orders),
+                value = FormatUtils.formatNumber(state.monthOrderCount.toLong())
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReportRow(icon: ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp)
+        )
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        Text(
+            text = value,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
 

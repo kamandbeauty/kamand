@@ -18,4 +18,17 @@ object DateUtils {
         val end = cal.timeInMillis - 1
         return start..end
     }
+
+    /** بازه ماه جاری تقویم شمسی در منطقه زمانی دستگاه. */
+    fun currentPersianMonthRange(): LongRange {
+        val calendar = android.icu.util.PersianCalendar()
+        calendar.set(android.icu.util.Calendar.DAY_OF_MONTH, 1)
+        calendar.set(android.icu.util.Calendar.HOUR_OF_DAY, 0)
+        calendar.set(android.icu.util.Calendar.MINUTE, 0)
+        calendar.set(android.icu.util.Calendar.SECOND, 0)
+        calendar.set(android.icu.util.Calendar.MILLISECOND, 0)
+        val start = calendar.timeInMillis
+        calendar.add(android.icu.util.Calendar.MONTH, 1)
+        return start..(calendar.timeInMillis - 1)
+    }
 }

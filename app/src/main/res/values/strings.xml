@@ -17,6 +17,10 @@
     <string name="metric_today_profit">سود امروز</string>
     <string name="metric_open_orders">سفارش‌های باز</string>
     <string name="metric_customers">تعداد مشتری‌ها</string>
+    <string name="monthly_report_title">گزارش ماه جاری</string>
+    <string name="metric_month_sales">فروش این ماه</string>
+    <string name="metric_month_profit">سود این ماه</string>
+    <string name="metric_month_orders">سفارش‌های این ماه</string>
     <string name="recent_orders_title">آخرین سفارش‌ها</string>
     <string name="no_orders">هنوز سفارشی ثبت نشده است</string>
     <string name="empty_state">به‌زودی در نسخه‌های بعدی</string>

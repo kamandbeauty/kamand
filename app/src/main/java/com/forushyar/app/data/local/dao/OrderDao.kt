@@ -45,6 +45,12 @@ interface OrderDao {
     @Query("SELECT COUNT(*) FROM orders WHERE status NOT IN ('CANCELLED')")
     fun observeActiveOrders(): Flow<Int>
 
+    @Query(
+        "SELECT COUNT(*) FROM orders " +
+            "WHERE createdAt BETWEEN :start AND :end AND status != 'CANCELLED'"
+    )
+    fun observeOrderCountBetween(start: Long, end: Long): Flow<Int>
+
     /** جمع فروش (تومان) در بازه زمانی — بدون سفارش‌های لغو شده */
     @Query(
         "SELECT COALESCE(SUM(oi.quantity * oi.sellPrice), 0) " +
