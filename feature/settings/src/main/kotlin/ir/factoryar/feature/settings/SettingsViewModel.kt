@@ -57,7 +57,6 @@ class SettingsViewModel @Inject constructor(
     fun setNextNumber(type: InvoiceType, next: Long) = viewModelScope.launch { settingsRepository.setNextNumber(type, next) }
 
     // چاپ
-    fun setPaperSize(mm: Int) = viewModelScope.launch { settingsRepository.setPaperSize(mm) }
     fun setPrintFlags(logo: Boolean, signature: Boolean, terms: Boolean) =
         viewModelScope.launch { settingsRepository.setPrintFlags(logo, signature, terms) }
 

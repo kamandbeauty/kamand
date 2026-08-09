@@ -1,9 +1,5 @@
 package ir.factoryar.feature.invoices
 
-import android.Manifest
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,7 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AlertDialog
@@ -53,7 +50,6 @@ import ir.factoryar.core.common.jalali.JalaliConverter
 import ir.factoryar.core.common.util.PersianFormatter.formatQuantity
 import ir.factoryar.core.common.util.PersianFormatter.toPersianDigits
 import ir.factoryar.core.domain.model.PaymentStatus
-import ir.factoryar.core.printer.PrinterDevice
 import ir.factoryar.core.ui.components.FyTopBar
 import ir.factoryar.core.ui.components.MoneyText
 import ir.factoryar.core.ui.components.PaymentStatusChip
@@ -68,17 +64,7 @@ fun InvoiceDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    var showPrinterDialog by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
-
-    val btPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
-    ) { grants ->
-        if (grants.values.all { it }) {
-            viewModel.loadPairedPrinters()
-            showPrinterDialog = true
-        }
-    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
@@ -97,21 +83,12 @@ fun InvoiceDetailScreen(
                 title = details?.invoice?.number?.toPersianDigits() ?: "فاکتور",
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = { viewModel.sharePdf() }, enabled = !state.isBusy) {
-                        Icon(Icons.Filled.Share, contentDescription = "اشتراک PDF")
+                    IconButton(onClick = { viewModel.shareBoth() }, enabled = !state.isBusy) {
+                        Icon(Icons.Filled.Share, contentDescription = "اشتراک‌گذاری")
                     }
-                    IconButton(
-                        onClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                btPermissionLauncher.launch(
-                                    arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN),
-                                )
-                            } else {
-                                viewModel.loadPairedPrinters(); showPrinterDialog = true
-                            }
-                        },
-                        enabled = !state.isBusy,
-                    ) { Icon(Icons.Filled.Print, contentDescription = "چاپ") }
+                    IconButton(onClick = { viewModel.openPdf() }, enabled = !state.isBusy) {
+                        Icon(Icons.Filled.PictureAsPdf, contentDescription = "نمایش PDF")
+                    }
                     IconButton(onClick = { details?.let { onEdit(it.invoice.id) } }) {
                         Icon(Icons.Filled.Edit, contentDescription = "ویرایش")
                     }
@@ -202,25 +179,46 @@ fun InvoiceDetailScreen(
                 }
             }
             item {
-                OutlinedButton(onClick = { viewModel.sharePdf() }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.Share, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("اشتراک‌گذاری PDF")
+                SectionHeader(title = "خروجی و اشتراک‌گذاری")
+                Column(
+                    Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Button(
+                        onClick = { viewModel.shareBoth() },
+                        enabled = !state.isBusy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Filled.Share, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("ارسال فاکتور (PDF و تصویر)")
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { viewModel.sharePdf() },
+                            enabled = !state.isBusy,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Filled.PictureAsPdf, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("فقط PDF")
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.shareImage() },
+                            enabled = !state.isBusy,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Filled.Image, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("فقط تصویر")
+                        }
+                    }
                 }
                 Spacer(Modifier.height(60.dp))
             }
         }
     }
 
-    if (showPrinterDialog) {
-        PrinterPickerDialog(
-            printers = state.pairedPrinters,
-            lastMac = state.settings.lastPrinterMac,
-            paperSizeMm = state.settings.paperSizeMm,
-            onDismiss = { showPrinterDialog = false },
-            onPrint = { mac -> viewModel.print(mac); showPrinterDialog = false },
-        )
-    }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -238,37 +236,4 @@ private fun DetailTotal(label: String, amount: Long) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
         MoneyText(amount, style = MaterialTheme.typography.bodyMedium)
     }
-}
-
-@Composable
-private fun PrinterPickerDialog(
-    printers: List<PrinterDevice>,
-    lastMac: String?,
-    paperSizeMm: Int,
-    onDismiss: () -> Unit,
-    onPrint: (String?) -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("چاپ فاکتور (کاغذ ${paperSizeMm}mm)".toPersianDigits()) },
-        text = {
-            Column {
-                if (printers.isEmpty()) {
-                    Text("هیچ چاپگر جفت‌شده‌ای یافت نشد. چاپگر را از تنظیمات بلوتوث گوشی جفت کنید.", style = MaterialTheme.typography.bodySmall)
-                } else {
-                    printers.forEach { p ->
-                        TextButton(onClick = { onPrint(p.macAddress) }, modifier = Modifier.fillMaxWidth()) {
-                            Row(Modifier.fillMaxWidth()) {
-                                Icon(Icons.Filled.Print, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(p.name + if (p.macAddress == lastMac) " (قبلی)" else "")
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("انصراف") } },
-    )
 }

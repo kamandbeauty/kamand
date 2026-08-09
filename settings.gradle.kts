@@ -62,7 +62,6 @@ include(":core:datastore")
 include(":core:data")
 include(":core:ui")
 include(":core:pdf")
-include(":core:printer")
 include(":core:billing")
 include(":core:barcode")
 

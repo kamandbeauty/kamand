@@ -28,8 +28,7 @@ data class AppSettings(
     val defaultTaxPercent: Double = 10.0,
     val defaultTerms: String = "",
     val invoicePrefixes: Map<InvoiceType, String> = InvoiceType.entries.associateWith { it.defaultPrefix },
-    val paperSizeMm: Int = 80,
-    val lastPrinterMac: String? = null,
+    /** نمایش لوگو/امضا/شرایط روی خروجی PDF و تصویر */
     val printShowLogo: Boolean = true,
     val printShowSignature: Boolean = true,
     val printShowTerms: Boolean = true,
@@ -51,8 +50,6 @@ interface SettingsRepository {
     suspend fun consumeNextNumber(type: InvoiceType): String
     suspend fun previewNextNumber(type: InvoiceType): String
     suspend fun setNextNumber(type: InvoiceType, next: Long)
-    suspend fun setPaperSize(mm: Int)
-    suspend fun setLastPrinterMac(mac: String?)
     suspend fun setPrintFlags(showLogo: Boolean, showSignature: Boolean, showTerms: Boolean)
     suspend fun setWeeklyBackupEnabled(enabled: Boolean)
     suspend fun setPremium(value: Boolean)

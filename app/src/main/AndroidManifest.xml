@@ -2,16 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- بلوتوث (چاپگر پوز) -->
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission
-        android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation"
-        tools:targetApi="s" />
-    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
-
     <!-- نوتیفیکیشن یادآوری فاکتورهای دوره‌ای و بدهی‌ها -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

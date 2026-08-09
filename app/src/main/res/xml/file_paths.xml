@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <!-- خروجی فاکتور: PDF و تصویر — برای اشتراک‌گذاری با FileProvider -->
     <external-files-path name="pdfs" path="pdfs/" />
+    <external-files-path name="images" path="images/" />
     <external-files-path name="reports" path="reports/" />
+    <external-files-path name="backups" path="backups/" />
     <files-path name="internal" path="." />
     <cache-path name="cache" path="." />
 </paths>

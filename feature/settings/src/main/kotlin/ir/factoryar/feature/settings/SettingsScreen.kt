@@ -243,18 +243,18 @@ fun SettingsScreen(
                 }
             }
 
-            // چاپگر
-            SectionHeader(title = "چاپگر پوز بلوتوثی")
+            // خروجی فاکتور
+            SectionHeader(title = "خروجی فاکتور (PDF و تصویر)")
             SettingsCard {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("اندازه کاغذ", style = MaterialTheme.typography.labelMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = state.settings.paperSizeMm == 58, onClick = { viewModel.setPaperSize(58) }, label = { Text("۵۸ میلی‌متر".toPersianDigits()) })
-                        FilterChip(selected = state.settings.paperSizeMm == 80, onClick = { viewModel.setPaperSize(80) }, label = { Text("۸۰ میلی‌متر".toPersianDigits()) })
-                    }
-                    PrintFlagRow("نمایش لوگو روی رسید", state.settings.printShowLogo) { viewModel.setPrintFlags(it, state.settings.printShowSignature, state.settings.printShowTerms) }
-                    PrintFlagRow("نمایش امضا روی رسید", state.settings.printShowSignature) { viewModel.setPrintFlags(state.settings.printShowLogo, it, state.settings.printShowTerms) }
-                    PrintFlagRow("نمایش شرایط روی رسید", state.settings.printShowTerms) { viewModel.setPrintFlags(state.settings.printShowLogo, state.settings.printShowSignature, it) }
+                    Text(
+                        "این تنظیمات روی خروجی PDF و تصویر فاکتور اعمال می‌شود.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    PrintFlagRow("نمایش لوگو روی فاکتور", state.settings.printShowLogo) { viewModel.setPrintFlags(it, state.settings.printShowSignature, state.settings.printShowTerms) }
+                    PrintFlagRow("نمایش امضا روی فاکتور", state.settings.printShowSignature) { viewModel.setPrintFlags(state.settings.printShowLogo, it, state.settings.printShowTerms) }
+                    PrintFlagRow("نمایش شرایط و توضیحات", state.settings.printShowTerms) { viewModel.setPrintFlags(state.settings.printShowLogo, state.settings.printShowSignature, it) }
                 }
             }
 

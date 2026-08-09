@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -24,8 +23,6 @@ class SettingsDataStore(private val context: Context) {
         val CURRENCY_UNIT = stringPreferencesKey("currency_unit")
         val DEFAULT_TAX = doublePreferencesKey("default_tax_percent")
         val DEFAULT_TERMS = stringPreferencesKey("default_terms")
-        val PAPER_SIZE = intPreferencesKey("paper_size_mm")
-        val LAST_PRINTER_MAC = stringPreferencesKey("last_printer_mac")
         val PRINT_SHOW_LOGO = booleanPreferencesKey("print_show_logo")
         val PRINT_SHOW_SIGNATURE = booleanPreferencesKey("print_show_signature")
         val PRINT_SHOW_TERMS = booleanPreferencesKey("print_show_terms")

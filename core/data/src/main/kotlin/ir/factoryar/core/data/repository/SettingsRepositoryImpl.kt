@@ -30,8 +30,6 @@ class SettingsRepositoryImpl @Inject constructor(
             invoicePrefixes = InvoiceType.entries.associateWith { type ->
                 p[SettingsDataStore.Keys.prefixKey(type.name)] ?: type.defaultPrefix
             },
-            paperSizeMm = p[SettingsDataStore.Keys.PAPER_SIZE] ?: 80,
-            lastPrinterMac = p[SettingsDataStore.Keys.LAST_PRINTER_MAC],
             printShowLogo = p[SettingsDataStore.Keys.PRINT_SHOW_LOGO] ?: true,
             printShowSignature = p[SettingsDataStore.Keys.PRINT_SHOW_SIGNATURE] ?: true,
             printShowTerms = p[SettingsDataStore.Keys.PRINT_SHOW_TERMS] ?: true,
@@ -86,12 +84,7 @@ class SettingsRepositoryImpl @Inject constructor(
         return "$prefix-$year-${number.toString().padStart(5, '0')}"
     }
 
-    override suspend fun setPaperSize(mm: Int) = ds.set(SettingsDataStore.Keys.PAPER_SIZE, if (mm == 58) 58 else 80)
 
-    override suspend fun setLastPrinterMac(mac: String?) {
-        if (mac == null) ds.remove(SettingsDataStore.Keys.LAST_PRINTER_MAC)
-        else ds.set(SettingsDataStore.Keys.LAST_PRINTER_MAC, mac)
-    }
 
     override suspend fun setPrintFlags(showLogo: Boolean, showSignature: Boolean, showTerms: Boolean) {
         ds.edit {

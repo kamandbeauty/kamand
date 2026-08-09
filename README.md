@@ -2,7 +2,7 @@
 
 [![Android Debug Build](https://github.com/kamandbeauty/kamand/actions/workflows/android-build.yml/badge.svg)](https://github.com/kamandbeauty/kamand/actions/workflows/android-build.yml)
 
-اپلیکیشن اندرویدی صدور فاکتور، پیش‌فاکتور و فاکتور خرید + مدیریت مشتریان (CRM ساده) + مدیریت انبار و بارکد + ثبت هزینه و سود خالص + یادآوری بدهی + ویجت صفحه اصلی + چاپ پوز بلوتوثی + گزارش مالی.
+اپلیکیشن اندرویدی صدور فاکتور، پیش‌فاکتور و فاکتور خرید + مدیریت مشتریان (CRM ساده) + مدیریت انبار و بارکد + ثبت هزینه و سود خالص + یادآوری بدهی + ویجت صفحه اصلی + خروجی PDF و تصویر + گزارش مالی.
 
 طراحی‌شده برای بازار ایران (کافه‌بازار / مایکت). کاملاً آفلاین، **بدون وابستگی اجباری به Google Play Services**.
 
@@ -143,8 +143,7 @@ app/                    پوسته اپ، ناوبری، Workerها، ویجت G
 │   ├── datastore/      تنظیمات (تم، شماره‌گذاری، چاپگر)
 │   ├── data/           پیاده‌سازی Repository، کلید SQLCipher، Hilt
 │   ├── ui/             موتور تم M3، کامپوننت‌ها، نمودارها
-│   ├── pdf/            تولید PDF فاکتور و گزارش
-│   ├── printer/        چاپ ESC/POS بلوتوثی
+│   ├── pdf/            تولید خروجی PDF و تصویر (JPG) فاکتور و گزارش
 │   ├── billing/        Poolakey — اشتراک طلایی
 │   └── barcode/        اسکن بارکد (CameraX + ML Kit ← ZXing ← دستی)
 └── feature/
@@ -156,7 +155,7 @@ app/                    پوسته اپ، ناوبری، Workerها، ویجت G
 
 ### فناوری‌ها
 
-Kotlin • Jetpack Compose (بدون XML) • Room + SQLCipher • Hilt • WorkManager • DataStore • Glance • CameraX + ML Kit (bundled، بدون GMS) • Poolakey
+Kotlin • Jetpack Compose (بدون XML) • Room + SQLCipher • Hilt • WorkManager • DataStore • Glance • CameraX + ML Kit (bundled، بدون GMS) • PdfDocument + PdfRenderer • Poolakey
 
 ---
 
@@ -168,7 +167,7 @@ Kotlin • Jetpack Compose (بدون XML) • Room + SQLCipher • Hilt • Work
 - **هزینه‌ها و سود واقعی:** سود ناخالص و خالص + نمودار مقایسه‌ای
 - **یادآوری بدهی:** شناسایی معوقات، متن آماده، ارسال با Share Intent
 - **ویجت صفحه اصلی:** فروش امروز، تعداد معوق، میان‌بر فاکتور جدید
-- چاپ ESC/POS بلوتوثی ۵۸/۸۰ میلی‌متر، خروجی PDF، فاکتور دوره‌ای، ۵ تم، CSV
+- **خروجی PDF و تصویر (JPG)** با اشتراک‌گذاری در تلگرام/واتساپ/ایمیل، فاکتور دوره‌ای، ۵ تم، CSV
 
 **اشتراک طلایی:** گزارش PDF حرفه‌ای، انتخابگر رنگ آزاد، حذف واترمارک، پشتیبان‌گیری ابری، چند کسب‌وکار
 

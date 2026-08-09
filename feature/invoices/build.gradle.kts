@@ -53,5 +53,4 @@ dependencies {
 
 dependencies {
     implementation(project(":core:pdf"))
-    implementation(project(":core:printer"))
 }

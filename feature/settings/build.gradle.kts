@@ -53,5 +53,4 @@ dependencies {
 dependencies {
     implementation(project(":core:billing"))
     implementation(project(":core:datastore"))
-    implementation(project(":core:printer"))
 }

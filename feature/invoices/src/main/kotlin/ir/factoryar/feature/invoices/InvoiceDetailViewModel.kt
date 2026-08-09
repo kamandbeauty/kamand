@@ -16,12 +16,9 @@ import ir.factoryar.core.domain.repository.InvoiceRepository
 import ir.factoryar.core.domain.repository.SettingsRepository
 import ir.factoryar.core.domain.repository.AppSettings
 import ir.factoryar.core.domain.usecase.GetInvoiceUseCase
+import ir.factoryar.core.pdf.InvoiceImageGenerator
 import ir.factoryar.core.pdf.InvoicePdfGenerator
 import ir.factoryar.core.pdf.PdfSharer
-import ir.factoryar.core.printer.BluetoothPrinterManager
-import ir.factoryar.core.printer.PrintConfig
-import ir.factoryar.core.printer.PrinterDevice
-import ir.factoryar.core.printer.ReceiptRenderer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +38,6 @@ data class InvoiceDetailUiState(
     val businessPhone: String = "",
     val businessTerms: String = "",
     val settings: AppSettings = AppSettings(),
-    val pairedPrinters: List<PrinterDevice> = emptyList(),
     val isBusy: Boolean = false,
 )
 
@@ -62,8 +58,8 @@ class InvoiceDetailViewModel @Inject constructor(
 
     val invoiceId: Long = savedStateHandle.get<Long>("invoiceId") ?: 0L
 
-    private val printerManager by lazy { BluetoothPrinterManager(context) }
     private val pdfGenerator by lazy { InvoicePdfGenerator(context) }
+    private val imageGenerator by lazy { InvoiceImageGenerator(context) }
 
     private val busy = MutableStateFlow(false)
 
@@ -86,10 +82,6 @@ class InvoiceDetailViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<InvoiceDetailEvent>()
     val events: SharedFlow<InvoiceDetailEvent> = _events
-
-    fun loadPairedPrinters() {
-        uiState.value = uiState.value.copy(pairedPrinters = printerManager.pairedPrinters())
-    }
 
     fun sharePdf() {
         val state = uiState.value
@@ -114,42 +106,71 @@ class InvoiceDetailViewModel @Inject constructor(
         }
     }
 
-    fun print(mac: String?) {
+    /** خروجی تصویری (JPG) — مناسب ارسال سریع در پیام‌رسان‌ها */
+    fun shareImage() {
         val state = uiState.value
         val details = state.details ?: return
-        val targetMac = mac ?: state.settings.lastPrinterMac
-        if (targetMac == null) {
-            viewModelScope.launch { _events.emit(InvoiceDetailEvent.Message("ابتدا چاپگر را انتخاب کنید")) }
-            return
-        }
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             busy.value = true
-            val profile = businessRepository.getActiveProfile()
-            val bitmap = kotlinx.coroutines.withContext(Dispatchers.IO) {
-                runCatching {
-                    ReceiptRenderer().render(
-                        details = details,
-                        profile = profile,
-                        unit = CurrencyUnit.fromName(state.settings.currencyUnit),
-                        config = PrintConfig(
-                            paperSizeMm = state.settings.paperSizeMm,
-                            showLogo = state.settings.printShowLogo,
-                            showSignature = state.settings.printShowSignature,
-                            showTerms = state.settings.printShowTerms,
-                        ),
-                    )
-                }.getOrNull()
+            runCatching {
+                val profile = businessRepository.getActiveProfile()
+                imageGenerator.generate(
+                    details = details,
+                    profile = profile,
+                    currencyUnit = CurrencyUnit.fromName(state.settings.currencyUnit),
+                    showWatermark = !state.settings.isPremium,
+                )
+            }.onSuccess { file ->
+                PdfSharer.share(context, file, "اشتراک‌گذاری تصویر فاکتور")
+            }.onFailure {
+                _events.emit(InvoiceDetailEvent.Message("خطا در ساخت تصویر: ${it.message}"))
             }
-            if (bitmap == null) {
-                _events.emit(InvoiceDetailEvent.Message("خطا در آماده‌سازی رسید"))
-                busy.value = false
-                return@launch
+            busy.value = false
+        }
+    }
+
+    /** اشتراک همزمان PDF و تصویر — کاربر در اپ مقصد انتخاب می‌کند */
+    fun shareBoth() {
+        val state = uiState.value
+        val details = state.details ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            busy.value = true
+            runCatching {
+                val profile = businessRepository.getActiveProfile()
+                val unit = CurrencyUnit.fromName(state.settings.currencyUnit)
+                val watermark = !state.settings.isPremium
+                val pdf = pdfGenerator.generate(details, profile, unit, watermark)
+                // تصویر از همان PDF ساخته می‌شود تا دوباره رسم نشود
+                val jpg = imageGenerator.generate(details, profile, unit, watermark, pdfFile = pdf)
+                listOf(pdf, jpg)
+            }.onSuccess { files ->
+                PdfSharer.shareMultiple(context, files)
+            }.onFailure {
+                _events.emit(InvoiceDetailEvent.Message("خطا در ساخت خروجی: ${it.message}"))
             }
-            val result = printerManager.print(targetMac, bitmap)
-            result.onSuccess {
-                settingsRepository.setLastPrinterMac(targetMac)
-                _events.emit(InvoiceDetailEvent.Message("چاپ ارسال شد"))
-            }.onFailure { msg -> _events.emit(InvoiceDetailEvent.Message(msg)) }
+            busy.value = false
+        }
+    }
+
+    /** نمایش PDF در اپ پیش‌فرض دستگاه */
+    fun openPdf() {
+        val state = uiState.value
+        val details = state.details ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            busy.value = true
+            runCatching {
+                val profile = businessRepository.getActiveProfile()
+                pdfGenerator.generate(
+                    details = details,
+                    profile = profile,
+                    currencyUnit = CurrencyUnit.fromName(state.settings.currencyUnit),
+                    showWatermark = !state.settings.isPremium,
+                )
+            }.onSuccess { file ->
+                PdfSharer.view(context, file)
+            }.onFailure {
+                _events.emit(InvoiceDetailEvent.Message("خطا در باز کردن PDF: ${it.message}"))
+            }
             busy.value = false
         }
     }

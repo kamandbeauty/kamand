@@ -121,7 +121,6 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:ui"))
     implementation(project(":core:pdf"))
-    implementation(project(":core:printer"))
     implementation(project(":core:billing"))
     implementation(project(":core:barcode"))
 
