@@ -1,43 +1,155 @@
-Downloading https://services.gradle.org/distributions/gradle-8.10.2-bin.zip
-.............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
-
-Welcome to Gradle 8.10.2!
-
-Here are the highlights of this release:
- - Support for Java 23
- - Faster configuration cache
- - Better configuration cache reports
-
-For more details see https://docs.gradle.org/8.10.2/release-notes.html
-
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :core:common:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:barcode:preBuild UP-TO-DATE
+> Task :core:domain:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:barcode:preDebugBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:billing:preBuild UP-TO-DATE
+> Task :core:billing:preDebugBuild UP-TO-DATE
+> Task :core:domain:processResources NO-SOURCE
+> Task :core:data:preBuild UP-TO-DATE
+> Task :core:data:preDebugBuild UP-TO-DATE
+> Task :core:billing:writeDebugAarMetadata
+> Task :core:data:writeDebugAarMetadata
+> Task :core:datastore:preBuild UP-TO-DATE
+> Task :core:database:preBuild UP-TO-DATE
+> Task :core:datastore:preDebugBuild UP-TO-DATE
+> Task :core:database:preDebugBuild UP-TO-DATE
+> Task :core:datastore:writeDebugAarMetadata
+> Task :core:barcode:writeDebugAarMetadata
+> Task :core:printer:preBuild UP-TO-DATE
+> Task :core:pdf:preBuild UP-TO-DATE
+> Task :core:pdf:preDebugBuild UP-TO-DATE
+> Task :core:printer:preDebugBuild UP-TO-DATE
+> Task :core:database:writeDebugAarMetadata
+> Task :core:ui:preBuild UP-TO-DATE
+> Task :core:printer:writeDebugAarMetadata
+> Task :core:ui:preDebugBuild UP-TO-DATE
+> Task :feature:customers:preBuild UP-TO-DATE
+> Task :feature:customers:preDebugBuild UP-TO-DATE
+> Task :core:ui:writeDebugAarMetadata
+> Task :feature:customers:writeDebugAarMetadata
+> Task :feature:expenses:preBuild UP-TO-DATE
+> Task :feature:expenses:preDebugBuild UP-TO-DATE
+> Task :feature:dashboard:preBuild UP-TO-DATE
+> Task :feature:dashboard:preDebugBuild UP-TO-DATE
+> Task :feature:expenses:writeDebugAarMetadata
+> Task :feature:invoices:preBuild UP-TO-DATE
+> Task :core:pdf:writeDebugAarMetadata
+> Task :feature:products:preBuild UP-TO-DATE
+> Task :feature:invoices:preDebugBuild UP-TO-DATE
+> Task :feature:products:preDebugBuild UP-TO-DATE
+> Task :feature:invoices:writeDebugAarMetadata
+> Task :feature:reports:preBuild UP-TO-DATE
+> Task :feature:reports:preDebugBuild UP-TO-DATE
+> Task :feature:dashboard:writeDebugAarMetadata
+> Task :feature:settings:preBuild UP-TO-DATE
+> Task :feature:settings:preDebugBuild UP-TO-DATE
+> Task :feature:reports:writeDebugAarMetadata
+> Task :feature:products:writeDebugAarMetadata
+> Task :app:generateDebugResValues
+> Task :core:barcode:generateDebugResValues
+> Task :core:billing:generateDebugResValues FROM-CACHE
+> Task :core:barcode:generateDebugResources
+> Task :core:billing:generateDebugResources FROM-CACHE
+> Task :core:barcode:packageDebugResources
+> Task :core:billing:packageDebugResources
+> Task :core:database:generateDebugResValues FROM-CACHE
+> Task :core:data:generateDebugResValues FROM-CACHE
+> Task :core:data:generateDebugResources FROM-CACHE
+> Task :core:database:generateDebugResources FROM-CACHE
+> Task :core:database:packageDebugResources
+> Task :core:data:packageDebugResources
+> Task :core:datastore:generateDebugResValues FROM-CACHE
+> Task :core:pdf:generateDebugResValues FROM-CACHE
+> Task :core:datastore:generateDebugResources FROM-CACHE
+> Task :core:pdf:generateDebugResources FROM-CACHE
+> Task :core:datastore:packageDebugResources
+> Task :core:printer:generateDebugResValues FROM-CACHE
+> Task :core:printer:generateDebugResources FROM-CACHE
+> Task :core:pdf:packageDebugResources
+> Task :core:printer:packageDebugResources
+> Task :core:ui:generateDebugResValues FROM-CACHE
+> Task :feature:customers:generateDebugResValues FROM-CACHE
+> Task :core:ui:generateDebugResources FROM-CACHE
+> Task :feature:customers:generateDebugResources FROM-CACHE
+> Task :core:ui:packageDebugResources
+> Task :feature:customers:packageDebugResources
+> Task :feature:dashboard:generateDebugResValues FROM-CACHE
+> Task :feature:expenses:generateDebugResValues FROM-CACHE
+> Task :feature:dashboard:generateDebugResources FROM-CACHE
+> Task :feature:expenses:generateDebugResources FROM-CACHE
+> Task :feature:dashboard:packageDebugResources
+> Task :feature:invoices:generateDebugResValues FROM-CACHE
+> Task :feature:expenses:packageDebugResources
+> Task :feature:invoices:generateDebugResources FROM-CACHE
+> Task :feature:products:generateDebugResValues FROM-CACHE
+> Task :feature:products:generateDebugResources FROM-CACHE
+> Task :feature:invoices:packageDebugResources
+> Task :feature:products:packageDebugResources
+> Task :feature:reports:generateDebugResValues FROM-CACHE
+> Task :feature:settings:generateDebugResValues FROM-CACHE
+> Task :feature:reports:generateDebugResources FROM-CACHE
+> Task :feature:settings:generateDebugResources FROM-CACHE
+> Task :feature:settings:packageDebugResources
+> Task :feature:reports:packageDebugResources
+> Task :core:barcode:extractDeepLinksDebug
+> Task :app:generateDebugResources
+> Task :core:barcode:processDebugManifest
+> Task :core:billing:extractDeepLinksDebug FROM-CACHE
+> Task :feature:settings:writeDebugAarMetadata
+> Task :core:data:extractDeepLinksDebug FROM-CACHE
+> Task :core:billing:processDebugManifest
+> Task :core:database:extractDeepLinksDebug FROM-CACHE
+> Task :core:database:processDebugManifest
+> Task :core:datastore:extractDeepLinksDebug FROM-CACHE
+> Task :core:data:processDebugManifest
+> Task :core:pdf:extractDeepLinksDebug FROM-CACHE
+> Task :core:datastore:processDebugManifest
+> Task :core:printer:extractDeepLinksDebug FROM-CACHE
+> Task :core:printer:processDebugManifest FAILED
+> Task :core:pdf:processDebugManifest
 
-> Configure project :app
-e: file:///home/runner/work/kamand/kamand/app/build.gradle.kts:19:26: Unresolved reference: util
-e: file:///home/runner/work/kamand/kamand/app/build.gradle.kts:40:10: Unresolved reference: io
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1786312111391.json
+> Task :core:common:compileKotlin FAILED
+e: file:///home/runner/work/kamand/kamand/core/common/src/main/kotlin/ir/factoryar/core/common/util/AppResult.kt:12:5 'inline' modifier on virtual members is prohibited. Only private or final members can be inlined.
+e: file:///home/runner/work/kamand/kamand/core/common/src/main/kotlin/ir/factoryar/core/common/util/AppResult.kt:17:5 'inline' modifier on virtual members is prohibited. Only private or final members can be inlined.
 
-FAILURE: Build failed with an exception.
+> Task :app:mapDebugSourceSetPaths
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1786312482054.json
 
-* Where:
-Build file '/home/runner/work/kamand/kamand/app/build.gradle.kts' line: 19
+FAILURE: Build completed with 2 failures.
 
+1: Task failed with an exception.
+-----------
 * What went wrong:
-Script compilation errors:
-
-  Line 19: val keystoreProps = java.util.Properties()
-                                    ^ Unresolved reference: util
-
-  Line 40:     java.io.File(storeFilePath).exists()
-                    ^ Unresolved reference: io
-
-2 errors
+Execution failed for task ':core:printer:processDebugManifest'.
+> A failure occurred while executing com.android.build.gradle.tasks.ProcessLibraryManifest$ProcessLibWorkAction
+   > com.android.manifmerger.ManifestMerger2$MergeFailureException: Error parsing /home/runner/work/kamand/kamand/core/printer/src/main/AndroidManifest.xml
 
 * Try:
 > Run with --stacktrace option to get the stack trace.
 > Run with --info or --debug option to get more log output.
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
+==============================================================================
 
-BUILD FAILED in 1m 9s
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':core:common:compileKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 41s
+78 actionable tasks: 44 executed, 34 from cache
