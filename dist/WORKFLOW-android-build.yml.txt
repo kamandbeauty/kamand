@@ -1,0 +1,193 @@
+name: Android Debug Build
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  بیلد خودکار نسخهٔ Debug روی هر push و pull request
+#  خروجی APK به‌عنوان Artifact ذخیره می‌شود و از بخش Actions قابل دانلود است.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: ['**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'dist/**'
+  pull_request:
+    branches: ['**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'dist/**'
+  workflow_dispatch:        # اجرای دستی از تب Actions
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # کش وابستگی‌ها و توزیع Gradle — اجراهای بعدی چند برابر سریع‌تر می‌شوند
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # بررسی سلامت wrapper پیش از اجرا
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      # ابتدا فقط ارزیابی اسکریپت‌ها بررسی می‌شود تا خطای پیکربندی زود پیدا شود
+      - name: Validate Gradle configuration
+        run: |
+          set +e
+          ./gradlew help --no-daemon --no-configuration-cache 2>&1 | tee /tmp/cfg.log
+          code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then
+            {
+              echo "## ❌ خطای پیکربندی Gradle"
+              echo '```'
+              grep -A 25 -E "What went wrong|FAILURE:" /tmp/cfg.log | head -60
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $code
+
+      - name: Build Debug APK
+        run: |
+          set +e
+          ./gradlew :app:assembleDebug --no-daemon -Pandroid.builder.sdkDownload=true 2>&1 | tee /tmp/build.log
+          code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then
+            {
+              echo "## ❌ خطاهای بیلد"
+              echo ""
+              echo "### خطاهای کامپایل کاتلین"
+              echo '```'
+              grep -E "^e: |error:" /tmp/build.log | head -50
+              echo '```'
+              echo ""
+              echo "### پیام Gradle"
+              echo '```'
+              grep -A 20 -E "What went wrong" /tmp/build.log | head -40
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $code
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: factoryar-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # لاگ خطا را در شاخه ci-logs کامیت می‌کند تا از هر جایی قابل خواندن باشد
+      - name: Commit error log
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LOG=/tmp/cfg.log
+          [ -f /tmp/build.log ] && [ -s /tmp/build.log ] && LOG=/tmp/build.log
+          mkdir -p /tmp/out
+          tail -400 "$LOG" > /tmp/out/last-error.log 2>/dev/null || echo "no log" > /tmp/out/last-error.log
+          git config --global user.name  "ci-bot"
+          git config --global user.email "ci@example.com"
+          cd /tmp
+          rm -rf logrepo
+          git clone --depth 1 --branch ci-logs \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" logrepo 2>/dev/null || {
+              git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" logrepo
+              cd logrepo && git checkout --orphan ci-logs && git rm -rf . >/dev/null 2>&1 || true
+              cd /tmp
+            }
+          cp /tmp/out/last-error.log logrepo/last-error.log
+          cd logrepo
+          git add last-error.log
+          git commit -m "CI error ${GITHUB_SHA:0:7}" || exit 0
+          git push origin ci-logs
+
+      # در صورت شکست، گزارش‌های بیلد برای عیب‌یابی آپلود می‌شوند
+      - name: Upload build reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: |
+            **/build/reports/
+            **/build/outputs/logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # تست‌های واحد ماژول‌های خالص JVM (محاسبهٔ فاکتور، سود، تقویم جلالی و…)
+      - name: Run unit tests
+        run: |
+          set +e
+          ./gradlew :core:domain:test :core:common:test --no-daemon -Pandroid.builder.sdkDownload=true 2>&1 | tee /tmp/test.log
+          code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then
+            {
+              echo "## ❌ خطای تست‌ها"
+              echo '```'
+              grep -E "^e: |error:" /tmp/test.log | head -40
+              echo '```'
+              echo '```'
+              grep -A 20 -E "What went wrong" /tmp/test.log | head -40
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $code
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: '**/build/reports/tests/'
+          retention-days: 7
+          if-no-files-found: ignore
+          
