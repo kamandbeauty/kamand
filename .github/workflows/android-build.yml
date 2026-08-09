@@ -1,0 +1,6 @@
+git pull
+mkdir -p .github/workflows
+unzip -o github-workflows.zip -d .github/workflows/
+git add .github/workflows/
+git commit -m "افزودن GitHub Actions"
+git push
