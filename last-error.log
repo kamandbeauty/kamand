@@ -1,56 +1,56 @@
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
-> Task :core:domain:checkKotlinGradlePluginConfigurationErrors SKIPPED
-> Task :core:barcode:preBuild UP-TO-DATE
-> Task :app:preBuild UP-TO-DATE
 > Task :core:common:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:domain:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :core:barcode:preBuild UP-TO-DATE
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :core:barcode:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
-> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:domain:processResources NO-SOURCE
 > Task :core:billing:preBuild UP-TO-DATE
 > Task :core:billing:preDebugBuild UP-TO-DATE
-> Task :core:domain:processResources NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :core:data:preBuild UP-TO-DATE
 > Task :core:data:preDebugBuild UP-TO-DATE
-> Task :core:data:writeDebugAarMetadata
-> Task :core:database:preBuild UP-TO-DATE
-> Task :core:database:preDebugBuild UP-TO-DATE
 > Task :core:billing:writeDebugAarMetadata
+> Task :core:barcode:writeDebugAarMetadata
 > Task :core:datastore:preBuild UP-TO-DATE
 > Task :core:datastore:preDebugBuild UP-TO-DATE
-> Task :core:barcode:writeDebugAarMetadata
+> Task :core:database:preBuild UP-TO-DATE
+> Task :core:database:preDebugBuild UP-TO-DATE
+> Task :core:data:writeDebugAarMetadata
 > Task :core:pdf:preBuild UP-TO-DATE
 > Task :core:pdf:preDebugBuild UP-TO-DATE
 > Task :core:database:writeDebugAarMetadata
 > Task :core:printer:preBuild UP-TO-DATE
 > Task :core:printer:preDebugBuild UP-TO-DATE
-> Task :core:pdf:writeDebugAarMetadata
+> Task :core:datastore:writeDebugAarMetadata
 > Task :core:ui:preBuild UP-TO-DATE
 > Task :core:ui:preDebugBuild UP-TO-DATE
-> Task :core:datastore:writeDebugAarMetadata
+> Task :core:printer:writeDebugAarMetadata
 > Task :feature:customers:preBuild UP-TO-DATE
 > Task :feature:customers:preDebugBuild UP-TO-DATE
-> Task :core:ui:writeDebugAarMetadata
+> Task :core:pdf:writeDebugAarMetadata
 > Task :feature:dashboard:preBuild UP-TO-DATE
 > Task :feature:dashboard:preDebugBuild UP-TO-DATE
-> Task :core:printer:writeDebugAarMetadata
+> Task :core:ui:writeDebugAarMetadata
 > Task :feature:expenses:preBuild UP-TO-DATE
 > Task :feature:expenses:preDebugBuild UP-TO-DATE
 > Task :feature:dashboard:writeDebugAarMetadata
 > Task :feature:invoices:preBuild UP-TO-DATE
-> Task :feature:customers:writeDebugAarMetadata
 > Task :feature:invoices:preDebugBuild UP-TO-DATE
+> Task :feature:expenses:writeDebugAarMetadata
 > Task :feature:products:preBuild UP-TO-DATE
 > Task :feature:products:preDebugBuild UP-TO-DATE
-> Task :feature:expenses:writeDebugAarMetadata
+> Task :feature:invoices:writeDebugAarMetadata
+> Task :feature:customers:writeDebugAarMetadata
 > Task :feature:reports:preBuild UP-TO-DATE
 > Task :feature:reports:preDebugBuild UP-TO-DATE
-> Task :feature:invoices:writeDebugAarMetadata
 > Task :feature:settings:preBuild UP-TO-DATE
 > Task :feature:settings:preDebugBuild UP-TO-DATE
-> Task :feature:products:writeDebugAarMetadata
 > Task :feature:reports:writeDebugAarMetadata
+> Task :feature:products:writeDebugAarMetadata
 > Task :core:barcode:generateDebugResValues
 > Task :app:generateDebugResValues
 > Task :core:billing:generateDebugResValues FROM-CACHE
@@ -59,64 +59,65 @@ Daemon will be stopped at the end of the build
 > Task :core:barcode:packageDebugResources
 > Task :core:billing:packageDebugResources
 > Task :core:data:generateDebugResValues FROM-CACHE
-> Task :core:data:generateDebugResources FROM-CACHE
 > Task :core:database:generateDebugResValues FROM-CACHE
+> Task :core:data:generateDebugResources FROM-CACHE
 > Task :core:database:generateDebugResources FROM-CACHE
+> Task :core:database:packageDebugResources
 > Task :core:data:packageDebugResources
 > Task :core:datastore:generateDebugResValues FROM-CACHE
-> Task :core:datastore:generateDebugResources FROM-CACHE
-> Task :core:database:packageDebugResources
 > Task :core:pdf:generateDebugResValues FROM-CACHE
 > Task :core:pdf:generateDebugResources FROM-CACHE
-> Task :core:datastore:packageDebugResources
+> Task :core:datastore:generateDebugResources FROM-CACHE
 > Task :core:pdf:packageDebugResources
+> Task :core:datastore:packageDebugResources
 > Task :core:printer:generateDebugResValues FROM-CACHE
 > Task :core:ui:generateDebugResValues FROM-CACHE
-> Task :core:ui:generateDebugResources FROM-CACHE
 > Task :core:printer:generateDebugResources FROM-CACHE
+> Task :core:ui:generateDebugResources FROM-CACHE
 > Task :core:printer:packageDebugResources
-> Task :feature:customers:generateDebugResValues FROM-CACHE
 > Task :core:ui:packageDebugResources
-> Task :feature:customers:generateDebugResources FROM-CACHE
+> Task :feature:customers:generateDebugResValues FROM-CACHE
 > Task :feature:dashboard:generateDebugResValues FROM-CACHE
+> Task :feature:customers:generateDebugResources FROM-CACHE
 > Task :feature:dashboard:generateDebugResources FROM-CACHE
 > Task :feature:customers:packageDebugResources
-> Task :feature:expenses:generateDebugResValues FROM-CACHE
-> Task :feature:expenses:generateDebugResources FROM-CACHE
 > Task :feature:dashboard:packageDebugResources
+> Task :feature:expenses:generateDebugResValues FROM-CACHE
 > Task :feature:invoices:generateDebugResValues FROM-CACHE
-> Task :feature:expenses:packageDebugResources
+> Task :feature:expenses:generateDebugResources FROM-CACHE
 > Task :feature:invoices:generateDebugResources FROM-CACHE
-> Task :feature:products:generateDebugResValues FROM-CACHE
-> Task :feature:products:generateDebugResources FROM-CACHE
 > Task :feature:invoices:packageDebugResources
+> Task :feature:expenses:packageDebugResources
+> Task :feature:products:generateDebugResValues FROM-CACHE
 > Task :feature:reports:generateDebugResValues FROM-CACHE
-> Task :feature:products:packageDebugResources
-> Task :feature:settings:generateDebugResValues FROM-CACHE
 > Task :feature:reports:generateDebugResources FROM-CACHE
-> Task :feature:settings:generateDebugResources FROM-CACHE
+> Task :feature:products:generateDebugResources FROM-CACHE
+> Task :feature:products:packageDebugResources
 > Task :feature:reports:packageDebugResources
-> Task :feature:settings:packageDebugResources
+> Task :feature:settings:generateDebugResValues FROM-CACHE
+> Task :feature:settings:generateDebugResources FROM-CACHE
 > Task :app:generateDebugResources
+> Task :feature:settings:packageDebugResources
 > Task :core:barcode:extractDeepLinksDebug
-> Task :feature:settings:writeDebugAarMetadata
-> Task :core:billing:extractDeepLinksDebug FROM-CACHE
+> Task :app:packageDebugResources
 > Task :core:barcode:processDebugManifest
-> Task :core:data:extractDeepLinksDebug FROM-CACHE
+> Task :core:billing:extractDeepLinksDebug FROM-CACHE
 > Task :core:billing:processDebugManifest
+> Task :core:data:extractDeepLinksDebug FROM-CACHE
+> Task :feature:settings:writeDebugAarMetadata
 > Task :core:database:extractDeepLinksDebug FROM-CACHE
-> Task :core:data:processDebugManifest
-> Task :core:datastore:extractDeepLinksDebug FROM-CACHE
 > Task :core:database:processDebugManifest
+> Task :core:datastore:extractDeepLinksDebug FROM-CACHE
+> Task :core:data:processDebugManifest
 > Task :core:pdf:extractDeepLinksDebug FROM-CACHE
 > Task :core:datastore:processDebugManifest
 > Task :core:printer:extractDeepLinksDebug FROM-CACHE
-> Task :core:pdf:processDebugManifest
 > Task :core:printer:processDebugManifest
 > Task :core:ui:extractDeepLinksDebug FROM-CACHE
+> Task :core:pdf:processDebugManifest
 > Task :feature:customers:extractDeepLinksDebug FROM-CACHE
-> Task :feature:customers:processDebugManifest
 > Task :core:ui:processDebugManifest
+> Task :feature:customers:processDebugManifest
 > Task :feature:dashboard:extractDeepLinksDebug FROM-CACHE
 > Task :feature:expenses:extractDeepLinksDebug FROM-CACHE
 > Task :feature:dashboard:processDebugManifest
@@ -131,81 +132,105 @@ Daemon will be stopped at the end of the build
 > Task :feature:settings:processDebugManifest
 > Task :core:barcode:compileDebugLibraryResources
 > Task :core:billing:compileDebugLibraryResources
-> Task :core:billing:parseDebugLocalResources
 > Task :core:barcode:parseDebugLocalResources
+> Task :core:billing:parseDebugLocalResources
 > Task :core:barcode:generateDebugRFile
+> Task :core:billing:generateDebugRFile
+> Task :core:database:compileDebugLibraryResources FROM-CACHE
 > Task :core:data:compileDebugLibraryResources FROM-CACHE
 > Task :core:data:parseDebugLocalResources FROM-CACHE
-> Task :core:data:generateDebugRFile
-> Task :core:database:compileDebugLibraryResources FROM-CACHE
 > Task :core:database:parseDebugLocalResources FROM-CACHE
-> Task :core:billing:generateDebugRFile
-> Task :core:datastore:compileDebugLibraryResources FROM-CACHE
-> Task :core:datastore:parseDebugLocalResources FROM-CACHE
+> Task :core:data:generateDebugRFile
 > Task :core:database:generateDebugRFile
+> Task :core:datastore:compileDebugLibraryResources FROM-CACHE
 > Task :core:pdf:compileDebugLibraryResources FROM-CACHE
 > Task :core:pdf:parseDebugLocalResources FROM-CACHE
+> Task :core:datastore:parseDebugLocalResources FROM-CACHE
+> Task :core:pdf:generateDebugRFile
 > Task :core:datastore:generateDebugRFile
 > Task :core:printer:compileDebugLibraryResources FROM-CACHE
-> Task :core:printer:parseDebugLocalResources FROM-CACHE
-> Task :core:pdf:generateDebugRFile
 > Task :core:ui:compileDebugLibraryResources FROM-CACHE
+> Task :core:printer:parseDebugLocalResources FROM-CACHE
 > Task :core:ui:parseDebugLocalResources FROM-CACHE
 > Task :core:printer:generateDebugRFile
-> Task :feature:customers:compileDebugLibraryResources FROM-CACHE
-> Task :feature:customers:parseDebugLocalResources FROM-CACHE
-> Task :feature:customers:generateDebugRFile
-> Task :feature:dashboard:compileDebugLibraryResources FROM-CACHE
-> Task :feature:dashboard:parseDebugLocalResources FROM-CACHE
 > Task :core:ui:generateDebugRFile
+> Task :feature:customers:compileDebugLibraryResources FROM-CACHE
+> Task :feature:dashboard:compileDebugLibraryResources FROM-CACHE
+> Task :feature:customers:parseDebugLocalResources FROM-CACHE
+> Task :feature:dashboard:parseDebugLocalResources FROM-CACHE
+> Task :feature:customers:generateDebugRFile
 > Task :feature:expenses:compileDebugLibraryResources FROM-CACHE
 > Task :feature:dashboard:generateDebugRFile
-> Task :feature:expenses:parseDebugLocalResources FROM-CACHE
 > Task :feature:invoices:compileDebugLibraryResources FROM-CACHE
 > Task :feature:invoices:parseDebugLocalResources FROM-CACHE
+> Task :feature:expenses:parseDebugLocalResources FROM-CACHE
 > Task :feature:expenses:generateDebugRFile
-> Task :feature:products:compileDebugLibraryResources FROM-CACHE
-> Task :feature:products:parseDebugLocalResources FROM-CACHE
 > Task :feature:invoices:generateDebugRFile
+> Task :feature:products:compileDebugLibraryResources FROM-CACHE
 > Task :feature:reports:compileDebugLibraryResources FROM-CACHE
 > Task :feature:reports:parseDebugLocalResources FROM-CACHE
-> Task :feature:products:generateDebugRFile
-> Task :feature:settings:compileDebugLibraryResources FROM-CACHE
+> Task :feature:products:parseDebugLocalResources FROM-CACHE
 > Task :feature:reports:generateDebugRFile
+> Task :feature:products:generateDebugRFile
 > Task :core:barcode:checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :core:ui:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:settings:compileDebugLibraryResources FROM-CACHE
 > Task :feature:settings:parseDebugLocalResources FROM-CACHE
 > Task :core:ui:javaPreCompileDebug
 > Task :feature:settings:generateDebugRFile
 > Task :core:billing:checkKotlinGradlePluginConfigurationErrors SKIPPED
-> Task :core:barcode:javaPreCompileDebug
+> Task :core:billing:javaPreCompileDebug
 > Task :core:common:processResources NO-SOURCE
 > Task :core:data:checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :core:database:checkKotlinGradlePluginConfigurationErrors SKIPPED
-> Task :core:billing:javaPreCompileDebug
+> Task :core:barcode:javaPreCompileDebug
 > Task :core:datastore:checkKotlinGradlePluginConfigurationErrors SKIPPED
-
 > Task :core:common:compileKotlin
-e: file:///home/runner/work/kamand/kamand/core/common/src/main/kotlin/ir/factoryar/core/common/util/PersianFormatter.kt:10:5 Platform declaration clash: The following declarations have the same JVM signature (toPersianDigits(Ljava/lang/String;)Ljava/lang/String;):
-    fun toPersianDigits(text: String): String defined in ir.factoryar.core.common.util.PersianFormatter
-    fun String.toPersianDigits(): String defined in ir.factoryar.core.common.util.PersianFormatter
-e: file:///home/runner/work/kamand/kamand/core/common/src/main/kotlin/ir/factoryar/core/common/util/PersianFormatter.kt:16:5 Platform declaration clash: The following declarations have the same JVM signature (toPersianDigits(Ljava/lang/String;)Ljava/lang/String;):
-    fun toPersianDigits(text: String): String defined in ir.factoryar.core.common.util.PersianFormatter
-    fun String.toPersianDigits(): String defined in ir.factoryar.core.common.util.PersianFormatter
-
-> Task :core:common:compileKotlin FAILED
+> Task :core:common:compileJava NO-SOURCE
+> Task :core:common:classes UP-TO-DATE
+> Task :core:common:jar
+> Task :core:domain:compileKotlin
+> Task :core:domain:compileJava NO-SOURCE
+> Task :core:domain:classes UP-TO-DATE
+> Task :core:domain:jar
 > Task :core:datastore:kspDebugKotlin
+> Task :app:mapDebugSourceSetPaths
 
 > Task :core:database:kspDebugKotlin
 w: [ksp] /home/runner/work/kamand/kamand/core/database/src/main/kotlin/ir/factoryar/core/database/FactorYarDatabase.kt:39: Schema export directory was not provided to the annotation processor so Room cannot export the schema. You can either provide `room.schemaLocation` annotation processor argument by applying the Room Gradle plugin (id 'androidx.room') OR set exportSchema to false.
 
-> Task :app:mapDebugSourceSetPaths
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1786313462919.json
+> Task :core:billing:kspDebugKotlin
+> Task :core:database:compileDebugKotlin
+> Task :core:database:javaPreCompileDebug
 
-FAILURE: Build failed with an exception.
+> Task :core:billing:compileDebugKotlin FAILED
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:112:11 Unresolved reference 'subscribeActivity'.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:112:101 Unresolved reference 'failedToBeginFlow'.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:113:13 Unresolved reference 'purchaseSucceed'.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:118:13 Unresolved reference 'purchaseCanceled'.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:119:13 Unresolved reference 'purchaseFailed'.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:119:30 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:120:35 Unresolved reference 'message'.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:122:13 Unresolved reference 'failedToBeginFlow'.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:122:33 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:123:35 Unresolved reference 'message'.
+e: file:///home/runner/work/kamand/kamand/core/billing/src/main/kotlin/ir/factoryar/core/billing/BillingManager.kt:129:18 Unresolved reference 'disconnect'.
 
+> Task :app:checkDebugAarMetadata
+
+> Task :core:ui:compileDebugKotlin FAILED
+e: file:///home/runner/work/kamand/kamand/core/ui/src/main/kotlin/ir/factoryar/core/ui/theme/ThemeEngine.kt:39:60 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Color.toArgb(): Int
+
+> Task :core:database:compileDebugJavaWithJavac
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1786313789582.json
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
 * What went wrong:
-Execution failed for task ':core:common:compileKotlin'.
+Execution failed for task ':core:billing:compileDebugKotlin'.
 > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
    > Compilation error. See log for more details
 
@@ -214,6 +239,21 @@ Execution failed for task ':core:common:compileKotlin'.
 > Run with --info or --debug option to get more log output.
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
+==============================================================================
 
-BUILD FAILED in 47s
-144 actionable tasks: 76 executed, 68 from cache
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':core:ui:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 1m 3s
+155 actionable tasks: 87 executed, 68 from cache
