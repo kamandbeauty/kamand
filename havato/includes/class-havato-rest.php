@@ -241,6 +241,22 @@ class Havato_REST {
 		$lang    = Havato_I18N::current_lang();
 
 		$data = array(
+			/*
+			 * A FRESH NONCE ON EVERY BOOTSTRAP.
+			 *
+			 * A REST nonce is only valid for 24 hours. This app is a PWA: it
+			 * is opened from the home screen or a restored tab and never
+			 * reloads the document, so the nonce printed into HAVATO_BOOT can
+			 * easily be days old by the time it is used. The auth COOKIE
+			 * lasts 14 days, so the user still looks signed in while every
+			 * request fails with rest_cookie_invalid_nonce — which surfaces
+			 * in Persian as "بررسی کوکی انجام نشد".
+			 *
+			 * bootstrap is a public route, so it answers even when the
+			 * caller's nonce is already dead; the client re-arms itself from
+			 * this value. See also the 403 retry in the JS api() helper.
+			 */
+			'nonce'         => wp_create_nonce( 'wp_rest' ),
 			'logged_in'     => (bool) $user_id,
 			'role'          => $role,
 			'lang'          => $lang,

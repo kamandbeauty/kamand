@@ -29,6 +29,40 @@ class Havato_Shortcode {
 		add_action( 'template_redirect', array( __CLASS__, 'remember_page' ) );
 		add_filter( 'template_include', array( __CLASS__, 'standalone_template' ), 99 );
 		add_filter( 'show_admin_bar', array( __CLASS__, 'hide_admin_bar' ) );
+
+		/*
+		 * Nonce vending, over admin-ajax rather than REST.
+		 *
+		 * It cannot live on a REST route. WordPress's own
+		 * rest_cookie_check_errors() forces wp_set_current_user(0) whenever a
+		 * request arrives WITHOUT an X-WP-Nonce header — and sending the
+		 * expired one just earns a 403 before our handler ever runs. Either
+		 * way the REST request is anonymous, so wp_create_nonce() there would
+		 * mint a nonce bound to user 0, which then fails to verify against the
+		 * caller's real cookie. Genuinely useless.
+		 *
+		 * admin-ajax.php authenticates from the cookie and performs no nonce
+		 * check of its own, so it is the one place that can hand a
+		 * still-logged-in client a nonce that actually matches its session.
+		 */
+		add_action( 'wp_ajax_havato_nonce', array( __CLASS__, 'ajax_nonce' ) );
+		add_action( 'wp_ajax_nopriv_havato_nonce', array( __CLASS__, 'ajax_nonce' ) );
+	}
+
+	/**
+	 * Hand the app a REST nonce matching the current cookie session.
+	 *
+	 * Returns `logged_in: false` for a visitor whose session really has ended,
+	 * so the client can show the sign-in screen instead of retrying forever.
+	 */
+	public static function ajax_nonce() {
+		nocache_headers();
+		wp_send_json(
+			array(
+				'nonce'     => wp_create_nonce( 'wp_rest' ),
+				'logged_in' => is_user_logged_in(),
+			)
+		);
 	}
 
 	/**
@@ -218,6 +252,8 @@ class Havato_Shortcode {
 				// a firewall can point them at a local copy or a mirror.
 				'leafletCss'   => esc_url_raw( apply_filters( 'havato_leaflet_css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' ) ),
 				'leafletJs'    => esc_url_raw( apply_filters( 'havato_leaflet_js', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js' ) ),
+				// Where the app re-arms an expired REST nonce. See ajax_nonce().
+				'nonceUrl'     => esc_url_raw( admin_url( 'admin-ajax.php?action=havato_nonce' ) ),
 				'swUrl'        => esc_url_raw( Havato_PWA::url( 'sw' ) ),
 				'appUrl'       => esc_url_raw( Havato_PWA::app_url() ),
 				'homeUrl'      => esc_url_raw( home_url( '/' ) ),

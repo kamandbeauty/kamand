@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.37.0
+Stable tag: 1.38.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,35 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.38.0 =
+* Fixed: an already signed-in user could open the app and see nothing but
+  "بررسی کوکی انجام نشد" (rest_cookie_invalid_nonce) — avatar, name and tabs
+  all present, but every request failing.
+* A WordPress REST nonce is only valid for 24 hours, and it is written into
+  the page once, at load. Havato is a PWA: it is opened from the home screen
+  or a restored tab and never reloads its document, so the nonce steadily goes
+  stale while the app sits installed. The auth cookie lasts 14 days, so the
+  session is genuinely still alive — which is why the user still looks signed
+  in while nothing works. 1.37.0 only refreshed the nonce at sign-in, which
+  does nothing for a session that goes stale days later.
+* The app now recovers on its own. A 403 carrying the
+  rest_cookie_invalid_nonce code triggers one silent nonce refresh and a
+  replay of the failed call; the user sees nothing. File uploads recover the
+  same way, so a finished photo upload is not lost to an expired nonce.
+* It also re-arms pre-emptively whenever the app returns to the foreground
+  after more than half an hour away, so in practice the failure never occurs.
+* The nonce is fetched over admin-ajax rather than a REST route, and that
+  detail is essential: WordPress forces the current user to 0 on any REST
+  request without an X-WP-Nonce header, and rejects a dead nonce with 403
+  before plugin code runs. A nonce minted on a REST route would therefore be
+  bound to user 0 and would still fail against the caller's real cookie.
+  admin-ajax authenticates from the cookie and runs no nonce check of its own.
+* The endpoint also reports whether the session is still alive, so a user
+  whose cookie has genuinely expired is shown the sign-in screen instead of
+  retrying in a loop.
+* Nonce failures are matched on the WordPress error CODE, never on the
+  message, which is localised into Persian and Turkish.
 
 = 1.37.0 =
 * Fixed: the app was very slow to appear. The Persian font was loaded from

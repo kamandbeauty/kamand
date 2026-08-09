@@ -181,14 +181,90 @@
 		return fetch(url, init).then(function (res) {
 			return res.json().catch(function () { return {}; }).then(function (json) {
 				if (!res.ok) {
-					var err = new Error((json && json.message) || t('error_generic'));
-					err.data = json;
-					err.status = res.status;
-					throw err;
+					// A dead nonce is recoverable: fetch a new one and replay
+					// the call once. Anything else is a real error.
+					if (isNonceError(res.status, json) && !options._retried) {
+						return refreshNonce().then(function (ok) {
+							if (!ok) { throw restError(res, json); }
+							options._retried = true;
+							return api(path, options);
+						});
+					}
+					throw restError(res, json);
 				}
 				return json;
 			});
 		});
+	}
+
+	function restError(res, json) {
+		var err = new Error((json && json.message) || t('error_generic'));
+		err.data = json;
+		err.status = res.status;
+		return err;
+	}
+
+	/**
+	 * Is this the "your nonce is no longer valid" failure?
+	 *
+	 * WordPress answers 403 with code `rest_cookie_invalid_nonce`. The message
+	 * is localised — in Persian it reads "بررسی کوکی انجام نشد" — so the CODE
+	 * is what we match on, never the text.
+	 */
+	function isNonceError(status, json) {
+		if (status !== 403) { return false; }
+		var code = json && json.code;
+		return code === 'rest_cookie_invalid_nonce' || code === 'rest_forbidden';
+	}
+
+	/**
+	 * Re-arm the client with a valid nonce.
+	 *
+	 * A REST nonce lasts 24 hours. This app is a PWA that never reloads the
+	 * document, so the nonce baked into the page goes stale while the app is
+	 * still open — and the auth cookie lasts 14 days, so the user still looks
+	 * signed in while every request fails.
+	 *
+	 * This deliberately does NOT use a REST route. WordPress forces
+	 * wp_set_current_user(0) on any REST request that arrives without an
+	 * X-WP-Nonce header, and rejects one that arrives with a dead nonce before
+	 * our code runs. Either way the request is anonymous there, so a nonce
+	 * minted on a REST route would be bound to user 0 and would still fail
+	 * against the caller's real cookie. admin-ajax authenticates from the
+	 * cookie and runs no nonce check, so it is the only place that can return
+	 * a nonce matching the live session.
+	 *
+	 * Concurrent callers share one in-flight request: a screen that fires four
+	 * parallel calls must not mint four nonces.
+	 */
+	function refreshNonce() {
+		if (S.nonceRefresh) { return S.nonceRefresh; }
+		if (!BOOT.nonceUrl) { return Promise.resolve(false); }
+
+		S.nonceRefresh = fetch(BOOT.nonceUrl, {
+			method: 'GET',
+			credentials: 'same-origin',
+			headers: { 'Accept': 'application/json' }
+		}).then(function (res) {
+			return res.ok ? res.json() : null;
+		}).then(function (json) {
+			S.nonceRefresh = null;
+			if (!json || !json.nonce) { return false; }
+			// The session really has ended: no nonce will help, and the app
+			// should fall back to the sign-in screen rather than loop.
+			if (json.logged_in === false && S.loggedIn) {
+				S.loggedIn = false;
+				S.user = null;
+				return false;
+			}
+			BOOT.nonce = json.nonce;
+			return true;
+		}).catch(function () {
+			S.nonceRefresh = null;
+			return false;
+		});
+
+		return S.nonceRefresh;
 	}
 
 	/**
@@ -231,6 +307,25 @@
 					resolve(json);
 					return;
 				}
+
+				// Same stale-nonce recovery as the fetch path. Worth doing
+				// here especially: losing a finished photo upload to an
+				// expired nonce means picking the file all over again.
+				if (isNonceError(xhr.status, json) && !options._retried) {
+					refreshNonce().then(function (ok) {
+						if (!ok) {
+							var e2 = new Error(json.message || t('error_generic'));
+							e2.data = json;
+							e2.status = xhr.status;
+							reject(e2);
+							return;
+						}
+						options._retried = true;
+						apiUpload(url, options).then(resolve, reject);
+					});
+					return;
+				}
+
 				var err = new Error(json.message || t('error_generic'));
 				err.data = json;
 				err.status = xhr.status;
@@ -3730,6 +3825,9 @@
 		initHistory();
 
 		api('bootstrap').then(function (res) {
+			// The document may have been sitting in a restored tab for days.
+			// bootstrap always mints a current nonce, so take it.
+			if (res.nonce) { BOOT.nonce = res.nonce; }
 			S.loggedIn = !!res.logged_in;
 			S.role = res.role || 'guest';
 			S.user = res.user || null;
@@ -3742,6 +3840,7 @@
 			buildTabs();
 			render();
 			S.booted = true;
+			watchForStaleSession();
 		}).catch(function (err) {
 			// Never leave the user staring at a spinner: if the REST API is
 			// unreachable (permalinks off, wp-json blocked by a security
@@ -3750,6 +3849,35 @@
 		});
 
 		registerServiceWorker();
+	}
+
+	/**
+	 * Re-arm the nonce when the app comes back to the foreground.
+	 *
+	 * A PWA is not closed, it is backgrounded — often for days. The nonce
+	 * printed into the document expires after 24 hours, so the first tap after
+	 * a long absence would otherwise fail before the retry in api() could
+	 * quietly fix it. Refreshing on the way back in means the user never sees
+	 * the failure at all; the retry stays as the safety net for a session that
+	 * goes stale while the app is actually open.
+	 *
+	 * Only when the app has been away long enough to matter — re-arming on
+	 * every tab switch would be a needless request.
+	 */
+	function watchForStaleSession() {
+		var STALE_AFTER = 30 * 60 * 1000; // half an hour
+		var leftAt = 0;
+
+		document.addEventListener('visibilitychange', function () {
+			if (document.hidden) {
+				leftAt = Date.now();
+				return;
+			}
+			if (!leftAt || (Date.now() - leftAt) < STALE_AFTER) { return; }
+			leftAt = 0;
+			// Not awaited: if it fails, api() still retries on the next 403.
+			refreshNonce();
+		});
 	}
 
 	function bootFailed(err) {
