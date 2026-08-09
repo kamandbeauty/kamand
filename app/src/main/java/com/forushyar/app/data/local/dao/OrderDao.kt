@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.forushyar.app.data.local.entity.Order
 import com.forushyar.app.data.local.entity.OrderDetails
@@ -16,18 +17,23 @@ interface OrderDao {
 
     // ---------- خواندن ----------
 
+    @Transaction
     @Query("SELECT * FROM orders ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<OrderDetails>>
 
+    @Transaction
     @Query("SELECT * FROM orders ORDER BY createdAt DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<OrderDetails>>
 
+    @Transaction
     @Query("SELECT * FROM orders WHERE id = :id")
-    fun observeById(id: Long): Flow<OrderWithItems?>
+    fun observeById(id: Long): Flow<OrderDetails?>
 
+    @Transaction
     @Query("SELECT * FROM orders WHERE customerId = :customerId ORDER BY createdAt DESC")
     fun observeByCustomer(customerId: Long): Flow<List<OrderWithItems>>
 
+    @Transaction
     @Query("SELECT * FROM orders WHERE createdAt BETWEEN :start AND :end")
     fun observeBetween(start: Long, end: Long): Flow<List<OrderWithItems>>
 
@@ -67,6 +73,9 @@ interface OrderDao {
 
     @Delete
     suspend fun delete(order: Order)
+
+    @Query("DELETE FROM orders WHERE id = :id")
+    suspend fun deleteById(id: Long)
 
     // کمک‌کننده برای تغییر وضعیت
     @Query("UPDATE orders SET status = :status WHERE id = :id")

@@ -22,9 +22,19 @@ import com.forushyar.app.ui.customers.CustomerDetailScreen
 import com.forushyar.app.ui.customers.CustomerFormScreen
 import com.forushyar.app.ui.customers.CustomersScreen
 import com.forushyar.app.ui.home.HomeScreen
+import com.forushyar.app.ui.orders.OrderDetailScreen
+import com.forushyar.app.ui.orders.OrderFormScreen
+import com.forushyar.app.ui.orders.OrdersScreen
 import com.forushyar.app.ui.products.ProductDetailScreen
 import com.forushyar.app.ui.products.ProductFormScreen
 import com.forushyar.app.ui.products.ProductsScreen
+
+private object OrderRoutes {
+    const val ADD = "orders/add"
+    const val DETAIL = "orders/{orderId}"
+
+    fun detail(orderId: Long) = "orders/$orderId"
+}
 
 private object CustomerRoutes {
     const val ADD = "customers/add"
@@ -58,6 +68,7 @@ fun AppNavGraph() {
             NavigationBar {
                 BottomNavItem.entries.forEach { item ->
                     val selected = currentRoute == item.route || when (item) {
+                        BottomNavItem.Orders -> currentRoute?.startsWith("orders/") == true
                         BottomNavItem.Customers -> currentRoute?.startsWith("customers/") == true
                         BottomNavItem.Products -> currentRoute?.startsWith("products/") == true
                         else -> false
@@ -94,7 +105,25 @@ fun AppNavGraph() {
 
             // --- مسیرهای اصلی و صفحه‌های هر بخش ---
             composable(BottomNavItem.Orders.route) {
-                PlaceholderScreen(title = stringResource(BottomNavItem.Orders.labelRes))
+                OrdersScreen(
+                    onAddOrder = { navController.navigate(OrderRoutes.ADD) },
+                    onOrderClick = { id -> navController.navigate(OrderRoutes.detail(id)) }
+                )
+            }
+            composable(OrderRoutes.ADD) {
+                OrderFormScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = { id ->
+                        navController.popBackStack()
+                        navController.navigate(OrderRoutes.detail(id))
+                    }
+                )
+            }
+            composable(
+                route = OrderRoutes.DETAIL,
+                arguments = listOf(navArgument("orderId") { type = NavType.LongType })
+            ) {
+                OrderDetailScreen(onBack = { navController.popBackStack() })
             }
             composable(BottomNavItem.Customers.route) {
                 CustomersScreen(

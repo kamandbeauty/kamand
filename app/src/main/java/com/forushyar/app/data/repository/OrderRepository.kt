@@ -1,5 +1,7 @@
 package com.forushyar.app.data.repository
 
+import androidx.room.withTransaction
+import com.forushyar.app.data.local.AppDatabase
 import com.forushyar.app.data.local.dao.OrderDao
 import com.forushyar.app.data.local.dao.OrderItemDao
 import com.forushyar.app.data.local.entity.Order
@@ -13,6 +15,7 @@ import javax.inject.Singleton
 
 @Singleton
 class OrderRepository @Inject constructor(
+    private val database: AppDatabase,
     private val orderDao: OrderDao,
     private val orderItemDao: OrderItemDao
 ) {
@@ -20,7 +23,7 @@ class OrderRepository @Inject constructor(
 
     fun observeRecent(limit: Int): Flow<List<OrderDetails>> = orderDao.observeRecent(limit)
 
-    fun observeById(id: Long): Flow<OrderWithItems?> = orderDao.observeById(id)
+    fun observeById(id: Long): Flow<OrderDetails?> = orderDao.observeById(id)
 
     fun observeByCustomer(customerId: Long): Flow<List<OrderWithItems>> =
         orderDao.observeByCustomer(customerId)
@@ -28,11 +31,12 @@ class OrderRepository @Inject constructor(
     /**
      * ثبت سفارش به همراه اقلام آن در یک عملیات.
      */
-    suspend fun createOrder(customerId: Long, items: List<OrderItem>): Long {
-        val orderId = orderDao.insert(Order(customerId = customerId))
-        orderItemDao.insertAll(items.map { it.copy(orderId = orderId) })
-        return orderId
-    }
+    suspend fun createOrder(customerId: Long, note: String, items: List<OrderItem>): Long =
+        database.withTransaction {
+            val orderId = orderDao.insert(Order(customerId = customerId, note = note))
+            orderItemDao.insertAll(items.map { it.copy(orderId = orderId) })
+            orderId
+        }
 
     suspend fun updateStatus(orderId: Long, status: OrderStatus) =
         orderDao.updateStatus(orderId, status)
@@ -41,7 +45,6 @@ class OrderRepository @Inject constructor(
 
     suspend fun delete(order: Order) = orderDao.delete(order)
 
-    suspend fun deleteByOrderId(orderId: Long) {
-        orderItemDao.deleteByOrderId(orderId)
-    }
+    /** حذف سفارش؛ اقلام به‌کمک کلید خارجی به‌صورت زنجیره‌ای حذف می‌شوند. */
+    suspend fun deleteById(orderId: Long) = orderDao.deleteById(orderId)
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.forushyar.app.data.local.entity.Product
 import com.forushyar.app.data.repository.ProductRepository
 import com.forushyar.app.util.FormatUtils
+import com.forushyar.app.util.toNonNegativeLongOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -87,9 +88,9 @@ class ProductFormViewModel @Inject constructor(
 
     fun save() {
         val current = _state.value
-        val buyPrice = current.buyPrice.toEnglishNumberOrNull()
-        val sellPrice = current.sellPrice.toEnglishNumberOrNull()
-        val stockLong = current.stock.toEnglishNumberOrNull()
+        val buyPrice = current.buyPrice.toNonNegativeLongOrNull()
+        val sellPrice = current.sellPrice.toNonNegativeLongOrNull()
+        val stockLong = current.stock.toNonNegativeLongOrNull()
         val nameError = current.name.isBlank()
         val buyPriceError = buyPrice == null
         val sellPriceError = sellPrice == null
@@ -127,19 +128,4 @@ class ProductFormViewModel @Inject constructor(
             }
         }
     }
-}
-
-/** جداکننده‌ها و رقم‌های فارسی/عربی را برای ذخیره‌سازی عددی یکسان می‌کند. */
-private fun String.toEnglishNumberOrNull(): Long? {
-    val normalized = buildString {
-        this@toEnglishNumberOrNull.forEach { character ->
-            when (character) {
-                in '۰'..'۹' -> append('0' + (character - '۰'))
-                in '٠'..'٩' -> append('0' + (character - '٠'))
-                ',', '٬', '،', ' ', '\u00A0' -> Unit
-                else -> append(character)
-            }
-        }
-    }
-    return normalized.takeIf { it.isNotBlank() }?.toLongOrNull()?.takeIf { it >= 0 }
 }

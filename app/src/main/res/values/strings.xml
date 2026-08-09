@@ -85,6 +85,44 @@
     <string name="out_of_stock">ناموجود</string>
     <string name="uncategorized">بدون دسته‌بندی</string>
 
+    <!-- مدیریت سفارش‌ها -->
+    <string name="orders_title">سفارش‌ها</string>
+    <string name="add_order">ثبت سفارش</string>
+    <string name="delete_order">حذف سفارش</string>
+    <string name="order_details">جزئیات سفارش</string>
+    <string name="order_customer">مشتری</string>
+    <string name="select_customer">انتخاب مشتری</string>
+    <string name="select_customer_error">لطفاً مشتری سفارش را انتخاب کنید</string>
+    <string name="no_customers_for_order">ابتدا یک مشتری ثبت کنید</string>
+    <string name="order_items">اقلام سفارش</string>
+    <string name="add_order_item">افزودن محصول</string>
+    <string name="select_product">انتخاب محصول</string>
+    <string name="no_products_for_order">برای ثبت سفارش، ابتدا یک محصول بسازید</string>
+    <string name="add_item_error">حداقل یک محصول به سفارش اضافه کنید</string>
+    <string name="invalid_order_item_error">تعداد و قیمت‌های اقلام را بررسی کنید</string>
+    <string name="remove_order_item">حذف از سفارش</string>
+    <string name="quantity">تعداد</string>
+    <string name="quantity_value">تعداد: %1$s</string>
+    <string name="increase_quantity">افزایش تعداد</string>
+    <string name="decrease_quantity">کاهش تعداد</string>
+    <string name="available_stock">موجودی فعلی: %1$s</string>
+    <string name="item_total">جمع قلم: %1$s</string>
+    <string name="item_total_label">جمع قلم</string>
+    <string name="order_total">جمع سفارش</string>
+    <string name="order_profit">سود سفارش</string>
+    <string name="order_note">یادداشت</string>
+    <string name="order_note_optional">یادداشت سفارش (اختیاری)</string>
+    <string name="save_order">ثبت نهایی سفارش</string>
+    <string name="order_save_error">ثبت سفارش انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="order_not_found">اطلاعات این سفارش پیدا نشد</string>
+    <string name="order_date">تاریخ ثبت</string>
+    <string name="change_order_status">تغییر وضعیت</string>
+    <string name="order_status_error">تغییر وضعیت سفارش انجام نشد</string>
+    <string name="order_delete_error">حذف سفارش انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="delete_order_title">حذف سفارش؟</string>
+    <string name="delete_order_warning">سفارش و همه اقلام آن برای همیشه حذف می‌شوند. این کار قابل بازگشت نیست.</string>
+    <string name="deleted_product_number">محصول شماره %1$s (حذف‌شده)</string>
+
     <!-- وضعیت سفارش -->
     <string name="order_status_new">جدید</string>
     <string name="order_status_preparing">در حال آماده‌سازی</string>
