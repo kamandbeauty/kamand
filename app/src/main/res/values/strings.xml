@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">فروشیار</string>
+
+    <!-- تب‌های ناوبری -->
+    <string name="tab_home">خانه</string>
+    <string name="tab_orders">سفارش‌ها</string>
+    <string name="tab_customers">مشتری‌ها</string>
+    <string name="tab_products">محصولات</string>
+    <string name="tab_settings">تنظیمات</string>
+
+    <!-- داشبورد -->
+    <string name="dashboard_title">داشبورد</string>
+    <string name="dashboard_greeting">سلام 👋</string>
+    <string name="dashboard_subtitle">وضعیت فروشگاه شما</string>
+    <string name="metric_today_sales">فروش امروز</string>
+    <string name="metric_today_profit">سود امروز</string>
+    <string name="metric_open_orders">سفارش‌های باز</string>
+    <string name="metric_customers">تعداد مشتری‌ها</string>
+    <string name="recent_orders_title">آخرین سفارش‌ها</string>
+    <string name="no_orders">هنوز سفارشی ثبت نشده است</string>
+    <string name="empty_state">به‌زودی در نسخه‌های بعدی</string>
+    <string name="currency_toman">تومان</string>
+
+    <!-- وضعیت سفارش -->
+    <string name="order_status_new">جدید</string>
+    <string name="order_status_preparing">در حال آماده‌سازی</string>
+    <string name="order_status_sent">ارسال شده</string>
+    <string name="order_status_delivered">تحویل شده</string>
+    <string name="order_status_cancelled">لغو شده</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        تم پایه فعالیت. طراحی واقعی رابط کاربری با Jetpack Compose
+        انجام می‌شود؛ این تم فقط برای قبل از بارگذاری Compose است.
+    -->
+    <style name="Theme.ForushYar" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
