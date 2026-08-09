@@ -120,6 +120,27 @@ org.gradle.java.home=C\:\\Program Files\\Android\\Android Studio\\jbr
 
 **اگر Android Studio ندارید:** Temurin 17 را از [adoptium.net](https://adoptium.net) نصب کنید.
 
+### خطای مبهم با شمارهٔ نسخه (مثل `* What went wrong: 25.0.4`)
+
+این یعنی جاوای شما **خیلی جدید** است، نه خیلی قدیمی. محدودهٔ سازگار:
+
+| | نسخه | دلیل |
+|---|---|---|
+| حداقل | Java 17 | الزام AGP 8.5.2 |
+| حداکثر | Java 23 | سقف پشتیبانی Gradle 8.10.2 |
+
+Java 24 نیازمند Gradle 8.14 و Java 25 نیازمند Gradle 9.1 است. اسکریپت
+`set-jdk.ps1` این محدوده را رعایت می‌کند و Java 17 را ترجیح می‌دهد.
+
+بررسی نسخه‌های نصب‌شده:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\set-jdk.ps1
+```
+
+اگر فقط جاوای جدید دارید، JDK 17 نصب کنید — کنار نسخهٔ فعلی می‌ماند و
+تداخلی ایجاد نمی‌کند.
+
 **در خود Android Studio:** `File → Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK` و نسخهٔ ۱۷ را انتخاب کنید.
 
 ### خطای «Failed to download any source lists» / dl.google.com
