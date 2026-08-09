@@ -44,22 +44,32 @@ object JalaliConverter {
         return JalCal(leap, gy, march)
     }
 
-    /** روز ژولینی از تاریخ میلادی */
+    /**
+     * روز ژولینی (JDN) از تاریخ میلادی — الگوریتم استاندارد Fliegel–Van Flandern.
+     *
+     * توجه: نسخهٔ پیشین این تابع فرمول فشردهٔ دیگری داشت که برای ماه‌های
+     * مارس تا دسامبر دقیقاً یک سال (۳۶۵ روز) خطا می‌داد و باعث می‌شد
+     * تبدیل تاریخ ماه‌های نامعتبر مثل ۱۳ و ۱۷ تولید کند.
+     */
     private fun g2d(gy: Int, gm: Int, gd: Int): Int {
-        var d = div((gy + div(gm - 8, 6) + 100100) * 1461, 4) +
-            div(153 * mod(gm + 9, 12) + 2, 5) + gd - 34840408
-        d -= div(div(gy + 100100 + div(gm - 8, 6), 100) * 3, 4) - 752
-        return d
+        val a = div(14 - gm, 12)
+        val y = gy + 4800 - a
+        val m = gm + 12 * a - 3
+        return gd + div(153 * m + 2, 5) + 365 * y +
+            div(y, 4) - div(y, 100) + div(y, 400) - 32045
     }
 
     /** تاریخ میلادی (سه‌تایی year, month, day) از روز ژولینی */
     private fun d2g(jdn: Int): Triple<Int, Int, Int> {
-        var j = 4 * jdn + 139361631
-        j += div(div(4 * jdn + 183187720, 146097) * 3, 4) * 4 - 3908
-        val i = div(mod(j, 1461), 4) * 5 + 308
-        val gd = div(mod(i, 153), 5) + 1
-        val gm = mod(div(i, 153), 12) + 1
-        val gy = div(j, 1461) - 100100 + div(8 - gm, 6)
+        val a = jdn + 32044
+        val b = div(4 * a + 3, 146097)
+        val c = a - div(146097 * b, 4)
+        val d = div(4 * c + 3, 1461)
+        val e = c - div(1461 * d, 4)
+        val m = div(5 * e + 2, 153)
+        val gd = e - div(153 * m + 2, 5) + 1
+        val gm = m + 3 - 12 * div(m, 10)
+        val gy = 100 * b + d - 4800 + div(m, 10)
         return Triple(gy, gm, gd)
     }
 
