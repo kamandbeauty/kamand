@@ -14,23 +14,23 @@ To honour the JVM settings for this build a single-use Daemon process will be fo
 Daemon will be stopped at the end of the build 
 
 > Configure project :app
-e: file:///home/runner/work/kamand/kamand/app/build.gradle.kts:21:26: Unresolved reference: util
-e: file:///home/runner/work/kamand/kamand/app/build.gradle.kts:24:31: Unresolved reference: load
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1786311787933.json
+e: file:///home/runner/work/kamand/kamand/app/build.gradle.kts:19:26: Unresolved reference: util
+e: file:///home/runner/work/kamand/kamand/app/build.gradle.kts:40:10: Unresolved reference: io
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1786312111391.json
 
 FAILURE: Build failed with an exception.
 
 * Where:
-Build file '/home/runner/work/kamand/kamand/app/build.gradle.kts' line: 21
+Build file '/home/runner/work/kamand/kamand/app/build.gradle.kts' line: 19
 
 * What went wrong:
 Script compilation errors:
 
-  Line 21: val keystoreProps = java.util.Properties().apply {
+  Line 19: val keystoreProps = java.util.Properties()
                                     ^ Unresolved reference: util
 
-  Line 24:         f.inputStream().use { load(it) }
-                                         ^ Unresolved reference: load
+  Line 40:     java.io.File(storeFilePath).exists()
+                    ^ Unresolved reference: io
 
 2 errors
 
@@ -40,4 +40,4 @@ Script compilation errors:
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
 
-BUILD FAILED in 1m 11s
+BUILD FAILED in 1m 9s
