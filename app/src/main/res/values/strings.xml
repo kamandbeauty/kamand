@@ -127,6 +127,12 @@
     <string name="delete_order_warning">سفارش و همه اقلام آن برای همیشه حذف می‌شوند. این کار قابل بازگشت نیست.</string>
     <string name="deleted_product_number">محصول شماره %1$s (حذف‌شده)</string>
 
+    <!-- پیام آماده واتساپ -->
+    <string name="send_whatsapp_message">ارسال پیام آماده در واتساپ</string>
+    <string name="whatsapp_ready_message">سلام %1$s\nسفارش شما آماده ارسال است.</string>
+    <string name="whatsapp_message_hint">پیش از ارسال می‌توانید متن پیام را در واتساپ بررسی و ویرایش کنید.</string>
+    <string name="whatsapp_not_installed">واتساپ یا واتساپ بیزینس روی این دستگاه پیدا نشد</string>
+
     <!-- وضعیت سفارش -->
     <string name="order_status_new">جدید</string>
     <string name="order_status_preparing">در حال آماده‌سازی</string>

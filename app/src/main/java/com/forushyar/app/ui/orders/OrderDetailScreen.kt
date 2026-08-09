@@ -14,7 +14,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,21 +36,26 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.forushyar.app.R
+import com.forushyar.app.data.local.entity.Customer
 import com.forushyar.app.data.local.entity.OrderDetails
 import com.forushyar.app.data.local.entity.OrderItem
 import com.forushyar.app.data.local.entity.OrderStatus
 import com.forushyar.app.ui.home.StatusChip
 import com.forushyar.app.util.FormatUtils
+import com.forushyar.app.util.WhatsAppLauncher
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @Composable
 fun OrderDetailScreen(
@@ -57,8 +64,11 @@ fun OrderDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val deleteError = stringResource(R.string.order_delete_error)
     val statusError = stringResource(R.string.order_status_error)
+    val whatsAppError = stringResource(R.string.whatsapp_not_installed)
 
     LaunchedEffect(viewModel) {
         viewModel.events.collectLatest { event ->
@@ -75,7 +85,13 @@ fun OrderDetailScreen(
         snackbar = snackbar,
         onBack = onBack,
         onStatusChange = viewModel::changeStatus,
-        onDelete = viewModel::deleteOrder
+        onDelete = viewModel::deleteOrder,
+        onSendWhatsApp = { customer ->
+            val message = context.getString(R.string.whatsapp_ready_message, customer.name)
+            if (!WhatsAppLauncher.open(context, customer.phone, message)) {
+                scope.launch { snackbar.showSnackbar(whatsAppError) }
+            }
+        }
     )
 }
 
@@ -86,7 +102,8 @@ private fun OrderDetailContent(
     snackbar: SnackbarHostState,
     onBack: () -> Unit,
     onStatusChange: (OrderStatus) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onSendWhatsApp: (Customer) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showStatusDialog by remember { mutableStateOf(false) }
@@ -140,7 +157,8 @@ private fun OrderDetailContent(
                 details = details,
                 productNames = state.productNames,
                 modifier = Modifier.padding(paddingValues),
-                onChangeStatus = { showStatusDialog = true }
+                onChangeStatus = { showStatusDialog = true },
+                onSendWhatsApp = { onSendWhatsApp(details.customer) }
             )
         }
     }
@@ -178,7 +196,8 @@ private fun OrderDetailsList(
     details: OrderDetails,
     productNames: Map<Long, String>,
     modifier: Modifier = Modifier,
-    onChangeStatus: () -> Unit
+    onChangeStatus: () -> Unit,
+    onSendWhatsApp: () -> Unit
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -202,6 +221,21 @@ private fun OrderDetailsList(
                             Text(stringResource(R.string.change_order_status))
                         }
                     }
+                    Button(
+                        onClick = onSendWhatsApp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.Send, contentDescription = null)
+                        Text(
+                            stringResource(R.string.send_whatsapp_message),
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                    Text(
+                        stringResource(R.string.whatsapp_message_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
