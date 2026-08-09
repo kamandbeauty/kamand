@@ -1,200 +1,233 @@
 # فاکتوریار (FactorYar)
 
-اپلیکیشن اندرویدی صدور فاکتور، پیش‌فاکتور و فاکتور خرید + مدیریت مشتریان (CRM ساده) + **مدیریت انبار و بارکد** + **ثبت هزینه و سود خالص** + **یادآوری بدهی** + **ویجت صفحه اصلی** + چاپ پوز بلوتوثی + گزارش مالی — طراحی‌شده برای بازار ایران (کافه‌بازار / مایکت). کاملاً آفلاین، بدون وابستگی اجباری به Google Play Services.
+[![Android Debug Build](https://github.com/kamandbeauty/kamand/actions/workflows/android-build.yml/badge.svg)](https://github.com/kamandbeauty/kamand/actions/workflows/android-build.yml)
+
+اپلیکیشن اندرویدی صدور فاکتور، پیش‌فاکتور و فاکتور خرید + مدیریت مشتریان (CRM ساده) + مدیریت انبار و بارکد + ثبت هزینه و سود خالص + یادآوری بدهی + ویجت صفحه اصلی + چاپ پوز بلوتوثی + گزارش مالی.
+
+طراحی‌شده برای بازار ایران (کافه‌بازار / مایکت). کاملاً آفلاین، **بدون وابستگی اجباری به Google Play Services**.
+
+> ⚠️ **وضعیت پروژه:** کد کامل نوشته شده اما هنوز اولین بیلد موفق ثبت نشده است.
+> برای دیدن آخرین وضعیت، تب [Actions](../../actions) را ببینید.
+
+---
+
+## دریافت APK آماده
+
+**بدون نصب هیچ ابزاری** می‌توانید APK بگیرید:
+
+1. به تب **[Actions](../../actions)** بروید
+2. آخرین اجرای موفق **Android Debug Build** را باز کنید (تیک سبز ✅)
+3. در پایین صفحه، بخش **Artifacts** → روی `factoryar-debug-apk` کلیک کنید
+4. فایل ZIP دانلود می‌شود؛ داخلش `app-debug.apk` است
+
+هر بار که کدی push شود، این APK به‌صورت خودکار بازسازی می‌شود.
+
+---
+
+## Build محلی
+
+### پیش‌نیازها
+
+| ابزار | نسخه | توضیح |
+|---|---|---|
+| JDK | **۱۷ تا ۲۳** | حداقل ۱۷ (الزام AGP 8.5) — حداکثر ۲۳ (سقف Gradle 8.10.2) |
+| Android SDK | API 34 + Build-Tools 34.0.0 | |
+| Gradle | لازم نیست | Wrapper در مخزن هست |
+
+### دستور بیلد
+
+```bash
+./gradlew assembleDebug          # لینوکس / مک
+.\gradlew.bat assembleDebug      # ویندوز
+```
+
+خروجی: `app/build/outputs/apk/debug/app-debug.apk`
+
+دستورات دیگر:
+
+```bash
+./gradlew :app:installDebug      # نصب روی گوشی متصل
+./gradlew test                   # تست‌های واحد
+./gradlew :app:assembleRelease   # نسخه release
+```
+
+### مسیر SDK
+
+فایل `local.properties` در ریشه بسازید:
+
+```properties
+sdk.dir=/home/<user>/Android/Sdk
+# ویندوز: sdk.dir=C\:\\Users\\<user>\\AppData\\Local\\Android\\Sdk
+```
+
+---
+
+## Build با GitHub Actions
+
+دو workflow آماده است:
+
+### ۱. `android-build.yml` — بیلد Debug
+
+**اجرا:** روی هر push و pull request، یا دستی از تب Actions
+
+**مراحل:** Checkout → JDK 17 → Gradle Cache → `assembleDebug` → آپلود APK
+
+**خروجی:** artifact با نام `factoryar-debug-apk`
+
+همچنین یک job جدا تست‌های واحد را اجرا می‌کند.
+
+### ۲. `android-release.yml` — بیلد Release
+
+**اجرا:** با push کردن tag (مثل `v1.0.0`) یا دستی
+
+**خروجی‌ها:**
+- `factoryar-release-apk` — برای کافه‌بازار و مایکت
+- `factoryar-release-aab` — فرمت Google Play
+- `factoryar-mapping` — فایل mapping برای رمزگشایی crash
+
+هنگام push کردن tag، یک **GitHub Release پیش‌نویس** هم ساخته می‌شود.
+
+### تنظیم کلید امضا (برای Release)
+
+کلید امضا **هرگز داخل مخزن قرار نمی‌گیرد**. از GitHub Secrets استفاده کنید:
+
+`Settings → Secrets and variables → Actions → New repository secret`
+
+| Secret | توضیح |
+|---|---|
+| `KEYSTORE_BASE64` | محتوای فایل keystore به Base64 |
+| `KEYSTORE_PASSWORD` | رمز فایل keystore |
+| `KEY_ALIAS` | نام alias کلید |
+| `KEY_PASSWORD` | رمز کلید |
+
+ساخت keystore و مقدار Base64:
+
+```bash
+# ساخت کلید (یک‌بار)
+keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 \
+        -validity 10000 -alias factoryar
+
+# تبدیل به Base64
+base64 -w 0 release.jks           # لینوکس/مک
+```
+
+```powershell
+# ویندوز
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("release.jks")) | Set-Clipboard
+```
+
+> اگر Secrets تنظیم نشده باشد، بیلد release با امضای debug انجام می‌شود تا
+> صحت کامپایل بررسی شود — آن خروجی **قابل انتشار نیست**.
+
+برای امضای محلی، فایل `keystore.properties` بسازید (در `.gitignore` است):
+
+```properties
+storeFile=/path/to/release.jks
+storePassword=***
+keyAlias=factoryar
+keyPassword=***
+```
+
+---
+
+## ساختار پروژه
+
+معماری **MVVM + Clean Architecture** چندماژوله. جزئیات کامل در [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+```
+app/                    پوسته اپ، ناوبری، Workerها، ویجت Glance
+├── core/
+│   ├── common/         تقویم جلالی، فرمت‌دهی فارسی        (JVM خالص)
+│   ├── domain/         مدل‌ها، Repository interface، UseCase (JVM خالص)
+│   ├── database/       Room: Entity / DAO / Migration
+│   ├── datastore/      تنظیمات (تم، شماره‌گذاری، چاپگر)
+│   ├── data/           پیاده‌سازی Repository، کلید SQLCipher، Hilt
+│   ├── ui/             موتور تم M3، کامپوننت‌ها، نمودارها
+│   ├── pdf/            تولید PDF فاکتور و گزارش
+│   ├── printer/        چاپ ESC/POS بلوتوثی
+│   ├── billing/        Poolakey — اشتراک طلایی
+│   └── barcode/        اسکن بارکد (CameraX + ML Kit ← ZXing ← دستی)
+└── feature/
+    ├── dashboard/  invoices/  customers/
+    ├── reports/    products/  expenses/  settings/
+```
+
+**قانون وابستگی:** featureها فقط به `core:domain` و `core:ui` وابسته‌اند. لایهٔ داده از طریق Hilt تزریق می‌شود، پس افزودن بک‌اند سروری در فاز ۲ فقط نیازمند یک پیاده‌سازی جدید از Repository است.
+
+### فناوری‌ها
+
+Kotlin • Jetpack Compose (بدون XML) • Room + SQLCipher • Hilt • WorkManager • DataStore • Glance • CameraX + ML Kit (bundled، بدون GMS) • Poolakey
+
+---
 
 ## قابلیت‌ها (نسخه رایگان)
 
 - فاکتور فروش / پیش‌فاکتور / فاکتور خرید با اقلام نامحدود، تخفیف و مالیات
-- CRM ساده: دفتر حساب مشتری، سابقه خرید، مانده بدهی
-- **انبار و بارکد:** تعریف کالا با موجودی اولیه، حد هشدار کمبود، قیمت عمده/خرده، بهای تمام‌شده، دسته‌بندی، اسکن بارکد با دوربین و کسر/افزایش خودکار موجودی هنگام فروش/خرید
-- **هزینه‌ها و سود واقعی:** ثبت هزینه با دسته‌بندی دلخواه و محاسبه سود ناخالص و **سود خالص** + نمودار مقایسه‌ای درآمد/هزینه/سود
-- **یادآوری بدهی:** شناسایی خودکار معوقات، نوتیفیکیشن محلی، تولید متن آماده و ارسال با Share Intent (پیامک/واتساپ/تلگرام)
-- **ویجت صفحه اصلی:** فروش امروز، تعداد معوق و دکمه میان‌بر «فاکتور جدید» — پیرو تم انتخابی کاربر
-- چاپ ESC/POS روی پرینتر بلوتوثی ۵۸/۸۰ میلی‌متر، خروجی PDF و اشتراک‌گذاری
-- فاکتورهای دوره‌ای، تقویم شمسی، ۵ تم آماده، خروجی CSV/Excel
+- CRM: دفتر حساب مشتری، سابقه خرید، مانده بدهی
+- **انبار و بارکد:** موجودی، حد هشدار، قیمت عمده/خرده، بهای تمام‌شده، کسر خودکار موجودی
+- **هزینه‌ها و سود واقعی:** سود ناخالص و خالص + نمودار مقایسه‌ای
+- **یادآوری بدهی:** شناسایی معوقات، متن آماده، ارسال با Share Intent
+- **ویجت صفحه اصلی:** فروش امروز، تعداد معوق، میان‌بر فاکتور جدید
+- چاپ ESC/POS بلوتوثی ۵۸/۸۰ میلی‌متر، خروجی PDF، فاکتور دوره‌ای، ۵ تم، CSV
 
-## فناوری‌ها
+**اشتراک طلایی:** گزارش PDF حرفه‌ای، انتخابگر رنگ آزاد، حذف واترمارک، پشتیبان‌گیری ابری، چند کسب‌وکار
 
-- Kotlin + Jetpack Compose (بدون XML Layout)
-- MVVM + Clean Architecture چند‌ماژوله — در `docs/ARCHITECTURE.md` کامل توضیح داده شده
-- Room + SQLCipher (دیتابیس محلی رمزنگاری‌شده)
-- Hilt، WorkManager، DataStore
-- تقویم جلالی داخلی (الگوریتم jalaali — بدون وابستگی)
-- Poolakey برای اشتراک طلایی (پرداخت درون‌برنامه‌ای بازار)
-- CameraX + ML Kit Barcode (نسخه bundled، بدون نیاز به GMS) با fallback خودکار به ZXing و ورود دستی
-- Glance AppWidget برای ویجت صفحه اصلی
+---
 
-## ماژول‌ها
+## بیلد داخل ایران (تحریم و فیلترینگ)
 
-| ماژول | نقش |
-|---|---|
-| `app` | پوسته اپ، ناوبری، WorkManager، Hilt root |
-| `core:common` | تقویم جلالی، فرمت‌دهی فارسی/تاریخ، ابزارها (JVM خالص) |
-| `core:domain` | مدل‌ها، اینترفیس Repository، UseCaseها (JVM خالص) |
-| `core:database` | Entity/DAO/Database Room |
-| `core:datastore` | تنظیمات DataStore (تم، شماره‌گذاری، چاپگر…) |
-| `core:data` | پیاده‌سازی Repositoryها، SQLCipher key، بایندهای Hilt |
-| `core:ui` | موتور تم M3 از Seed، تقویم جلالی UI، کامپوننت‌ها |
-| `core:pdf` | تولید PDF فاکتور/گزارش با PdfDocument |
-| `core:printer` | چاپ ESC/POS بلوتوثی + رندر رسید |
-| `core:billing` | Poolakey — اشتراک طلایی |
-| `core:barcode` | اسکن بارکد (CameraX + ML Kit با fallback به ZXing و ورود دستی) |
-| `feature:*` | dashboard / invoices / customers / reports / products / expenses / settings |
+Workflowهای CI از مخازن رسمی استفاده می‌کنند. برای بیلد محلی داخل ایران،
+`settings.gradle.kts` به‌صورت خودکار تشخیص می‌دهد و میرورهای داخلی
+(مایکت، en-mirror، کارگادان) را در اولویت قرار می‌دهد.
 
-## پیش‌نیازها و Build
+### اگر توزیع Gradle دانلود نشد
 
-1. **JDK 17** و Android SDK 34 (از Android Studio نسخه Koala به بالا: AGP 8.5 / Gradle 8.10)
-2. اجرا:
-   ```bash
-   ./gradlew :app:assembleDebug        # APK دیباگ
-   ./gradlew :app:assembleRelease      # ریلیز (R8 فعال)
-   ./gradlew testDebugUnitTest         # تست‌های واحد (فاکتور، جلالی، سود، انبار، یادآوری)
-   ```
-3. **میرورهای داخلی** در `settings.gradle.kts` با اولویت اول تنظیم شده‌اند (مایکت، en-mirror، جامکو، کارگادان) و منابع رسمی گوگل/mavenCentral فقط fallback هستند.
-
-### اگر Gradle سینک نشد (فیلترینگ / تحریم)
-
-سه لایه پیش‌بینی شده است:
-
-| لایه | فایل | چه چیزی را پوشش می‌دهد |
-|---|---|---|
-| ۱ | `settings.gradle.kts` | دانلود کتابخانه‌ها و پلاگین‌ها |
-| ۲ | `gradle/wrapper/gradle-wrapper.properties` | دانلود خودِ توزیع Gradle (~۱۳۰MB) |
-| ۳ | `gradle/init.mirror.gradle.kts` | اجبار پلاگین‌های سرکش به میرور |
-
-اگر با لایه ۱ و ۲ باز هم خطای `Could not resolve` یا timeout گرفتید، لایه ۳ را فعال کنید:
-
-```bash
-# موقتی — فقط همین بیلد
-./gradlew --init-script gradle/init.mirror.gradle.kts :app:assembleDebug
-
-# دائمی — برای همه پروژه‌ها (توصیه‌شده)
-mkdir -p ~/.gradle/init.d
-cp gradle/init.mirror.gradle.kts ~/.gradle/init.d/mirror.gradle.kts
-```
-
-**اگر میروری از کار افتاد:** کافی است خطش را در `settings.gradle.kts` کامنت کنید یا ترتیب را عوض کنید. فهرست به‌روز میرورهای ایرانی: [MiravaOrg/Mirava](https://github.com/MiravaOrg/Mirava)
-
-**اگر Gradle از قبل نصب است:** اصلاً نیازی به دانلود توزیع نیست — `gradle wrapper --gradle-version 8.10.2` بزنید.
-
-#### خطای ۴۰۴ هنگام دانلود توزیع Gradle
-
-میرورها ساختار مسیر متفاوتی دارند و ممکن است نسخهٔ خاصی را نداشته باشند. اسکریپت زیر همهٔ آدرس‌ها را تست می‌کند و اولین آدرس سالم را خودکار در `gradle-wrapper.properties` می‌نویسد:
-
-```bash
-bash scripts/pick-gradle-mirror.sh          # نسخه پیش‌فرض 8.10.2
-bash scripts/pick-gradle-mirror.sh 8.9      # نسخهٔ دیگر
-```
-
-آدرس‌های تست‌شونده به ترتیب:
-
-| میرور | الگوی آدرس |
-|---|---|
-| **مایکت** (پیش‌فرض) | `maven.myket.ir/gradle/distributions/gradle-<ver>-bin.zip` |
-| کارگادان | `mirror.kargadan.ir/gradle/distributions/gradle-<ver>-bin.zip` |
-| مخزن ملی ITO | `archive.ito.gov.ir/gradle/distributions/gradle-<ver>-bin.zip` |
-| رسمی | `services.gradle.org/distributions/gradle-<ver>-bin.zip` |
-
-مستندات رسمی مایکت: <https://maven.myket.ir/services/gradle-wrapper.html>
-
-### خطای «This build uses a Java 8 JVM»
-
-پیام کامل: `Dependency requires at least JVM runtime version 11. This build uses a Java 8 JVM.`
-
-یعنی Gradle با جاوای قدیمی اجرا می‌شود. **AGP 8.5 حداقل به Java 17 نیاز دارد.**
-
-خبر خوب: اگر Android Studio نصب دارید، JDK مناسب از قبل روی سیستمتان هست
-(JetBrains Runtime در پوشهٔ `jbr`). این اسکریپت پیدایش می‌کند و تنظیم می‌کند:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\set-jdk.ps1
-.\gradlew.bat --stop
-.\gradlew.bat :app:assembleDebug
-```
-
-**تنظیم دستی:** خط زیر را به `gradle.properties` اضافه کنید (بک‌اسلش و دونقطه escape شوند):
+در `gradle/wrapper/gradle-wrapper.properties` خط `distributionUrl` را به میرور مایکت تغییر دهید:
 
 ```properties
-org.gradle.java.home=C\:\\Program Files\\Android\\Android Studio\\jbr
+distributionUrl=https\://maven.myket.ir/gradle/distributions/gradle-8.10.2-bin.zip
 ```
 
-**اگر Android Studio ندارید:** Temurin 17 را از [adoptium.net](https://adoptium.net) نصب کنید.
+یا اگر Gradle از قبل نصب دارید: `gradle wrapper --gradle-version 8.10.2`
 
-### خطای مبهم با شمارهٔ نسخه (مثل `* What went wrong: 25.0.4`)
+### اگر Android SDK نصب نیست
 
-این یعنی جاوای شما **خیلی جدید** است، نه خیلی قدیمی. محدودهٔ سازگار:
+`dl.google.com` در ایران مسدود است. اسکریپت‌های کمکی:
 
-| | نسخه | دلیل |
-|---|---|---|
-| حداقل | Java 17 | الزام AGP 8.5.2 |
-| حداکثر | Java 23 | سقف پشتیبانی Gradle 8.10.2 |
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup-sdk-windows.ps1   # ویندوز
+```
 
-Java 24 نیازمند Gradle 8.14 و Java 25 نیازمند Gradle 9.1 است. اسکریپت
-`set-jdk.ps1` این محدوده را رعایت می‌کند و Java 17 را ترجیح می‌دهد.
+```bash
+bash scripts/fetch-android-sdk.sh      # لینوکس / مک
+```
 
-بررسی نسخه‌های نصب‌شده:
+راهنمای کامل: [`docs/ANDROID_SDK_SETUP.md`](docs/ANDROID_SDK_SETUP.md)
+
+### اگر خطای نسخهٔ جاوا گرفتید
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\set-jdk.ps1
 ```
 
-اگر فقط جاوای جدید دارید، JDK 17 نصب کنید — کنار نسخهٔ فعلی می‌ماند و
-تداخلی ایجاد نمی‌کند.
-
-**در خود Android Studio:** `File → Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK` و نسخهٔ ۱۷ را انتخاب کنید.
-
-### خطای «Failed to download any source lists» / dl.google.com
-
-این خطا **ربطی به کد پروژه ندارد** — Gradle موفق اجرا شده ولی حالا Android Studio می‌خواهد فهرست پکیج‌های SDK را از `dl.google.com` بگیرد که در ایران مسدود است.
-
-**نکتهٔ مهم:** `maven.myket.ir` فقط میرورِ *کتابخانه‌ها* است، **نه Android SDK**. اگر آن را در «SDK Update Sites» اندروید استودیو اضافه کرده‌اید حذفش کنید — همان چیزی است که خطای `UnknownHost sys-img.xml` را تولید می‌کند.
-
-**راه‌حل — نصب دستی SDK از CSV مایکت:**
-
-```bash
-bash scripts/fetch-android-sdk.sh --list   # فقط نمایش لینک‌ها
-bash scripts/fetch-android-sdk.sh          # دانلود و نصب خودکار
-```
-
-پکیج‌های موردنیاز این پروژه:
-
-| پکیج | مسیر نصب |
+| خطا | معنی |
 |---|---|
-| Platform API 34 | `$SDK/platforms/android-34/` |
-| Build-Tools 34.0.0 | `$SDK/build-tools/34.0.0/` |
-| Platform-Tools | `$SDK/platform-tools/` |
-| Command-line Tools | `$SDK/cmdline-tools/latest/` |
+| `This build uses a Java 8 JVM` | جاوا خیلی قدیمی — حداقل ۱۷ لازم است |
+| خطای مبهم مثل `25.0.4` | جاوا خیلی جدید — حداکثر ۲۳ برای Gradle 8.10.2 |
 
-سپس مسیر SDK را معرفی کنید:
+---
 
-```bash
-echo "sdk.dir=$HOME/Android/Sdk" > local.properties
-```
+## کارهای باقی‌مانده قبل از انتشار
 
-راهنمای کامل گام‌به‌گام (شامل لینک مستقیم هر پکیج، ساخت لایسنس و عیب‌یابی):
-**[`docs/ANDROID_SDK_SETUP.md`](docs/ANDROID_SDK_SETUP.md)**
-
-منبع: <https://maven.myket.ir/services/android-sdk.html> — CSV: <https://maven.myket.ir/sdk-archives.csv>
-
-## راه‌اندازی برای انتشار
-
-1. **فونت وزیرمتن** (OFL): فایل‌های `vazirmatn_regular/medium/bold.ttf` را در `core/ui/src/main/res/font/` قرار داده و در `FactorYarTheme.kt` مقدار `FyFontFamily` را با `FontFamily(Font(R.font.vazirmatn_regular))…` پر کنید.
-2. **Poolakey:** کلید عمومی RSA را از پنل توسعه‌دهندگان بازار در `BillingManager.RSA_PUBLIC_KEY` جای‌گذاری و SKUها را بسازید (`factoryar_gold_monthly/yearly`). وابستگی از JitPack با مختصات `com.github.cafebazaar.Poolakey:poolakey:2.2.0` می‌آید.
-3. **امضای انتشار:** keystore خود را بسازید و در `app/build.gradle.kts` بلوک `signingConfigs` را اضافه کنید.
-4. تست روی دستگاهی بدون Google Play Services (مهم‌ترین سناریوی بازار ایران) — به‌ویژه مسیر اسکن بارکد که باید به ZXing یا ورود دستی برگردد.
-5. تست ویجت: افزودن به صفحه اصلی، تغییر تم در تنظیمات و بررسی به‌روزرسانی رنگ ویجت.
-- حجم APK هدف‌گذاری: < ۱۵ مگابایت. مدل bundled بارکد حدود ۲–۳ مگابایت اضافه می‌کند؛ در صورت نیاز به کاهش حجم می‌توان به نسخه `barcode-scanning-common` + وابستگی GMS سوییچ کرد (اما سازگاری بدون GMS از دست می‌رود).
-
-## مهاجرت دیتابیس
-
-نسخه دیتابیس **۲** است. `MIGRATION_1_2` در `core/database/.../migration/Migrations.kt` جدول‌های `products`، `product_categories`، `stock_movements`، `expenses`، `expense_categories` را می‌سازد و ستون‌های `productId` و `costPrice` را به `invoice_items` اضافه می‌کند. `fallbackToDestructiveMigration` **حذف شده** تا داده کاربران در به‌روزرسانی از بین نرود؛ برای هر تغییر بعدی اسکیما حتماً یک Migration جدید بنویسید.
-
-## نکته درباره Gradle Wrapper
-
-فایل `gradle/wrapper/gradle-wrapper.jar` در این محیط تولید نشده (بدون JDK/شبکه). روی سیستم خود با یک‌بار اجرای `gradle wrapper --gradle-version 8.10.2` یا با نصب Gradle هر نسخه ≥8.7 و اجرای `gradle wrapper` تولید می‌شود.
+- [ ] اولین بیلد موفق و رفع خطاهای کامپایل
+- [ ] کلید RSA بازار در `BillingManager.kt` و ساخت SKUها (`factoryar_gold_monthly` / `_yearly`)
+- [ ] فونت وزیرمتن در `core/ui/src/main/res/font/` و اتصال `FyFontFamily`
+- [ ] تنظیم Secrets امضا در گیت‌هاب
+- [ ] تست روی دستگاه بدون Google Play Services
+- [ ] بررسی حجم APK (هدف: زیر ۱۵ مگابایت)
 
 ## نقشه راه فاز ۲
 
-- درگاه پرداخت آنلاین ایرانی (زرین‌پال/…) برای لینک پرداخت فاکتور
-- بک‌اند اختصاصی برای همگام‌سازی چند دستگاه (نقطه اتصال: اینترفیس‌های Repository در `core:domain`)
+- درگاه پرداخت آنلاین ایرانی برای لینک پرداخت فاکتور
+- بک‌اند همگام‌سازی چنددستگاهی
 - اتصال به MPOS با پرداخت کارتی

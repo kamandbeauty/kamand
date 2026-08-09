@@ -14,3 +14,9 @@ keystore.properties
 *.keystore
 
 # توجه: dist/ عمداً ردیابی می‌شود تا زیپ سورس از GitHub قابل دانلود باشد
+
+# ── امضای انتشار — هرگز نباید در مخزن باشد ───────────────────────────────────
+keystore.properties
+*.jks
+*.keystore
+release.jks

@@ -6,6 +6,37 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  پیکربندی امضای نسخه Release
+//
+//  کلید امضا هرگز داخل مخزن قرار نمی‌گیرد. مقادیر از دو منبع خوانده می‌شوند:
+//    ۱) متغیرهای محیطی (GitHub Actions → از Secrets)
+//    ۲) فایل keystore.properties در ریشه (توسعهٔ محلی — در .gitignore است)
+//
+//  اگر هیچ‌کدام موجود نباشد، بیلد release با امضای debug انجام می‌شود تا
+//  CI بدون Secrets هم بتواند کامپایل را تست کند.
+// ─────────────────────────────────────────────────────────────────────────────
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = java.util.Properties().apply {
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.inputStream().use { load(it) }
+    }
+}
+
+fun signingValue(envName: String, propName: String): String? =
+    System.getenv(envName) ?: keystoreProps.getProperty(propName)
+
+val storeFilePath = signingValue("KEYSTORE_FILE", "storeFile")
+val storePasswordValue = signingValue("KEYSTORE_PASSWORD", "storePassword")
+val keyAliasValue = signingValue("KEY_ALIAS", "keyAlias")
+val keyPasswordValue = signingValue("KEY_PASSWORD", "keyPassword")
+
+val hasReleaseSigning = !storeFilePath.isNullOrBlank() &&
+    !storePasswordValue.isNullOrBlank() &&
+    !keyAliasValue.isNullOrBlank() &&
+    !keyPasswordValue.isNullOrBlank() &&
+    file(storeFilePath).exists()
+
 android {
     namespace = "ir.factoryar.app"
     compileSdk = 34
@@ -20,11 +51,31 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(storeFilePath!!)
+                storePassword = storePasswordValue
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                // بدون کلید امضا (مثلاً CI بدون Secrets) → امضای debug
+                // تا کامپایل قابل تست باشد. این APK قابل انتشار نیست.
+                signingConfigs.getByName("debug")
+            }
         }
         debug {
             applicationIdSuffix = ".debug"
