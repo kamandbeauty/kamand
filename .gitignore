@@ -1,0 +1,22 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+**/build/
+keystore.properties
+*.jks
+*.keystore
+
+# توجه: dist/ عمداً ردیابی می‌شود تا زیپ سورس از GitHub قابل دانلود باشد
+
+# ── امضای انتشار — هرگز نباید در مخزن باشد ───────────────────────────────────
+keystore.properties
+*.jks
+*.keystore
+release.jks

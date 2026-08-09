@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">فاکتوریار</string>
+    <string name="notification_channel_recurring">یادآور فاکتورهای دوره‌ای</string>
+    <string name="notification_channel_backup">پشتیبان‌گیری خودکار</string>
+    <string name="widget_description">خلاصه فروش امروز و میان‌بر صدور فاکتور</string>
+    <string name="widget_name">فاکتوریار — خلاصه امروز</string>
+    <string name="notification_channel_stock">هشدار کمبود موجودی</string>
+    <string name="notification_channel_debt">یادآوری بدهی مشتریان</string>
+</resources>

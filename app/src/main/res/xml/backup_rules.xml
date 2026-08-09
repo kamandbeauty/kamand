@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- فایل دیتابیس رمزنگاری‌شده (SQLCipher) است؛ پشتیبان خودکار سیستم بی‌خطر است -->
+<full-backup-content>
+    <include domain="database" path="factoryar.db" />
+    <include domain="file" path="." />
+</full-backup-content>
