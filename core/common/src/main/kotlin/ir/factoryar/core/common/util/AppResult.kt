@@ -8,16 +8,24 @@ sealed interface AppResult<out T> {
     val isSuccess: Boolean get() = this is Success
 
     fun getOrNull(): T? = (this as? Success)?.data
+}
 
-    inline fun onSuccess(block: (T) -> Unit): AppResult<T> {
-        if (this is Success) block(data)
-        return this
-    }
+/**
+ * توابع کمکی به‌صورت extension نوشته شده‌اند، نه عضو interface.
+ *
+ * دلیل: کاتلین اجازه نمی‌دهد متد داخل interface با `inline` علامت بخورد
+ * («'inline' modifier on virtual members is prohibited») چون آن متد virtual
+ * است و می‌تواند override شود. extension function این محدودیت را ندارد و
+ * inline شدن آن مزیت عملکردی lambda را حفظ می‌کند.
+ */
+inline fun <T> AppResult<T>.onSuccess(block: (T) -> Unit): AppResult<T> {
+    if (this is AppResult.Success) block(data)
+    return this
+}
 
-    inline fun onFailure(block: (String) -> Unit): AppResult<T> {
-        if (this is Failure) block(message)
-        return this
-    }
+inline fun <T> AppResult<T>.onFailure(block: (String) -> Unit): AppResult<T> {
+    if (this is AppResult.Failure) block(message)
+    return this
 }
 
 inline fun <T> runSafely(block: () -> T): AppResult<T> =
