@@ -22,6 +22,9 @@ import com.forushyar.app.ui.customers.CustomerDetailScreen
 import com.forushyar.app.ui.customers.CustomerFormScreen
 import com.forushyar.app.ui.customers.CustomersScreen
 import com.forushyar.app.ui.home.HomeScreen
+import com.forushyar.app.ui.products.ProductDetailScreen
+import com.forushyar.app.ui.products.ProductFormScreen
+import com.forushyar.app.ui.products.ProductsScreen
 
 private object CustomerRoutes {
     const val ADD = "customers/add"
@@ -30,6 +33,15 @@ private object CustomerRoutes {
 
     fun detail(customerId: Long) = "customers/$customerId"
     fun edit(customerId: Long) = "customers/$customerId/edit"
+}
+
+private object ProductRoutes {
+    const val ADD = "products/add"
+    const val DETAIL = "products/{productId}"
+    const val EDIT = "products/{productId}/edit"
+
+    fun detail(productId: Long) = "products/$productId"
+    fun edit(productId: Long) = "products/$productId/edit"
 }
 
 /**
@@ -45,8 +57,11 @@ fun AppNavGraph() {
         bottomBar = {
             NavigationBar {
                 BottomNavItem.entries.forEach { item ->
-                    val selected = currentRoute == item.route ||
-                        (item == BottomNavItem.Customers && currentRoute?.startsWith("customers/") == true)
+                    val selected = currentRoute == item.route || when (item) {
+                        BottomNavItem.Customers -> currentRoute?.startsWith("customers/") == true
+                        BottomNavItem.Products -> currentRoute?.startsWith("products/") == true
+                        else -> false
+                    }
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -106,7 +121,28 @@ fun AppNavGraph() {
                 CustomerFormScreen(onBack = { navController.popBackStack() })
             }
             composable(BottomNavItem.Products.route) {
-                PlaceholderScreen(title = stringResource(BottomNavItem.Products.labelRes))
+                ProductsScreen(
+                    onAddProduct = { navController.navigate(ProductRoutes.ADD) },
+                    onProductClick = { id -> navController.navigate(ProductRoutes.detail(id)) }
+                )
+            }
+            composable(ProductRoutes.ADD) {
+                ProductFormScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = ProductRoutes.DETAIL,
+                arguments = listOf(navArgument("productId") { type = NavType.LongType })
+            ) {
+                ProductDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onEdit = { id -> navController.navigate(ProductRoutes.edit(id)) }
+                )
+            }
+            composable(
+                route = ProductRoutes.EDIT,
+                arguments = listOf(navArgument("productId") { type = NavType.LongType })
+            ) {
+                ProductFormScreen(onBack = { navController.popBackStack() })
             }
             composable(BottomNavItem.Settings.route) {
                 PlaceholderScreen(title = stringResource(BottomNavItem.Settings.labelRes))
