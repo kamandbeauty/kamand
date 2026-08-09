@@ -63,7 +63,10 @@ data class Invoice(
 ) {
     /** معوق: سررسید گذشته و تسویه نشده */
     val isOverdue: Boolean
-        get() = status != PaymentStatus.PAID && dueDate != null && dueDate < System.currentTimeMillis()
+        get() {
+            val due = dueDate ?: return false
+            return status != PaymentStatus.PAID && due < System.currentTimeMillis()
+        }
 
     val remainingAmount: Long get() = (grandTotal - paidAmount).coerceAtLeast(0)
 

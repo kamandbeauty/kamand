@@ -57,7 +57,11 @@ class DebtorRepositoryImpl @Inject constructor(
             .groupBy { it.customerId!! }
             .mapNotNull { (customerId, list) ->
                 val customer = customerById[customerId] ?: return@mapNotNull null
-                val overdue = list.filter { it.dueDate != null && it.dueDate < now }
+                // dueDate در ماژول دیگری تعریف شده، پس smart cast ممکن نیست
+                val overdue = list.filter { inv ->
+                    val due = inv.dueDate
+                    due != null && due < now
+                }
                 val maxDays = overdue.maxOfOrNull { inv ->
                     ((now - (inv.dueDate ?: now)) / DateUtils.DAY_MILLIS).toInt()
                 } ?: 0

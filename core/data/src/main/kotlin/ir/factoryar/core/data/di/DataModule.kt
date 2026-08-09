@@ -39,7 +39,7 @@ import ir.factoryar.core.domain.repository.RecurringRepository
 import ir.factoryar.core.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.security.SecureRandom
 import javax.inject.Singleton
 
@@ -64,20 +64,32 @@ object DatabaseModule {
         }
     }
 
+    /**
+     * کتابخانهٔ نیتیو SQLCipher باید پیش از هر استفاده صریحاً بارگذاری شود.
+     * در نسخهٔ sqlcipher-android (برخلاف android-database-sqlcipher قدیمی)
+     * این کار خودکار انجام نمی‌شود.
+     */
+    private val nativeLibraryLoaded: Boolean by lazy {
+        runCatching { System.loadLibrary("sqlcipher") }.isSuccess
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context,
         passphrase: ByteArray,
-    ): FactorYarDatabase = Room.databaseBuilder(
-        context,
-        FactorYarDatabase::class.java,
-        FactorYarDatabase.DATABASE_NAME,
-    )
-        .openHelperFactory(SupportFactory(passphrase))
+    ): FactorYarDatabase {
+        check(nativeLibraryLoaded) { "بارگذاری کتابخانهٔ SQLCipher ناموفق بود" }
+        return Room.databaseBuilder(
+            context,
+            FactorYarDatabase::class.java,
+            FactorYarDatabase.DATABASE_NAME,
+        )
+            .openHelperFactory(SupportOpenHelperFactory(passphrase))
         // مهاجرت واقعی نسخه ۱ → ۲ (افزودن انبار و هزینه‌ها) بدون از دست رفتن داده کاربر
-        .addMigrations(*ALL_MIGRATIONS)
-        .build()
+            .addMigrations(*ALL_MIGRATIONS)
+            .build()
+    }
 
     @Provides
     fun provideCustomerDao(db: FactorYarDatabase): CustomerDao = db.customerDao()

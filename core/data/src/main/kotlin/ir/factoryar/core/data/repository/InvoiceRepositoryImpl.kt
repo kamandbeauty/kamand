@@ -274,8 +274,10 @@ class InvoiceRepositoryImpl @Inject constructor(
             grossProfit = sales.sumOf { it.grandTotal } - purchases.sumOf { it.grandTotal },
             paidAmount = sales.sumOf { it.paidAmount.coerceAtMost(it.grandTotal) },
             unpaidAmount = sales.sumOf { it.remainingAmount },
-            overdueAmount = sales.filter { it.status != PaymentStatus.PAID && it.dueDate != null && it.dueDate < now }
-                .sumOf { it.remainingAmount },
+            overdueAmount = sales.filter { inv ->
+                val due = inv.dueDate
+                inv.status != PaymentStatus.PAID && due != null && due < now
+            }.sumOf { it.remainingAmount },
             invoiceCount = sales.size,
             dailySales = daily,
         )
