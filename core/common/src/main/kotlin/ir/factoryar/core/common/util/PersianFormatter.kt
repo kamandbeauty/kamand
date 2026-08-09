@@ -13,7 +13,9 @@ object PersianFormatter {
         }
     }
 
-    fun toPersianDigits(text: String): String = text.toPersianDigits()
+    // نکته: نسخهٔ غیر-extension حذف شد. در JVM هر دو امضای یکسانی تولید
+    // می‌کردند (Platform declaration clash). همه‌جای پروژه از شکل extension
+    // یعنی "text".toPersianDigits() استفاده می‌شود.
 
     /** ارقام فارسی/عربی → انگلیسی، حذف جداکننده هزارگان و نقطه اعشار فارسی (برای ورودی کاربر) */
     fun String.toEnglishDigits(): String = buildString(length) {
