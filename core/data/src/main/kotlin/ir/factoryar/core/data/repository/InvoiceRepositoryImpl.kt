@@ -207,7 +207,8 @@ class InvoiceRepositoryImpl @Inject constructor(
         val debtPhase = combine(
             invoiceDao.observeTotalReceivable(),
             invoiceDao.observeOverdueCount(DateUtils.now()),
-            invoiceDao.observeDailySales(sevenDaysAgo).map { rows -> rows.map { it.bucket to it.total } },
+            invoiceDao.observeDailySales(sevenDaysAgo, DateUtils.DAY_MILLIS)
+                .map { rows -> rows.map { it.bucket to it.total } },
         ) { receivable, overdue, daily ->
             DebtPhase(receivable, overdue, daily)
         }

@@ -38,8 +38,15 @@ class BillingManager @Inject constructor(
         const val YEARLY = "factoryar_gold_yearly"
     }
 
-    /** TODO: کلید عمومی RSA از پنل توسعه‌دهندگان بازار (بخش پرداخت درون‌برنامه‌ای) */
-    private const val RSA_PUBLIC_KEY = "MIHNMA0GCSqGSIb3DQEBAQUAA4G7ADCBtwKBrwDv..."
+    companion object {
+        /**
+         * TODO: کلید عمومی RSA از پنل توسعه‌دهندگان بازار (بخش پرداخت درون‌برنامه‌ای)
+         *
+         * نکته: `const val` فقط در companion object یا سطح فایل مجاز است،
+         * نه مستقیم داخل بدنهٔ کلاس — در غیر این صورت کامپایل نمی‌شود.
+         */
+        private const val RSA_PUBLIC_KEY = "MIHNMA0GCSqGSIb3DQEBAQUAA4G7ADCBtwKBrwDv..."
+    }
 
     sealed interface BillingState {
         data object NotConnected : BillingState

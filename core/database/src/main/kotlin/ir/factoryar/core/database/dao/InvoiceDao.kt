@@ -90,7 +90,7 @@ interface InvoiceDao {
         GROUP BY bucket ORDER BY bucket ASC
         """
     )
-    fun observeDailySales(from: Long, dayMs: Long = 86_400_000): Flow<List<DailySalesDbRow>>
+    fun observeDailySales(from: Long, dayMs: Long): Flow<List<DailySalesDbRow>>
 
     // ---------------- گزارش بازه‌ای ----------------
 
@@ -102,7 +102,7 @@ interface InvoiceDao {
     suspend fun getWithItemsInRange(from: Long, to: Long): List<InvoiceWithItemsEntity>
 
     @Query("SELECT * FROM invoices ORDER BY issueDate DESC LIMIT :limit")
-    fun observeRecent(limit: Int = 10): Flow<List<InvoiceEntity>>
+    fun observeRecent(limit: Int): Flow<List<InvoiceEntity>>
 
     // ---------------- سود و زیان ----------------
 
