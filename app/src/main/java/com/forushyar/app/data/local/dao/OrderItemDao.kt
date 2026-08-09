@@ -22,6 +22,12 @@ interface OrderItemDao {
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     fun observeForOrder(orderId: Long): Flow<List<OrderItem>>
 
+    @Query("SELECT * FROM order_items ORDER BY id")
+    suspend fun getAll(): List<OrderItem>
+
+    @Query("DELETE FROM order_items")
+    suspend fun clearAll()
+
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     suspend fun getForOrder(orderId: Long): List<OrderItem>
 

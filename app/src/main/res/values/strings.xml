@@ -12,6 +12,7 @@
     <!-- داشبورد -->
     <string name="dashboard_title">داشبورد</string>
     <string name="dashboard_greeting">سلام 👋</string>
+    <string name="dashboard_shop_greeting">سلام، %1$s 👋</string>
     <string name="dashboard_subtitle">وضعیت فروشگاه شما</string>
     <string name="metric_today_sales">فروش امروز</string>
     <string name="metric_today_profit">سود امروز</string>
@@ -132,6 +133,27 @@
     <string name="whatsapp_ready_message">سلام %1$s\nسفارش شما آماده ارسال است.</string>
     <string name="whatsapp_message_hint">پیش از ارسال می‌توانید متن پیام را در واتساپ بررسی و ویرایش کنید.</string>
     <string name="whatsapp_not_installed">واتساپ یا واتساپ بیزینس روی این دستگاه پیدا نشد</string>
+
+    <!-- تنظیمات و پشتیبان‌گیری -->
+    <string name="settings_title">تنظیمات</string>
+    <string name="shop_settings">فروشگاه</string>
+    <string name="shop_name">نام فروشگاه</string>
+    <string name="confirm_deletion">تأیید پیش از حذف</string>
+    <string name="confirm_deletion_hint">پیش از پاک‌کردن مشتری، محصول یا سفارش هشدار نمایش داده شود.</string>
+    <string name="save_settings">ذخیره تنظیمات</string>
+    <string name="settings_saved">تنظیمات ذخیره شد</string>
+    <string name="backup_title">نسخه پشتیبان آفلاین</string>
+    <string name="backup_export">ذخیره نسخه پشتیبان JSON</string>
+    <string name="backup_import">بازیابی از فایل JSON</string>
+    <string name="backup_export_succeeded">نسخه پشتیبان با موفقیت ذخیره شد</string>
+    <string name="backup_import_succeeded">اطلاعات با موفقیت بازیابی شد</string>
+    <string name="backup_operation_failed">فایل پشتیبان نامعتبر است یا عملیات انجام نشد</string>
+    <string name="backup_import_warning_title">جایگزینی همه اطلاعات؟</string>
+    <string name="backup_import_warning_text">با ادامه، تمام مشتری‌ها، محصولات، سفارش‌ها و تنظیمات فعلی با محتوای فایل جایگزین می‌شوند. پیش از ادامه از اطلاعات فعلی نسخه پشتیبان بگیرید.</string>
+    <string name="continue_action">ادامه</string>
+    <string name="about_title">درباره برنامه</string>
+    <string name="app_version">نسخه %1$s</string>
+    <string name="about_description">دستیار آفلاین و ساده فروشندگان اینستاگرامی</string>
 
     <!-- وضعیت سفارش -->
     <string name="order_status_new">جدید</string>

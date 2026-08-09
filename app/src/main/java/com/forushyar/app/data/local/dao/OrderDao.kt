@@ -69,6 +69,12 @@ interface OrderDao {
     )
     fun observeProfitBetween(start: Long, end: Long): Flow<Long>
 
+    @Query("SELECT * FROM orders ORDER BY id")
+    suspend fun getAll(): List<Order>
+
+    @Query("DELETE FROM orders")
+    suspend fun clearAll()
+
     // ---------- نوشتن ----------
 
     @Insert

@@ -29,6 +29,12 @@ interface CustomerDao {
     @Query("SELECT COUNT(*) FROM customers")
     fun observeCount(): Flow<Int>
 
+    @Query("SELECT * FROM customers ORDER BY id")
+    suspend fun getAll(): List<Customer>
+
+    @Query("DELETE FROM customers")
+    suspend fun clearAll()
+
     @Insert
     suspend fun insert(customer: Customer): Long
 

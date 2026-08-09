@@ -125,7 +125,9 @@ private fun OrderDetailContent(
                 },
                 actions = {
                     if (details != null) {
-                        IconButton(onClick = { showDeleteDialog = true }) {
+                        IconButton(onClick = {
+                            if (state.confirmDeletion) showDeleteDialog = true else onDelete()
+                        }) {
                             Icon(
                                 Icons.Outlined.Delete,
                                 contentDescription = stringResource(R.string.delete_order),

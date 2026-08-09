@@ -18,6 +18,7 @@ data class DashboardData(
     val monthSales: Long = 0,
     val monthProfit: Long = 0,
     val monthOrderCount: Int = 0,
+    val shopName: String = "",
     val recentOrders: List<OrderDetails> = emptyList()
 )
 
@@ -38,7 +39,8 @@ private data class MonthlyReport(
 @Singleton
 class DashboardRepository @Inject constructor(
     private val orderDao: OrderDao,
-    private val customerDao: CustomerDao
+    private val customerDao: CustomerDao,
+    private val settingsRepository: SettingsRepository
 ) {
     fun observeDashboard(): Flow<DashboardData> {
         val today = DateUtils.todayRange()
@@ -62,7 +64,7 @@ class DashboardRepository @Inject constructor(
             MonthlyReport(sales, profit, orderCount)
         }
 
-        return combine(summary, monthlyReport) { current, monthly ->
+        val dashboard = combine(summary, monthlyReport) { current, monthly ->
             DashboardData(
                 todaySales = current.todaySales,
                 todayProfit = current.todayProfit,
@@ -73,6 +75,9 @@ class DashboardRepository @Inject constructor(
                 monthOrderCount = monthly.orderCount,
                 recentOrders = current.recentOrders
             )
+        }
+        return combine(dashboard, settingsRepository.settings) { data, settings ->
+            data.copy(shopName = settings.shopName)
         }
     }
 

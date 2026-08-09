@@ -17,7 +17,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.forushyar.app.ui.common.PlaceholderScreen
 import com.forushyar.app.ui.customers.CustomerDetailScreen
 import com.forushyar.app.ui.customers.CustomerFormScreen
 import com.forushyar.app.ui.customers.CustomersScreen
@@ -28,6 +27,7 @@ import com.forushyar.app.ui.orders.OrdersScreen
 import com.forushyar.app.ui.products.ProductDetailScreen
 import com.forushyar.app.ui.products.ProductFormScreen
 import com.forushyar.app.ui.products.ProductsScreen
+import com.forushyar.app.ui.settings.SettingsScreen
 
 private object OrderRoutes {
     const val ADD = "orders/add"
@@ -173,9 +173,7 @@ fun AppNavGraph() {
             ) {
                 ProductFormScreen(onBack = { navController.popBackStack() })
             }
-            composable(BottomNavItem.Settings.route) {
-                PlaceholderScreen(title = stringResource(BottomNavItem.Settings.labelRes))
-            }
+            composable(BottomNavItem.Settings.route) { SettingsScreen() }
         }
     }
 }

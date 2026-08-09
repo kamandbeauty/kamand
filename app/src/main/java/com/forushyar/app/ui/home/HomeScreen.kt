@@ -55,7 +55,7 @@ private fun HomeContent(state: DashboardData) {
     ) {
         // ---------- سربرگ ----------
         item {
-            Header()
+            Header(shopName = state.shopName)
         }
 
         // ---------- کارت‌های آمار ----------
@@ -134,10 +134,14 @@ private fun HomeContent(state: DashboardData) {
 }
 
 @Composable
-private fun Header() {
+private fun Header(shopName: String) {
     Column(modifier = Modifier.padding(top = 16.dp)) {
         Text(
-            text = stringResource(R.string.dashboard_greeting),
+            text = if (shopName.isBlank()) {
+                stringResource(R.string.dashboard_greeting)
+            } else {
+                stringResource(R.string.dashboard_shop_greeting, shopName)
+            },
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )

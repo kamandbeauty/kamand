@@ -102,7 +102,9 @@ private fun CustomerDetailContent(
                         IconButton(onClick = onEdit) {
                             Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.edit_customer))
                         }
-                        IconButton(onClick = { showDeleteDialog = true }) {
+                        IconButton(onClick = {
+                            if (state.confirmDeletion) showDeleteDialog = true else onDelete()
+                        }) {
                             Icon(
                                 Icons.Outlined.Delete,
                                 contentDescription = stringResource(R.string.delete_customer),

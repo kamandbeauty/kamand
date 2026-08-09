@@ -96,7 +96,9 @@ private fun ProductDetailContent(
                         IconButton(onClick = onEdit) {
                             Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.edit_product))
                         }
-                        IconButton(onClick = { showDeleteDialog = true }) {
+                        IconButton(onClick = {
+                            if (state.confirmDeletion) showDeleteDialog = true else onDelete()
+                        }) {
                             Icon(
                                 Icons.Outlined.Delete,
                                 contentDescription = stringResource(R.string.delete_product),

@@ -7,6 +7,7 @@ import com.forushyar.app.data.local.entity.Customer
 import com.forushyar.app.data.local.entity.OrderWithItems
 import com.forushyar.app.data.repository.CustomerRepository
 import com.forushyar.app.data.repository.OrderRepository
+import com.forushyar.app.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 data class CustomerDetailState(
     val customer: Customer? = null,
     val orders: List<OrderWithItems> = emptyList(),
+    val confirmDeletion: Boolean = true,
     val isLoading: Boolean = true
 )
 
@@ -32,16 +34,23 @@ sealed interface CustomerDetailEvent {
 class CustomerDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val customerRepository: CustomerRepository,
-    orderRepository: OrderRepository
+    orderRepository: OrderRepository,
+    settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     val customerId: Long = checkNotNull(savedStateHandle.get<Long>("customerId"))
 
     val state: StateFlow<CustomerDetailState> = combine(
         customerRepository.observeById(customerId),
-        orderRepository.observeByCustomer(customerId)
-    ) { customer, orders ->
-        CustomerDetailState(customer = customer, orders = orders, isLoading = false)
+        orderRepository.observeByCustomer(customerId),
+        settingsRepository.settings
+    ) { customer, orders, settings ->
+        CustomerDetailState(
+            customer = customer,
+            orders = orders,
+            confirmDeletion = settings.confirmDeletion,
+            isLoading = false
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

@@ -13,7 +13,7 @@
 
 > کاملاً Offline First — بدون اینترنت، سرور، API، ثبت‌نام یا لاگین. تمام داده‌ها در حافظه داخلی گوشی ذخیره می‌شود.
 
-## وضعیت فعلی (فاز ۶)
+## وضعیت فعلی (MVP کامل تا فاز ۸)
 
 - [x] اسکلت کامل پروژه (Gradle, Manifest, Theme, Navigation, Hilt, DI)
 - [x] مدل داده کامل: `customers` ،`products` ،`orders` ،`order_items`
@@ -23,10 +23,19 @@
 - [x] مدیریت سفارش‌ها: ثبت چندقلمی، قیمت لحظه‌ای، جزئیات، وضعیت، سود و حذف
 - [x] گزارش‌های امروز و ماه جاری شمسی: فروش، سود و تعداد سفارش‌ها
 - [x] پیام آماده و شخصی‌سازی‌شده واتساپ از صفحه سفارش
+- [x] خروجی و بازیابی کامل JSON با هشدار و اعتبارسنجی
+- [x] تنظیمات نام فروشگاه، تأیید حذف و درباره برنامه
 - [x] بیلد خودکار Debug و Release در GitHub Actions
 - [x] زبان فارسی + جهت RTL + تقویم شمسی + اعداد فارسی
 
-تب تنظیمات و امکانات تکمیلی طبق نقشه راه (فایل `docs/PLAN.md`) در فازهای بعدی ساخته می‌شوند.
+امکانات اصلی MVP کامل شده‌اند. جزئیات انتشار و نقشه راه در فایل `docs/PLAN.md` قرار دارد.
+
+## پشتیبان‌گیری و حریم خصوصی
+
+از تب «تنظیمات» می‌توان تمام مشتری‌ها، محصولات، سفارش‌ها و تنظیمات را در فایل
+`ForushYar_Backup_YYYY-MM-DD.json` ذخیره کرد. بازیابی فقط پس از نمایش هشدار انجام می‌شود و
+اطلاعات فعلی را در یک تراکنش امن Room جایگزین می‌کند. برنامه مجوز اینترنت ندارد و Android Cloud
+Backup نیز غیرفعال است. متن سیاست حریم خصوصی در `docs/PRIVACY_POLICY_FA.md` قرار دارد.
 
 ## Build محلی بدون Android Studio
 
@@ -103,8 +112,8 @@ app/src/main/java/com/forushyar/app/
 │   ├── local/                  # AppDatabase + entity + dao
 │   └── repository/             # Customer / Product / Order / Dashboard
 ├── di/DatabaseModule.kt        # Hilt
-├── ui/{theme,navigation,home,customers,products,orders,common}
-└── util/                       # DateUtils + FormatUtils
+├── ui/{theme,navigation,home,customers,products,orders,settings,common}
+└── util/                       # تاریخ، اعداد و راه‌انداز واتساپ
 ```
 
 جزئیات کامل معماری، دیاگرام دیتابیس، لیست وابستگی‌ها و نقشه راه در [docs/PLAN.md](docs/PLAN.md).

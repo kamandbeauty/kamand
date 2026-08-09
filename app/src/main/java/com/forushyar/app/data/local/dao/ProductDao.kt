@@ -23,6 +23,12 @@ interface ProductDao {
     @Query("SELECT COUNT(*) FROM products")
     fun observeCount(): Flow<Int>
 
+    @Query("SELECT * FROM products ORDER BY id")
+    suspend fun getAll(): List<Product>
+
+    @Query("DELETE FROM products")
+    suspend fun clearAll()
+
     @Insert
     suspend fun insert(product: Product): Long
 

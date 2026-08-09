@@ -7,6 +7,7 @@ import com.forushyar.app.data.local.entity.OrderDetails
 import com.forushyar.app.data.local.entity.OrderStatus
 import com.forushyar.app.data.repository.OrderRepository
 import com.forushyar.app.data.repository.ProductRepository
+import com.forushyar.app.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 data class OrderDetailState(
     val details: OrderDetails? = null,
     val productNames: Map<Long, String> = emptyMap(),
+    val confirmDeletion: Boolean = true,
     val isLoading: Boolean = true
 )
 
@@ -33,18 +35,21 @@ sealed interface OrderDetailEvent {
 class OrderDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: OrderRepository,
-    productRepository: ProductRepository
+    productRepository: ProductRepository,
+    settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     val orderId: Long = checkNotNull(savedStateHandle.get<Long>("orderId"))
 
     val state: StateFlow<OrderDetailState> = combine(
         repository.observeById(orderId),
-        productRepository.observeAll()
-    ) { details, products ->
+        productRepository.observeAll(),
+        settingsRepository.settings
+    ) { details, products, settings ->
         OrderDetailState(
             details = details,
             productNames = products.associate { it.id to it.name },
+            confirmDeletion = settings.confirmDeletion,
             isLoading = false
         )
     }.stateIn(
