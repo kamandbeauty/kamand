@@ -1,5 +1,3 @@
-import java.io.File
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -18,11 +16,10 @@ plugins {
 //  اگر هیچ‌کدام موجود نباشد، بیلد release با امضای debug انجام می‌شود تا
 //  CI بدون Secrets هم بتواند کامپایل را تست کند.
 // ─────────────────────────────────────────────────────────────────────────────
-val keystoreProps = java.util.Properties().apply {
-    val f = rootProject.file("keystore.properties")
-    if (f.exists()) {
-        f.inputStream().use { load(it) }
-    }
+val keystoreProps = java.util.Properties()
+val keystorePropsFile = rootProject.file("keystore.properties")
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.inputStream().use { stream -> keystoreProps.load(stream) }
 }
 
 // خواندن مقدار از متغیر محیطی (CI) یا فایل محلی
@@ -40,7 +37,7 @@ val hasReleaseSigning: Boolean = !storeFilePath.isNullOrBlank() &&
     !storePasswordValue.isNullOrBlank() &&
     !keyAliasValue.isNullOrBlank() &&
     !keyPasswordValue.isNullOrBlank() &&
-    File(storeFilePath).exists()
+    java.io.File(storeFilePath).exists()
 
 android {
     namespace = "ir.factoryar.app"
