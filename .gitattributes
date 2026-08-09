@@ -1,2 +1,21 @@
+# خروجی بسته‌بندی در آرشیو git archive نیاید (جلوگیری از تودرتو شدن زیپ)
 dist/ export-ignore
 .gitattributes export-ignore
+
+# ── Gradle Wrapper ───────────────────────────────────────────────────────────
+# jar باینری است؛ git نباید آن را متنی تلقی و خط‌پایان‌ها را تبدیل کند
+*.jar binary
+gradle/wrapper/gradle-wrapper.jar binary
+
+# gradlew.bat روی ویندوز باید CRLF بماند وگرنه اجرا نمی‌شود
+gradlew.bat text eol=crlf
+# gradlew روی لینوکس/مک باید LF بماند
+gradlew text eol=lf
+
+# ── سایر فایل‌های باینری ─────────────────────────────────────────────────────
+*.png binary
+*.jpg binary
+*.zip binary
+*.ttf binary
+*.keystore binary
+*.jks binary
