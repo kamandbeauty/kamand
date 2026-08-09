@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- کیسه خرید ساده -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30c-5,0 -9,4 -9,9v2H31c-2,0 -3.6,1.6 -3.9,3.5l-4.1,30C22.8,77 24.5,79 26.6,79h54.8c2.1,0 3.8,-2 3.6,-4.5l-4.1,-30C80.6,42.6 79,41 77,41H63v-2c0,-5 -4,-9 -9,-9zM49,41v-2c0,-2.8 2.2,-5 5,-5s5,2.2 5,5v2H49zM40,48h28v2H40v-2zM40,54h28v2H40v-2zM40,60h20v2H40v-2z" />
+</vector>

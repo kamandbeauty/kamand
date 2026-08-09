@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">فروشیار</string>
+
+    <!-- تب‌های ناوبری -->
+    <string name="tab_home">خانه</string>
+    <string name="tab_orders">سفارش‌ها</string>
+    <string name="tab_customers">مشتری‌ها</string>
+    <string name="tab_products">محصولات</string>
+    <string name="tab_settings">تنظیمات</string>
+
+    <!-- داشبورد -->
+    <string name="dashboard_title">داشبورد</string>
+    <string name="dashboard_greeting">سلام 👋</string>
+    <string name="dashboard_shop_greeting">سلام، %1$s 👋</string>
+    <string name="dashboard_subtitle">وضعیت فروشگاه شما</string>
+    <string name="metric_today_sales">فروش امروز</string>
+    <string name="metric_today_profit">سود امروز</string>
+    <string name="metric_open_orders">سفارش‌های باز</string>
+    <string name="metric_customers">تعداد مشتری‌ها</string>
+    <string name="monthly_report_title">گزارش ماه جاری</string>
+    <string name="metric_month_sales">فروش این ماه</string>
+    <string name="metric_month_profit">سود این ماه</string>
+    <string name="metric_month_orders">سفارش‌های این ماه</string>
+    <string name="recent_orders_title">آخرین سفارش‌ها</string>
+    <string name="no_orders">هنوز سفارشی ثبت نشده است</string>
+    <string name="empty_state">به‌زودی در نسخه‌های بعدی</string>
+    <string name="currency_toman">تومان</string>
+
+    <!-- مدیریت مشتری‌ها -->
+    <string name="customers_title">مشتری‌ها</string>
+    <string name="search_customers">جست‌وجو با نام، تلفن یا اینستاگرام</string>
+    <string name="clear_search">پاک‌کردن جست‌وجو</string>
+    <string name="add_customer">افزودن مشتری</string>
+    <string name="edit_customer">ویرایش مشتری</string>
+    <string name="delete_customer">حذف مشتری</string>
+    <string name="customer_details">مشخصات مشتری</string>
+    <string name="no_customers">هنوز مشتری‌ای ثبت نشده است</string>
+    <string name="no_customer_search_result">مشتری‌ای با این مشخصات پیدا نشد</string>
+    <string name="customer_name">نام مشتری</string>
+    <string name="customer_name_required">نام مشتری را وارد کنید</string>
+    <string name="customer_phone">شماره تلفن</string>
+    <string name="customer_phone_optional">شماره تلفن (اختیاری)</string>
+    <string name="customer_instagram">شناسه اینستاگرام</string>
+    <string name="customer_instagram_optional">شناسه اینستاگرام (اختیاری)</string>
+    <string name="customer_address">نشانی</string>
+    <string name="customer_address_optional">نشانی (اختیاری)</string>
+    <string name="customer_note">یادداشت</string>
+    <string name="customer_note_optional">یادداشت (اختیاری)</string>
+    <string name="customer_created_date">تاریخ ثبت</string>
+    <string name="save_customer">ذخیره مشتری</string>
+    <string name="customer_not_found">اطلاعات این مشتری پیدا نشد</string>
+    <string name="customer_save_error">ذخیره مشتری انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="customer_delete_error">حذف مشتری انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="customer_order_history">تاریخچه سفارش‌ها</string>
+    <string name="customer_no_orders">این مشتری هنوز سفارشی ندارد</string>
+    <string name="delete_customer_title">حذف مشتری؟</string>
+    <string name="delete_customer_warning">با حذف مشتری، همه سفارش‌های ثبت‌شده برای او نیز پاک می‌شوند. این کار قابل بازگشت نیست.</string>
+    <string name="delete">حذف</string>
+    <string name="cancel">انصراف</string>
+    <string name="back">بازگشت</string>
+    <string name="order_number">سفارش شماره %1$s</string>
+
+    <!-- مدیریت محصولات -->
+    <string name="products_title">محصولات</string>
+    <string name="search_products">جست‌وجو با نام یا دسته‌بندی</string>
+    <string name="add_product">افزودن محصول</string>
+    <string name="edit_product">ویرایش محصول</string>
+    <string name="delete_product">حذف محصول</string>
+    <string name="product_details">مشخصات محصول</string>
+    <string name="no_products">هنوز محصولی ثبت نشده است</string>
+    <string name="no_product_search_result">محصولی با این مشخصات پیدا نشد</string>
+    <string name="product_name">نام محصول</string>
+    <string name="product_name_required">نام محصول را وارد کنید</string>
+    <string name="product_category_optional">دسته‌بندی (اختیاری)</string>
+    <string name="product_buy_price">قیمت خرید</string>
+    <string name="product_sell_price">قیمت فروش</string>
+    <string name="product_stock">موجودی</string>
+    <string name="product_unit_profit">سود هر واحد</string>
+    <string name="product_created_date">تاریخ ثبت</string>
+    <string name="valid_price_required">یک مبلغ معتبر و نامنفی وارد کنید</string>
+    <string name="valid_stock_required">موجودی را به‌صورت عدد نامنفی وارد کنید</string>
+    <string name="save_product">ذخیره محصول</string>
+    <string name="product_not_found">اطلاعات این محصول پیدا نشد</string>
+    <string name="product_save_error">ذخیره محصول انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="product_delete_error">حذف محصول انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="delete_product_title">حذف محصول؟</string>
+    <string name="delete_product_warning">محصول از فهرست حذف می‌شود، اما اطلاعات قیمت آن در سفارش‌های قبلی باقی می‌ماند. این کار قابل بازگشت نیست.</string>
+    <string name="stock_count">موجودی: %1$s</string>
+    <string name="out_of_stock">ناموجود</string>
+    <string name="uncategorized">بدون دسته‌بندی</string>
+
+    <!-- مدیریت سفارش‌ها -->
+    <string name="orders_title">سفارش‌ها</string>
+    <string name="add_order">ثبت سفارش</string>
+    <string name="delete_order">حذف سفارش</string>
+    <string name="order_details">جزئیات سفارش</string>
+    <string name="order_customer">مشتری</string>
+    <string name="select_customer">انتخاب مشتری</string>
+    <string name="select_customer_error">لطفاً مشتری سفارش را انتخاب کنید</string>
+    <string name="no_customers_for_order">ابتدا یک مشتری ثبت کنید</string>
+    <string name="order_items">اقلام سفارش</string>
+    <string name="add_order_item">افزودن محصول</string>
+    <string name="select_product">انتخاب محصول</string>
+    <string name="no_products_for_order">برای ثبت سفارش، ابتدا یک محصول بسازید</string>
+    <string name="add_item_error">حداقل یک محصول به سفارش اضافه کنید</string>
+    <string name="invalid_order_item_error">تعداد و قیمت‌های اقلام را بررسی کنید</string>
+    <string name="remove_order_item">حذف از سفارش</string>
+    <string name="quantity">تعداد</string>
+    <string name="quantity_value">تعداد: %1$s</string>
+    <string name="increase_quantity">افزایش تعداد</string>
+    <string name="decrease_quantity">کاهش تعداد</string>
+    <string name="available_stock">موجودی فعلی: %1$s</string>
+    <string name="item_total">جمع قلم: %1$s</string>
+    <string name="item_total_label">جمع قلم</string>
+    <string name="order_total">جمع سفارش</string>
+    <string name="order_profit">سود سفارش</string>
+    <string name="order_note">یادداشت</string>
+    <string name="order_note_optional">یادداشت سفارش (اختیاری)</string>
+    <string name="save_order">ثبت نهایی سفارش</string>
+    <string name="order_save_error">ثبت سفارش انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="order_not_found">اطلاعات این سفارش پیدا نشد</string>
+    <string name="order_date">تاریخ ثبت</string>
+    <string name="change_order_status">تغییر وضعیت</string>
+    <string name="order_status_error">تغییر وضعیت سفارش انجام نشد</string>
+    <string name="order_delete_error">حذف سفارش انجام نشد؛ دوباره تلاش کنید</string>
+    <string name="delete_order_title">حذف سفارش؟</string>
+    <string name="delete_order_warning">سفارش و همه اقلام آن برای همیشه حذف می‌شوند. این کار قابل بازگشت نیست.</string>
+    <string name="deleted_product_number">محصول شماره %1$s (حذف‌شده)</string>
+
+    <!-- پیام آماده واتساپ -->
+    <string name="send_whatsapp_message">ارسال پیام آماده در واتساپ</string>
+    <string name="whatsapp_ready_message">سلام %1$s\nسفارش شما آماده ارسال است.</string>
+    <string name="whatsapp_message_hint">پیش از ارسال می‌توانید متن پیام را در واتساپ بررسی و ویرایش کنید.</string>
+    <string name="whatsapp_not_installed">واتساپ یا واتساپ بیزینس روی این دستگاه پیدا نشد</string>
+
+    <!-- تنظیمات و پشتیبان‌گیری -->
+    <string name="settings_title">تنظیمات</string>
+    <string name="shop_settings">فروشگاه</string>
+    <string name="shop_name">نام فروشگاه</string>
+    <string name="confirm_deletion">تأیید پیش از حذف</string>
+    <string name="confirm_deletion_hint">پیش از پاک‌کردن مشتری، محصول یا سفارش هشدار نمایش داده شود.</string>
+    <string name="save_settings">ذخیره تنظیمات</string>
+    <string name="settings_saved">تنظیمات ذخیره شد</string>
+    <string name="backup_title">نسخه پشتیبان آفلاین</string>
+    <string name="backup_export">ذخیره نسخه پشتیبان JSON</string>
+    <string name="backup_import">بازیابی از فایل JSON</string>
+    <string name="backup_export_succeeded">نسخه پشتیبان با موفقیت ذخیره شد</string>
+    <string name="backup_import_succeeded">اطلاعات با موفقیت بازیابی شد</string>
+    <string name="backup_operation_failed">فایل پشتیبان نامعتبر است یا عملیات انجام نشد</string>
+    <string name="backup_import_warning_title">جایگزینی همه اطلاعات؟</string>
+    <string name="backup_import_warning_text">با ادامه، تمام مشتری‌ها، محصولات، سفارش‌ها و تنظیمات فعلی با محتوای فایل جایگزین می‌شوند. پیش از ادامه از اطلاعات فعلی نسخه پشتیبان بگیرید.</string>
+    <string name="continue_action">ادامه</string>
+    <string name="about_title">درباره برنامه</string>
+    <string name="app_version">نسخه %1$s</string>
+    <string name="about_description">دستیار آفلاین و ساده فروشندگان اینستاگرامی</string>
+
+    <!-- وضعیت سفارش -->
+    <string name="order_status_new">جدید</string>
+    <string name="order_status_preparing">در حال آماده‌سازی</string>
+    <string name="order_status_sent">ارسال شده</string>
+    <string name="order_status_delivered">تحویل شده</string>
+    <string name="order_status_cancelled">لغو شده</string>
+</resources>
