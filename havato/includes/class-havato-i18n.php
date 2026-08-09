@@ -472,6 +472,10 @@ class Havato_I18N {
 			'map_title'             => array( 'fa' => 'کافه‌های نزدیک', 'en' => 'Nearby cafés', 'tr' => 'Yakındaki kafeler' ),
 			'nearby_location'       => array( 'fa' => 'موقعیت نزدیک', 'en' => 'Nearby Location', 'tr' => 'Yakın Konum' ),
 			'map_hint'              => array( 'fa' => 'روی پین‌ها بزنید تا پروفایل کافه باز شود.', 'en' => 'Tap a pin to open the café profile.', 'tr' => 'Kafe profilini açmak için bir işarete dokunun.' ),
+			// Shown when the map library cannot be fetched. The café list
+			// underneath still works, so this is an inconvenience, not a dead
+			// end — the wording says so.
+			'map_unavailable'       => array( 'fa' => 'نقشه در دسترس نیست. فهرست کافه‌ها در پایین همچنان کار می‌کند.', 'en' => 'The map could not load. The café list below still works.', 'tr' => 'Harita yüklenemedi. Aşağıdaki kafe listesi çalışmaya devam ediyor.' ),
 			'locating'              => array( 'fa' => 'در حال یافتن موقعیت شما…', 'en' => 'Finding your location…', 'tr' => 'Konumunuz bulunuyor…' ),
 			'geo_denied'            => array( 'fa' => 'دسترسی به موقعیت مکانی رد شد. از تنظیمات مرورگر اجازه دهید.', 'en' => 'Location access denied. Allow it in your browser settings.', 'tr' => 'Konum erişimi reddedildi. Tarayıcı ayarlarınızdan izin verin.' ),
 			'geo_failed'            => array( 'fa' => 'موقعیت مکانی پیدا نشد. دوباره تلاش کنید.', 'en' => 'Could not determine your location. Please try again.', 'tr' => 'Konumunuz belirlenemedi. Lütfen tekrar deneyin.' ),

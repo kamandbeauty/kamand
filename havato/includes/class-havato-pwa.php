@@ -142,10 +142,16 @@ class Havato_PWA {
 		// Pre-cache the real enqueued URLs (?ver=…). Without the query string
 		// the entries never match what the page actually requests, so the
 		// pre-cache silently does nothing.
+		// The fonts are pre-cached too. They are first-party as of 1.37.0 and
+		// they are what the app is READ in, so having them offline is worth
+		// far more than the ~96 KB it costs.
 		$assets = wp_json_encode(
 			array(
 				add_query_arg( 'ver', HAVATO_VERSION, HAVATO_URL . 'assets/css/havato-app.css' ),
 				add_query_arg( 'ver', HAVATO_VERSION, HAVATO_URL . 'assets/js/havato-app.js' ),
+				add_query_arg( 'ver', HAVATO_VERSION, HAVATO_URL . 'assets/css/havato-fonts.css' ),
+				HAVATO_URL . 'assets/fonts/vazirmatn-400.woff2',
+				HAVATO_URL . 'assets/fonts/vazirmatn-700.woff2',
 			)
 		);
 

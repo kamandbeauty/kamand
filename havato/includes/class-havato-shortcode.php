@@ -133,26 +133,25 @@ class Havato_Shortcode {
 	 * Register (not enqueue) the assets.
 	 */
 	public static function register_assets() {
+		/*
+		 * NOTHING THIRD-PARTY MAY BLOCK THE FIRST PAINT.
+		 *
+		 * The font came from jsDelivr and Leaflet from unpkg, and both were
+		 * declared as DEPENDENCIES of havato-app.css. WordPress therefore
+		 * emitted them ahead of our own stylesheet, and a stylesheet blocks
+		 * rendering: the app stayed blank until both CDNs answered. From
+		 * Iran — most of the audience — they frequently do not answer at all,
+		 * so the page waited out the full connection timeout on every single
+		 * load. That is the reported slowness.
+		 *
+		 * The font is now served from the plugin (assets/fonts), and Leaflet
+		 * is fetched on demand the first time the map is actually opened.
+		 */
 		wp_register_style(
-			'havato-vazirmatn',
-			'https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css',
+			'havato-fonts',
+			HAVATO_URL . 'assets/css/havato-fonts.css',
 			array(),
-			'33.003'
-		);
-
-		wp_register_style(
-			'leaflet',
-			'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-			array(),
-			'1.9.4'
-		);
-
-		wp_register_script(
-			'leaflet',
-			'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-			array(),
-			'1.9.4',
-			true
+			HAVATO_VERSION
 		);
 
 		wp_register_script(
@@ -166,14 +165,18 @@ class Havato_Shortcode {
 		wp_register_style(
 			'havato-app',
 			HAVATO_URL . 'assets/css/havato-app.css',
-			array( 'havato-vazirmatn', 'leaflet' ),
+			array( 'havato-fonts' ),
 			HAVATO_VERSION
 		);
 
+		// No 'leaflet' dependency any more: it is loaded on demand by
+		// ensureLeaflet() the first time the map tab is opened. Leaving the
+		// dependency here would silently prevent the app script from being
+		// printed at all, since the handle no longer exists.
 		wp_register_script(
 			'havato-app',
 			HAVATO_URL . 'assets/js/havato-app.js',
-			array( 'leaflet' ),
+			array(),
 			HAVATO_VERSION,
 			true
 		);
@@ -209,6 +212,12 @@ class Havato_Shortcode {
 				'googleClient' => Havato_Settings::get( 'google_client_id', '' ),
 				'googleReady'  => Havato_Google_Auth::is_configured(),
 				'standalone'   => self::is_standalone(),
+				// Leaflet is fetched only when the map is first opened, so the
+				// URLs travel to the client instead of being <link>/<script>
+				// tags that block the first paint. Filterable so a site behind
+				// a firewall can point them at a local copy or a mirror.
+				'leafletCss'   => esc_url_raw( apply_filters( 'havato_leaflet_css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' ) ),
+				'leafletJs'    => esc_url_raw( apply_filters( 'havato_leaflet_js', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js' ) ),
 				'swUrl'        => esc_url_raw( Havato_PWA::url( 'sw' ) ),
 				'appUrl'       => esc_url_raw( Havato_PWA::app_url() ),
 				'homeUrl'      => esc_url_raw( home_url( '/' ) ),

@@ -285,10 +285,26 @@ class Havato_REST {
 			return $result;
 		}
 
+		/*
+		 * A FRESH REST NONCE MUST TRAVEL BACK WITH THE ANSWER.
+		 *
+		 * A WordPress REST nonce is bound to the user id and session token.
+		 * The page was rendered while nobody was signed in, so the nonce baked
+		 * into HAVATO_BOOT belongs to the logged-out state. force_login() has
+		 * just replaced the auth cookie, which invalidates that nonce
+		 * immediately — every request the app makes afterwards is rejected
+		 * with rest_cookie_invalid_nonce until the page is reloaded, which is
+		 * exactly the "cookies won't load, refresh a few times" report.
+		 *
+		 * wp_create_nonce() is called AFTER force_login() has run, so it is
+		 * generated against the new session and the client can keep going
+		 * without a reload.
+		 */
 		return self::ok(
 			array(
-				'user' => self::user_card( $result['user_id'] ),
-				'role' => havato_user_role( $result['user_id'] ),
+				'user'  => self::user_card( $result['user_id'] ),
+				'role'  => havato_user_role( $result['user_id'] ),
+				'nonce' => wp_create_nonce( 'wp_rest' ),
 			)
 		);
 	}
@@ -302,7 +318,16 @@ class Havato_REST {
 	public static function auth_logout( $req ) {
 		self::boot( $req );
 		wp_logout();
-		return self::ok( array( 'logged_out' => true ) );
+		// Same reasoning as auth_google(): wp_logout() destroys the session,
+		// so the caller's nonce dies with it. Hand back one for the
+		// logged-out state so the sign-in screen can talk to the API without
+		// a reload.
+		return self::ok(
+			array(
+				'logged_out' => true,
+				'nonce'      => wp_create_nonce( 'wp_rest' ),
+			)
+		);
 	}
 
 	/**

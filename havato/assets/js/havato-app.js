@@ -924,6 +924,13 @@
 		if (!response || !response.credential) { return; }
 		api('auth/google', { method: 'POST', body: { credential: response.credential } })
 			.then(function (res) {
+				// Adopt the nonce minted for the NEW session before anything
+				// else runs. Signing in replaced the auth cookie, which
+				// instantly invalidated the one printed into the page while
+				// nobody was logged in; without this every following request
+				// fails with rest_cookie_invalid_nonce and the app only
+				// recovers when the user reloads by hand.
+				if (res.nonce) { BOOT.nonce = res.nonce; }
 				S.loggedIn = true;
 				S.user = res.user;
 				S.role = res.role || 'gatherer';
@@ -1847,7 +1854,16 @@
 				node.onclick = function () { openVenue(node.dataset.venueOpen); };
 			});
 
-			initLeaflet();
+			// Leaflet arrives on demand now. Until it does — or if it never
+			// does, because the CDN is blocked — the venue list below the map
+			// is already rendered and fully usable, so the tab is never dead.
+			ensureLeaflet().then(initLeaflet, function () {
+				var node = $('#hv-map');
+				if (node) {
+					node.innerHTML = '<div class="hv-map-fallback">' +
+						'<p class="hv-muted">' + esc(t('map_unavailable')) + '</p></div>';
+				}
+			});
 
 			var locateBtn = $('#hv-locate-btn');
 			if (locateBtn) { locateBtn.onclick = locateMe; }
@@ -1875,6 +1891,53 @@
 					'<span class="hv-badge hv-badge-blue">' + num(venue.guests_routed) + '</span>' +
 				'</span>' +
 			'</button>';
+	}
+
+	/**
+	 * Fetch Leaflet the first time the map is actually opened.
+	 *
+	 * It used to be a hard dependency of the app's own stylesheet and script,
+	 * which meant a render-blocking request to unpkg.com on EVERY page load —
+	 * including for the large majority of visits that never open the map. From
+	 * Iran that host is often unreachable, so the app sat blank waiting for a
+	 * connection that was never going to be answered.
+	 *
+	 * Resolves once (the promise is cached) and rejects if the network is not
+	 * available, letting the caller show the list instead of hanging.
+	 */
+	function ensureLeaflet() {
+		if (window.L) { return Promise.resolve(window.L); }
+		if (S.leafletPromise) { return S.leafletPromise; }
+
+		S.leafletPromise = new Promise(function (resolve, reject) {
+			var css = BOOT.leafletCss;
+			var js = BOOT.leafletJs;
+			if (!js) { reject(new Error('no leaflet url')); return; }
+
+			if (css && !document.getElementById('hv-leaflet-css')) {
+				var link = document.createElement('link');
+				link.id = 'hv-leaflet-css';
+				link.rel = 'stylesheet';
+				link.href = css;
+				document.head.appendChild(link);
+			}
+
+			var tag = document.createElement('script');
+			tag.src = js;
+			tag.async = true;
+			tag.onload = function () {
+				if (window.L) { resolve(window.L); } else { reject(new Error('leaflet did not define L')); }
+			};
+			tag.onerror = function () {
+				// Let a later attempt retry rather than caching the failure
+				// forever — the user may simply have been offline just now.
+				S.leafletPromise = null;
+				reject(new Error('leaflet blocked'));
+			};
+			document.head.appendChild(tag);
+		});
+
+		return S.leafletPromise;
 	}
 
 	function initLeaflet() {

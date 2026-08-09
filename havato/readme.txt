@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.36.0
+Stable tag: 1.37.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,35 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.37.0 =
+* Fixed: the app was very slow to appear. The Persian font was loaded from
+  jsDelivr and the map library from unpkg, and both were declared as
+  DEPENDENCIES of the app's own stylesheet. A stylesheet blocks rendering, so
+  the browser refused to paint anything until both third-party hosts replied.
+  From Iran — most of the audience — those hosts are frequently unreachable,
+  so every single page load sat waiting out the full connection timeout before
+  showing anything, whether or not the visitor ever opened the map.
+* Vazirmatn is now served from the plugin itself: four weights, Arabic subset
+  only (Latin text uses the system UI font, so Vazirmatn's Latin glyphs were
+  never used), 84 KB in total, with font-display:swap so text is readable
+  immediately. No visitor IP is handed to a third-party CDN any more either.
+* Leaflet is fetched the first time the map is actually opened instead of on
+  every page load. If it cannot be fetched at all, the map area now says so
+  and the café list underneath keeps working, rather than leaving a blank box.
+  Two new filters, havato_leaflet_css and havato_leaflet_js, let a site behind
+  a firewall point them at a local copy or a mirror.
+* A page load that never opens the map now makes zero blocking requests to any
+  third party.
+* Fixed: signing in reported that cookies could not be loaded, and only worked
+  after refreshing the page several times. A WordPress REST nonce is tied to
+  the user id and session token. The page is rendered while nobody is signed
+  in, so the nonce embedded in it belongs to the logged-out state; completing
+  Google sign-in replaces the auth cookie and invalidates that nonce
+  instantly. Every request the app made afterwards was rejected with
+  rest_cookie_invalid_nonce until a manual reload regenerated the page.
+  Sign-in and sign-out now return a nonce minted for the new session, and the
+  app adopts it before making any further request.
 
 = 1.36.0 =
 * The no-show warning on your profile now reads as two tidy blocks — the

@@ -1237,6 +1237,14 @@ body.havato-standalone #havato-app { border-radius: 0; }
 	background: #dfe6f7;
 }
 #hv-map { inline-size: 100%; block-size: 100%; }
+/* Shown in place of the map when the library cannot be fetched. */
+.hv-map-fallback {
+	display: grid;
+	place-items: center;
+	block-size: 100%;
+	padding: var(--hv-gutter);
+	text-align: center;
+}
 #hv-map .leaflet-tile,
 #hv-map img { max-width: none !important; }
 .leaflet-container { font: inherit; background: #dfe6f7; }
