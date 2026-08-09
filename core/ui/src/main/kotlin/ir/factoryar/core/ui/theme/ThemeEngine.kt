@@ -6,9 +6,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
 import ir.factoryar.core.domain.repository.ThemePreset
 
 /** رنگ‌های بذر (Seed) تم‌های آماده */
@@ -35,10 +32,6 @@ object ColorSchemeFactory {
 
     private fun color(h: Float, s: Float, l: Float): Color =
         Color(ColorUtils.HSLToColor(floatArrayOf((h % 360 + 360) % 360, s.coerceIn(0f, 1f), l.coerceIn(0f, 1f))))
-
-    private fun Float.darken(factor: Float): Color = Color(toArgb()).let {
-        Color(it.red * (1 - factor), it.green * (1 - factor), it.blue * (1 - factor), it.alpha)
-    }
 
     /** رنگ نوشته/آیکن خوانا روی seed */
     private fun contentOn(base: Int): Color {

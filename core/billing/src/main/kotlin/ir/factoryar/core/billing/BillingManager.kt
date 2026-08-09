@@ -63,6 +63,9 @@ class BillingManager @Inject constructor(
 
     private var payment: Payment? = null
 
+    /** مرجع اتصال؛ disconnect روی Connection تعریف شده نه Payment */
+    private var connection: ir.cafebazaar.poolakey.Connection? = null
+
     /** اتصال به سرویس پرداخت بازار — یک‌بار در شروع اپ صدا زده شود */
     fun connect(onPremiumChecked: (Boolean) -> Unit = {}) {
         if (payment != null) return
@@ -71,7 +74,7 @@ class BillingManager @Inject constructor(
             localSecurityCheck = SecurityCheck.Enable(rsaPublicKey = RSA_PUBLIC_KEY),
         )
         payment = Payment(context = context, config = config)
-        payment?.connect {
+        connection = payment?.connect {
             connectionSucceed {
                 _state.value = BillingState.Connected
                 refreshPurchases(onPremiumChecked)
@@ -109,7 +112,7 @@ class BillingManager @Inject constructor(
         onError: (String) -> Unit = {},
     ) {
         val p = payment ?: return onError("سرویس پرداخت متصل نیست. ابتدا کافه‌بازار را نصب/به‌روزرسانی کنید.")
-        p.subscribeActivity(registry, PurchaseRequest(productId = sku, payload = "factoryar_gold")) {
+        p.subscribeProduct(registry, PurchaseRequest(productId = sku, payload = "factoryar_gold")) {
             purchaseSucceed {
                 _isPremium.value = true
                 scope.launch { premiumStore.setPremium(true) }
@@ -126,7 +129,8 @@ class BillingManager @Inject constructor(
     }
 
     fun disconnect() {
-        payment?.disconnect()
+        connection?.disconnect()
+        connection = null
         payment = null
         _state.value = BillingState.NotConnected
     }
