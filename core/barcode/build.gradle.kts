@@ -38,6 +38,8 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.extended)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    // لازم برای rememberLauncherForActivityResult (درخواست مجوز دوربین)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
 
     // دوربین
