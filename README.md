@@ -97,6 +97,31 @@ bash scripts/pick-gradle-mirror.sh 8.9      # نسخهٔ دیگر
 
 مستندات رسمی مایکت: <https://maven.myket.ir/services/gradle-wrapper.html>
 
+### خطای «This build uses a Java 8 JVM»
+
+پیام کامل: `Dependency requires at least JVM runtime version 11. This build uses a Java 8 JVM.`
+
+یعنی Gradle با جاوای قدیمی اجرا می‌شود. **AGP 8.5 حداقل به Java 17 نیاز دارد.**
+
+خبر خوب: اگر Android Studio نصب دارید، JDK مناسب از قبل روی سیستمتان هست
+(JetBrains Runtime در پوشهٔ `jbr`). این اسکریپت پیدایش می‌کند و تنظیم می‌کند:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\set-jdk.ps1
+.\gradlew.bat --stop
+.\gradlew.bat :app:assembleDebug
+```
+
+**تنظیم دستی:** خط زیر را به `gradle.properties` اضافه کنید (بک‌اسلش و دونقطه escape شوند):
+
+```properties
+org.gradle.java.home=C\:\\Program Files\\Android\\Android Studio\\jbr
+```
+
+**اگر Android Studio ندارید:** Temurin 17 را از [adoptium.net](https://adoptium.net) نصب کنید.
+
+**در خود Android Studio:** `File → Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK` و نسخهٔ ۱۷ را انتخاب کنید.
+
 ### خطای «Failed to download any source lists» / dl.google.com
 
 این خطا **ربطی به کد پروژه ندارد** — Gradle موفق اجرا شده ولی حالا Android Studio می‌خواهد فهرست پکیج‌های SDK را از `dl.google.com` بگیرد که در ایران مسدود است.
