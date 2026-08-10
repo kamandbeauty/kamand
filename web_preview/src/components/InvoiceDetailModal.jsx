@@ -38,7 +38,7 @@ export default function InvoiceDetailModal({
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: `فاکتور شماره ${invoice.number} - ${business?.shopName || 'فیدا'}`,
+        title: `فاکتور شماره ${invoice.number} - ${business?.shopName || 'روبی'}`,
         text: `فاکتور شماره ${invoice.number} برای ${invoice.customerName} به مبلغ ${formatCurrency(invoice.totalAmount)} صادر شد.`,
         url: window.location.href
       }).catch(() => {});
@@ -115,7 +115,7 @@ export default function InvoiceDetailModal({
                 </div>
                 <div>
                   <h1 className="font-black text-2xl text-slate-900">
-                    {business?.shopName || 'فروشگاه فیدا'}
+                    {business?.shopName || 'فروشگاه روبی'}
                   </h1>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
                     {business?.phone ? `تلفن: ${business.phone}` : ''}
@@ -205,7 +205,7 @@ export default function InvoiceDetailModal({
                   <QrCode className="w-10 h-10 text-slate-800" />
                 </div>
                 <div className="text-[11px] text-slate-500">
-                  صحت این فاکتور از طریق اسکن کیوآرکد و سامانه فاکتور فیدا قابل استعلام است.
+                  صحت این فاکتور از طریق اسکن کیوآرکد و سامانه فاکتور روبی قابل استعلام است.
                 </div>
               </div>
             </div>

@@ -24,7 +24,7 @@ export default function Navbar({
         {/* Center: App Title */}
         <div className="flex items-center gap-1.5">
           <h1 className="font-extrabold text-xl text-slate-900 dark:text-white tracking-tight">
-            فاکتورساز جاوید
+            فاکتور روبی
           </h1>
         </div>
 

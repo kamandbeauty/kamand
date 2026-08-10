@@ -112,7 +112,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                   ElevatedButton(
                     onPressed: _nextStep,
-                    child: Text(_step == 5 ? 'شروع استفاده از فیدا' : 'بعدی'),
+                    child: Text(_step == 5 ? 'شروع استفاده از روبی' : 'بعدی'),
                   ),
                 ],
               ),
@@ -139,7 +139,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'سلام! من فیدا هستم 👋',
+              'سلام! من روبی هستم 👋',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.black),
             ),
             const SizedBox(height: 8),

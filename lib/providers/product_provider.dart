@@ -22,7 +22,7 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
           ProductModel(
             id: 'p2',
             code: '102',
-            name: 'ماگ سرامیکی طرح فیدا',
+            name: 'ماگ سرامیکی طرح روبی',
             unit: 'عدد',
             buyPrice: 85000,
             sellPrice: 140000,
@@ -32,7 +32,7 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
           ProductModel(
             id: 'p3',
             code: '103',
-            name: 'دستگاه اسپرسوساز خانگی مدل FID-200',
+            name: 'دستگاه اسپرسوساز خانگی مدل RBY-200',
             unit: 'دستگاه',
             buyPrice: 4200000,
             sellPrice: 5800000,

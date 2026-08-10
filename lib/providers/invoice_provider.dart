@@ -30,7 +30,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
                   totalPrice: 1040000),
               InvoiceItemModel(
                   id: 'i2',
-                  title: 'ماگ سرامیکی طرح فیدا',
+                  title: 'ماگ سرامیکی طرح روبی',
                   quantity: 1,
                   unit: 'عدد',
                   unitPrice: 140000,
@@ -62,7 +62,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
             items: [
               InvoiceItemModel(
                   id: 'i3',
-                  title: 'دستگاه اسپرسوساز خانگی مدل FID-200',
+                  title: 'دستگاه اسپرسوساز خانگی مدل RBY-200',
                   quantity: 1,
                   unit: 'دستگاه',
                   unitPrice: 5800000,

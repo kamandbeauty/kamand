@@ -29,7 +29,7 @@ import {
 export default function App() {
   const loadState = (key, fallback) => {
     try {
-      const saved = localStorage.getItem(`fida_${key}`);
+      const saved = localStorage.getItem(`ruby_${key}`);
       return saved ? JSON.parse(saved) : fallback;
     } catch {
       return fallback;
@@ -38,7 +38,7 @@ export default function App() {
 
   const saveState = (key, val) => {
     try {
-      localStorage.setItem(`fida_${key}`, JSON.stringify(val));
+      localStorage.setItem(`ruby_${key}`, JSON.stringify(val));
     } catch (e) {
       console.error('LocalStorage save error:', e);
     }
@@ -224,9 +224,9 @@ export default function App() {
       <div className="fixed inset-0 z-50 bg-slate-900 text-white flex items-center justify-center p-4 dir-rtl font-vazir">
         <div className="text-center space-y-4 max-w-xs">
           <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-xl">
-            ج
+            ر
           </div>
-          <h2 className="font-extrabold text-lg">فاکتورساز جاوید قفل است</h2>
+          <h2 className="font-extrabold text-lg">فاکتور روبی قفل است</h2>
           <p className="text-xs text-slate-400">رمز ۴ رقمی خود را وارد کنید</p>
 
           <input

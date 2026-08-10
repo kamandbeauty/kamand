@@ -151,7 +151,7 @@ export default function Sidebar({
           </button>
 
           <p className="text-xs text-slate-400 font-medium">
-            فاکتورساز جاوید - نسخه ۵.۸.۰
+            فاکتور روبی - نسخه ۵.۸.۰
           </p>
         </div>
 

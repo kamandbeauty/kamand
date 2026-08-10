@@ -50,7 +50,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Text(business.shopName.isNotEmpty ? business.shopName : 'فاکتور فیدا'),
+            Text(business.shopName.isNotEmpty ? business.shopName : 'فاکتور روبی'),
           ],
         ),
         actions: [
