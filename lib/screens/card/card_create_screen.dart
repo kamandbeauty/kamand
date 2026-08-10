@@ -25,7 +25,7 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
   late TextEditingController _nameCtrl;
   String _bankName = '';
   final List<String> _banks = const [
-    'بانک ملت','بانک ملی','بانک سپه','بانک تجارت','بانک صادرات','بانک پارسیان','بانک پاسارگاد','بانک سامان','بانک سینا','بانک شهر','بانک آینده','بانک کشاورزی'
+    'بانک ملت','بانک ملی','بانک صادرات','بانک تجارت','بانک سپه','بانک کشاورزی','بانک پارسیان','بانک مسکن','پست بانک','بانک اقتصاد نوین','بانک کارآفرین','بانک سینا','بانک سرمایه','بانک شهر','بانک دی','بانک پاسارگاد','بانک سامان','بانک انصار','بانک توسعه تعاون','بانک قوامین','بانک حکمت ایرانیان','بانک ایران زمین','بانک گردشگری','بانک صنعت و معدن','بانک توسعه صادرات','بانک مهر اقتصاد','بانک ایران ونزوئلا','بانک قرض الحسنه رسالت','موسسه ملل','بانک آینده',
   ];
 
   @override
@@ -183,7 +183,17 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
                   hint: Text('انتخاب کنید', style: TextStyle(color: _slate400, fontSize: 13)),
                   isExpanded: true,
                   icon: const Icon(Icons.arrow_drop_down, color: _slate500),
-                  items: _banks.map((b)=> DropdownMenuItem(value: b, child: Text(b, style: const TextStyle(fontSize: 13)))).toList(),
+                  items: _banks.map((b){
+                    final asset = bankLogoAsset(b);
+                    return DropdownMenuItem(
+                      value: b,
+                      child: Row(children: [
+                        if(asset.isNotEmpty) ClipRRect(borderRadius: BorderRadius.circular(4), child: Image.asset(asset, width: 24, height: 16, fit: BoxFit.contain, errorBuilder: (_,__,___)=> const SizedBox())) else Container(width: 24, height: 16, decoration: BoxDecoration(color: bankColor(b), borderRadius: BorderRadius.circular(4))),
+                        const SizedBox(width: 8),
+                        Text(b, style: const TextStyle(fontSize: 13)),
+                      ]),
+                    );
+                  }).toList(),
                   onChanged: (v)=> setState(()=> _bankName = v!),
                 ),
               ),
