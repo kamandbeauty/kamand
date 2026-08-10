@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand Primary Blue
-  static const Color primaryBlue = Color(0xFF1976D2);
-  static const Color primaryBlueDark = Color(0xFF0D47A1);
-  static const Color lightBlueBg = Color(0xFFE3F2FD);
-  static const Color bgLight = Color(0xFFF8FAFC);
+  // Brand Primary Blue (matching the Fida invoice-app design language)
+  static const Color primaryBlue = Color(0xFF2D92DF);
+  static const Color primaryBlueDark = Color(0xFF1E78C0);
+  static const Color lightBlueBg = Color(0xFFE8F4FD);
+  static const Color bgLight = Color(0xFFF3F6FA);
   static const Color bgDark = Color(0xFF0F172A);
   static const Color cardDark = Color(0xFF1E293B);
 
@@ -25,15 +25,16 @@ class AppTheme {
     ),
     fontFamily: 'Vazirmatn',
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
+      backgroundColor: primaryBlue,
       elevation: 0,
       centerTitle: true,
       scrolledUnderElevation: 0,
-      iconTheme: IconThemeData(color: Color(0xFF1E293B)),
+      foregroundColor: Colors.white,
+      iconTheme: IconThemeData(color: Colors.white),
       titleTextStyle: TextStyle(
-        color: Color(0xFF1E293B),
+        color: Colors.white,
         fontSize: 18,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w900,
         fontFamily: 'Vazirmatn',
       ),
     ),

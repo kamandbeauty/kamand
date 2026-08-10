@@ -8,6 +8,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        blue: {
+          50: '#EFF7FD',
+          100: '#DCEFFB',
+          200: '#B9DFF7',
+          300: '#93CEF1',
+          400: '#5FB4E9',
+          500: '#3FA2E4',
+          600: '#2D92DF',
+          700: '#1E78C0',
+          800: '#1A5F99',
+          900: '#174B77',
+          950: '#0F3354',
+        },
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',

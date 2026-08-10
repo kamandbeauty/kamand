@@ -13,9 +13,10 @@ import '../product/product_list_screen.dart';
 import '../financial/financial_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
 
-/// Palette matching the web preview design language.
-const _blue = Color(0xFF2563EB);
-const _blueSoft = Color(0xFFEFF6FF);
+/// Palette matching the Fida invoice-app design language.
+const _blue = Color(0xFF2D92DF);
+const _blueSoft = Color(0xFFE8F4FD);
+const _blueDark = Color(0xFF1E78C0);
 const _emerald = Color(0xFF059669);
 const _emeraldSoft = Color(0xFFECFDF5);
 const _rose = Color(0xFFE11D48);
@@ -66,27 +67,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: AppTheme.primaryBlue,
+        foregroundColor: Colors.white,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppTheme.primaryBlue,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Text(
                 'ف',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.w900, fontSize: 16),
               ),
             ),
             const SizedBox(width: 8),
-            Text(business.shopName.isNotEmpty ? business.shopName : 'فاکتور روبی'),
+            Text(
+              business.shopName.isNotEmpty ? business.shopName : 'فاکتور روبی',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
@@ -157,22 +163,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 20),
 
             // ================= Quick Actions =================
+            // Primary CTA — big blue button like the Fida app
+            SizedBox(
+              width: double.infinity,
+              child: _PrimaryBlueButton(
+                label: 'فاکتور جدید',
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceCreateScreen()));
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
-                  flex: 3,
-                  child: _QuickActionButton(
-                    label: 'فاکتور جدید',
-                    icon: Icons.add,
-                    filled: true,
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceCreateScreen()));
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 3,
                   child: _QuickActionButton(
                     label: 'مشتری جدید',
                     icon: Icons.person_add,
@@ -185,7 +189,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  flex: 3,
                   child: _QuickActionButton(
                     label: 'کالا جدید',
                     icon: Icons.inventory_2,
@@ -484,12 +487,64 @@ class _StatCard extends StatelessWidget {
 }
 
 // ============================================================
+//  Primary Blue Button (Fida-style big CTA)
+// ============================================================
+class _PrimaryBlueButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _PrimaryBlueButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
+        decoration: BoxDecoration(
+          color: _blue,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: _blue.withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: const BoxDecoration(color: Color(0x33FFFFFF), shape: BoxShape.circle),
+              child: const Icon(Icons.add, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
 //  Quick Action Button
 // ============================================================
 class _QuickActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
-  final bool filled;
   final Color chipColor;
   final Color chipBg;
   final VoidCallback onTap;
@@ -498,7 +553,6 @@ class _QuickActionButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onTap,
-    this.filled = false,
     this.chipColor = _emerald,
     this.chipBg = _emeraldSoft,
   });
@@ -506,36 +560,6 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    if (filled) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          decoration: BoxDecoration(
-            color: _blue,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.25), blurRadius: 16, offset: const Offset(0, 6))],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(color: Color(0x33FFFFFF), shape: BoxShape.circle),
-                child: const Icon(Icons.add, color: Colors.white, size: 20),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'فاکتور جدید',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
