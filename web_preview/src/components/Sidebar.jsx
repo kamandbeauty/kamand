@@ -2,14 +2,11 @@ import React from 'react';
 import {
   X,
   Settings,
-  AlertCircle,
   Package,
   Users,
   FileText,
   ShoppingBag,
-  Sparkles,
-  Hand,
-  RotateCcw
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -154,7 +151,7 @@ export default function Sidebar({
           </button>
 
           <p className="text-xs text-slate-400 font-medium">
-            فاکتور فیدا - نسخه ۵.۸.۰
+            فاکتورساز جاوید - نسخه ۵.۸.۰
           </p>
         </div>
 

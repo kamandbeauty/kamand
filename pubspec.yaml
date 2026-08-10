@@ -1,7 +1,7 @@
-name: factor_fida
-description: "فاکتور فیدا - اپلیکیشن اندرویدی صدور فاکتور و مدیریت مالی کسب‌وکار"
+name: factorsaz_javid
+description: "فاکتورساز جاوید - اپلیکیشن اندرویدی صدور فاکتور و مدیریت مالی کسب‌وکار"
 publish_to: 'none'
-version: 1.0.0+1
+version: 5.8.0+1
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

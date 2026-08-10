@@ -1,32 +1,35 @@
 import React, { useState } from 'react';
 import {
-  Check,
-  ChevronLeft,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
-  MapPin,
-  Store,
-  Wrench,
-  PackageCheck,
-  Laptop,
-  User,
-  Calculator,
-  Briefcase,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Check
 } from 'lucide-react';
-import { COUNTRIES, IRAN_LOCATION_DATA, USAGE_TYPES } from '../utils/helpers';
+import { IRAN_LOCATION_DATA, USAGE_TYPES } from '../utils/helpers';
 
 export default function OnboardingModal({ isOpen, onComplete, initialData }) {
   if (!isOpen) return null;
 
   const [step, setStep] = useState(1);
   const [name, setName] = useState(initialData?.name || '');
+  const [currency, setCurrency] = useState(initialData?.currency || 'تومان');
   const [country, setCountry] = useState(initialData?.country || 'ایران');
   const [province, setProvince] = useState(initialData?.province || 'تهران');
   const [city, setCity] = useState(initialData?.city || 'تهران');
   const [citySearch, setCitySearch] = useState('');
   const [usageType, setUsageType] = useState(initialData?.usageType || 'store');
+
+  const currencies = [
+    { id: 'IRR', name: 'ریال', flag: '🇮🇷' },
+    { id: 'IRT', name: 'تومان', flag: '🇮🇷' },
+    { id: 'USD', name: 'دلار', flag: '🇺🇸' },
+    { id: 'EUR', name: 'یورو', flag: '🇪🇺' },
+    { id: 'CAD', name: 'دلار کانادا', flag: '🇨🇦' },
+    { id: 'TRY', name: 'لیر', flag: '🇹🇷' },
+    { id: 'AFN', name: 'افغانی', flag: '🇦🇫' }
+  ];
 
   const provinces = Object.keys(IRAN_LOCATION_DATA);
   const currentCities = IRAN_LOCATION_DATA[province] || ['تهران'];
@@ -42,6 +45,7 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
     } else {
       onComplete({
         name,
+        currency,
         country,
         province: country === 'ایران' ? province : '',
         city,
@@ -55,52 +59,60 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
     if (step > 1) setStep(step - 1);
   };
 
-  const getUsageIcon = (iconName) => {
-    switch (iconName) {
-      case 'Store': return <Store className="w-6 h-6" />;
-      case 'Wrench': return <Wrench className="w-6 h-6" />;
-      case 'PackageCheck': return <PackageCheck className="w-6 h-6" />;
-      case 'Laptop': return <Laptop className="w-6 h-6" />;
-      case 'User': return <User className="w-6 h-6" />;
-      case 'Calculator': return <Calculator className="w-6 h-6" />;
-      default: return <Briefcase className="w-6 h-6" />;
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-      <div className="w-full max-w-xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in font-vazir">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700">
         
-        {/* Progress Bar */}
-        <div className="bg-slate-100 dark:bg-slate-700 h-2 w-full">
-          <div
-            className="bg-blue-600 h-2 transition-all duration-300 ease-out"
-            style={{ width: `${(step / 5) * 100}%` }}
-          />
-        </div>
+        {/* Top Indicator Header (Screenshot 11 & 9) */}
+        <div className="p-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700 text-xs">
+          {step > 1 ? (
+            <button onClick={handlePrev} className="p-1 text-slate-500 hover:text-slate-800 transition">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          ) : <div className="w-5" />}
 
-        {/* Card Header */}
-        <div className="p-6 text-center pb-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 mb-3 shadow-inner">
-            <Sparkles className="w-7 h-7" />
+          {/* Step Progress Bar */}
+          <div className="flex gap-1 justify-center flex-1 max-w-xs mx-4">
+            {[1, 2, 3, 4, 5].map(s => (
+              <div
+                key={s}
+                className={`h-1 flex-1 rounded-full transition-all ${
+                  s <= step ? 'bg-sky-500' : 'bg-slate-200 dark:bg-slate-700'
+                }`}
+              />
+            ))}
           </div>
-          <span className="text-xs font-bold text-blue-600 dark:text-blue-400 block mb-1">
-            مرحله {step} از ۵
-          </span>
+
+          <button
+            onClick={() => handleNext()}
+            className="text-slate-400 hover:text-slate-600 font-bold flex items-center gap-0.5"
+          >
+            <span>بعدا</span>
+            <ChevronLeft className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Card Body by Step */}
-        <div className="px-6 py-4 flex-1 overflow-y-auto max-h-[60vh]">
+        {/* Content by Step */}
+        <div className="p-6 flex-1 overflow-y-auto max-h-[65vh]">
           
-          {/* STEP 1: Name */}
+          {/* STEP 1: Name (Screenshot 11) */}
           {step === 1 && (
             <div className="space-y-6 text-center animate-fade-in">
+              {/* Mascot */}
+              <div className="w-28 h-28 mx-auto rounded-full bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center text-6xl shadow-inner">
+                🦉
+              </div>
+
               <div>
-                <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">
-                  سلام! من فیدا هستم 👋
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white">سلام!</h3>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white mt-1 mb-2">
+                  من فیدا هستم
                 </h2>
-                <p className="text-slate-500 dark:text-slate-300 text-sm">
-                  اسم شما چیه؟
+                <p className="text-slate-500 dark:text-slate-300 text-xs leading-relaxed">
+                  همراه همیشگی تو توی مسیر صدور فاکتور و مدیریت کارهات.
+                </p>
+                <p className="text-slate-700 dark:text-slate-200 font-bold text-xs mt-2">
+                  برای شروع، اسمتو بهم بگو
                 </p>
               </div>
 
@@ -109,163 +121,141 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="مثلاً: علی رضایی..."
+                  placeholder="اینجا بنویس"
                   autoFocus
-                  className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-center text-lg font-bold focus:border-blue-600 focus:bg-white focus:outline-none transition"
+                  className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900 text-slate-800 dark:text-white text-center text-sm font-bold focus:border-sky-500 focus:bg-white focus:outline-none transition"
                 />
-                {!name.trim() && (
-                  <p className="text-xs text-amber-500 mt-2">
-                    لطفا نام خود را وارد کنید تا ادامه دهیم
-                  </p>
-                )}
               </div>
             </div>
           )}
 
-          {/* STEP 2: Country Selection */}
+          {/* STEP 2: Currency Selection (Screenshot 9) */}
           {step === 2 && (
             <div className="space-y-4 animate-fade-in">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-                  کشور محل فعالیت خود را انتخاب کنید
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto rounded-full bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center text-4xl mb-2">
+                  🦉
+                </div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  انتخاب ارز
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  کشور پیش‌فرض برای صدور فاکتور و واحد مالی
-                </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {COUNTRIES.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setCountry(c.name)}
-                    className={`p-3.5 rounded-2xl border-2 text-right flex items-center gap-3 transition ${
-                      country === c.name
-                        ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold shadow-sm'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    <span className="text-2xl">{c.flag}</span>
-                    <span className="text-sm">{c.name}</span>
-                  </button>
-                ))}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {currencies.map((c) => {
+                  const isSelected = currency === c.name;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setCurrency(c.name)}
+                      className={`w-full p-3.5 rounded-2xl border text-right flex items-center justify-between transition ${
+                        isSelected
+                          ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-900/30 text-slate-900 dark:text-white font-bold shadow-xs'
+                          : 'border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {isSelected && (
+                          <CheckCircle2 className="w-5 h-5 text-sky-500 fill-sky-500 text-white shrink-0" />
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold">{c.name}</span>
+                        <span className="text-lg">{c.flag}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* STEP 3: City/Province Selection */}
+          {/* STEP 3: Province / City */}
           {step === 3 && (
             <div className="space-y-4 animate-fade-in">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+              <div className="text-center">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                   انتخاب استان و شهر
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {country === 'ایران' ? 'استان و شهر محل کسب و کار شما' : 'شهر محل استقرار شما'}
-                </p>
               </div>
 
-              {country === 'ایران' ? (
-                <div className="space-y-4">
-                  {/* Province Dropdown */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      استان
-                    </label>
-                    <select
-                      value={province}
-                      onChange={(e) => {
-                        setProvince(e.target.value);
-                        setCity(IRAN_LOCATION_DATA[e.target.value]?.[0] || '');
-                      }}
-                      className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium focus:border-blue-600 focus:outline-none"
-                    >
-                      {provinces.map(p => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* City Search & Select */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      شهر (با قابلیت جستجو)
-                    </label>
-                    <div className="relative mb-2">
-                      <Search className="w-4 h-4 absolute right-3 top-3.5 text-slate-400" />
-                      <input
-                        type="text"
-                        value={citySearch}
-                        onChange={(e) => setCitySearch(e.target.value)}
-                        placeholder="جستجوی شهر..."
-                        className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto p-1">
-                      {filteredCities.map(ct => (
-                        <button
-                          key={ct}
-                          onClick={() => setCity(ct)}
-                          className={`p-2.5 rounded-xl text-xs text-center border transition ${
-                            city === ct
-                              ? 'border-blue-600 bg-blue-600 text-white font-bold shadow'
-                              : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {ct}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="max-w-md mx-auto">
+              <div className="space-y-3">
+                <div>
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    نام شهر
+                    استان
                   </label>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="مثال: استانبول، تورنتو..."
-                    className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-sm font-medium focus:border-blue-600 focus:outline-none"
-                  />
+                  <select
+                    value={province}
+                    onChange={(e) => {
+                      setProvince(e.target.value);
+                      setCity(IRAN_LOCATION_DATA[e.target.value]?.[0] || '');
+                    }}
+                    className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900 text-slate-800 dark:text-white text-xs font-bold"
+                  >
+                    {provinces.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                    شهر
+                  </label>
+                  <div className="relative mb-2">
+                    <Search className="w-4 h-4 absolute right-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      value={citySearch}
+                      onChange={(e) => setCitySearch(e.target.value)}
+                      placeholder="جستجوی شهر..."
+                      className="w-full pr-9 pl-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900 text-xs"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto">
+                    {filteredCities.map(ct => (
+                      <button
+                        key={ct}
+                        onClick={() => setCity(ct)}
+                        className={`p-2 rounded-xl text-xs border text-center transition ${
+                          city === ct
+                            ? 'border-sky-500 bg-sky-500 text-white font-bold shadow-xs'
+                            : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {ct}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* STEP 4: Usage Type */}
+          {/* STEP 4: Activity Type */}
           {step === 4 && (
             <div className="space-y-4 animate-fade-in">
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-                  نوع فعالیت شما چیست؟
+              <div className="text-center">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  نوع فعالیت شما
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  برای شخصی‌سازی فاکتورها و گزارش‌های شما
-                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1">
+              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
                 {USAGE_TYPES.map((u) => (
                   <button
                     key={u.id}
                     onClick={() => setUsageType(u.id)}
-                    className={`p-3.5 rounded-2xl border-2 text-right flex items-start gap-3 transition ${
+                    className={`p-3 rounded-2xl border text-right transition ${
                       usageType === u.id
-                        ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
+                        ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300 font-bold'
+                        : 'border-slate-100 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300'
                     }`}
                   >
-                    <div className={`p-2 rounded-xl ${usageType === u.id ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
-                      {getUsageIcon(u.icon)}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-sm text-slate-800 dark:text-white mb-0.5">{u.title}</h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">{u.desc}</p>
-                    </div>
+                    <div className="text-sm font-bold">{u.title}</div>
+                    <div className="text-[11px] text-slate-400">{u.desc}</div>
                   </button>
                 ))}
               </div>
@@ -274,64 +264,35 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
 
           {/* STEP 5: Welcome Final */}
           {step === 5 && (
-            <div className="space-y-6 text-center animate-fade-in py-2">
-              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-lg">
-                <CheckCircle2 className="w-10 h-10" />
+            <div className="space-y-4 text-center animate-fade-in py-2">
+              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-2xl shadow-md">
+                <Check className="w-10 h-10" />
               </div>
 
-              <div>
-                <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">
-                  خوش آمدید، {name}! 🎉
-                </h2>
-                <p className="text-slate-500 dark:text-slate-300 text-sm">
-                  همه چیز برای شروع صدور آسان فاکتور و مدیریت مالی آماده است.
-                </p>
-              </div>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">
+                خوش آمدید، {name}! 🎉
+              </h2>
 
-              <div className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 text-right space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                <div className="flex justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
-                  <span className="text-slate-400">نام:</span>
-                  <span className="font-bold text-slate-800 dark:text-white">{name}</span>
-                </div>
-                <div className="flex justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
-                  <span className="text-slate-400">موقعیت:</span>
-                  <span className="font-bold text-slate-800 dark:text-white">{country} - {city}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">نوع فعالیت:</span>
-                  <span className="font-bold text-slate-800 dark:text-white">
-                    {USAGE_TYPES.find(u => u.id === usageType)?.title || 'کسب و کار'}
-                  </span>
-                </div>
-              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                تنظیمات شما با ارز ({currency}) ثبت گردید. هم‌اکنون می‌توانید فاکتورهای خود را صادر کنید.
+              </p>
             </div>
           )}
 
         </div>
 
-        {/* Card Footer Actions */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
-          {step > 1 && step < 5 ? (
-            <button
-              onClick={handlePrev}
-              className="flex items-center gap-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition"
-            >
-              <ChevronRight className="w-4 h-4" />
-              <span>قبلی</span>
-            </button>
-          ) : <div />}
-
+        {/* Footer Button (Screenshot 11 & 9) */}
+        <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700">
           <button
             onClick={handleNext}
             disabled={step === 1 && !name.trim()}
-            className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl font-bold text-xs shadow-lg transition active:scale-95 ${
+            className={`w-full py-3.5 rounded-2xl font-bold text-xs shadow-md transition active:scale-98 ${
               step === 1 && !name.trim()
-                ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
-                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/25'
+                ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/20'
             }`}
           >
-            <span>{step === 5 ? 'شروع استفاده از فاکتور فیدا' : 'بعدی'}</span>
-            {step < 5 && <ChevronLeft className="w-4 h-4" />}
+            {step === 5 ? 'شروع استفاده از فاکتورساز جاوید' : (step === 1 ? 'بعدی' : 'ادامه')}
           </button>
         </div>
 

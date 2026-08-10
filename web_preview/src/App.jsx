@@ -12,6 +12,7 @@ import FinancialView from './components/FinancialView';
 import SmartToolsModal from './components/SmartToolsModal';
 import SettingsView from './components/SettingsView';
 import GoldenUpgradeModal from './components/GoldenUpgradeModal';
+import PricingPlansModal from './components/PricingPlansModal';
 import OpenWindowsModal from './components/OpenWindowsModal';
 
 import {
@@ -54,14 +55,15 @@ export default function App() {
   const [settings, setSettings] = useState(() => loadState('settings', INITIAL_SETTINGS));
 
   // Navigation & Modals
-  const [activeTab, setActiveTab] = useState('create_invoice'); // Default directly to Factor Creator as shown in reference screenshots
+  const [activeTab, setActiveTab] = useState('create_invoice');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isAppLocked, setIsAppLocked] = useState(false);
   const [pinUnlockInput, setPinUnlockInput] = useState('');
 
-  const [showSplash, setShowSplash] = useState(false); // Can be triggered anytime or on reset
+  const [showSplash, setShowSplash] = useState(false);
   const [showGoldenModal, setShowGoldenModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
   const [showWindowsModal, setShowWindowsModal] = useState(false);
 
   const [selectedInvoiceModal, setSelectedInvoiceModal] = useState(null);
@@ -71,7 +73,7 @@ export default function App() {
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [globalSearchQuery, setGlobalSearchOpenQuery] = useState('');
 
-  // Temporary Multi-window Tabs (Screenshots 2, 3, 5)
+  // Temporary Multi-window Tabs
   const [factorTabs, setFactorTabs] = useState([
     { id: 'tab-1', title: 'پیش فاکتور ۱', number: '۱' }
   ]);
@@ -222,9 +224,9 @@ export default function App() {
       <div className="fixed inset-0 z-50 bg-slate-900 text-white flex items-center justify-center p-4 dir-rtl font-vazir">
         <div className="text-center space-y-4 max-w-xs">
           <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-xl">
-            ف
+            ج
           </div>
-          <h2 className="font-extrabold text-lg">فاکتور فیدا قفل است</h2>
+          <h2 className="font-extrabold text-lg">فاکتورساز جاوید قفل است</h2>
           <p className="text-xs text-slate-400">رمز ۴ رقمی خود را وارد کنید</p>
 
           <input
@@ -257,7 +259,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-vazir select-none">
       
-      {/* Welcome Splash Screen (Screenshot 1) */}
+      {/* Welcome Splash Screen */}
       <WelcomeSplashModal
         isOpen={showSplash}
         onStart={() => setShowSplash(false)}
@@ -278,13 +280,13 @@ export default function App() {
       <Navbar
         onOpenSidebar={() => setIsSidebarOpen(true)}
         onOpenGlobalSearch={() => setGlobalSearchOpen(true)}
-        onOpenGoldenModal={() => setShowGoldenModal(true)}
+        onOpenGoldenModal={() => setShowPricingModal(true)}
         isDarkMode={isDarkMode}
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         onLockApp={() => setIsAppLocked(true)}
       />
 
-      {/* Sidebar Drawer Menu (Screenshot 4) */}
+      {/* Sidebar Drawer Menu */}
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -414,10 +416,16 @@ export default function App() {
         onRecordPayment={handleRecordPayment}
       />
 
-      {/* Golden Upgrade Modal (Screenshot 6) */}
+      {/* Golden Upgrade Features Modal (Screenshot 6) */}
       <GoldenUpgradeModal
         isOpen={showGoldenModal}
         onClose={() => setShowGoldenModal(false)}
+      />
+
+      {/* Pricing Plans Modal (Screenshot 1) */}
+      <PricingPlansModal
+        isOpen={showPricingModal}
+        onClose={() => setShowPricingModal(false)}
       />
 
       {/* Open Windows Modal (Screenshot 5) */}
@@ -454,7 +462,7 @@ export default function App() {
       {/* Global Search Dialog */}
       {globalSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-xl bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+          <div className="w-full max-w-xl bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-2xl space-y-4 font-vazir">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
               <h3 className="font-bold text-sm text-slate-800 dark:text-white">
                 جستجوی سریع سراسری

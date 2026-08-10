@@ -2,15 +2,16 @@ import { getTodayJalali } from '../utils/helpers';
 
 export const INITIAL_USER = {
   name: 'علی علوی',
+  currency: 'تومان',
   country: 'ایران',
   province: 'تهران',
   city: 'تهران',
   usageType: 'store',
-  isOnboarded: false // Will trigger onboarding on fresh view or can be completed
+  isOnboarded: false
 };
 
 export const INITIAL_BUSINESS = {
-  shopName: 'فروشگاه آنلاین فیدا',
+  shopName: 'فروشگاه جاوید',
   phone: '۰۲۱-۸۸۸۸۹۹۹۹',
   address: 'تهران، خیابان ولیعصر، نرسیده به میدان ونک، پلاک ۱۲۴',
   taxId: '۱۰۱۰۹۸۷۶۵۴۳',
@@ -29,7 +30,7 @@ export const INITIAL_CUSTOMERS = [
     phone: '02144556677',
     address: 'تهران، سعادت‌آباد، خیابان سرو غربی، پلاک ۴۵',
     notes: 'مشتری خوش‌حساب، تحویل حضوری',
-    balance: 1500000, // Debt
+    balance: 1500000,
     createdAt: '1405/05/15'
   },
   {
@@ -49,7 +50,7 @@ export const INITIAL_CUSTOMERS = [
     phone: '02188776655',
     address: 'مشهد، بلوار سجاد، بزرگمهر شمالی، پلاک ۸',
     notes: 'خریدار عمده قطعات الکترونیک',
-    balance: 4200000, // Debt
+    balance: 4200000,
     createdAt: '1405/05/19'
   }
 ];
@@ -68,7 +69,7 @@ export const INITIAL_PRODUCTS = [
   {
     id: 'p2',
     code: '102',
-    name: 'ماگ سرامیکی طرح فیدا',
+    name: 'ماگ سرامیکی طرح جاوید',
     unit: 'عدد',
     buyPrice: 85000,
     sellPrice: 140000,
@@ -78,7 +79,7 @@ export const INITIAL_PRODUCTS = [
   {
     id: 'p3',
     code: '103',
-    name: 'دستگاه اسپرسوساز خانگی مدل FID-200',
+    name: 'دستگاه اسپرسوساز خانگی مدل JVD-200',
     unit: 'دستگاه',
     buyPrice: 4200000,
     sellPrice: 5800000,
@@ -104,13 +105,13 @@ export const INITIAL_INVOICES = [
     customerId: 'c1',
     customerName: 'رضا محمدی',
     customerPhone: '09121112233',
-    type: 'sale', // sale, proforma, purchase
-    paymentType: 'cash', // cash, non_cash
-    status: 'paid', // paid, unpaid, partial, proforma
+    type: 'sale',
+    paymentType: 'cash',
+    status: 'paid',
     date: '1405/05/18',
     items: [
       { id: 'item-1', title: 'دان قهوه اسپرسو برزیل (۱ کیلویی)', quantity: 2, unit: 'بسته', unitPrice: 520000, totalPrice: 1040000 },
-      { id: 'item-2', title: 'ماگ سرامیکی طرح فیدا', quantity: 1, unit: 'عدد', unitPrice: 140000, totalPrice: 140000 }
+      { id: 'item-2', title: 'ماگ سرامیکی طرح جاوید', quantity: 1, unit: 'عدد', unitPrice: 140000, totalPrice: 140000 }
     ],
     subtotal: 1180000,
     discountPercent: 5,
@@ -136,7 +137,7 @@ export const INITIAL_INVOICES = [
     status: 'unpaid',
     date: '1405/05/19',
     items: [
-      { id: 'item-3', title: 'دستگاه اسپرسوساز خانگی مدل FID-200', quantity: 1, unit: 'دستگاه', unitPrice: 5800000, totalPrice: 5800000 }
+      { id: 'item-3', title: 'دستگاه اسپرسوساز خانگی مدل JVD-200', quantity: 1, unit: 'دستگاه', unitPrice: 5800000, totalPrice: 5800000 }
     ],
     subtotal: 5800000,
     discountPercent: 0,
@@ -150,40 +151,12 @@ export const INITIAL_INVOICES = [
     notes: 'سررسید تسویه ۵ روز آینده',
     cardNumber: '5022-2910-8765-4321',
     createdAt: '1405/05/19'
-  },
-  {
-    id: 'inv-1003',
-    number: '1003',
-    customerId: 'c2',
-    customerName: 'زهرا کاظمی',
-    customerPhone: '09359876543',
-    type: 'proforma',
-    paymentType: 'cash',
-    status: 'proforma',
-    date: '1405/05/20',
-    items: [
-      { id: 'item-4', title: 'دان قهوه اسپرسو برزیل (۱ کیلویی)', quantity: 5, unit: 'بسته', unitPrice: 520000, totalPrice: 2600000 },
-      { id: 'item-5', title: 'خدمات سرویس و نگه‌داری دوره‌ای', quantity: 2, unit: 'ساعت', unitPrice: 350000, totalPrice: 700000 }
-    ],
-    subtotal: 3300000,
-    discountPercent: 10,
-    discountAmount: 165000,
-    shippingFee: 65000,
-    previousDebt: 0,
-    deposit: 0,
-    totalAmount: 3200000,
-    paidAmount: 0,
-    remainingAmount: 3200000,
-    notes: 'اعتبار پیش‌فاکتور تا ۳ روز کاری',
-    cardNumber: '6037-9975-1234-5678',
-    createdAt: '1405/05/20'
   }
 ];
 
 export const INITIAL_EXPENSES = [
   { id: 'e1', title: 'اجاره دفتر و کارگاه', category: 'اجاره', amount: 8500000, date: '1405/05/01', notes: 'اجاره ماه مرداد' },
-  { id: 'e2', title: 'قبض برق و اینترنت', category: 'قبوض', amount: 950000, date: '1405/05/10', notes: 'پرداخت آنلاین' },
-  { id: 'e3', title: 'هزینه بسته بندی و کارتن', category: 'ملزومات', amount: 1200000, date: '1405/05/14', notes: 'خرید ۱۰۰ عدد کارتن' }
+  { id: 'e2', title: 'قبض برق و اینترنت', category: 'قبوض', amount: 950000, date: '1405/05/10', notes: 'پرداخت آنلاین' }
 ];
 
 export const INITIAL_INCOMES = [
@@ -192,10 +165,10 @@ export const INITIAL_INCOMES = [
 
 export const INITIAL_SETTINGS = {
   startingInvoiceNum: 1004,
-  templateStyle: 'modern', // classic, modern, simple
+  templateStyle: 'modern',
   showLogo: true,
   showCardNum: true,
-  themeMode: 'light', // light, dark, system
+  themeMode: 'light',
   autoBackup: true,
   pinCode: '',
   pinEnabled: false

@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import {
-  Package,
-  Search,
   Plus,
+  ArrowRight,
+  Menu,
+  FolderPlus,
+  SlidersHorizontal,
   Edit,
   Trash2,
   X,
-  Tag,
-  Boxes,
-  TrendingUp,
-  DollarSign
+  ChevronDown
 } from 'lucide-react';
 import { UNITS, formatCurrency, toPersianDigits } from '../utils/helpers';
 
@@ -19,59 +18,46 @@ export default function ProductManagementView({
   onEditProduct,
   onDeleteProduct
 }) {
-  const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // Form state
+  // Form State (Screenshot 4: Name, Price, Unit)
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
   const [unit, setUnit] = useState('عدد');
-  const [buyPrice, setBuyPrice] = useState('');
   const [sellPrice, setSellPrice] = useState('');
-  const [stock, setStock] = useState('10');
-  const [notes, setNotes] = useState('');
 
   const openAddModal = () => {
     setEditingProduct(null);
     setName('');
-    setCode((products.length + 101).toString());
     setUnit('عدد');
-    setBuyPrice('');
     setSellPrice('');
-    setStock('10');
-    setNotes('');
     setShowModal(true);
   };
 
   const openEditModal = (p) => {
     setEditingProduct(p);
     setName(p.name || '');
-    setCode(p.code || '');
     setUnit(p.unit || 'عدد');
-    setBuyPrice((p.buyPrice || 0).toString());
     setSellPrice((p.sellPrice || 0).toString());
-    setStock((p.stock || 0).toString());
-    setNotes(p.notes || '');
     setShowModal(true);
   };
 
   const handleSave = (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert('لطفا نام کالا/خدمت را وارد کنید.');
+      alert('لطفاً نام آیتم را وارد کنید.');
       return;
     }
 
     const productData = {
       id: editingProduct?.id || `p-${Date.now()}`,
-      code: code.trim() || Date.now().toString().slice(-4),
+      code: editingProduct?.code || (products.length + 101).toString(),
       name: name.trim(),
       unit,
-      buyPrice: parseFloat(buyPrice) || 0,
+      buyPrice: editingProduct?.buyPrice || 0,
       sellPrice: parseFloat(sellPrice) || 0,
-      stock: parseFloat(stock) || 0,
-      notes: notes.trim()
+      stock: editingProduct?.stock || 99,
+      notes: editingProduct?.notes || ''
     };
 
     if (editingProduct) {
@@ -83,275 +69,184 @@ export default function ProductManagementView({
     setShowModal(false);
   };
 
-  const filtered = products.filter(p =>
-    p.name.includes(searchTerm.trim()) ||
-    p.code.includes(searchTerm.trim())
-  );
-
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="space-y-4 max-w-xl mx-auto pb-24 animate-fade-in font-vazir relative min-h-[80vh]">
       
-      {/* Top Header */}
-      <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold">
-            <Package className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="font-bold text-lg text-slate-800 dark:text-white">
-              مدیریت کالاها و خدمات
-            </h2>
-            <p className="text-xs text-slate-400">
-              تعداد کالا/خدمات: {toPersianDigits(products.length)}
-            </p>
-          </div>
-        </div>
+      {/* Top Header Bar (Screenshot 6) */}
+      <div className="flex items-center justify-between py-2 border-b border-slate-200/60 dark:border-slate-700">
+        <button onClick={() => window.history.back()} className="p-1.5 text-slate-700 dark:text-slate-200">
+          <ArrowRight className="w-5 h-5" />
+        </button>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="w-4 h-4 absolute right-3 top-3.5 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="جستجوی کد یا عنوان کالا..."
-              className="w-full pr-9 pl-3 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white text-xs"
-            />
-          </div>
+        <h2 className="font-extrabold text-lg text-slate-900 dark:text-white">
+          آیتم‌ها
+        </h2>
 
-          <button
-            onClick={openAddModal}
-            className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 flex items-center gap-1.5 shrink-0 transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>کالا جدید</span>
+        <div className="w-5" />
+      </div>
+
+      {/* Action Bar: Create Category + Filter Icons (Screenshot 6) */}
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="flex items-center gap-2">
+          <button className="p-2 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+            <SlidersHorizontal className="w-4 h-4" />
           </button>
         </div>
 
+        <button
+          onClick={() => alert('دسته‌بندی جدید ایجاد شد.')}
+          className="px-4 py-2 rounded-2xl bg-slate-100/90 dark:bg-slate-800 text-sky-600 dark:text-sky-400 font-bold text-xs flex items-center gap-1.5 hover:bg-slate-200 transition"
+        >
+          <Plus className="w-4 h-4" />
+          <span>ایجاد دسته‌بندی</span>
+        </button>
       </div>
 
-      {/* Product List Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-slate-400 text-xs bg-white dark:bg-slate-800 rounded-3xl p-6">
-            کالا یا خدمتی با این مشخصات یافت نشد.
+      {/* Products List or Empty State Folder Box (Screenshot 6) */}
+      {products.length === 0 ? (
+        <div className="my-12 p-8 bg-slate-100/80 dark:bg-slate-800 rounded-3xl text-center space-y-4 border border-slate-200/60 dark:border-slate-700">
+          {/* Yellow Folder Icon */}
+          <div className="w-24 h-24 mx-auto bg-amber-400/20 text-amber-500 rounded-3xl flex items-center justify-center text-5xl shadow-xs">
+            📁
           </div>
-        ) : (
-          filtered.map((product) => {
-            const margin = product.sellPrice - product.buyPrice;
 
-            return (
-              <div
-                key={product.id}
-                className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  
-                  {/* Title & Code Badge */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded-md inline-block mb-1">
-                        کد: {toPersianDigits(product.code)}
-                      </span>
-                      <h3 className="font-bold text-base text-slate-800 dark:text-white">
-                        {product.name}
-                      </h3>
-                    </div>
+          <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm">
+            هنوز هیچ آیتمی اضافه نشده!
+          </h3>
 
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 shrink-0">
-                      موجودی: {toPersianDigits(product.stock)} {product.unit}
-                    </span>
-                  </div>
-
-                  {/* Price Box */}
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700/60 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <div className="text-[10px] text-slate-400">قیمت فروش</div>
-                      <div className="font-bold text-slate-800 dark:text-white text-sm">
-                        {formatCurrency(product.sellPrice)}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] text-slate-400">قیمت خرید</div>
-                      <div className="font-medium text-slate-500 dark:text-slate-400 text-xs">
-                        {product.buyPrice ? formatCurrency(product.buyPrice) : '---'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {product.notes && (
-                    <p className="text-[11px] text-slate-400 line-clamp-1">
-                      {product.notes}
-                    </p>
-                  )}
-
+          <button
+            onClick={openAddModal}
+            className="text-sky-600 dark:text-sky-400 font-bold text-xs hover:underline block mx-auto"
+          >
+            ایجاد آیتم
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3 pt-2">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="p-4 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 flex items-center justify-between shadow-xs hover:border-sky-400 transition"
+            >
+              <div className="text-right">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                  {product.name}
+                </h4>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  واحد: {product.unit}
                 </div>
-
-                {/* Card Actions */}
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                    حاشیه سود: {formatCurrency(margin)}
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEditModal(product)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
-                      title="ویرایش"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`آیا از حذف کالا ${product.name} اطمینان دارید؟`)) {
-                          onDeleteProduct(product.id);
-                        }
-                      }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
-                      title="حذف"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
               </div>
-            );
-          })
-        )}
-      </div>
 
-      {/* Add / Edit Product Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
-              <h3 className="font-bold text-base text-slate-800 dark:text-white">
-                {editingProduct ? 'ویرایش کالا / خدمت' : 'افزودن کالا یا خدمت جدید'}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="p-1 text-slate-400">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="font-bold text-sm text-sky-600 dark:text-sky-400">
+                  {formatCurrency(product.sellPrice)}
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => openEditModal(product)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`آیا از حذف آیتم ${product.name} اطمینان دارید؟`)) {
+                        onDeleteProduct(product.id);
+                      }
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Floating Action Button (FAB) Bottom Right (Screenshot 6) */}
+      <button
+        onClick={openAddModal}
+        className="fixed bottom-6 left-6 z-30 w-14 h-14 rounded-full bg-sky-500 hover:bg-sky-600 text-white shadow-xl flex items-center justify-center text-2xl transition active:scale-95"
+        title="ایجاد آیتم"
+      >
+        <Plus className="w-7 h-7" />
+      </button>
+
+      {/* Create Item Modal (Screenshot 4) */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm font-vazir">
+          <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-2xl space-y-4 border border-slate-100 dark:border-slate-700 animate-slide-up">
+            
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-white text-center pb-2 border-b border-slate-100 dark:border-slate-700">
+              {editingProduct ? 'ویرایش آیتم' : 'ایجاد آیتم'}
+            </h3>
 
             <form onSubmit={handleSave} className="space-y-3 text-xs">
+              {/* Name Field */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  نام کالا یا خدمت *
-                </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="عنوان کامل کالا..."
-                  className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium"
+                  placeholder="نام"
+                  className="w-full p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-right font-medium text-xs outline-none focus:border-sky-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    کد کالا
-                  </label>
-                  <input
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="101"
-                    className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium text-center"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    واحد سنجش
-                  </label>
+              {/* Price & Unit Row (Screenshot 4) */}
+              <div className="grid grid-cols-2 gap-2">
+                
+                {/* Unit Select */}
+                <div className="relative">
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium"
+                    className="w-full p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-center font-medium text-xs outline-none appearance-none"
                   >
                     {UNITS.map(u => (
                       <option key={u} value={u}>{u}</option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    قیمت خرید (تومان)
-                  </label>
-                  <input
-                    type="number"
-                    value={buyPrice}
-                    onChange={(e) => setBuyPrice(e.target.value)}
-                    placeholder="0"
-                    className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-bold"
-                  />
+                  <ChevronDown className="w-4 h-4 absolute left-3 top-4 text-slate-400 pointer-events-none" />
                 </div>
 
+                {/* Price Field */}
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    قیمت فروش (تومان) *
-                  </label>
                   <input
                     type="number"
-                    required
                     value={sellPrice}
                     onChange={(e) => setSellPrice(e.target.value)}
-                    placeholder="0"
-                    className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-bold text-blue-600"
+                    placeholder="قیمت"
+                    className="w-full p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-center font-bold text-xs outline-none focus:border-sky-500"
                   />
                 </div>
+
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  موجودی اولیه
-                </label>
-                <input
-                  type="number"
-                  value={stock}
-                  onChange={(e) => setStock(e.target.value)}
-                  placeholder="10"
-                  className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  توضیحات
-                </label>
-                <textarea
-                  rows="2"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="توضیحات تکمیلی کالا..."
-                  className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white font-medium"
-                />
-              </div>
-
+              {/* Bottom Actions (Screenshot 4: Cancel left, Create right) */}
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-3 rounded-2xl border border-slate-200 font-bold"
+                  className="flex-1 py-3 rounded-2xl text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                 >
                   انصراف
                 </button>
+
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-2xl bg-indigo-600 text-white font-bold shadow"
+                  className="flex-1 py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs shadow-md transition active:scale-98"
                 >
-                  ذخیره کالا
+                  {editingProduct ? 'ذخیره' : 'ایجاد'}
                 </button>
               </div>
+
             </form>
+
           </div>
         </div>
       )}

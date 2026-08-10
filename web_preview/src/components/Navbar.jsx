@@ -1,9 +1,8 @@
 import React from 'react';
-import { Menu, Sparkles, Search, Lock, Moon, Sun, Plus } from 'lucide-react';
+import { Menu, Sparkles, Lock, Moon, Sun } from 'lucide-react';
 
 export default function Navbar({
   onOpenSidebar,
-  onOpenGlobalSearch,
   onOpenGoldenModal,
   isDarkMode,
   onToggleDarkMode,
@@ -22,10 +21,10 @@ export default function Navbar({
           <Menu className="w-6 h-6" />
         </button>
 
-        {/* Center: Title */}
+        {/* Center: App Title */}
         <div className="flex items-center gap-1.5">
           <h1 className="font-extrabold text-xl text-slate-900 dark:text-white tracking-tight">
-            فاکتور فیدا
+            فاکتورساز جاوید
           </h1>
         </div>
 
