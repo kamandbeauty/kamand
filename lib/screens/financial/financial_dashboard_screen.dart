@@ -39,7 +39,7 @@ class FinancialDashboardScreen extends ConsumerWidget {
                             const SizedBox(height: 4),
                             Text(
                               PersianNumberFormatter.formatCurrency(totalIncome),
-                              style: const TextStyle(color: Colors.emeraldAccent, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -49,7 +49,7 @@ class FinancialDashboardScreen extends ConsumerWidget {
                             const SizedBox(height: 4),
                             Text(
                               PersianNumberFormatter.formatCurrency(totalExpense),
-                              style: const TextStyle(color: Colors.roseAccent, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -72,7 +72,7 @@ class FinancialDashboardScreen extends ConsumerWidget {
                   child: ListTile(
                     leading: Icon(
                       r.isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-                      color: r.isIncome ? Colors.emerald : Colors.rose,
+                      color: r.isIncome ? Colors.green : Colors.redAccent,
                     ),
                     title: Text(r.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('${r.category} • ${r.date}'),
@@ -80,7 +80,7 @@ class FinancialDashboardScreen extends ConsumerWidget {
                       PersianNumberFormatter.formatCurrency(r.amount),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: r.isIncome ? Colors.emerald : Colors.rose,
+                        color: r.isIncome ? Colors.green : Colors.redAccent,
                       ),
                     ),
                   ),

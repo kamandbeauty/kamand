@@ -49,7 +49,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               child: const Text(
                 'ف',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.black, fontSize: 16),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
               ),
             ),
             const SizedBox(width: 8),
@@ -76,7 +76,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 backgroundColor: Colors.white,
                 child: Text(
                   user.name.isNotEmpty ? user.name[0] : 'ف',
-                  style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.black, fontSize: 24),
+                  style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.w900, fontSize: 24),
                 ),
               ),
               decoration: const BoxDecoration(color: AppTheme.primaryBlue),
@@ -144,8 +144,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               childAspectRatio: 1.4,
               children: [
                 _buildStatCard('فروش امروز', PersianNumberFormatter.formatCurrency(todaySales), Icons.trending_up, Colors.blue),
-                _buildStatCard('دریافت امروز', PersianNumberFormatter.formatCurrency(todayReceived), Icons.payments, Colors.emerald),
-                _buildStatCard('بدهی مشتریان', PersianNumberFormatter.formatCurrency(customerDebt), Icons.warning_amber, Colors.rose),
+                _buildStatCard('دریافت امروز', PersianNumberFormatter.formatCurrency(todayReceived), Icons.payments, Colors.green),
+                _buildStatCard('بدهی مشتریان', PersianNumberFormatter.formatCurrency(customerDebt), Icons.warning_amber, Colors.redAccent),
                 _buildStatCard('تعداد فاکتورها', PersianNumberFormatter.toPersian(invoices.length), Icons.description, Colors.purple),
               ],
             ),
@@ -214,7 +214,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           inv.status == 'paid' ? 'پرداخت شده' : 'بدهکار',
                           style: TextStyle(
                             fontSize: 10,
-                            color: inv.status == 'paid' ? Colors.emerald : Colors.rose,
+                            color: inv.status == 'paid' ? Colors.green : Colors.redAccent,
                           ),
                         ),
                       ],
@@ -244,7 +244,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Icon(icon, color: color, size: 20),
               ],
             ),
-            Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.black, color: color)),
+            Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: color)),
           ],
         ),
       ),

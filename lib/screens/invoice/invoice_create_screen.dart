@@ -253,7 +253,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                           const Text('جمع کل نهایی:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                           Text(
                             PersianNumberFormatter.formatCurrency(_totalAmount),
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.black, fontSize: 18),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
                           ),
                         ],
                       ),

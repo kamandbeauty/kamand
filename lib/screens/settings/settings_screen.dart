@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_providers.dart';
+import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
 
@@ -55,7 +56,9 @@ class SettingsScreen extends ConsumerWidget {
                     value: settings.themeMode == 'dark',
                     onChanged: (val) {
                       ref.read(settingsProvider.notifier).updateSettings(
-                        settings.toMap()..['themeMode'] = val ? 'dark' : 'light' as dynamic,
+                        AppSettingsModel.fromMap(
+                          settings.toMap()..['themeMode'] = val ? 'dark' : 'light',
+                        ),
                       );
                     },
                   ),

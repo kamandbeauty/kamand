@@ -37,7 +37,7 @@ class AppTheme {
         fontFamily: 'Vazirmatn',
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -102,7 +102,7 @@ class AppTheme {
         fontFamily: 'Vazirmatn',
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: cardDark,
       elevation: 0,
       shape: RoundedRectangleBorder(
