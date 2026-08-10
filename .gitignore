@@ -28,3 +28,6 @@ capture*.png
 *.aab
 release/
 web_preview/public/FactorRuby*
+
+!release_package/FactorRuby-v5.8.0.apk
+!release_package/FactorRuby-v5.8.0-release.zip
