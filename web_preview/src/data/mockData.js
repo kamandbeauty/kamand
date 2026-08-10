@@ -11,7 +11,7 @@ export const INITIAL_USER = {
 };
 
 export const INITIAL_BUSINESS = {
-  shopName: 'فروشگاه جاوید',
+  shopName: 'فروشگاه روبی',
   phone: '۰۲۱-۸۸۸۸۹۹۹۹',
   address: 'تهران، خیابان ولیعصر، نرسیده به میدان ونک، پلاک ۱۲۴',
   taxId: '۱۰۱۰۹۸۷۶۵۴۳',
@@ -69,7 +69,7 @@ export const INITIAL_PRODUCTS = [
   {
     id: 'p2',
     code: '102',
-    name: 'ماگ سرامیکی طرح جاوید',
+    name: 'ماگ سرامیکی طرح روبی',
     unit: 'عدد',
     buyPrice: 85000,
     sellPrice: 140000,
@@ -79,7 +79,7 @@ export const INITIAL_PRODUCTS = [
   {
     id: 'p3',
     code: '103',
-    name: 'دستگاه اسپرسوساز خانگی مدل JVD-200',
+    name: 'دستگاه اسپرسوساز خانگی مدل RBY-200',
     unit: 'دستگاه',
     buyPrice: 4200000,
     sellPrice: 5800000,
@@ -111,7 +111,7 @@ export const INITIAL_INVOICES = [
     date: '1405/05/18',
     items: [
       { id: 'item-1', title: 'دان قهوه اسپرسو برزیل (۱ کیلویی)', quantity: 2, unit: 'بسته', unitPrice: 520000, totalPrice: 1040000 },
-      { id: 'item-2', title: 'ماگ سرامیکی طرح جاوید', quantity: 1, unit: 'عدد', unitPrice: 140000, totalPrice: 140000 }
+      { id: 'item-2', title: 'ماگ سرامیکی طرح روبی', quantity: 1, unit: 'عدد', unitPrice: 140000, totalPrice: 140000 }
     ],
     subtotal: 1180000,
     discountPercent: 5,
@@ -137,7 +137,7 @@ export const INITIAL_INVOICES = [
     status: 'unpaid',
     date: '1405/05/19',
     items: [
-      { id: 'item-3', title: 'دستگاه اسپرسوساز خانگی مدل JVD-200', quantity: 1, unit: 'دستگاه', unitPrice: 5800000, totalPrice: 5800000 }
+      { id: 'item-3', title: 'دستگاه اسپرسوساز خانگی مدل RBY-200', quantity: 1, unit: 'دستگاه', unitPrice: 5800000, totalPrice: 5800000 }
     ],
     subtotal: 5800000,
     discountPercent: 0,

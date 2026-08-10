@@ -22,7 +22,7 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
           ProductModel(
             id: 'p2',
             code: '102',
-            name: 'ماگ سرامیکی طرح فیدا',
+            name: 'ماگ سرامیکی طرح روبی',
             unit: 'عدد',
             buyPrice: 85000,
             sellPrice: 140000,

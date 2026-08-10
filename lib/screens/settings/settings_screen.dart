@@ -79,7 +79,7 @@ class SettingsScreen extends ConsumerWidget {
 
           const Center(
             child: Text(
-              'فاکتور فیدا نسخه ۱.۰.۰ release\nطراحی شده برای کسب‌وکارهای ایرانی',
+              'فاکتور روبی نسخه ۱.۰.۰ release\nطراحی شده برای کسب‌وکارهای ایرانی',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),

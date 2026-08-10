@@ -23,7 +23,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.fida.factor_fida"
+    namespace "com.ruby.factor_ruby"
     compileSdk 34
     ndkVersion "25.1.8937393"
 
@@ -37,7 +37,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.fida.factor_fida"
+        applicationId "com.ruby.factor_ruby"
         minSdk 21
         targetSdk 34
         versionCode flutterVersionCode.toInteger()

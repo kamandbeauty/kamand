@@ -30,7 +30,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
                   totalPrice: 1040000),
               InvoiceItemModel(
                   id: 'i2',
-                  title: 'ماگ سرامیکی طرح فیدا',
+                  title: 'ماگ سرامیکی طرح روبی',
                   quantity: 1,
                   unit: 'عدد',
                   unitPrice: 140000,

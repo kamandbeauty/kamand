@@ -106,7 +106,7 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
               <div>
                 <h3 className="text-xl font-bold text-slate-800 dark:text-white">سلام!</h3>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white mt-1 mb-2">
-                  من فیدا هستم
+                  من روبی هستم
                 </h2>
                 <p className="text-slate-500 dark:text-slate-300 text-xs leading-relaxed">
                   همراه همیشگی تو توی مسیر صدور فاکتور و مدیریت کارهات.
@@ -292,7 +292,7 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
                 : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/20'
             }`}
           >
-            {step === 5 ? 'شروع استفاده از فاکتورساز جاوید' : (step === 1 ? 'بعدی' : 'ادامه')}
+            {step === 5 ? 'شروع استفاده از فاکتور روبی' : (step === 1 ? 'بعدی' : 'ادامه')}
           </button>
         </div>
 

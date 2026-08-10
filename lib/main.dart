@@ -10,13 +10,13 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
     const ProviderScope(
-      child: FactorsazJavidApp(),
+      child: FactorRubyApp(),
     ),
   );
 }
 
-class FactorsazJavidApp extends ConsumerWidget {
-  const FactorsazJavidApp({super.key});
+class FactorRubyApp extends ConsumerWidget {
+  const FactorRubyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,7 +31,7 @@ class FactorsazJavidApp extends ConsumerWidget {
     }
 
     return MaterialApp(
-      title: 'فاکتورساز جاوید',
+      title: 'فاکتور روبی',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Build Automation Script for Factor Fida (فاکتور فیدا)
+# Build Automation Script for Factor Ruby (فاکتور روبی)
 set -e
 
 echo "=========================================="
-echo "  فاکتور فیدا - ساخت نسخه Release APK"
+echo "  فاکتور روبی - ساخت نسخه Release APK"
 echo "=========================================="
 
 echo "[1/4] Checking Flutter installation..."

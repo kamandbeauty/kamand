@@ -1,5 +1,5 @@
-name: factorsaz_javid
-description: "فاکتورساز جاوید - اپلیکیشن اندرویدی صدور فاکتور و مدیریت مالی کسب‌وکار"
+name: factor_ruby
+description: "فاکتور روبی - اپلیکیشن اندرویدی صدور فاکتور و مدیریت مالی کسب‌وکار"
 publish_to: 'none'
 version: 5.8.0+1
 

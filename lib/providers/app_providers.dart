@@ -33,7 +33,7 @@ class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
   BusinessNotifier()
       : super(BusinessProfileModel(
           id: 'b1',
-          shopName: 'فروشگاه آنلاین فیدا',
+          shopName: 'فروشگاه آنلاین روبی',
           phone: '۰۲۱-۸۸۸۸۹۹۹۹',
           address: 'تهران، خیابان ولیعصر، پلاک ۱۲۴',
           taxId: '۱۰۱۰۹۸۷۶۵۴۳',

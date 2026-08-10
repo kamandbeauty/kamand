@@ -447,7 +447,7 @@ export default function CustomerManagementView({
               </p>
               <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
                 جناب آقای/خانم {reminderCustomer.name} محترم، سلام.<br />
-                احتراماً مانده حساب شما در {this?.business?.shopName || 'فروشگاه فیدا'} مبلغ {formatCurrency(reminderCustomer.balance)} می‌باشد. خواهشمند است جهت تسویه حساب اقدام فرمایید. با تشکر.
+                احتراماً مانده حساب شما در {this?.business?.shopName || 'فروشگاه روبی'} مبلغ {formatCurrency(reminderCustomer.balance)} می‌باشد. خواهشمند است جهت تسویه حساب اقدام فرمایید. با تشکر.
               </div>
             </div>
 

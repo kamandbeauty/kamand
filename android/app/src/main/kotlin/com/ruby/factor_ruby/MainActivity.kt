@@ -1,4 +1,4 @@
-package com.fida.factor_fida
+package com.ruby.factor_ruby
 
 import io.flutter.embedding.android.FlutterActivity
 

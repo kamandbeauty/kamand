@@ -1,4 +1,4 @@
-# ساختار دیتابیس محلی «فاکتور فیدا» (Local Database Schema)
+# ساختار دیتابیس محلی «فاکتور روبی» (Local Database Schema)
 
 این دیتابیس کاملاً **Offline-First** بوده و روی دیتابیس SQLite / Drift پیاده‌سازی شده است.
 

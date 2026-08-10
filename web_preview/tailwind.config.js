@@ -21,7 +21,7 @@ export default {
           900: '#1e3a8a',
           950: '#172554',
         },
-        fida: {
+        ruby: {
           blue: '#1976D2',
           lightBlue: '#E3F2FD',
           darkBlue: '#0D47A1',
