@@ -141,7 +141,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
     const english = ['0','1','2','3','4','5','6','7','8','9'];
     for (int i=0;i<10;i++) numEn = numEn.replaceAll(persian[i], english[i]);
-    final jalali = JalaliHelper.getTodayJalali();
+    final jalaliEn = JalaliHelper.getTodayJalali();
+    final jalali = PersianNumberFormatter.toPersian(jalaliEn);
     final inv = InvoiceModel(
       id: 'inv-${DateTime.now().millisecondsSinceEpoch}',
       number: numEn,
