@@ -16,7 +16,8 @@ export default function ProductManagementView({
   products,
   onAddProduct,
   onEditProduct,
-  onDeleteProduct
+  onDeleteProduct,
+  onBack
 }) {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -74,7 +75,7 @@ export default function ProductManagementView({
       
       {/* Top Header Bar (Screenshot 6) */}
       <div className="flex items-center justify-between py-2 border-b border-slate-200/60 dark:border-slate-700">
-        <button onClick={() => window.history.back()} className="p-1.5 text-slate-700 dark:text-slate-200">
+        <button onClick={() => onBack ? onBack() : window.history.back()} className="p-1.5 text-slate-700 dark:text-slate-200" title="بازگشت">
           <ArrowRight className="w-5 h-5" />
         </button>
 

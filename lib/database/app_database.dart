@@ -3,8 +3,13 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'app_database.g.dart';
+
+final appDatabaseProvider = Provider<AppDatabase>((ref) {
+  return AppDatabase();
+});
 
 // User Table
 class UsersTable extends Table {
@@ -93,7 +98,7 @@ class InvoicesTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-// Financial Expenses & Income Table
+// Financial Expenses & Income Table (Legacy Combined Table)
 class FinancialTable extends Table {
   TextColumn get id => text()();
   TextColumn get title => text()();
@@ -102,6 +107,61 @@ class FinancialTable extends Table {
   TextColumn get date => text()();
   TextColumn get notes => text().nullable()();
   BoolColumn get isIncome => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Expenses Table (DATABASE.md Table 8)
+class ExpensesTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn get category => text()();
+  RealColumn get amount => real()();
+  TextColumn get date => text()();
+  TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Income Table (DATABASE.md Table 9)
+class IncomeTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn get category => text()();
+  RealColumn get amount => real()();
+  TextColumn get date => text()();
+  TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Invoice Items Table (DATABASE.md Table 6)
+class InvoiceItemsTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get invoiceId => text()();
+  TextColumn get productId => text().nullable()();
+  TextColumn get title => text()();
+  RealColumn get quantity => real()();
+  TextColumn get unit => text().withDefault(const Constant('عدد'))();
+  RealColumn get unitPrice => real()();
+  RealColumn get totalPrice => real()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Payments Table (DATABASE.md Table 7)
+class PaymentsTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get invoiceId => text()();
+  TextColumn get customerId => text()();
+  RealColumn get amount => real()();
+  TextColumn get date => text()();
+  TextColumn get paymentMethod => text().withDefault(const Constant('کارت به کارت'))();
+  TextColumn get notes => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -120,20 +180,81 @@ class SettingsTable extends Table {
   BoolColumn get pinEnabled => boolean().withDefault(const Constant(false))();
 }
 
+// Backups Table (DATABASE.md Table 11)
+class BackupsTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get fileName => text()();
+  TextColumn get createdAt => text()();
+  IntColumn get sizeBytes => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(tables: [
   UsersTable,
   BusinessProfileTable,
   CustomersTable,
   ProductsTable,
   InvoicesTable,
+  InvoiceItemsTable,
+  PaymentsTable,
+  ExpensesTable,
+  IncomeTable,
   FinancialTable,
   SettingsTable,
+  BackupsTable,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
   int get schemaVersion => 1;
+
+  Future<void> persistInvoiceRecord(String id, String number, String customerName, String date, double totalAmount) async {
+    try {
+      await into(invoicesTable).insertOnConflictUpdate(
+        InvoicesTableCompanion.insert(
+          id: id,
+          number: number,
+          customerName: customerName,
+          date: date,
+          itemsJson: '',
+          subtotal: totalAmount,
+          totalAmount: totalAmount,
+          paidAmount: totalAmount,
+          remainingAmount: 0,
+          createdAt: date,
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> persistCustomerRecord(String id, String name, double balance, String createdAt) async {
+    try {
+      await into(customersTable).insertOnConflictUpdate(
+        CustomersTableCompanion.insert(
+          id: id,
+          name: name,
+          balance: Value(balance),
+          createdAt: createdAt,
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> persistProductRecord(String id, String code, String name, double sellPrice) async {
+    try {
+      await into(productsTable).insertOnConflictUpdate(
+        ProductsTableCompanion.insert(
+          id: id,
+          code: code,
+          name: name,
+          sellPrice: Value(sellPrice),
+        ),
+      );
+    } catch (_) {}
+  }
 }
 
 LazyDatabase _openConnection() {

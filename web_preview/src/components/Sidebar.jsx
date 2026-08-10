@@ -6,7 +6,8 @@ import {
   Users,
   FileText,
   ShoppingBag,
-  Sparkles
+  Sparkles,
+  Wrench
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -15,6 +16,7 @@ export default function Sidebar({
   onNavigateTab,
   onOpenGoldenModal,
   onOpenSettings,
+  onOpenSmartTools,
   onResetData
 }) {
   if (!isOpen) return null;
@@ -134,7 +136,41 @@ export default function Sidebar({
             <ShoppingBag className="w-6 h-6 text-slate-600 dark:text-slate-300" />
           </button>
 
+          {/* Smart Tools */}
+          <button
+            onClick={() => {
+              if (onOpenSmartTools) onOpenSmartTools();
+              onClose();
+            }}
+            className="p-5 rounded-3xl bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white flex items-center justify-center gap-3 transition"
+          >
+            <span className="font-bold text-sm">ابزارها</span>
+            <Wrench className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+          </button>
+
+          {/* Financial */}
+          <button
+            onClick={() => {
+              onNavigateTab('financial');
+              onClose();
+            }}
+            className="p-5 rounded-3xl bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white flex items-center justify-center gap-3 transition"
+          >
+            <span className="font-bold text-sm">امور مالی</span>
+            <Sparkles className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+          </button>
+
         </div>
+
+        {/* Direct Release ZIP Download Banner */}
+        <a
+          href="/FactorRuby-v5.8.0-release.zip"
+          download
+          className="p-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs flex items-center justify-between shadow-md hover:shadow-lg transition block"
+        >
+          <span>دانلود بسته انتشار و سورس کامل (نسخه ۵.۸.۰)</span>
+          <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">📦</span>
+        </a>
 
         {/* Footer Version & Reset */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-700 text-center space-y-2">

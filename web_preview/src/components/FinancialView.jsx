@@ -11,7 +11,7 @@ import {
   Receipt,
   AlertCircle
 } from 'lucide-react';
-import { formatCurrency, toPersianDigits } from '../utils/helpers';
+import { formatCurrency, toPersianDigits, getTodayJalali } from '../utils/helpers';
 
 export default function FinancialView({
   invoices,
@@ -25,21 +25,29 @@ export default function FinancialView({
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
 
-  // New Income / Expense Form
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('عمومی');
-  const [amount, setAmount] = useState('');
-  const [notes, setNotes] = useState('');
+  const todayStr = getTodayJalali();
+  const currentMonthStr = todayStr.slice(0, 7);
+
+  const filterByDate = (dateStr) => {
+    if (!dateStr) return true;
+    if (dateFilter === 'today') return dateStr === todayStr;
+    if (dateFilter === 'month') return dateStr.startsWith(currentMonthStr);
+    return true; // week or custom shows all in preview
+  };
+
+  const filteredInvoices = invoices.filter(inv => filterByDate(inv.date));
+  const filteredIncomes = incomes.filter(inc => filterByDate(inc.date));
+  const filteredExpenses = expenses.filter(exp => filterByDate(exp.date));
 
   // Income calculations
-  const totalSalesRevenue = invoices
+  const totalSalesRevenue = filteredInvoices
     .filter(inv => inv.type === 'sale')
     .reduce((sum, inv) => sum + inv.totalAmount, 0);
 
-  const totalOtherIncome = incomes.reduce((sum, inc) => sum + inc.amount, 0);
+  const totalOtherIncome = filteredIncomes.reduce((sum, inc) => sum + inc.amount, 0);
 
   // Expense calculations
-  const totalExpensesAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalExpensesAmount = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   // Cost of goods estimation (roughly 60% of sales or based on buy prices)
   const estimatedCOGS = Math.round(totalSalesRevenue * 0.6);
@@ -63,7 +71,7 @@ export default function FinancialView({
       title: title.trim(),
       category,
       amount: parseFloat(amount) || 0,
-      date: '1405/05/20',
+      date: getTodayJalali(),
       notes: notes.trim()
     });
 
@@ -82,7 +90,7 @@ export default function FinancialView({
       title: title.trim(),
       category,
       amount: parseFloat(amount) || 0,
-      date: '1405/05/20',
+      date: getTodayJalali(),
       notes: notes.trim()
     });
 

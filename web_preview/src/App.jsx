@@ -78,6 +78,7 @@ export default function App() {
     { id: 'tab-1', title: 'پیش فاکتور ۱', number: '۱' }
   ]);
   const [activeFactorTabId, setActiveFactorTabId] = useState('tab-1');
+  const [tabInvoiceStates, setTabInvoiceStates] = useState({});
 
   // Persistence
   useEffect(() => saveState('user', user), [user]);
@@ -280,6 +281,7 @@ export default function App() {
       <Navbar
         onOpenSidebar={() => setIsSidebarOpen(true)}
         onOpenGlobalSearch={() => setGlobalSearchOpen(true)}
+        onOpenSmartTools={() => setShowSmartToolsModal(true)}
         onOpenGoldenModal={() => setShowPricingModal(true)}
         isDarkMode={isDarkMode}
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
@@ -293,6 +295,7 @@ export default function App() {
         onNavigateTab={(tab) => setActiveTab(tab)}
         onOpenGoldenModal={() => setShowGoldenModal(true)}
         onOpenSettings={() => setActiveTab('settings')}
+        onOpenSmartTools={() => setShowSmartToolsModal(true)}
         onResetData={handleResetData}
       />
 
@@ -301,18 +304,25 @@ export default function App() {
         
         {activeTab === 'create_invoice' && (
           <InvoiceCreatorView
+            key={activeFactorTabId}
             customers={customers}
             products={products}
             business={business}
-            editingInvoice={editingInvoiceData}
+            editingInvoice={editingInvoiceData || tabInvoiceStates[activeFactorTabId]}
             onSaveInvoice={handleSaveInvoice}
             onCancel={() => setActiveTab('dashboard')}
             onNewCustomerModal={() => setActiveTab('customers')}
             tabs={factorTabs}
             activeTabId={activeFactorTabId}
-            onSelectTab={(id) => setActiveFactorTabId(id)}
+            onSelectTab={(id) => {
+              setEditingInvoiceData(null);
+              setActiveFactorTabId(id);
+            }}
             onAddTab={handleAddFactorTab}
             onOpenWindowsModal={() => setShowWindowsModal(true)}
+            onUpdateTabState={(stateData) => {
+              setTabInvoiceStates(prev => ({ ...prev, [activeFactorTabId]: stateData }));
+            }}
           />
         )}
 
@@ -352,6 +362,7 @@ export default function App() {
           <CustomerManagementView
             customers={customers}
             invoices={invoices}
+            business={business}
             onAddCustomer={(c) => setCustomers([...customers, c])}
             onEditCustomer={(c) => setCustomers(customers.map(item => item.id === c.id ? c : item))}
             onDeleteCustomer={(id) => setCustomers(customers.filter(item => item.id !== id))}
@@ -370,6 +381,7 @@ export default function App() {
             onAddProduct={(p) => setProducts([...products, p])}
             onEditProduct={(p) => setProducts(products.map(item => item.id === p.id ? p : item))}
             onDeleteProduct={(id) => setProducts(products.filter(item => item.id !== id))}
+            onBack={() => setActiveTab('dashboard')}
           />
         )}
 

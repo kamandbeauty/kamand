@@ -1,13 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/product_model.dart';
+import '../database/app_database.dart';
 
 final productListProvider =
     StateNotifierProvider<ProductListNotifier, List<ProductModel>>((ref) {
-  return ProductListNotifier();
+  final db = ref.watch(appDatabaseProvider);
+  return ProductListNotifier(db);
 });
 
 class ProductListNotifier extends StateNotifier<List<ProductModel>> {
-  ProductListNotifier()
+  final AppDatabase? db;
+
+  ProductListNotifier([this.db])
       : super([
           ProductModel(
             id: 'p1',
@@ -53,6 +57,7 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
 
   void addProduct(ProductModel product) {
     state = [...state, product];
+    db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
   }
 
   void updateProduct(ProductModel product) {
@@ -60,6 +65,7 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
       for (final item in state)
         if (item.id == product.id) product else item,
     ];
+    db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
   }
 
   void deleteProduct(String id) {

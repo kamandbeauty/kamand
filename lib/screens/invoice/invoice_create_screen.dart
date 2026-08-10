@@ -7,6 +7,7 @@ import '../../models/invoice_model.dart';
 import '../../models/invoice_item_model.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../providers/app_providers.dart';
 
 class InvoiceCreateScreen extends ConsumerStatefulWidget {
   const InvoiceCreateScreen({super.key});
@@ -59,10 +60,15 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   }
 
   void _saveInvoice() {
+    final existingCust = ref.read(customerListProvider).where((c) => c.name == _customerName).firstOrNull;
+    final custId = existingCust?.id ?? 'c-${DateTime.now().millisecondsSinceEpoch}';
+    final business = ref.read(businessProvider);
+    final cardNum = business.bankCards.isNotEmpty ? business.bankCards.first : '';
+
     final newInv = InvoiceModel(
       id: 'inv-${DateTime.now().millisecondsSinceEpoch}',
       number: _number,
-      customerId: 'c1',
+      customerId: custId,
       customerName: _customerName,
       customerPhone: _customerPhone,
       type: _type,
@@ -80,11 +86,14 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
       paidAmount: _paymentType == 'cash' ? _totalAmount : 0,
       remainingAmount: _paymentType == 'cash' ? 0 : _totalAmount,
       notes: _notes,
-      cardNumber: '6037-9975-1234-5678',
+      cardNumber: cardNum,
       createdAt: _date,
     );
 
     ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
+    if (_type == 'sale' && _paymentType != 'cash' && newInv.remainingAmount > 0) {
+      ref.read(customerListProvider.notifier).updateBalance(custId, newInv.remainingAmount);
+    }
     Navigator.pop(context);
   }
 

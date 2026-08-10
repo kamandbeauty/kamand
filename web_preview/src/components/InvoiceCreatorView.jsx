@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus,
   Trash2,
@@ -28,13 +28,14 @@ export default function InvoiceCreatorView({
   activeTabId,
   onSelectTab,
   onAddTab,
-  onOpenWindowsModal
+  onOpenWindowsModal,
+  onUpdateTabState
 }) {
   // Form State
   const [number, setNumber] = useState(editingInvoice?.number || '۱');
   const [customerName, setCustomerName] = useState(editingInvoice?.customerName || '');
   const [customerPhone, setCustomerPhone] = useState(editingInvoice?.customerPhone || '');
-  const [date, setDate] = useState(editingInvoice?.date || 'دوشنبه ۱۹ مرداد ۱۴۰۵');
+  const [date, setDate] = useState(editingInvoice?.date || getTodayJalali());
 
   const [type, setType] = useState(editingInvoice?.type || 'proforma'); // sale, purchase, proforma
   const [paymentType, setPaymentType] = useState(editingInvoice?.paymentType || 'non_cash'); // cash, non_cash
@@ -60,7 +61,28 @@ export default function InvoiceCreatorView({
   const [cardNumber, setCardNumber] = useState(editingInvoice?.cardNumber || '');
 
   const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [productSearch, setProductSearch] = useState('');
+
+  useEffect(() => {
+    if (onUpdateTabState) {
+      onUpdateTabState({
+        number,
+        customerName,
+        customerPhone,
+        date,
+        type,
+        paymentType,
+        items,
+        discountAmount: discountValue,
+        shippingFee,
+        deposit,
+        previousDebt,
+        notes,
+        cardNumber
+      });
+    }
+  }, [number, customerName, customerPhone, date, type, paymentType, items, discountValue, shippingFee, deposit, previousDebt, notes, cardNumber]);
 
   // Item helpers
   const handleItemChange = (index, field, value) => {
@@ -173,6 +195,13 @@ export default function InvoiceCreatorView({
             placeholder="مثلا: رضا محمدی"
             className="flex-1 p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-left dir-rtl text-xs"
           />
+          <button
+            type="button"
+            onClick={() => setShowCustomerModal(true)}
+            className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[10px] rounded-xl border border-blue-200 dark:border-blue-800 shrink-0"
+          >
+            انتخاب مشتری
+          </button>
           <span className="text-slate-600 dark:text-slate-300 font-bold shrink-0">:نام مشتری</span>
         </div>
 
@@ -283,13 +312,21 @@ export default function InvoiceCreatorView({
         </div>
 
         {/* Add Item Row Button (Screenshot 2) */}
-        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/30 text-center border-t border-slate-100 dark:border-slate-700">
+        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/30 text-center border-t border-slate-100 dark:border-slate-700 flex items-center justify-center gap-4">
           <button
             onClick={addItemRow}
-            className="text-sky-600 dark:text-sky-400 font-bold text-xs hover:underline flex items-center justify-center gap-1 mx-auto"
+            className="text-sky-600 dark:text-sky-400 font-bold text-xs hover:underline flex items-center gap-1"
           >
-            <span>ایجاد</span>
+            <span>ایجاد سطر جدید</span>
             <Plus className="w-4 h-4" />
+          </button>
+          <span className="text-slate-300">|</span>
+          <button
+            onClick={() => setShowCatalogModal(true)}
+            className="text-emerald-600 dark:text-emerald-400 font-bold text-xs hover:underline flex items-center gap-1"
+          >
+            <span>انتخاب از کاتالوگ کالا</span>
+            <Package className="w-4 h-4" />
           </button>
         </div>
 
@@ -558,6 +595,61 @@ export default function InvoiceCreatorView({
 
         </div>
       </div>
+
+      {/* Customer Selection Modal */}
+      {showCustomerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-2xl space-y-3 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-bold text-sm text-slate-800 dark:text-white">انتخاب از مشتریان ثبت‌شده</h3>
+              <button onClick={() => setShowCustomerModal(false)} className="text-slate-400"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {customers.map(c => (
+                <div
+                  key={c.id}
+                  onClick={() => {
+                    setCustomerName(c.name);
+                    setCustomerPhone(c.mobile || c.phone || '');
+                    setShowCustomerModal(false);
+                  }}
+                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 cursor-pointer hover:border-blue-500 flex justify-between items-center text-xs"
+                >
+                  <span className="font-bold text-slate-800 dark:text-white">{c.name}</span>
+                  <span className="text-slate-400">{c.mobile || c.phone}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Catalog Selection Modal */}
+      {showCatalogModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-2xl space-y-3 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-bold text-sm text-slate-800 dark:text-white">انتخاب از کاتالوگ کالا و خدمات</h3>
+              <button onClick={() => setShowCatalogModal(false)} className="text-slate-400"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {products.map(p => (
+                <div
+                  key={p.id}
+                  onClick={() => addFromCatalog(p)}
+                  className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 cursor-pointer hover:border-emerald-500 flex justify-between items-center text-xs"
+                >
+                  <div>
+                    <div className="font-bold text-slate-800 dark:text-white">{p.name}</div>
+                    <div className="text-[10px] text-slate-400">واحد: {p.unit}</div>
+                  </div>
+                  <span className="font-bold text-emerald-600">{formatCurrency(p.sellPrice)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
