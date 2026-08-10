@@ -10,7 +10,8 @@ import '../../providers/customer_provider.dart';
 import '../../providers/app_providers.dart';
 
 class InvoiceCreateScreen extends ConsumerStatefulWidget {
-  const InvoiceCreateScreen({super.key});
+  final InvoiceModel? editInvoice;
+  const InvoiceCreateScreen({super.key, this.editInvoice});
 
   @override
   ConsumerState<InvoiceCreateScreen> createState() => _InvoiceCreateScreenState();
@@ -19,12 +20,39 @@ class InvoiceCreateScreen extends ConsumerStatefulWidget {
 class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  String _number = '1004';
-  String _customerName = 'رضا محمدی';
-  String _customerPhone = '09121112233';
-  String _date = JalaliHelper.getTodayJalali();
-  String _type = 'sale';
-  String _paymentType = 'cash';
+  late String _number;
+  late String _customerName;
+  late String _customerPhone;
+  late String _date;
+  late String _type;
+  late String _paymentType;
+  String? _editId;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.editInvoice;
+    if (e != null) {
+      _editId = e.id;
+      _number = e.number;
+      _customerName = e.customerName;
+      _customerPhone = e.customerPhone;
+      _date = e.date;
+      _type = e.type;
+      _paymentType = e.paymentType;
+      _items = List.from(e.items.isEmpty ? _items : e.items);
+      _discountAmount = e.discountAmount;
+      _shippingFee = e.shippingFee;
+      _notes = e.notes;
+    } else {
+      _number = '1004';
+      _customerName = 'رضا محمدی';
+      _customerPhone = '09121112233';
+      _date = JalaliHelper.getTodayJalali();
+      _type = 'sale';
+      _paymentType = 'cash';
+    }
+  }
 
   List<InvoiceItemModel> _items = [
     InvoiceItemModel(
@@ -61,12 +89,13 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
 
   void _saveInvoice() {
     final existingCust = ref.read(customerListProvider).where((c) => c.name == _customerName).firstOrNull;
-    final custId = existingCust?.id ?? 'c-${DateTime.now().millisecondsSinceEpoch}';
+    final custId = widget.editInvoice?.customerId ?? existingCust?.id ?? 'c-${DateTime.now().millisecondsSinceEpoch}';
     final business = ref.read(businessProvider);
     final cardNum = business.bankCards.isNotEmpty ? business.bankCards.first : '';
 
+    final isEdit = _editId != null;
     final newInv = InvoiceModel(
-      id: 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      id: isEdit ? _editId! : 'inv-${DateTime.now().millisecondsSinceEpoch}',
       number: _number,
       customerId: custId,
       customerName: _customerName,
@@ -99,9 +128,10 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = _editId != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ایجاد فاکتور جدید'),
+        title: Text(isEdit ? 'ویرایش فاکتور' : 'ایجاد فاکتور جدید'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -268,8 +298,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _saveInvoice,
-                  icon: const Icon(Icons.save),
-                  label: const Text('ذخیره فاکتور'),
+                  icon: Icon(isEdit ? Icons.check : Icons.save),
+                  label: Text(isEdit ? 'ذخیره تغییرات' : 'ذخیره فاکتور'),
                 ),
               ),
             ],

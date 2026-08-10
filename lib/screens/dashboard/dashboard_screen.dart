@@ -13,6 +13,7 @@ import '../customer/customer_list_screen.dart';
 import '../product/product_list_screen.dart';
 import '../financial/financial_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
+import '../invoice/invoice_list_screen.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -617,7 +618,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: Text(user.name.isNotEmpty? user.name[0]: 'ر', style: const TextStyle(color: _orange, fontWeight: FontWeight.w900, fontSize: 24))),
           decoration: const BoxDecoration(color: _orange),
         ),
-        ListTile(leading: const Icon(Icons.home), title: const Text('خانه (فاکتور)'), onTap: ()=> Navigator.pop(context)),
+        ListTile(leading: const Icon(Icons.add_circle_outline, color: _orange), title: const Text('ثبت فاکتور جدید', style: TextStyle(fontWeight: FontWeight.w800)), onTap: ()=> Navigator.pop(context)),
+        ListTile(leading: const Icon(Icons.receipt_long, color: _orange), title: const Text('لیست فاکتورها', style: TextStyle(fontWeight: FontWeight.w800)), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const InvoiceListScreen()));}),
+        const Divider(),
         ListTile(leading: const Icon(Icons.people), title: const Text('مشتریان'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const CustomerListScreen()));}),
         ListTile(leading: const Icon(Icons.inventory_2), title: const Text('محصولات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const ProductListScreen()));}),
         ListTile(leading: const Icon(Icons.account_balance_wallet), title: const Text('گزارش مالی'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const FinancialDashboardScreen()));}),
