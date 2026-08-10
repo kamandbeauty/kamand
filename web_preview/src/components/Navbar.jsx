@@ -11,7 +11,7 @@ export default function Navbar({
   onLockApp
 }) {
   return (
-    <header className="sticky top-0 z-30 bg-[#2D92DF] shadow-md px-4 py-3">
+    <header className="sticky top-0 z-30 bg-[#F97316] shadow-md px-4 py-3">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         
         {/* Right side: Hamburger menu button */}
