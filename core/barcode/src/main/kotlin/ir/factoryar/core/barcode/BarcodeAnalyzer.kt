@@ -1,14 +1,8 @@
 package ir.factoryar.core.barcode
 
-import android.annotation.SuppressLint
 import android.graphics.ImageFormat
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import com.google.mlkit.vision.barcode.BarcodeScanner
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
@@ -19,15 +13,21 @@ import java.util.EnumMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** موتور اسکن مورد استفاده — برای نمایش به کاربر و عیب‌یابی */
-enum class ScanEngine { ML_KIT, ZXING }
+enum class ScanEngine { ZXING }
 
 /**
- * تحلیلگر فریم دوربین برای تشخیص بارکد.
+ * تحلیلگر فریم دوربین برای تشخیص بارکد — بر پایهٔ ZXing.
  *
- * استراتژی سازگاری با دستگاه‌های بدون Google Play Services:
- *  ۱. ML Kit نسخه bundled (مدل داخل APK) — نیازی به GMS ندارد.
- *  ۲. اگر ML Kit در دسترس نبود یا خطا داد، به‌صورت خودکار به موتور ZXING سوییچ می‌شود.
- *  ۳. اگر دوربین/اسکن اصلاً کار نکرد، UI امکان ورود دستی بارکد را می‌دهد.
+ * چرا ZXing و نه ML Kit؟
+ *   • مدل bundled کتابخانهٔ ML Kit حدود ۱۰ تا ۱۵ مگابایت به حجم APK اضافه
+ *     می‌کرد. برای اپی که رقبایش در کافه‌بازار ۶ مگابایت هستند، این هزینه
+ *     برای قابلیتی جانبی توجیه ندارد.
+ *   • ZXing خالص جاواست (حدود ۵۰۰ کیلوبایت)، به Google Play Services نیاز
+ *     ندارد و روی همهٔ دستگاه‌های بازار ایران کار می‌کند.
+ *   • برای بارکد کالا (EAN/UPC/Code-128) دقت ZXing کاملاً کافی است.
+ *
+ * اگر اسکن با دوربین ممکن نباشد (نبود دوربین یا رد مجوز)، UI امکان ورود
+ * دستی بارکد را می‌دهد.
  */
 class BarcodeAnalyzer(
     private val onResult: (value: String, format: String, engine: ScanEngine) -> Unit,
@@ -35,32 +35,7 @@ class BarcodeAnalyzer(
 
     private val handled = AtomicBoolean(false)
 
-    /** در صورت خطای ML Kit به ZXing سوییچ می‌کنیم */
-    @Volatile
-    private var useMlKit: Boolean = MlKitAvailability.isAvailable
-
-    private val mlScanner: BarcodeScanner? by lazy {
-        runCatching {
-            BarcodeScanning.getClient(
-                BarcodeScannerOptions.Builder()
-                    .setBarcodeFormats(
-                        Barcode.FORMAT_EAN_13,
-                        Barcode.FORMAT_EAN_8,
-                        Barcode.FORMAT_UPC_A,
-                        Barcode.FORMAT_UPC_E,
-                        Barcode.FORMAT_CODE_128,
-                        Barcode.FORMAT_CODE_39,
-                        Barcode.FORMAT_CODE_93,
-                        Barcode.FORMAT_ITF,
-                        Barcode.FORMAT_QR_CODE,
-                        Barcode.FORMAT_DATA_MATRIX,
-                    )
-                    .build(),
-            )
-        }.getOrNull()
-    }
-
-    private val zxingReader by lazy {
+    private val reader by lazy {
         MultiFormatReader().apply {
             val hints = EnumMap<DecodeHintType, Any>(DecodeHintType::class.java)
             hints[DecodeHintType.TRY_HARDER] = true
@@ -68,44 +43,22 @@ class BarcodeAnalyzer(
         }
     }
 
-    /** پس از یک تشخیص موفق، تحلیل متوقف می‌شود تا نتیجه تکراری صادر نشود */
+    /** پس از یک تشخیص موفق، تحلیل متوقف می‌شود تا نتیجهٔ تکراری صادر نشود */
     fun reset() = handled.set(false)
 
-    @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
         if (handled.get()) {
             imageProxy.close()
             return
         }
-
-        val scanner = mlScanner
-        if (useMlKit && scanner != null) {
-            val mediaImage = imageProxy.image
-            if (mediaImage == null) {
-                imageProxy.close()
-                return
-            }
-            val input = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            scanner.process(input)
-                .addOnSuccessListener { barcodes ->
-                    barcodes.firstOrNull { !it.rawValue.isNullOrBlank() }?.let { barcode ->
-                        if (handled.compareAndSet(false, true)) {
-                            onResult(barcode.rawValue!!.trim(), formatName(barcode.format), ScanEngine.ML_KIT)
-                        }
-                    }
-                }
-                .addOnFailureListener {
-                    // ML Kit در این دستگاه کار نمی‌کند → سوییچ دائمی به ZXing
-                    useMlKit = false
-                }
-                .addOnCompleteListener { imageProxy.close() }
-        } else {
-            decodeWithZxing(imageProxy)
+        try {
+            decode(imageProxy)
+        } finally {
             imageProxy.close()
         }
     }
 
-    private fun decodeWithZxing(imageProxy: ImageProxy) {
+    private fun decode(imageProxy: ImageProxy) {
         if (imageProxy.format != ImageFormat.YUV_420_888) return
         runCatching {
             val plane = imageProxy.planes[0]
@@ -122,9 +75,8 @@ class BarcodeAnalyzer(
             )
             val bitmap = BinaryBitmap(HybridBinarizer(source))
             val result = try {
-                zxingReader.decodeWithState(bitmap)
+                reader.decodeWithState(bitmap)
             } catch (e: NotFoundException) {
-                zxingReader.reset()
                 null
             }
             result?.text?.takeIf { it.isNotBlank() }?.let { text ->
@@ -133,28 +85,6 @@ class BarcodeAnalyzer(
                 }
             }
         }
-        zxingReader.reset()
-    }
-
-    private fun formatName(format: Int): String = when (format) {
-        Barcode.FORMAT_EAN_13 -> "EAN-13"
-        Barcode.FORMAT_EAN_8 -> "EAN-8"
-        Barcode.FORMAT_UPC_A -> "UPC-A"
-        Barcode.FORMAT_UPC_E -> "UPC-E"
-        Barcode.FORMAT_CODE_128 -> "CODE-128"
-        Barcode.FORMAT_CODE_39 -> "CODE-39"
-        Barcode.FORMAT_QR_CODE -> "QR"
-        Barcode.FORMAT_DATA_MATRIX -> "DataMatrix"
-        else -> "بارکد"
-    }
-}
-
-/** تشخیص اینکه آیا کلاس‌های ML Kit در رانتایم قابل بارگذاری‌اند */
-object MlKitAvailability {
-    val isAvailable: Boolean by lazy {
-        runCatching {
-            Class.forName("com.google.mlkit.vision.barcode.BarcodeScanning")
-            true
-        }.getOrDefault(false)
+        reader.reset()
     }
 }

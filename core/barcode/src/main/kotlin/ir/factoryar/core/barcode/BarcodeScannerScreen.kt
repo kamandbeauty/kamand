@@ -106,7 +106,7 @@ fun BarcodeScannerDialog(
                 Column {
                     CameraPreviewBox(
                         onDetected = { value, format, engine ->
-                            detectedInfo = "$format — ${if (engine == ScanEngine.ML_KIT) "ML Kit" else "ZXing"}"
+                            detectedInfo = format
                             onBarcode(value)
                         },
                     )

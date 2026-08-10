@@ -48,9 +48,8 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
 
-    // ML Kit — نسخه bundled: مدل داخل APK است و به Google Play Services نیاز ندارد
-    implementation(libs.mlkit.barcode.scanning)
-    // موتور جایگزین سبک برای دستگاه‌های بدون GMS یا در صورت خطای ML Kit
+    // ZXing: موتور اسکن بارکد — خالص جاوا، بدون نیاز به Google Play Services
+    // (ML Kit حذف شد چون مدل bundled آن ~۱۰-۱۵ مگابایت به حجم APK اضافه می‌کرد)
     implementation(libs.zxing.core)
 
     implementation(libs.hilt.android)
