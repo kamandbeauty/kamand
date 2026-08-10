@@ -145,12 +145,13 @@ export default function PricingPlansModal({ isOpen, onClose }) {
         <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700 space-y-3 text-center">
           <button
             onClick={() => {
-              alert('اشتراک با موفقیت فعال گردید.');
+              const planName = selectedPlan === 'year' ? 'یک ساله' : selectedPlan === '6months' ? 'شش ماهه' : 'یک ماهه';
+              alert(`اشتراک ${planName} با موفقیت فعال گردید.`);
               onClose();
             }}
             className="w-full py-3.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-sm shadow-md transition active:scale-98"
           >
-            فعالسازی یک ساله
+            {selectedPlan === 'year' ? 'فعالسازی یک ساله' : selectedPlan === '6months' ? 'فعالسازی شش ماهه' : 'فعالسازی یک ماهه'}
           </button>
 
           <button

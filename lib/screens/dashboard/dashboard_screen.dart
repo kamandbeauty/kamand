@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/jalali_helper.dart';
 import '../../core/utils/persian_number_formatter.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/invoice_provider.dart';
@@ -29,8 +30,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final customers = ref.watch(customerListProvider);
 
     // Stats calculations
-    final todaySales = invoices.fold<double>(0, (sum, item) => sum + item.totalAmount);
-    final todayReceived = invoices.fold<double>(0, (sum, item) => sum + item.paidAmount);
+    final todayStr = JalaliHelper.getTodayJalali();
+    final todayInvoices = invoices.where((inv) => inv.date == todayStr && inv.type == 'sale');
+    final todaySales = todayInvoices.fold<double>(0, (sum, item) => sum + item.totalAmount);
+    final todayReceived = todayInvoices.fold<double>(0, (sum, item) => sum + item.paidAmount);
     final customerDebt = customers.fold<double>(0, (sum, item) => sum + item.balance);
 
     return Scaffold(

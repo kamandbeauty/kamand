@@ -116,7 +116,7 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
                 </p>
               </div>
 
-              <div className="max-w-md mx-auto">
+              <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="max-w-md mx-auto">
                 <input
                   type="text"
                   value={name}
@@ -125,7 +125,7 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
                   autoFocus
                   className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900 text-slate-800 dark:text-white text-center text-sm font-bold focus:border-sky-500 focus:bg-white focus:outline-none transition"
                 />
-              </div>
+              </form>
             </div>
           )}
 

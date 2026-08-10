@@ -42,7 +42,7 @@ export default function SmartToolsModal({
   // Backup JSON download
   const handleExportJSON = () => {
     const data = {
-      version: '1.0.0',
+      version: '5.8.0',
       exportedAt: new Date().toISOString(),
       invoices,
       customers,
