@@ -1,0 +1,28 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+
+# Node / Web Preview
+node_modules/
+web_preview/node_modules/
+web_preview/dist/
+.npm/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Android
+.gradle/
+local.properties
+capture*.png
+*.apk
+*.aab
