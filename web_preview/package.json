@@ -8,7 +8,6 @@
     "preview": "vite preview --host 0.0.0.0 --port 3000"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
     "clsx": "^2.1.1",
     "jalali-moment": "^3.3.11",
     "lucide-react": "^0.479.0",
