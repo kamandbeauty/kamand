@@ -259,9 +259,11 @@ private fun ProductRow(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (row.categoryName != null) {
+                    // categoryName در ماژول دیگری تعریف شده، پس smart cast ممکن نیست
+                    val categoryName = row.categoryName
+                    if (categoryName != null) {
                         Text(
-                            row.categoryName,
+                            categoryName,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                         )
