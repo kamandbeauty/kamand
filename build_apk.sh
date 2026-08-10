@@ -23,8 +23,9 @@ else
     (cd web_preview && npm run build --silent)
 
     echo "[3/4] Packaging Factor Ruby v5.8.0 release artifacts..."
-    zip -q -r release_package/FactorRuby-v5.8.0-release.zip lib android assets pubspec.yaml DATABASE.md ARCHITECTURE.md ANALYSIS_REPORT.md README.md web_preview/dist -x "*.git*" "*node_modules*"
+    zip -q -r release_package/FactorRuby-v5.8.0-release.zip lib android assets pubspec.yaml DATABASE.md ARCHITECTURE.md ANALYSIS_REPORT.md README.md web_preview/dist -x "*.git*" "*node_modules*" "*FactorRuby*"
     cp release_package/FactorRuby-v5.8.0-release.zip web_preview/public/FactorRuby-v5.8.0-release.zip
+    cp release_package/FactorRuby-v5.8.0-release.zip web_preview/dist/FactorRuby-v5.8.0-release.zip
 
     echo "[4/4] Release Package Build Complete!"
     echo "--------------------------------------------------------"
