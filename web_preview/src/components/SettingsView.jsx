@@ -394,7 +394,7 @@ export default function SettingsView({
           </div>
           <div className="flex justify-between">
             <span>سازنده:</span>
-            <span className="font-bold text-blue-600">فاکتور روبی (Factor Ruby)</span>
+            <span className="font-bold text-blue-600">فاکتور ساز روبی (Factor Ruby)</span>
           </div>
         </div>
       </div>

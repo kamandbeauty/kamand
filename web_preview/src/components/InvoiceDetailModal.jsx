@@ -205,7 +205,7 @@ export default function InvoiceDetailModal({
                   <QrCode className="w-10 h-10 text-slate-800" />
                 </div>
                 <div className="text-[11px] text-slate-500">
-                  صحت این فاکتور از طریق اسکن کیوآرکد و سامانه فاکتور روبی قابل استعلام است.
+                  صحت این فاکتور از طریق اسکن کیوآرکد و سامانه فاکتور ساز روبی قابل استعلام است.
                 </div>
               </div>
             </div>

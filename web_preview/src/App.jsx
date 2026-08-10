@@ -227,7 +227,7 @@ export default function App() {
           <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-xl">
             ر
           </div>
-          <h2 className="font-extrabold text-lg">فاکتور روبی قفل است</h2>
+          <h2 className="font-extrabold text-lg">فاکتور ساز روبی قفل است</h2>
           <p className="text-xs text-slate-400">رمز ۴ رقمی خود را وارد کنید</p>
 
           <input

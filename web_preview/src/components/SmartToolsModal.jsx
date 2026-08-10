@@ -123,7 +123,7 @@ export default function SmartToolsModal({
               <Sparkles className="w-5 h-5 text-amber-300" />
             </div>
             <div>
-              <h2 className="font-extrabold text-base">قابلیت‌های هوشمند فاکتور روبی</h2>
+              <h2 className="font-extrabold text-base">قابلیت‌های هوشمند فاکتور ساز روبی</h2>
               <p className="text-xs text-blue-100 opacity-90">۱۵ قابلیت پیشرفته برای سرعت و سهولت کاری شما</p>
             </div>
           </div>
@@ -257,7 +257,7 @@ export default function SmartToolsModal({
                 <ol className="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-300">
                   <li>روی گوشی فعلی، دکمه «دانلود فایل پشتیبان» را بزنید.</li>
                   <li>فایل JSON ایجاد شده را از طریق ایتا، روبیکا یا تلگرام به گوشی جدید بفرستید.</li>
-                  <li>در گوشی جدید، اپلیکیشن «فاکتور روبی» را نصب کرده و گزینه «بازیابی از فایل پشتیبان» را انتخاب کنید.</li>
+                  <li>در گوشی جدید، اپلیکیشن «فاکتور ساز روبی» را نصب کرده و گزینه «بازیابی از فایل پشتیبان» را انتخاب کنید.</li>
                 </ol>
               </div>
 

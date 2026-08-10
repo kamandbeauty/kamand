@@ -31,7 +31,7 @@ class FactorRubyApp extends ConsumerWidget {
     }
 
     return MaterialApp(
-      title: 'فاکتور روبی',
+      title: 'فاکتور ساز روبی',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

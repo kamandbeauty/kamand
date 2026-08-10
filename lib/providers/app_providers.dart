@@ -33,7 +33,7 @@ class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
   BusinessNotifier()
       : super(BusinessProfileModel(
           id: 'b1',
-          shopName: 'فروشگاه آنلاین روبی',
+          shopName: 'فاکتور ساز روبی',
           phone: '۰۲۱-۸۸۸۸۹۹۹۹',
           address: 'تهران، خیابان ولیعصر، پلاک ۱۲۴',
           taxId: '۱۰۱۰۹۸۷۶۵۴۳',

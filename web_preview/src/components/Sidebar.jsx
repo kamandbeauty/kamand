@@ -187,7 +187,7 @@ export default function Sidebar({
           </button>
 
           <p className="text-xs text-slate-400 font-medium">
-            فاکتور روبی - نسخه ۵.۸.۰
+            فاکتور ساز روبی - نسخه ۵.۸.۰
           </p>
         </div>
 
