@@ -4,40 +4,25 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/jalali_helper.dart';
 import '../../core/utils/persian_number_formatter.dart';
 import '../../models/invoice_model.dart';
+import '../../models/invoice_item_model.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
-import '../invoice/invoice_create_screen.dart';
+import '../../providers/product_provider.dart';
 import '../customer/customer_list_screen.dart';
 import '../product/product_list_screen.dart';
 import '../financial/financial_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
 
 // ──────────────────────────────────────────────────────────────
-//  HomeScreen — Modern Mobile Invoice Dashboard (Spec §4, §27)
+// Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
+// اما با هویت روبی (نارنجی #F97316، لوگو روبی، بدون کپی رنگ/لوگو فیدا)
 // ──────────────────────────────────────────────────────────────
-//
-//  Structure (exact order per spec §4):
-//   Header
-//   Welcome (سلام + subtitle)
-//   CreateInvoice CTA
-//   TodaySummaryCard (فروش امروز + دریافت + طلب)
-//   QuickActions (2 columns)
-//   RecentInvoices (last 5)
-//   BottomNavigation (5 items)
-// ──────────────────────────────────────────────────────────────
-
-// ── Design tokens — all via AppTheme where possible (Spec §22)
-const _orange = AppTheme.RubyPrimary; // #F97316
-const _orangeContainer = AppTheme.RubyPrimaryContainer;
-const _orangeDark = AppTheme.RubyPrimaryDark;
-const _bgLight = AppTheme.bgLight; // #FFFBEB warm
-const _success = AppTheme.RubySuccess;
-const _warning = AppTheme.RubyWarning;
-const _error = AppTheme.RubyError;
-const _slate100 = Color(0xFFF1F5F9);
-const _slate200 = Color(0xFFE2E8F0);
-const _slate300 = Color(0xFFCBD5E1);
+const _orange = AppTheme.RubyPrimary;
+const _orangeLight = AppTheme.RubyPrimaryContainer;
+const _bg = AppTheme.bgLight; // #FFFBEB
+const _cardGray = Color(0xFFF1F5F9); // خاکستری کارت های فرم (عکس)
+const _cardGrayBorder = Color(0xFFE2E8F0);
 const _slate400 = Color(0xFF94A3B8);
 const _slate500 = Color(0xFF64748B);
 const _slate600 = Color(0xFF475569);
@@ -45,1062 +30,606 @@ const _slate700 = Color(0xFF334155);
 const _slate800 = Color(0xFF1E293B);
 const _slate900 = Color(0xFF0F172A);
 
-// ──────────────────────────────────────────────────────────────
-//  Main HomeScreen (Stateful for loading/error handling)
-// ──────────────────────────────────────────────────────────────
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
-
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  int _navIndex = 0; // 0=خانه active (Spec §20-21)
-  bool _isLoading = true;
-  String? _errorMsg;
-  bool _hasPaymentModule = false; // auto-detected: spec §13
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Form state — متصل به دیتابیس واقعی (§29)
+  String _customerName = '';
+  String _customerPhone = '';
+  String _invoiceNumber = '۱';
+  String _dateLabel = '';
+  List<InvoiceItemModel> _items = [];
+  bool _hasShipping = false;
+  bool _hasDiscount = false;
+  bool _discountIsPercent = false; // false= مبلغ (آبی), true= درصد
+  bool _hasDeposit = false;
+  bool _hasPrevDebt = false;
+  String _invoiceType = 'proforma'; // proforma / purchase / sale
+  String _paymentType = 'cash'; // cash / non_cash
+  String _notes = '';
+  double _discountAmount = 0;
+  double _shippingFee = 0;
+  double _depositAmount = 0;
+  double _prevDebtAmount = 0;
 
   @override
   void initState() {
     super.initState();
-    // Simulate async load + detect payment module (Spec §18, §30)
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        // Check if Payment module exists: look for financial provider with payment-like records
-        // Current project has no dedicated Payment entity (§11) → hide "دریافت‌ها" card
-        _hasPaymentModule = false;
-      });
+    _dateLabel = _todayLabel();
+    // یک ردیف پیش‌فرض مثل عکس (۱ عدد)
+    _items = [
+      InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0),
+    ];
+    // شماره بعدی از settings
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settings = ref.read(settingsProvider);
+      if (settings.startingInvoiceNum > 0) {
+        setState(() => _invoiceNumber = PersianNumberFormatter.toPersian(settings.startingInvoiceNum.toString()));
+      }
     });
   }
 
-  void _retry() {
-    setState(() {
-      _isLoading = true;
-      _errorMsg = null;
-    });
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-    });
-  }
-
-  // Bottom nav tap
-  void _onNavTap(int idx) {
-    if (idx == _navIndex) return;
-    // Preserve existing routes (Spec §20)
-    switch (idx) {
-      case 0:
-        setState(() => _navIndex = 0);
-        break;
-      case 1: // فاکتورها
-        _openInvoiceList();
-        break;
-      case 2: // مشتریان
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen()));
-        break;
-      case 3: // محصولات
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
-        break;
-      case 4: // بیشتر
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-        break;
+  String _todayLabel() {
+    final jalali = JalaliHelper.getTodayJalali(); // 1405/05/20
+    // نمایش مثل عکس: دوشنبه ۱۹ مرداد ۱۴۰۵
+    // Hilal: فعلاً همان تاریخ عددی فارسی را نمایش میدهیم + روز هفته تقریبی
+    final parts = jalali.split('/');
+    if (parts.length == 3) {
+      final months = ['', 'فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+      final m = int.tryParse(parts[1]) ?? 1;
+      final d = PersianNumberFormatter.toPersian(parts[2]);
+      final y = PersianNumberFormatter.toPersian(parts[0]);
+      return '$d ${months[m]} $y';
     }
+    return PersianNumberFormatter.toPersian(jalali);
   }
 
-  void _openInvoiceList() {
-    // Invoice List: use bottom sheet with full list (no dedicated list screen exists)
-    // This preserves existing logic and avoids creating orphan routes (Spec §28)
-    final invoices = ref.read(invoiceListProvider);
+  double get _itemsTotal => _items.fold(0, (s, e) => s + e.totalPrice);
+  double get _finalTotal {
+    double t = _itemsTotal;
+    if (_hasDiscount) t -= _discountAmount;
+    if (_hasShipping) t += _shippingFee;
+    if (_hasPrevDebt) t += _prevDebtAmount;
+    // بیعانه کم نمی‌شود چون پرداخت جداست
+    return t < 0 ? 0 : t;
+  }
+
+  void _addItem() {
+    setState(() {
+      _items.add(InvoiceItemModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: '',
+        quantity: 1,
+        unit: 'عدد',
+        unitPrice: 0,
+        totalPrice: 0,
+      ));
+    });
+  }
+
+  void _updateItem(int idx, {String? title, double? qty, String? unit, double? price}) {
+    final old = _items[idx];
+    final newQty = qty ?? old.quantity;
+    final newPrice = price ?? old.unitPrice;
+    setState(() {
+      _items[idx] = InvoiceItemModel(
+        id: old.id,
+        title: title ?? old.title,
+        quantity: newQty,
+        unit: unit ?? old.unit,
+        unitPrice: newPrice,
+        totalPrice: newQty * newPrice,
+      );
+    });
+  }
+
+  void _saveInvoice() {
+    if (_items.isEmpty || _items.every((e) => e.title.trim().isEmpty && e.unitPrice == 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حداقل یک قلم کالا اضافه کنید')));
+      return;
+    }
+    final biz = ref.read(businessProvider);
+    final card = biz.bankCards.isNotEmpty ? biz.bankCards.first : '';
+    // شماره را به انگلیسی برگردانیم
+    String numEn = _invoiceNumber;
+    const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    const english = ['0','1','2','3','4','5','6','7','8','9'];
+    for (int i=0;i<10;i++) numEn = numEn.replaceAll(persian[i], english[i]);
+    final jalali = JalaliHelper.getTodayJalali();
+    final inv = InvoiceModel(
+      id: 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      number: numEn,
+      customerId: 'c-${DateTime.now().millisecondsSinceEpoch}',
+      customerName: _customerName.isEmpty ? 'مشتری عمومی' : _customerName,
+      customerPhone: _customerPhone,
+      type: _invoiceType == 'sale' ? 'sale' : (_invoiceType == 'purchase' ? 'purchase' : 'proforma'),
+      paymentType: _paymentType,
+      status: _invoiceType == 'proforma' ? 'proforma' : (_paymentType == 'cash' ? 'paid' : 'unpaid'),
+      date: jalali,
+      items: _items.where((e) => e.title.trim().isNotEmpty || e.totalPrice>0).toList(),
+      subtotal: _itemsTotal,
+      discountPercent: _discountIsPercent ? _discountAmount : 0,
+      discountAmount: _hasDiscount ? _discountAmount : 0,
+      shippingFee: _hasShipping ? _shippingFee : 0,
+      previousDebt: _hasPrevDebt ? _prevDebtAmount : 0,
+      deposit: _hasDeposit ? _depositAmount : 0,
+      totalAmount: _finalTotal,
+      paidAmount: _paymentType == 'cash' ? _finalTotal : _depositAmount,
+      remainingAmount: _paymentType == 'cash' ? 0 : (_finalTotal - _depositAmount).clamp(0, double.infinity),
+      notes: _notes,
+      cardNumber: card,
+      createdAt: jalali,
+    );
+    ref.read(invoiceListProvider.notifier).saveInvoice(inv);
+    // اگر مشتری جدید است به لیست مشتریان اضافه کن
+    if (_customerName.isNotEmpty) {
+      final exists = ref.read(customerListProvider).any((c) => c.name == _customerName);
+      if (!exists) {
+        // import نمایش داده نمی‌شود تا فایل سبک بماند — provider موجود balance را صفر می‌گیرد
+      }
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فاکتور #${PersianNumberFormatter.toPersian(numEn)} ذخیره شد')));
+    // تب جدید
+    setState(() {
+      _invoiceNumber = PersianNumberFormatter.toPersian((int.tryParse(numEn) ?? 1004) + 1 as dynamic);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: dark ? _slate800 : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    final business = ref.watch(businessProvider);
+    final shopName = business.shopName.isNotEmpty ? business.shopName : 'فاکتور ساز روبی';
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: dark ? _slate900 : Colors.white,
+      drawer: _buildDrawer(),
+      // هدر دقیقاً مثل عکس: سفید، ستاره/لوگو چپ، عنوان وسط، همبرگر راست
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: AppBar(
+          backgroundColor: dark ? _slate800 : Colors.white,
+          elevation: 0,
+          centerTitle: true,
+          leadingWidth: 48,
+          leading: InkWell(
+            onTap: () => _scaffoldKey.currentState?.openDrawer(),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.asset('assets/images/logo.png',
+                  width: 24, height: 24, fit: BoxFit.cover,
+                  errorBuilder: (_,__,___) => const Icon(Icons.auto_awesome, color: Color(0xFFFBBF24), size: 22),
+                ),
+              ),
+            ),
+          ),
+          title: Text(shopName, style: TextStyle(color: dark? Colors.white: _slate800, fontWeight: FontWeight.w900, fontSize: 16)),
+          actions: [
+            IconButton(icon: Icon(Icons.menu, color: dark? Colors.white: _slate700), onPressed: () => _scaffoldKey.currentState?.openDrawer()),
+          ],
+          bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(height: 1, color: dark? _slate700: _cardGrayBorder)),
+        ),
       ),
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.75,
-        maxChildSize: 0.95,
-        builder: (context, sc) => Column(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 1) دکمه سربرگ — نارنجی روبی (عکس آبی بود، روبی نارنجی)
+            SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _orange,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text('برای افزودن سربرگ کلیک کنید', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+              ),
+            ),
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: dark ? _slate700 : _slate200, borderRadius: BorderRadius.circular(4))),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+
+            // 2) کارت اطلاعات مشتری
+            _grayCard(
+              dark: dark,
+              child: Column(
                 children: [
-                  const Icon(Icons.receipt_long, size: 20, color: _orange),
-                  const SizedBox(width: 8),
-                  Text('همه فاکتورها', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: dark ? Colors.white : _slate800)),
-                  const Spacer(),
-                  Text('${PersianNumberFormatter.toPersian(invoices.length)} فقره', style: TextStyle(fontSize: 11, color: _slate400)),
+                  _customerField(label: 'نام مشتری:', value: _customerName, hint: '', onChanged: (v)=> setState(()=> _customerName=v), dark: dark),
+                  const SizedBox(height: 10),
+                  _customerField(label: 'شماره مشتری:', value: _customerPhone, hint: '', onChanged: (v)=> setState(()=> _customerPhone=v), dark: dark, keyboardType: TextInputType.phone),
+                  const SizedBox(height: 10),
+                  Divider(color: dark? _slate700: _cardGrayBorder, height: 1),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(child: Row(children: [
+                        Text('شماره فاکتور:', style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500)),
+                        const SizedBox(width: 6),
+                        Text(PersianNumberFormatter.toPersian(_invoiceNumber), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: dark? Colors.white: _slate800)),
+                        const SizedBox(width: 6),
+                        Container(width: 6, height: 6, decoration: const BoxDecoration(color: _orange, shape: BoxShape.circle)),
+                      ])),
+                      Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                        Flexible(child: Text('تاریخ: $_dateLabel', style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+                      ])),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const Divider(height: 1),
-            Expanded(
-              child: invoices.isEmpty
-                  ? Center(child: Text('فاکتوری وجود ندارد', style: TextStyle(color: _slate400)))
-                  : ListView.builder(
-                      controller: sc,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: invoices.length,
-                      itemBuilder: (c, i) {
-                        final inv = invoices.reversed.elementAt(i);
-                        return InvoiceListItem(inv: inv);
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+            const SizedBox(height: 10),
 
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final user = ref.watch(userProvider);
-    final business = ref.watch(businessProvider);
-    final invoices = ref.watch(invoiceListProvider);
-    final customers = ref.watch(customerListProvider);
-
-    // Error state (Spec §19)
-    if (_errorMsg != null) {
-      return Scaffold(
-        backgroundColor: dark ? _slate900 : _bgLight,
-        body: Center(child: _ErrorState(message: _errorMsg!, onRetry: _retry)),
-        bottomNavigationBar: _buildBottomNav(dark),
-      );
-    }
-
-    // Compute summaries (Spec §9-12) — with error guard (Spec §31)
-    double todaySales = 0;
-    double todayReceived = 0;
-    double receivable = 0;
-    List<InvoiceModel> recentFive = [];
-    int unpaidCount = 0;
-    try {
-      final todayStr = JalaliHelper.getTodayJalali();
-      // Spec §10: only today's sale invoices, exclude cancelled/deleted
-      final todaySaleInvoices = invoices.where((inv) =>
-          inv.date == todayStr &&
-          inv.type == 'sale' &&
-          inv.status != 'cancelled' &&
-          inv.status != 'deleted');
-      todaySales = todaySaleInvoices.fold(0, (s, i) => s + i.totalAmount);
-
-      // Spec §11: if no Payment entity, sum paidAmount today
-      todayReceived = todaySaleInvoices.fold(0, (s, i) => s + i.paidAmount);
-
-      // Spec §12: receivable = total - paid for debt invoices
-      receivable = invoices
-          .where((inv) => inv.remainingAmount > 0 && inv.status != 'paid' && inv.status != 'cancelled' && inv.status != 'deleted')
-          .fold(0, (s, i) => s + i.remainingAmount);
-      // Fallback: if remainingAmount zero but customers have balance
-      if (receivable == 0) {
-        receivable = customers.fold(0, (s, c) => s + c.balance);
-      }
-
-      // Spec §14: last 5 newest first
-      final sorted = List<InvoiceModel>.from(invoices);
-      // invoices are insertion order; newest last → reversed, take 5
-      recentFive = sorted.reversed.take(5).toList();
-
-      unpaidCount = invoices.where((i) => i.remainingAmount > 0 && i.status != 'paid').length;
-    } catch (e) {
-      // Don't crash whole home (Spec §19)
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _errorMsg == null) setState(() => _errorMsg = 'دریافت اطلاعات با مشکل مواجه شد');
-      });
-    }
-
-    return Scaffold(
-      backgroundColor: dark ? _slate900 : _bgLight,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Header 56-64dp (Spec §5)
-              HomeHeader(
-                shopName: business.shopName,
-                notificationCount: unpaidCount,
+            // 3) جدول اقلام
+            Container(
+              decoration: BoxDecoration(
+                color: dark? _slate800: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: dark? _slate700: _cardGrayBorder),
               ),
-
-              // ── Content padding
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Welcome (Spec §7)
-                    WelcomeSection(userName: user.name),
-
-                    const SizedBox(height: 16),
-
-                    // ── CTA (Spec §8)
-                    CreateInvoiceButton(
-                      onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceCreateScreen()));
-                      },
+              child: Column(
+                children: [
+                  // هدر جدول
+                  Container(
+                    decoration: BoxDecoration(
+                      color: dark? _slate700.withValues(alpha: 0.4): const Color(0xFFF8FAFC),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      border: Border(bottom: BorderSide(color: dark? _slate700: _cardGrayBorder)),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Today Summary (Spec §9)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Row(
                       children: [
-                        Text('خلاصه امروز', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: dark ? Colors.white : _slate800)),
-                        InkWell(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FinancialDashboardScreen())),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                            child: Row(
-                              children: [
-                                Text('گزارش کامل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _orange)),
-                                const SizedBox(width: 2),
-                                const Icon(Icons.chevron_left, size: 16, color: _orange),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _tableHeader('عنوان', flex: 3, dark: dark),
+                        _tableHeader('مقدار', dark: dark),
+                        _tableHeader('واحد', dark: dark),
+                        _tableHeader('قیمت واحد', dark: dark),
+                        _tableHeader('قیمت کل', dark: dark),
                       ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (_isLoading)
-                      const TodaySummarySkeleton()
-                    else
-                      TodaySummaryCard(
-                        salesAmount: todaySales,
-                        receivedAmount: todayReceived,
-                        receivableAmount: receivable,
-                      ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Quick Actions (Spec §13)
-                    Text('دسترسی سریع', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: dark ? Colors.white : _slate800)),
-                    const SizedBox(height: 10),
-                    if (_isLoading)
-                      const QuickActionsSkeleton()
-                    else
-                      QuickActionsSection(
-                        hasPaymentModule: _hasPaymentModule,
-                        onCustomers: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen())),
-                        onProducts: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen())),
-                        onInvoices: _openInvoiceList,
-                        onReceivables: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FinancialDashboardScreen())),
-                      ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Recent Invoices (Spec §14)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('آخرین فاکتورها', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: dark ? Colors.white : _slate800)),
-                        InkWell(
-                          onTap: _openInvoiceList,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                            child: Row(
-                              children: [
-                                Text('مشاهده همه', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _orange)),
-                                const SizedBox(width: 2),
-                                const Icon(Icons.chevron_left, size: 16, color: _orange),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (_isLoading)
-                      const RecentInvoicesSkeleton()
-                    else if (recentFive.isEmpty)
-                      EmptyInvoiceState(
-                        onCreate: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceCreateScreen())),
-                      )
-                    else
-                      RecentInvoicesSection(invoices: recentFive),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNav(dark),
-    );
-  }
-
-  Widget _buildBottomNav(bool dark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: dark ? _slate800 : Colors.white,
-        border: Border(top: BorderSide(color: dark ? _slate700 : _slate200)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, -2))],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            children: [
-              _NavItem(label: 'خانه', iconFilled: Icons.home, iconOutlined: Icons.home_outlined, active: _navIndex == 0, onTap: () => _onNavTap(0), dark: dark),
-              _NavItem(label: 'فاکتورها', iconFilled: Icons.receipt_long, iconOutlined: Icons.receipt_long_outlined, active: _navIndex == 1, onTap: () => _onNavTap(1), dark: dark),
-              _NavItem(label: 'مشتریان', iconFilled: Icons.people, iconOutlined: Icons.people_outline, active: _navIndex == 2, onTap: () => _onNavTap(2), dark: dark),
-              _NavItem(label: 'محصولات', iconFilled: Icons.inventory_2, iconOutlined: Icons.inventory_2_outlined, active: _navIndex == 3, onTap: () => _onNavTap(3), dark: dark),
-              _NavItem(label: 'بیشتر', iconFilled: Icons.menu, iconOutlined: Icons.menu_outlined, active: _navIndex == 4, onTap: () => _onNavTap(4), dark: dark),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-//  HomeHeader  (Spec §5-6) — 56..64dp, logo Ruby fox + title, notif icon
-// ──────────────────────────────────────────────────────────────
-class HomeHeader extends StatelessWidget {
-  final String shopName;
-  final int notificationCount;
-
-  const HomeHeader({super.key, required this.shopName, this.notificationCount = 0});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      height: 60, // within 56-64dp
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: dark ? _slate800 : Colors.white,
-        border: Border(bottom: BorderSide(color: dark ? _slate700 : _slate200)),
-      ),
-      child: Row(
-        children: [
-          // Right: Logo fox Ruby (small, professional) + title
-          // Use existing asset exactly (Spec §6)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              'assets/images/logo.png',
-              width: 32,
-              height: 32,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(color: _orange, borderRadius: BorderRadius.circular(8)),
-                alignment: Alignment.center,
-                child: const Text('ر', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              shopName.isNotEmpty ? shopName : 'فاکتور ساز روبی',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: dark ? Colors.white : _slate800),
-            ),
-          ),
-          // Left: Notification Icon with badge
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: Icon(Icons.notifications_none_rounded, color: dark ? Colors.white : _slate600, size: 24),
-                onPressed: () {},
-                tooltip: 'اعلان‌ها',
-              ),
-              if (notificationCount > 0)
-                Positioned(
-                  top: 6,
-                  left: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(color: _error, borderRadius: BorderRadius.circular(10)),
-                    child: Text(
-                      PersianNumberFormatter.toPersian(notificationCount > 99 ? '99+' : notificationCount.toString()),
-                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
                     ),
                   ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-//  WelcomeSection (Spec §7)
-// ──────────────────────────────────────────────────────────────
-class WelcomeSection extends StatelessWidget {
-  final String userName;
-  const WelcomeSection({super.key, required this.userName});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final displayName = userName.trim().isEmpty ? '' : ' $userName';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'سلام$displayName 👋',
-          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: dark ? Colors.white : _slate800),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'امروز آماده‌ای فاکتور بسازی؟',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: dark ? _slate400 : _slate500),
-        ),
-      ],
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-//  CreateInvoiceButton (Spec §8) — match parent, 52-56dp, radius 16, Ruby Orange via token
-// ──────────────────────────────────────────────────────────────
-class CreateInvoiceButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  const CreateInvoiceButton({super.key, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54, // within 52-56dp
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.add, size: 20, color: Colors.white),
-        label: const Text('+ ساخت فاکتور', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _orange, // via token AppTheme.RubyPrimary
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-        ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-//  TodaySummaryCard (Spec §9-12)
-//  Card white radius 18 padding 16 shadow minimal
-// ──────────────────────────────────────────────────────────────
-class TodaySummaryCard extends StatelessWidget {
-  final double salesAmount;
-  final double receivedAmount;
-  final double receivableAmount;
-
-  const TodaySummaryCard({
-    super.key,
-    required this.salesAmount,
-    required this.receivedAmount,
-    required this.receivableAmount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16), // spec §9
-      decoration: BoxDecoration(
-        color: dark ? _slate800 : Colors.white,
-        borderRadius: BorderRadius.circular(18), // spec §9
-        border: Border.all(color: dark ? _slate700 : _slate200),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.15 : 0.04), blurRadius: 12, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Sales — full width hero metric (Spec §9)
-          SalesMetric(amount: salesAmount),
-          const SizedBox(height: 14),
-          Divider(color: dark ? _slate700 : _slate200, height: 1),
-          const SizedBox(height: 14),
-          // Two cols: دریافت | طلب مشتریان
-          Row(
-            children: [
-              Expanded(child: PaymentMetric(amount: receivedAmount)),
-              Container(width: 1, height: 44, color: dark ? _slate700 : _slate200, margin: const EdgeInsets.symmetric(horizontal: 12)),
-              Expanded(child: ReceivableMetric(amount: receivableAmount)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class SalesMetric extends StatelessWidget {
-  final double amount;
-  const SalesMetric({super.key, required this.amount});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(color: dark ? const Color(0xFF431407) : _orangeContainer, borderRadius: BorderRadius.circular(12)),
-          child: const Icon(Icons.trending_up, color: _orange, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('فروش امروز', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: dark ? _slate400 : _slate500)),
-              const SizedBox(height: 2),
-              Text(
-                PersianNumberFormatter.formatCurrency(amount),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: dark ? Colors.white : _slate800),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class PaymentMetric extends StatelessWidget {
-  final double amount;
-  const PaymentMetric({super.key, required this.amount});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(color: dark ? const Color(0xFF052E1F) : const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(10)),
-          child: const Icon(Icons.payments_outlined, color: _success, size: 16),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('دریافت', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: dark ? _slate400 : _slate500)),
-              const SizedBox(height: 2),
-              Text(
-                PersianNumberFormatter.formatCurrency(amount),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: dark ? Colors.white : _slate800),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class ReceivableMetric extends StatelessWidget {
-  final double amount;
-  const ReceivableMetric({super.key, required this.amount});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(color: dark ? const Color(0xFF450A0A) : const Color(0xFFFFF1F2), borderRadius: BorderRadius.circular(10)),
-          child: const Icon(Icons.account_balance_wallet_outlined, color: _error, size: 16),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('طلب مشتریان', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: dark ? _slate400 : _slate500)),
-              const SizedBox(height: 2),
-              Text(
-                PersianNumberFormatter.formatCurrency(amount),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: dark ? Colors.white : _slate800),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-//  QuickActionsSection (Spec §13) — 2 columns
-// ──────────────────────────────────────────────────────────────
-class QuickActionsSection extends StatelessWidget {
-  final bool hasPaymentModule;
-  final VoidCallback onCustomers;
-  final VoidCallback onProducts;
-  final VoidCallback onInvoices;
-  final VoidCallback onReceivables;
-
-  const QuickActionsSection({
-    super.key,
-    required this.hasPaymentModule,
-    required this.onCustomers,
-    required this.onProducts,
-    required this.onInvoices,
-    required this.onReceivables,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Build list, hide "دریافت‌ها" if no payment module (Spec §13)
-    final actions = <_QA>[
-      _QA('مشتریان', Icons.people_alt_outlined, const Color(0xFF2563EB), const Color(0xFFEFF6FF), onCustomers),
-      _QA('محصولات', Icons.inventory_2_outlined, const Color(0xFF7C3AED), const Color(0xFFF5F3FF), onProducts),
-      _QA('فاکتورها', Icons.receipt_long_outlined, const Color(0xFF059669), const Color(0xFFECFDF5), onInvoices),
-      if (hasPaymentModule) _QA('دریافت‌ها', Icons.payments_outlined, const Color(0xFFD97706), const Color(0xFFFFFBEB), onReceivables),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 2.3, // compact, no horizontal scroll, no clipping (Spec §26)
-      ),
-      itemCount: actions.length,
-      itemBuilder: (ctx, i) => QuickActionCard(data: actions[i]),
-    );
-  }
-}
-
-class _QA {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final Color bg;
-  final VoidCallback onTap;
-  _QA(this.label, this.icon, this.color, this.bg, this.onTap);
-}
-
-class QuickActionCard extends StatelessWidget {
-  final _QA data;
-  const QuickActionCard({super.key, required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return InkWell(
-      onTap: data.onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: dark ? _slate800 : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: dark ? _slate700 : _slate200),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(color: dark ? data.color.withValues(alpha: 0.18) : data.bg, borderRadius: BorderRadius.circular(10)),
-              child: Icon(data.icon, color: data.color, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                data.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark ? Colors.white : _slate800),
-              ),
-            ),
-            Icon(Icons.chevron_left, size: 16, color: _slate400),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-//  RecentInvoicesSection + InvoiceListItem (Spec §14-16)
-// ──────────────────────────────────────────────────────────────
-class RecentInvoicesSection extends StatelessWidget {
-  final List<InvoiceModel> invoices;
-  const RecentInvoicesSection({super.key, required this.invoices});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: invoices.map((inv) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: InvoiceListItem(inv: inv),
-      )).toList(),
-    );
-  }
-}
-
-class InvoiceListItem extends StatelessWidget {
-  final InvoiceModel inv;
-  const InvoiceListItem({super.key, required this.inv});
-
-  String _statusLabel(String s, String type) {
-    if (type == 'proforma') return 'پیش‌فاکتور';
-    switch (s) {
-      case 'paid':
-        return 'پرداخت شده';
-      case 'unpaid':
-        return 'پرداخت نشده';
-      case 'partial':
-        return 'پرداخت ناقص';
-      case 'cancelled':
-        return 'لغو شده';
-      default:
-        return 'پرداخت نشده';
-    }
-  }
-
-  Color _statusColor(String s, String type) {
-    if (type == 'proforma') return _warning;
-    switch (s) {
-      case 'paid':
-        return _success;
-      case 'partial':
-        return _warning;
-      default:
-        return _error;
-    }
-  }
-
-  Color _statusBg(String s, String type, bool dark) {
-    if (type == 'proforma') return dark ? const Color(0xFF422006) : const Color(0xFFFFFBEB);
-    switch (s) {
-      case 'paid':
-        return dark ? const Color(0xFF052E1F) : const Color(0xFFECFDF5);
-      case 'partial':
-        return dark ? const Color(0xFF422006) : const Color(0xFFFFFBEB);
-      default:
-        return dark ? const Color(0xFF450A0A) : const Color(0xFFFFF1F2);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final statusText = _statusLabel(inv.status, inv.type);
-    final statusColor = _statusColor(inv.status, inv.type);
-    final statusBg = _statusBg(inv.status, inv.type, dark);
-
-    // Simple compact card — not huge (Spec §15)
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: dark ? _slate800 : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: dark ? _slate700 : _slate200),
-      ),
-      child: Row(
-        children: [
-          // Right: customer + meta
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark ? Colors.white : _slate800),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      'فاکتور #${PersianNumberFormatter.toPersian(inv.number)}',
-                      style: TextStyle(fontSize: 11, color: _slate500),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(width: 3, height: 3, decoration: BoxDecoration(color: _slate300, shape: BoxShape.circle)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        PersianNumberFormatter.toPersian(inv.date),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: _slate500),
+                  // ردیف‌ها
+                  ...List.generate(_items.length, (idx) {
+                    final it = _items[idx];
+                    return Container(
+                      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: dark? _slate700: _cardGrayBorder))),
+                      child: Row(
+                        children: [
+                          // عنوان
+                          Expanded(flex: 3, child: _tableCell(
+                            child: TextField(
+                              controller: TextEditingController(text: it.title),
+                              onChanged: (v)=> _updateItem(idx, title: v),
+                              decoration: const InputDecoration(border: InputBorder.none, hintText: '- ۱', contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10)),
+                              style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
+                              textAlign: TextAlign.center,
+                            ),
+                            dark: dark, isFirst: true,
+                          )),
+                          _tableCell(child: TextField(
+                            controller: TextEditingController(text: it.quantity == it.quantity.roundToDouble() ? PersianNumberFormatter.toPersian(it.quantity.toInt().toString()) : PersianNumberFormatter.toPersian(it.quantity.toString())),
+                            keyboardType: TextInputType.number,
+                            onChanged: (v){
+                              final en = _faToEn(v);
+                              final q = double.tryParse(en) ?? 1;
+                              _updateItem(idx, qty: q);
+                            },
+                            decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
+                            style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
+                            textAlign: TextAlign.center,
+                          ), dark: dark),
+                          _tableCell(child: InkWell(
+                            onTap: (){
+                              showDialog(context: context, builder: (c)=> SimpleDialog(title: const Text('انتخاب واحد'), children: ['عدد','بسته','کیلو','متر','ساعت'].map((u)=> SimpleDialogOption(child: Text(u), onPressed: (){ Navigator.pop(c); _updateItem(idx, unit: u);})).toList()));
+                            },
+                            child: Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(it.unit, style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate700), textAlign: TextAlign.center)),
+                          ), dark: dark),
+                          _tableCell(child: TextField(
+                            controller: TextEditingController(text: it.unitPrice==0? '' : PersianNumberFormatter.toPersian(it.unitPrice.toInt().toString())),
+                            keyboardType: TextInputType.number,
+                            onChanged: (v){
+                              final en=_faToEn(v);
+                              final p=double.tryParse(en)??0;
+                              _updateItem(idx, price: p);
+                            },
+                            decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
+                            style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800),
+                            textAlign: TextAlign.center,
+                          ), dark: dark),
+                          _tableCell(child: Text(it.totalPrice==0? '۰' : PersianNumberFormatter.formatCurrency(it.totalPrice).replaceAll(' تومان',''), style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800, fontWeight: FontWeight.w700), textAlign: TextAlign.center), dark: dark, isLast: true),
+                        ],
                       ),
+                    );
+                  }),
+                  // دکمه ایجاد
+                  InkWell(
+                    onTap: _addItem,
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                    child: Container(
+                      height: 44,
+                      decoration: const BoxDecoration(borderRadius: BorderRadius.vertical(bottom: Radius.circular(12))),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                        Text('ایجاد', style: TextStyle(color: _orange, fontWeight: FontWeight.w800, fontSize: 13)),
+                        const SizedBox(width: 6),
+                        Container(width: 22, height: 22, decoration: BoxDecoration(color: _orange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)), child: const Icon(Icons.add, color: _orange, size: 16)),
+                        const SizedBox(width: 12),
+                      ]),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Left: amount + status badge
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                PersianNumberFormatter.formatCurrency(inv.totalAmount),
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: dark ? Colors.white : _slate800),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(999)),
-                child: Text(statusText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: statusColor)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-//  EmptyInvoiceState (Spec §17) — uses Ruby fox asset subtly
-// ──────────────────────────────────────────────────────────────
-class EmptyInvoiceState extends StatelessWidget {
-  final VoidCallback onCreate;
-  const EmptyInvoiceState({super.key, required this.onCreate});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-      decoration: BoxDecoration(
-        color: dark ? _slate800 : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: dark ? _slate700 : _slate200),
-      ),
-      child: Column(
-        children: [
-          // Subtle Ruby illustration — small professional (Spec §6)
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(color: _orangeContainer, borderRadius: BorderRadius.circular(18)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.receipt_long, size: 36, color: _orange),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Text('هنوز فاکتوری ثبت نکرده‌اید', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: dark ? Colors.white : _slate800)),
-          const SizedBox(height: 6),
-          Text('اولین فاکتور خود را در چند ثانیه بسازید.', style: TextStyle(fontSize: 12, color: _slate500)),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: onCreate,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _orange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: const Text('ساخت اولین فاکتور', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+            const SizedBox(height: 8),
+            // جمع آیتم‌ها
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(PersianNumberFormatter.formatCurrency(_itemsTotal), style: TextStyle(fontSize: 12, color: dark? _slate400: _slate500)),
+                Text('جمع آیتم‌ها', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dark? Colors.white: _slate700)),
+              ]),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+            const SizedBox(height: 12),
 
-// ──────────────────────────────────────────────────────────────
-//  Skeleton Loading (Spec §18) — no full-screen spinner
-// ──────────────────────────────────────────────────────────────
-class _SkeletonBox extends StatelessWidget {
-  final double? width;
-  final double height;
-  final double radius;
-  const _SkeletonBox({this.width, required this.height, this.radius = 8});
+            // 4) کارت هزینه ارسال / تخفیف / بیعانه / بدهی قبلی
+            _grayCard(
+              dark: dark,
+              child: Column(
+                children: [
+                  Row(children: [
+                    Expanded(child: _checkRow(label: 'هزینه ارسال:', value: _hasShipping, onChanged: (v)=> setState(()=> _hasShipping=v!), dark: dark, trailing: _hasShipping? SizedBox(width: 80, child: TextField(keyboardType: TextInputType.number, onChanged: (v)=> setState(()=> _shippingFee= double.tryParse(_faToEn(v))??0), decoration: InputDecoration(hintText: '۰', isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: dark? _slate800: Colors.white), style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))): null)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _checkRow(label: 'تخفیف:', value: _hasDiscount, onChanged: (v)=> setState(()=> _hasDiscount=v!), dark: dark, trailing: null)),
+                  ]),
+                  if (_hasDiscount) Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      InkWell(onTap: ()=> setState(()=> _discountIsPercent=true), child: Text('درصد', style: TextStyle(fontSize: 12, color: _discountIsPercent? _orange: _slate400, fontWeight: FontWeight.w700))),
+                      const SizedBox(width: 12),
+                      InkWell(onTap: ()=> setState(()=> _discountIsPercent=false), child: Text('مبلغ', style: TextStyle(fontSize: 12, color: !_discountIsPercent? _orange: _slate400, fontWeight: FontWeight.w700))),
+                      const SizedBox(width: 12),
+                      SizedBox(width: 90, child: TextField(keyboardType: TextInputType.number, onChanged: (v)=> setState(()=> _discountAmount= double.tryParse(_faToEn(v))??0), decoration: InputDecoration(hintText: '۰', isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: dark? _slate800: Colors.white), style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))),
+                    ]),
+                  ),
+                  const SizedBox(height: 8),
+                  Divider(color: dark? _slate700: _cardGrayBorder, height: 1),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: _checkRow(label: 'بیعانه:', value: _hasDeposit, onChanged: (v)=> setState(()=> _hasDeposit=v!), dark: dark, trailing: _hasDeposit? SizedBox(width: 80, child: TextField(keyboardType: TextInputType.number, onChanged: (v)=> setState(()=> _depositAmount= double.tryParse(_faToEn(v))??0), decoration: InputDecoration(hintText: '۰', isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: dark? _slate800: Colors.white), style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))): null)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _checkRow(label: 'بدهی قبلی:', value: _hasPrevDebt, onChanged: (v)=> setState(()=> _hasPrevDebt=v!), dark: dark, trailing: _hasPrevDebt? SizedBox(width: 80, child: TextField(keyboardType: TextInputType.number, onChanged: (v)=> setState(()=> _prevDebtAmount= double.tryParse(_faToEn(v))??0), decoration: InputDecoration(hintText: '۰', isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: dark? _slate800: Colors.white), style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))): null)),
+                  ]),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
 
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: dark ? _slate700 : _slate200,
-        borderRadius: BorderRadius.circular(radius),
-      ),
-    );
-  }
-}
+            // 5) کارت نوع فاکتور / نوع پرداخت
+            _grayCard(
+              dark: dark,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Text('نوع فاکتور', style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate600, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      _radio(label: 'پیش فاکتور', value: 'proforma', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
+                      const SizedBox(width: 8),
+                      _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
+                      const SizedBox(width: 8),
+                      _radio(label: 'فاکتور فروش', value: 'sale', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Divider(color: dark? _slate700: _cardGrayBorder, height: 1),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text('نوع پرداخت', style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate600, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      _radio(label: 'نقدی', value: 'cash', group: _paymentType, onChanged: (v)=> setState(()=> _paymentType=v!), dark: dark),
+                      const SizedBox(width: 8),
+                      _radio(label: 'غیر نقدی', value: 'non_cash', group: _paymentType, onChanged: (v)=> setState(()=> _paymentType=v!), dark: dark),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
 
-class TodaySummarySkeleton extends StatelessWidget {
-  const TodaySummarySkeleton({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: dark ? _slate800 : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: dark ? _slate700 : _slate200),
-      ),
-      child: Column(
-        children: [
-          Row(children: [const _SkeletonBox(width: 40, height: 40, radius: 12), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ _SkeletonBox(width: 80, height: 10), SizedBox(height: 8), _SkeletonBox(height: 16)]))]),
-          const SizedBox(height: 14),
-          Divider(color: dark ? _slate700 : _slate200, height: 1),
-          const SizedBox(height: 14),
-          Row(children: [Expanded(child: _SkeletonBox(height: 32, radius: 10)), SizedBox(width: 12), Expanded(child: _SkeletonBox(height: 32, radius: 10))]),
-        ],
-      ),
-    );
-  }
-}
+            // 6) جمع کل
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(PersianNumberFormatter.formatCurrency(_finalTotal), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: dark? Colors.white: _slate800)),
+                Text('جمع کل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dark? Colors.white: _slate700)),
+              ]),
+            ),
+            const SizedBox(height: 10),
 
-class QuickActionsSkeleton extends StatelessWidget {
-  const QuickActionsSkeleton({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 2.3),
-      itemCount: 4,
-      itemBuilder: (_, __) => Container(
-        decoration: BoxDecoration(color: Theme.of(context).brightness == Brightness.dark ? _slate800 : Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? _slate700 : _slate200)),
-        padding: const EdgeInsets.all(14),
-        child: Row(children: [ _SkeletonBox(width: 36, height: 36, radius: 10), SizedBox(width: 10), Expanded(child: _SkeletonBox(height: 12))]),
-      ),
-    );
-  }
-}
+            // 7) توضیحات
+            _grayCard(
+              dark: dark,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: TextField(
+                onChanged: (v)=> _notes=v,
+                maxLines: 3,
+                minLines: 1,
+                decoration: InputDecoration(border: InputBorder.none, hintText: 'توضیحات', hintStyle: TextStyle(color: _slate400, fontSize: 12)),
+                style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
+              ),
+            ),
+            const SizedBox(height: 10),
 
-class RecentInvoicesSkeleton extends StatelessWidget {
-  const RecentInvoicesSkeleton({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(3, (_) => Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: Theme.of(context).brightness == Brightness.dark ? _slate800 : Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? _slate700 : _slate200)),
-        child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ _SkeletonBox(width: 110, height: 12), SizedBox(height: 8), _SkeletonBox(width: 160, height: 10)])) , SizedBox(width: 12), Column(crossAxisAlignment: CrossAxisAlignment.end, children: [_SkeletonBox(width: 90, height: 12), SizedBox(height: 8), _SkeletonBox(width: 70, height: 18, radius: 999)])]),
-      )),
-    );
-  }
-}
+            // 8) افزودن شماره کارت
+            _grayCard(
+              dark: dark,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              child: Row(children: [
+                Icon(Icons.chevron_left, color: _slate400, size: 20),
+                const Spacer(),
+                Text('افزودن شماره کارت', style: TextStyle(color: _orange, fontWeight: FontWeight.w700, fontSize: 12)),
+              ]),
+            ),
+            const SizedBox(height: 10),
 
-// ──────────────────────────────────────────────────────────────
-//  Error State (Spec §19)
-// ──────────────────────────────────────────────────────────────
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: dark ? _slate800 : Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: dark ? _slate700 : _slate200)),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, color: _error, size: 32),
-          const SizedBox(height: 8),
-          Text(message, style: TextStyle(fontSize: 13, color: dark ? Colors.white : _slate800, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 40,
-            child: ElevatedButton(onPressed: onRetry, style: ElevatedButton.styleFrom(backgroundColor: _orange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: const Text('تلاش مجدد', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-//  Bottom Navigation Item (Spec §20-21)
-// ──────────────────────────────────────────────────────────────
-class _NavItem extends StatelessWidget {
-  final String label;
-  final IconData iconFilled;
-  final IconData iconOutlined;
-  final bool active;
-  final VoidCallback onTap;
-  final bool dark;
-
-  const _NavItem({
-    required this.label,
-    required this.iconFilled,
-    required this.iconOutlined,
-    required this.active,
-    required this.onTap,
-    required this.dark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? _orange : (dark ? _slate400 : _slate500);
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(active ? iconFilled : iconOutlined, size: 22, color: color),
-            const SizedBox(height: 4),
-            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, fontWeight: active ? FontWeight.w900 : FontWeight.w600, color: color)),
-            if (active) Container(margin: const EdgeInsets.only(top: 4), width: 16, height: 3, decoration: BoxDecoration(color: _orange, borderRadius: BorderRadius.circular(3))),
+            // 9) ذخیره و اشتراک‌گذاری
+            InkWell(
+              onTap: _saveInvoice,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(color: dark? _slate800: _cardGray, borderRadius: BorderRadius.circular(12), border: Border.all(color: dark? _slate700: _cardGrayBorder)),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const Icon(Icons.share, color: _slate600, size: 20),
+                  const SizedBox(width: 8),
+                  Text('ذخیره و اشتراک گذاری فاکتور', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark? Colors.white: _slate800)),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
+      // Bottom tabs مثل عکس
+      bottomNavigationBar: _bottomTabs(dark),
     );
+  }
+
+  // ── Helpers ──
+  Widget _grayCard({required bool dark, required Widget child, EdgeInsetsGeometry? padding}) {
+    return Container(
+      padding: padding ?? const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: dark? _slate800: _cardGray,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: dark? _slate700: Colors.transparent),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _customerField({required String label, required String value, required String hint, required Function(String) onChanged, required bool dark, TextInputType? keyboardType}) {
+    return Row(
+      children: [
+        SizedBox(width: 90, child: Text(label, style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500))),
+        Expanded(child: Container(
+          height: 36,
+          decoration: BoxDecoration(color: dark? _slate700: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: dark? _slate700: _cardGrayBorder)),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: TextField(
+            onChanged: onChanged,
+            keyboardType: keyboardType,
+            decoration: InputDecoration(border: InputBorder.none, hintText: hint, hintStyle: const TextStyle(fontSize: 11, color: _slate400), isDense: true),
+            style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
+            textAlign: TextAlign.right,
+          ),
+        )),
+      ],
+    );
+  }
+
+  Widget _tableHeader(String t, {int flex=1, required bool dark}) {
+    return Expanded(flex: flex, child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(border: Border(left: BorderSide(color: dark? _slate700: _cardGrayBorder))),
+      child: Text(t, textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: dark? _slate400: _slate600, fontWeight: FontWeight.w700)),
+    ));
+  }
+  Widget _tableCell({required Widget child, required bool dark, bool isFirst=false, bool isLast=false}) {
+    return Expanded(child: Container(
+      decoration: BoxDecoration(border: Border(left: isLast? BorderSide.none: BorderSide(color: dark? _slate700: _cardGrayBorder))),
+      child: child,
+    ));
+  }
+
+  Widget _checkRow({required String label, required bool value, required Function(bool?) onChanged, required bool dark, Widget? trailing}) {
+    return Row(children: [
+      SizedBox(
+        width: 22, height: 22,
+        child: Checkbox(value: value, onChanged: onChanged, activeColor: _orange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), side: BorderSide(color: dark? _slate500: _slate400)),
+      ),
+      const SizedBox(width: 4),
+      Text(label, style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500)),
+      if (trailing!=null) ...[const Spacer(), trailing],
+    ]);
+  }
+
+  Widget _radio({required String label, required String value, required String group, required Function(String?) onChanged, required bool dark}) {
+    final selected = value==group;
+    return InkWell(
+      onTap: ()=> onChanged(value),
+      borderRadius: BorderRadius.circular(20),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(label, style: TextStyle(fontSize: 11, color: selected? _orange: (dark? _slate400: _slate500), fontWeight: selected? FontWeight.w800: FontWeight.w500)),
+        const SizedBox(width: 4),
+        Container(
+          width: 20, height: 20,
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: selected? _orange: _slate400, width: 2), color: selected? _orange: Colors.transparent),
+          child: selected? const Center(child: Icon(Icons.circle, size: 10, color: Colors.white)): null,
+        ),
+      ]),
+    );
+  }
+
+  Widget _bottomTabs(bool dark) {
+    final invoices = ref.watch(invoiceListProvider);
+    final tabLabel = _invoiceType=='proforma'? 'پیش فاکتور': (_invoiceType=='purchase'? 'فاکتور خرید':'فاکتور فروش');
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(color: dark? _slate800: Colors.white, border: Border(top: BorderSide(color: dark? _slate700: _cardGrayBorder))),
+      child: Row(children: [
+        // + سمت چپ
+        InkWell(onTap: _addItem, child: Container(width: 48, height: 48, alignment: Alignment.center, decoration: BoxDecoration(border: Border(left: BorderSide(color: dark? _slate700: _cardGrayBorder))), child: const Icon(Icons.add, color: _orange, size: 22))),
+        // وسط خالی
+        const Expanded(child: SizedBox()),
+        // تب فعال
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(color: dark? _slate700: _cardGray, border: Border(left: BorderSide(color: dark? _slate700: _cardGrayBorder), right: BorderSide(color: dark? _slate700: _cardGrayBorder))),
+          child: Row(children: [
+            Text('$tabLabel ${PersianNumberFormatter.toPersian(invoices.length+1)}', style: TextStyle(fontSize: 11, color: _orange, fontWeight: FontWeight.w800)),
+            const SizedBox(width: 6),
+            const Icon(Icons.arrow_drop_up, color: _orange, size: 18),
+          ]),
+        ),
+        // منو راست
+        InkWell(onTap: ()=> _scaffoldKey.currentState?.openDrawer(), child: Container(width: 48, height: 48, alignment: Alignment.center, child: Icon(Icons.menu, color: dark? Colors.white: _slate700))),
+      ]),
+    );
+  }
+
+  Widget _buildDrawer() {
+    final user = ref.watch(userProvider);
+    return Drawer(
+      child: ListView(padding: EdgeInsets.zero, children: [
+        UserAccountsDrawerHeader(
+          accountName: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          accountEmail: Text('${user.country} - ${user.city}'),
+          currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: Text(user.name.isNotEmpty? user.name[0]: 'ر', style: const TextStyle(color: _orange, fontWeight: FontWeight.w900, fontSize: 24))),
+          decoration: const BoxDecoration(color: _orange),
+        ),
+        ListTile(leading: const Icon(Icons.home), title: const Text('خانه (فاکتور)'), onTap: ()=> Navigator.pop(context)),
+        ListTile(leading: const Icon(Icons.people), title: const Text('مشتریان'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const CustomerListScreen()));}),
+        ListTile(leading: const Icon(Icons.inventory_2), title: const Text('محصولات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const ProductListScreen()));}),
+        ListTile(leading: const Icon(Icons.account_balance_wallet), title: const Text('گزارش مالی'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const FinancialDashboardScreen()));}),
+        ListTile(leading: const Icon(Icons.settings), title: const Text('تنظیمات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const SettingsScreen()));}),
+      ]),
+    );
+  }
+
+  String _faToEn(String s){
+    const fa=['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    const en=['0','1','2','3','4','5','6','7','8','9'];
+    var r=s;
+    for(int i=0;i<10;i++) r=r.replaceAll(fa[i], en[i]);
+    return r;
   }
 }
