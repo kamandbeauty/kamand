@@ -58,6 +58,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _shippingFee = 0;
   double _depositAmount = 0;
   double _prevDebtAmount = 0;
+  int? _selectedRow;
 
   @override
   void initState() {
@@ -111,6 +112,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         unitPrice: 0,
         totalPrice: 0,
       ));
+      _selectedRow = _items.length - 1;
+    });
+  }
+
+  void _removeRow(int idx) {
+    setState(() {
+      _items.removeAt(idx);
+      if (_items.isEmpty) {
+        _items.add(InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0));
+      }
+      if (_selectedRow == idx) {
+        _selectedRow = null;
+      } else if (_selectedRow != null && _selectedRow! > idx) {
+        _selectedRow = _selectedRow! - 1;
+      }
     });
   }
 
@@ -298,56 +314,88 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ],
                     ),
                   ),
-                  // ردیف‌ها
+                  // ردیف‌ها — شماره ردیف غیرقابل ادیت + ضربدر حذف با کلیک
                   ...List.generate(_items.length, (idx) {
                     final it = _items[idx];
-                    return Container(
-                      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: dark? _slate700: _cardGrayBorder))),
-                      child: Row(
-                        children: [
-                          // عنوان
-                          Expanded(flex: 3, child: _tableCell(
-                            child: TextField(
-                              controller: TextEditingController(text: it.title),
-                              onChanged: (v)=> _updateItem(idx, title: v),
-                              decoration: const InputDecoration(border: InputBorder.none, hintText: '- ۱', contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10)),
+                    final isSelected = _selectedRow == idx;
+                    final rowNum = PersianNumberFormatter.toPersian((idx + 1).toString());
+                    return InkWell(
+                      onTap: () => setState(() => _selectedRow = idx),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected ? _orange.withValues(alpha: 0.06) : Colors.transparent,
+                          border: Border(bottom: BorderSide(color: dark? _slate700: _cardGrayBorder)),
+                        ),
+                        child: Row(
+                          children: [
+                            // عنوان + شماره ردیف ثابت + ضربدر
+                            Expanded(flex: 3, child: _tableCell(
+                              child: Row(
+                                children: [
+                                  // ضربدر فقط برای ردیف انتخاب‌شده
+                                  if (isSelected)
+                                    InkWell(
+                                      onTap: () => _removeRow(idx),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        child: Icon(Icons.close, size: 18, color: _slate500),
+                                      ),
+                                    )
+                                  else
+                                    const SizedBox(width: 22),
+                                  // شماره ردیف غیرقابل ادیت
+                                  Text(' $rowNum -', style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500, fontWeight: FontWeight.w700)),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: TextEditingController(text: it.title),
+                                      onChanged: (v)=> _updateItem(idx, title: v),
+                                      onTap: () => setState(() => _selectedRow = idx),
+                                      decoration: const InputDecoration(border: InputBorder.none, hintText: '', contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
+                                      style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
+                                      textAlign: TextAlign.right,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              dark: dark, isFirst: true,
+                            )),
+                            _tableCell(child: TextField(
+                              controller: TextEditingController(text: it.quantity == it.quantity.roundToDouble() ? PersianNumberFormatter.toPersian(it.quantity.toInt().toString()) : PersianNumberFormatter.toPersian(it.quantity.toString())),
+                              keyboardType: TextInputType.number,
+                              onChanged: (v){
+                                final en = _faToEn(v);
+                                final q = double.tryParse(en) ?? 1;
+                                _updateItem(idx, qty: q);
+                              },
+                              onTap: () => setState(() => _selectedRow = idx),
+                              decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
                               style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
                               textAlign: TextAlign.center,
-                            ),
-                            dark: dark, isFirst: true,
-                          )),
-                          _tableCell(child: TextField(
-                            controller: TextEditingController(text: it.quantity == it.quantity.roundToDouble() ? PersianNumberFormatter.toPersian(it.quantity.toInt().toString()) : PersianNumberFormatter.toPersian(it.quantity.toString())),
-                            keyboardType: TextInputType.number,
-                            onChanged: (v){
-                              final en = _faToEn(v);
-                              final q = double.tryParse(en) ?? 1;
-                              _updateItem(idx, qty: q);
-                            },
-                            decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
-                            style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
-                            textAlign: TextAlign.center,
-                          ), dark: dark),
-                          _tableCell(child: InkWell(
-                            onTap: (){
-                              showDialog(context: context, builder: (c)=> SimpleDialog(title: const Text('انتخاب واحد'), children: ['عدد','بسته','کیلو','متر','ساعت'].map((u)=> SimpleDialogOption(child: Text(u), onPressed: (){ Navigator.pop(c); _updateItem(idx, unit: u);})).toList()));
-                            },
-                            child: Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(it.unit, style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate700), textAlign: TextAlign.center)),
-                          ), dark: dark),
-                          _tableCell(child: TextField(
-                            controller: TextEditingController(text: it.unitPrice==0? '' : PersianNumberFormatter.toPersian(it.unitPrice.toInt().toString())),
-                            keyboardType: TextInputType.number,
-                            onChanged: (v){
-                              final en=_faToEn(v);
-                              final p=double.tryParse(en)??0;
-                              _updateItem(idx, price: p);
-                            },
-                            decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
-                            style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800),
-                            textAlign: TextAlign.center,
-                          ), dark: dark),
-                          _tableCell(child: Text(it.totalPrice==0? '۰' : PersianNumberFormatter.formatCurrency(it.totalPrice).replaceAll(' تومان',''), style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800, fontWeight: FontWeight.w700), textAlign: TextAlign.center), dark: dark, isLast: true),
-                        ],
+                            ), dark: dark),
+                            _tableCell(child: InkWell(
+                              onTap: (){
+                                setState(()=> _selectedRow = idx);
+                                showDialog(context: context, builder: (c)=> SimpleDialog(title: const Text('انتخاب واحد'), children: ['عدد','بسته','کیلو','متر','ساعت'].map((u)=> SimpleDialogOption(child: Text(u), onPressed: (){ Navigator.pop(c); _updateItem(idx, unit: u);})).toList()));
+                              },
+                              child: Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(it.unit, style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate700), textAlign: TextAlign.center)),
+                            ), dark: dark),
+                            _tableCell(child: TextField(
+                              controller: TextEditingController(text: it.unitPrice==0? '' : PersianNumberFormatter.toPersian(it.unitPrice.toInt().toString())),
+                              keyboardType: TextInputType.number,
+                              onChanged: (v){
+                                final en=_faToEn(v);
+                                final p=double.tryParse(en)??0;
+                                _updateItem(idx, price: p);
+                              },
+                              onTap: () => setState(() => _selectedRow = idx),
+                              decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
+                              style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800),
+                              textAlign: TextAlign.center,
+                            ), dark: dark),
+                            _tableCell(child: Text(it.totalPrice==0? '۰' : PersianNumberFormatter.formatCurrency(it.totalPrice).replaceAll(' تومان',''), style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800, fontWeight: FontWeight.w700), textAlign: TextAlign.center), dark: dark, isLast: true),
+                          ],
+                        ),
                       ),
                     );
                   }),
