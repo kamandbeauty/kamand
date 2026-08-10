@@ -41,3 +41,13 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
+    - assets/images/banks/mellat.png
+    - assets/images/banks/melli.png
+    - assets/images/banks/pasargad.png
+    - assets/images/banks/parsian.png
+    - assets/images/banks/saman.png
+    - assets/images/banks/sepah.png
+    - assets/images/banks/tejarat.png
+    - assets/images/banks/saderat.png
+    - assets/images/banks/sina.png
+    - assets/images/banks/shahr.png

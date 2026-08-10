@@ -554,6 +554,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Row(children: [
                       Text(PersianNumberFormatter.toPersian(selected.formattedCard.replaceAll(' ', ' - ')), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: dark? Colors.white: Colors.black)),
                       const Spacer(),
+                      Builder(builder: (ctx){
+                        final asset = bankLogoAsset(selected.bankName);
+                        if(asset.isNotEmpty){
+                          return ClipRRect(borderRadius: BorderRadius.circular(4), child: Image.asset(asset, width: 28, height: 18, fit: BoxFit.contain, errorBuilder: (_,__,___)=> const SizedBox()));
+                        }
+                        return Container(width: 28, height: 18, decoration: BoxDecoration(color: bankColor(selected.bankName), borderRadius: BorderRadius.circular(4)), alignment: Alignment.center, child: Text(selected.bankName.replaceAll('بانک ', '').substring(0,1), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)));
+                      }),
+                      const SizedBox(width: 6),
                       Text(selected.persianName, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark? Colors.white: Colors.black)),
                     ]),
                     const SizedBox(height: 6),

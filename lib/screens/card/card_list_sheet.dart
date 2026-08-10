@@ -123,7 +123,7 @@ class _CardItem extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(children: [
-              Container(width: 36, height: 24, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)), child: const Icon(Icons.account_balance, size: 16, color: Color(0xFF2196F3))),
+              _BankLogo(bankName: card.bankName, size: 36),
               const SizedBox(width: 8),
               Text(card.bankName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               const Spacer(),
@@ -136,6 +136,32 @@ class _CardItem extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BankLogo extends StatelessWidget {
+  final String bankName;
+  final double size;
+  const _BankLogo({required this.bankName, this.size = 36});
+  @override
+  Widget build(BuildContext context){
+    final asset = bankLogoAsset(bankName);
+    if(asset.isNotEmpty){
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.asset(asset, width: size, height: size*0.66, fit: BoxFit.contain, errorBuilder: (_,__,___)=> _fallback()),
+      );
+    }
+    return _fallback();
+  }
+  Widget _fallback(){
+    final c = bankColor(bankName);
+    return Container(
+      width: size, height: size*0.66,
+      decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4)),
+      alignment: Alignment.center,
+      child: Text(bankName.replaceAll('بانک ', '').substring(0,1), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
     );
   }
 }

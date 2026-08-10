@@ -121,7 +121,7 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
               child: Column(
                 children: [
                   Row(children: [
-                    Container(width: 48, height: 32, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.account_balance, color: _orange, size: 22)),
+                    _buildBankLogo(previewBank, size: 48),
                     const SizedBox(width: 8),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Text(previewBank.isEmpty ? 'بانک' : previewBank, style: TextStyle(fontSize: 12, color: _slate500)),
@@ -210,6 +210,25 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildBankLogo(String bankName, {double size = 48}){
+    final asset = bankLogoAsset(bankName);
+    if(asset.isNotEmpty){
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(asset, width: size, height: size * 0.66, fit: BoxFit.contain, errorBuilder: (_,__,___)=> Container(width: size, height: size*0.66, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.account_balance, color: bankColor(bankName), size: 22))),
+      );
+    }
+    if(bankName.isNotEmpty){
+      return Container(
+        width: size, height: size*0.66,
+        decoration: BoxDecoration(color: bankColor(bankName), borderRadius: BorderRadius.circular(8)),
+        alignment: Alignment.center,
+        child: Text(bankName.replaceAll('بانک ', '').substring(0,1), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+      );
+    }
+    return Container(width: size, height: size*0.66, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.account_balance, color: _orange, size: 22));
   }
 
   Widget _buildField({required bool dark, required TextEditingController controller, required String hint, TextInputType? keyboardType, int? maxLength, Function(String)? onChanged}){

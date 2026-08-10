@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/bank_card_model.dart';
 
@@ -60,6 +61,34 @@ String detectBankName(String cardNumber){
 }
 
 String bankLogoAsset(String bankName){
-  // for now return generic — in real app map to assets
-  return '';
+  const map = {
+    'بانک ملت': 'assets/images/banks/mellat.png',
+    'بانک ملی': 'assets/images/banks/melli.png',
+    'بانک پاسارگاد': 'assets/images/banks/pasargad.png',
+    'بانک پارسیان': 'assets/images/banks/parsian.png',
+    'بانک سامان': 'assets/images/banks/saman.png',
+    'بانک سپه': 'assets/images/banks/sepah.png',
+    'بانک تجارت': 'assets/images/banks/tejarat.png',
+    'بانک صادرات': 'assets/images/banks/saderat.png',
+    'بانک سینا': 'assets/images/banks/sina.png',
+    'بانک شهر': 'assets/images/banks/shahr.png',
+    // بقیه بانک‌ها فعلاً با حرف اول نمایش داده می‌شوند
+  };
+  return map[bankName] ?? '';
+}
+
+Color bankColor(String bankName){
+  const colors = {
+    'بانک ملت': Color(0xFFD32F2F),
+    'بانک ملی': Color(0xFF2E7D32),
+    'بانک پاسارگاد': Color(0xFFF9A825),
+    'بانک پارسیان': Color(0xFF1565C0),
+    'بانک سامان': Color(0xFF0288D1),
+    'بانک سپه': Color(0xFF37474F),
+    'بانک تجارت': Color(0xFF00897B),
+    'بانک صادرات': Color(0xFF283593),
+    'بانک سینا': Color(0xFFAD1457),
+    'بانک شهر': Color(0xFF2E7D32),
+  };
+  return colors[bankName] ?? const Color(0xFF607D8B);
 }
