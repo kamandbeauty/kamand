@@ -42,7 +42,7 @@ export default function SmartToolsModal({
   // Backup JSON download
   const handleExportJSON = () => {
     const data = {
-      version: '1.0.0',
+      version: '5.8.0',
       exportedAt: new Date().toISOString(),
       invoices,
       customers,
@@ -232,6 +232,17 @@ export default function SmartToolsModal({
                     className="hidden"
                   />
                 </label>
+              </div>
+
+              <div className="pt-2">
+                <a
+                  href="/FactorRuby-v5.8.0-release.zip"
+                  download
+                  className="w-full p-4 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition block text-center"
+                >
+                  <Smartphone className="w-5 h-5 text-emerald-200" />
+                  <span>دانلود مستقیم بسته انتشار، دیتابیس و سورس کامل (ZIP)</span>
+                </a>
               </div>
             </div>
           )}

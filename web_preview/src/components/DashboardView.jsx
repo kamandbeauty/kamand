@@ -13,7 +13,7 @@ import {
   ArrowUpRight,
   Receipt
 } from 'lucide-react';
-import { formatCurrency, toPersianDigits } from '../utils/helpers';
+import { formatCurrency, toPersianDigits, getTodayJalali } from '../utils/helpers';
 
 export default function DashboardView({
   invoices,
@@ -26,7 +26,7 @@ export default function DashboardView({
   onNavigateTab
 }) {
   // Calculations
-  const today = '1405/05/20'; // Reference date for mock
+  const today = getTodayJalali();
   const todayInvoices = invoices.filter(inv => inv.date === today && inv.type === 'sale');
   const todaySales = todayInvoices.reduce((acc, inv) => acc + inv.totalAmount, 0);
   const todayReceived = todayInvoices.reduce((acc, inv) => acc + inv.paidAmount, 0);

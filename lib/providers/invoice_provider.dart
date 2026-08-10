@@ -1,14 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/invoice_model.dart';
 import '../models/invoice_item_model.dart';
+import '../core/utils/jalali_helper.dart';
+import '../database/app_database.dart';
 
 final invoiceListProvider =
     StateNotifierProvider<InvoiceListNotifier, List<InvoiceModel>>((ref) {
-  return InvoiceListNotifier();
+  final db = ref.watch(appDatabaseProvider);
+  return InvoiceListNotifier(db);
 });
 
 class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
-  InvoiceListNotifier()
+  final AppDatabase? db;
+
+  InvoiceListNotifier([this.db])
       : super([
           InvoiceModel(
             id: 'inv-1001',
@@ -58,7 +63,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
             type: 'sale',
             paymentType: 'non_cash',
             status: 'unpaid',
-            date: '1405/05/19',
+            date: JalaliHelper.getTodayJalali(),
             items: [
               InvoiceItemModel(
                   id: 'i3',
@@ -108,7 +113,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
                   totalPrice: 700000),
             ],
             subtotal: 3300000,
-            discountPercent: 10,
+            discountPercent: 5,
             discountAmount: 165000,
             shippingFee: 65000,
             previousDebt: 0,

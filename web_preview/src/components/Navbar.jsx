@@ -1,9 +1,11 @@
 import React from 'react';
-import { Menu, Sparkles, Lock, Moon, Sun } from 'lucide-react';
+import { Menu, Sparkles, Lock, Moon, Sun, Search, Wrench } from 'lucide-react';
 
 export default function Navbar({
   onOpenSidebar,
   onOpenGoldenModal,
+  onOpenGlobalSearch,
+  onOpenSmartTools,
   isDarkMode,
   onToggleDarkMode,
   onLockApp
@@ -13,13 +15,22 @@ export default function Navbar({
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         
         {/* Right side: Hamburger menu button */}
-        <button
-          onClick={onOpenSidebar}
-          className="p-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
-          title="منوی اصلی"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenSidebar}
+            className="p-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            title="منوی اصلی"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <button
+            onClick={onOpenGlobalSearch}
+            className="p-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            title="جستجوی سراسری"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* Center: App Title */}
         <div className="flex items-center gap-1.5">
@@ -30,6 +41,14 @@ export default function Navbar({
 
         {/* Left side: Sparkle / Golden icon button */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenSmartTools}
+            className="p-1.5 rounded-xl text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
+            title="ابزارهای هوشمند"
+          >
+            <Wrench className="w-5 h-5 text-blue-500" />
+          </button>
+
           <button
             onClick={onOpenGoldenModal}
             className="p-1.5 rounded-xl text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition"

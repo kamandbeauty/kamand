@@ -1,13 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/customer_model.dart';
+import '../database/app_database.dart';
 
 final customerListProvider =
     StateNotifierProvider<CustomerListNotifier, List<CustomerModel>>((ref) {
-  return CustomerListNotifier();
+  final db = ref.watch(appDatabaseProvider);
+  return CustomerListNotifier(db);
 });
 
 class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
-  CustomerListNotifier()
+  final AppDatabase? db;
+
+  CustomerListNotifier([this.db])
       : super([
           CustomerModel(
             id: 'c1',
@@ -43,6 +47,7 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
 
   void addCustomer(CustomerModel customer) {
     state = [...state, customer];
+    db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 
   void updateCustomer(CustomerModel customer) {
@@ -50,6 +55,7 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
       for (final item in state)
         if (item.id == customer.id) customer else item,
     ];
+    db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 
   void deleteCustomer(String id) {
@@ -68,6 +74,25 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
             address: item.address,
             notes: item.notes,
             balance: (item.balance - amount) < 0 ? 0 : item.balance - amount,
+            createdAt: item.createdAt,
+          )
+        else
+          item,
+    ];
+  }
+
+  void updateBalance(String id, double delta) {
+    state = [
+      for (final item in state)
+        if (item.id == id)
+          CustomerModel(
+            id: item.id,
+            name: item.name,
+            mobile: item.mobile,
+            phone: item.phone,
+            address: item.address,
+            notes: item.notes,
+            balance: (item.balance + delta) < 0 ? 0 : item.balance + delta,
             createdAt: item.createdAt,
           )
         else

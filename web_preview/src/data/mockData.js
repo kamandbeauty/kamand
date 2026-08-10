@@ -135,7 +135,7 @@ export const INITIAL_INVOICES = [
     type: 'sale',
     paymentType: 'non_cash',
     status: 'unpaid',
-    date: '1405/05/19',
+    date: getTodayJalali(),
     items: [
       { id: 'item-3', title: 'دستگاه اسپرسوساز خانگی مدل RBY-200', quantity: 1, unit: 'دستگاه', unitPrice: 5800000, totalPrice: 5800000 }
     ],
@@ -150,7 +150,7 @@ export const INITIAL_INVOICES = [
     remainingAmount: 4200000,
     notes: 'سررسید تسویه ۵ روز آینده',
     cardNumber: '5022-2910-8765-4321',
-    createdAt: '1405/05/19'
+    createdAt: getTodayJalali()
   }
 ];
 
