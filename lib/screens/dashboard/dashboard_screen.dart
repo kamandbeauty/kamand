@@ -15,6 +15,8 @@ import '../financial/financial_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
 import '../invoice/invoice_list_screen.dart';
 import '../customize/header_customize_screen.dart';
+import '../card/card_list_sheet.dart';
+import '../../providers/bank_card_provider.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -152,8 +154,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حداقل یک قلم کالا اضافه کنید')));
       return;
     }
+    final selectedCard = ref.read(selectedBankCardProvider);
     final biz = ref.read(businessProvider);
-    final card = biz.bankCards.isNotEmpty ? biz.bankCards.first : '';
+    final card = selectedCard?.cardNumber ?? (biz.bankCards.isNotEmpty ? biz.bankCards.first : '');
     // شماره را به انگلیسی برگردانیم
     String numEn = _invoiceNumber;
     const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
@@ -521,16 +524,57 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 10),
 
-            // 8) افزودن شماره کارت
-            _grayCard(
-              dark: dark,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              child: Row(children: [
-                Icon(Icons.chevron_left, color: _slate400, size: 20),
-                const Spacer(),
-                Text('افزودن شماره کارت', style: TextStyle(color: _orange, fontWeight: FontWeight.w700, fontSize: 12)),
-              ]),
-            ),
+            // 8) کارت بانکی — افزودن یا نمایش انتخاب‌شده (با انیمیشن)
+            Builder(builder: (ctx){
+              final selected = ref.watch(selectedBankCardProvider);
+              if (selected == null) {
+                return InkWell(
+                  onTap: ()=> showCardListSheet(context),
+                  borderRadius: BorderRadius.circular(16),
+                  child: _grayCard(
+                    dark: dark,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    child: Row(children: [
+                      Icon(Icons.chevron_left, color: _slate400, size: 20),
+                      const Spacer(),
+                      Text('افزودن شماره کارت', style: TextStyle(color: _orange, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ]),
+                  ),
+                );
+              }
+              // نمایش کارت انتخاب‌شده مثل عکس ۴ — با انیمیشن نرم
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: dark? _slate800: _cardGray, borderRadius: BorderRadius.circular(16)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(children: [
+                      Text(PersianNumberFormatter.toPersian(selected.formattedCard.replaceAll(' ', ' - ')), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: dark? Colors.white: Colors.black)),
+                      const Spacer(),
+                      Text(selected.persianName, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark? Colors.white: Colors.black)),
+                    ]),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Expanded(child: Text(PersianNumberFormatter.toPersian(selected.spacedSheba), style: TextStyle(fontSize: 11, letterSpacing: 0.5, color: dark? Colors.white: Colors.black))),
+                      const SizedBox(width: 8),
+                      Text('شماره شبا:', style: TextStyle(fontSize: 11, color: _slate500)),
+                    ]),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      InkWell(onTap: ()=> showCardListSheet(context), child: Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(children: [
+                        Icon(Icons.chevron_left, size: 18, color: _slate400),
+                        const SizedBox(width: 4),
+                        Text('تغییر شماره کارت', style: TextStyle(color: const Color(0xFF2196F3), fontWeight: FontWeight.w700, fontSize: 12)),
+                      ]))),
+                      const Spacer(),
+                    ]),
+                  ],
+                ),
+              );
+            }),
             const SizedBox(height: 10),
 
             // 9) ذخیره و اشتراک‌گذاری
