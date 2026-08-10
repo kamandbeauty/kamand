@@ -162,14 +162,14 @@ export default function Sidebar({
 
         </div>
 
-        {/* Direct APK Download Banner */}
+        {/* Direct Release ZIP Download Banner */}
         <a
-          href="/FactorRuby-v5.8.0.apk"
+          href="/FactorRuby-v5.8.0-release.zip"
           download
           className="p-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs flex items-center justify-between shadow-md hover:shadow-lg transition block"
         >
-          <span>دانلود مستقیم فایل APK (نسخه ۵.۸.۰)</span>
-          <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">📲</span>
+          <span>دانلود بسته انتشار و سورس کامل (نسخه ۵.۸.۰)</span>
+          <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">📦</span>
         </a>
 
         {/* Footer Version & Reset */}
