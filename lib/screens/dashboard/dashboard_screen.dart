@@ -14,6 +14,7 @@ import '../product/product_list_screen.dart';
 import '../financial/financial_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
 import '../invoice/invoice_list_screen.dart';
+import '../customize/header_customize_screen.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -246,7 +247,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()));
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _orange,
                   foregroundColor: Colors.white,

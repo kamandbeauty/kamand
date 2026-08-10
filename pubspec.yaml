@@ -22,6 +22,8 @@ dependencies:
   # Files & Paths
   path_provider: ^2.1.2
   path: ^1.9.0
+  image_picker: ^1.0.8
+  image: ^4.3.0
 
   # Persian Calendar & Date
   shamsi_date: ^1.0.2
