@@ -80,7 +80,7 @@ class _EmptyState extends StatelessWidget {
               Container(
                 width: 120, height: 120,
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                child: const Icon(Icons.owl, size: 64, color: Color(0xFF29B6F6)),
+                child: const Icon(Icons.credit_card, size: 64, color: Color(0xFF29B6F6)),
               ),
               const SizedBox(height: 16),
               const Text('هنوز هیچ کارتی ثبت نشده!', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
