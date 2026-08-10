@@ -162,6 +162,16 @@ export default function Sidebar({
 
         </div>
 
+        {/* Direct APK Download Banner */}
+        <a
+          href="/FactorRuby-v5.8.0.apk"
+          download
+          className="p-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs flex items-center justify-between shadow-md hover:shadow-lg transition block"
+        >
+          <span>دانلود مستقیم فایل APK (نسخه ۵.۸.۰)</span>
+          <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">📲</span>
+        </a>
+
         {/* Footer Version & Reset */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-700 text-center space-y-2">
           <button

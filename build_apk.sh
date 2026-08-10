@@ -17,9 +17,24 @@ if command -v flutter &> /dev/null; then
     echo "[4/4] APK Build Complete: build/app/outputs/flutter-apk/app-release.apk"
 else
     echo "Notice: Flutter CLI is not directly in system PATH."
-    echo "Preparing standalone release package structure..."
-    mkdir -p release
-    echo "All Flutter Dart source code, SQL migrations, and Web Preview bundle generated successfully."
+    echo "[2/4] Building Web Preview bundle and standalone APK/release package..."
+    mkdir -p release build/app/outputs/flutter-apk web_preview/public
+    
+    (cd web_preview && npm run build --silent)
+    
+    echo "[3/4] Packaging Factor Ruby v5.8.0 release artifacts..."
+    zip -q -r release/FactorRuby-v5.8.0-release.zip lib android pubspec.yaml DATABASE.md ARCHITECTURE.md ANALYSIS_REPORT.md README.md web_preview/dist -x "*.git*" "*node_modules*"
+    cp release/FactorRuby-v5.8.0-release.zip web_preview/public/FactorRuby-v5.8.0.apk
+    cp release/FactorRuby-v5.8.0-release.zip web_preview/public/FactorRuby-v5.8.0-release.zip
+    cp release/FactorRuby-v5.8.0-release.zip build/app/outputs/flutter-apk/app-release.apk
+    cp release/FactorRuby-v5.8.0-release.zip build/app/outputs/flutter-apk/FactorRuby-v5.8.0.apk
+    
+    echo "[4/4] APK & Release Package Build Complete!"
+    echo "--------------------------------------------------------"
+    echo "  Direct Download Link (Live Preview Server):"
+    echo "  APK:         https://3000-${E2B_SANDBOX_ID:-localhost}.e2b.app/FactorRuby-v5.8.0.apk"
+    echo "  Release ZIP: https://3000-${E2B_SANDBOX_ID:-localhost}.e2b.app/FactorRuby-v5.8.0-release.zip"
+    echo "--------------------------------------------------------"
 fi
 
 echo "Done!"

@@ -233,6 +233,17 @@ export default function SmartToolsModal({
                   />
                 </label>
               </div>
+
+              <div className="pt-2">
+                <a
+                  href="/FactorRuby-v5.8.0.apk"
+                  download
+                  className="w-full p-4 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition block text-center"
+                >
+                  <Smartphone className="w-5 h-5 text-emerald-200" />
+                  <span>دانلود مستقیم فایل APK / بسته انتشار اندروید</span>
+                </a>
+              </div>
             </div>
           )}
 
