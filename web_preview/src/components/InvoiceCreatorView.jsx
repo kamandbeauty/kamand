@@ -268,52 +268,48 @@ export default function InvoiceCreatorView({
         تنظیمات فاکتور
       </button>
 
-      {/* ۲) کارت اطلاعات مشتری */}
-      <div className="mb-2.5 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 border border-transparent dark:border-slate-700 p-3 space-y-2.5">
-        {/* نام مشتری */}
-        <div className="flex items-center gap-2">
-          <span className="w-[108px] shrink-0 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            نام مشتری:
-          </span>
-          <div className="flex-1 flex items-center gap-1.5 h-[42px] rounded-[10px] bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 shadow-sm px-2.5">
+      {/* ۲) کارت اطلاعات مشتری — لیبل بالا + یک کادر تمیز */}
+      <div className="mb-2.5 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 border border-transparent dark:border-slate-700 p-3 space-y-3">
+        <div className="space-y-1.5">
+          <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 text-right">
+            نام مشتری
+          </div>
+          <div className="flex items-center gap-1.5">
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="مثلاً: رضا محمدی"
+              placeholder="مثلاً: آقای محمدی"
               dir="rtl"
               lang="fa"
               autoComplete="off"
-              className="invoice-rtl-input flex-1 min-w-0 bg-transparent outline-none text-[13px] font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 placeholder:font-normal"
+              className="invoice-rtl-input flex-1 min-w-0 h-[44px] rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 px-3 outline-none text-[13px] font-bold text-slate-800 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-[#F97316] focus:ring-1 focus:ring-orange-200"
               style={{ direction: 'rtl', textAlign: 'right', unicodeBidi: 'plaintext' }}
             />
             <button
               type="button"
               onClick={() => setShowCustomerModal(true)}
-              className="shrink-0 p-1.5 rounded-md text-[#F97316] hover:bg-orange-50 dark:hover:bg-orange-900/20"
+              className="shrink-0 h-[44px] w-[44px] rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 text-[#F97316] flex items-center justify-center"
               title="انتخاب مشتری"
             >
-              <UserPlus className="w-3.5 h-3.5" />
+              <UserPlus className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* شماره همراه مشتری */}
-        <div className="flex items-center gap-2">
-          <span className="w-[108px] shrink-0 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            شماره همراه مشتری:
-          </span>
-          <div className="flex-1 h-[42px] rounded-[10px] bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 shadow-sm px-2.5 flex items-center">
-            <input
-              type="tel"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              placeholder="۰۹۱۲…"
-              className="w-full bg-transparent outline-none text-[13px] font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 placeholder:font-normal"
-              dir="ltr"
-              style={{ textAlign: 'right' }}
-            />
+        <div className="space-y-1.5">
+          <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 text-right">
+            شماره همراه مشتری
           </div>
+          <input
+            type="tel"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            placeholder="۰۹۱۲xxxxxxx"
+            className="w-full h-[44px] rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 px-3 outline-none text-[13px] font-bold text-slate-800 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:border-[#F97316] focus:ring-1 focus:ring-orange-200"
+            dir="ltr"
+            style={{ textAlign: 'right' }}
+          />
         </div>
 
         <div className="border-t border-slate-200 dark:border-slate-700 pt-2.5 flex items-center justify-between gap-2 text-[11px]">
@@ -339,7 +335,7 @@ export default function InvoiceCreatorView({
         </div>
       </div>
 
-      {/* ۳) جدول اقلام — عنوان پهن + تایپ راست‌چین */}
+{/* ۳) جدول اقلام — عنوان پهن + تایپ راست‌چین */}
       <div className="mb-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table

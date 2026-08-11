@@ -51,6 +51,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _notesCtrl;
+  late final TextEditingController _shippingCtrl;
+  late final TextEditingController _depositCtrl;
+  late final TextEditingController _discountCtrl;
+  late final TextEditingController _prevDebtCtrl;
 
   // Form state — متصل به دیتابیس واقعی (§29)
   String? _editId;
@@ -83,6 +87,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _nameCtrl = TextEditingController();
     _phoneCtrl = TextEditingController();
     _notesCtrl = TextEditingController();
+    _shippingCtrl = TextEditingController();
+    _depositCtrl = TextEditingController();
+    _discountCtrl = TextEditingController();
+    _prevDebtCtrl = TextEditingController();
     _dateLabel = _todayLabel();
     // یک ردیف پیش‌فرض مثل عکس (۱ عدد)
     _items = [
@@ -114,28 +122,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _notesCtrl.dispose();
+    _shippingCtrl.dispose();
+    _depositCtrl.dispose();
+    _discountCtrl.dispose();
+    _prevDebtCtrl.dispose();
     super.dispose();
   }
 
+  String _fmtAmt(double v) {
+    if (v <= 0) return '';
+    if (v == v.roundToDouble()) {
+      return PersianNumberFormatter.toPersian(v.toInt().toString());
+    }
+    return PersianNumberFormatter.toPersian(v.toString());
+  }
+
+  void _setCtrl(TextEditingController c, String text) {
+    if (c.text == text) return;
+    c.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
   void _syncTextControllers() {
-    if (_nameCtrl.text != _customerName) {
-      _nameCtrl.value = TextEditingValue(
-        text: _customerName,
-        selection: TextSelection.collapsed(offset: _customerName.length),
-      );
-    }
-    if (_phoneCtrl.text != _customerPhone) {
-      _phoneCtrl.value = TextEditingValue(
-        text: _customerPhone,
-        selection: TextSelection.collapsed(offset: _customerPhone.length),
-      );
-    }
-    if (_notesCtrl.text != _notes) {
-      _notesCtrl.value = TextEditingValue(
-        text: _notes,
-        selection: TextSelection.collapsed(offset: _notes.length),
-      );
-    }
+    _setCtrl(_nameCtrl, _customerName);
+    _setCtrl(_phoneCtrl, _customerPhone);
+    _setCtrl(_notesCtrl, _notes);
+    _setCtrl(_shippingCtrl, _hasShipping ? _fmtAmt(_shippingFee) : '');
+    _setCtrl(_depositCtrl, _hasDeposit ? _fmtAmt(_depositAmount) : '');
+    _setCtrl(_discountCtrl, _hasDiscount ? _fmtAmt(_discountAmount) : '');
+    _setCtrl(_prevDebtCtrl, _hasPrevDebt ? _fmtAmt(_prevDebtAmount) : '');
   }
 
   /// پر کردن فرم هوم با داده فاکتور برای ویرایش (همان UI داشبورد)
@@ -500,29 +517,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 2) کارت اطلاعات مشتری — کنترلر پایدار (بدون پرش فوکوس)
+            // 2) کارت اطلاعات مشتری — لیبل بالا + یک کادر تمیز
             _grayCard(
               dark: dark,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _stableCustomerField(
-                    label: 'نام مشتری:',
+                  _labeledInput(
+                    label: 'نام مشتری',
                     controller: _nameCtrl,
-                    hint: 'مثلاً: رضا محمدی',
+                    hint: 'مثلاً: آقای محمدی',
                     dark: dark,
                     keyboardType: TextInputType.name,
                     onChanged: (v) => _customerName = v,
                   ),
-                  const SizedBox(height: 10),
-                  _stableCustomerField(
-                    label: 'شماره همراه مشتری:',
+                  const SizedBox(height: 12),
+                  _labeledInput(
+                    label: 'شماره همراه مشتری',
                     controller: _phoneCtrl,
-                    hint: '۰۹۱۲…',
+                    hint: '۰۹۱۲xxxxxxx',
                     dark: dark,
                     keyboardType: TextInputType.phone,
                     onChanged: (v) => _customerPhone = v,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
                   const SizedBox(height: 10),
                   Row(
@@ -902,32 +920,117 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 12),
 
             // 4) کارت هزینه ارسال / تخفیف / بیعانه / بدهی قبلی
+            // در ویرایش، مقادیر واقعی با کنترلر پایدار نمایش داده می‌شوند
             _grayCard(
               dark: dark,
               child: Column(
                 children: [
                   Row(children: [
-                    Expanded(child: _checkRow(label: 'هزینه ارسال:', value: _hasShipping, onChanged: (v)=> setState(()=> _hasShipping=v!), dark: dark, trailing: _hasShipping? SizedBox(width: 80, child: TextField(keyboardType: TextInputType.number, onChanged: (v)=> setState(()=> _shippingFee= double.tryParse(_faToEn(v))??0), decoration: InputDecoration(hintText: '۰', isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: dark? _slate800: Colors.white), style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))): null)),
+                    Expanded(
+                      child: _checkAmountRow(
+                        label: 'هزینه ارسال:',
+                        value: _hasShipping,
+                        dark: dark,
+                        controller: _shippingCtrl,
+                        onChanged: (v) {
+                          setState(() {
+                            _hasShipping = v;
+                            if (!v) {
+                              _shippingFee = 0;
+                              _shippingCtrl.clear();
+                            } else if (_shippingCtrl.text.isEmpty && _shippingFee > 0) {
+                              _setCtrl(_shippingCtrl, _fmtAmt(_shippingFee));
+                            }
+                          });
+                        },
+                        onAmount: (n) => setState(() => _shippingFee = n),
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _checkRow(label: 'تخفیف:', value: _hasDiscount, onChanged: (v)=> setState(()=> _hasDiscount=v!), dark: dark, trailing: null)),
+                    Expanded(
+                      child: _checkAmountRow(
+                        label: 'تخفیف:',
+                        value: _hasDiscount,
+                        dark: dark,
+                        controller: _discountCtrl,
+                        onChanged: (v) {
+                          setState(() {
+                            _hasDiscount = v;
+                            if (!v) {
+                              _discountAmount = 0;
+                              _discountCtrl.clear();
+                            } else if (_discountCtrl.text.isEmpty && _discountAmount > 0) {
+                              _setCtrl(_discountCtrl, _fmtAmt(_discountAmount));
+                            }
+                          });
+                        },
+                        onAmount: (n) => setState(() => _discountAmount = n),
+                      ),
+                    ),
                   ]),
-                  if (_hasDiscount) Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      InkWell(onTap: ()=> setState(()=> _discountIsPercent=true), child: Text('درصد', style: TextStyle(fontSize: 12, color: _discountIsPercent? _orange: _slate400, fontWeight: FontWeight.w700))),
-                      const SizedBox(width: 12),
-                      InkWell(onTap: ()=> setState(()=> _discountIsPercent=false), child: Text('مبلغ', style: TextStyle(fontSize: 12, color: !_discountIsPercent? _orange: _slate400, fontWeight: FontWeight.w700))),
-                      const SizedBox(width: 12),
-                      SizedBox(width: 90, child: TextField(keyboardType: TextInputType.number, onChanged: (v)=> setState(()=> _discountAmount= double.tryParse(_faToEn(v))??0), decoration: InputDecoration(hintText: '۰', isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: dark? _slate800: Colors.white), style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))),
-                    ]),
-                  ),
+                  if (_hasDiscount)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          InkWell(
+                            onTap: () => setState(() => _discountIsPercent = true),
+                            child: Text('درصد', style: TextStyle(fontSize: 12, color: _discountIsPercent ? _orange : _slate400, fontWeight: FontWeight.w700)),
+                          ),
+                          const SizedBox(width: 16),
+                          InkWell(
+                            onTap: () => setState(() => _discountIsPercent = false),
+                            child: Text('مبلغ', style: TextStyle(fontSize: 12, color: !_discountIsPercent ? _orange : _slate400, fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 8),
-                  Divider(color: dark? _slate700: _cardGrayBorder, height: 1),
+                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
                   const SizedBox(height: 8),
                   Row(children: [
-                    Expanded(child: _checkRow(label: 'بیعانه:', value: _hasDeposit, onChanged: (v)=> setState(()=> _hasDeposit=v!), dark: dark, trailing: _hasDeposit? SizedBox(width: 80, child: TextField(keyboardType: TextInputType.number, onChanged: (v)=> setState(()=> _depositAmount= double.tryParse(_faToEn(v))??0), decoration: InputDecoration(hintText: '۰', isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: dark? _slate800: Colors.white), style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))): null)),
+                    Expanded(
+                      child: _checkAmountRow(
+                        label: 'بیعانه:',
+                        value: _hasDeposit,
+                        dark: dark,
+                        controller: _depositCtrl,
+                        onChanged: (v) {
+                          setState(() {
+                            _hasDeposit = v;
+                            if (!v) {
+                              _depositAmount = 0;
+                              _depositCtrl.clear();
+                            } else if (_depositCtrl.text.isEmpty && _depositAmount > 0) {
+                              _setCtrl(_depositCtrl, _fmtAmt(_depositAmount));
+                            }
+                          });
+                        },
+                        onAmount: (n) => setState(() => _depositAmount = n),
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _checkRow(label: 'بدهی قبلی:', value: _hasPrevDebt, onChanged: (v)=> setState(()=> _hasPrevDebt=v!), dark: dark, trailing: _hasPrevDebt? SizedBox(width: 80, child: TextField(keyboardType: TextInputType.number, onChanged: (v)=> setState(()=> _prevDebtAmount= double.tryParse(_faToEn(v))??0), decoration: InputDecoration(hintText: '۰', isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: dark? _slate800: Colors.white), style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))): null)),
+                    Expanded(
+                      child: _checkAmountRow(
+                        label: 'بدهی قبلی:',
+                        value: _hasPrevDebt,
+                        dark: dark,
+                        controller: _prevDebtCtrl,
+                        onChanged: (v) {
+                          setState(() {
+                            _hasPrevDebt = v;
+                            if (!v) {
+                              _prevDebtAmount = 0;
+                              _prevDebtCtrl.clear();
+                            } else if (_prevDebtCtrl.text.isEmpty && _prevDebtAmount > 0) {
+                              _setCtrl(_prevDebtCtrl, _fmtAmt(_prevDebtAmount));
+                            }
+                          });
+                        },
+                        onAmount: (n) => setState(() => _prevDebtAmount = n),
+                      ),
+                    ),
                   ]),
                 ],
               ),
@@ -1315,8 +1418,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  /// فیلد پایدار با کنترلر — فوکوس هنگام تایپ از دست نمی‌رود
-  Widget _stableCustomerField({
+  /// فیلد مشتری: لیبل بالا + یک Outline تمیز (بدون تکه سفید اضافه)
+  Widget _labeledInput({
     required String label,
     required TextEditingController controller,
     required String hint,
@@ -1325,62 +1428,118 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     TextInputType? keyboardType,
   }) {
     final isPhone = keyboardType == TextInputType.phone;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          label,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            fontSize: 11,
+            color: dark ? _slate400 : _slate500,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          onChanged: onChanged,
+          keyboardType: keyboardType,
+          textDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
+          textAlign: TextAlign.right,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: dark ? _slate700 : Colors.white,
+            hintText: hint,
+            hintTextDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
+            hintStyle: TextStyle(
+              fontSize: 12,
+              color: dark ? _slate400.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            isDense: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: _orange, width: 1.4),
+            ),
+          ),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: dark ? Colors.white : _slate800,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// چک‌باکس + فیلد مبلغ پایدار (در ویرایش مقدار واقعی را نشان می‌دهد)
+  Widget _checkAmountRow({
+    required String label,
+    required bool value,
+    required bool dark,
+    required TextEditingController controller,
+    required ValueChanged<bool> onChanged,
+    required ValueChanged<double> onAmount,
+  }) {
     return Row(
       children: [
         SizedBox(
-          width: 110,
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500, fontWeight: FontWeight.w600),
+          width: 22,
+          height: 22,
+          child: Checkbox(
+            value: value,
+            onChanged: (v) => onChanged(v ?? false),
+            activeColor: _orange,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            side: BorderSide(color: dark ? _slate500 : _slate400),
           ),
         ),
-        Expanded(
-          child: Container(
-            height: 42,
-            decoration: BoxDecoration(
-              color: dark ? _slate700 : Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: dark ? _slate600 : const Color(0xFFCBD5E1),
-                width: 1.2,
-              ),
-              boxShadow: dark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            alignment: Alignment.center,
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (value) ...[
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 78,
             child: TextField(
               controller: controller,
-              onChanged: onChanged,
-              keyboardType: keyboardType,
-              textDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
-              textAlign: TextAlign.right,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.ltr,
+              onChanged: (v) {
+                final en = _faToEn(v);
+                onAmount(double.tryParse(en) ?? 0);
+              },
               decoration: InputDecoration(
-                border: InputBorder.none,
+                hintText: '۰',
                 isDense: true,
-                hintText: hint,
-                hintTextDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
-                hintStyle: TextStyle(
-                  fontSize: 12,
-                  color: dark ? _slate400.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                filled: true,
+                fillColor: dark ? _slate800 : Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
                 color: dark ? Colors.white : _slate800,
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
