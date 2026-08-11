@@ -248,6 +248,19 @@ export default function InvoiceCreatorView({
   const typeLabel =
     type === 'sale' ? 'فاکتور فروش' : type === 'purchase' ? 'فاکتور خرید' : 'پیش فاکتور';
 
+  const formatThousands = (raw) => {
+    const clean = String(raw ?? '').replace(/[^\d.]/g, '');
+    if (!clean) return '';
+    const [a, b] = clean.split('.');
+    const intPart = a.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return toPersianDigits(b !== undefined ? `${intPart}.${b}` : intPart);
+  };
+  const parseThousands = (s) => {
+    const clean = String(s ?? '').replace(/[^\d.]/g, '');
+    if (!clean) return 0;
+    const n = parseFloat(clean);
+    return Number.isFinite(n) ? n : 0;
+  };
   const fmtNum = (n) =>
     toPersianDigits(Math.round(Number(n) || 0).toLocaleString('en-US'));
 
@@ -456,10 +469,10 @@ export default function InvoiceCreatorView({
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={item.unitPrice ? item.unitPrice : ''}
+                        value={item.unitPrice ? formatThousands(item.unitPrice) : ''}
                         onChange={(e) => {
-                          const v = e.target.value.replace(/[^\d.]/g, '');
-                          handleItemChange(index, 'unitPrice', v === '' ? 0 : v);
+                          const n = parseThousands(e.target.value);
+                          handleItemChange(index, 'unitPrice', n);
                         }}
                         onFocus={(e) => {
                           setSelectedRow(index);

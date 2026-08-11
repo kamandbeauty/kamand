@@ -7,12 +7,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:gal/gal.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/invoice_provider.dart';
+import '../../providers/bank_card_provider.dart';
 import '../dashboard/dashboard_screen.dart';
 
 const _orange = AppTheme.RubyPrimary;
@@ -117,7 +120,70 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
     }
   }
 
+
+  /// فقط تصویر ناحیه فاکتور (نه کل صفحه/دکمه‌ها) را در گالری ذخیره می‌کند
+  Future<void> _saveInvoiceToGallery() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final bytes = await _capturePng();
+      if (bytes == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('ساخت تصویر فاکتور ناموفق بود')),
+          );
+        }
+        return;
+      }
+      // درخواست دسترسی و ذخیره فقط بایت‌های فاکتور
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        final granted = await Gal.requestAccess();
+        if (!granted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('دسترسی گالری داده نشد')),
+            );
+          }
+          return;
+        }
+      }
+      await Gal.putImageBytes(
+        bytes,
+        name: 'factor_${inv.number}_${DateTime.now().millisecondsSinceEpoch}',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('فاکتور در گالری ذخیره شد')),
+        );
+      }
+    } catch (e) {
+      // fallback: share file if gal fails
+      try {
+        final bytes = await _capturePng();
+        if (bytes != null) {
+          final dir = await getTemporaryDirectory();
+          final file = File('${dir.path}/factor_${inv.number}.png');
+          await file.writeAsBytes(bytes);
+          await Share.shareXFiles(
+            [XFile(file.path, mimeType: 'image/png', name: 'factor-${inv.number}.png')],
+            text: 'فاکتور ذخیره شود',
+          );
+        }
+      } catch (e2) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('خطا در ذخیره گالری: $e')),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _sharePdfLike() async {
+
     // بدون پکیج pdf: تصویر با کیفیت بالا به‌عنوان فایل قابل اشتراک (کاربر می‌تواند PDF کند)
     // + منوی سیستم
     if (_busy) return;
@@ -592,50 +658,110 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             style: const TextStyle(fontSize: 11, color: _slate500, height: 1.4),
                           ),
                         ],
-                        if (inv.cardNumber.isNotEmpty) ...[
+if (inv.cardNumber.isNotEmpty) ...[
                           const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0F9FF),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFBAE6FD)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.credit_card, color: Color(0xFF0284C7), size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                          Builder(builder: (_) {
+                            final cards = ref.watch(bankCardListProvider);
+                            final selected = ref.watch(selectedBankCardProvider);
+                            dynamic match = selected;
+                            final digits = inv.cardNumber.replaceAll(RegExp(r'\D'), '');
+                            if (match == null || match.cardNumber.replaceAll(RegExp(r'\D'), '') != digits) {
+                              for (final c in cards) {
+                                if (c.cardNumber.replaceAll(RegExp(r'\D'), '') == digits) {
+                                  match = c;
+                                  break;
+                                }
+                              }
+                            }
+                            final bankName = (inv.cardBank.isNotEmpty
+                                    ? inv.cardBank
+                                    : (match?.bankName?.toString() ?? detectBankName(inv.cardNumber)));
+                            final ownerName = inv.cardOwner.isNotEmpty
+                                ? inv.cardOwner
+                                : (match?.persianName?.toString() ?? '');
+                            final grouped = formatCardGrouped(inv.cardNumber);
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0F9FF),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFBAE6FD)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    textDirection: TextDirection.rtl,
                                     children: [
-                                      const Text(
-                                        'شماره کارت جهت واریز',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Color(0xFF0284C7),
-                                          fontWeight: FontWeight.w700,
+                                      const Icon(Icons.credit_card, color: Color(0xFF0284C7), size: 20),
+                                      const SizedBox(width: 8),
+                                      const Expanded(
+                                        child: Text(
+                                          'شماره کارت جهت واریز',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Color(0xFF0284C7),
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          textAlign: TextAlign.right,
                                         ),
-                                      ),
-                                      Text(
-                                        PersianNumberFormatter.toPersian(inv.cardNumber),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 13,
-                                          letterSpacing: 0.5,
-                                        ),
-                                        textDirection: TextDirection.ltr,
-                                        textAlign: TextAlign.right,
                                       ),
                                     ],
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
+                                  if (bankName.isNotEmpty || ownerName.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      textDirection: TextDirection.rtl,
+                                      children: [
+                                        if (bankName.isNotEmpty)
+                                          Text(
+                                            bankName,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFF0F172A),
+                                            ),
+                                          ),
+                                        if (bankName.isNotEmpty && ownerName.isNotEmpty)
+                                          const Text('  ·  ', style: TextStyle(color: Color(0xFF94A3B8))),
+                                        if (ownerName.isNotEmpty)
+                                          Text(
+                                            ownerName,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF334155),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                  const SizedBox(height: 8),
+                                  // شماره کارت گروه‌بندی ۴تایی — LTR برای جلوگیری از برعکس شدن
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Directionality(
+                                      textDirection: TextDirection.ltr,
+                                      child: Text(
+                                        grouped,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 16,
+                                          letterSpacing: 1.1,
+                                          color: Color(0xFF0F172A),
+                                          fontFeatures: [ui.FontFeature.tabularFigures()],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                         ],
                         const SizedBox(height: 20),
                         // مهر و امضا
+// مهر و امضا
                         Builder(builder: (_) {
                           final settings = ref.watch(settingsProvider);
                           final showStamp = settings.showStamp && biz.stampPath.isNotEmpty;
@@ -715,6 +841,18 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             ],
                           );
                         }),
+                        const SizedBox(height: 18),
+                        const Center(
+                          child: Text(
+                            'اپلیکیشن فاکتور ساز روبی',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF94A3B8),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -783,6 +921,24 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: _busy ? null : _saveInvoiceToGallery,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: dark ? Colors.white : _slate800,
+                        side: BorderSide(color: dark ? _slate700 : const Color(0xFFE2E8F0)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: const Icon(Icons.save_alt, size: 18),
+                      label: const Text(
+                        'ذخیره فاکتور در گالری',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   SizedBox(

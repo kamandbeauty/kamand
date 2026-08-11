@@ -28,6 +28,9 @@ dependencies:
   # Share invoice image / file
   share_plus: ^10.1.4
 
+  # Save image to device gallery
+  gal: ^2.3.0
+
   # Local key-value persistence
   shared_preferences: ^2.3.3
 

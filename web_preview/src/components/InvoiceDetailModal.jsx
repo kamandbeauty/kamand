@@ -341,9 +341,14 @@ export default function InvoiceDetailModal({
                 <CreditCard className="w-5 h-5 text-sky-600 shrink-0" />
                 <div>
                   <div className="text-[10px] text-sky-600 font-bold">شماره کارت جهت واریز</div>
-                  <div className="font-mono font-bold text-sm text-slate-900" dir="ltr">
-                    {invoice.cardNumber}
+                  <div className="font-mono font-bold text-base text-slate-900 tracking-wider" dir="ltr" style={{textAlign:'right', direction:'ltr'}}>
+                    {toPersianDigits(String(invoice.cardNumber||'').replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim())}
                   </div>
+                  {(invoice.cardBank || invoice.cardOwner) && (
+                    <div className="text-[11px] text-slate-600 font-bold mt-1">
+                      {[invoice.cardBank, invoice.cardOwner].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -378,6 +383,9 @@ export default function InvoiceDetailModal({
                 <div className="h-12 border-b border-dashed border-slate-300 w-full max-w-[90px]" />
                 <span className="text-[10px] text-slate-400">امضای خریدار</span>
               </div>
+            </div>
+            <div className="text-center pt-3 text-[11px] font-extrabold text-slate-400">
+              اپلیکیشن فاکتور ساز روبی
             </div>
           </div>
         </div>

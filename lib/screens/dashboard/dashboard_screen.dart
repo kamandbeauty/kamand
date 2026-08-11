@@ -19,6 +19,7 @@ import '../card/card_list_sheet.dart';
 import '../invoice/invoice_preview_screen.dart';
 import '../../providers/bank_card_provider.dart';
 import '../../core/utils/replace_on_type_field.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -131,10 +132,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   String _fmtAmt(double v) {
     if (v <= 0) return '';
-    if (v == v.roundToDouble()) {
-      return PersianNumberFormatter.toPersian(v.toInt().toString());
-    }
-    return PersianNumberFormatter.toPersian(v.toString());
+    final raw = v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+    return ThousandSeparatorInputFormatter.formatDisplay(raw, allowDecimal: true);
   }
 
   void _setCtrl(TextEditingController c, String text) {
@@ -336,6 +335,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final biz = ref.read(businessProvider);
     final card = selectedCard?.cardNumber ??
         (biz.bankCards.isNotEmpty ? biz.bankCards.first : '');
+    final cardBank = selectedCard?.bankName ??
+        (card.isNotEmpty ? detectBankName(card) : '');
+    final cardOwner = selectedCard?.persianName ?? '';
 
     String numEn = _faToEn(_invoiceNumber);
     final jalaliEn = JalaliHelper.getTodayJalali();
@@ -388,6 +390,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       remainingAmount: finalRemaining.toDouble(),
       notes: _notes,
       cardNumber: card.isNotEmpty ? card : (existing?.cardNumber ?? ''),
+      cardBank: cardBank.isNotEmpty ? cardBank : (existing?.cardBank ?? ''),
+      cardOwner: cardOwner.isNotEmpty ? cardOwner : (existing?.cardOwner ?? ''),
       createdAt: existing?.createdAt ?? jalaliFa,
     );
 
@@ -712,6 +716,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   child: ReplaceOnTypeNumberField(
                                     key: ValueKey('qty-${it.id}-$_formGen'),
                                     value: it.quantity,
+                                    useThousandSeparator: false,
                                     onChanged: (q) {
                                       setState(() => _selectedRow = idx);
                                       _updateItem(idx, qty: q <= 0 ? 0 : q);
@@ -1530,26 +1535,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (value) ...[
           const SizedBox(width: 6),
           SizedBox(
-            width: 88,
+            width: 96,
             child: TextField(
               controller: controller,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
               textDirection: TextDirection.ltr,
+              inputFormatters: [
+                ThousandSeparatorInputFormatter(allowDecimal: true),
+              ],
               onTap: () {
-                // کل متن انتخاب شود تا تایپ جایگزین شود
                 controller.selection = TextSelection(
                   baseOffset: 0,
                   extentOffset: controller.text.length,
                 );
               },
               onChanged: (v) {
-                final en = _faToEn(v);
-                if (en.isEmpty) {
+                if (v.trim().isEmpty) {
                   onAmount(0);
                   return;
                 }
-                onAmount(double.tryParse(en) ?? 0);
+                onAmount(ThousandSeparatorInputFormatter.parseToDouble(v) ?? 0);
               },
               decoration: InputDecoration(
                 hintText: '۰',

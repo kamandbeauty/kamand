@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'persian_number_formatter.dart';
+import 'thousand_separator_formatter.dart';
 
-/// فیلد عددی: با فوکوس/کلیک کل متن انتخاب می‌شود تا اولین تایپ جایگزین شود
+/// فیلد عددی: فوکوس = انتخاب کل متن + جداکننده هزارگان هنگام تایپ
 class ReplaceOnTypeNumberField extends StatefulWidget {
   final double value;
   final ValueChanged<double> onChanged;
   final TextStyle? style;
   final String emptyDisplay;
   final bool allowDecimal;
+  final bool useThousandSeparator;
   final TextAlign textAlign;
   final EdgeInsetsGeometry contentPadding;
   final Color? fillColor;
@@ -22,6 +24,7 @@ class ReplaceOnTypeNumberField extends StatefulWidget {
     this.style,
     this.emptyDisplay = '',
     this.allowDecimal = true,
+    this.useThousandSeparator = true,
     this.textAlign = TextAlign.center,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
     this.fillColor,
@@ -39,45 +42,37 @@ class _ReplaceOnTypeNumberFieldState extends State<ReplaceOnTypeNumberField> {
   bool _syncing = false;
 
   String _format(double v) {
-    // اگر emptyDisplay صراحتاً '' برای صفر قیمت باشد و value==0 → خالی نشان بده
-    // برای مقدار (quantity) emptyDisplay پیش‌فرض '' نیست با معنا؛ همیشه عدد نشان می‌دهیم
-    // قرارداد: emptyDisplay == '\u0000' یعنی صفر را خالی نشان بده
     if (v == 0 && widget.emptyDisplay == '\u0000') return '';
-    if (v == v.roundToDouble()) {
-      return PersianNumberFormatter.toPersian(v.toInt().toString());
+    if (!widget.useThousandSeparator) {
+      if (v == v.roundToDouble()) {
+        return PersianNumberFormatter.toPersian(v.toInt().toString());
+      }
+      var s = v.toString();
+      if (s.contains('.')) s = s.replaceFirst(RegExp(r'\.?0+$'), '');
+      return PersianNumberFormatter.toPersian(s);
     }
-    // حذف صفرهای انتهایی اعشار بی‌مورد
-    var s = v.toString();
-    if (s.contains('.')) {
-      s = s.replaceFirst(RegExp(r'\.?0+$'), '');
+    if (v == 0) {
+      return widget.emptyDisplay == '\u0000' ? '' : PersianNumberFormatter.toPersian('0');
     }
-    return PersianNumberFormatter.toPersian(s);
-  }
-
-  String _faToEn(String s) {
-    const fa = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    const en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    var r = s;
-    for (int i = 0; i < 10; i++) {
-      r = r.replaceAll(fa[i], en[i]);
-    }
-    return r.replaceAll(RegExp(r'[^0-9.]'), '');
+    final raw = v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+    return ThousandSeparatorInputFormatter.formatDisplay(
+      raw,
+      allowDecimal: widget.allowDecimal,
+      persianDigits: true,
+    );
   }
 
   @override
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: _format(widget.value));
-    _focus = FocusNode();
-    _focus.addListener(_onFocusChange);
+    _focus = FocusNode()..addListener(_onFocusChange);
   }
 
   void _onFocusChange() {
     if (_focus.hasFocus) {
-      // کل متن را انتخاب کن تا تایپ بعدی جایگزین شود
       _ctrl.selection = TextSelection(baseOffset: 0, extentOffset: _ctrl.text.length);
     } else {
-      // نرمال‌سازی نمایش بعد از blur
       _syncFromValue(widget.value);
     }
   }
@@ -110,10 +105,6 @@ class _ReplaceOnTypeNumberFieldState extends State<ReplaceOnTypeNumberField> {
     super.dispose();
   }
 
-  void _selectAll() {
-    _ctrl.selection = TextSelection(baseOffset: 0, extentOffset: _ctrl.text.length);
-  }
-
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -124,7 +115,10 @@ class _ReplaceOnTypeNumberFieldState extends State<ReplaceOnTypeNumberField> {
       textDirection: TextDirection.ltr,
       style: widget.style,
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹.]')),
+        if (widget.useThousandSeparator)
+          ThousandSeparatorInputFormatter(allowDecimal: widget.allowDecimal)
+        else
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹.]')),
       ],
       decoration: InputDecoration(
         border: widget.border ?? InputBorder.none,
@@ -134,18 +128,17 @@ class _ReplaceOnTypeNumberFieldState extends State<ReplaceOnTypeNumberField> {
         fillColor: widget.fillColor,
         counterText: '',
       ),
-      onTap: _selectAll,
+      onTap: () {
+        _ctrl.selection = TextSelection(baseOffset: 0, extentOffset: _ctrl.text.length);
+      },
       onChanged: (v) {
         if (_syncing) return;
-        final en = _faToEn(v);
-        if (en.isEmpty) {
+        if (v.trim().isEmpty) {
           widget.onChanged(0);
           return;
         }
-        final parsed = double.tryParse(en);
-        if (parsed != null) {
-          widget.onChanged(parsed);
-        }
+        final parsed = ThousandSeparatorInputFormatter.parseToDouble(v);
+        if (parsed != null) widget.onChanged(parsed);
       },
     );
   }
