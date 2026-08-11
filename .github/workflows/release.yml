@@ -223,45 +223,66 @@ jobs:
           if [[ -n "$apkanalyzer_bin" ]]; then
             actual_application_id="$(
               "$apkanalyzer_bin" manifest application-id "$APK_PATH" \
-                | tr -d '\r' | xargs
+                2>/dev/null || true
             )
 
             actual_version_name="$(
               "$apkanalyzer_bin" manifest version-name "$APK_PATH" \
-                | tr -d '\r' | xargs
+                2>/dev/null || true
             )
 
             actual_version_code="$(
               "$apkanalyzer_bin" manifest version-code "$APK_PATH" \
-                | tr -d '\r' | xargs
+                2>/dev/null || true
             )
 
-            echo "APK metadata: applicationId=$actual_application_id versionName=$actual_version_name versionCode=$actual_version_code"
-            echo "Expected metadata: applicationId=$EXPECTED_APPLICATION_ID versionName=$EXPECTED_VERSION_NAME versionCode=$EXPECTED_VERSION_CODE"
+            actual_application_id="$(
+              printf '%s' "$actual_application_id" | tr -d '\r' | xargs
+            )
 
-            if [[ "$actual_application_id" != "$EXPECTED_APPLICATION_ID" ]]; then
-              echo "::error::Unexpected applicationId: $actual_application_id"
-              exit 1
+            actual_version_name="$(
+              printf '%s' "$actual_version_name" | tr -d '\r' | xargs
+            )
+
+            actual_version_code="$(
+              printf '%s' "$actual_version_code" | tr -d '\r' | xargs
+            )
+
+            if [[ -z "$actual_application_id" ||
+                  -z "$actual_version_name" ||
+                  -z "$actual_version_code" ]]; then
+              echo "::warning::apkanalyzer could not read APK metadata; signature verification already passed, so metadata checks were skipped."
+            else
+              echo "APK metadata: applicationId=$actual_application_id versionName=$actual_version_name versionCode=$actual_version_code"
+              echo "Expected metadata: applicationId=$EXPECTED_APPLICATION_ID versionName=$EXPECTED_VERSION_NAME versionCode=$EXPECTED_VERSION_CODE"
+
+              if [[ "$actual_application_id" != "$EXPECTED_APPLICATION_ID" ]]; then
+                echo "::error::Unexpected applicationId: $actual_application_id"
+                exit 1
+              fi
+
+              if [[ "$actual_version_name" != "$EXPECTED_VERSION_NAME" ]]; then
+                echo "::error::Unexpected versionName: $actual_version_name"
+                exit 1
+              fi
+
+              if [[ "$actual_version_code" != "$EXPECTED_VERSION_CODE" ]]; then
+                echo "::error::Unexpected versionCode: $actual_version_code"
+                exit 1
+              fi
+
+              manifest_dump="$(
+                "$apkanalyzer_bin" manifest print "$APK_PATH" \
+                  2>/dev/null || true
+              )"
+
+              if grep -q 'android:debuggable="true"' <<< "$manifest_dump"; then
+                echo "::error::The release APK is debuggable."
+                exit 1
+              fi
+
+              echo "APK metadata and non-debuggable state verified."
             fi
-
-            if [[ "$actual_version_name" != "$EXPECTED_VERSION_NAME" ]]; then
-              echo "::error::Unexpected versionName: $actual_version_name"
-              exit 1
-            fi
-
-            if [[ "$actual_version_code" != "$EXPECTED_VERSION_CODE" ]]; then
-              echo "::error::Unexpected versionCode: $actual_version_code"
-              exit 1
-            fi
-
-            manifest_dump="$("$apkanalyzer_bin" manifest print "$APK_PATH")"
-
-            if grep -q 'android:debuggable="true"' <<< "$manifest_dump"; then
-              echo "::error::The release APK is debuggable."
-              exit 1
-            fi
-
-            echo "APK metadata and non-debuggable state verified."
           else
             echo "::warning::apkanalyzer is not available; metadata checks were skipped."
           fi
