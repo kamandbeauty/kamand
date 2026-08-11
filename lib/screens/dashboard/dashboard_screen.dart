@@ -5,6 +5,7 @@ import '../../core/utils/jalali_helper.dart';
 import '../../core/utils/persian_number_formatter.dart';
 import '../../models/invoice_model.dart';
 import '../../models/invoice_item_model.dart';
+import '../../models/product_model.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
@@ -397,13 +398,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _switchToTab(String id) {
     if (id == _activeTabId) return;
     _snapshotCurrentToActiveTab();
-    _DraftTab? t;
+    _DraftTab? found;
     for (final e in _draftTabs) {
-      if (e.id == id) { t = e; break; }
+      if (e.id == id) {
+        found = e;
+        break;
+      }
     }
-    if (t == null) return;
+    if (found == null) return;
+    final tab = found;
     setState(() {
-      _restoreTab(t);
+      _restoreTab(tab);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
