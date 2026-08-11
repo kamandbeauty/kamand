@@ -28,6 +28,9 @@ dependencies:
   # Share invoice image / file
   share_plus: ^10.1.4
 
+  # Local key-value persistence
+  shared_preferences: ^2.3.3
+
   # Persian Calendar & Date
   shamsi_date: ^1.0.2
   intl: ^0.20.2

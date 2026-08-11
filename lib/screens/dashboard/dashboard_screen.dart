@@ -47,6 +47,11 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // کنترلرهای پایدار — جلوگیری از پرش فوکوس هنگام تایپ
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _notesCtrl;
+
   // Form state — متصل به دیتابیس واقعی (§29)
   String? _editId;
   String _customerName = '';
@@ -67,7 +72,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _depositAmount = 0;
   double _prevDebtAmount = 0;
   int? _selectedRow;
-  /// با هر بار load ویرایش افزایش می‌یابد تا فیلدها دوباره ساخته شوند
+  /// با هر بار load ویرایش افزایش می‌یابد تا فیلدهای جدول دوباره ساخته شوند
   int _formGen = 0;
 
   bool get _isEditing => _editId != null;
@@ -75,6 +80,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _nameCtrl = TextEditingController();
+    _phoneCtrl = TextEditingController();
+    _notesCtrl = TextEditingController();
     _dateLabel = _todayLabel();
     // یک ردیف پیش‌فرض مثل عکس (۱ عدد)
     _items = [
@@ -101,11 +109,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  void _syncTextControllers() {
+    if (_nameCtrl.text != _customerName) {
+      _nameCtrl.value = TextEditingValue(
+        text: _customerName,
+        selection: TextSelection.collapsed(offset: _customerName.length),
+      );
+    }
+    if (_phoneCtrl.text != _customerPhone) {
+      _phoneCtrl.value = TextEditingValue(
+        text: _customerPhone,
+        selection: TextSelection.collapsed(offset: _customerPhone.length),
+      );
+    }
+    if (_notesCtrl.text != _notes) {
+      _notesCtrl.value = TextEditingValue(
+        text: _notes,
+        selection: TextSelection.collapsed(offset: _notes.length),
+      );
+    }
+  }
+
   /// پر کردن فرم هوم با داده فاکتور برای ویرایش (همان UI داشبورد)
   void _loadInvoiceForEdit(InvoiceModel e) {
     setState(() {
       _editId = e.id;
-      _customerName = e.customerName;
+      _customerName = e.customerName == 'مشتری عمومی' ? '' : e.customerName;
       _customerPhone = e.customerPhone;
       _invoiceNumber = PersianNumberFormatter.toPersian(e.number);
       _dateLabel = e.date.isNotEmpty ? PersianNumberFormatter.toPersian(e.date) : _todayLabel();
@@ -126,7 +163,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _invoiceType = e.type;
       _paymentType = e.paymentType;
       _hasDiscount = e.discountAmount > 0;
-      _discountAmount = e.discountAmount;
+      _discountAmount = e.discountPercent > 0 ? e.discountPercent : e.discountAmount;
       _discountIsPercent = e.discountPercent > 0;
       _hasShipping = e.shippingFee > 0;
       _shippingFee = e.shippingFee;
@@ -137,6 +174,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _notes = e.notes;
       _selectedRow = null;
       _formGen++;
+      _syncTextControllers();
     });
   }
 
@@ -163,6 +201,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _invoiceType = 'proforma';
       _paymentType = 'cash';
       _formGen++;
+      _syncTextControllers();
     });
   }
 
@@ -437,12 +476,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           key: ValueKey('form-$_formGen'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1) دکمه سربرگ — نارنجی روبی (عکس آبی بود، روبی نارنجی)
+            // 1) تنظیمات فاکتور / سربرگ
             SizedBox(
               height: 52,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _orange,
@@ -450,34 +492,84 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('برای افزودن سربرگ کلیک کنید', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                child: const Text(
+                  'تنظیمات فاکتور',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                ),
               ),
             ),
             const SizedBox(height: 12),
 
-            // 2) کارت اطلاعات مشتری
+            // 2) کارت اطلاعات مشتری — کنترلر پایدار (بدون پرش فوکوس)
             _grayCard(
               dark: dark,
               child: Column(
                 children: [
-                  _customerField(label: 'نام مشتری:', value: _customerName, hint: '', onChanged: (v)=> setState(()=> _customerName=v), dark: dark),
+                  _stableCustomerField(
+                    label: 'نام مشتری:',
+                    controller: _nameCtrl,
+                    hint: 'مثلاً: رضا محمدی',
+                    dark: dark,
+                    keyboardType: TextInputType.name,
+                    onChanged: (v) => _customerName = v,
+                  ),
                   const SizedBox(height: 10),
-                  _customerField(label: 'شماره مشتری:', value: _customerPhone, hint: '', onChanged: (v)=> setState(()=> _customerPhone=v), dark: dark, keyboardType: TextInputType.phone),
+                  _stableCustomerField(
+                    label: 'شماره همراه مشتری:',
+                    controller: _phoneCtrl,
+                    hint: '۰۹۱۲…',
+                    dark: dark,
+                    keyboardType: TextInputType.phone,
+                    onChanged: (v) => _customerPhone = v,
+                  ),
                   const SizedBox(height: 10),
-                  Divider(color: dark? _slate700: _cardGrayBorder, height: 1),
+                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      Expanded(child: Row(children: [
-                        Text('شماره فاکتور:', style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500)),
-                        const SizedBox(width: 6),
-                        Text(PersianNumberFormatter.toPersian(_invoiceNumber), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: dark? Colors.white: _slate800)),
-                        const SizedBox(width: 6),
-                        Container(width: 6, height: 6, decoration: const BoxDecoration(color: _orange, shape: BoxShape.circle)),
-                      ])),
-                      Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                        Flexible(child: Text('تاریخ: $_dateLabel', style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
-                      ])),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Text(
+                              'شماره فاکتور:',
+                              style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              PersianNumberFormatter.toPersian(_invoiceNumber),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: dark ? Colors.white : _slate800,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(color: _orange, shape: BoxShape.circle),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'تاریخ: $_dateLabel',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: dark ? Colors.white : _slate800,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -980,9 +1072,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               dark: dark,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: TextField(
-                key: ValueKey('notes-$_formGen'),
-                controller: TextEditingController(text: _notes)
-                  ..selection = TextSelection.collapsed(offset: _notes.length),
+                controller: _notesCtrl,
                 onChanged: (v) => _notes = v,
                 maxLines: 3,
                 minLines: 1,
@@ -1225,47 +1315,69 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _customerField({
+  /// فیلد پایدار با کنترلر — فوکوس هنگام تایپ از دست نمی‌رود
+  Widget _stableCustomerField({
     required String label,
-    required String value,
+    required TextEditingController controller,
     required String hint,
-    required Function(String) onChanged,
     required bool dark,
+    required ValueChanged<String> onChanged,
     TextInputType? keyboardType,
   }) {
+    final isPhone = keyboardType == TextInputType.phone;
     return Row(
       children: [
         SizedBox(
-          width: 90,
-          child: Text(label, style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500)),
+          width: 110,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500, fontWeight: FontWeight.w600),
+          ),
         ),
         Expanded(
           child: Container(
-            height: 36,
+            height: 42,
             decoration: BoxDecoration(
               color: dark ? _slate700 : Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: dark ? _slate700 : _cardGrayBorder),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: dark ? _slate600 : const Color(0xFFCBD5E1),
+                width: 1.2,
+              ),
+              boxShadow: dark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            alignment: Alignment.center,
             child: TextField(
-              // key باعث می‌شود با ورود به حالت ویرایش مقدار جدید لود شود
-              key: ValueKey('$label-$value-$_formGen'),
-              controller: TextEditingController(text: value)
-                ..selection = TextSelection.collapsed(offset: value.length),
+              controller: controller,
               onChanged: onChanged,
               keyboardType: keyboardType,
-              textDirection:
-                  keyboardType == TextInputType.phone ? TextDirection.ltr : TextDirection.rtl,
+              textDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
               textAlign: TextAlign.right,
               decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: hint,
-                hintTextDirection: TextDirection.rtl,
-                hintStyle: const TextStyle(fontSize: 11, color: _slate400),
                 isDense: true,
+                hintText: hint,
+                hintTextDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                  color: dark ? _slate400.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
               ),
-              style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: dark ? Colors.white : _slate800,
+              ),
             ),
           ),
         ),

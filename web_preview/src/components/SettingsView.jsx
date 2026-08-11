@@ -27,6 +27,7 @@ export default function SettingsView({
 }) {
   // ── User Profile ──
   const [userName, setUserName] = useState(user?.name || '');
+  const [userPhone, setUserPhone] = useState(user?.phone || '');
   const [userCountry, setUserCountry] = useState(user?.country || 'ایران');
   const [userProvince, setUserProvince] = useState(user?.province || 'تهران');
   const [userCity, setUserCity] = useState(user?.city || 'تهران');
@@ -62,6 +63,7 @@ export default function SettingsView({
   // Sync local form when parent props change (e.g. after restore / reset)
   useEffect(() => {
     setUserName(user?.name || '');
+    setUserPhone(user?.phone || '');
     setUserCountry(user?.country || 'ایران');
     setUserProvince(user?.province || 'تهران');
     setUserCity(user?.city || 'تهران');
@@ -113,6 +115,7 @@ export default function SettingsView({
     const nextUser = {
       ...(user || {}),
       name,
+      phone: String(userPhone || '').trim(),
       country: userCountry,
       province: userProvince,
       city: userCity,
@@ -263,6 +266,27 @@ export default function SettingsView({
               }}
               placeholder="مثلاً: علی علوی"
               className={fieldClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="user-phone">
+              شماره تلفن / همراه
+            </label>
+            <input
+              id="user-phone"
+              name="userPhone"
+              type="tel"
+              autoComplete="tel"
+              value={userPhone}
+              onChange={(e) => {
+                setUserPhone(e.target.value);
+                markDirty();
+              }}
+              placeholder="۰۹۱۲…"
+              className={fieldClass}
+              dir="ltr"
+              style={{ textAlign: 'right' }}
             />
           </div>
 
@@ -660,7 +684,7 @@ export default function SettingsView({
           ].map((item) => (
             <div key={item.key} className="rounded-2xl border border-slate-200 dark:border-slate-600 p-3 space-y-2 bg-slate-50 dark:bg-slate-900">
               <div className="font-bold text-xs text-slate-700 dark:text-slate-200">{item.label}</div>
-              <div className="h-28 rounded-xl bg-white dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden relative">
+              <div className="h-28 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden relative" style={{ backgroundImage: "linear-gradient(45deg,#e2e8f0 25%,transparent 25%),linear-gradient(-45deg,#e2e8f0 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8f0 75%),linear-gradient(-45deg,transparent 75%,#e2e8f0 75%)", backgroundSize: "16px 16px", backgroundPosition: "0 0,0 8px,8px -8px,-8px 0", backgroundColor: "#f8fafc" }}>
                 {item.value ? (
                   <>
                     <img src={item.value} alt={item.label} className="max-h-full max-w-full object-contain p-2" />
@@ -848,13 +872,16 @@ function StampCropModal({ src, title, onCancel, onDone }) {
         const d = id.data;
         for (let i = 0; i < d.length; i += 4) {
           const r = d[i], g = d[i + 1], b = d[i + 2];
-          if (r > 238 && g > 238 && b > 238) {
+          const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+          const maxC = Math.max(r, g, b);
+          const minC = Math.min(r, g, b);
+          const sat = maxC - minC;
+          // سفید / خاکستری خیلی روشن با اشباع کم → شفاف
+          if ((luma >= 220 || minC >= 210) && sat < 40) {
             d[i + 3] = 0;
-          } else {
-            const minC = Math.min(r, g, b);
-            if (minC > 213) {
-              d[i + 3] = Math.round(((238 - minC) / 25) * 255);
-            }
+          } else if (luma >= 185 && sat < 28) {
+            const t = Math.max(0, Math.min(1, (220 - luma) / 35));
+            d[i + 3] = Math.round(t * d[i + 3]);
           }
         }
         ctx.putImageData(id, 0, 0);

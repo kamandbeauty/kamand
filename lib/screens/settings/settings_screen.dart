@@ -135,11 +135,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   _infoRow('نام', user.name),
+                  _infoRow('تلفن کاربر', user.phone.isEmpty ? '—' : user.phone),
                   _infoRow('کشور / شهر', '${user.country} · ${user.city}'),
                   _infoRow('استان', user.province.isEmpty ? '—' : user.province),
                   _infoRow('نوع فعالیت', _usageLabel(user.usageType)),
                   _infoRow('فروشگاه', business.shopName),
-                  _infoRow('تلفن', business.phone.isEmpty ? '—' : business.phone),
+                  _infoRow('تلفن کسب‌وکار', business.phone.isEmpty ? '—' : business.phone),
                 ],
               ),
             ),
@@ -196,6 +197,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _editUserProfile(BuildContext context, UserModel user) async {
     final nameCtrl = TextEditingController(text: user.name);
+    final phoneCtrl = TextEditingController(text: user.phone);
     final countryCtrl = TextEditingController(text: user.country);
     final provinceCtrl = TextEditingController(text: user.province);
     final cityCtrl = TextEditingController(text: user.city);
@@ -244,6 +246,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       controller: nameCtrl,
                       decoration: const InputDecoration(
                         labelText: 'نام شما *',
+                        border: OutlineInputBorder(),
+                      ),
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.right,
+                      decoration: const InputDecoration(
+                        labelText: 'شماره تلفن / همراه',
+                        hintText: '۰۹۱۲…',
                         border: OutlineInputBorder(),
                       ),
                       textInputAction: TextInputAction.next,
@@ -330,9 +345,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (saved == true && mounted) {
       ref.read(userProvider.notifier).updateUser(
-            UserModel(
-              id: user.id,
+            user.copyWith(
               name: nameCtrl.text.trim(),
+              phone: phoneCtrl.text.trim(),
               country: countryCtrl.text.trim().isEmpty ? 'ایران' : countryCtrl.text.trim(),
               province: provinceCtrl.text.trim(),
               city: cityCtrl.text.trim(),
@@ -346,6 +361,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
 
     nameCtrl.dispose();
+    phoneCtrl.dispose();
     countryCtrl.dispose();
     provinceCtrl.dispose();
     cityCtrl.dispose();

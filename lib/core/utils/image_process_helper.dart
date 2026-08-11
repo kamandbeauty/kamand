@@ -4,37 +4,56 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-/// پردازش تصویر مهر/امضا: کراپ + حذف پس‌زمینه سفید/نزدیک‌سفید
+/// پردازش تصویر مهر/امضا: کراپ + حذف پس‌زمینه سفید/روشن
 class ImageProcessHelper {
-  /// حذف پیکسل‌های نزدیک سفید (شفاف‌سازی)
+  /// حذف پس‌زمینه روشن با آستانه قابل تنظیم + حفظ کانال آلفا
   static img.Image removeNearWhiteBackground(
     img.Image src, {
-    int threshold = 238,
+    int threshold = 225,
+    int softness = 35,
   }) {
-    final out = img.Image.from(src);
-    for (var y = 0; y < out.height; y++) {
-      for (var x = 0; x < out.width; x++) {
-        final px = out.getPixel(x, y);
+    // خروجی حتماً RGBA تا شفافیت ذخیره شود
+    final out = img.Image(
+      width: src.width,
+      height: src.height,
+      numChannels: 4,
+    );
+
+    for (var y = 0; y < src.height; y++) {
+      for (var x = 0; x < src.width; x++) {
+        final px = src.getPixel(x, y);
         final r = px.r.toInt();
         final g = px.g.toInt();
         final b = px.b.toInt();
-        // نزدیک سفید یا خاکستری خیلی روشن
-        if (r >= threshold && g >= threshold && b >= threshold) {
-          out.setPixelRgba(x, y, r, g, b, 0);
-        } else {
-          // کمی soft edge برای مرزها
-          final minC = r < g ? (r < b ? r : b) : (g < b ? g : b);
-          if (minC > threshold - 25) {
-            final a = ((threshold - minC) / 25.0 * 255).clamp(0, 255).toInt();
-            out.setPixelRgba(x, y, r, g, b, a);
-          }
+        final aIn = px.a.toInt();
+
+        // روشنایی (luma تقریبی)
+        final luma = (0.299 * r + 0.587 * g + 0.114 * b);
+        // نزدیکی به خاکستری روشن (پس‌زمینه کاغذ/اسکن)
+        final maxC = r > g ? (r > b ? r : b) : (g > b ? g : b);
+        final minC = r < g ? (r < b ? r : b) : (g < b ? g : b);
+        final saturation = maxC - minC;
+
+        int aOut = aIn;
+
+        // سفید / نزدیک سفید / خاکستری خیلی روشن با اشباع کم → شفاف
+        final isBright = luma >= threshold || (minC >= threshold - 10);
+        final isPaleGray = luma >= (threshold - softness) && saturation < 28;
+
+        if (isBright && saturation < 40) {
+          aOut = 0;
+        } else if (isPaleGray) {
+          // لبه نرم
+          final t = ((threshold - luma) / softness).clamp(0.0, 1.0);
+          aOut = (t * aIn).round().clamp(0, 255);
         }
+
+        out.setPixelRgba(x, y, r, g, b, aOut);
       }
     }
     return out;
   }
 
-  /// کراپ نرمال‌شده (مقادیر 0..1 نسبت به عرض/ارتفاع)
   static img.Image cropNormalized(
     img.Image src, {
     required double left,
@@ -49,7 +68,7 @@ class ImageProcessHelper {
     return img.copyCrop(src, x: l, y: t, width: r - l, height: b - t);
   }
 
-  /// پردازش کامل و ذخیره دائمی در پوشه اپ
+  /// پردازش کامل و ذخیره دائمی PNG شفاف
   static Future<String> processAndSave({
     required Uint8List bytes,
     required String kind, // stamp | signature | logo
@@ -58,11 +77,27 @@ class ImageProcessHelper {
     double right = 1,
     double bottom = 1,
     bool removeWhite = true,
-    int maxSide = 800,
+    int maxSide = 900,
   }) async {
     var decoded = img.decodeImage(bytes);
     if (decoded == null) {
       throw Exception('تصویر قابل خواندن نیست');
+    }
+
+    // تبدیل به RGBA
+    if (decoded.numChannels < 4) {
+      final rgba = img.Image(
+        width: decoded.width,
+        height: decoded.height,
+        numChannels: 4,
+      );
+      for (var y = 0; y < decoded.height; y++) {
+        for (var x = 0; x < decoded.width; x++) {
+          final px = decoded.getPixel(x, y);
+          rgba.setPixelRgba(x, y, px.r.toInt(), px.g.toInt(), px.b.toInt(), 255);
+        }
+      }
+      decoded = rgba;
     }
 
     decoded = cropNormalized(
@@ -74,10 +109,12 @@ class ImageProcessHelper {
     );
 
     if (removeWhite) {
-      decoded = removeNearWhiteBackground(decoded);
+      // آستانه پایین‌تر برای اسکن‌های خاکستری
+      decoded = removeNearWhiteBackground(decoded, threshold: 220, softness: 40);
+      // پاس دوم برای سفیدهای باقی‌مانده
+      decoded = removeNearWhiteBackground(decoded, threshold: 235, softness: 20);
     }
 
-    // resize if too large
     if (decoded.width > maxSide || decoded.height > maxSide) {
       if (decoded.width >= decoded.height) {
         decoded = img.copyResize(decoded, width: maxSide);
@@ -95,8 +132,7 @@ class ImageProcessHelper {
       folder.path,
       '${kind}_${DateTime.now().millisecondsSinceEpoch}.png',
     );
-    final file = File(outPath);
-    await file.writeAsBytes(img.encodePng(decoded));
+    await File(outPath).writeAsBytes(img.encodePng(decoded));
     return outPath;
   }
 }

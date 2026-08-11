@@ -346,6 +346,7 @@ export default function App() {
             onSaveInvoice={handleSaveInvoice}
             onCancel={() => setActiveTab('dashboard')}
             onNewCustomerModal={() => setActiveTab('customers')}
+            onOpenSettings={() => setActiveTab('settings')}
             tabs={factorTabs}
             activeTabId={activeFactorTabId}
             onSelectTab={(id) => {

@@ -645,11 +645,19 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                                 child: Column(
                                   children: [
                                     if (showStamp)
-                                      SizedBox(
-                                        height: 72,
+                                      Container(
+                                        height: 80,
+                                        width: double.infinity,
+                                        alignment: Alignment.center,
+                                        decoration: const BoxDecoration(
+                                          // شطرنجی برای نمایش شفافیت
+                                          color: Color(0xFFF1F5F9),
+                                        ),
                                         child: Image.file(
                                           File(biz.stampPath),
+                                          height: 72,
                                           fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.high,
                                           errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                                         ),
                                       )
@@ -667,11 +675,16 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                                 child: Column(
                                   children: [
                                     if (showSign)
-                                      SizedBox(
-                                        height: 56,
+                                      Container(
+                                        height: 64,
+                                        width: double.infinity,
+                                        alignment: Alignment.center,
+                                        color: const Color(0xFFF1F5F9),
                                         child: Image.file(
                                           File(biz.signaturePath),
+                                          height: 56,
                                           fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.high,
                                           errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                                         ),
                                       )

@@ -2,6 +2,7 @@ import { getTodayJalali } from '../utils/helpers';
 
 export const INITIAL_USER = {
   name: 'علی علوی',
+  phone: '',
   currency: 'تومان',
   country: 'ایران',
   province: 'تهران',

@@ -38,6 +38,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final updatedUser = UserModel(
         id: 'u1',
         name: _nameController.text.trim(),
+        phone: '',
         country: _selectedCountry,
         province: _selectedCountry == 'ایران' ? _selectedProvince : '',
         city: _selectedCity,

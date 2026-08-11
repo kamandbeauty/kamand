@@ -24,6 +24,7 @@ export default function InvoiceCreatorView({
   onSaveInvoice,
   onCancel,
   onNewCustomerModal,
+  onOpenSettings,
   tabs,
   activeTabId,
   onSelectTab,
@@ -252,39 +253,44 @@ export default function InvoiceCreatorView({
 
   return (
     <div className="relative max-w-lg mx-auto pb-20 animate-fade-in font-vazir" dir="rtl">
-      {/* ۱) دکمه سربرگ — نارنجی روبی */}
+      {/* ۱) تنظیمات فاکتور */}
       <button
         type="button"
-        onClick={() =>
-          alert('جهت افزودن سربرگ کسب‌وکار، نام و لوگو را در بخش تنظیمات وارد کنید.')
-        }
+        onClick={() => {
+          if (typeof onOpenSettings === 'function') {
+            onOpenSettings();
+          } else {
+            alert('از منو وارد تنظیمات شوید تا سربرگ، مهر و امضا را ویرایش کنید.');
+          }
+        }}
         className="w-full h-[52px] mb-3 rounded-2xl bg-[#F97316] hover:bg-[#EA580C] text-white font-extrabold text-[13px] shadow-sm transition active:scale-[0.99]"
       >
-        برای افزودن سربرگ کلیک کنید
+        تنظیمات فاکتور
       </button>
 
       {/* ۲) کارت اطلاعات مشتری */}
       <div className="mb-2.5 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 border border-transparent dark:border-slate-700 p-3 space-y-2.5">
         {/* نام مشتری */}
         <div className="flex items-center gap-2">
-          <span className="w-[88px] shrink-0 text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="w-[108px] shrink-0 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
             نام مشتری:
           </span>
-          <div className="flex-1 flex items-center gap-1.5 h-9 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2">
+          <div className="flex-1 flex items-center gap-1.5 h-[42px] rounded-[10px] bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 shadow-sm px-2.5">
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="نام مشتری"
+              placeholder="مثلاً: رضا محمدی"
               dir="rtl"
               lang="fa"
-              className="invoice-rtl-input flex-1 min-w-0 bg-transparent outline-none text-[12px] font-medium text-slate-800 dark:text-white"
+              autoComplete="off"
+              className="invoice-rtl-input flex-1 min-w-0 bg-transparent outline-none text-[13px] font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 placeholder:font-normal"
               style={{ direction: 'rtl', textAlign: 'right', unicodeBidi: 'plaintext' }}
             />
             <button
               type="button"
               onClick={() => setShowCustomerModal(true)}
-              className="shrink-0 p-1 rounded-md text-[#F97316] hover:bg-orange-50 dark:hover:bg-orange-900/20"
+              className="shrink-0 p-1.5 rounded-md text-[#F97316] hover:bg-orange-50 dark:hover:bg-orange-900/20"
               title="انتخاب مشتری"
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -292,17 +298,18 @@ export default function InvoiceCreatorView({
           </div>
         </div>
 
-        {/* شماره مشتری */}
+        {/* شماره همراه مشتری */}
         <div className="flex items-center gap-2">
-          <span className="w-[88px] shrink-0 text-[11px] text-slate-500 dark:text-slate-400">
-            شماره مشتری:
+          <span className="w-[108px] shrink-0 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            شماره همراه مشتری:
           </span>
-          <div className="flex-1 h-9 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2 flex items-center">
+          <div className="flex-1 h-[42px] rounded-[10px] bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 shadow-sm px-2.5 flex items-center">
             <input
               type="tel"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
-              className="w-full bg-transparent outline-none text-[12px] font-medium text-slate-800 dark:text-white text-right"
+              placeholder="۰۹۱۲…"
+              className="w-full bg-transparent outline-none text-[13px] font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 placeholder:font-normal"
               dir="ltr"
               style={{ textAlign: 'right' }}
             />
