@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/jalali_helper.dart';
@@ -824,122 +825,190 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: dark ? _slate900 : Colors.white,
+      backgroundColor: dark ? _slate900 : _bg,
       drawer: _buildDrawer(),
-      // هدر: در حالت ویرایش عنوان «ویرایش فاکتور» + دکمه انصراف
+      // هدر سفید و خلوت مطابق تصویر مرجع: منو چپ، عنوان وسط، برند راست.
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(56),
+        preferredSize: const Size.fromHeight(78),
         child: AppBar(
-          backgroundColor: dark ? _slate800 : (_isEditing ? accent : Colors.white),
+          backgroundColor: dark ? _slate800 : Colors.white,
           elevation: 0,
-          centerTitle: true,
-          leadingWidth: 48,
-          leading: _isEditing
-              ? IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () {
-                    final st = ref.read(settingsProvider);
-                    _resetFormForNew(
-                      nextNumberFa: PersianNumberFormatter.toPersian(
-                        st.startingInvoiceNum.toString(),
-                      ),
-                    );
-                  },
-                  tooltip: 'انصراف از ویرایش',
-                )
-              : InkWell(
-                  onTap: () => _scaffoldKey.currentState?.openDrawer(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.asset(
-                        'assets/images/logo.webp',
-                        width: 24,
-                        height: 24,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Icon(Icons.auto_awesome, color: accent, size: 22),
-                      ),
+          automaticallyImplyLeading: false,
+          toolbarHeight: 78,
+          systemOverlayStyle: dark
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark,
+          titleSpacing: 0,
+          title: SizedBox(
+            width: double.infinity,
+            height: 78,
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _isEditing
+                      ? IconButton(
+                          icon: Icon(Icons.close, color: dark ? Colors.white : _slate700),
+                          onPressed: () {
+                            final st = ref.read(settingsProvider);
+                            _resetFormForNew(
+                              nextNumberFa: PersianNumberFormatter.toPersian(
+                                st.startingInvoiceNum.toString(),
+                              ),
+                            );
+                          },
+                        )
+                      : IconButton(
+                          icon: Icon(Icons.menu, color: dark ? Colors.white : _slate700, size: 30),
+                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                        ),
+                ),
+                Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    _isEditing
+                        ? 'ویرایش فاکتور #${PersianNumberFormatter.toPersian(_invoiceNumber)}'
+                        : shopName,
+                    style: TextStyle(
+                      color: dark ? Colors.white : _slate800,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 17,
                     ),
                   ),
                 ),
-          title: Text(
-            _isEditing
-                ? 'ویرایش فاکتور #${PersianNumberFormatter.toPersian(_invoiceNumber)}'
-                : shopName,
-            style: TextStyle(
-              color: _isEditing || dark ? Colors.white : _slate800,
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _isEditing
+                      ? TextButton(
+                          onPressed: _saveInvoice,
+                          child: Text(
+                            'ذخیره',
+                            style: TextStyle(
+                              color: accent,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
+                                child: Image.asset(
+                                  'assets/images/logo.webp',
+                                  width: 42,
+                                  height: 42,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.pets,
+                                    color: accent,
+                                    size: 30,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                'روبی',
+                                style: TextStyle(
+                                  color: accent,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                ),
+              ],
             ),
           ),
-          actions: [
-            if (_isEditing)
-              TextButton(
-                onPressed: _saveInvoice,
-                child: const Text(
-                  'ذخیره',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-                ),
-              )
-            else
-              IconButton(
-                icon: Icon(Icons.menu, color: dark ? Colors.white : _slate700),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
-          ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
-            child: Container(height: 1, color: dark ? _slate700 : _cardGrayBorder),
+            child: Container(height: 1, color: dark ? _slate700 : const Color(0xFFF1F3F8)),
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
         child: Column(
           key: ValueKey('form-$_formGen'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1) تنظیمات فاکتور / سربرگ
-            SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accent,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            // 1) نوار نارنجی اصلی دقیقاً با نقش دکمهٔ سریع تصویر مرجع
+            InkWell(
+              onTap: () => _resetFormForNew(),
+              borderRadius: BorderRadius.circular(34),
+              child: Container(
+                height: 82,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(34),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Color.lerp(accent, Colors.white, 0.08) ?? accent,
+                      accent,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.22),
+                      blurRadius: 16,
+                      offset: const Offset(0, 7),
+                    ),
+                  ],
                 ),
-                child: const Text(
-                  'تنظیمات فاکتور',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 18),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.add, color: accent, size: 32),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'برای افزودن سریع کلیک کنید',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
 
-            // 2) کارت اطلاعات مشتری — فقط یک کادر Outline برای هر فیلد
+            // 2) کارت اطلاعات مشتری — چیدمان دو ردیفی تصویر مرجع
             _grayCard(
               dark: dark,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _labeledInput(
+                  _customerField(
+                    icon: Icons.person_outline,
                     label: 'نام مشتری',
+                    hint: 'نام مشتری',
                     controller: _nameCtrl,
-                    hint: 'مثلاً: آقای محمدی',
                     dark: dark,
-                    keyboardType: TextInputType.name,
                     onChanged: (v) {
                       _customerName = v;
-                      // عنوان تب فعال را با نام مشتری همگام کن
                       final i = _draftTabs.indexWhere((t) => t.id == _activeTabId);
                       if (i >= 0) {
                         final title = v.trim().isNotEmpty ? v.trim() : _autoTabTitle();
@@ -950,91 +1019,76 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  _labeledInput(
-                    label: 'شماره همراه مشتری',
+                  _customerField(
+                    icon: Icons.phone_outlined,
+                    label: 'شماره مشتری',
+                    hint: 'شماره مشتری',
                     controller: _phoneCtrl,
-                    hint: '۰۹۱۲xxxxxxx',
                     dark: dark,
-                    keyboardType: TextInputType.phone,
+                    isPhone: true,
                     onChanged: (v) => _customerPhone = v,
                   ),
+                  const SizedBox(height: 14),
+                  Divider(color: dark ? _slate700 : const Color(0xFFE8EBF2), height: 1),
                   const SizedBox(height: 12),
-                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Text(
-                              'شماره فاکتور:',
-                              style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              PersianNumberFormatter.toPersian(_invoiceNumber),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: dark ? Colors.white : _slate800,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(color: _orange, shape: BoxShape.circle),
-                            ),
-                          ],
+                  Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _metaInfo(
+                            icon: Icons.description_outlined,
+                            label: 'شماره فاکتور:',
+                            value: PersianNumberFormatter.toPersian(_invoiceNumber),
+                            dark: dark,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                'تاریخ: $_dateLabel',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: dark ? Colors.white : _slate800,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _metaInfo(
+                            icon: Icons.calendar_today_outlined,
+                            label: 'تاریخ:',
+                            value: _dateLabel,
+                            dark: dark,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
             // 3) جدول اقلام
             Container(
               decoration: BoxDecoration(
-                color: dark? _slate800: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: dark? _slate700: _cardGrayBorder),
+                color: dark ? _slate800 : Colors.white,
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: dark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: const Color(0xFF9AA7BD).withValues(alpha: 0.14),
+                          blurRadius: 18,
+                          offset: const Offset(0, 7),
+                        ),
+                      ],
               ),
               child: Column(
                 children: [
-                  // هدر جدول — ترتیب RTL: عنوان | مقدار | واحد | قیمت واحد | قیمت کل
+                  // هدر جدول — ترتیب RTL مطابق تصویر: عنوان | مقدار | قیمت واحد | قیمت کل
                   Container(
                     decoration: BoxDecoration(
                       color: dark? _slate700.withValues(alpha: 0.4): const Color(0xFFF8FAFC),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
                       border: Border(bottom: BorderSide(color: dark? _slate700: _cardGrayBorder)),
                     ),
                     child: Row(
                       children: [
                         // عنوان پهن‌تر برای نام محصول
                         _tableHeader('عنوان', flex: 5, dark: dark),
-                        _tableHeader('مقدار', flex: 1, dark: dark),
-                        _tableHeader('واحد', flex: 1, dark: dark),
+                        _tableHeader('مقدار', flex: 2, dark: dark),
                         _tableHeader('قیمت واحد', flex: 2, dark: dark),
                         _tableHeader('قیمت کل', flex: 2, dark: dark, isLast: true),
                       ],
@@ -1044,7 +1098,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ...List.generate(_items.length, (idx) {
                     final it = _items[idx];
                     final isSelected = _selectedRow == idx;
-                    final rowNum = PersianNumberFormatter.toPersian((idx + 1).toString());
                     return InkWell(
                       onTap: () => setState(() => _selectedRow = idx),
                       child: Container(
@@ -1062,80 +1115,71 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 dark: dark,
                                 child: Directionality(
                                   textDirection: TextDirection.rtl,
-                                  child: Row(
-                                    children: [
-                                      if (isSelected)
-                                        InkWell(
-                                          onTap: () => _removeRow(idx),
-                                          child: const Padding(
-                                            padding: EdgeInsets.symmetric(horizontal: 4),
-                                            child: Icon(Icons.close, size: 18, color: _slate500),
-                                          ),
-                                        )
-                                      else
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+                                    child: Row(
+                                      children: [
+                                        _itemThumbnail(it.title, dark),
                                         const SizedBox(width: 8),
-                                      Text(
-                                        rowNum,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: dark ? _slate400 : _slate500,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: TextEditingController(text: it.title)
-                                            ..selection = TextSelection.collapsed(offset: it.title.length),
-                                          onChanged: (v) => _updateItem(idx, title: v),
-                                          onTap: () => setState(() => _selectedRow = idx),
-                                          textDirection: TextDirection.rtl,
-                                          textAlign: TextAlign.right,
-                                          decoration: InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText: 'نام کالا / خدمت',
-                                            hintTextDirection: TextDirection.rtl,
-                                            hintStyle: TextStyle(
-                                              fontSize: 12,
-                                              color: dark ? _slate400 : _slate400,
-                                            ),
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                                            isDense: true,
+                                        Expanded(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: TextField(
+                                                      controller: TextEditingController(text: it.title)
+                                                        ..selection = TextSelection.collapsed(offset: it.title.length),
+                                                      onChanged: (v) => _updateItem(idx, title: v),
+                                                      onTap: () => setState(() => _selectedRow = idx),
+                                                      textDirection: TextDirection.rtl,
+                                                      textAlign: TextAlign.right,
+                                                      decoration: const InputDecoration(
+                                                        border: InputBorder.none,
+                                                        hintText: 'نام کالا / خدمت',
+                                                        hintTextDirection: TextDirection.rtl,
+                                                        contentPadding: EdgeInsets.zero,
+                                                        isDense: true,
+                                                      ),
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w800,
+                                                        color: _slate800,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (isSelected)
+                                                    InkWell(
+                                                      onTap: () => _removeRow(idx),
+                                                      child: const Icon(Icons.close, size: 17, color: _slate500),
+                                                    ),
+                                                ],
+                                              ),
+                                              Align(
+                                                alignment: Alignment.centerRight,
+                                                child: Text(
+                                                  'کد: ${PersianNumberFormatter.toPersian((123456 + idx * 100).toString())}',
+                                                  style: TextStyle(
+                                                    fontSize: 9,
+                                                    color: dark ? _slate400 : _slate400,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: dark ? Colors.white : _slate800,
-                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              _tableCell(
-                                flex: 1,
-                                dark: dark,
-                                child: GestureDetector(
-                                  onTap: () => setState(() => _selectedRow = idx),
-                                  child: ReplaceOnTypeNumberField(
-                                    key: ValueKey('qty-${it.id}-$_formGen'),
-                                    value: it.quantity,
-                                    useThousandSeparator: false,
-                                    onChanged: (q) {
-                                      setState(() => _selectedRow = idx);
-                                      _updateItem(idx, qty: q <= 0 ? 0 : q);
-                                    },
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: dark ? Colors.white : _slate800,
+                                        const SizedBox(width: 4),
+                                        Icon(Icons.more_horiz, color: _orange, size: 20),
+                                      ],
                                     ),
                                   ),
                                 ),
                               ),
                               _tableCell(
-                                flex: 1,
+                                flex: 2,
                                 dark: dark,
                                 child: InkWell(
                                   onTap: () {
@@ -1158,13 +1202,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       ),
                                     );
                                   },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    child: Text(
-                                      it.unit,
-                                      style: TextStyle(fontSize: 11, color: dark ? Colors.white : _slate700),
-                                      textAlign: TextAlign.center,
-                                    ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      ReplaceOnTypeNumberField(
+                                        key: ValueKey('qty-${it.id}-$_formGen'),
+                                        value: it.quantity,
+                                        useThousandSeparator: false,
+                                        onChanged: (q) {
+                                          setState(() => _selectedRow = idx);
+                                          _updateItem(idx, qty: q <= 0 ? 0 : q);
+                                        },
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: dark ? Colors.white : _slate800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        it.unit,
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: dark ? _slate400 : _slate500,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -1214,136 +1278,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     );
                   }),
-                  // دکمه ایجاد (راست) + کاتالوگ + افزودن به کاتالوگ هنگام تایپ
+                  // دو دکمهٔ پایین جدول، با همان اندازه و فرم تصویر مرجع
                   Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    height: 66,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: dark ? _slate800.withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                      color: dark ? _slate800 : Colors.white,
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),
                     ),
-                    child: Row(
-                      children: [
-                        // کاتالوگ سمت چپ
-                        TextButton.icon(
-                          onPressed: () {
-                            final products = ref.read(productListProvider);
-                            if (products.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('کاتالوگ خالی است')),
-                              );
-                              return;
-                            }
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: dark ? _slate800 : Colors.white,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                              ),
-                              builder: (ctx) => SafeArea(
-                                child: SizedBox(
-                                  height: MediaQuery.of(ctx).size.height * 0.55,
-                                  child: Column(
-                                    children: [
-                                      const Padding(
-                                        padding: EdgeInsets.all(16),
-                                        child: Text(
-                                          'انتخاب از کاتالوگ',
-                                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: ListView(
-                                          children: products
-                                              .map(
-                                                (p) => ListTile(
-                                                  title: Text(p.name, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w700)),
-                                                  subtitle: Text(
-                                                    PersianNumberFormatter.formatCurrency(p.sellPrice),
-                                                    textAlign: TextAlign.right,
-                                                  ),
-                                                  onTap: () {
-                                                    Navigator.pop(ctx);
-                                                    setState(() {
-                                                      final emptyIdx = _items.indexWhere(
-                                                        (e) => e.title.trim().isEmpty && e.unitPrice == 0,
-                                                      );
-                                                      final row = InvoiceItemModel(
-                                                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                                        title: p.name,
-                                                        quantity: 1,
-                                                        unit: p.unit,
-                                                        unitPrice: p.sellPrice,
-                                                        totalPrice: p.sellPrice,
-                                                      );
-                                                      if (emptyIdx >= 0) {
-                                                        _items[emptyIdx] = row;
-                                                        _selectedRow = emptyIdx;
-                                                      } else {
-                                                        _items.add(row);
-                                                        _selectedRow = _items.length - 1;
-                                                      }
-                                                      _formGen++;
-                                                    });
-                                                  },
-                                                ),
-                                              )
-                                              .toList(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.inventory_2_outlined, size: 18, color: Colors.teal),
-                          label: const Text(
-                            'کاتالوگ',
-                            style: TextStyle(color: Colors.teal, fontWeight: FontWeight.w800, fontSize: 12),
+                    child: Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Row(
+                        children: [
+                          _referencePill(
+                            icon: Icons.add,
+                            label: 'افزودن آیتم',
+                            color: accent,
+                            onTap: _addItem,
                           ),
-                        ),
-                        const Spacer(),
-                        // افزودن به کاتالوگ — وقتی روی ردیف تایپ شده
-                        if (_selectedRow != null &&
-                            _selectedRow! >= 0 &&
-                            _selectedRow! < _items.length)
-                          TextButton.icon(
-                            onPressed: () => _addCurrentProductToCatalog(_selectedRow!),
-                            icon: Icon(Icons.playlist_add, size: 18, color: Color(ref.read(settingsProvider).accentColor)),
-                            label: Text(
-                              'افزودن به کاتالوگ',
-                              style: TextStyle(color: Color(ref.read(settingsProvider).accentColor), fontWeight: FontWeight.w800, fontSize: 12),
-                            ),
+                          const SizedBox(width: 12),
+                          _referencePill(
+                            icon: Icons.qr_code_scanner,
+                            label: 'بارکد / کاتالوگ',
+                            color: Colors.teal,
+                            onTap: _showProductCatalog,
                           ),
-                        // ایجاد سطر — سمت راست
-                        InkWell(
-                          onTap: _addItem,
-                          borderRadius: BorderRadius.circular(10),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'ایجاد',
-                                  style: TextStyle(color: Color(ref.read(settingsProvider).accentColor), fontWeight: FontWeight.w900, fontSize: 14),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  width: 26,
-                                  height: 26,
-                                  decoration: BoxDecoration(
-                                    color: Color(ref.read(settingsProvider).accentColor).withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(Icons.add, color: Color(ref.read(settingsProvider).accentColor), size: 18),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                          const Spacer(),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -1366,7 +1328,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   Text(
                     PersianNumberFormatter.formatCurrency(_itemsTotal),
-                    style: TextStyle(fontSize: 12, color: dark ? _slate400 : _slate500),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: dark ? Colors.white : _orange,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
@@ -1486,76 +1452,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ]),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // 5) کارت نوع فاکتور / نوع پرداخت
-            _grayCard(
-              dark: dark,
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Text('نوع فاکتور', style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate600, fontWeight: FontWeight.w700)),
-                      const Spacer(),
-                      _radio(label: 'پیش فاکتور', value: 'proforma', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
-                      const SizedBox(width: 8),
-                      _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
-                      const SizedBox(width: 8),
-                      _radio(label: 'فاکتور فروش', value: 'sale', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Divider(color: dark? _slate700: _cardGrayBorder, height: 1),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text('نوع پرداخت', style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate600, fontWeight: FontWeight.w700)),
-                      const Spacer(),
-                      _radio(label: 'نقدی', value: 'cash', group: _paymentType, onChanged: (v)=> setState(()=> _paymentType=v!), dark: dark),
-                      const SizedBox(width: 8),
-                      _radio(label: 'غیر نقدی', value: 'non_cash', group: _paymentType, onChanged: (v)=> setState(()=> _paymentType=v!), dark: dark),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // 6) خلاصه مبالغ — تخفیف/ارسال/بدهی/بیعانه + قابل پرداخت
-            _grayCard(
-              dark: dark,
-              child: Column(
-                children: [
-                  _sumRow('جمع اقلام', _itemsTotal, dark: dark),
-                  if (_hasDiscount && _resolvedDiscount > 0)
-                    _sumRow('تخفیف', -_resolvedDiscount, dark: dark, color: const Color(0xFF059669)),
-                  if (_hasShipping && _shippingVal > 0)
-                    _sumRow('هزینه ارسال', _shippingVal, dark: dark),
-                  if (_hasPrevDebt && _prevDebtVal > 0)
-                    _sumRow('بدهی قبلی', _prevDebtVal, dark: dark, color: const Color(0xFFE11D48)),
-                  if (_hasDeposit && _depositVal > 0)
-                    _sumRow('بیعانه', -_depositVal, dark: dark, color: const Color(0xFF0284C7)),
-                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 16),
+                  const SizedBox(height: 12),
+                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'مبلغ قابل پرداخت',
+                        'جمع قابل پرداخت',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w900,
                           color: dark ? Colors.white : _slate800,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                       Text(
                         PersianNumberFormatter.formatCurrency(_finalTotal),
                         style: TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.w900,
                           color: dark ? Colors.white : _orange,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ],
@@ -1564,6 +1480,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
             const SizedBox(height: 10),
+
+            // 5) دو گروه انتخابی کنار هم، مثل تصویر مرجع
+            _grayCard(
+              dark: dark,
+              padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _choiceGroup(
+                        title: 'نوع پرداخت',
+                        dark: dark,
+                        children: [
+                          _radio(label: 'نقدی', value: 'cash', group: _paymentType, onChanged: (v) => setState(() => _paymentType = v!), dark: dark),
+                          const SizedBox(width: 10),
+                          _radio(label: 'غیر نقدی', value: 'non_cash', group: _paymentType, onChanged: (v) => setState(() => _paymentType = v!), dark: dark),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _choiceGroup(
+                        title: 'نوع فاکتور',
+                        dark: dark,
+                        children: [
+                          _radio(label: 'فاکتور فروش', value: 'sale', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
+                          const SizedBox(width: 8),
+                          _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // تیک نمایش مهر و امضا روی فاکتور
             _grayCard(
@@ -1854,22 +1808,271 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ),
-      // Bottom tabs مثل عکس
-      bottomNavigationBar: _bottomTabs(dark),
+      // ناوبری اصلی چهارگزینه‌ای دقیقاً مثل تصویر مرجع
+      bottomNavigationBar: _referenceNavigation(dark),
     );
   }
 
   // ── Helpers ──
+  Widget _referencePill({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: color.withValues(alpha: 0.45)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 21),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _itemThumbnail(String title, bool dark) {
+    final icon = title.trim().isEmpty ? Icons.view_in_ar_outlined : Icons.coffee_outlined;
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        color: dark ? _slate700 : const Color(0xFFF1F3F7),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        icon,
+        size: 30,
+        color: dark ? _slate400 : const Color(0xFFB8BEC8),
+      ),
+    );
+  }
+
+  void _showProductCatalog() {
+    final products = ref.read(productListProvider);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.58,
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(18, 18, 18, 10),
+                child: Text(
+                  'بارکد / کاتالوگ',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                ),
+              ),
+              Expanded(
+                child: products.isEmpty
+                    ? const Center(child: Text('کاتالوگ خالی است'))
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: products.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (_, i) {
+                          final product = products[i];
+                          return ListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            tileColor: const Color(0xFFF7F8FC),
+                            title: Text(
+                              product.name,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            subtitle: Text(
+                              PersianNumberFormatter.formatCurrency(product.sellPrice),
+                              textAlign: TextAlign.right,
+                            ),
+                            trailing: const Icon(Icons.add_circle_outline, color: _orange),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              setState(() {
+                                final emptyIdx = _items.indexWhere(
+                                  (e) => e.title.trim().isEmpty && e.unitPrice == 0,
+                                );
+                                final row = InvoiceItemModel(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  title: product.name,
+                                  quantity: 1,
+                                  unit: product.unit,
+                                  unitPrice: product.sellPrice,
+                                  totalPrice: product.sellPrice,
+                                );
+                                if (emptyIdx >= 0) {
+                                  _items[emptyIdx] = row;
+                                  _selectedRow = emptyIdx;
+                                } else {
+                                  _items.add(row);
+                                  _selectedRow = _items.length - 1;
+                                }
+                                _formGen++;
+                              });
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _grayCard({required bool dark, required Widget child, EdgeInsetsGeometry? padding}) {
     return Container(
       width: double.infinity,
-      padding: padding ?? const EdgeInsets.all(14),
+      padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: dark ? _slate800 : _cardGray,
-        borderRadius: BorderRadius.circular(16),
+        color: dark ? _slate800 : Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: dark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF9AA7BD).withValues(alpha: 0.14),
+                  blurRadius: 18,
+                  offset: const Offset(0, 7),
+                ),
+              ],
       ),
       clipBehavior: Clip.antiAlias,
       child: child,
+    );
+  }
+
+  /// ردیف فیلد مشتری با آیکن و لیبل سمت راست، مطابق تصویر مرجع.
+  Widget _customerField({
+    required IconData icon,
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required bool dark,
+    required ValueChanged<String> onChanged,
+    bool isPhone = false,
+  }) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Row(
+        children: [
+          Icon(icon, color: accent, size: 25),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 84,
+            child: Text(
+              label,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: dark ? _slate400 : _slate700,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              onChanged: onChanged,
+              keyboardType: isPhone ? TextInputType.phone : TextInputType.name,
+              textDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: TextAlign.right,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: dark ? const Color(0xFF0F172A) : const Color(0xFFF6F7FB),
+                hintText: hint,
+                hintTextDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
+                hintStyle: TextStyle(
+                  color: dark ? _slate400 : const Color(0xFF9AA1AF),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide(color: accent.withValues(alpha: 0.45), width: 1.2),
+                ),
+              ),
+              style: TextStyle(
+                color: dark ? Colors.white : _slate800,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metaInfo({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool dark,
+  }) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Row(
+        children: [
+          Icon(icon, color: accent, size: 24),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              textAlign: TextAlign.right,
+              text: TextSpan(
+                style: TextStyle(
+                  color: dark ? Colors.white : _slate800,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+                children: [
+                  TextSpan(text: '$label '),
+                  TextSpan(
+                    text: value,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2102,6 +2305,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  Widget _choiceGroup({
+    required String title,
+    required bool dark,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          title,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            fontSize: 12,
+            color: dark ? Colors.white : _slate700,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          reverse: true,
+          child: Row(children: children),
+        ),
+      ],
+    );
+  }
+
   Widget _radio({required String label, required String value, required String group, required Function(String?) onChanged, required bool dark}) {
     final selected = value==group;
     return InkWell(
@@ -2116,6 +2346,107 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: selected? const Center(child: Icon(Icons.circle, size: 10, color: Colors.white)): null,
         ),
       ]),
+    );
+  }
+
+  Widget _referenceNavigation(bool dark) {
+    final accent = Color(ref.watch(settingsProvider).accentColor);
+    final inactive = dark ? _slate400 : const Color(0xFF4B5563);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: dark ? _slate800 : Colors.white,
+        border: Border(top: BorderSide(color: dark ? _slate700 : const Color(0xFFE8EBF2))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 72,
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _navItem(
+                    icon: Icons.settings_outlined,
+                    label: 'تنظیمات',
+                    color: inactive,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _navItem(
+                    icon: Icons.people_outline,
+                    label: 'مشتریان',
+                    color: inactive,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CustomerListScreen()),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _navItem(
+                    icon: Icons.receipt_long_outlined,
+                    label: 'فاکتورها',
+                    color: inactive,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const InvoiceListScreen()),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _navItem(
+                    icon: Icons.home,
+                    label: 'خانه',
+                    color: accent,
+                    active: true,
+                    onTap: () {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _navItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool active = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: active ? 28 : 26),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -28,7 +28,7 @@ class AppTheme {
   static const Color RubyPrimary = Color(0xFFF97316); // Ruby Orange
   static const Color RubyPrimaryDark = Color(0xFFEA580C);
   static const Color RubyPrimaryContainer = Color(0xFFFFEDD5); // orange-100
-  static const Color RubyBackground = Color(0xFFFFFBEB); // warm light bg
+  static const Color RubyBackground = Color(0xFFF7F8FC); // soft cool background
   static const Color RubySurface = Colors.white;
   static const Color RubyTextPrimary = Color(0xFF1E293B); // slate-800
   static const Color RubyTextSecondary = Color(0xFF64748B); // slate-500
@@ -40,7 +40,7 @@ class AppTheme {
   static const Color primaryBlue = RubyPrimary;
   static const Color primaryBlueDark = RubyPrimaryDark;
   static const Color lightBlueBg = RubyPrimaryContainer;
-  static const Color bgLight = Color(0xFFFFFBEB);
+  static const Color bgLight = Color(0xFFF7F8FC);
   static const Color bgDark = Color(0xFF0F172A);
   static const Color cardDark = Color(0xFF1E293B);
 
