@@ -182,12 +182,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   double get _itemsTotal => _items.fold(0, (s, e) => s + e.totalPrice);
+
+  /// مبلغ تخفیف واقعی (درصد یا مبلغ ثابت)
+  double get _resolvedDiscount {
+    if (!_hasDiscount) return 0;
+    if (_discountIsPercent) {
+      return (_itemsTotal * (_discountAmount.clamp(0, 100)) / 100);
+    }
+    return _discountAmount < 0 ? 0 : _discountAmount;
+  }
+
+  double get _shippingVal => _hasShipping ? _shippingFee : 0;
+  double get _prevDebtVal => _hasPrevDebt ? _prevDebtAmount : 0;
+  double get _depositVal => _hasDeposit ? _depositAmount : 0;
+
+  /// جمع قبل از بیعانه = اقلام − تخفیف + ارسال + بدهی قبلی
+  double get _grossTotal {
+    final t = _itemsTotal - _resolvedDiscount + _shippingVal + _prevDebtVal;
+    return t < 0 ? 0 : t;
+  }
+
+  /// مبلغ قابل پرداخت نهایی (بیعانه کم می‌شود)
   double get _finalTotal {
-    double t = _itemsTotal;
-    if (_hasDiscount) t -= _discountAmount;
-    if (_hasShipping) t += _shippingFee;
-    if (_hasPrevDebt) t += _prevDebtAmount;
-    // بیعانه کم نمی‌شود چون پرداخت جداست
+    final t = _grossTotal - _depositVal;
     return t < 0 ? 0 : t;
   }
 
@@ -275,12 +292,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
     }
 
-    final paid = _paymentType == 'cash'
-        ? _finalTotal
-        : (_isEditing ? (existing?.paidAmount ?? _depositAmount) : _depositAmount);
-    final remaining = _paymentType == 'cash'
-        ? 0.0
-        : (_finalTotal - paid).clamp(0, double.infinity);
+    // totalAmount = مبلغ قابل پرداخت نهایی (بعد از کسر بیعانه)
+    // paidAmount: نقدی = کل؛ غیرنقدی = بیعانه (که از total کم شده)
+    final depositAmt = _depositVal;
+    final payable = _finalTotal;
+    final finalRemaining = _paymentType == 'cash' ? 0.0 : payable;
+    final finalPaid = _paymentType == 'cash' ? payable : depositAmt;
 
     final inv = InvoiceModel(
       id: _editId ?? 'inv-${DateTime.now().millisecondsSinceEpoch}',
@@ -294,18 +311,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       paymentType: _paymentType,
       status: _invoiceType == 'proforma'
           ? 'proforma'
-          : (remaining <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid')),
+          : (finalRemaining <= 0 ? 'paid' : (finalPaid > 0 ? 'partial' : 'unpaid')),
       date: jalaliFa,
       items: cleanItems,
       subtotal: _itemsTotal,
       discountPercent: _discountIsPercent ? _discountAmount : 0,
-      discountAmount: _hasDiscount ? _discountAmount : 0,
-      shippingFee: _hasShipping ? _shippingFee : 0,
-      previousDebt: _hasPrevDebt ? _prevDebtAmount : 0,
-      deposit: _hasDeposit ? _depositAmount : 0,
-      totalAmount: _finalTotal,
-      paidAmount: paid.toDouble(),
-      remainingAmount: remaining.toDouble(),
+      discountAmount: _resolvedDiscount,
+      shippingFee: _shippingVal,
+      previousDebt: _prevDebtVal,
+      deposit: depositAmt,
+      totalAmount: payable,
+      paidAmount: finalPaid.toDouble(),
+      remainingAmount: finalRemaining.toDouble(),
       notes: _notes,
       cardNumber: card.isNotEmpty ? card : (existing?.cardNumber ?? ''),
       createdAt: existing?.createdAt ?? jalaliFa,
@@ -858,30 +875,103 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 6) جمع کل — برچسب راست، مبلغ چپ
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // 6) خلاصه مبالغ — تخفیف/ارسال/بدهی/بیعانه + قابل پرداخت
+            _grayCard(
+              dark: dark,
+              child: Column(
                 children: [
-                  Text(
-                    'جمع کل',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: dark ? Colors.white : _slate700,
-                    ),
-                  ),
-                  Text(
-                    PersianNumberFormatter.formatCurrency(_finalTotal),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: dark ? Colors.white : _slate800,
-                    ),
+                  _sumRow('جمع اقلام', _itemsTotal, dark: dark),
+                  if (_hasDiscount && _resolvedDiscount > 0)
+                    _sumRow('تخفیف', -_resolvedDiscount, dark: dark, color: const Color(0xFF059669)),
+                  if (_hasShipping && _shippingVal > 0)
+                    _sumRow('هزینه ارسال', _shippingVal, dark: dark),
+                  if (_hasPrevDebt && _prevDebtVal > 0)
+                    _sumRow('بدهی قبلی', _prevDebtVal, dark: dark, color: const Color(0xFFE11D48)),
+                  if (_hasDeposit && _depositVal > 0)
+                    _sumRow('بیعانه', -_depositVal, dark: dark, color: const Color(0xFF0284C7)),
+                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'مبلغ قابل پرداخت',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: dark ? Colors.white : _slate800,
+                        ),
+                      ),
+                      Text(
+                        PersianNumberFormatter.formatCurrency(_finalTotal),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: dark ? Colors.white : _orange,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 10),
+
+            // تیک نمایش مهر و امضا روی فاکتور
+            _grayCard(
+              dark: dark,
+              child: Builder(builder: (ctx) {
+                final st = ref.watch(settingsProvider);
+                final biz = ref.watch(businessProvider);
+                return Column(
+                  children: [
+                    _checkRow(
+                      label: 'نمایش مهر روی فاکتور',
+                      value: st.showStamp,
+                      dark: dark,
+                      onChanged: (v) {
+                        ref.read(settingsProvider.notifier).updateSettings(
+                              st.copyWith(showStamp: v ?? false),
+                            );
+                      },
+                      trailing: biz.stampPath.isEmpty
+                          ? TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
+                                );
+                              },
+                              child: const Text('افزودن', style: TextStyle(fontSize: 11, color: _orange)),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
+                    const SizedBox(height: 8),
+                    _checkRow(
+                      label: 'نمایش امضا روی فاکتور',
+                      value: st.showSignature,
+                      dark: dark,
+                      onChanged: (v) {
+                        ref.read(settingsProvider.notifier).updateSettings(
+                              st.copyWith(showSignature: v ?? false),
+                            );
+                      },
+                      trailing: biz.signaturePath.isEmpty
+                          ? TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
+                                );
+                              },
+                              child: const Text('افزودن', style: TextStyle(fontSize: 11, color: _orange)),
+                            )
+                          : null,
+                    ),
+                  ],
+                );
+              }),
             ),
             const SizedBox(height: 10),
 
@@ -1234,9 +1324,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: Checkbox(value: value, onChanged: onChanged, activeColor: _orange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), side: BorderSide(color: dark? _slate500: _slate400)),
       ),
       const SizedBox(width: 4),
-      Text(label, style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500)),
-      if (trailing!=null) ...[const Spacer(), trailing],
+      Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500))),
+      if (trailing!=null) trailing,
     ]);
+  }
+
+  Widget _sumRow(String label, double amount, {required bool dark, Color? color}) {
+    final c = color ?? (dark ? Colors.white70 : _slate700);
+    final isNeg = amount < 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c)),
+          Text(
+            '${isNeg ? '− ' : ''}${PersianNumberFormatter.formatCurrency(amount.abs())}',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: c),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _radio({required String label, required String value, required String group, required Function(String?) onChanged, required bool dark}) {

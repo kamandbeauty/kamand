@@ -470,13 +470,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           .where((e) => e.isNotEmpty)
           .toList();
       ref.read(businessProvider.notifier).updateBusiness(
-            BusinessProfileModel(
-              id: business.id,
+            business.copyWith(
               shopName: shopCtrl.text.trim().isEmpty ? 'فاکتور ساز روبی' : shopCtrl.text.trim(),
               phone: phoneCtrl.text.trim(),
               address: addressCtrl.text.trim(),
               taxId: taxCtrl.text.trim(),
-              logoPath: business.logoPath,
               bankCards: cards,
             ),
           );
@@ -593,15 +591,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (saved == true && mounted) {
       ref.read(settingsProvider.notifier).updateSettings(
-            AppSettingsModel(
+            settings.copyWith(
               startingInvoiceNum: int.tryParse(startCtrl.text.trim()) ?? settings.startingInvoiceNum,
               templateStyle: template,
               showLogo: showLogo,
               showCardNum: showCard,
-              themeMode: settings.themeMode,
-              autoBackup: settings.autoBackup,
-              pinCode: settings.pinCode,
-              pinEnabled: settings.pinEnabled,
             ),
           );
       ScaffoldMessenger.of(context).showSnackBar(

@@ -543,10 +543,18 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                         const SizedBox(height: 12),
                         _totalRow('جمع اقلام', inv.subtotal),
                         if (inv.discountAmount > 0)
-                          _totalRow('تخفیف', -inv.discountAmount, color: const Color(0xFF059669)),
+                          _totalRow(
+                            inv.discountPercent > 0
+                                ? 'تخفیف (${PersianNumberFormatter.toPersian(inv.discountPercent.toStringAsFixed(0))}٪)'
+                                : 'تخفیف',
+                            -inv.discountAmount,
+                            color: const Color(0xFF059669),
+                          ),
                         if (inv.shippingFee > 0) _totalRow('هزینه ارسال', inv.shippingFee),
                         if (inv.previousDebt > 0)
                           _totalRow('بدهی قبلی', inv.previousDebt, color: const Color(0xFFE11D48)),
+                        if (inv.deposit > 0)
+                          _totalRow('بیعانه', -inv.deposit, color: const Color(0xFF0284C7)),
                         const Divider(height: 18),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -565,6 +573,16 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             ),
                           ],
                         ),
+                        if (inv.paidAmount > 0 && inv.paymentType != 'cash')
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: _totalRow('پرداخت‌شده / بیعانه', inv.paidAmount, color: const Color(0xFF059669)),
+                          ),
+                        if (inv.remainingAmount > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _totalRow('باقی‌مانده', inv.remainingAmount, color: const Color(0xFFE11D48)),
+                          ),
                         if (inv.notes.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Text(
@@ -614,14 +632,74 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 16),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('مهر و امضای فروشنده', style: TextStyle(fontSize: 10, color: _slate400)),
-                            Text('امضای خریدار', style: TextStyle(fontSize: 10, color: _slate400)),
-                          ],
-                        ),
+                        const SizedBox(height: 20),
+                        // مهر و امضا
+                        Builder(builder: (_) {
+                          final settings = ref.watch(settingsProvider);
+                          final showStamp = settings.showStamp && biz.stampPath.isNotEmpty;
+                          final showSign = settings.showSignature && biz.signaturePath.isNotEmpty;
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    if (showStamp)
+                                      SizedBox(
+                                        height: 72,
+                                        child: Image.file(
+                                          File(biz.stampPath),
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                        ),
+                                      )
+                                    else
+                                      const SizedBox(height: 48),
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'مهر فروشنده',
+                                      style: TextStyle(fontSize: 10, color: _slate400),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    if (showSign)
+                                      SizedBox(
+                                        height: 56,
+                                        child: Image.file(
+                                          File(biz.signaturePath),
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                        ),
+                                      )
+                                    else
+                                      const SizedBox(height: 48),
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'امضای فروشنده',
+                                      style: TextStyle(fontSize: 10, color: _slate400),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Expanded(
+                                child: Column(
+                                  children: [
+                                    SizedBox(height: 48),
+                                    SizedBox(height: 6),
+                                    Text(
+                                      'امضای خریدار',
+                                      style: TextStyle(fontSize: 10, color: _slate400),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),

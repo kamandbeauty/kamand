@@ -337,6 +337,11 @@ export default function App() {
             customers={customers}
             products={products}
             business={business}
+            settings={settings}
+            onUpdateSettings={(s) => {
+              setSettings(s);
+              saveState('settings', s);
+            }}
             editingInvoice={editingInvoiceData || tabInvoiceStates[activeFactorTabId]}
             onSaveInvoice={handleSaveInvoice}
             onCancel={() => setActiveTab('dashboard')}
@@ -480,6 +485,7 @@ export default function App() {
       <InvoiceDetailModal
         invoice={selectedInvoiceModal}
         business={business}
+        settings={settings}
         isOpen={Boolean(selectedInvoiceModal)}
         onClose={() => setSelectedInvoiceModal(null)}
         onEdit={(inv) => {

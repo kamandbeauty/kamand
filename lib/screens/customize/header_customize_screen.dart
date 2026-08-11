@@ -1,13 +1,10 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
-import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_providers.dart';
-import '../../models/business_profile_model.dart';
+import 'image_crop_screen.dart';
 
 const _orange = AppTheme.RubyPrimary;
 const _slate400 = Color(0xFF94A3B8);
@@ -25,9 +22,9 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
   late TextEditingController _nameCtrl;
   late TextEditingController _descCtrl;
   Color _selectedColor = _orange;
-  XFile? _logoFile;
-  XFile? _stampFile;
-  XFile? _signFile;
+  String? _logoPath;
+  String? _stampPath;
+  String? _signPath;
   final _picker = ImagePicker();
 
   final List<Color> _paletteRow1 = const [
@@ -57,6 +54,9 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
     final biz = ref.read(businessProvider);
     _nameCtrl = TextEditingController(text: biz.shopName);
     _descCtrl = TextEditingController(text: biz.address);
+    _logoPath = biz.logoPath.isEmpty ? null : biz.logoPath;
+    _stampPath = biz.stampPath.isEmpty ? null : biz.stampPath;
+    _signPath = biz.signaturePath.isEmpty ? null : biz.signaturePath;
   }
 
   @override
@@ -66,58 +66,47 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage(Function(XFile?) onPicked) async {
-    final x = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (x == null) return;
-    try {
-      final bytes = await File(x.path).readAsBytes();
-      final decoded = img.decodeImage(bytes);
-      if (decoded != null) {
-        // حذف زمینه سفید: پیکسل‌های نزدیک سفید را شفاف کن
-        for (var y = 0; y < decoded.height; y++) {
-          for (var x2 = 0; x2 < decoded.width; x2++) {
-            final p = decoded.getPixel(x2, y);
-            final r = p.r.toInt();
-            final g = p.g.toInt();
-            final b = p.b.toInt();
-            if (r > 242 && g > 242 && b > 242) {
-              decoded.setPixelRgba(x2, y, r, g, b, 0);
-            }
-          }
-        }
-        final dir = await getTemporaryDirectory();
-        final outPath = '${dir.path}/rubi_${DateTime.now().millisecondsSinceEpoch}_${x.name}';
-        final outFile = File(outPath);
-        await outFile.writeAsBytes(img.encodePng(decoded));
-        final newX = XFile(outFile.path);
-        setState(() => onPicked(newX));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عکس انتخاب شد — زمینه سفید حذف شد')));
-        }
-        return;
+  Future<void> _pickAndCrop({required String kind, required String title}) async {
+    final x = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
+    if (x == null || !mounted) return;
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ImageCropScreen(
+          imagePath: x.path,
+          kind: kind,
+          title: title,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      if (kind == 'stamp') {
+        _stampPath = result;
+      } else if (kind == 'signature') {
+        _signPath = result;
+      } else {
+        _logoPath = result;
       }
-    } catch (_) {}
-    // fallback بدون پردازش
-    setState(() => onPicked(x));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عکس انتخاب شد — زمینه سفید هنگام چاپ حذف می‌شود')));
-    }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$title ذخیره شد (کراپ + حذف پس‌زمینه سفید)')),
+    );
   }
 
   void _save() {
     final biz = ref.read(businessProvider);
-    final updated = BusinessProfileModel(
-      id: biz.id,
+    final updated = biz.copyWith(
       shopName: _nameCtrl.text.trim().isEmpty ? biz.shopName : _nameCtrl.text.trim(),
-      phone: biz.phone,
       address: _descCtrl.text.trim(),
-      taxId: biz.taxId,
-      logoPath: _logoFile?.path ?? biz.logoPath,
-      bankCards: biz.bankCards,
+      logoPath: _logoPath ?? biz.logoPath,
+      stampPath: _stampPath ?? biz.stampPath,
+      signaturePath: _signPath ?? biz.signaturePath,
     );
     ref.read(businessProvider.notifier).updateBusiness(updated);
-    // Save selected color to AppTheme? For now just show and pop
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ذخیره شد — رنگ ${(_selectedColor.value.toRadixString(16))} اعمال خواهد شد')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تنظیمات سربرگ، مهر و امضا ذخیره شد')),
+    );
     Navigator.pop(context);
   }
 
@@ -189,11 +178,17 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
                     const SizedBox(width: 6),
                     Text('لوگو', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: dark? Colors.white: _slate600)),
                     const Spacer(),
-                    if (_logoFile != null) ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(_logoFile!.path), width: 40, height: 40, fit: BoxFit.cover)) else const SizedBox(),
+                    if (_logoPath != null && File(_logoPath!).existsSync())
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(File(_logoPath!), width: 40, height: 40, fit: BoxFit.cover),
+                      )
+                    else
+                      const SizedBox(),
                   ]),
                   const SizedBox(height: 12),
                   InkWell(
-                    onTap: ()=> _pickImage((x)=> _logoFile = x),
+                    onTap: () => _pickAndCrop(kind: 'logo', title: 'کراپ لوگو'),
                     child: Row(children: [
                       const Icon(Icons.more_horiz, color: _slate500),
                       const Spacer(),
@@ -277,39 +272,75 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
                   ]),
                   const SizedBox(height: 12),
                   Row(children: [
-                    Expanded(child: InkWell(
-                      onTap: ()=> _pickImage((x)=> _signFile = x),
-                      child: Container(
-                        height: 110,
-                        decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12)),
-                        child: _signFile != null
-                            ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(_signFile!.path), fit: BoxFit.contain))
-                            : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                Icon(Icons.add_photo_alternate_outlined, size: 36, color: _selectedColor),
-                                const SizedBox(height: 8),
-                                Text('انتخاب امضا', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _slate600)),
-                                const SizedBox(height: 2),
-                                Text('زمینه سفید خودکار حذف می‌شود', style: TextStyle(fontSize: 9, color: _slate400)),
-                              ]),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _pickAndCrop(kind: 'signature', title: 'کراپ امضا'),
+                        child: Container(
+                          height: 120,
+                          decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12)),
+                          child: _signPath != null && File(_signPath!).existsSync()
+                              ? Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Image.file(File(_signPath!), fit: BoxFit.contain),
+                                    ),
+                                    Positioned(
+                                      left: 4,
+                                      top: 4,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                                        onPressed: () => setState(() => _signPath = ''),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                  Icon(Icons.add_photo_alternate_outlined, size: 36, color: _selectedColor),
+                                  const SizedBox(height: 8),
+                                  Text('انتخاب امضا', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _slate600)),
+                                  const SizedBox(height: 2),
+                                  Text('کراپ + حذف پس‌زمینه سفید', style: TextStyle(fontSize: 9, color: _slate400)),
+                                ]),
+                        ),
                       ),
-                    )),
+                    ),
                     const SizedBox(width: 10),
-                    Expanded(child: InkWell(
-                      onTap: ()=> _pickImage((x)=> _stampFile = x),
-                      child: Container(
-                        height: 110,
-                        decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12)),
-                        child: _stampFile != null
-                            ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(_stampFile!.path), fit: BoxFit.contain))
-                            : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                Icon(Icons.add_photo_alternate_outlined, size: 36, color: _selectedColor),
-                                const SizedBox(height: 8),
-                                Text('انتخاب مهر', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _slate600)),
-                                const SizedBox(height: 2),
-                                Text('زمینه سفید خودکار حذف می‌شود', style: TextStyle(fontSize: 9, color: _slate400)),
-                              ]),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _pickAndCrop(kind: 'stamp', title: 'کراپ مهر'),
+                        child: Container(
+                          height: 120,
+                          decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12)),
+                          child: _stampPath != null && File(_stampPath!).existsSync()
+                              ? Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Image.file(File(_stampPath!), fit: BoxFit.contain),
+                                    ),
+                                    Positioned(
+                                      left: 4,
+                                      top: 4,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                                        onPressed: () => setState(() => _stampPath = ''),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                  Icon(Icons.add_photo_alternate_outlined, size: 36, color: _selectedColor),
+                                  const SizedBox(height: 8),
+                                  Text('انتخاب مهر', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _slate600)),
+                                  const SizedBox(height: 2),
+                                  Text('کراپ + حذف پس‌زمینه سفید', style: TextStyle(fontSize: 9, color: _slate400)),
+                                ]),
+                        ),
                       ),
-                    )),
+                    ),
                   ]),
                 ],
               ),

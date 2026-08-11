@@ -8,7 +8,6 @@ import {
   Edit,
   ArrowRightLeft,
   CreditCard,
-  QrCode,
   Image as ImageIcon,
   FileText,
   MessageSquare
@@ -19,6 +18,7 @@ import { formatCurrency, toPersianDigits } from '../utils/helpers';
 export default function InvoiceDetailModal({
   invoice,
   business,
+  settings,
   isOpen,
   onClose,
   onEdit,
@@ -284,7 +284,12 @@ export default function InvoiceDetailModal({
               </div>
               {invoice.discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-600">
-                  <span>تخفیف</span>
+                  <span>
+                    تخفیف
+                    {invoice.discountPercent > 0
+                      ? ` (${toPersianDigits(invoice.discountPercent)}٪)`
+                      : ''}
+                  </span>
                   <span className="font-bold">− {formatCurrency(invoice.discountAmount)}</span>
                 </div>
               )}
@@ -300,13 +305,19 @@ export default function InvoiceDetailModal({
                   <span className="font-bold">+ {formatCurrency(invoice.previousDebt)}</span>
                 </div>
               )}
+              {invoice.deposit > 0 && (
+                <div className="flex justify-between text-sky-600">
+                  <span>بیعانه</span>
+                  <span className="font-bold">− {formatCurrency(invoice.deposit)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
                 <span>مبلغ قابل پرداخت</span>
                 <span className="text-[#F97316]">{formatCurrency(invoice.totalAmount)}</span>
               </div>
-              {invoice.paidAmount > 0 && (
+              {invoice.paidAmount > 0 && invoice.paymentType !== 'cash' && (
                 <div className="flex justify-between text-emerald-600">
-                  <span>پرداخت شده</span>
+                  <span>پرداخت‌شده / بیعانه</span>
                   <span className="font-bold">{formatCurrency(invoice.paidAmount)}</span>
                 </div>
               )}
@@ -337,13 +348,36 @@ export default function InvoiceDetailModal({
               </div>
             )}
 
-            <div className="flex items-center gap-3 p-3 border border-dashed border-slate-300 rounded-xl">
-              <div className="w-11 h-11 bg-white rounded-lg border border-slate-200 flex items-center justify-center shrink-0">
-                <QrCode className="w-8 h-8 text-slate-700" />
+            {/* مهر و امضا */}
+            <div className="grid grid-cols-3 gap-3 pt-2 border-t border-slate-100">
+              <div className="flex flex-col items-center gap-1.5 min-h-[88px] justify-end">
+                {settings?.showStamp !== false && business?.stampDataUrl ? (
+                  <img
+                    src={business.stampDataUrl}
+                    alt="مهر"
+                    className="h-[72px] w-auto max-w-full object-contain"
+                  />
+                ) : (
+                  <div className="h-12" />
+                )}
+                <span className="text-[10px] text-slate-400">مهر فروشنده</span>
               </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                مهر و امضای فروشنده / خریدار
-              </p>
+              <div className="flex flex-col items-center gap-1.5 min-h-[88px] justify-end">
+                {settings?.showSignature !== false && business?.signatureDataUrl ? (
+                  <img
+                    src={business.signatureDataUrl}
+                    alt="امضا"
+                    className="h-14 w-auto max-w-full object-contain"
+                  />
+                ) : (
+                  <div className="h-12" />
+                )}
+                <span className="text-[10px] text-slate-400">امضای فروشنده</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 min-h-[88px] justify-end">
+                <div className="h-12 border-b border-dashed border-slate-300 w-full max-w-[90px]" />
+                <span className="text-[10px] text-slate-400">امضای خریدار</span>
+              </div>
             </div>
           </div>
         </div>

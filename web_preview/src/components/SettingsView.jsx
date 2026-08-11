@@ -49,6 +49,11 @@ export default function SettingsView({
   const [templateStyle, setTemplateStyle] = useState(settings?.templateStyle || 'modern');
   const [showLogo, setShowLogo] = useState(settings?.showLogo !== false);
   const [showCardNum, setShowCardNum] = useState(settings?.showCardNum !== false);
+  const [showStamp, setShowStamp] = useState(settings?.showStamp !== false);
+  const [showSignature, setShowSignature] = useState(settings?.showSignature !== false);
+  const [stampDataUrl, setStampDataUrl] = useState(business?.stampDataUrl || '');
+  const [signatureDataUrl, setSignatureDataUrl] = useState(business?.signatureDataUrl || '');
+  const [cropModal, setCropModal] = useState(null); // { kind, src }
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -70,6 +75,8 @@ export default function SettingsView({
     setAddress(business?.address || '');
     setTaxId(business?.taxId || '');
     setBankCards(business?.bankCards || []);
+    setStampDataUrl(business?.stampDataUrl || '');
+    setSignatureDataUrl(business?.signatureDataUrl || '');
   }, [business]);
 
   useEffect(() => {
@@ -77,6 +84,8 @@ export default function SettingsView({
     setTemplateStyle(settings?.templateStyle || 'modern');
     setShowLogo(settings?.showLogo !== false);
     setShowCardNum(settings?.showCardNum !== false);
+    setShowStamp(settings?.showStamp !== false);
+    setShowSignature(settings?.showSignature !== false);
   }, [settings]);
 
   const markDirty = () => {
@@ -118,7 +127,9 @@ export default function SettingsView({
       phone: String(phone || '').trim(),
       address: String(address || '').trim(),
       taxId: String(taxId || '').trim(),
-      bankCards: bankCards || []
+      bankCards: bankCards || [],
+      stampDataUrl: stampDataUrl || '',
+      signatureDataUrl: signatureDataUrl || ''
     };
 
     const nextSettings = {
@@ -126,7 +137,9 @@ export default function SettingsView({
       startingInvoiceNum: parseInt(startingNum, 10) || 1004,
       templateStyle,
       showLogo: Boolean(showLogo),
-      showCardNum: Boolean(showCardNum)
+      showCardNum: Boolean(showCardNum),
+      showStamp: Boolean(showStamp),
+      showSignature: Boolean(showSignature)
     };
 
     try {
@@ -630,6 +643,72 @@ export default function SettingsView({
         </div>
       </section>
 
+
+      {/* 3b. مهر و امضا */}
+      <section className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-700">
+          <FileText className="w-5 h-5 text-rose-500" />
+          <h3 className="font-bold text-sm text-slate-800 dark:text-white">مهر و امضای فروشنده</h3>
+        </div>
+        <p className="text-[11px] text-slate-500">
+          عکس را انتخاب کنید، کراپ کنید؛ پس‌زمینه سفید خودکار حذف می‌شود و روی فاکتور نمایش داده می‌شود.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {[
+            { key: 'stamp', label: 'مهر', value: stampDataUrl, set: setStampDataUrl },
+            { key: 'signature', label: 'امضا', value: signatureDataUrl, set: setSignatureDataUrl }
+          ].map((item) => (
+            <div key={item.key} className="rounded-2xl border border-slate-200 dark:border-slate-600 p-3 space-y-2 bg-slate-50 dark:bg-slate-900">
+              <div className="font-bold text-xs text-slate-700 dark:text-slate-200">{item.label}</div>
+              <div className="h-28 rounded-xl bg-white dark:bg-slate-800 border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden relative">
+                {item.value ? (
+                  <>
+                    <img src={item.value} alt={item.label} className="max-h-full max-w-full object-contain p-2" />
+                    <button
+                      type="button"
+                      onClick={() => { item.set(''); markDirty(); }}
+                      className="absolute top-1 left-1 text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-lg"
+                    >
+                      حذف
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-[11px] text-slate-400">هنوز انتخاب نشده</span>
+                )}
+              </div>
+              <label className="block w-full text-center py-2 rounded-xl bg-[#F97316] text-white text-xs font-bold cursor-pointer">
+                انتخاب / کراپ {item.label}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setCropModal({ kind: item.key, src: reader.result, set: item.set });
+                    };
+                    reader.readAsDataURL(f);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" checked={showStamp} onChange={(e) => { setShowStamp(e.target.checked); markDirty(); }} className="w-4 h-4 rounded accent-[#F97316]" />
+            <span className="font-bold text-xs text-slate-700 dark:text-slate-300">نمایش مهر روی فاکتور</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" checked={showSignature} onChange={(e) => { setShowSignature(e.target.checked); markDirty(); }} className="w-4 h-4 rounded accent-[#F97316]" />
+            <span className="font-bold text-xs text-slate-700 dark:text-slate-300">نمایش امضا روی فاکتور</span>
+          </label>
+        </div>
+      </section>
+
       {/* 4. Appearance */}
       <section className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
         <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-700">
@@ -684,6 +763,176 @@ export default function SettingsView({
           </button>
         </div>
       </div>
+
+      {cropModal && (
+        <StampCropModal
+          src={cropModal.src}
+          title={cropModal.kind === 'stamp' ? 'کراپ مهر' : 'کراپ امضا'}
+          onCancel={() => setCropModal(null)}
+          onDone={(dataUrl) => {
+            cropModal.set(dataUrl);
+            setCropModal(null);
+            markDirty();
+          }}
+        />
+      )}
     </form>
   );
 }
+
+function StampCropModal({ src, title, onCancel, onDone }) {
+  const imgRef = React.useRef(null);
+  const [box, setBox] = React.useState({ l: 0.08, t: 0.08, r: 0.92, b: 0.92 });
+  const [dragging, setDragging] = React.useState(null);
+  const [removeWhite, setRemoveWhite] = React.useState(true);
+  const [busy, setBusy] = React.useState(false);
+
+  const onPointer = (e, corner) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(corner);
+  };
+
+  React.useEffect(() => {
+    if (!dragging) return;
+    const move = (ev) => {
+      const el = imgRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+      let x = (clientX - rect.left) / rect.width;
+      let y = (clientY - rect.top) / rect.height;
+      x = Math.min(1, Math.max(0, x));
+      y = Math.min(1, Math.max(0, y));
+      setBox((prev) => {
+        const n = { ...prev };
+        const min = 0.12;
+        if (dragging === 'tl') { n.l = Math.min(x, n.r - min); n.t = Math.min(y, n.b - min); }
+        if (dragging === 'tr') { n.r = Math.max(x, n.l + min); n.t = Math.min(y, n.b - min); }
+        if (dragging === 'bl') { n.l = Math.min(x, n.r - min); n.b = Math.max(y, n.t + min); }
+        if (dragging === 'br') { n.r = Math.max(x, n.l + min); n.b = Math.max(y, n.t + min); }
+        return n;
+      });
+    };
+    const up = () => setDragging(null);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    window.addEventListener('touchmove', move, { passive: false });
+    window.addEventListener('touchend', up);
+    return () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      window.removeEventListener('touchmove', move);
+      window.removeEventListener('touchend', up);
+    };
+  }, [dragging]);
+
+  const apply = async () => {
+    setBusy(true);
+    try {
+      const image = new Image();
+      image.src = src;
+      await new Promise((res, rej) => { image.onload = res; image.onerror = rej; });
+      const sx = Math.round(box.l * image.naturalWidth);
+      const sy = Math.round(box.t * image.naturalHeight);
+      const sw = Math.max(1, Math.round((box.r - box.l) * image.naturalWidth));
+      const sh = Math.max(1, Math.round((box.b - box.t) * image.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = sw;
+      canvas.height = sh;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, sw, sh);
+      if (removeWhite) {
+        const id = ctx.getImageData(0, 0, sw, sh);
+        const d = id.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          if (r > 238 && g > 238 && b > 238) {
+            d[i + 3] = 0;
+          } else {
+            const minC = Math.min(r, g, b);
+            if (minC > 213) {
+              d[i + 3] = Math.round(((238 - minC) / 25) * 255);
+            }
+          }
+        }
+        ctx.putImageData(id, 0, 0);
+      }
+      // limit size
+      let out = canvas;
+      const maxSide = 800;
+      if (sw > maxSide || sh > maxSide) {
+        const scale = maxSide / Math.max(sw, sh);
+        out = document.createElement('canvas');
+        out.width = Math.round(sw * scale);
+        out.height = Math.round(sh * scale);
+        out.getContext('2d').drawImage(canvas, 0, 0, out.width, out.height);
+      }
+      onDone(out.toDataURL('image/png'));
+    } catch (err) {
+      console.error(err);
+      alert('پردازش تصویر ناموفق بود');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-slate-900/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="w-full max-w-lg bg-slate-900 text-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl">
+        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+          <h3 className="font-black text-sm">{title}</h3>
+          <button type="button" onClick={onCancel} className="text-slate-400 text-xs">انصراف</button>
+        </div>
+        <div className="p-4">
+          <div className="relative w-full bg-slate-800 rounded-2xl overflow-hidden select-none" style={{ touchAction: 'none' }}>
+            <img ref={imgRef} src={src} alt="crop" className="w-full h-auto block max-h-[50vh] object-contain mx-auto" draggable={false} />
+            {/* overlay */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div
+                className="absolute border-2 border-orange-500 bg-orange-500/10"
+                style={{
+                  left: `${box.l * 100}%`,
+                  top: `${box.t * 100}%`,
+                  width: `${(box.r - box.l) * 100}%`,
+                  height: `${(box.b - box.t) * 100}%`
+                }}
+              />
+            </div>
+            {['tl','tr','bl','br'].map((c) => {
+              const style = {
+                tl: { left: `calc(${box.l * 100}% - 10px)`, top: `calc(${box.t * 100}% - 10px)` },
+                tr: { left: `calc(${box.r * 100}% - 10px)`, top: `calc(${box.t * 100}% - 10px)` },
+                bl: { left: `calc(${box.l * 100}% - 10px)`, top: `calc(${box.b * 100}% - 10px)` },
+                br: { left: `calc(${box.r * 100}% - 10px)`, top: `calc(${box.b * 100}% - 10px)` }
+              }[c];
+              return (
+                <div
+                  key={c}
+                  onMouseDown={(e) => onPointer(e, c)}
+                  onTouchStart={(e) => onPointer(e, c)}
+                  className="absolute w-5 h-5 rounded-full bg-orange-500 border-2 border-white z-10"
+                  style={style}
+                />
+              );
+            })}
+          </div>
+          <label className="flex items-center gap-2 mt-3 text-xs">
+            <input type="checkbox" checked={removeWhite} onChange={(e) => setRemoveWhite(e.target.checked)} className="accent-orange-500" />
+            حذف پس‌زمینه سفید
+          </label>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={apply}
+            className="w-full mt-3 h-12 rounded-2xl bg-[#F97316] font-black text-sm disabled:opacity-60"
+          >
+            {busy ? 'در حال پردازش…' : 'اعمال کراپ و ذخیره'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

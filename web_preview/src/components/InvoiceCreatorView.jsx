@@ -18,6 +18,8 @@ export default function InvoiceCreatorView({
   customers,
   products,
   business,
+  settings,
+  onUpdateSettings,
   editingInvoice,
   onSaveInvoice,
   onCancel,
@@ -187,7 +189,10 @@ export default function InvoiceCreatorView({
   const shipping = hasShipping ? parseFloat(shippingFee) || 0 : 0;
   const prevDebt = hasPreviousDebt ? parseFloat(previousDebt) || 0 : 0;
   const dep = hasDeposit ? parseFloat(deposit) || 0 : 0;
-  const totalAmount = Math.max(0, subtotal - discountAmount + shipping + prevDebt);
+  // جمع ناخالص = اقلام − تخفیف + ارسال + بدهی قبلی
+  const grossTotal = Math.max(0, subtotal - discountAmount + shipping + prevDebt);
+  // مبلغ قابل پرداخت = ناخالص − بیعانه
+  const totalAmount = Math.max(0, grossTotal - dep);
 
   const handleSave = () => {
     const cleanItems = items.filter(
@@ -220,8 +225,9 @@ export default function InvoiceCreatorView({
       previousDebt: prevDebt,
       deposit: dep,
       totalAmount,
+      // بیعانه قبلاً از total کم شده؛ در غیرنقدی paid=بیعانه و remaining=total
       paidAmount: paymentType === 'cash' ? totalAmount : dep,
-      remainingAmount: paymentType === 'cash' ? 0 : Math.max(0, totalAmount - dep),
+      remainingAmount: paymentType === 'cash' ? 0 : totalAmount,
       notes,
       cardNumber,
       createdAt: date || getTodayJalali()
@@ -603,12 +609,79 @@ export default function InvoiceCreatorView({
         </div>
       </div>
 
-      {/* ۶) جمع کل */}
-      <div className="flex items-center justify-between px-1 mb-2.5">
-        <span className="text-[12px] font-bold text-slate-700 dark:text-slate-200">جمع کل</span>
-        <span className="text-lg font-black text-slate-800 dark:text-white tabular-nums">
-          {formatCurrency(totalAmount)}
-        </span>
+      {/* ۶) خلاصه مبالغ */}
+      <div className="mb-2.5 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 border border-transparent dark:border-slate-700 p-3 space-y-1.5 text-[12px]">
+        <div className="flex justify-between text-slate-600 dark:text-slate-300">
+          <span>جمع اقلام</span>
+          <span className="font-bold tabular-nums">{formatCurrency(subtotal)}</span>
+        </div>
+        {hasDiscount && discountAmount > 0 && (
+          <div className="flex justify-between text-emerald-600">
+            <span>تخفیف{discountType === 'percent' ? ` (${toPersianDigits(discountValue)}٪)` : ''}</span>
+            <span className="font-bold tabular-nums">− {formatCurrency(discountAmount)}</span>
+          </div>
+        )}
+        {hasShipping && shipping > 0 && (
+          <div className="flex justify-between text-slate-600 dark:text-slate-300">
+            <span>هزینه ارسال</span>
+            <span className="font-bold tabular-nums">+ {formatCurrency(shipping)}</span>
+          </div>
+        )}
+        {hasPreviousDebt && prevDebt > 0 && (
+          <div className="flex justify-between text-rose-600">
+            <span>بدهی قبلی</span>
+            <span className="font-bold tabular-nums">+ {formatCurrency(prevDebt)}</span>
+          </div>
+        )}
+        {hasDeposit && dep > 0 && (
+          <div className="flex justify-between text-sky-600">
+            <span>بیعانه</span>
+            <span className="font-bold tabular-nums">− {formatCurrency(dep)}</span>
+          </div>
+        )}
+        <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+          <span className="font-black text-slate-800 dark:text-white">مبلغ قابل پرداخت</span>
+          <span className="text-lg font-black text-[#F97316] tabular-nums">
+            {formatCurrency(totalAmount)}
+          </span>
+        </div>
+      </div>
+
+      {/* تیک مهر و امضا */}
+      <div className="mb-2.5 rounded-2xl bg-[#F1F5F9] dark:bg-slate-800 border border-transparent dark:border-slate-700 p-3 space-y-2">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={Boolean(settings?.showStamp !== false)}
+            onChange={(e) =>
+              onUpdateSettings?.({ ...(settings || {}), showStamp: e.target.checked })
+            }
+            className="w-[18px] h-[18px] rounded accent-[#F97316]"
+          />
+          <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex-1">
+            نمایش مهر روی فاکتور
+          </span>
+          {!business?.stampDataUrl && (
+            <span className="text-[10px] text-[#F97316] font-bold">از تنظیمات اضافه کنید</span>
+          )}
+        </label>
+        <div className="border-t border-slate-200 dark:border-slate-700" />
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={Boolean(settings?.showSignature !== false)}
+            onChange={(e) =>
+              onUpdateSettings?.({ ...(settings || {}), showSignature: e.target.checked })
+            }
+            className="w-[18px] h-[18px] rounded accent-[#F97316]"
+          />
+          <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex-1">
+            نمایش امضا روی فاکتور
+          </span>
+          {!business?.signatureDataUrl && (
+            <span className="text-[10px] text-[#F97316] font-bold">از تنظیمات اضافه کنید</span>
+          )}
+        </label>
       </div>
 
       {/* ۷) توضیحات */}

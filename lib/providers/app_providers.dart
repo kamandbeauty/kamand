@@ -38,6 +38,8 @@ class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
           address: 'تهران، خیابان ولیعصر، پلاک ۱۲۴',
           taxId: '۱۰۱۰۹۸۷۶۵۴۳',
           logoPath: '',
+          stampPath: '',
+          signaturePath: '',
           bankCards: ['6037-9975-1234-5678', '5022-2910-8765-4321'],
         ));
 
@@ -58,6 +60,8 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
           templateStyle: 'modern',
           showLogo: true,
           showCardNum: true,
+          showStamp: true,
+          showSignature: true,
           themeMode: 'light',
           autoBackup: true,
           pinCode: '',
