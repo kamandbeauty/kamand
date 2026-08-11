@@ -211,14 +211,8 @@ jobs:
           grep -Eiq 'jar verified' "$aab_verify_log"
           echo "AAB signature verification passed."
 
+          # apkanalyzer اختیاری است و نباید مانع آپلود Artifact شود.
           apkanalyzer_bin="$(command -v apkanalyzer || true)"
-
-          if [[ -z "$apkanalyzer_bin" && -n "$sdk_root" ]]; then
-            apkanalyzer_bin="$(
-              find "$sdk_root" -type f -name apkanalyzer \
-                -print 2>/dev/null | sort -V | tail -n 1
-            )"
-          fi
 
           if [[ -n "$apkanalyzer_bin" ]]; then
             actual_application_id="$(
@@ -237,15 +231,18 @@ jobs:
             )
 
             actual_application_id="$(
-              printf '%s' "$actual_application_id" | tr -d '\r' | xargs
+              printf '%s' "$actual_application_id" \
+                | tr -d '\r' | xargs
             )
 
             actual_version_name="$(
-              printf '%s' "$actual_version_name" | tr -d '\r' | xargs
+              printf '%s' "$actual_version_name" \
+                | tr -d '\r' | xargs
             )
 
             actual_version_code="$(
-              printf '%s' "$actual_version_code" | tr -d '\r' | xargs
+              printf '%s' "$actual_version_code" \
+                | tr -d '\r' | xargs
             )
 
             if [[ -z "$actual_application_id" ||
