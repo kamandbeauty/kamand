@@ -20,21 +20,34 @@ web_preview/dist/
 .DS_Store
 Thumbs.db
 
-# Android
+# Android / local machine
 .gradle/
 local.properties
 capture*.png
 *.apk
 *.aab
 release/
+release-artifacts/
+release_package/*.zip
 web_preview/public/FactorRuby*
 
-# Signing secrets — هرگز commit نشوند
+# Signing material and certificates — never commit these
 android/key.properties
-android/*.jks
-android/*.keystore
-*.jks
-*.keystore
+*.jks*
+*.keystore*
+*.p12*
+*.pem*
+*.key*
+*.csr*
 
+# Local environment and credential files
+.env
+.env.*
+!.env.example
+*.credentials
+*.secrets
+.secrets/
+
+# Keep the repository's existing source release archive exceptions.
 !release_package/FactorRuby-v5.8.0.apk
 !release_package/FactorRuby-v5.8.0-release.zip

@@ -1,9 +1,8 @@
-# این فایل را کپی کنید به: android/key.properties
-# مقادیر را با اطلاعات keystore خودتان پر کنید.
-# ⚠️  هرگز key.properties و فایل .jks را در Git commit نکنید.
+# Copy this file to android/key.properties for local signing.
+# android/key.properties is ignored by Git; never commit it.
+# The storeFile path is relative to the android/ directory unless absolute.
 
-storePassword=YOUR_STORE_PASSWORD
-keyPassword=YOUR_KEY_PASSWORD
-keyAlias=upload
-# مسیر نسبت به پوشه android/
 storeFile=upload-keystore.jks
+storePassword=REPLACE_WITH_YOUR_STORE_PASSWORD
+keyAlias=upload
+keyPassword=REPLACE_WITH_YOUR_KEY_PASSWORD
