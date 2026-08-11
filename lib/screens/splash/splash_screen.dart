@@ -40,8 +40,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
     _anim.forward();
 
-    // حداقل نمایش اسپلش + رفتن به صفحه بعد
-    Timer(const Duration(milliseconds: 2200), _goNext);
+    // حداقل نمایش اسپلش (۱.۵ ثانیه) + رفتن به صفحه بعد
+    Timer(const Duration(milliseconds: 1500), _goNext);
   }
 
   void _goNext() {
