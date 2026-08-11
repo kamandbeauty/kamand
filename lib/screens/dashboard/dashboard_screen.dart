@@ -1548,30 +1548,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             )
                           : null,
                     ),
-                    const SizedBox(height: 8),
-                    Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
-                    const SizedBox(height: 8),
-                    _checkRow(
-                      label: 'نمایش امضا روی فاکتور',
-                      value: st.showSignature,
-                      dark: dark,
-                      onChanged: (v) {
-                        ref.read(settingsProvider.notifier).updateSettings(
-                              st.copyWith(showSignature: v ?? false),
-                            );
-                      },
-                      trailing: biz.signaturePath.isEmpty
-                          ? TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
-                                );
-                              },
-                              child: const Text('افزودن', style: TextStyle(fontSize: 11, color: _orange)),
-                            )
-                          : null,
-                    ),
+                    const SizedBox(height: 4),
                   ],
                 );
               }),

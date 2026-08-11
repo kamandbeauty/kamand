@@ -760,83 +760,34 @@ if (inv.cardNumber.isNotEmpty) ...[
                           }),
                         ],
                         const SizedBox(height: 20),
-                        // مهر و امضا
-// مهر و امضا
+                        // در فاکتور فقط مهر فروشنده نمایش داده می‌شود؛ امضا حذف شده است.
                         Builder(builder: (_) {
                           final settings = ref.watch(settingsProvider);
                           final showStamp = settings.showStamp && biz.stampPath.isNotEmpty;
-                          final showSign = settings.showSignature && biz.signaturePath.isNotEmpty;
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                          return Column(
                             children: [
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    if (showStamp)
-                                      Container(
-                                        height: 80,
-                                        width: double.infinity,
-                                        alignment: Alignment.center,
-                                        decoration: const BoxDecoration(
-                                          // شطرنجی برای نمایش شفافیت
-                                          color: Color(0xFFF1F5F9),
-                                        ),
-                                        child: Image.file(
-                                          File(biz.stampPath),
-                                          height: 72,
-                                          fit: BoxFit.contain,
-                                          filterQuality: FilterQuality.high,
-                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                        ),
-                                      )
-                                    else
-                                      const SizedBox(height: 48),
-                                    const SizedBox(height: 6),
-                                    const Text(
-                                      'مهر فروشنده',
-                                      style: TextStyle(fontSize: 10, color: _slate400),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    if (showSign)
-                                      Container(
-                                        height: 64,
-                                        width: double.infinity,
-                                        alignment: Alignment.center,
-                                        color: const Color(0xFFF1F5F9),
-                                        child: Image.file(
-                                          File(biz.signaturePath),
-                                          height: 56,
-                                          fit: BoxFit.contain,
-                                          filterQuality: FilterQuality.high,
-                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                        ),
-                                      )
-                                    else
-                                      const SizedBox(height: 48),
-                                    const SizedBox(height: 6),
-                                    const Text(
-                                      'امضای فروشنده',
-                                      style: TextStyle(fontSize: 10, color: _slate400),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Expanded(
-                                child: Column(
-                                  children: [
-                                    SizedBox(height: 48),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      'امضای خریدار',
-                                      style: TextStyle(fontSize: 10, color: _slate400),
-                                    ),
-                                  ],
-                                ),
+                              if (showStamp)
+                                Container(
+                                  height: 88,
+                                  width: double.infinity,
+                                  alignment: Alignment.center,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFF1F5F9),
+                                  ),
+                                  child: Image.file(
+                                    File(biz.stampPath),
+                                    height: 80,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
+                                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                  ),
+                                )
+                              else
+                                const SizedBox(height: 56),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'مهر فروشنده',
+                                style: TextStyle(fontSize: 10, color: _slate400),
                               ),
                             ],
                           );

@@ -108,7 +108,8 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
       address: _descCtrl.text.trim(),
       logoPath: _logoPath ?? biz.logoPath,
       stampPath: _stampPath ?? '',
-      signaturePath: _signPath ?? '',
+      // امضا در نسخهٔ فعلی روی فاکتور نمایش داده نمی‌شود.
+      signaturePath: '',
     );
     ref.read(businessProvider.notifier).updateBusiness(updated);
     // ذخیره رنگ روی گوشی + اعمال روی تم اپ و فاکتور
@@ -116,7 +117,7 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
           st.copyWith(accentColor: _selectedColor.value),
         );
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تنظیمات فاکتور، رنگ، مهر و امضا ذخیره شد')),
+      const SnackBar(content: Text('تنظیمات فاکتور، رنگ و مهر ذخیره شد')),
     );
     Navigator.pop(context);
   }
@@ -281,96 +282,86 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
             ),
             const SizedBox(height: 12),
 
-            // مهر / امضا — زمینه سفید حذف می‌شود
+            // فقط مهر فروشنده روی فاکتور قرار می‌گیرد؛ امضا عمداً حذف شده است.
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: dark? const Color(0xFF1E293B): Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: dark? const Color(0xFF334155): const Color(0xFFE2E8F0))),
+              decoration: BoxDecoration(
+                color: dark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: dark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
+              ),
               child: Column(
                 children: [
-                  Row(children: [
-                    Expanded(child: Row(children: [
-                      Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Color(0xFFFFF3CD), shape: BoxShape.circle), child: const Icon(Icons.verified, size: 14, color: Color(0xFFEAB308))),
-                      const SizedBox(width: 4),
-                      Text('امضا', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: dark? Colors.white: _slate600)),
-                    ])),
-                    Expanded(child: Row(children: [
-                      Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Color(0xFFFFF3CD), shape: BoxShape.circle), child: const Icon(Icons.verified, size: 14, color: Color(0xFFEAB308))),
-                      const SizedBox(width: 4),
-                      Text('مهر', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: dark? Colors.white: _slate600)),
-                    ])),
-                  ]),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFF3CD),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.verified, size: 14, color: Color(0xFFEAB308)),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'مهر',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: dark ? Colors.white : _slate600,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
-                  Row(children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _pickAndCrop(kind: 'signature', title: 'کراپ امضا'),
-                        child: Container(
-                          height: 120,
-                          decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12)),
-                          child: _signPath != null && File(_signPath!).existsSync()
-                              ? Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Image.file(File(_signPath!), fit: BoxFit.contain),
-                                    ),
-                                    Positioned(
-                                      left: 4,
-                                      top: 4,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                                        onPressed: () => setState(() => _signPath = ''),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                  Icon(Icons.add_photo_alternate_outlined, size: 36, color: _selectedColor),
-                                  const SizedBox(height: 8),
-                                  Text('انتخاب امضا', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _slate600)),
-                                  const SizedBox(height: 2),
-                                  Text('کراپ + حذف پس‌زمینه سفید', style: TextStyle(fontSize: 9, color: _slate400)),
-                                ]),
-                        ),
+                  InkWell(
+                    onTap: () => _pickAndCrop(kind: 'stamp', title: 'کراپ مهر'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: _cardBg,
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: _stampPath != null && File(_stampPath!).existsSync()
+                          ? Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Image.file(File(_stampPath!), fit: BoxFit.contain),
+                                ),
+                                Positioned(
+                                  left: 4,
+                                  top: 4,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                                    onPressed: () => setState(() => _stampPath = ''),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_photo_alternate_outlined, size: 38, color: _selectedColor),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'انتخاب مهر',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _slate600),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'کراپ + حذف پس‌زمینه سفید',
+                                  style: TextStyle(fontSize: 9, color: _slate400),
+                                ),
+                              ],
+                            ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _pickAndCrop(kind: 'stamp', title: 'کراپ مهر'),
-                        child: Container(
-                          height: 120,
-                          decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12)),
-                          child: _stampPath != null && File(_stampPath!).existsSync()
-                              ? Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Image.file(File(_stampPath!), fit: BoxFit.contain),
-                                    ),
-                                    Positioned(
-                                      left: 4,
-                                      top: 4,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                                        onPressed: () => setState(() => _stampPath = ''),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                  Icon(Icons.add_photo_alternate_outlined, size: 36, color: _selectedColor),
-                                  const SizedBox(height: 8),
-                                  Text('انتخاب مهر', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _slate600)),
-                                  const SizedBox(height: 2),
-                                  Text('کراپ + حذف پس‌زمینه سفید', style: TextStyle(fontSize: 9, color: _slate400)),
-                                ]),
-                        ),
-                      ),
-                    ),
-                  ]),
+                  ),
                 ],
               ),
             ),

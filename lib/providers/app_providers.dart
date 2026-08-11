@@ -79,7 +79,7 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
           showLogo: true,
           showCardNum: true,
           showStamp: true,
-          showSignature: true,
+          showSignature: false,
           themeMode: 'light',
           autoBackup: true,
           pinCode: '',
