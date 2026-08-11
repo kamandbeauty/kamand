@@ -18,18 +18,19 @@ if command -v flutter &> /dev/null; then
 else
     echo "Notice: Flutter CLI is not directly in system PATH."
     echo "[2/4] Building Web Preview bundle and standalone release package..."
-    mkdir -p release build/app/outputs/flutter-apk web_preview/public
-    
+    mkdir -p release build/app/outputs/flutter-apk web_preview/public release_package
+
     (cd web_preview && npm run build --silent)
-    
-    echo "[3/4] Packaging Factor Ruby v5.8.0 release artifacts..."
-    zip -q -r release/FactorRuby-v5.8.0-release.zip lib android pubspec.yaml DATABASE.md ARCHITECTURE.md ANALYSIS_REPORT.md README.md web_preview/dist -x "*.git*" "*node_modules*"
-    cp release/FactorRuby-v5.8.0-release.zip web_preview/public/FactorRuby-v5.8.0-release.zip
-    
+
+    echo "[3/4] Packaging Factor Ruby v1.0.1 release artifacts..."
+    zip -q -r release_package/FactorRuby-v1.0.1-release.zip lib android assets pubspec.yaml DATABASE.md ARCHITECTURE.md ANALYSIS_REPORT.md README.md web_preview/dist -x "*.git*" "*node_modules*" "*FactorRuby*"
+    cp release_package/FactorRuby-v1.0.1-release.zip web_preview/public/FactorRuby-v1.0.1-release.zip
+    cp release_package/FactorRuby-v1.0.1-release.zip web_preview/dist/FactorRuby-v1.0.1-release.zip
+
     echo "[4/4] Release Package Build Complete!"
     echo "--------------------------------------------------------"
     echo "  Direct Download Link (Release ZIP Bundle):"
-    echo "  Release ZIP: https://3000-${E2B_SANDBOX_ID:-localhost}.e2b.app/FactorRuby-v5.8.0-release.zip"
+    echo "  Release ZIP: https://3000-${E2B_SANDBOX_ID:-localhost}.e2b.app/FactorRuby-v1.0.1-release.zip"
     echo "  To compile binary APK, run 'flutter build apk --release' in an environment with Flutter SDK."
     echo "--------------------------------------------------------"
 fi

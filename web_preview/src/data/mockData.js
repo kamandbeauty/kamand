@@ -2,6 +2,7 @@ import { getTodayJalali } from '../utils/helpers';
 
 export const INITIAL_USER = {
   name: 'علی علوی',
+  phone: '',
   currency: 'تومان',
   country: 'ایران',
   province: 'تهران',
@@ -16,6 +17,8 @@ export const INITIAL_BUSINESS = {
   address: 'تهران، خیابان ولیعصر، نرسیده به میدان ونک، پلاک ۱۲۴',
   taxId: '۱۰۱۰۹۸۷۶۵۴۳',
   logoUrl: '',
+  stampDataUrl: '',
+  signatureDataUrl: '',
   bankCards: [
     { id: '1', bank: 'بانک ملی', number: '6037-9975-1234-5678', owner: 'علی علوی' },
     { id: '2', bank: 'بانک پاسارگاد', number: '5022-2910-8765-4321', owner: 'علی علوی' }
@@ -168,6 +171,9 @@ export const INITIAL_SETTINGS = {
   templateStyle: 'modern',
   showLogo: true,
   showCardNum: true,
+  showStamp: true,
+  showSignature: true,
+  accentColor: '#F97316',
   themeMode: 'light',
   autoBackup: true,
   pinCode: '',

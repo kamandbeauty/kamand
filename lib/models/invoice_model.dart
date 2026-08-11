@@ -22,6 +22,8 @@ class InvoiceModel {
   final double remainingAmount;
   final String notes;
   final String cardNumber;
+  final String cardBank;
+  final String cardOwner;
   final String createdAt;
 
   InvoiceModel({
@@ -46,6 +48,8 @@ class InvoiceModel {
     required this.remainingAmount,
     required this.notes,
     required this.cardNumber,
+    this.cardBank = '',
+    this.cardOwner = '',
     required this.createdAt,
   });
 
@@ -71,6 +75,8 @@ class InvoiceModel {
     'remainingAmount': remainingAmount,
     'notes': notes,
     'cardNumber': cardNumber,
+    'cardBank': cardBank,
+    'cardOwner': cardOwner,
     'createdAt': createdAt,
   };
 
@@ -98,6 +104,8 @@ class InvoiceModel {
     remainingAmount: (map['remainingAmount'] ?? 0).toDouble(),
     notes: map['notes'] ?? '',
     cardNumber: map['cardNumber'] ?? '',
+    cardBank: map['cardBank'] ?? '',
+    cardOwner: map['cardOwner'] ?? '',
     createdAt: map['createdAt'] ?? '',
   );
 }

@@ -29,5 +29,12 @@ capture*.png
 release/
 web_preview/public/FactorRuby*
 
+# Signing secrets — هرگز commit نشوند
+android/key.properties
+android/*.jks
+android/*.keystore
+*.jks
+*.keystore
+
 !release_package/FactorRuby-v5.8.0.apk
 !release_package/FactorRuby-v5.8.0-release.zip

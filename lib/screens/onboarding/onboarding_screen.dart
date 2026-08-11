@@ -38,6 +38,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final updatedUser = UserModel(
         id: 'u1',
         name: _nameController.text.trim(),
+        phone: '',
         country: _selectedCountry,
         province: _selectedCountry == 'ایران' ? _selectedProvince : '',
         city: _selectedCity,
@@ -140,7 +141,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             const SizedBox(height: 24),
             const Text(
               'سلام! من روبی هستم 👋',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.black),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -260,7 +261,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         return Column(
           children: [
             const SizedBox(height: 20),
-            const Icon(Icons.verified, size: 64, color: Colors.emerald),
+            const Icon(Icons.verified, size: 64, color: Colors.green),
             const SizedBox(height: 20),
             Text(
               'خوش آمدید، ${_nameController.text}! 🎉',

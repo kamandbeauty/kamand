@@ -3,251 +3,2240 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/jalali_helper.dart';
 import '../../core/utils/persian_number_formatter.dart';
+import '../../models/invoice_model.dart';
+import '../../models/invoice_item_model.dart';
+import '../../models/product_model.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
-import '../invoice/invoice_create_screen.dart';
+import '../../providers/product_provider.dart';
 import '../customer/customer_list_screen.dart';
 import '../product/product_list_screen.dart';
 import '../financial/financial_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
+import '../invoice/invoice_list_screen.dart';
+import '../customize/header_customize_screen.dart';
+import '../card/card_list_sheet.dart';
+import '../invoice/invoice_preview_screen.dart';
+import '../../providers/bank_card_provider.dart';
+import '../../core/utils/replace_on_type_field.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
+
+// ──────────────────────────────────────────────────────────────
+// Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
+// اما با هویت روبی (نارنجی #F97316، لوگو روبی، بدون کپی رنگ/لوگو فیدا)
+// ──────────────────────────────────────────────────────────────
+const _orange = AppTheme.RubyPrimary;
+const _orangeLight = AppTheme.RubyPrimaryContainer;
+const _bg = AppTheme.bgLight; // #FFFBEB
+const _cardGray = Color(0xFFF1F5F9); // خاکستری کارت های فرم (عکس)
+const _cardGrayBorder = Color(0xFFE2E8F0);
+const _slate400 = Color(0xFF94A3B8);
+const _slate500 = Color(0xFF64748B);
+const _slate600 = Color(0xFF475569);
+const _slate700 = Color(0xFF334155);
+const _slate800 = Color(0xFF1E293B);
+const _slate900 = Color(0xFF0F172A);
+
+/// پیش‌فاکتور موقت (تب پایین صفحه)
+class _DraftTab {
+  final String id;
+  String title;
+  String? editId;
+  String customerName;
+  String customerPhone;
+  String invoiceNumber;
+  String dateLabel;
+  List<InvoiceItemModel> items;
+  bool hasShipping;
+  bool hasDiscount;
+  bool discountIsPercent;
+  bool hasDeposit;
+  bool hasPrevDebt;
+  String invoiceType;
+  String paymentType;
+  String notes;
+  double discountAmount;
+  double shippingFee;
+  double depositAmount;
+  double prevDebtAmount;
+
+  _DraftTab({
+    required this.id,
+    required this.title,
+    this.editId,
+    this.customerName = '',
+    this.customerPhone = '',
+    this.invoiceNumber = '۱',
+    this.dateLabel = '',
+    List<InvoiceItemModel>? items,
+    this.hasShipping = false,
+    this.hasDiscount = false,
+    this.discountIsPercent = false,
+    this.hasDeposit = false,
+    this.hasPrevDebt = false,
+    this.invoiceType = 'proforma',
+    this.paymentType = 'cash',
+    this.notes = '',
+    this.discountAmount = 0,
+    this.shippingFee = 0,
+    this.depositAmount = 0,
+    this.prevDebtAmount = 0,
+  }) : items = items ??
+            [
+              InvoiceItemModel(
+                id: '1',
+                title: '',
+                quantity: 1,
+                unit: 'عدد',
+                unitPrice: 0,
+                totalPrice: 0,
+              ),
+            ];
+}
 
 class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({super.key});
 
+  /// اگر مقدار داشته باشد، فرم هوم همان فاکتور را برای ویرایش باز می‌کند
+  final InvoiceModel? editInvoice;
+  const DashboardScreen({super.key, this.editInvoice});
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  int _currentIndex = 0;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // کنترلرهای پایدار — جلوگیری از پرش فوکوس هنگام تایپ
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _notesCtrl;
+  late final TextEditingController _shippingCtrl;
+  late final TextEditingController _depositCtrl;
+  late final TextEditingController _discountCtrl;
+  late final TextEditingController _prevDebtCtrl;
+
+  // Form state — متصل به دیتابیس واقعی (§29)
+  String? _editId;
+  String _customerName = '';
+  String _customerPhone = '';
+  String _invoiceNumber = '۱';
+  String _dateLabel = '';
+  List<InvoiceItemModel> _items = [];
+  bool _hasShipping = false;
+  bool _hasDiscount = false;
+  bool _discountIsPercent = false; // false= مبلغ (آبی), true= درصد
+  bool _hasDeposit = false;
+  bool _hasPrevDebt = false;
+  String _invoiceType = 'proforma'; // proforma / purchase / sale
+  String _paymentType = 'cash'; // cash / non_cash
+  String _notes = '';
+  double _discountAmount = 0;
+  double _shippingFee = 0;
+  double _depositAmount = 0;
+  double _prevDebtAmount = 0;
+  int? _selectedRow;
+  /// با هر بار load ویرایش افزایش می‌یابد تا فیلدهای جدول دوباره ساخته شوند
+  int _formGen = 0;
+
+  /// تب‌های پیش‌فاکتور موقت (مثل فیدا)
+  final List<_DraftTab> _draftTabs = [];
+  String _activeTabId = '';
+  int _tabSeq = 1;
+
+  bool get _isEditing => _editId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController();
+    _phoneCtrl = TextEditingController();
+    _notesCtrl = TextEditingController();
+    _shippingCtrl = TextEditingController();
+    _depositCtrl = TextEditingController();
+    _discountCtrl = TextEditingController();
+    _prevDebtCtrl = TextEditingController();
+    _dateLabel = _todayLabel();
+    // یک ردیف پیش‌فرض مثل عکس (۱ عدد)
+    _items = [
+      InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0),
+    ];
+    // تب اول
+    final first = _DraftTab(
+      id: 'tab-1',
+      title: 'پیش فاکتور ۱',
+      invoiceNumber: _invoiceNumber,
+      dateLabel: _dateLabel,
+    );
+    _draftTabs.add(first);
+    _activeTabId = first.id;
+    _tabSeq = 2;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // ویرایش مستقیم از constructor
+      if (widget.editInvoice != null) {
+        _loadInvoiceForEdit(widget.editInvoice!);
+        return;
+      }
+      // ویرایش از provider (از صفحه پیش‌نمایش / لیست)
+      final req = ref.read(invoiceEditRequestProvider);
+      if (req != null) {
+        ref.read(invoiceEditRequestProvider.notifier).state = null;
+        _loadInvoiceForEdit(req);
+        return;
+      }
+      final settings = ref.read(settingsProvider);
+      if (settings.startingInvoiceNum > 0) {
+        setState(() => _invoiceNumber =
+            PersianNumberFormatter.toPersian(settings.startingInvoiceNum.toString()));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _notesCtrl.dispose();
+    _shippingCtrl.dispose();
+    _depositCtrl.dispose();
+    _discountCtrl.dispose();
+    _prevDebtCtrl.dispose();
+    super.dispose();
+  }
+
+  String _fmtAmt(double v) {
+    if (v <= 0) return '';
+    final raw = v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+    return ThousandSeparatorInputFormatter.formatDisplay(raw, allowDecimal: true);
+  }
+
+  void _setCtrl(TextEditingController c, String text) {
+    if (c.text == text) return;
+    c.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
+  void _syncTextControllers() {
+    _setCtrl(_nameCtrl, _customerName);
+    _setCtrl(_phoneCtrl, _customerPhone);
+    _setCtrl(_notesCtrl, _notes);
+    _setCtrl(_shippingCtrl, _hasShipping ? _fmtAmt(_shippingFee) : '');
+    _setCtrl(_depositCtrl, _hasDeposit ? _fmtAmt(_depositAmount) : '');
+    _setCtrl(_discountCtrl, _hasDiscount ? _fmtAmt(_discountAmount) : '');
+    _setCtrl(_prevDebtCtrl, _hasPrevDebt ? _fmtAmt(_prevDebtAmount) : '');
+  }
+
+  /// پر کردن فرم هوم با داده فاکتور برای ویرایش (همان UI داشبورد)
+  void _loadInvoiceForEdit(InvoiceModel e) {
+    setState(() {
+      _editId = e.id;
+      _customerName = e.customerName == 'مشتری عمومی' ? '' : e.customerName;
+      _customerPhone = e.customerPhone;
+      _invoiceNumber = PersianNumberFormatter.toPersian(e.number);
+      _dateLabel = e.date.isNotEmpty ? PersianNumberFormatter.toPersian(e.date) : _todayLabel();
+      _items = e.items.isEmpty
+          ? [InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0)]
+          : e.items
+              .map(
+                (it) => InvoiceItemModel(
+                  id: it.id,
+                  title: it.title,
+                  quantity: it.quantity,
+                  unit: it.unit,
+                  unitPrice: it.unitPrice,
+                  totalPrice: it.totalPrice,
+                ),
+              )
+              .toList();
+      _invoiceType = e.type;
+      _paymentType = e.paymentType;
+      _hasDiscount = e.discountAmount > 0;
+      _discountAmount = e.discountPercent > 0 ? e.discountPercent : e.discountAmount;
+      _discountIsPercent = e.discountPercent > 0;
+      _hasShipping = e.shippingFee > 0;
+      _shippingFee = e.shippingFee;
+      _hasDeposit = e.deposit > 0;
+      _depositAmount = e.deposit;
+      _hasPrevDebt = e.previousDebt > 0;
+      _prevDebtAmount = e.previousDebt;
+      _notes = e.notes;
+      _selectedRow = null;
+      _formGen++;
+    });
+    // بعد از rebuild ویجت‌ها، کنترلرها را با مقادیر واقعی پر کن
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncTextControllers();
+    });
+  }
+
+  void _resetFormForNew({String? nextNumberFa}) {
+    setState(() {
+      _editId = null;
+      _customerName = '';
+      _customerPhone = '';
+      if (nextNumberFa != null) _invoiceNumber = nextNumberFa;
+      _dateLabel = _todayLabel();
+      _items = [
+        InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0),
+      ];
+      _hasShipping = false;
+      _hasDiscount = false;
+      _hasDeposit = false;
+      _hasPrevDebt = false;
+      _discountAmount = 0;
+      _shippingFee = 0;
+      _depositAmount = 0;
+      _prevDebtAmount = 0;
+      _notes = '';
+      _selectedRow = null;
+      _invoiceType = 'proforma';
+      _paymentType = 'cash';
+      _formGen++;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncTextControllers();
+    });
+  }
+
+
+  String _typeLabelOf(String t) {
+    switch (t) {
+      case 'sale':
+        return 'فاکتور فروش';
+      case 'purchase':
+        return 'فاکتور خرید';
+      default:
+        return 'پیش فاکتور';
+    }
+  }
+
+  String _autoTabTitle() {
+    final name = _customerName.trim();
+    if (name.isNotEmpty) return name;
+    // شماره تب از ترتیب
+    final idx = _draftTabs.indexWhere((t) => t.id == _activeTabId);
+    final n = idx >= 0 ? idx + 1 : _draftTabs.length;
+    return '${_typeLabelOf(_invoiceType)} ${PersianNumberFormatter.toPersian(n.toString())}';
+  }
+
+  void _snapshotCurrentToActiveTab() {
+    final i = _draftTabs.indexWhere((t) => t.id == _activeTabId);
+    if (i < 0) return;
+    final t = _draftTabs[i];
+    t.editId = _editId;
+    t.customerName = _customerName;
+    t.customerPhone = _customerPhone;
+    t.invoiceNumber = _invoiceNumber;
+    t.dateLabel = _dateLabel;
+    t.items = _items
+        .map((e) => InvoiceItemModel(
+              id: e.id,
+              title: e.title,
+              quantity: e.quantity,
+              unit: e.unit,
+              unitPrice: e.unitPrice,
+              totalPrice: e.totalPrice,
+            ))
+        .toList();
+    t.hasShipping = _hasShipping;
+    t.hasDiscount = _hasDiscount;
+    t.discountIsPercent = _discountIsPercent;
+    t.hasDeposit = _hasDeposit;
+    t.hasPrevDebt = _hasPrevDebt;
+    t.invoiceType = _invoiceType;
+    t.paymentType = _paymentType;
+    t.notes = _notes;
+    t.discountAmount = _discountAmount;
+    t.shippingFee = _shippingFee;
+    t.depositAmount = _depositAmount;
+    t.prevDebtAmount = _prevDebtAmount;
+    t.title = _autoTabTitle();
+  }
+
+  void _restoreTab(_DraftTab t) {
+    _editId = t.editId;
+    _customerName = t.customerName;
+    _customerPhone = t.customerPhone;
+    _invoiceNumber = t.invoiceNumber;
+    _dateLabel = t.dateLabel.isNotEmpty ? t.dateLabel : _todayLabel();
+    _items = t.items
+        .map((e) => InvoiceItemModel(
+              id: e.id,
+              title: e.title,
+              quantity: e.quantity,
+              unit: e.unit,
+              unitPrice: e.unitPrice,
+              totalPrice: e.totalPrice,
+            ))
+        .toList();
+    if (_items.isEmpty) {
+      _items = [
+        InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0),
+      ];
+    }
+    _hasShipping = t.hasShipping;
+    _hasDiscount = t.hasDiscount;
+    _discountIsPercent = t.discountIsPercent;
+    _hasDeposit = t.hasDeposit;
+    _hasPrevDebt = t.hasPrevDebt;
+    _invoiceType = t.invoiceType;
+    _paymentType = t.paymentType;
+    _notes = t.notes;
+    _discountAmount = t.discountAmount;
+    _shippingFee = t.shippingFee;
+    _depositAmount = t.depositAmount;
+    _prevDebtAmount = t.prevDebtAmount;
+    _selectedRow = null;
+    _formGen++;
+    _activeTabId = t.id;
+  }
+
+  void _switchToTab(String id) {
+    if (id == _activeTabId) return;
+    _snapshotCurrentToActiveTab();
+    _DraftTab? found;
+    for (final e in _draftTabs) {
+      if (e.id == id) {
+        found = e;
+        break;
+      }
+    }
+    if (found == null) return;
+    final tab = found;
+    setState(() {
+      _restoreTab(tab);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncTextControllers();
+    });
+  }
+
+  void _addNewDraftTab() {
+    _snapshotCurrentToActiveTab();
+    final settings = ref.read(settingsProvider);
+    // شماره بعدی
+    final base = settings.startingInvoiceNum + _draftTabs.length;
+    final numFa = PersianNumberFormatter.toPersian(base.toString());
+    final tab = _DraftTab(
+      id: 'tab-${DateTime.now().millisecondsSinceEpoch}',
+      title: 'پیش فاکتور ${PersianNumberFormatter.toPersian(_tabSeq.toString())}',
+      invoiceNumber: numFa,
+      dateLabel: _todayLabel(),
+      invoiceType: 'proforma',
+      paymentType: 'cash',
+    );
+    setState(() {
+      _draftTabs.add(tab);
+      _tabSeq++;
+      _restoreTab(tab);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncTextControllers();
+    });
+  }
+
+  void _closeDraftTab(String id) {
+    if (_draftTabs.length <= 1) {
+      // ریست همان تب
+      _resetFormForNew();
+      _snapshotCurrentToActiveTab();
+      return;
+    }
+    final idx = _draftTabs.indexWhere((t) => t.id == id);
+    if (idx < 0) return;
+    final wasActive = id == _activeTabId;
+    if (wasActive) {
+      // قبل از حذف، سوییچ
+      final next = idx > 0 ? _draftTabs[idx - 1] : _draftTabs[idx + 1];
+      setState(() {
+        _draftTabs.removeAt(idx);
+        _restoreTab(next);
+      });
+    } else {
+      setState(() => _draftTabs.removeAt(idx));
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncTextControllers();
+    });
+  }
+
+  void _showOpenWindowsSheet() {
+    _snapshotCurrentToActiveTab();
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = Color(ref.read(settingsProvider).accentColor);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: dark ? _slate800 : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setModal) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '${PersianNumberFormatter.toPersian(_draftTabs.length.toString())} پنجره',
+                        style: TextStyle(fontSize: 12, color: dark ? _slate400 : _slate500, fontWeight: FontWeight.w700),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'پنجره‌های باز',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: dark ? Colors.white : _slate800),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: Icon(Icons.close, color: dark ? Colors.white70 : _slate600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'این فاکتورها موقتی هستند. برای جلوگیری از حذف شدن، آن‌ها را ذخیره کنید.',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontSize: 12, color: dark ? _slate400 : _slate500, height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.45),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _draftTabs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) {
+                        final t = _draftTabs[i];
+                        final active = t.id == _activeTabId;
+                        return Material(
+                          color: active
+                              ? accent.withValues(alpha: 0.10)
+                              : (dark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
+                          borderRadius: BorderRadius.circular(16),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              _switchToTab(t.id);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                              child: Row(
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      setModal(() {
+                                        _closeDraftTab(t.id);
+                                      });
+                                      if (_draftTabs.isEmpty) Navigator.pop(ctx);
+                                    },
+                                    child: Icon(Icons.close, size: 20, color: dark ? _slate400 : _slate500),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    t.title,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      color: active ? accent : (dark ? Colors.white : _slate800),
+                                    ),
+                                  ),
+                                  if (active) ...[
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.check_circle, color: accent, size: 22),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _addNewDraftTab();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: const Icon(Icons.add),
+                      label: const Text('فاکتور جدید', style: TextStyle(fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  void _addCurrentProductToCatalog(int idx) {
+    final it = _items[idx];
+    final name = it.title.trim();
+    if (name.isEmpty) return;
+    final products = ref.read(productListProvider);
+    final exists = products.any((p) => p.name.trim() == name);
+    if (exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('این کالا از قبل در کاتالوگ هست')),
+      );
+      return;
+    }
+    final p = ProductModel(
+      id: 'p-${DateTime.now().millisecondsSinceEpoch}',
+      code: '${100 + products.length + 1}',
+      name: name,
+      unit: it.unit.isEmpty ? 'عدد' : it.unit,
+      buyPrice: 0,
+      sellPrice: it.unitPrice,
+      stock: 0,
+      notes: '',
+    );
+    ref.read(productListProvider.notifier).addProduct(p);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('«$name» به کاتالوگ اضافه شد')),
+    );
+  }
+
+  String _todayLabel() {
+    final jalali = JalaliHelper.getTodayJalali(); // 1405/05/20
+    // نمایش مثل عکس: دوشنبه ۱۹ مرداد ۱۴۰۵
+    // Hilal: فعلاً همان تاریخ عددی فارسی را نمایش میدهیم + روز هفته تقریبی
+    final parts = jalali.split('/');
+    if (parts.length == 3) {
+      final months = ['', 'فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+      final m = int.tryParse(parts[1]) ?? 1;
+      final d = PersianNumberFormatter.toPersian(parts[2]);
+      final y = PersianNumberFormatter.toPersian(parts[0]);
+      return '$d ${months[m]} $y';
+    }
+    return PersianNumberFormatter.toPersian(jalali);
+  }
+
+  double get _itemsTotal => _items.fold(0, (s, e) => s + e.totalPrice);
+
+  /// مبلغ تخفیف واقعی (درصد یا مبلغ ثابت)
+  double get _resolvedDiscount {
+    if (!_hasDiscount) return 0;
+    if (_discountIsPercent) {
+      return (_itemsTotal * (_discountAmount.clamp(0, 100)) / 100);
+    }
+    return _discountAmount < 0 ? 0 : _discountAmount;
+  }
+
+  double get _shippingVal => _hasShipping ? _shippingFee : 0;
+  double get _prevDebtVal => _hasPrevDebt ? _prevDebtAmount : 0;
+  double get _depositVal => _hasDeposit ? _depositAmount : 0;
+
+  /// جمع قبل از بیعانه = اقلام − تخفیف + ارسال + بدهی قبلی
+  double get _grossTotal {
+    final t = _itemsTotal - _resolvedDiscount + _shippingVal + _prevDebtVal;
+    return t < 0 ? 0 : t;
+  }
+
+  /// مبلغ قابل پرداخت نهایی (بیعانه کم می‌شود)
+  double get _finalTotal {
+    final t = _grossTotal - _depositVal;
+    return t < 0 ? 0 : t;
+  }
+
+  void _addItem() {
+    setState(() {
+      _items.add(InvoiceItemModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: '',
+        quantity: 1,
+        unit: 'عدد',
+        unitPrice: 0,
+        totalPrice: 0,
+      ));
+      _selectedRow = _items.length - 1;
+    });
+  }
+
+  void _removeRow(int idx) {
+    setState(() {
+      _items.removeAt(idx);
+      if (_items.isEmpty) {
+        _items.add(InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0));
+      }
+      if (_selectedRow == idx) {
+        _selectedRow = null;
+      } else if (_selectedRow != null && _selectedRow! > idx) {
+        _selectedRow = _selectedRow! - 1;
+      }
+    });
+  }
+
+  void _updateItem(int idx, {String? title, double? qty, String? unit, double? price}) {
+    final old = _items[idx];
+    final newQty = qty ?? old.quantity;
+    final newPrice = price ?? old.unitPrice;
+    setState(() {
+      _items[idx] = InvoiceItemModel(
+        id: old.id,
+        title: title ?? old.title,
+        quantity: newQty,
+        unit: unit ?? old.unit,
+        unitPrice: newPrice,
+        totalPrice: newQty * newPrice,
+      );
+    });
+  }
+
+  void _saveInvoice() {
+    final cleanItems = _items
+        .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0 || e.totalPrice > 0)
+        .toList();
+    if (cleanItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('حداقل یک قلم کالا با عنوان یا قیمت اضافه کنید')),
+      );
+      return;
+    }
+    if (_finalTotal <= 0 && cleanItems.every((e) => e.unitPrice <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('قیمت اقلام را وارد کنید')),
+      );
+      return;
+    }
+
+    final selectedCard = ref.read(selectedBankCardProvider);
+    final biz = ref.read(businessProvider);
+    final card = selectedCard?.cardNumber ??
+        (biz.bankCards.isNotEmpty ? biz.bankCards.first : '');
+    final cardBank = selectedCard?.bankName ??
+        (card.isNotEmpty ? detectBankName(card) : '');
+    final cardOwner = selectedCard?.persianName ?? '';
+
+    String numEn = _faToEn(_invoiceNumber);
+    final jalaliEn = JalaliHelper.getTodayJalali();
+    // اگر در حالت ویرایش تاریخ قبلی را نگه داریم
+    final dateToStore = _isEditing && _dateLabel.isNotEmpty
+        ? _faToEn(_dateLabel.replaceAll('-', '/'))
+        : jalaliEn;
+    final jalaliFa = PersianNumberFormatter.toPersian(dateToStore);
+
+    InvoiceModel? existing;
+    if (_editId != null) {
+      for (final i in ref.read(invoiceListProvider)) {
+        if (i.id == _editId) {
+          existing = i;
+          break;
+        }
+      }
+    }
+
+    // totalAmount = مبلغ قابل پرداخت نهایی (بعد از کسر بیعانه)
+    // paidAmount: نقدی = کل؛ غیرنقدی = بیعانه (که از total کم شده)
+    final depositAmt = _depositVal;
+    final payable = _finalTotal;
+    final finalRemaining = _paymentType == 'cash' ? 0.0 : payable;
+    final finalPaid = _paymentType == 'cash' ? payable : depositAmt;
+
+    final inv = InvoiceModel(
+      id: _editId ?? 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      number: numEn,
+      customerId: existing?.customerId ?? 'c-${DateTime.now().millisecondsSinceEpoch}',
+      customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
+      customerPhone: _customerPhone.trim(),
+      type: _invoiceType == 'sale'
+          ? 'sale'
+          : (_invoiceType == 'purchase' ? 'purchase' : 'proforma'),
+      paymentType: _paymentType,
+      status: _invoiceType == 'proforma'
+          ? 'proforma'
+          : (finalRemaining <= 0 ? 'paid' : (finalPaid > 0 ? 'partial' : 'unpaid')),
+      date: jalaliFa,
+      items: cleanItems,
+      subtotal: _itemsTotal,
+      discountPercent: _discountIsPercent ? _discountAmount : 0,
+      discountAmount: _resolvedDiscount,
+      shippingFee: _shippingVal,
+      previousDebt: _prevDebtVal,
+      deposit: depositAmt,
+      totalAmount: payable,
+      paidAmount: finalPaid.toDouble(),
+      remainingAmount: finalRemaining.toDouble(),
+      notes: _notes,
+      cardNumber: card.isNotEmpty ? card : (existing?.cardNumber ?? ''),
+      cardBank: cardBank.isNotEmpty ? cardBank : (existing?.cardBank ?? ''),
+      cardOwner: cardOwner.isNotEmpty ? cardOwner : (existing?.cardOwner ?? ''),
+      createdAt: existing?.createdAt ?? jalaliFa,
+    );
+
+    ref.read(invoiceListProvider.notifier).saveInvoice(inv);
+
+    // آماده‌سازی فرم برای فاکتور بعدی
+    final nextNum = (int.tryParse(numEn) ?? 1004) + 1;
+    _resetFormForNew(
+      nextNumberFa: PersianNumberFormatter.toPersian(nextNum.toString()),
+    );
+
+    // به‌روزرسانی تب فعال پس از ذخیره
+    _snapshotCurrentToActiveTab();
+
+    // باز کردن صفحه نمایش فاکتور + اشتراک
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => InvoicePreviewScreen(invoice: inv),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(userProvider);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final business = ref.watch(businessProvider);
-    final invoices = ref.watch(invoiceListProvider);
-    final customers = ref.watch(customerListProvider);
+    final settings = ref.watch(settingsProvider);
+    final accent = Color(settings.accentColor);
+    final shopName = business.shopName.isNotEmpty ? business.shopName : 'فاکتور ساز روبی';
 
-    // Stats calculations
-    final todayStr = JalaliHelper.getTodayJalali();
-    final todayInvoices = invoices.where((inv) => inv.date == todayStr && inv.type == 'sale');
-    final todaySales = todayInvoices.fold<double>(0, (sum, item) => sum + item.totalAmount);
-    final todayReceived = todayInvoices.fold<double>(0, (sum, item) => sum + item.paidAmount);
-    final customerDebt = customers.fold<double>(0, (sum, item) => sum + item.balance);
+    // گوش دادن به درخواست ویرایش از صفحات دیگر
+    ref.listen<InvoiceModel?>(invoiceEditRequestProvider, (prev, next) {
+      if (next != null) {
+        ref.read(invoiceEditRequestProvider.notifier).state = null;
+        _loadInvoiceForEdit(next);
+      }
+    });
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryBlue,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Text(
-                'ف',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.black, fontSize: 16),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(business.shopName.isNotEmpty ? business.shopName : 'فاکتور روبی'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-            },
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              accountName: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              accountEmail: Text('${user.country} - ${user.city}'),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Text(
-                  user.name.isNotEmpty ? user.name[0] : 'ف',
-                  style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.black, fontSize: 24),
+      key: _scaffoldKey,
+      backgroundColor: dark ? _slate900 : Colors.white,
+      drawer: _buildDrawer(),
+      // هدر: در حالت ویرایش عنوان «ویرایش فاکتور» + دکمه انصراف
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: AppBar(
+          backgroundColor: dark ? _slate800 : (_isEditing ? accent : Colors.white),
+          elevation: 0,
+          centerTitle: true,
+          leadingWidth: 48,
+          leading: _isEditing
+              ? IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () {
+                    final st = ref.read(settingsProvider);
+                    _resetFormForNew(
+                      nextNumberFa: PersianNumberFormatter.toPersian(
+                        st.startingInvoiceNum.toString(),
+                      ),
+                    );
+                  },
+                  tooltip: 'انصراف از ویرایش',
+                )
+              : InkWell(
+                  onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Icon(Icons.auto_awesome, color: accent, size: 22),
+                      ),
+                    ),
+                  ),
                 ),
+          title: Text(
+            _isEditing
+                ? 'ویرایش فاکتور #${PersianNumberFormatter.toPersian(_invoiceNumber)}'
+                : shopName,
+            style: TextStyle(
+              color: _isEditing || dark ? Colors.white : _slate800,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            if (_isEditing)
+              TextButton(
+                onPressed: _saveInvoice,
+                child: const Text(
+                  'ذخیره',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                ),
+              )
+            else
+              IconButton(
+                icon: Icon(Icons.menu, color: dark ? Colors.white : _slate700),
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               ),
-              decoration: const BoxDecoration(color: AppTheme.primaryBlue),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: const Text('داشبورد اصلی'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: const Text('مدیریت فاکتورها'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceCreateScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.people),
-              title: const Text('مشتریان و بدهی‌ها'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.inventory_2),
-              title: const Text('کالاها و خدمات'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet),
-              title: const Text('گزارشات مالی'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const FinancialDashboardScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('تنظیمات'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-              },
-            ),
           ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(height: 1, color: dark ? _slate700 : _cardGrayBorder),
+          ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          key: ValueKey('form-$_formGen'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Stats 2x2 Grid
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.4,
-              children: [
-                _buildStatCard('فروش امروز', PersianNumberFormatter.formatCurrency(todaySales), Icons.trending_up, Colors.blue),
-                _buildStatCard('دریافت امروز', PersianNumberFormatter.formatCurrency(todayReceived), Icons.payments, Colors.emerald),
-                _buildStatCard('بدهی مشتریان', PersianNumberFormatter.formatCurrency(customerDebt), Icons.warning_amber, Colors.rose),
-                _buildStatCard('تعداد فاکتورها', PersianNumberFormatter.toPersian(invoices.length), Icons.description, Colors.purple),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // Quick Actions
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceCreateScreen()));
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('فاکتور جدید'),
-                  ),
+            // 1) تنظیمات فاکتور / سربرگ
+            SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen()));
-                    },
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('مشتری جدید'),
-                  ),
+                child: const Text(
+                  'تنظیمات فاکتور',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Recent Invoices Header
-            const Text(
-              'آخرین فاکتورها',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(height: 12),
 
-            // Invoices List
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: invoices.length,
-              itemBuilder: (ctx, idx) {
-                final inv = invoices[idx];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppTheme.lightBlueBg,
-                      child: Text('#${PersianNumberFormatter.toPersian(inv.number)}'),
-                    ),
-                    title: Text(inv.customerName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('تاریخ: ${PersianNumberFormatter.toPersian(inv.date)}'),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          PersianNumberFormatter.formatCurrency(inv.totalAmount),
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+            // 2) کارت اطلاعات مشتری — فقط یک کادر Outline برای هر فیلد
+            _grayCard(
+              dark: dark,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _labeledInput(
+                    label: 'نام مشتری',
+                    controller: _nameCtrl,
+                    hint: 'مثلاً: آقای محمدی',
+                    dark: dark,
+                    keyboardType: TextInputType.name,
+                    onChanged: (v) {
+                      _customerName = v;
+                      // عنوان تب فعال را با نام مشتری همگام کن
+                      final i = _draftTabs.indexWhere((t) => t.id == _activeTabId);
+                      if (i >= 0) {
+                        final title = v.trim().isNotEmpty ? v.trim() : _autoTabTitle();
+                        if (_draftTabs[i].title != title) {
+                          setState(() => _draftTabs[i].title = title);
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _labeledInput(
+                    label: 'شماره همراه مشتری',
+                    controller: _phoneCtrl,
+                    hint: '۰۹۱۲xxxxxxx',
+                    dark: dark,
+                    keyboardType: TextInputType.phone,
+                    onChanged: (v) => _customerPhone = v,
+                  ),
+                  const SizedBox(height: 12),
+                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Text(
+                              'شماره فاکتور:',
+                              style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              PersianNumberFormatter.toPersian(_invoiceNumber),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: dark ? Colors.white : _slate800,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(color: _orange, shape: BoxShape.circle),
+                            ),
+                          ],
                         ),
-                        Text(
-                          inv.status == 'paid' ? 'پرداخت شده' : 'بدهکار',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: inv.status == 'paid' ? Colors.emerald : Colors.rose,
+                      ),
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'تاریخ: $_dateLabel',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: dark ? Colors.white : _slate800,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // 3) جدول اقلام
+            Container(
+              decoration: BoxDecoration(
+                color: dark? _slate800: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: dark? _slate700: _cardGrayBorder),
+              ),
+              child: Column(
+                children: [
+                  // هدر جدول — ترتیب RTL: عنوان | مقدار | واحد | قیمت واحد | قیمت کل
+                  Container(
+                    decoration: BoxDecoration(
+                      color: dark? _slate700.withValues(alpha: 0.4): const Color(0xFFF8FAFC),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      border: Border(bottom: BorderSide(color: dark? _slate700: _cardGrayBorder)),
+                    ),
+                    child: Row(
+                      children: [
+                        // عنوان پهن‌تر برای نام محصول
+                        _tableHeader('عنوان', flex: 5, dark: dark),
+                        _tableHeader('مقدار', flex: 1, dark: dark),
+                        _tableHeader('واحد', flex: 1, dark: dark),
+                        _tableHeader('قیمت واحد', flex: 2, dark: dark),
+                        _tableHeader('قیمت کل', flex: 2, dark: dark, isLast: true),
+                      ],
+                    ),
+                  ),
+                  // ردیف‌ها — شماره ردیف غیرقابل ادیت + ضربدر حذف با کلیک
+                  ...List.generate(_items.length, (idx) {
+                    final it = _items[idx];
+                    final isSelected = _selectedRow == idx;
+                    final rowNum = PersianNumberFormatter.toPersian((idx + 1).toString());
+                    return InkWell(
+                      onTap: () => setState(() => _selectedRow = idx),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected ? _orange.withValues(alpha: 0.06) : Colors.transparent,
+                          border: Border(bottom: BorderSide(color: dark? _slate700: _cardGrayBorder)),
+                        ),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // عنوان + شماره ردیف — فضای بیشتر برای نام محصول
+                              _tableCell(
+                                flex: 5,
+                                dark: dark,
+                                child: Directionality(
+                                  textDirection: TextDirection.rtl,
+                                  child: Row(
+                                    children: [
+                                      if (isSelected)
+                                        InkWell(
+                                          onTap: () => _removeRow(idx),
+                                          child: const Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 4),
+                                            child: Icon(Icons.close, size: 18, color: _slate500),
+                                          ),
+                                        )
+                                      else
+                                        const SizedBox(width: 8),
+                                      Text(
+                                        rowNum,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: dark ? _slate400 : _slate500,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: TextEditingController(text: it.title)
+                                            ..selection = TextSelection.collapsed(offset: it.title.length),
+                                          onChanged: (v) => _updateItem(idx, title: v),
+                                          onTap: () => setState(() => _selectedRow = idx),
+                                          textDirection: TextDirection.rtl,
+                                          textAlign: TextAlign.right,
+                                          decoration: InputDecoration(
+                                            border: InputBorder.none,
+                                            hintText: 'نام کالا / خدمت',
+                                            hintTextDirection: TextDirection.rtl,
+                                            hintStyle: TextStyle(
+                                              fontSize: 12,
+                                              color: dark ? _slate400 : _slate400,
+                                            ),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                                            isDense: true,
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: dark ? Colors.white : _slate800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              _tableCell(
+                                flex: 1,
+                                dark: dark,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _selectedRow = idx),
+                                  child: ReplaceOnTypeNumberField(
+                                    key: ValueKey('qty-${it.id}-$_formGen'),
+                                    value: it.quantity,
+                                    useThousandSeparator: false,
+                                    onChanged: (q) {
+                                      setState(() => _selectedRow = idx);
+                                      _updateItem(idx, qty: q <= 0 ? 0 : q);
+                                    },
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: dark ? Colors.white : _slate800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              _tableCell(
+                                flex: 1,
+                                dark: dark,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() => _selectedRow = idx);
+                                    showDialog(
+                                      context: context,
+                                      builder: (c) => SimpleDialog(
+                                        title: const Text('انتخاب واحد'),
+                                        children: ['عدد', 'بسته', 'کیلو', 'متر', 'ساعت', 'دستگاه']
+                                            .map(
+                                              (u) => SimpleDialogOption(
+                                                child: Text(u),
+                                                onPressed: () {
+                                                  Navigator.pop(c);
+                                                  _updateItem(idx, unit: u);
+                                                },
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    child: Text(
+                                      it.unit,
+                                      style: TextStyle(fontSize: 11, color: dark ? Colors.white : _slate700),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              _tableCell(
+                                flex: 2,
+                                dark: dark,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _selectedRow = idx),
+                                  child: ReplaceOnTypeNumberField(
+                                    key: ValueKey('price-${it.id}-$_formGen'),
+                                    value: it.unitPrice,
+                                    emptyDisplay: '\u0000',
+                                    onChanged: (p) {
+                                      setState(() => _selectedRow = idx);
+                                      _updateItem(idx, price: p);
+                                    },
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: dark ? Colors.white : _slate800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              _tableCell(
+                                flex: 2,
+                                dark: dark,
+                                isLast: true,
+                                child: Center(
+                                  child: Text(
+                                    it.totalPrice == 0
+                                        ? '۰'
+                                        : PersianNumberFormatter.formatCurrency(it.totalPrice)
+                                            .replaceAll(' تومان', ''),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: dark ? Colors.white : _slate800,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    );
+                  }),
+                  // دکمه ایجاد (راست) + کاتالوگ + افزودن به کاتالوگ هنگام تایپ
+                  Container(
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: dark ? _slate800.withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                    ),
+                    child: Row(
+                      children: [
+                        // کاتالوگ سمت چپ
+                        TextButton.icon(
+                          onPressed: () {
+                            final products = ref.read(productListProvider);
+                            if (products.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('کاتالوگ خالی است')),
+                              );
+                              return;
+                            }
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: dark ? _slate800 : Colors.white,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                              ),
+                              builder: (ctx) => SafeArea(
+                                child: SizedBox(
+                                  height: MediaQuery.of(ctx).size.height * 0.55,
+                                  child: Column(
+                                    children: [
+                                      const Padding(
+                                        padding: EdgeInsets.all(16),
+                                        child: Text(
+                                          'انتخاب از کاتالوگ',
+                                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: ListView(
+                                          children: products
+                                              .map(
+                                                (p) => ListTile(
+                                                  title: Text(p.name, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                                  subtitle: Text(
+                                                    PersianNumberFormatter.formatCurrency(p.sellPrice),
+                                                    textAlign: TextAlign.right,
+                                                  ),
+                                                  onTap: () {
+                                                    Navigator.pop(ctx);
+                                                    setState(() {
+                                                      final emptyIdx = _items.indexWhere(
+                                                        (e) => e.title.trim().isEmpty && e.unitPrice == 0,
+                                                      );
+                                                      final row = InvoiceItemModel(
+                                                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                                        title: p.name,
+                                                        quantity: 1,
+                                                        unit: p.unit,
+                                                        unitPrice: p.sellPrice,
+                                                        totalPrice: p.sellPrice,
+                                                      );
+                                                      if (emptyIdx >= 0) {
+                                                        _items[emptyIdx] = row;
+                                                        _selectedRow = emptyIdx;
+                                                      } else {
+                                                        _items.add(row);
+                                                        _selectedRow = _items.length - 1;
+                                                      }
+                                                      _formGen++;
+                                                    });
+                                                  },
+                                                ),
+                                              )
+                                              .toList(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.inventory_2_outlined, size: 18, color: Colors.teal),
+                          label: const Text(
+                            'کاتالوگ',
+                            style: TextStyle(color: Colors.teal, fontWeight: FontWeight.w800, fontSize: 12),
+                          ),
+                        ),
+                        const Spacer(),
+                        // افزودن به کاتالوگ — وقتی روی ردیف تایپ شده
+                        if (_selectedRow != null &&
+                            _selectedRow! >= 0 &&
+                            _selectedRow! < _items.length)
+                          TextButton.icon(
+                            onPressed: () => _addCurrentProductToCatalog(_selectedRow!),
+                            icon: Icon(Icons.playlist_add, size: 18, color: Color(ref.read(settingsProvider).accentColor)),
+                            label: Text(
+                              'افزودن به کاتالوگ',
+                              style: TextStyle(color: Color(ref.read(settingsProvider).accentColor), fontWeight: FontWeight.w800, fontSize: 12),
+                            ),
+                          ),
+                        // ایجاد سطر — سمت راست
+                        InkWell(
+                          onTap: _addItem,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'ایجاد',
+                                  style: TextStyle(color: Color(ref.read(settingsProvider).accentColor), fontWeight: FontWeight.w900, fontSize: 14),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  width: 26,
+                                  height: 26,
+                                  decoration: BoxDecoration(
+                                    color: Color(ref.read(settingsProvider).accentColor).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(Icons.add, color: Color(ref.read(settingsProvider).accentColor), size: 18),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // جمع آیتم‌ها — برچسب راست، مبلغ چپ (RTL)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'جمع آیتم‌ها',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: dark ? Colors.white : _slate700,
+                    ),
+                  ),
+                  Text(
+                    PersianNumberFormatter.formatCurrency(_itemsTotal),
+                    style: TextStyle(fontSize: 12, color: dark ? _slate400 : _slate500),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 4) کارت هزینه ارسال / تخفیف / بیعانه / بدهی قبلی
+            // در ویرایش، مقادیر واقعی با کنترلر پایدار نمایش داده می‌شوند
+            _grayCard(
+              dark: dark,
+              child: Column(
+                children: [
+                  Row(children: [
+                    Expanded(
+                      child: _checkAmountRow(
+                        label: 'هزینه ارسال:',
+                        value: _hasShipping,
+                        dark: dark,
+                        controller: _shippingCtrl,
+                        onChanged: (v) {
+                          setState(() {
+                            _hasShipping = v;
+                            if (!v) {
+                              _shippingFee = 0;
+                              _shippingCtrl.clear();
+                            } else if (_shippingCtrl.text.isEmpty && _shippingFee > 0) {
+                              _setCtrl(_shippingCtrl, _fmtAmt(_shippingFee));
+                            }
+                          });
+                        },
+                        onAmount: (n) => setState(() => _shippingFee = n),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _checkAmountRow(
+                        label: 'تخفیف:',
+                        value: _hasDiscount,
+                        dark: dark,
+                        controller: _discountCtrl,
+                        onChanged: (v) {
+                          setState(() {
+                            _hasDiscount = v;
+                            if (!v) {
+                              _discountAmount = 0;
+                              _discountCtrl.clear();
+                            } else if (_discountCtrl.text.isEmpty && _discountAmount > 0) {
+                              _setCtrl(_discountCtrl, _fmtAmt(_discountAmount));
+                            }
+                          });
+                        },
+                        onAmount: (n) => setState(() => _discountAmount = n),
+                      ),
+                    ),
+                  ]),
+                  if (_hasDiscount)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          InkWell(
+                            onTap: () => setState(() => _discountIsPercent = true),
+                            child: Text('درصد', style: TextStyle(fontSize: 12, color: _discountIsPercent ? _orange : _slate400, fontWeight: FontWeight.w700)),
+                          ),
+                          const SizedBox(width: 16),
+                          InkWell(
+                            onTap: () => setState(() => _discountIsPercent = false),
+                            child: Text('مبلغ', style: TextStyle(fontSize: 12, color: !_discountIsPercent ? _orange : _slate400, fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(
+                      child: _checkAmountRow(
+                        label: 'بیعانه:',
+                        value: _hasDeposit,
+                        dark: dark,
+                        controller: _depositCtrl,
+                        onChanged: (v) {
+                          setState(() {
+                            _hasDeposit = v;
+                            if (!v) {
+                              _depositAmount = 0;
+                              _depositCtrl.clear();
+                            } else if (_depositCtrl.text.isEmpty && _depositAmount > 0) {
+                              _setCtrl(_depositCtrl, _fmtAmt(_depositAmount));
+                            }
+                          });
+                        },
+                        onAmount: (n) => setState(() => _depositAmount = n),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _checkAmountRow(
+                        label: 'بدهی قبلی:',
+                        value: _hasPrevDebt,
+                        dark: dark,
+                        controller: _prevDebtCtrl,
+                        onChanged: (v) {
+                          setState(() {
+                            _hasPrevDebt = v;
+                            if (!v) {
+                              _prevDebtAmount = 0;
+                              _prevDebtCtrl.clear();
+                            } else if (_prevDebtCtrl.text.isEmpty && _prevDebtAmount > 0) {
+                              _setCtrl(_prevDebtCtrl, _fmtAmt(_prevDebtAmount));
+                            }
+                          });
+                        },
+                        onAmount: (n) => setState(() => _prevDebtAmount = n),
+                      ),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // 5) کارت نوع فاکتور / نوع پرداخت
+            _grayCard(
+              dark: dark,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Text('نوع فاکتور', style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate600, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      _radio(label: 'پیش فاکتور', value: 'proforma', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
+                      const SizedBox(width: 8),
+                      _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
+                      const SizedBox(width: 8),
+                      _radio(label: 'فاکتور فروش', value: 'sale', group: _invoiceType, onChanged: (v)=> setState(()=> _invoiceType=v!), dark: dark),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Divider(color: dark? _slate700: _cardGrayBorder, height: 1),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text('نوع پرداخت', style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate600, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      _radio(label: 'نقدی', value: 'cash', group: _paymentType, onChanged: (v)=> setState(()=> _paymentType=v!), dark: dark),
+                      const SizedBox(width: 8),
+                      _radio(label: 'غیر نقدی', value: 'non_cash', group: _paymentType, onChanged: (v)=> setState(()=> _paymentType=v!), dark: dark),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 6) خلاصه مبالغ — تخفیف/ارسال/بدهی/بیعانه + قابل پرداخت
+            _grayCard(
+              dark: dark,
+              child: Column(
+                children: [
+                  _sumRow('جمع اقلام', _itemsTotal, dark: dark),
+                  if (_hasDiscount && _resolvedDiscount > 0)
+                    _sumRow('تخفیف', -_resolvedDiscount, dark: dark, color: const Color(0xFF059669)),
+                  if (_hasShipping && _shippingVal > 0)
+                    _sumRow('هزینه ارسال', _shippingVal, dark: dark),
+                  if (_hasPrevDebt && _prevDebtVal > 0)
+                    _sumRow('بدهی قبلی', _prevDebtVal, dark: dark, color: const Color(0xFFE11D48)),
+                  if (_hasDeposit && _depositVal > 0)
+                    _sumRow('بیعانه', -_depositVal, dark: dark, color: const Color(0xFF0284C7)),
+                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'مبلغ قابل پرداخت',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: dark ? Colors.white : _slate800,
+                        ),
+                      ),
+                      Text(
+                        PersianNumberFormatter.formatCurrency(_finalTotal),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: dark ? Colors.white : _orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // تیک نمایش مهر و امضا روی فاکتور
+            _grayCard(
+              dark: dark,
+              child: Builder(builder: (ctx) {
+                final st = ref.watch(settingsProvider);
+                final biz = ref.watch(businessProvider);
+                return Column(
+                  children: [
+                    _checkRow(
+                      label: 'نمایش مهر روی فاکتور',
+                      value: st.showStamp,
+                      dark: dark,
+                      onChanged: (v) {
+                        ref.read(settingsProvider.notifier).updateSettings(
+                              st.copyWith(showStamp: v ?? false),
+                            );
+                      },
+                      trailing: biz.stampPath.isEmpty
+                          ? TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
+                                );
+                              },
+                              child: const Text('افزودن', style: TextStyle(fontSize: 11, color: _orange)),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
+                    const SizedBox(height: 8),
+                    _checkRow(
+                      label: 'نمایش امضا روی فاکتور',
+                      value: st.showSignature,
+                      dark: dark,
+                      onChanged: (v) {
+                        ref.read(settingsProvider.notifier).updateSettings(
+                              st.copyWith(showSignature: v ?? false),
+                            );
+                      },
+                      trailing: biz.signaturePath.isEmpty
+                          ? TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
+                                );
+                              },
+                              child: const Text('افزودن', style: TextStyle(fontSize: 11, color: _orange)),
+                            )
+                          : null,
+                    ),
+                  ],
+                );
+              }),
+            ),
+            const SizedBox(height: 10),
+
+            // 7) توضیحات
+            _grayCard(
+              dark: dark,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: TextField(
+                controller: _notesCtrl,
+                onChanged: (v) => _notes = v,
+                maxLines: 3,
+                minLines: 1,
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.right,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'توضیحات',
+                  hintTextDirection: TextDirection.rtl,
+                  hintStyle: TextStyle(color: _slate400, fontSize: 12),
+                ),
+                style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // 8) کارت بانکی — افزودن یا نمایش انتخاب‌شده (با انیمیشن)
+            Builder(builder: (ctx){
+              final selected = ref.watch(selectedBankCardProvider);
+              if (selected == null) {
+                return InkWell(
+                  onTap: ()=> showCardListSheet(context),
+                  borderRadius: BorderRadius.circular(16),
+                  child: _grayCard(
+                    dark: dark,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    child: Row(children: [
+                      Icon(Icons.chevron_left, color: _slate400, size: 20),
+                      const Spacer(),
+                      Text('افزودن شماره کارت', style: TextStyle(color: _orange, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ]),
+                  ),
+                );
+              }
+              // نمایش کارت انتخاب‌شده — لوگو درشت، نام/بانک راست، شماره LTR راست‌چین
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: dark ? _slate800 : _cardGray,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        // لوگو بدون بک‌گراند سفید
+                        Builder(builder: (ctx) {
+                          final asset = bankLogoAsset(selected.bankName);
+                          if (asset.isNotEmpty) {
+                            return SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Image.asset(
+                                asset,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const SizedBox(),
+                              ),
+                            );
+                          }
+                          final label = selected.bankName.replaceAll('بانک ', '');
+                          return Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: bankColor(selected.bankName),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              label.isNotEmpty ? label.substring(0, 1) : 'ب',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                selected.bankName,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: dark ? _slate400 : _slate500,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                selected.persianName,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                  color: dark ? Colors.white : Colors.black,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // شماره کارت — LTR راست‌چین
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(
+                          PersianNumberFormatter.toPersian(
+                            selected.formattedCard.replaceAll(' ', ' - '),
+                          ),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            letterSpacing: 0.8,
+                            color: dark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (selected.sheba.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Text(
+                            PersianNumberFormatter.toPersian(selected.spacedSheba),
+                            style: TextStyle(
+                              fontSize: 11,
+                              letterSpacing: 0.4,
+                              color: dark ? _slate400 : _slate500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: InkWell(
+                        onTap: () => showCardListSheet(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chevron_left, size: 18, color: _slate400),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'تغییر شماره کارت',
+                                style: TextStyle(
+                                  color: Color(0xFF2196F3),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 10),
+
+            // 9) ذخیره و اشتراک‌گذاری / ذخیره تغییرات
+            InkWell(
+              onTap: _saveInvoice,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _isEditing
+                      ? accent
+                      : (dark ? _slate800 : _cardGray),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _isEditing
+                        ? accent
+                        : (dark ? _slate700 : _cardGrayBorder),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _isEditing ? Icons.check : Icons.share,
+                      color: _isEditing ? Colors.white : _slate600,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isEditing ? 'ذخیره تغییرات' : 'ذخیره و اشتراک گذاری فاکتور',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: _isEditing
+                            ? Colors.white
+                            : (dark ? Colors.white : _slate800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+      // Bottom tabs مثل عکس
+      bottomNavigationBar: _bottomTabs(dark),
+    );
+  }
+
+  // ── Helpers ──
+  Widget _grayCard({required bool dark, required Widget child, EdgeInsetsGeometry? padding}) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: dark ? _slate800 : _cardGray,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+  }
+
+  /// فیلد مشتری: لیبل بالا + یک Outline تمیز (بدون تکه سفید اضافه)
+  Widget _labeledInput({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    required bool dark,
+    required ValueChanged<String> onChanged,
+    TextInputType? keyboardType,
+  }) {
+    final isPhone = keyboardType == TextInputType.phone;
+    final accent = Theme.of(context).colorScheme.primary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 2, bottom: 6),
+          child: Text(
+            label,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 11,
+              color: dark ? _slate400 : _slate500,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        TextFormField(
+          controller: controller,
+          onChanged: onChanged,
+          keyboardType: keyboardType,
+          textDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
+          textAlign: TextAlign.right,
+          decoration: InputDecoration(
+            isCollapsed: false,
+            filled: true,
+            fillColor: dark ? const Color(0xFF0F172A) : Colors.white,
+            hintText: hint,
+            hintTextDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
+            hintStyle: TextStyle(
+              fontSize: 12,
+              color: dark ? _slate400.withValues(alpha: 0.65) : const Color(0xFF94A3B8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            isDense: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: accent, width: 1.5),
+            ),
+          ),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: dark ? Colors.white : _slate800,
+            height: 1.25,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// چک‌باکس + فیلد مبلغ — در ویرایش مقدار واقعی فاکتور نمایش داده می‌شود
+  Widget _checkAmountRow({
+    required String label,
+    required bool value,
+    required bool dark,
+    required TextEditingController controller,
+    required ValueChanged<bool> onChanged,
+    required ValueChanged<double> onAmount,
+  }) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Row(
+      children: [
+        SizedBox(
+          width: 22,
+          height: 22,
+          child: Checkbox(
+            value: value,
+            onChanged: (v) => onChanged(v ?? false),
+            activeColor: accent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            side: BorderSide(color: dark ? _slate500 : _slate400),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (value) ...[
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 96,
+            child: TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.ltr,
+              inputFormatters: [
+                ThousandSeparatorInputFormatter(allowDecimal: true),
+              ],
+              onTap: () {
+                controller.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: controller.text.length,
+                );
+              },
+              onChanged: (v) {
+                if (v.trim().isEmpty) {
+                  onAmount(0);
+                  return;
+                }
+                onAmount(ThousandSeparatorInputFormatter.parseToDouble(v) ?? 0);
+              },
+              decoration: InputDecoration(
+                hintText: '۰',
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                filled: true,
+                fillColor: dark ? const Color(0xFF0F172A) : Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: accent, width: 1.4),
+                ),
+              ),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: dark ? Colors.white : _slate800,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _tableHeader(String t, {int flex = 1, required bool dark, bool isLast = false}) {
+    final isTitle = t == 'عنوان';
+    return Expanded(
+      flex: flex,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 10, horizontal: isTitle ? 8 : 0),
+        decoration: BoxDecoration(
+          border: isLast
+              ? null
+              : Border(left: BorderSide(color: dark ? _slate700 : _cardGrayBorder)),
+        ),
+        child: Text(
+          t,
+          textAlign: isTitle ? TextAlign.right : TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            color: dark ? _slate400 : _slate600,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tableCell({
+    required Widget child,
+    required bool dark,
+    int flex = 1,
+    bool isLast = false,
+  }) {
+    return Expanded(
+      flex: flex,
+      child: Container(
+        decoration: BoxDecoration(
+          border: isLast
+              ? null
+              : Border(left: BorderSide(color: dark ? _slate700 : _cardGrayBorder)),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
+  }
+
+  Widget _checkRow({required String label, required bool value, required Function(bool?) onChanged, required bool dark, Widget? trailing}) {
+    return Row(children: [
+      SizedBox(
+        width: 22, height: 22,
+        child: Checkbox(value: value, onChanged: onChanged, activeColor: _orange, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), side: BorderSide(color: dark? _slate500: _slate400)),
+      ),
+      const SizedBox(width: 4),
+      Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500))),
+      if (trailing!=null) trailing,
+    ]);
+  }
+
+  Widget _sumRow(String label, double amount, {required bool dark, Color? color}) {
+    final c = color ?? (dark ? Colors.white70 : _slate700);
+    final isNeg = amount < 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c)),
+          Text(
+            '${isNeg ? '− ' : ''}${PersianNumberFormatter.formatCurrency(amount.abs())}',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: c),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _radio({required String label, required String value, required String group, required Function(String?) onChanged, required bool dark}) {
+    final selected = value==group;
+    return InkWell(
+      onTap: ()=> onChanged(value),
+      borderRadius: BorderRadius.circular(20),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(label, style: TextStyle(fontSize: 11, color: selected? _orange: (dark? _slate400: _slate500), fontWeight: selected? FontWeight.w800: FontWeight.w500)),
+        const SizedBox(width: 4),
+        Container(
+          width: 20, height: 20,
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: selected? _orange: _slate400, width: 2), color: selected? _orange: Colors.transparent),
+          child: selected? const Center(child: Icon(Icons.circle, size: 10, color: Colors.white)): null,
+        ),
+      ]),
+    );
+  }
+
+  Widget _bottomTabs(bool dark) {
+    final accent = Color(ref.watch(settingsProvider).accentColor);
+    // عنوان تب‌ها را تازه نگه دار
+    final activeIdx = _draftTabs.indexWhere((t) => t.id == _activeTabId);
+
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: dark ? _slate800 : Colors.white,
+        border: Border(top: BorderSide(color: dark ? _slate700 : _cardGrayBorder)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // + فاکتور/شیت جدید
+          InkWell(
+            onTap: _addNewDraftTab,
+            child: Container(
+              width: 48,
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: Border(left: BorderSide(color: dark ? _slate700 : _cardGrayBorder)),
+              ),
+              child: Icon(Icons.add, color: accent, size: 26),
+            ),
+          ),
+          // تب‌های باز
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              reverse: true, // RTL: تب‌ها از راست
+              itemCount: _draftTabs.length,
+              itemBuilder: (_, i) {
+                final t = _draftTabs[i];
+                final active = t.id == _activeTabId;
+                return InkWell(
+                  onTap: () => _switchToTab(t.id),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? (dark ? _slate700 : const Color(0xFFF1F5F9))
+                          : Colors.transparent,
+                      border: Border(
+                        left: BorderSide(color: dark ? _slate700 : _cardGrayBorder),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          t.title,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: active ? accent : (dark ? _slate400 : _slate600),
+                          ),
+                        ),
+                        if (active) ...[
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_drop_up, color: accent, size: 18),
+                        ],
                       ],
                     ),
                   ),
                 );
               },
             ),
-          ],
-        ),
+          ),
+          // همبرگر: لیست پنجره‌های باز
+          InkWell(
+            onTap: _showOpenWindowsSheet,
+            child: Container(
+              width: 48,
+              height: 52,
+              alignment: Alignment.center,
+              child: Icon(Icons.menu, color: dark ? Colors.white : _slate700),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
-                Icon(icon, color: color, size: 20),
-              ],
-            ),
-            Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.black, color: color)),
-          ],
+  Widget _buildDrawer() {
+    final user = ref.watch(userProvider);
+    return Drawer(
+      child: ListView(padding: EdgeInsets.zero, children: [
+        UserAccountsDrawerHeader(
+          accountName: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          accountEmail: Text('${user.country} - ${user.city}'),
+          currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: Text(user.name.isNotEmpty? user.name[0]: 'ر', style: const TextStyle(color: _orange, fontWeight: FontWeight.w900, fontSize: 24))),
+          decoration: const BoxDecoration(color: _orange),
         ),
-      ),
+        ListTile(leading: const Icon(Icons.add_circle_outline, color: _orange), title: const Text('ثبت فاکتور جدید', style: TextStyle(fontWeight: FontWeight.w800)), onTap: ()=> Navigator.pop(context)),
+        ListTile(leading: const Icon(Icons.receipt_long, color: _orange), title: const Text('لیست فاکتورها', style: TextStyle(fontWeight: FontWeight.w800)), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const InvoiceListScreen()));}),
+        const Divider(),
+        ListTile(leading: const Icon(Icons.people), title: const Text('مشتریان'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const CustomerListScreen()));}),
+        ListTile(leading: const Icon(Icons.inventory_2), title: const Text('محصولات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const ProductListScreen()));}),
+        ListTile(leading: const Icon(Icons.account_balance_wallet), title: const Text('گزارش مالی'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const FinancialDashboardScreen()));}),
+        ListTile(leading: const Icon(Icons.settings), title: const Text('تنظیمات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const SettingsScreen()));}),
+      ]),
     );
+  }
+
+  String _faToEn(String s){
+    const fa=['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    const en=['0','1','2','3','4','5','6','7','8','9'];
+    var r=s;
+    for(int i=0;i<10;i++) r=r.replaceAll(fa[i], en[i]);
+    return r;
   }
 }

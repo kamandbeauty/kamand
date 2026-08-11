@@ -10,6 +10,9 @@ final invoiceListProvider =
   return InvoiceListNotifier(db);
 });
 
+/// وقتی ست شود، داشبورد هوم فرم را با این فاکتور برای ویرایش پر می‌کند
+final invoiceEditRequestProvider = StateProvider<InvoiceModel?>((ref) => null);
+
 class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   final AppDatabase? db;
 

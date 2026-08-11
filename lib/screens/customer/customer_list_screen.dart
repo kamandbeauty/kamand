@@ -37,13 +37,13 @@ class CustomerListScreen extends ConsumerWidget {
                     c.balance > 0 ? 'بدهکار' : 'تسویه',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: c.balance > 0 ? Colors.rose : Colors.emerald,
+                      color: c.balance > 0 ? Colors.redAccent : Colors.green,
                     ),
                   ),
                   if (c.balance > 0)
                     Text(
                       PersianNumberFormatter.formatCurrency(c.balance),
-                      style: const TextStyle(fontSize: 11, color: Colors.rose),
+                      style: const TextStyle(fontSize: 11, color: Colors.redAccent),
                     ),
                 ],
               ),

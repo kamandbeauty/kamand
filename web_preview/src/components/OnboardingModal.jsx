@@ -292,7 +292,7 @@ export default function OnboardingModal({ isOpen, onComplete, initialData }) {
                 : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/20'
             }`}
           >
-            {step === 5 ? 'شروع استفاده از فاکتور روبی' : (step === 1 ? 'بعدی' : 'ادامه')}
+            {step === 5 ? 'شروع استفاده از فاکتور ساز روبی' : (step === 1 ? 'بعدی' : 'ادامه')}
           </button>
         </div>
 
