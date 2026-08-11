@@ -21,6 +21,7 @@ class HeaderCustomizeScreen extends ConsumerStatefulWidget {
 class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
   late TextEditingController _nameCtrl;
   late TextEditingController _descCtrl;
+  late TextEditingController _phoneCtrl;
   Color _selectedColor = _orange;
   String? _logoPath;
   String? _stampPath;
@@ -52,8 +53,11 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
   void initState() {
     super.initState();
     final biz = ref.read(businessProvider);
+    final st = ref.read(settingsProvider);
     _nameCtrl = TextEditingController(text: biz.shopName);
     _descCtrl = TextEditingController(text: biz.address);
+    _phoneCtrl = TextEditingController(text: biz.phone);
+    _selectedColor = Color(st.accentColor);
     _logoPath = biz.logoPath.isEmpty ? null : biz.logoPath;
     _stampPath = biz.stampPath.isEmpty ? null : biz.stampPath;
     _signPath = biz.signaturePath.isEmpty ? null : biz.signaturePath;
@@ -63,6 +67,7 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _descCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
   }
 
@@ -96,16 +101,22 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
 
   void _save() {
     final biz = ref.read(businessProvider);
+    final st = ref.read(settingsProvider);
     final updated = biz.copyWith(
       shopName: _nameCtrl.text.trim().isEmpty ? biz.shopName : _nameCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
       address: _descCtrl.text.trim(),
       logoPath: _logoPath ?? biz.logoPath,
-      stampPath: _stampPath ?? biz.stampPath,
-      signaturePath: _signPath ?? biz.signaturePath,
+      stampPath: _stampPath ?? '',
+      signaturePath: _signPath ?? '',
     );
     ref.read(businessProvider.notifier).updateBusiness(updated);
+    // ذخیره رنگ روی گوشی + اعمال روی تم اپ و فاکتور
+    ref.read(settingsProvider.notifier).updateSettings(
+          st.copyWith(accentColor: _selectedColor.value),
+        );
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تنظیمات سربرگ، مهر و امضا ذخیره شد')),
+      const SnackBar(content: Text('تنظیمات فاکتور، رنگ، مهر و امضا ذخیره شد')),
     );
     Navigator.pop(context);
   }
@@ -147,6 +158,24 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 ),
                 style: TextStyle(fontSize: 13, color: dark? Colors.white: _slate600),
+                textAlign: TextAlign.right,
+              ),
+            ),
+            const SizedBox(height: 10),
+            // شماره تلفن کسب‌وکار
+            _fieldCard(
+              dark: dark,
+              child: TextField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                textDirection: TextDirection.ltr,
+                decoration: InputDecoration(
+                  hintText: 'شماره تلفن کسب‌وکار (۰۲۱… / ۰۹۱۲…)',
+                  hintStyle: TextStyle(color: _slate400, fontSize: 13),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                ),
+                style: TextStyle(fontSize: 13, color: dark ? Colors.white : _slate600),
                 textAlign: TextAlign.right,
               ),
             ),

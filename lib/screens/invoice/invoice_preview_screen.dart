@@ -287,6 +287,8 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final biz = ref.watch(businessProvider);
+    final settingsWatch = ref.watch(settingsProvider);
+    final accent = Color(settingsWatch.accentColor);
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
@@ -317,7 +319,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
         actions: [
           IconButton(
             onPressed: _openShareMenu,
-            icon: const Icon(Icons.share, color: _orange),
+            icon: Icon(Icons.share, color: accent),
             tooltip: 'اشتراک‌گذاری',
           ),
         ],
@@ -565,10 +567,10 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             ),
                             Text(
                               PersianNumberFormatter.formatCurrency(inv.totalAmount),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 16,
-                                color: _orange,
+                                color: accent,
                               ),
                             ),
                           ],
@@ -741,7 +743,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                           child: ElevatedButton.icon(
                             onPressed: _busy ? null : _shareImage,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _orange,
+                              backgroundColor: accent,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                               elevation: 0,

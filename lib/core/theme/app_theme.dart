@@ -25,22 +25,25 @@ class AppTheme {
 
   static const double cardRadius = 22.0;
 
-  static ThemeData lightTheme = ThemeData(
+  /// تم روشن با رنگ اصلی قابل‌سفارشی‌سازی
+  static ThemeData lightThemeWith(Color accent) {
+    final container = Color.lerp(accent, Colors.white, 0.85) ?? RubyPrimaryContainer;
+    return ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    primaryColor: RubyPrimary,
+    primaryColor: accent,
     scaffoldBackgroundColor: bgLight,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: RubyPrimary,
-      primary: RubyPrimary,
-      primaryContainer: RubyPrimaryContainer,
+      seedColor: accent,
+      primary: accent,
+      primaryContainer: container,
       secondary: const Color(0xFF0284C7),
       surface: Colors.white,
       brightness: Brightness.light,
     ),
     fontFamily: 'Vazirmatn',
-    appBarTheme: const AppBarTheme(
-      backgroundColor: RubyPrimary,
+    appBarTheme: AppBarTheme(
+      backgroundColor: accent,
       elevation: 0,
       centerTitle: true,
       scrolledUnderElevation: 0,
@@ -63,14 +66,14 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: RubyPrimary,
+        backgroundColor: accent,
         foregroundColor: Colors.white,
         elevation: 2,
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        textStyle: TextStyle(
+        textStyle: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           fontFamily: 'Vazirmatn',
@@ -79,28 +82,33 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Color(0xFFF1F5F9),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      fillColor: const Color(0xFFF1F5F9),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: RubyPrimary, width: 2),
+        borderSide: BorderSide(color: accent, width: 2),
       ),
     ),
   );
+  }
 
-  static ThemeData darkTheme = ThemeData(
+  static ThemeData get lightTheme => lightThemeWith(RubyPrimary);
+
+  /// تم تاریک با رنگ اصلی قابل‌سفارشی‌سازی
+  static ThemeData darkThemeWith(Color accent) {
+    return ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    primaryColor: RubyPrimary,
+    primaryColor: accent,
     scaffoldBackgroundColor: bgDark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: RubyPrimary,
-      primary: RubyPrimary,
-      secondary: Color(0xFFFB923C),
+      seedColor: accent,
+      primary: accent,
+      secondary: Color.lerp(accent, Colors.white, 0.25) ?? accent,
       surface: cardDark,
       brightness: Brightness.dark,
     ),
@@ -123,19 +131,19 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(cardRadius),
-        side: BorderSide(color: Color(0xFF334155), width: 1),
+        side: const BorderSide(color: Color(0xFF334155), width: 1),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: RubyPrimary,
+        backgroundColor: accent,
         foregroundColor: Colors.white,
         elevation: 2,
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        textStyle: TextStyle(
+        textStyle: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           fontFamily: 'Vazirmatn',
@@ -144,16 +152,19 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Color(0xFF0F172A),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      fillColor: const Color(0xFF0F172A),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: RubyPrimary, width: 2),
+        borderSide: BorderSide(color: accent, width: 2),
       ),
     ),
   );
+  }
+
+  static ThemeData get darkTheme => darkThemeWith(RubyPrimary);
 }

@@ -84,6 +84,7 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
           autoBackup: true,
           pinCode: '',
           pinEnabled: false,
+          accentColor: 0xFFF97316,
         )) {
     _hydrate();
   }

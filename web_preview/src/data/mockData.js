@@ -173,6 +173,7 @@ export const INITIAL_SETTINGS = {
   showCardNum: true,
   showStamp: true,
   showSignature: true,
+  accentColor: '#F97316',
   themeMode: 'light',
   autoBackup: true,
   pinCode: '',

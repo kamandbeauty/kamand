@@ -191,6 +191,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _notes = e.notes;
       _selectedRow = null;
       _formGen++;
+    });
+    // بعد از rebuild ویجت‌ها، کنترلرها را با مقادیر واقعی پر کن
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _syncTextControllers();
     });
   }
@@ -218,6 +222,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _invoiceType = 'proforma';
       _paymentType = 'cash';
       _formGen++;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _syncTextControllers();
     });
   }
@@ -404,6 +411,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final business = ref.watch(businessProvider);
+    final settings = ref.watch(settingsProvider);
+    final accent = Color(settings.accentColor);
     final shopName = business.shopName.isNotEmpty ? business.shopName : 'فاکتور ساز روبی';
 
     // گوش دادن به درخواست ویرایش از صفحات دیگر
@@ -422,7 +431,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: AppBar(
-          backgroundColor: dark ? _slate800 : (_isEditing ? _orange : Colors.white),
+          backgroundColor: dark ? _slate800 : (_isEditing ? accent : Colors.white),
           elevation: 0,
           centerTitle: true,
           leadingWidth: 48,
@@ -430,10 +439,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ? IconButton(
                   icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () {
-                    final settings = ref.read(settingsProvider);
+                    final st = ref.read(settingsProvider);
                     _resetFormForNew(
                       nextNumberFa: PersianNumberFormatter.toPersian(
-                        settings.startingInvoiceNum.toString(),
+                        st.startingInvoiceNum.toString(),
                       ),
                     );
                   },
@@ -451,7 +460,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         height: 24,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.auto_awesome, color: Color(0xFFFBBF24), size: 22),
+                            Icon(Icons.auto_awesome, color: accent, size: 22),
                       ),
                     ),
                   ),
@@ -504,7 +513,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _orange,
+                  backgroundColor: accent,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -517,7 +526,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 2) کارت اطلاعات مشتری — لیبل بالا + یک کادر تمیز
+            // 2) کارت اطلاعات مشتری — فقط یک کادر Outline برای هر فیلد
             _grayCard(
               dark: dark,
               child: Column(
@@ -1364,12 +1373,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 height: 56,
                 decoration: BoxDecoration(
                   color: _isEditing
-                      ? _orange
+                      ? accent
                       : (dark ? _slate800 : _cardGray),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _isEditing
-                        ? _orange
+                        ? accent
                         : (dark ? _slate700 : _cardGrayBorder),
                   ),
                 ),
@@ -1408,12 +1417,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // ── Helpers ──
   Widget _grayCard({required bool dark, required Widget child, EdgeInsetsGeometry? padding}) {
     return Container(
-      padding: padding ?? const EdgeInsets.all(12),
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: dark? _slate800: _cardGray,
+        color: dark ? _slate800 : _cardGray,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: dark? _slate700: Colors.transparent),
       ),
+      clipBehavior: Clip.antiAlias,
       child: child,
     );
   }
@@ -1428,35 +1438,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     TextInputType? keyboardType,
   }) {
     final isPhone = keyboardType == TextInputType.phone;
+    final accent = Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          label,
-          textAlign: TextAlign.right,
-          style: TextStyle(
-            fontSize: 11,
-            color: dark ? _slate400 : _slate500,
-            fontWeight: FontWeight.w700,
+        Padding(
+          padding: const EdgeInsets.only(right: 2, bottom: 6),
+          child: Text(
+            label,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 11,
+              color: dark ? _slate400 : _slate500,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
-        const SizedBox(height: 6),
-        TextField(
+        TextFormField(
           controller: controller,
           onChanged: onChanged,
           keyboardType: keyboardType,
           textDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
           textAlign: TextAlign.right,
           decoration: InputDecoration(
+            isCollapsed: false,
             filled: true,
-            fillColor: dark ? _slate700 : Colors.white,
+            fillColor: dark ? const Color(0xFF0F172A) : Colors.white,
             hintText: hint,
             hintTextDirection: isPhone ? TextDirection.ltr : TextDirection.rtl,
             hintStyle: TextStyle(
               fontSize: 12,
-              color: dark ? _slate400.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
+              color: dark ? _slate400.withValues(alpha: 0.65) : const Color(0xFF94A3B8),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             isDense: true,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1466,22 +1480,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: _orange, width: 1.4),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: accent, width: 1.5),
             ),
           ),
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: dark ? Colors.white : _slate800,
+            height: 1.25,
           ),
         ),
       ],
     );
   }
 
-  /// چک‌باکس + فیلد مبلغ پایدار (در ویرایش مقدار واقعی را نشان می‌دهد)
+  /// چک‌باکس + فیلد مبلغ — در ویرایش مقدار واقعی فاکتور نمایش داده می‌شود
   Widget _checkAmountRow({
     required String label,
     required bool value,
@@ -1490,6 +1505,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required ValueChanged<bool> onChanged,
     required ValueChanged<double> onAmount,
   }) {
+    final accent = Theme.of(context).colorScheme.primary;
     return Row(
       children: [
         SizedBox(
@@ -1498,7 +1514,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Checkbox(
             value: value,
             onChanged: (v) => onChanged(v ?? false),
-            activeColor: _orange,
+            activeColor: accent,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             side: BorderSide(color: dark ? _slate500 : _slate400),
           ),
@@ -1514,27 +1530,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (value) ...[
           const SizedBox(width: 6),
           SizedBox(
-            width: 78,
+            width: 88,
             child: TextField(
               controller: controller,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
               textDirection: TextDirection.ltr,
+              onTap: () {
+                // کل متن انتخاب شود تا تایپ جایگزین شود
+                controller.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: controller.text.length,
+                );
+              },
               onChanged: (v) {
                 final en = _faToEn(v);
+                if (en.isEmpty) {
+                  onAmount(0);
+                  return;
+                }
                 onAmount(double.tryParse(en) ?? 0);
               },
               decoration: InputDecoration(
                 hintText: '۰',
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                 filled: true,
-                fillColor: dark ? _slate800 : Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                fillColor: dark ? const Color(0xFF0F172A) : Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: dark ? _slate600 : const Color(0xFFCBD5E1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: accent, width: 1.4),
+                ),
               ),
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
                 color: dark ? Colors.white : _slate800,
               ),
             ),

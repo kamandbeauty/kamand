@@ -9,6 +9,8 @@ class AppSettingsModel {
   final bool autoBackup;
   final String pinCode;
   final bool pinEnabled;
+  /// رنگ اصلی اپ/فاکتور به صورت 0xAARRGGBB (مثلاً 0xFFF97316)
+  final int accentColor;
 
   AppSettingsModel({
     required this.startingInvoiceNum,
@@ -21,6 +23,7 @@ class AppSettingsModel {
     required this.autoBackup,
     required this.pinCode,
     required this.pinEnabled,
+    this.accentColor = 0xFFF97316,
   });
 
   AppSettingsModel copyWith({
@@ -34,6 +37,7 @@ class AppSettingsModel {
     bool? autoBackup,
     String? pinCode,
     bool? pinEnabled,
+    int? accentColor,
   }) {
     return AppSettingsModel(
       startingInvoiceNum: startingInvoiceNum ?? this.startingInvoiceNum,
@@ -46,6 +50,7 @@ class AppSettingsModel {
       autoBackup: autoBackup ?? this.autoBackup,
       pinCode: pinCode ?? this.pinCode,
       pinEnabled: pinEnabled ?? this.pinEnabled,
+      accentColor: accentColor ?? this.accentColor,
     );
   }
 
@@ -60,6 +65,7 @@ class AppSettingsModel {
         'autoBackup': autoBackup,
         'pinCode': pinCode,
         'pinEnabled': pinEnabled,
+        'accentColor': accentColor,
       };
 
   factory AppSettingsModel.fromMap(Map<String, dynamic> map) => AppSettingsModel(
@@ -73,5 +79,8 @@ class AppSettingsModel {
         autoBackup: map['autoBackup'] ?? true,
         pinCode: map['pinCode'] ?? '',
         pinEnabled: map['pinEnabled'] ?? false,
+        accentColor: map['accentColor'] is int
+            ? map['accentColor'] as int
+            : int.tryParse('${map['accentColor']}') ?? 0xFFF97316,
       );
 }
