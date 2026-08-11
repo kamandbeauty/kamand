@@ -185,11 +185,11 @@ export default function Sidebar({
 
         {/* Direct Release ZIP Download Banner */}
         <a
-          href="/FactorRuby-v5.8.0-release.zip"
+          href="/FactorRuby-v1.0.1-release.zip"
           download
           className="p-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs flex items-center justify-between shadow-md hover:shadow-lg transition block"
         >
-          <span>دانلود بسته انتشار و سورس کامل (نسخه ۵.۸.۰)</span>
+          <span>دانلود بسته انتشار و سورس کامل (نسخه ۱.۰.۱)</span>
           <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">📦</span>
         </a>
 
@@ -208,7 +208,7 @@ export default function Sidebar({
           </button>
 
           <p className="text-xs text-slate-400 font-medium">
-            فاکتور ساز روبی - نسخه ۵.۸.۰
+            فاکتور ساز روبی - نسخه ۱.۰.۱
           </p>
         </div>
 

@@ -759,7 +759,7 @@ export default function SettingsView({
         <div className="pt-3 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-500 space-y-1">
           <div className="flex justify-between">
             <span>نسخه اپلیکیشن:</span>
-            <span className="font-bold text-slate-800 dark:text-white">۵.۸.۰ release</span>
+            <span className="font-bold text-slate-800 dark:text-white">۱.۰.۱ release</span>
           </div>
           <div className="flex justify-between">
             <span>ذخیره‌سازی:</span>
