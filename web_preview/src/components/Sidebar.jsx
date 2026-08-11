@@ -17,9 +17,14 @@ export default function Sidebar({
   onOpenGoldenModal,
   onOpenSettings,
   onOpenSmartTools,
-  onResetData
+  onResetData,
+  userName,
+  shopName
 }) {
   if (!isOpen) return null;
+
+  const displayName = userName || 'کاربر روبی';
+  const displayShop = shopName || 'فاکتور ساز روبی';
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-3 pt-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
@@ -41,14 +46,16 @@ export default function Sidebar({
 
             <button
               onClick={() => {
-                alert('جهت ورود به حساب کاربری، شماره همراه خود را وارد کنید.');
+                onOpenSettings();
+                onClose();
               }}
-              className="px-4 py-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
+              className="px-3 py-2 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition max-w-[11rem]"
+              title="ویرایش مشخصات کاربر"
             >
-              <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
-                !
+              <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px] font-black shrink-0">
+                {displayName.charAt(0)}
               </div>
-              <span>ورود</span>
+              <span className="truncate">{displayName}</span>
             </button>
           </div>
 
@@ -59,6 +66,20 @@ export default function Sidebar({
             <X className="w-6 h-6" />
           </button>
         </div>
+
+        {/* User summary */}
+        <button
+          type="button"
+          onClick={() => {
+            onOpenSettings();
+            onClose();
+          }}
+          className="w-full text-right p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 hover:border-[#F97316]/40 transition"
+        >
+          <div className="font-extrabold text-sm text-slate-800 dark:text-white">{displayName}</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{displayShop}</div>
+          <div className="text-[11px] text-[#F97316] font-bold mt-1">ویرایش مشخصات ←</div>
+        </button>
 
         {/* Big Golden Upgrade Banner (Screenshot 4) */}
         <div

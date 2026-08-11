@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   X,
   Printer,
@@ -7,12 +7,13 @@ import {
   Trash2,
   Edit,
   ArrowRightLeft,
-  CheckCircle,
   CreditCard,
   QrCode,
-  Download,
-  AlertCircle
+  Image as ImageIcon,
+  FileText,
+  MessageSquare
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { formatCurrency, toPersianDigits } from '../utils/helpers';
 
 export default function InvoiceDetailModal({
@@ -28,23 +29,126 @@ export default function InvoiceDetailModal({
 }) {
   if (!isOpen || !invoice) return null;
 
+  const printRef = useRef(null);
   const [paymentAmountInput, setPaymentAmountInput] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [busy, setBusy] = useState('');
 
-  const handlePrint = () => {
-    window.print();
+  const typeTitle =
+    invoice.type === 'proforma'
+      ? 'پیش‌فاکتور'
+      : invoice.type === 'purchase'
+        ? 'فاکتور خرید'
+        : 'فاکتور فروش';
+
+  const shareText = () => {
+    const lines = [
+      `${typeTitle} #${invoice.number}`,
+      `فروشگاه: ${business?.shopName || 'روبی'}`,
+      `مشتری: ${invoice.customerName}`,
+      invoice.customerPhone ? `موبایل: ${invoice.customerPhone}` : '',
+      `تاریخ: ${invoice.date}`,
+      `مبلغ: ${formatCurrency(invoice.totalAmount)}`,
+      invoice.notes ? `توضیحات: ${invoice.notes}` : '',
+      '',
+      '— فاکتور ساز روبی'
+    ].filter(Boolean);
+    return lines.join('\n');
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `فاکتور شماره ${invoice.number} - ${business?.shopName || 'روبی'}`,
-        text: `فاکتور شماره ${invoice.number} برای ${invoice.customerName} به مبلغ ${formatCurrency(invoice.totalAmount)} صادر شد.`,
-        url: window.location.href
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(`فاکتور شماره ${invoice.number} - مبلغ: ${formatCurrency(invoice.totalAmount)}`);
-      alert('متن فاکتور در حافظه کپی شد!');
+  const handlePrintPdf = () => {
+    setShowShareMenu(false);
+    // کمی تاخیر تا منو بسته شود
+    setTimeout(() => window.print(), 80);
+  };
+
+  const captureInvoiceCanvas = async () => {
+    const el = printRef.current || document.getElementById('printable-invoice');
+    if (!el) throw new Error('عنصر فاکتور یافت نشد');
+    return html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+  };
+
+  const handleShareImage = async () => {
+    setBusy('image');
+    try {
+      const canvas = await captureInvoiceCanvas();
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('ساخت تصویر ناموفق بود');
+
+      const file = new File([blob], `factor-${invoice.number}.png`, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `${typeTitle} ${invoice.number}`,
+          text: shareText()
+        });
+      } else if (navigator.share) {
+        // fallback: data url download + share text
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `factor-${invoice.number}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        await navigator.share({ title: `${typeTitle} ${invoice.number}`, text: shareText() });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `factor-${invoice.number}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('تصویر فاکتور دانلود شد.');
+      }
+      setShowShareMenu(false);
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        console.error(err);
+        alert('اشتراک تصویر انجام نشد. دوباره تلاش کنید.');
+      }
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const handleSharePdf = async () => {
+    setShowShareMenu(false);
+    // در مرورگر: دیالوگ چاپ → ذخیره به‌صورت PDF
+    setTimeout(() => window.print(), 80);
+  };
+
+  const handleShareText = async () => {
+    setBusy('text');
+    try {
+      const text = shareText();
+      if (navigator.share) {
+        await navigator.share({
+          title: `${typeTitle} ${invoice.number}`,
+          text
+        });
+      } else {
+        await navigator.clipboard.writeText(text);
+        alert('متن فاکتور در حافظه کپی شد.');
+      }
+      setShowShareMenu(false);
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        try {
+          await navigator.clipboard.writeText(shareText());
+          alert('متن فاکتور در حافظه کپی شد.');
+        } catch {
+          alert('اشتراک متن ممکن نشد.');
+        }
+      }
+    } finally {
+      setBusy('');
     }
   };
 
@@ -59,285 +163,379 @@ export default function InvoiceDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-3xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto border border-slate-200 dark:border-slate-700">
-        
-        {/* Top Action Bar (No Print) */}
-        <div className="p-4 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between no-print">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-slate-800 dark:text-white">
-              مشاهده فاکتور #{toPersianDigits(invoice.number)}
-            </span>
-            {invoice.type === 'proforma' && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
-                پیش‌فاکتور
-              </span>
-            )}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+      <div className="w-full max-w-lg sm:max-w-2xl bg-[#F8FAFC] dark:bg-slate-900 sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col min-h-[100dvh] sm:min-h-0 sm:max-h-[92vh] border border-slate-200 dark:border-slate-700">
+        {/* Top bar */}
+        <div className="sticky top-0 z-20 p-3 sm:p-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between no-print">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200"
+            title="بستن"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="text-center">
+            <div className="font-black text-sm text-slate-800 dark:text-white">
+              {typeTitle} #{toPersianDigits(invoice.number)}
+            </div>
+            <div className="text-[10px] text-emerald-600 font-bold">ذخیره شد ✓</div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrint}
-              className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-medium text-xs flex items-center gap-1 shadow-sm transition"
-              title="چاپ و خروجی PDF"
-            >
-              <Printer className="w-4 h-4 text-blue-600" />
-              <span className="hidden sm:inline">چاپ / PDF</span>
-            </button>
-
-            <button
-              onClick={handleShare}
-              className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 font-medium text-xs flex items-center gap-1 shadow-sm transition"
-              title="اشتراک‌گذاری"
-            >
-              <Share2 className="w-4 h-4 text-emerald-600" />
-              <span className="hidden sm:inline">اشتراک</span>
-            </button>
-
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            onClick={() => setShowShareMenu(true)}
+            className="p-2 rounded-xl bg-[#F97316] text-white shadow-sm"
+            title="اشتراک‌گذاری"
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Printable Invoice Container */}
-        <div id="printable-invoice" className="p-6 sm:p-8 bg-white text-slate-900 font-vazir space-y-6">
-          
-          {/* Header with Business & Logo */}
-          <div className="flex items-start justify-between border-b-2 border-slate-200 pb-6 gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white font-black text-2xl flex items-center justify-center shadow">
+        {/* Scrollable invoice body */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5">
+          <div
+            ref={printRef}
+            id="printable-invoice"
+            className="bg-white text-slate-900 font-vazir rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-5"
+            dir="rtl"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-[#F97316] text-white font-black text-xl flex items-center justify-center shadow shrink-0">
                   ف
                 </div>
-                <div>
-                  <h1 className="font-black text-2xl text-slate-900">
+                <div className="min-w-0">
+                  <h1 className="font-black text-lg text-slate-900 truncate">
                     {business?.shopName || 'فروشگاه روبی'}
                   </h1>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    {business?.phone ? `تلفن: ${business.phone}` : ''}
-                  </p>
+                  {business?.phone && (
+                    <p className="text-[11px] text-slate-500 mt-0.5" dir="ltr" style={{ textAlign: 'right' }}>
+                      {business.phone}
+                    </p>
+                  )}
+                  {business?.address && (
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{business.address}</p>
+                  )}
                 </div>
               </div>
-              {business?.address && (
-                <p className="text-xs text-slate-600 mt-2 max-w-md">
-                  آدرس: {business.address}
-                </p>
-              )}
-            </div>
-
-            <div className="text-left bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-1">
-              <div className="text-lg font-black text-blue-700">
-                {invoice.type === 'proforma' ? 'پیش‌فاکتور فروش' : 'فاکتور فروش'}
+              <div className="text-left shrink-0 bg-slate-50 rounded-xl border border-slate-200 px-3 py-2 text-[11px] space-y-0.5">
+                <div className="font-black text-[#F97316] text-sm">{typeTitle}</div>
+                <div>
+                  شماره: <b>{toPersianDigits(invoice.number)}</b>
+                </div>
+                <div>
+                  تاریخ: <b>{toPersianDigits(invoice.date)}</b>
+                </div>
               </div>
-              <div>شماره: <span className="font-bold">{toPersianDigits(invoice.number)}</span></div>
-              <div>تاریخ: <span className="font-bold">{toPersianDigits(invoice.date)}</span></div>
             </div>
-          </div>
 
-          {/* Customer Info Box */}
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row justify-between gap-2 text-xs">
-            <div>
-              <span className="text-slate-400 font-medium">خریدار:</span>{' '}
-              <span className="font-bold text-slate-900 text-sm">{invoice.customerName}</span>
+            {/* Customer */}
+            <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 flex flex-wrap justify-between gap-2 text-xs">
+              <div>
+                <span className="text-slate-400">خریدار: </span>
+                <span className="font-bold text-sm">{invoice.customerName}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">موبایل: </span>
+                <span className="font-bold" dir="ltr">
+                  {toPersianDigits(invoice.customerPhone || '—')}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-slate-400 font-medium">شماره تماس:</span>{' '}
-              <span className="font-bold text-slate-800">{toPersianDigits(invoice.customerPhone || '---')}</span>
-            </div>
-          </div>
 
-          {/* Items Table */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full text-right text-xs">
-              <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                <tr>
-                  <th className="p-3 text-center w-12">#</th>
-                  <th className="p-3">عنوان کالا / خدمت</th>
-                  <th className="p-3 text-center">مقدار</th>
-                  <th className="p-3 text-center">واحد</th>
-                  <th className="p-3 text-center">قیمت واحد</th>
-                  <th className="p-3 text-left">قیمت کل</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {invoice.items.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="p-3 text-center font-bold text-slate-400">{toPersianDigits(idx + 1)}</td>
-                    <td className="p-3 font-bold text-slate-800">{item.title}</td>
-                    <td className="p-3 text-center font-bold">{toPersianDigits(item.quantity)}</td>
-                    <td className="p-3 text-center text-slate-500">{item.unit}</td>
-                    <td className="p-3 text-center font-medium">{formatCurrency(item.unitPrice)}</td>
-                    <td className="p-3 text-left font-bold text-slate-900">{formatCurrency(item.totalPrice)}</td>
+            {/* Items */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-right text-[11px]" dir="rtl">
+                <thead className="bg-slate-100 text-slate-700 font-bold">
+                  <tr>
+                    <th className="p-2.5 text-center w-8">#</th>
+                    <th className="p-2.5">عنوان</th>
+                    <th className="p-2.5 text-center">مقدار</th>
+                    <th className="p-2.5 text-center">واحد</th>
+                    <th className="p-2.5 text-center">قیمت واحد</th>
+                    <th className="p-2.5 text-left">قیمت کل</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Bottom Grid: Notes & Card on Right, Calculation Summary on Left */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start pt-2">
-            
-            {/* Notes & Bank Card & QR */}
-            <div className="space-y-4 text-xs">
-              {invoice.notes && (
-                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div className="font-bold text-slate-700 mb-1">توضیحات:</div>
-                  <p className="text-slate-600 leading-relaxed">{invoice.notes}</p>
-                </div>
-              )}
-
-              {invoice.cardNumber && (
-                <div className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-200 flex items-center gap-3">
-                  <CreditCard className="w-5 h-5 text-blue-600 shrink-0" />
-                  <div>
-                    <div className="text-[10px] text-blue-600 font-bold">شماره کارت بانکی جهت واریز:</div>
-                    <div className="font-mono font-bold text-sm text-slate-900 dir-ltr">{invoice.cardNumber}</div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 p-3 border border-dashed border-slate-300 rounded-2xl bg-slate-50">
-                <div className="w-12 h-12 bg-white p-1 rounded-lg border border-slate-200 flex items-center justify-center shrink-0">
-                  <QrCode className="w-10 h-10 text-slate-800" />
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  صحت این فاکتور از طریق اسکن کیوآرکد و سامانه فاکتور ساز روبی قابل استعلام است.
-                </div>
-              </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {(invoice.items || []).map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2.5 text-center text-slate-400 font-bold">
+                        {toPersianDigits(idx + 1)}
+                      </td>
+                      <td className="p-2.5 font-bold text-slate-800">{item.title}</td>
+                      <td className="p-2.5 text-center font-bold">
+                        {toPersianDigits(item.quantity)}
+                      </td>
+                      <td className="p-2.5 text-center text-slate-500">{item.unit}</td>
+                      <td className="p-2.5 text-center">{formatCurrency(item.unitPrice)}</td>
+                      <td className="p-2.5 text-left font-bold">{formatCurrency(item.totalPrice)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            {/* Calculations Card */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-2">
+            {/* Totals */}
+            <div className="space-y-1.5 text-xs bg-slate-50 rounded-xl border border-slate-200 p-3">
               <div className="flex justify-between text-slate-600">
-                <span>جمع کل اقلام:</span>
+                <span>جمع اقلام</span>
                 <span className="font-bold">{formatCurrency(invoice.subtotal)}</span>
               </div>
-
               {invoice.discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-600 font-medium">
-                  <span>تخفیف:</span>
-                  <span>- {formatCurrency(invoice.discountAmount)}</span>
+                <div className="flex justify-between text-emerald-600">
+                  <span>تخفیف</span>
+                  <span className="font-bold">− {formatCurrency(invoice.discountAmount)}</span>
                 </div>
               )}
-
               {invoice.shippingFee > 0 && (
                 <div className="flex justify-between text-slate-600">
-                  <span>هزینه ارسال:</span>
-                  <span>+ {formatCurrency(invoice.shippingFee)}</span>
+                  <span>هزینه ارسال</span>
+                  <span className="font-bold">+ {formatCurrency(invoice.shippingFee)}</span>
                 </div>
               )}
-
               {invoice.previousDebt > 0 && (
                 <div className="flex justify-between text-rose-600">
-                  <span>بدهی قبلی:</span>
-                  <span>+ {formatCurrency(invoice.previousDebt)}</span>
+                  <span>بدهی قبلی</span>
+                  <span className="font-bold">+ {formatCurrency(invoice.previousDebt)}</span>
                 </div>
               )}
-
-              <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-300">
-                <span>مبلغ قابل پرداخت:</span>
-                <span className="text-base text-blue-700">{formatCurrency(invoice.totalAmount)}</span>
+              <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
+                <span>مبلغ قابل پرداخت</span>
+                <span className="text-[#F97316]">{formatCurrency(invoice.totalAmount)}</span>
               </div>
-
-              <div className="flex justify-between text-slate-600 pt-1">
-                <span>مبلغ پرداخت شده:</span>
-                <span className="font-bold text-emerald-600">{formatCurrency(invoice.paidAmount)}</span>
-              </div>
-
+              {invoice.paidAmount > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>پرداخت شده</span>
+                  <span className="font-bold">{formatCurrency(invoice.paidAmount)}</span>
+                </div>
+              )}
               {invoice.remainingAmount > 0 && (
-                <div className="flex justify-between font-bold text-rose-600 pt-1 border-t border-dashed border-slate-300">
-                  <span>باقی‌مانده بدهی:</span>
+                <div className="flex justify-between text-rose-600 font-bold">
+                  <span>باقی‌مانده</span>
                   <span>{formatCurrency(invoice.remainingAmount)}</span>
                 </div>
               )}
             </div>
 
-          </div>
-
-          {/* Footer Signature */}
-          <div className="pt-6 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400">
-            <div>مهر و امضای فروشنده</div>
-            <div>امضای خریدار</div>
-          </div>
-
-        </div>
-
-        {/* Footer Smart Actions (No Print) */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 no-print">
-          
-          <div className="flex items-center gap-2">
-            {invoice.type === 'proforma' && (
-              <button
-                onClick={() => onConvertProforma(invoice.id)}
-                className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1 shadow transition"
-              >
-                <ArrowRightLeft className="w-4 h-4" />
-                <span>تبدیل به فاکتور فروش</span>
-              </button>
+            {invoice.notes && (
+              <div className="text-xs text-slate-600 bg-amber-50/60 border border-amber-100 rounded-xl p-3">
+                <span className="font-bold text-slate-700">توضیحات: </span>
+                {invoice.notes}
+              </div>
             )}
 
-            {invoice.remainingAmount > 0 && (
-              <button
-                onClick={() => setShowPaymentModal(true)}
-                className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow transition"
-              >
-                <CreditCard className="w-4 h-4" />
-                <span>ثبت دریافت / تسویه</span>
-              </button>
+            {invoice.cardNumber && (
+              <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex items-center gap-3 text-xs">
+                <CreditCard className="w-5 h-5 text-sky-600 shrink-0" />
+                <div>
+                  <div className="text-[10px] text-sky-600 font-bold">شماره کارت جهت واریز</div>
+                  <div className="font-mono font-bold text-sm text-slate-900" dir="ltr">
+                    {invoice.cardNumber}
+                  </div>
+                </div>
+              </div>
             )}
 
-            <button
-              onClick={() => onCopy(invoice)}
-              className="px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1 transition"
-            >
-              <Copy className="w-4 h-4" />
-              <span>کپی فاکتور</span>
-            </button>
+            <div className="flex items-center gap-3 p-3 border border-dashed border-slate-300 rounded-xl">
+              <div className="w-11 h-11 bg-white rounded-lg border border-slate-200 flex items-center justify-center shrink-0">
+                <QrCode className="w-8 h-8 text-slate-700" />
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                مهر و امضای فروشنده / خریدار
+              </p>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onEdit(invoice)}
-              className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center gap-1 transition"
-            >
-              <Edit className="w-4 h-4" />
-              <span>ویرایش</span>
-            </button>
-
-            <button
-              onClick={() => {
-                if (window.confirm('آیا از حذف این فاکتور اطمینان دارید؟')) {
-                  onDelete(invoice.id);
-                  onClose();
-                }
-              }}
-              className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center gap-1 transition"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>حذف</span>
-            </button>
-          </div>
-
         </div>
 
+        {/* Bottom action buttons — PDF & Image */}
+        <div className="sticky bottom-0 z-20 p-3 sm:p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 space-y-2 no-print">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={handleShareImage}
+              disabled={busy === 'image'}
+              className="h-12 rounded-2xl bg-[#F97316] hover:bg-[#EA580C] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-orange-500/20 active:scale-[0.98] transition disabled:opacity-60"
+            >
+              <ImageIcon className="w-5 h-5" />
+              <span>{busy === 'image' ? 'در حال ساخت…' : 'ارسال عکس فاکتور'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePrintPdf}
+              className="h-12 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-sky-500/20 active:scale-[0.98] transition"
+            >
+              <FileText className="w-5 h-5" />
+              <span>ارسال PDF</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowShareMenu(true)}
+            className="w-full h-11 rounded-2xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold text-xs flex items-center justify-center gap-2 transition"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>منوی اشتراک‌گذاری فاکتور</span>
+          </button>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {invoice.type === 'proforma' && onConvertProforma && (
+                <button
+                  onClick={() => onConvertProforma(invoice.id)}
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-100 text-amber-700 font-bold text-[11px] flex items-center gap-1"
+                >
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  تبدیل به فروش
+                </button>
+              )}
+              {invoice.remainingAmount > 0 && (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-700 font-bold text-[11px] flex items-center gap-1"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  ثبت دریافت
+                </button>
+              )}
+              {onCopy && (
+                <button
+                  onClick={() => onCopy(invoice)}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 font-bold text-[11px] flex items-center gap-1"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  کپی
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(invoice)}
+                  className="px-2.5 py-1.5 rounded-xl bg-blue-50 text-blue-600 font-bold text-[11px] flex items-center gap-1"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  ویرایش
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => {
+                    if (window.confirm('آیا از حذف این فاکتور اطمینان دارید؟')) {
+                      onDelete(invoice.id);
+                      onClose();
+                    }
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-rose-50 text-rose-600 font-bold text-[11px] flex items-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  حذف
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Record Payment Sub-Modal */}
+      {/* Share menu sheet */}
+      {showShareMenu && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4 no-print"
+          onClick={() => setShowShareMenu(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-3 border border-slate-200 dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+            dir="rtl"
+          >
+            <div className="flex items-center justify-between pb-1">
+              <h3 className="font-black text-base text-slate-800 dark:text-white">
+                اشتراک‌گذاری فاکتور
+              </h3>
+              <button
+                onClick={() => setShowShareMenu(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              فاکتور #{toPersianDigits(invoice.number)} · {formatCurrency(invoice.totalAmount)}
+            </p>
+
+            <button
+              type="button"
+              onClick={handleShareImage}
+              disabled={!!busy}
+              className="w-full p-4 rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 flex items-center gap-3 hover:bg-orange-100 transition text-right"
+            >
+              <div className="w-11 h-11 rounded-xl bg-[#F97316] text-white flex items-center justify-center shrink-0">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-extrabold text-sm text-slate-800 dark:text-white">
+                  {busy === 'image' ? 'در حال ساخت تصویر…' : 'ارسال عکس فاکتور'}
+                </div>
+                <div className="text-[11px] text-slate-500">اشتراک تصویر PNG از طریق واتساپ و…</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSharePdf}
+              className="w-full p-4 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 flex items-center gap-3 hover:bg-sky-100 transition text-right"
+            >
+              <div className="w-11 h-11 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0">
+                <Printer className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-extrabold text-sm text-slate-800 dark:text-white">ارسال PDF</div>
+                <div className="text-[11px] text-slate-500">چاپ یا ذخیره به‌صورت PDF</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleShareText}
+              disabled={!!busy}
+              className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition text-right"
+            >
+              <div className="w-11 h-11 rounded-xl bg-slate-700 text-white flex items-center justify-center shrink-0">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-extrabold text-sm text-slate-800 dark:text-white">
+                  اشتراک متن فاکتور
+                </div>
+                <div className="text-[11px] text-slate-500">ارسال خلاصه متنی یا کپی</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowShareMenu(false)}
+              className="w-full py-3 rounded-2xl text-slate-500 font-bold text-xs"
+            >
+              انصراف
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Payment sub-modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print">
           <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
             <h3 className="font-bold text-base text-slate-800 dark:text-white">
               ثبت دریافت وجه برای فاکتور #{toPersianDigits(invoice.number)}
             </h3>
-            
             <p className="text-xs text-slate-500">
-              مانده فعلی این فاکتور: <span className="font-bold text-rose-600">{formatCurrency(invoice.remainingAmount)}</span>
+              مانده فعلی:{' '}
+              <span className="font-bold text-rose-600">
+                {formatCurrency(invoice.remainingAmount)}
+              </span>
             </p>
-
             <input
               type="number"
               placeholder="مبلغ دریافتی به تومان"
@@ -345,7 +543,6 @@ export default function InvoiceDetailModal({
               onChange={(e) => setPaymentAmountInput(e.target.value)}
               className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold text-sm"
             />
-
             <div className="flex gap-2">
               <button
                 onClick={() => setShowPaymentModal(false)}
@@ -363,7 +560,6 @@ export default function InvoiceDetailModal({
           </div>
         </div>
       )}
-
     </div>
   );
 }

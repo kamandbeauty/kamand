@@ -25,6 +25,9 @@ dependencies:
   image_picker: ^1.0.8
   image: ^4.3.0
 
+  # Share invoice image / file
+  share_plus: ^10.1.4
+
   # Persian Calendar & Date
   shamsi_date: ^1.0.2
   intl: ^0.20.2

@@ -5,6 +5,7 @@ import '../../core/utils/persian_number_formatter.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/invoice_provider.dart';
 import 'invoice_create_screen.dart';
+import 'invoice_preview_screen.dart';
 
 const _orange = AppTheme.RubyPrimary;
 const _slate400 = Color(0xFF94A3B8);
@@ -36,61 +37,9 @@ class InvoiceListScreen extends ConsumerWidget {
   }
 
   void _showDetail(BuildContext context, WidgetRef ref, InvoiceModel inv) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: dark ? _slate800 : Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: dark? _slate700: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(4)))),
-            const SizedBox(height: 16),
-            Row(children: [
-              Expanded(child: Text(inv.customerName.isEmpty? 'مشتری عمومی': inv.customerName, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: dark? Colors.white: _slate800))),
-              Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: _statusColor(inv).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)), child: Text(_statusLabel(inv), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _statusColor(inv)))),
-            ]),
-            const SizedBox(height: 8),
-            Text('فاکتور #${PersianNumberFormatter.toPersian(inv.number)}  •  ${PersianNumberFormatter.toPersian(inv.date)}', style: TextStyle(fontSize: 11, color: _slate500)),
-            const SizedBox(height: 12),
-            Divider(color: dark? _slate700: const Color(0xFFE2E8F0)),
-            const SizedBox(height: 12),
-            ...inv.items.map((it) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(children: [
-                Expanded(child: Text(it.title.isEmpty? 'بدون عنوان': it.title, style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800))),
-                Text('${PersianNumberFormatter.toPersian(it.quantity)} ${it.unit} × ${PersianNumberFormatter.formatCurrency(it.unitPrice)}', style: TextStyle(fontSize: 11, color: _slate500)),
-              ]),
-            )),
-            const SizedBox(height: 12),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('جمع کل', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: dark? Colors.white: _slate800)),
-              Text(PersianNumberFormatter.formatCurrency(inv.totalAmount), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: dark? Colors.white: _slate800)),
-            ]),
-            if (inv.notes.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('توضیحات: ${inv.notes}', style: TextStyle(fontSize: 11, color: _slate500)),
-            ],
-            const SizedBox(height: 16),
-            Row(children: [
-              Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.edit, size: 16), label: const Text('ویرایش'), onPressed: (){
-                Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_)=> InvoiceCreateScreen(editInvoice: inv)));
-              }, style: OutlinedButton.styleFrom(foregroundColor: _orange, side: const BorderSide(color: _orange)))),
-              const SizedBox(width: 12),
-              Expanded(child: ElevatedButton.icon(icon: const Icon(Icons.delete_outline, size: 16), label: const Text('حذف'), onPressed: (){
-                ref.read(invoiceListProvider.notifier).deleteInvoice(inv.id);
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('فاکتور حذف شد')));
-              }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE11D48)))),
-            ]),
-          ],
-        ),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => InvoicePreviewScreen(invoice: inv)),
     );
   }
 

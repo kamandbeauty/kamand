@@ -16,6 +16,7 @@ import '../settings/settings_screen.dart';
 import '../invoice/invoice_list_screen.dart';
 import '../customize/header_customize_screen.dart';
 import '../card/card_list_sheet.dart';
+import '../invoice/invoice_preview_screen.dart';
 import '../../providers/bank_card_provider.dart';
 
 // ──────────────────────────────────────────────────────────────
@@ -150,31 +151,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _saveInvoice() {
-    if (_items.isEmpty || _items.every((e) => e.title.trim().isEmpty && e.unitPrice == 0)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حداقل یک قلم کالا اضافه کنید')));
+    final cleanItems = _items
+        .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0 || e.totalPrice > 0)
+        .toList();
+    if (cleanItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('حداقل یک قلم کالا با عنوان یا قیمت اضافه کنید')),
+      );
       return;
     }
+    if (_finalTotal <= 0 && cleanItems.every((e) => e.unitPrice <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('قیمت اقلام را وارد کنید')),
+      );
+      return;
+    }
+
     final selectedCard = ref.read(selectedBankCardProvider);
     final biz = ref.read(businessProvider);
-    final card = selectedCard?.cardNumber ?? (biz.bankCards.isNotEmpty ? biz.bankCards.first : '');
-    // شماره را به انگلیسی برگردانیم
+    final card = selectedCard?.cardNumber ??
+        (biz.bankCards.isNotEmpty ? biz.bankCards.first : '');
+
     String numEn = _invoiceNumber;
-    const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-    const english = ['0','1','2','3','4','5','6','7','8','9'];
-    for (int i=0;i<10;i++) numEn = numEn.replaceAll(persian[i], english[i]);
+    const persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    for (int i = 0; i < 10; i++) {
+      numEn = numEn.replaceAll(persian[i], english[i]);
+    }
     final jalaliEn = JalaliHelper.getTodayJalali();
     final jalali = PersianNumberFormatter.toPersian(jalaliEn);
+
     final inv = InvoiceModel(
       id: 'inv-${DateTime.now().millisecondsSinceEpoch}',
       number: numEn,
       customerId: 'c-${DateTime.now().millisecondsSinceEpoch}',
-      customerName: _customerName.isEmpty ? 'مشتری عمومی' : _customerName,
-      customerPhone: _customerPhone,
-      type: _invoiceType == 'sale' ? 'sale' : (_invoiceType == 'purchase' ? 'purchase' : 'proforma'),
+      customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
+      customerPhone: _customerPhone.trim(),
+      type: _invoiceType == 'sale'
+          ? 'sale'
+          : (_invoiceType == 'purchase' ? 'purchase' : 'proforma'),
       paymentType: _paymentType,
-      status: _invoiceType == 'proforma' ? 'proforma' : (_paymentType == 'cash' ? 'paid' : 'unpaid'),
+      status: _invoiceType == 'proforma'
+          ? 'proforma'
+          : (_paymentType == 'cash' ? 'paid' : 'unpaid'),
       date: jalali,
-      items: _items.where((e) => e.title.trim().isNotEmpty || e.totalPrice>0).toList(),
+      items: cleanItems,
       subtotal: _itemsTotal,
       discountPercent: _discountIsPercent ? _discountAmount : 0,
       discountAmount: _hasDiscount ? _discountAmount : 0,
@@ -183,24 +204,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       deposit: _hasDeposit ? _depositAmount : 0,
       totalAmount: _finalTotal,
       paidAmount: _paymentType == 'cash' ? _finalTotal : _depositAmount,
-      remainingAmount: _paymentType == 'cash' ? 0 : (_finalTotal - _depositAmount).clamp(0, double.infinity),
+      remainingAmount: _paymentType == 'cash'
+          ? 0
+          : (_finalTotal - _depositAmount).clamp(0, double.infinity),
       notes: _notes,
       cardNumber: card,
       createdAt: jalali,
     );
+
     ref.read(invoiceListProvider.notifier).saveInvoice(inv);
-    // اگر مشتری جدید است به لیست مشتریان اضافه کن
-    if (_customerName.isNotEmpty) {
-      final exists = ref.read(customerListProvider).any((c) => c.name == _customerName);
-      if (!exists) {
-        // import نمایش داده نمی‌شود تا فایل سبک بماند — provider موجود balance را صفر می‌گیرد
-      }
-    }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فاکتور #${PersianNumberFormatter.toPersian(numEn)} ذخیره شد')));
-    // تب جدید
+
+    // آماده‌سازی فرم برای فاکتور بعدی
+    final nextNum = (int.tryParse(numEn) ?? 1004) + 1;
     setState(() {
-      _invoiceNumber = PersianNumberFormatter.toPersian((int.tryParse(numEn) ?? 1004) + 1 as dynamic);
+      _invoiceNumber = PersianNumberFormatter.toPersian(nextNum.toString());
+      _customerName = '';
+      _customerPhone = '';
+      _items = [
+        InvoiceItemModel(
+          id: '1',
+          title: '',
+          quantity: 1,
+          unit: 'عدد',
+          unitPrice: 0,
+          totalPrice: 0,
+        ),
+      ];
+      _hasShipping = false;
+      _hasDiscount = false;
+      _hasDeposit = false;
+      _hasPrevDebt = false;
+      _discountAmount = 0;
+      _shippingFee = 0;
+      _depositAmount = 0;
+      _prevDebtAmount = 0;
+      _notes = '';
+      _selectedRow = null;
     });
+
+    // باز کردن صفحه نمایش فاکتور + اشتراک
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => InvoicePreviewScreen(invoice: inv),
+      ),
+    );
   }
 
   @override
@@ -303,7 +350,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               child: Column(
                 children: [
-                  // هدر جدول
+                  // هدر جدول — ترتیب RTL: عنوان | مقدار | واحد | قیمت واحد | قیمت کل
                   Container(
                     decoration: BoxDecoration(
                       color: dark? _slate700.withValues(alpha: 0.4): const Color(0xFFF8FAFC),
@@ -312,11 +359,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     child: Row(
                       children: [
-                        _tableHeader('عنوان', flex: 3, dark: dark),
-                        _tableHeader('مقدار', dark: dark),
-                        _tableHeader('واحد', dark: dark),
-                        _tableHeader('قیمت واحد', dark: dark),
-                        _tableHeader('قیمت کل', dark: dark),
+                        // عنوان پهن‌تر برای نام محصول
+                        _tableHeader('عنوان', flex: 5, dark: dark),
+                        _tableHeader('مقدار', flex: 1, dark: dark),
+                        _tableHeader('واحد', flex: 1, dark: dark),
+                        _tableHeader('قیمت واحد', flex: 2, dark: dark),
+                        _tableHeader('قیمت کل', flex: 2, dark: dark, isLast: true),
                       ],
                     ),
                   ),
@@ -332,105 +380,295 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           color: isSelected ? _orange.withValues(alpha: 0.06) : Colors.transparent,
                           border: Border(bottom: BorderSide(color: dark? _slate700: _cardGrayBorder)),
                         ),
-                        child: Row(
-                          children: [
-                            // عنوان + شماره ردیف ثابت + ضربدر
-                            Expanded(flex: 3, child: _tableCell(
-                              child: Row(
-                                children: [
-                                  // ضربدر فقط برای ردیف انتخاب‌شده
-                                  if (isSelected)
-                                    InkWell(
-                                      onTap: () => _removeRow(idx),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                                        child: Icon(Icons.close, size: 18, color: _slate500),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // عنوان + شماره ردیف — فضای بیشتر برای نام محصول
+                              _tableCell(
+                                flex: 5,
+                                dark: dark,
+                                child: Directionality(
+                                  textDirection: TextDirection.rtl,
+                                  child: Row(
+                                    children: [
+                                      if (isSelected)
+                                        InkWell(
+                                          onTap: () => _removeRow(idx),
+                                          child: const Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 4),
+                                            child: Icon(Icons.close, size: 18, color: _slate500),
+                                          ),
+                                        )
+                                      else
+                                        const SizedBox(width: 8),
+                                      Text(
+                                        rowNum,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: dark ? _slate400 : _slate500,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
-                                    )
-                                  else
-                                    const SizedBox(width: 22),
-                                  // شماره ردیف غیرقابل ادیت
-                                  Text(' $rowNum -', style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500, fontWeight: FontWeight.w700)),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: TextEditingController(text: it.title),
-                                      onChanged: (v)=> _updateItem(idx, title: v),
-                                      onTap: () => setState(() => _selectedRow = idx),
-                                      decoration: const InputDecoration(border: InputBorder.none, hintText: '', contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
-                                      style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
-                                      textAlign: TextAlign.right,
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: TextEditingController(text: it.title)
+                                            ..selection = TextSelection.collapsed(offset: it.title.length),
+                                          onChanged: (v) => _updateItem(idx, title: v),
+                                          onTap: () => setState(() => _selectedRow = idx),
+                                          textDirection: TextDirection.rtl,
+                                          textAlign: TextAlign.right,
+                                          decoration: InputDecoration(
+                                            border: InputBorder.none,
+                                            hintText: 'نام کالا / خدمت',
+                                            hintTextDirection: TextDirection.rtl,
+                                            hintStyle: TextStyle(
+                                              fontSize: 12,
+                                              color: dark ? _slate400 : _slate400,
+                                            ),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                                            isDense: true,
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: dark ? Colors.white : _slate800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              _tableCell(
+                                flex: 1,
+                                dark: dark,
+                                child: TextField(
+                                  controller: TextEditingController(
+                                    text: it.quantity == it.quantity.roundToDouble()
+                                        ? PersianNumberFormatter.toPersian(it.quantity.toInt().toString())
+                                        : PersianNumberFormatter.toPersian(it.quantity.toString()),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (v) {
+                                    final en = _faToEn(v);
+                                    final q = double.tryParse(en) ?? 1;
+                                    _updateItem(idx, qty: q);
+                                  },
+                                  onTap: () => setState(() => _selectedRow = idx),
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                                  ),
+                                  style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              _tableCell(
+                                flex: 1,
+                                dark: dark,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() => _selectedRow = idx);
+                                    showDialog(
+                                      context: context,
+                                      builder: (c) => SimpleDialog(
+                                        title: const Text('انتخاب واحد'),
+                                        children: ['عدد', 'بسته', 'کیلو', 'متر', 'ساعت', 'دستگاه']
+                                            .map(
+                                              (u) => SimpleDialogOption(
+                                                child: Text(u),
+                                                onPressed: () {
+                                                  Navigator.pop(c);
+                                                  _updateItem(idx, unit: u);
+                                                },
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    child: Text(
+                                      it.unit,
+                                      style: TextStyle(fontSize: 11, color: dark ? Colors.white : _slate700),
+                                      textAlign: TextAlign.center,
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
-                              dark: dark, isFirst: true,
-                            )),
-                            _tableCell(child: TextField(
-                              controller: TextEditingController(text: it.quantity == it.quantity.roundToDouble() ? PersianNumberFormatter.toPersian(it.quantity.toInt().toString()) : PersianNumberFormatter.toPersian(it.quantity.toString())),
-                              keyboardType: TextInputType.number,
-                              onChanged: (v){
-                                final en = _faToEn(v);
-                                final q = double.tryParse(en) ?? 1;
-                                _updateItem(idx, qty: q);
-                              },
-                              onTap: () => setState(() => _selectedRow = idx),
-                              decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
-                              style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
-                              textAlign: TextAlign.center,
-                            ), dark: dark),
-                            _tableCell(child: InkWell(
-                              onTap: (){
-                                setState(()=> _selectedRow = idx);
-                                showDialog(context: context, builder: (c)=> SimpleDialog(title: const Text('انتخاب واحد'), children: ['عدد','بسته','کیلو','متر','ساعت'].map((u)=> SimpleDialogOption(child: Text(u), onPressed: (){ Navigator.pop(c); _updateItem(idx, unit: u);})).toList()));
-                              },
-                              child: Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(it.unit, style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate700), textAlign: TextAlign.center)),
-                            ), dark: dark),
-                            _tableCell(child: TextField(
-                              controller: TextEditingController(text: it.unitPrice==0? '' : PersianNumberFormatter.toPersian(it.unitPrice.toInt().toString())),
-                              keyboardType: TextInputType.number,
-                              onChanged: (v){
-                                final en=_faToEn(v);
-                                final p=double.tryParse(en)??0;
-                                _updateItem(idx, price: p);
-                              },
-                              onTap: () => setState(() => _selectedRow = idx),
-                              decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10)),
-                              style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800),
-                              textAlign: TextAlign.center,
-                            ), dark: dark),
-                            _tableCell(child: Text(it.totalPrice==0? '۰' : PersianNumberFormatter.formatCurrency(it.totalPrice).replaceAll(' تومان',''), style: TextStyle(fontSize: 11, color: dark? Colors.white: _slate800, fontWeight: FontWeight.w700), textAlign: TextAlign.center), dark: dark, isLast: true),
-                          ],
+                              _tableCell(
+                                flex: 2,
+                                dark: dark,
+                                child: TextField(
+                                  controller: TextEditingController(
+                                    text: it.unitPrice == 0
+                                        ? ''
+                                        : PersianNumberFormatter.toPersian(it.unitPrice.toInt().toString()),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (v) {
+                                    final en = _faToEn(v);
+                                    final p = double.tryParse(en) ?? 0;
+                                    _updateItem(idx, price: p);
+                                  },
+                                  onTap: () => setState(() => _selectedRow = idx),
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                                  ),
+                                  style: TextStyle(fontSize: 11, color: dark ? Colors.white : _slate800),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              _tableCell(
+                                flex: 2,
+                                dark: dark,
+                                isLast: true,
+                                child: Center(
+                                  child: Text(
+                                    it.totalPrice == 0
+                                        ? '۰'
+                                        : PersianNumberFormatter.formatCurrency(it.totalPrice)
+                                            .replaceAll(' تومان', ''),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: dark ? Colors.white : _slate800,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
                   }),
-                  // دکمه ایجاد
-                  InkWell(
-                    onTap: _addItem,
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                    child: Container(
-                      height: 44,
-                      decoration: const BoxDecoration(borderRadius: BorderRadius.vertical(bottom: Radius.circular(12))),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                        Text('ایجاد', style: TextStyle(color: _orange, fontWeight: FontWeight.w800, fontSize: 13)),
-                        const SizedBox(width: 6),
-                        Container(width: 22, height: 22, decoration: BoxDecoration(color: _orange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)), child: const Icon(Icons.add, color: _orange, size: 16)),
-                        const SizedBox(width: 12),
-                      ]),
+                  // دکمه ایجاد + کاتالوگ
+                  Container(
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () {
+                            final products = ref.read(productListProvider);
+                            if (products.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('کاتالوگ خالی است')),
+                              );
+                              return;
+                            }
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (ctx) => SafeArea(
+                                child: ListView(
+                                  shrinkWrap: true,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Text(
+                                        'انتخاب از کاتالوگ',
+                                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                    ...products.map(
+                                      (p) => ListTile(
+                                        title: Text(p.name, textAlign: TextAlign.right),
+                                        subtitle: Text(
+                                          PersianNumberFormatter.formatCurrency(p.sellPrice),
+                                          textAlign: TextAlign.right,
+                                        ),
+                                        onTap: () {
+                                          Navigator.pop(ctx);
+                                          setState(() {
+                                            final emptyIdx = _items.indexWhere(
+                                              (e) => e.title.trim().isEmpty && e.unitPrice == 0,
+                                            );
+                                            final row = InvoiceItemModel(
+                                              id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                              title: p.name,
+                                              quantity: 1,
+                                              unit: p.unit,
+                                              unitPrice: p.sellPrice,
+                                              totalPrice: p.sellPrice,
+                                            );
+                                            if (emptyIdx >= 0) {
+                                              _items[emptyIdx] = row;
+                                              _selectedRow = emptyIdx;
+                                            } else {
+                                              _items.add(row);
+                                              _selectedRow = _items.length - 1;
+                                            }
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.inventory_2_outlined, size: 16, color: Colors.teal),
+                          label: const Text(
+                            'کاتالوگ',
+                            style: TextStyle(color: Colors.teal, fontWeight: FontWeight.w800, fontSize: 12),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: _addItem,
+                          child: Row(
+                            children: [
+                              Text('ایجاد', style: TextStyle(color: _orange, fontWeight: FontWeight.w800, fontSize: 13)),
+                              const SizedBox(width: 6),
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: _orange.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(Icons.add, color: _orange, size: 16),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
-            // جمع آیتم‌ها
+            // جمع آیتم‌ها — برچسب راست، مبلغ چپ (RTL)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text(PersianNumberFormatter.formatCurrency(_itemsTotal), style: TextStyle(fontSize: 12, color: dark? _slate400: _slate500)),
-                Text('جمع آیتم‌ها', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dark? Colors.white: _slate700)),
-              ]),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'جمع آیتم‌ها',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: dark ? Colors.white : _slate700,
+                    ),
+                  ),
+                  Text(
+                    PersianNumberFormatter.formatCurrency(_itemsTotal),
+                    style: TextStyle(fontSize: 12, color: dark ? _slate400 : _slate500),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -500,13 +738,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 6) جمع کل
+            // 6) جمع کل — برچسب راست، مبلغ چپ
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text(PersianNumberFormatter.formatCurrency(_finalTotal), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: dark? Colors.white: _slate800)),
-                Text('جمع کل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dark? Colors.white: _slate700)),
-              ]),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'جمع کل',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: dark ? Colors.white : _slate700,
+                    ),
+                  ),
+                  Text(
+                    PersianNumberFormatter.formatCurrency(_finalTotal),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: dark ? Colors.white : _slate800,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
 
@@ -515,11 +770,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               dark: dark,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: TextField(
-                onChanged: (v)=> _notes=v,
+                onChanged: (v) => _notes = v,
                 maxLines: 3,
                 minLines: 1,
-                decoration: InputDecoration(border: InputBorder.none, hintText: 'توضیحات', hintStyle: TextStyle(color: _slate400, fontSize: 12)),
-                style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.right,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'توضیحات',
+                  hintTextDirection: TextDirection.rtl,
+                  hintStyle: TextStyle(color: _slate400, fontSize: 12),
+                ),
+                style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
               ),
             ),
             const SizedBox(height: 10),
@@ -542,43 +804,146 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 );
               }
-              // نمایش کارت انتخاب‌شده مثل عکس ۴ — با انیمیشن نرم
+              // نمایش کارت انتخاب‌شده — لوگو درشت، نام/بانک راست، شماره LTR راست‌چین
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOut,
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: dark? _slate800: _cardGray, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(
+                  color: dark ? _slate800 : _cardGray,
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(children: [
-                      Text(PersianNumberFormatter.toPersian(selected.formattedCard.replaceAll(' ', ' - ')), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: dark? Colors.white: Colors.black)),
-                      const Spacer(),
-                      Builder(builder: (ctx){
-                        final asset = bankLogoAsset(selected.bankName);
-                        if(asset.isNotEmpty){
-                          return ClipRRect(borderRadius: BorderRadius.circular(4), child: Image.asset(asset, width: 28, height: 18, fit: BoxFit.contain, errorBuilder: (_,__,___)=> const SizedBox()));
-                        }
-                        return Container(width: 28, height: 18, decoration: BoxDecoration(color: bankColor(selected.bankName), borderRadius: BorderRadius.circular(4)), alignment: Alignment.center, child: Text(selected.bankName.replaceAll('بانک ', '').substring(0,1), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)));
-                      }),
-                      const SizedBox(width: 6),
-                      Text(selected.persianName, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark? Colors.white: Colors.black)),
-                    ]),
-                    const SizedBox(height: 6),
-                    Row(children: [
-                      Expanded(child: Text(PersianNumberFormatter.toPersian(selected.spacedSheba), style: TextStyle(fontSize: 11, letterSpacing: 0.5, color: dark? Colors.white: Colors.black))),
-                      const SizedBox(width: 8),
-                      Text('شماره شبا:', style: TextStyle(fontSize: 11, color: _slate500)),
-                    ]),
+                    Row(
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        // لوگو بدون بک‌گراند سفید
+                        Builder(builder: (ctx) {
+                          final asset = bankLogoAsset(selected.bankName);
+                          if (asset.isNotEmpty) {
+                            return SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Image.asset(
+                                asset,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const SizedBox(),
+                              ),
+                            );
+                          }
+                          final label = selected.bankName.replaceAll('بانک ', '');
+                          return Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: bankColor(selected.bankName),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              label.isNotEmpty ? label.substring(0, 1) : 'ب',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                selected.bankName,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: dark ? _slate400 : _slate500,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                selected.persianName,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                  color: dark ? Colors.white : Colors.black,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // شماره کارت — LTR راست‌چین
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(
+                          PersianNumberFormatter.toPersian(
+                            selected.formattedCard.replaceAll(' ', ' - '),
+                          ),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            letterSpacing: 0.8,
+                            color: dark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (selected.sheba.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Text(
+                            PersianNumberFormatter.toPersian(selected.spacedSheba),
+                            style: TextStyle(
+                              fontSize: 11,
+                              letterSpacing: 0.4,
+                              color: dark ? _slate400 : _slate500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
-                    Row(children: [
-                      InkWell(onTap: ()=> showCardListSheet(context), child: Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(children: [
-                        Icon(Icons.chevron_left, size: 18, color: _slate400),
-                        const SizedBox(width: 4),
-                        Text('تغییر شماره کارت', style: TextStyle(color: const Color(0xFF2196F3), fontWeight: FontWeight.w700, fontSize: 12)),
-                      ]))),
-                      const Spacer(),
-                    ]),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: InkWell(
+                        onTap: () => showCardListSheet(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chevron_left, size: 18, color: _slate400),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'تغییر شماره کارت',
+                                style: TextStyle(
+                                  color: Color(0xFF2196F3),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -632,27 +997,66 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: TextField(
             onChanged: onChanged,
             keyboardType: keyboardType,
-            decoration: InputDecoration(border: InputBorder.none, hintText: hint, hintStyle: const TextStyle(fontSize: 11, color: _slate400), isDense: true),
-            style: TextStyle(fontSize: 12, color: dark? Colors.white: _slate800),
+            textDirection: keyboardType == TextInputType.phone
+                ? TextDirection.ltr
+                : TextDirection.rtl,
             textAlign: TextAlign.right,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: hint,
+              hintTextDirection: TextDirection.rtl,
+              hintStyle: const TextStyle(fontSize: 11, color: _slate400),
+              isDense: true,
+            ),
+            style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
           ),
         )),
       ],
     );
   }
 
-  Widget _tableHeader(String t, {int flex=1, required bool dark}) {
-    return Expanded(flex: flex, child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(border: Border(left: BorderSide(color: dark? _slate700: _cardGrayBorder))),
-      child: Text(t, textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: dark? _slate400: _slate600, fontWeight: FontWeight.w700)),
-    ));
+  Widget _tableHeader(String t, {int flex = 1, required bool dark, bool isLast = false}) {
+    final isTitle = t == 'عنوان';
+    return Expanded(
+      flex: flex,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 10, horizontal: isTitle ? 8 : 0),
+        decoration: BoxDecoration(
+          border: isLast
+              ? null
+              : Border(left: BorderSide(color: dark ? _slate700 : _cardGrayBorder)),
+        ),
+        child: Text(
+          t,
+          textAlign: isTitle ? TextAlign.right : TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            color: dark ? _slate400 : _slate600,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
   }
-  Widget _tableCell({required Widget child, required bool dark, bool isFirst=false, bool isLast=false}) {
-    return Expanded(child: Container(
-      decoration: BoxDecoration(border: Border(left: isLast? BorderSide.none: BorderSide(color: dark? _slate700: _cardGrayBorder))),
-      child: child,
-    ));
+
+  Widget _tableCell({
+    required Widget child,
+    required bool dark,
+    int flex = 1,
+    bool isLast = false,
+  }) {
+    return Expanded(
+      flex: flex,
+      child: Container(
+        decoration: BoxDecoration(
+          border: isLast
+              ? null
+              : Border(left: BorderSide(color: dark ? _slate700 : _cardGrayBorder)),
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
+    );
   }
 
   Widget _checkRow({required String label, required bool value, required Function(bool?) onChanged, required bool dark, Widget? trailing}) {

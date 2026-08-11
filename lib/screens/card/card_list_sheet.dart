@@ -122,17 +122,57 @@ class _CardItem extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(children: [
-              _BankLogo(bankName: card.bankName, size: 36),
-              const SizedBox(width: 8),
-              Text(card.bankName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-              const Spacer(),
-              Text(card.persianName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
-            ]),
-            const SizedBox(height: 12),
-            Text(PersianNumberFormatter.toPersian(card.formattedCard), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1), textAlign: TextAlign.center),
-            const SizedBox(height: 6),
-            Text(PersianNumberFormatter.toPersian(card.spacedSheba), style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), letterSpacing: 0.8), textAlign: TextAlign.center),
+            // لوگو + بانک + نام — سمت راست
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                _BankLogo(bankName: card.bankName, size: 48),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        card.bankName,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                        textAlign: TextAlign.right,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        card.persianName,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                        textAlign: TextAlign.right,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // شماره کارت — LTR راست‌چین (جلوگیری از برعکس شدن)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Text(
+                  PersianNumberFormatter.toPersian(card.formattedCard),
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 1.1),
+                ),
+              ),
+            ),
+            if (card.sheba.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    PersianNumberFormatter.toPersian(card.spacedSheba),
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), letterSpacing: 0.5),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -143,25 +183,41 @@ class _CardItem extends ConsumerWidget {
 class _BankLogo extends StatelessWidget {
   final String bankName;
   final double size;
-  const _BankLogo({required this.bankName, this.size = 36});
+  const _BankLogo({required this.bankName, this.size = 48});
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final asset = bankLogoAsset(bankName);
-    if(asset.isNotEmpty){
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Image.asset(asset, width: size, height: size*0.66, fit: BoxFit.contain, errorBuilder: (_,__,___)=> _fallback()),
+    // بدون بک‌گراند سفید — فقط لوگو
+    if (asset.isNotEmpty) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Image.asset(
+          asset,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (_, __, ___) => _fallback(),
+        ),
       );
     }
     return _fallback();
   }
-  Widget _fallback(){
+
+  Widget _fallback() {
     final c = bankColor(bankName);
+    final label = bankName.replaceAll('بانک ', '');
+    final letter = label.isNotEmpty ? label.substring(0, 1) : 'ب';
     return Container(
-      width: size, height: size*0.66,
-      decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4)),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(size * 0.18)),
       alignment: Alignment.center,
-      child: Text(bankName.replaceAll('بانک ', '').substring(0,1), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+      child: Text(
+        letter,
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: size * 0.36),
+      ),
     );
   }
 }

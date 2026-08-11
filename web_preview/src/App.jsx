@@ -57,7 +57,14 @@ export default function App() {
   // Navigation & Modals
   const [activeTab, setActiveTab] = useState('create_invoice');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      const s = loadState('settings', INITIAL_SETTINGS);
+      return s?.themeMode === 'dark';
+    } catch {
+      return false;
+    }
+  });
   const [isAppLocked, setIsAppLocked] = useState(false);
   const [pinUnlockInput, setPinUnlockInput] = useState('');
 
@@ -104,11 +111,12 @@ export default function App() {
     const newNum = factorTabs.length + 1;
     const newTab = {
       id: `tab-${Date.now()}`,
-      title: `پیش فاکتور ${newNum}`,
+      title: `فاکتور ${newNum === 1 ? 'اول' : newNum === 2 ? 'دوم' : newNum}`,
       number: newNum.toString()
     };
     setFactorTabs([...factorTabs, newTab]);
     setActiveFactorTabId(newTab.id);
+    setEditingInvoiceData(null);
   };
 
   const handleCloseFactorTab = (id) => {
@@ -120,9 +128,9 @@ export default function App() {
     }
   };
 
-  // Invoice Actions
-  const handleSaveInvoice = (invoiceObj, shouldOpenModal = false) => {
-    const existingIndex = invoices.findIndex(i => i.id === invoiceObj.id);
+  // Invoice Actions — ذخیره و باز کردن صفحه نمایش فاکتور
+  const handleSaveInvoice = (invoiceObj, shouldOpenModal = true) => {
+    const existingIndex = invoices.findIndex((i) => i.id === invoiceObj.id);
     let updatedInvoices = [];
     if (existingIndex >= 0) {
       updatedInvoices = [...invoices];
@@ -131,20 +139,29 @@ export default function App() {
       updatedInvoices = [...invoices, invoiceObj];
     }
     setInvoices(updatedInvoices);
+    saveState('invoices', updatedInvoices);
 
-    if (invoiceObj.customerId && invoiceObj.type === 'sale') {
-      setCustomers(prev =>
-        prev.map(c => {
-          if (c.id === invoiceObj.customerId) {
-            return { ...c, balance: Math.max(0, (c.balance || 0) + invoiceObj.remainingAmount) };
-          }
-          return c;
-        })
-      );
+    if (invoiceObj.type === 'sale' && invoiceObj.paymentType !== 'cash' && invoiceObj.remainingAmount > 0) {
+      // به‌روزرسانی مانده مشتری در صورت وجود نام
+      setCustomers((prev) => {
+        const byId = invoiceObj.customerId
+          ? prev.find((c) => c.id === invoiceObj.customerId)
+          : prev.find((c) => c.name === invoiceObj.customerName);
+        if (!byId) return prev;
+        const next = prev.map((c) =>
+          c.id === byId.id
+            ? { ...c, balance: Math.max(0, (c.balance || 0) + (invoiceObj.remainingAmount || 0)) }
+            : c
+        );
+        saveState('customers', next);
+        return next;
+      });
     }
 
     setEditingInvoiceData(null);
-    if (shouldOpenModal) {
+
+    // همیشه بعد از ذخیره موفق، صفحه نمایش فاکتور باز شود
+    if (shouldOpenModal !== false) {
       setSelectedInvoiceModal(invoiceObj);
     }
   };
@@ -258,7 +275,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-vazir select-none">
+    <div className={`min-h-screen flex flex-col dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-vazir ${
+      activeTab === 'create_invoice' ? 'bg-white' : 'bg-[#F8FAFC]'
+    }`}>
       
       {/* Welcome Splash Screen */}
       <WelcomeSplashModal
@@ -286,6 +305,8 @@ export default function App() {
         isDarkMode={isDarkMode}
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         onLockApp={() => setIsAppLocked(true)}
+        invoiceHomeMode={activeTab === 'create_invoice'}
+        shopName={business?.shopName || 'فاکتور ساز روبی'}
       />
 
       {/* Sidebar Drawer Menu */}
@@ -297,10 +318,18 @@ export default function App() {
         onOpenSettings={() => setActiveTab('settings')}
         onOpenSmartTools={() => setShowSmartToolsModal(true)}
         onResetData={handleResetData}
+        userName={user?.name}
+        shopName={business?.shopName}
       />
 
       {/* Main View Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6">
+      <main
+        className={`flex-1 w-full mx-auto ${
+          activeTab === 'create_invoice'
+            ? 'max-w-lg px-3 pt-3 sm:px-4 sm:pt-4'
+            : 'max-w-4xl p-4 sm:p-6'
+        }`}
+      >
         
         {activeTab === 'create_invoice' && (
           <InvoiceCreatorView
@@ -322,6 +351,17 @@ export default function App() {
             onOpenWindowsModal={() => setShowWindowsModal(true)}
             onUpdateTabState={(stateData) => {
               setTabInvoiceStates(prev => ({ ...prev, [activeFactorTabId]: stateData }));
+              // Keep bottom-tab title in sync with customer name (like reference UI)
+              const label = (stateData?.customerName || '').trim();
+              if (label) {
+                setFactorTabs(prev => {
+                  const current = prev.find(t => t.id === activeFactorTabId);
+                  if (!current || current.title === label) return prev;
+                  return prev.map(t =>
+                    t.id === activeFactorTabId ? { ...t, title: label } : t
+                  );
+                });
+              }
             }}
           />
         )}
@@ -401,11 +441,36 @@ export default function App() {
             user={user}
             business={business}
             settings={settings}
-            onSaveUser={(u) => setUser(u)}
-            onSaveBusiness={(b) => setBusiness(b)}
-            onSaveSettings={(s) => setSettings(s)}
+            onSaveUser={(u) => {
+              const next = { ...user, ...u, isOnboarded: true };
+              setUser(next);
+              saveState('user', next);
+            }}
+            onSaveBusiness={(b) => {
+              const next = { ...business, ...b };
+              setBusiness(next);
+              saveState('business', next);
+            }}
+            onSaveSettings={(s) => {
+              const next = { ...settings, ...s };
+              setSettings(next);
+              saveState('settings', next);
+              if (next.themeMode === 'dark' && !isDarkMode) setIsDarkMode(true);
+              if (next.themeMode === 'light' && isDarkMode) setIsDarkMode(false);
+            }}
             isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+            onToggleDarkMode={() => {
+              setIsDarkMode((d) => {
+                const next = !d;
+                setSettings((prev) => {
+                  const updated = { ...prev, themeMode: next ? 'dark' : 'light' };
+                  saveState('settings', updated);
+                  return updated;
+                });
+                return next;
+              });
+            }}
+            onBack={() => setActiveTab('create_invoice')}
           />
         )}
 

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "html2canvas": "^1.4.1",
     "jalali-moment": "^3.3.11",
     "lucide-react": "^0.479.0",
     "react": "^18.3.1",

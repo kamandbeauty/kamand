@@ -8,6 +8,7 @@ import '../../models/invoice_item_model.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/app_providers.dart';
+import 'invoice_preview_screen.dart';
 
 class InvoiceCreateScreen extends ConsumerStatefulWidget {
   final InvoiceModel? editInvoice;
@@ -88,8 +89,27 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   }
 
   void _saveInvoice() {
-    final existingCust = ref.read(customerListProvider).where((c) => c.name == _customerName).firstOrNull;
-    final custId = widget.editInvoice?.customerId ?? existingCust?.id ?? 'c-${DateTime.now().millisecondsSinceEpoch}';
+    final cleanItems = _items
+        .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0)
+        .toList();
+    if (cleanItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('حداقل یک قلم کالا اضافه کنید')),
+      );
+      return;
+    }
+
+    final customers = ref.read(customerListProvider);
+    String? existingId;
+    for (final c in customers) {
+      if (c.name == _customerName) {
+        existingId = c.id;
+        break;
+      }
+    }
+    final custId = widget.editInvoice?.customerId ??
+        existingId ??
+        'c-${DateTime.now().millisecondsSinceEpoch}';
     final business = ref.read(businessProvider);
     final cardNum = business.bankCards.isNotEmpty ? business.bankCards.first : '';
 
@@ -98,13 +118,15 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
       id: isEdit ? _editId! : 'inv-${DateTime.now().millisecondsSinceEpoch}',
       number: _number,
       customerId: custId,
-      customerName: _customerName,
+      customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
       customerPhone: _customerPhone,
       type: _type,
       paymentType: _paymentType,
-      status: _paymentType == 'cash' ? 'paid' : 'unpaid',
+      status: _type == 'proforma'
+          ? 'proforma'
+          : (_paymentType == 'cash' ? 'paid' : 'unpaid'),
       date: _date,
-      items: _items,
+      items: cleanItems,
       subtotal: _subtotal,
       discountPercent: 0,
       discountAmount: _discountAmount,
@@ -123,7 +145,11 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
     if (_type == 'sale' && _paymentType != 'cash' && newInv.remainingAmount > 0) {
       ref.read(customerListProvider.notifier).updateBalance(custId, newInv.remainingAmount);
     }
-    Navigator.pop(context);
+
+    // بعد از ذخیره → صفحه نمایش فاکتور
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => InvoicePreviewScreen(invoice: newInv)),
+    );
   }
 
   @override

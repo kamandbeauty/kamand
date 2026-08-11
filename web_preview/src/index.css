@@ -8,6 +8,47 @@
   }
 }
 
+/* Hide horizontal scrollbar on multi-window tab strip */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Invoice table — product title column stays roomy; text inputs RTL */
+.invoice-items-table th,
+.invoice-items-table td {
+  vertical-align: middle;
+}
+.invoice-items-table th:first-child,
+.invoice-items-table td:first-child {
+  text-align: right;
+}
+
+/* Force right-to-left typing in Persian text fields */
+.invoice-rtl-input,
+input.invoice-rtl-input,
+textarea.invoice-rtl-input {
+  direction: rtl !important;
+  text-align: right !important;
+  unicode-bidi: plaintext;
+}
+.invoice-rtl-input::placeholder {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Subtle fade-in used across views */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.28s ease-out both;
+}
+
 /* Custom scrollbar for modern feel */
 ::-webkit-scrollbar {
   width: 6px;
@@ -26,23 +67,37 @@
 
 /* Print styles for PDF / Printer */
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    margin: 12mm;
   }
-  #printable-invoice, #printable-invoice * {
-    visibility: visible;
+  html, body {
+    background: white !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  #printable-invoice,
+  #printable-invoice * {
+    visibility: visible !important;
   }
   #printable-invoice {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 16px !important;
     background: white !important;
     color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
   }
   .no-print {
     display: none !important;
+    visibility: hidden !important;
   }
 }
