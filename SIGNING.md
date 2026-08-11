@@ -194,7 +194,7 @@ Workflow در `.github/workflows/release.yml` روی Tagهای `v*.*.*`/`release
 - `RELEASE_KEY_ALIAS`
 - `RELEASE_KEY_PASSWORD`
 
-Workflow Base64 را Decode می‌کند، keystore را در `$RUNNER_TEMP` می‌سازد، APK و AAB را Build و Verify می‌کند، Artifact آپلود می‌کند و برای Tag یک GitHub Release می‌سازد. در پایان فایل موقت حذف می‌شود و هیچ Secretای در Log چاپ نمی‌شود.
+Workflow Base64 را Decode می‌کند، keystore را در `$RUNNER_TEMP` می‌سازد، با Gradle Wrapper فرمان‌های `./gradlew clean`، `./gradlew assembleRelease` و `./gradlew bundleRelease` را اجرا می‌کند، APK و AAB را Verify می‌کند، Artifact آپلود می‌کند و برای Tag یک GitHub Release می‌سازد. در پایان فایل موقت حذف می‌شود و هیچ Secretای در Log چاپ نمی‌شود.
 
 ساخت Base64:
 

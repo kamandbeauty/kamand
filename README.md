@@ -393,11 +393,12 @@ Workflow رسمی در `.github/workflows/release.yml` قرار دارد و رو
 1. Java 17 و Flutter stable را آماده می‌کند؛
 2. چهار Secret زیر را بررسی می‌کند؛
 3. keystore Base64 را در یک فایل موقت خارج از Repository Decode می‌کند؛
-4. APK و AAB Signed می‌سازد؛
-5. با `apksigner` و `jarsigner` امضا را Verify می‌کند و در صورت موجود بودن `apkanalyzer`، شناسه/نسخه/debuggable را نیز بررسی می‌کند؛
-6. Artifactهای نام‌گذاری‌شده را Upload می‌کند؛
-7. برای Tag، APK و AAB را به GitHub Release همان Tag Attach می‌کند؛
-8. فایل keystore موقت را در پایان حذف می‌کند.
+4. از Gradle Wrapper فرمان‌های `./gradlew clean`، `./gradlew assembleRelease` و `./gradlew bundleRelease` را اجرا می‌کند؛
+5. APK و AAB Signed می‌سازد؛
+6. با `apksigner` و `jarsigner` امضا را Verify می‌کند و در صورت موجود بودن `apkanalyzer`، شناسه/نسخه/debuggable را نیز بررسی می‌کند؛
+7. Artifactهای نام‌گذاری‌شده را Upload می‌کند؛
+8. برای Tag، APK و AAB را به GitHub Release همان Tag Attach می‌کند؛
+9. فایل keystore موقت را در پایان حذف می‌کند.
 
 Secretهای لازم در Settings → Secrets and variables → Actions:
 
