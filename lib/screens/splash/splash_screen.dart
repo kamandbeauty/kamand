@@ -6,7 +6,7 @@ import '../../providers/app_providers.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
-/// اسپلش اسکرین برند روبی — تصویر کامل + فید به داشبورد/آنبوردینگ
+/// اسپلش اسکرین برند روبی — تصویر کامل rubilogo + فید به داشبورد/آنبوردینگ
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -82,7 +82,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             width: size.width,
             height: size.height,
             child: Image.asset(
-              'assets/images/splash.png',
+              'assets/images/rubilogo.jpg',
               fit: BoxFit.cover,
               width: size.width,
               height: size.height,

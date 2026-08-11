@@ -68,7 +68,22 @@ export default function App() {
   const [isAppLocked, setIsAppLocked] = useState(false);
   const [pinUnlockInput, setPinUnlockInput] = useState('');
 
-  const [showSplash, setShowSplash] = useState(false);
+  // اسپلش برند روبی — اولین اجرا نمایش داده می‌شود، بعد از آن فقط با ریست داده‌ها
+  const [showSplash, setShowSplash] = useState(() => {
+    try {
+      return !localStorage.getItem('ruby_splash_seen');
+    } catch {
+      return true;
+    }
+  });
+  const dismissSplash = () => {
+    setShowSplash(false);
+    try {
+      localStorage.setItem('ruby_splash_seen', '1');
+    } catch (e) {
+      console.error('Splash flag save error:', e);
+    }
+  };
   const [showGoldenModal, setShowGoldenModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showWindowsModal, setShowWindowsModal] = useState(false);
@@ -282,8 +297,8 @@ export default function App() {
       {/* Welcome Splash Screen */}
       <WelcomeSplashModal
         isOpen={showSplash}
-        onStart={() => setShowSplash(false)}
-        onSkip={() => setShowSplash(false)}
+        onStart={dismissSplash}
+        onSkip={dismissSplash}
       />
 
       {/* Onboarding Wizard Modal on first launch */}
