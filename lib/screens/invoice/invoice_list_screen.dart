@@ -4,8 +4,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/invoice_provider.dart';
-import 'invoice_create_screen.dart';
 import 'invoice_preview_screen.dart';
+import '../dashboard/dashboard_screen.dart';
 
 const _orange = AppTheme.RubyPrimary;
 const _slate400 = Color(0xFF94A3B8);
@@ -88,7 +88,10 @@ class InvoiceListScreen extends ConsumerWidget {
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: ()=> Navigator.push(context, MaterialPageRoute(builder: (_)=> const InvoiceCreateScreen())),
+        onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          (route) => false,
+        ),
         backgroundColor: _orange,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('فاکتور جدید', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),

@@ -13,7 +13,7 @@ import '../../core/utils/persian_number_formatter.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/invoice_provider.dart';
-import 'invoice_create_screen.dart';
+import '../dashboard/dashboard_screen.dart';
 
 const _orange = AppTheme.RubyPrimary;
 const _slate400 = Color(0xFF94A3B8);
@@ -714,11 +714,12 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                     children: [
                       TextButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
+                          // ویرایش در همان فرم هوم/داشبورد
+                          Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(
-                              builder: (_) => InvoiceCreateScreen(editInvoice: inv),
+                              builder: (_) => DashboardScreen(editInvoice: inv),
                             ),
+                            (route) => false,
                           );
                         },
                         child: const Text('ویرایش', style: TextStyle(fontSize: 12)),

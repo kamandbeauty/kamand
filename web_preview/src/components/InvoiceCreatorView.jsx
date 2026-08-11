@@ -405,16 +405,22 @@ export default function InvoiceCreatorView({
                       </div>
                     </td>
 
-                    {/* مقدار */}
+                    {/* مقدار — با فوکوس کل متن انتخاب می‌شود تا تایپ جایگزین شود */}
                     <td className="p-0 border-l border-slate-200 dark:border-slate-700 align-middle">
                       <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                        onFocus={() => setSelectedRow(index)}
-                        className="w-full bg-transparent outline-none text-center text-[12px] font-medium text-slate-800 dark:text-white py-2.5 px-0.5"
+                        type="text"
+                        inputMode="decimal"
+                        value={item.quantity === '' || item.quantity === undefined ? '' : item.quantity}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/[^\d.]/g, '');
+                          handleItemChange(index, 'quantity', v === '' ? 0 : v);
+                        }}
+                        onFocus={(e) => {
+                          setSelectedRow(index);
+                          e.target.select();
+                        }}
+                        onClick={(e) => e.target.select()}
+                        className="w-full bg-transparent outline-none text-center text-[12px] font-bold text-slate-800 dark:text-white py-2.5 px-0.5"
                         dir="ltr"
                       />
                     </td>
@@ -436,17 +442,23 @@ export default function InvoiceCreatorView({
                       </select>
                     </td>
 
-                    {/* قیمت واحد */}
+                    {/* قیمت واحد — با فوکوس کل متن انتخاب می‌شود تا تایپ جایگزین شود */}
                     <td className="p-0 border-l border-slate-200 dark:border-slate-700 align-middle">
                       <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={item.unitPrice || ''}
-                        onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                        onFocus={() => setSelectedRow(index)}
+                        type="text"
+                        inputMode="decimal"
+                        value={item.unitPrice ? item.unitPrice : ''}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/[^\d.]/g, '');
+                          handleItemChange(index, 'unitPrice', v === '' ? 0 : v);
+                        }}
+                        onFocus={(e) => {
+                          setSelectedRow(index);
+                          e.target.select();
+                        }}
+                        onClick={(e) => e.target.select()}
                         placeholder="۰"
-                        className="w-full bg-transparent outline-none text-center text-[11px] text-slate-800 dark:text-white py-2.5 px-0.5"
+                        className="w-full bg-transparent outline-none text-center text-[11px] font-bold text-slate-800 dark:text-white py-2.5 px-0.5"
                         dir="ltr"
                       />
                     </td>

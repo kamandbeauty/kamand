@@ -18,6 +18,7 @@ import '../customize/header_customize_screen.dart';
 import '../card/card_list_sheet.dart';
 import '../invoice/invoice_preview_screen.dart';
 import '../../providers/bank_card_provider.dart';
+import '../../core/utils/replace_on_type_field.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -36,7 +37,9 @@ const _slate800 = Color(0xFF1E293B);
 const _slate900 = Color(0xFF0F172A);
 
 class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({super.key});
+  /// اگر مقدار داشته باشد، فرم هوم همان فاکتور را برای ویرایش باز می‌کند
+  final InvoiceModel? editInvoice;
+  const DashboardScreen({super.key, this.editInvoice});
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -45,6 +48,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Form state — متصل به دیتابیس واقعی (§29)
+  String? _editId;
   String _customerName = '';
   String _customerPhone = '';
   String _invoiceNumber = '۱';
@@ -63,6 +67,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _depositAmount = 0;
   double _prevDebtAmount = 0;
   int? _selectedRow;
+  /// با هر بار load ویرایش افزایش می‌یابد تا فیلدها دوباره ساخته شوند
+  int _formGen = 0;
+
+  bool get _isEditing => _editId != null;
 
   @override
   void initState() {
@@ -72,12 +80,89 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _items = [
       InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0),
     ];
-    // شماره بعدی از settings
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // ویرایش مستقیم از constructor
+      if (widget.editInvoice != null) {
+        _loadInvoiceForEdit(widget.editInvoice!);
+        return;
+      }
+      // ویرایش از provider (از صفحه پیش‌نمایش / لیست)
+      final req = ref.read(invoiceEditRequestProvider);
+      if (req != null) {
+        ref.read(invoiceEditRequestProvider.notifier).state = null;
+        _loadInvoiceForEdit(req);
+        return;
+      }
       final settings = ref.read(settingsProvider);
       if (settings.startingInvoiceNum > 0) {
-        setState(() => _invoiceNumber = PersianNumberFormatter.toPersian(settings.startingInvoiceNum.toString()));
+        setState(() => _invoiceNumber =
+            PersianNumberFormatter.toPersian(settings.startingInvoiceNum.toString()));
       }
+    });
+  }
+
+  /// پر کردن فرم هوم با داده فاکتور برای ویرایش (همان UI داشبورد)
+  void _loadInvoiceForEdit(InvoiceModel e) {
+    setState(() {
+      _editId = e.id;
+      _customerName = e.customerName;
+      _customerPhone = e.customerPhone;
+      _invoiceNumber = PersianNumberFormatter.toPersian(e.number);
+      _dateLabel = e.date.isNotEmpty ? PersianNumberFormatter.toPersian(e.date) : _todayLabel();
+      _items = e.items.isEmpty
+          ? [InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0)]
+          : e.items
+              .map(
+                (it) => InvoiceItemModel(
+                  id: it.id,
+                  title: it.title,
+                  quantity: it.quantity,
+                  unit: it.unit,
+                  unitPrice: it.unitPrice,
+                  totalPrice: it.totalPrice,
+                ),
+              )
+              .toList();
+      _invoiceType = e.type;
+      _paymentType = e.paymentType;
+      _hasDiscount = e.discountAmount > 0;
+      _discountAmount = e.discountAmount;
+      _discountIsPercent = e.discountPercent > 0;
+      _hasShipping = e.shippingFee > 0;
+      _shippingFee = e.shippingFee;
+      _hasDeposit = e.deposit > 0;
+      _depositAmount = e.deposit;
+      _hasPrevDebt = e.previousDebt > 0;
+      _prevDebtAmount = e.previousDebt;
+      _notes = e.notes;
+      _selectedRow = null;
+      _formGen++;
+    });
+  }
+
+  void _resetFormForNew({String? nextNumberFa}) {
+    setState(() {
+      _editId = null;
+      _customerName = '';
+      _customerPhone = '';
+      if (nextNumberFa != null) _invoiceNumber = nextNumberFa;
+      _dateLabel = _todayLabel();
+      _items = [
+        InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0),
+      ];
+      _hasShipping = false;
+      _hasDiscount = false;
+      _hasDeposit = false;
+      _hasPrevDebt = false;
+      _discountAmount = 0;
+      _shippingFee = 0;
+      _depositAmount = 0;
+      _prevDebtAmount = 0;
+      _notes = '';
+      _selectedRow = null;
+      _invoiceType = 'proforma';
+      _paymentType = 'cash';
+      _formGen++;
     });
   }
 
@@ -172,19 +257,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final card = selectedCard?.cardNumber ??
         (biz.bankCards.isNotEmpty ? biz.bankCards.first : '');
 
-    String numEn = _invoiceNumber;
-    const persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    for (int i = 0; i < 10; i++) {
-      numEn = numEn.replaceAll(persian[i], english[i]);
-    }
+    String numEn = _faToEn(_invoiceNumber);
     final jalaliEn = JalaliHelper.getTodayJalali();
-    final jalali = PersianNumberFormatter.toPersian(jalaliEn);
+    // اگر در حالت ویرایش تاریخ قبلی را نگه داریم
+    final dateToStore = _isEditing && _dateLabel.isNotEmpty
+        ? _faToEn(_dateLabel.replaceAll('-', '/'))
+        : jalaliEn;
+    final jalaliFa = PersianNumberFormatter.toPersian(dateToStore);
+
+    InvoiceModel? existing;
+    if (_editId != null) {
+      for (final i in ref.read(invoiceListProvider)) {
+        if (i.id == _editId) {
+          existing = i;
+          break;
+        }
+      }
+    }
+
+    final paid = _paymentType == 'cash'
+        ? _finalTotal
+        : (_isEditing ? (existing?.paidAmount ?? _depositAmount) : _depositAmount);
+    final remaining = _paymentType == 'cash'
+        ? 0.0
+        : (_finalTotal - paid).clamp(0, double.infinity);
 
     final inv = InvoiceModel(
-      id: 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      id: _editId ?? 'inv-${DateTime.now().millisecondsSinceEpoch}',
       number: numEn,
-      customerId: 'c-${DateTime.now().millisecondsSinceEpoch}',
+      customerId: existing?.customerId ?? 'c-${DateTime.now().millisecondsSinceEpoch}',
       customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
       customerPhone: _customerPhone.trim(),
       type: _invoiceType == 'sale'
@@ -193,8 +294,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       paymentType: _paymentType,
       status: _invoiceType == 'proforma'
           ? 'proforma'
-          : (_paymentType == 'cash' ? 'paid' : 'unpaid'),
-      date: jalali,
+          : (remaining <= 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid')),
+      date: jalaliFa,
       items: cleanItems,
       subtotal: _itemsTotal,
       discountPercent: _discountIsPercent ? _discountAmount : 0,
@@ -203,44 +304,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       previousDebt: _hasPrevDebt ? _prevDebtAmount : 0,
       deposit: _hasDeposit ? _depositAmount : 0,
       totalAmount: _finalTotal,
-      paidAmount: _paymentType == 'cash' ? _finalTotal : _depositAmount,
-      remainingAmount: _paymentType == 'cash'
-          ? 0
-          : (_finalTotal - _depositAmount).clamp(0, double.infinity),
+      paidAmount: paid.toDouble(),
+      remainingAmount: remaining.toDouble(),
       notes: _notes,
-      cardNumber: card,
-      createdAt: jalali,
+      cardNumber: card.isNotEmpty ? card : (existing?.cardNumber ?? ''),
+      createdAt: existing?.createdAt ?? jalaliFa,
     );
 
     ref.read(invoiceListProvider.notifier).saveInvoice(inv);
 
     // آماده‌سازی فرم برای فاکتور بعدی
     final nextNum = (int.tryParse(numEn) ?? 1004) + 1;
-    setState(() {
-      _invoiceNumber = PersianNumberFormatter.toPersian(nextNum.toString());
-      _customerName = '';
-      _customerPhone = '';
-      _items = [
-        InvoiceItemModel(
-          id: '1',
-          title: '',
-          quantity: 1,
-          unit: 'عدد',
-          unitPrice: 0,
-          totalPrice: 0,
-        ),
-      ];
-      _hasShipping = false;
-      _hasDiscount = false;
-      _hasDeposit = false;
-      _hasPrevDebt = false;
-      _discountAmount = 0;
-      _shippingFee = 0;
-      _depositAmount = 0;
-      _prevDebtAmount = 0;
-      _notes = '';
-      _selectedRow = null;
-    });
+    _resetFormForNew(
+      nextNumberFa: PersianNumberFormatter.toPersian(nextNum.toString()),
+    );
 
     // باز کردن صفحه نمایش فاکتور + اشتراک
     Navigator.of(context).push(
@@ -256,41 +333,91 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final business = ref.watch(businessProvider);
     final shopName = business.shopName.isNotEmpty ? business.shopName : 'فاکتور ساز روبی';
 
+    // گوش دادن به درخواست ویرایش از صفحات دیگر
+    ref.listen<InvoiceModel?>(invoiceEditRequestProvider, (prev, next) {
+      if (next != null) {
+        ref.read(invoiceEditRequestProvider.notifier).state = null;
+        _loadInvoiceForEdit(next);
+      }
+    });
+
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: dark ? _slate900 : Colors.white,
       drawer: _buildDrawer(),
-      // هدر دقیقاً مثل عکس: سفید، ستاره/لوگو چپ، عنوان وسط، همبرگر راست
+      // هدر: در حالت ویرایش عنوان «ویرایش فاکتور» + دکمه انصراف
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: AppBar(
-          backgroundColor: dark ? _slate800 : Colors.white,
+          backgroundColor: dark ? _slate800 : (_isEditing ? _orange : Colors.white),
           elevation: 0,
           centerTitle: true,
           leadingWidth: 48,
-          leading: InkWell(
-            onTap: () => _scaffoldKey.currentState?.openDrawer(),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image.asset('assets/images/logo.png',
-                  width: 24, height: 24, fit: BoxFit.cover,
-                  errorBuilder: (_,__,___) => const Icon(Icons.auto_awesome, color: Color(0xFFFBBF24), size: 22),
+          leading: _isEditing
+              ? IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () {
+                    final settings = ref.read(settingsProvider);
+                    _resetFormForNew(
+                      nextNumberFa: PersianNumberFormatter.toPersian(
+                        settings.startingInvoiceNum.toString(),
+                      ),
+                    );
+                  },
+                  tooltip: 'انصراف از ویرایش',
+                )
+              : InkWell(
+                  onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.auto_awesome, color: Color(0xFFFBBF24), size: 22),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+          title: Text(
+            _isEditing
+                ? 'ویرایش فاکتور #${PersianNumberFormatter.toPersian(_invoiceNumber)}'
+                : shopName,
+            style: TextStyle(
+              color: _isEditing || dark ? Colors.white : _slate800,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
             ),
           ),
-          title: Text(shopName, style: TextStyle(color: dark? Colors.white: _slate800, fontWeight: FontWeight.w900, fontSize: 16)),
           actions: [
-            IconButton(icon: Icon(Icons.menu, color: dark? Colors.white: _slate700), onPressed: () => _scaffoldKey.currentState?.openDrawer()),
+            if (_isEditing)
+              TextButton(
+                onPressed: _saveInvoice,
+                child: const Text(
+                  'ذخیره',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                ),
+              )
+            else
+              IconButton(
+                icon: Icon(Icons.menu, color: dark ? Colors.white : _slate700),
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              ),
           ],
-          bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(height: 1, color: dark? _slate700: _cardGrayBorder)),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(height: 1, color: dark ? _slate700 : _cardGrayBorder),
+          ),
         ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
         child: Column(
+          key: ValueKey('form-$_formGen'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 1) دکمه سربرگ — نارنجی روبی (عکس آبی بود، روبی نارنجی)
@@ -444,25 +571,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               _tableCell(
                                 flex: 1,
                                 dark: dark,
-                                child: TextField(
-                                  controller: TextEditingController(
-                                    text: it.quantity == it.quantity.roundToDouble()
-                                        ? PersianNumberFormatter.toPersian(it.quantity.toInt().toString())
-                                        : PersianNumberFormatter.toPersian(it.quantity.toString()),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (v) {
-                                    final en = _faToEn(v);
-                                    final q = double.tryParse(en) ?? 1;
-                                    _updateItem(idx, qty: q);
-                                  },
+                                child: GestureDetector(
                                   onTap: () => setState(() => _selectedRow = idx),
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                                  child: ReplaceOnTypeNumberField(
+                                    key: ValueKey('qty-${it.id}-$_formGen'),
+                                    value: it.quantity,
+                                    onChanged: (q) {
+                                      setState(() => _selectedRow = idx);
+                                      _updateItem(idx, qty: q <= 0 ? 0 : q);
+                                    },
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: dark ? Colors.white : _slate800,
+                                    ),
                                   ),
-                                  style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
-                                  textAlign: TextAlign.center,
                                 ),
                               ),
                               _tableCell(
@@ -502,25 +625,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               _tableCell(
                                 flex: 2,
                                 dark: dark,
-                                child: TextField(
-                                  controller: TextEditingController(
-                                    text: it.unitPrice == 0
-                                        ? ''
-                                        : PersianNumberFormatter.toPersian(it.unitPrice.toInt().toString()),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (v) {
-                                    final en = _faToEn(v);
-                                    final p = double.tryParse(en) ?? 0;
-                                    _updateItem(idx, price: p);
-                                  },
+                                child: GestureDetector(
                                   onTap: () => setState(() => _selectedRow = idx),
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                                  child: ReplaceOnTypeNumberField(
+                                    key: ValueKey('price-${it.id}-$_formGen'),
+                                    value: it.unitPrice,
+                                    emptyDisplay: '\u0000',
+                                    onChanged: (p) {
+                                      setState(() => _selectedRow = idx);
+                                      _updateItem(idx, price: p);
+                                    },
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: dark ? Colors.white : _slate800,
+                                    ),
                                   ),
-                                  style: TextStyle(fontSize: 11, color: dark ? Colors.white : _slate800),
-                                  textAlign: TextAlign.center,
                                 ),
                               ),
                               _tableCell(
@@ -770,6 +890,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               dark: dark,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: TextField(
+                key: ValueKey('notes-$_formGen'),
+                controller: TextEditingController(text: _notes)
+                  ..selection = TextSelection.collapsed(offset: _notes.length),
                 onChanged: (v) => _notes = v,
                 maxLines: 3,
                 minLines: 1,
@@ -950,18 +1073,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             }),
             const SizedBox(height: 10),
 
-            // 9) ذخیره و اشتراک‌گذاری
+            // 9) ذخیره و اشتراک‌گذاری / ذخیره تغییرات
             InkWell(
               onTap: _saveInvoice,
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 height: 56,
-                decoration: BoxDecoration(color: dark? _slate800: _cardGray, borderRadius: BorderRadius.circular(12), border: Border.all(color: dark? _slate700: _cardGrayBorder)),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  const Icon(Icons.share, color: _slate600, size: 20),
-                  const SizedBox(width: 8),
-                  Text('ذخیره و اشتراک گذاری فاکتور', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark? Colors.white: _slate800)),
-                ]),
+                decoration: BoxDecoration(
+                  color: _isEditing
+                      ? _orange
+                      : (dark ? _slate800 : _cardGray),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _isEditing
+                        ? _orange
+                        : (dark ? _slate700 : _cardGrayBorder),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _isEditing ? Icons.check : Icons.share,
+                      color: _isEditing ? Colors.white : _slate600,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isEditing ? 'ذخیره تغییرات' : 'ذخیره و اشتراک گذاری فاکتور',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: _isEditing
+                            ? Colors.white
+                            : (dark ? Colors.white : _slate800),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -986,31 +1135,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _customerField({required String label, required String value, required String hint, required Function(String) onChanged, required bool dark, TextInputType? keyboardType}) {
+  Widget _customerField({
+    required String label,
+    required String value,
+    required String hint,
+    required Function(String) onChanged,
+    required bool dark,
+    TextInputType? keyboardType,
+  }) {
     return Row(
       children: [
-        SizedBox(width: 90, child: Text(label, style: TextStyle(fontSize: 11, color: dark? _slate400: _slate500))),
-        Expanded(child: Container(
-          height: 36,
-          decoration: BoxDecoration(color: dark? _slate700: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: dark? _slate700: _cardGrayBorder)),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: TextField(
-            onChanged: onChanged,
-            keyboardType: keyboardType,
-            textDirection: keyboardType == TextInputType.phone
-                ? TextDirection.ltr
-                : TextDirection.rtl,
-            textAlign: TextAlign.right,
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              hintText: hint,
-              hintTextDirection: TextDirection.rtl,
-              hintStyle: const TextStyle(fontSize: 11, color: _slate400),
-              isDense: true,
+        SizedBox(
+          width: 90,
+          child: Text(label, style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500)),
+        ),
+        Expanded(
+          child: Container(
+            height: 36,
+            decoration: BoxDecoration(
+              color: dark ? _slate700 : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: dark ? _slate700 : _cardGrayBorder),
             ),
-            style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TextField(
+              // key باعث می‌شود با ورود به حالت ویرایش مقدار جدید لود شود
+              key: ValueKey('$label-$value-$_formGen'),
+              controller: TextEditingController(text: value)
+                ..selection = TextSelection.collapsed(offset: value.length),
+              onChanged: onChanged,
+              keyboardType: keyboardType,
+              textDirection:
+                  keyboardType == TextInputType.phone ? TextDirection.ltr : TextDirection.rtl,
+              textAlign: TextAlign.right,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: hint,
+                hintTextDirection: TextDirection.rtl,
+                hintStyle: const TextStyle(fontSize: 11, color: _slate400),
+                isDense: true,
+              ),
+              style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
+            ),
           ),
-        )),
+        ),
       ],
     );
   }
