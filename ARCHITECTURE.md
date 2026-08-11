@@ -56,12 +56,15 @@ flutter pub get
 flutter run
 ```
 
-### ساخت نسخه Release APK برای اندروید:
+### ساخت نسخه‌های Release اندروید:
 ```bash
 ./build_apk.sh
 # یا با فرمان مستقیم فلاتر:
-flutter build apk --release
+flutter build apk --release --split-per-abi
 ```
 
-فایل خروجی APK در مسیر زیر قرار خواهد گرفت:
-`build/app/outputs/flutter-apk/app-release.apk`
+APKهای کم‌حجم در مسیر زیر قرار می‌گیرند:
+`build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
+
+برای Google Play از AAB استفاده کنید:
+`build/app/outputs/bundle/release/app-release.aab`

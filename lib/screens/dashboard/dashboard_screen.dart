@@ -854,7 +854,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
                       child: Image.asset(
-                        'assets/images/logo.png',
+                        'assets/images/logo.webp',
                         width: 24,
                         height: 24,
                         fit: BoxFit.cover,

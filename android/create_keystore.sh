@@ -68,13 +68,13 @@ cat <<EOF
   Config   : android/$PROPS
 
 از ریشه پروژه بسازید:
-  flutter build apk --release
+  flutter build apk --release --split-per-abi
   flutter build appbundle --release   # خروجی پیشنهادی Google Play
 
-خروجی APK : build/app/outputs/flutter-apk/app-release.apk
-خروجی AAB : build/app/outputs/bundle/release/app-release.aab
+خروجی APK اصلی : build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+خروجی AAB       : build/app/outputs/bundle/release/app-release.aab
 
 بررسی امضا:
-  apksigner verify --verbose build/app/outputs/flutter-apk/app-release.apk
+  apksigner verify --verbose build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
   jarsigner -verify -verbose -certs build/app/outputs/bundle/release/app-release.aab
 EOF

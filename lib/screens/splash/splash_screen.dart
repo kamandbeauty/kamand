@@ -104,7 +104,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       children: [
                         const SizedBox(height: 80),
                         Image.asset(
-                          'assets/images/logo.png',
+                          'assets/images/logo.webp',
                           width: 200,
                           height: 200,
                           errorBuilder: (_, __, ___) => const Icon(

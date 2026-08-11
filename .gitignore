@@ -6,20 +6,6 @@
 .pub/
 build/
 
-# Node / Web Preview
-node_modules/
-web_preview/node_modules/
-web_preview/dist/
-.npm/
-
-# IDE / OS
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-
 # Android / local machine
 .gradle/
 local.properties
@@ -28,8 +14,14 @@ capture*.png
 *.aab
 release/
 release-artifacts/
-release_package/*.zip
-web_preview/public/FactorRuby*
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
 
 # Signing material and certificates — never commit these
 android/key.properties
@@ -47,7 +39,3 @@ android/key.properties
 *.credentials
 *.secrets
 .secrets/
-
-# Keep the repository's existing source release archive exceptions.
-!release_package/FactorRuby-v5.8.0.apk
-!release_package/FactorRuby-v5.8.0-release.zip
