@@ -60,9 +60,24 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Check Gradle Wrapper
-        working-directory: android
-        run: ./gradlew --version
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(awk '$1 == "version:" { print $2; exit }' pubspec.yaml)"
+
+          if [[ "$version" != *+* ]]; then
+            echo "::error::pubspec.yaml version must use name+code format."
+            exit 1
+          fi
+
+          version_name="${version%%+*}"
+          version_code="${version##*+}"
+
+          echo "name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "Building version $version_name (versionCode $version_code)."
 
       - name: Restore release keystore
         id: keystore
@@ -84,42 +99,38 @@ jobs:
 
           echo "path=$keystore_path" >> "$GITHUB_OUTPUT"
 
-      - name: Read app version
-        id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="$(awk '$1 == "version:" { print $2; exit }' pubspec.yaml)"
+      - name: Check Gradle Wrapper
+        working-directory: android
+        run: ./gradlew --version
 
-          if [[ "$version" != *+* ]]; then
-            echo "::error::pubspec.yaml version must use name+code format."
-            exit 1
-          fi
-
-          version_name="${version%%+*}"
-          version_code="${version##*+}"
-
-          echo "name=$version_name" >> "$GITHUB_OUTPUT"
-          echo "code=$version_code" >> "$GITHUB_OUTPUT"
-          echo "Building version $version_name (versionCode $version_code)."
+      - name: Clean Android build
+        working-directory: android
+        env:
+          RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew clean
 
       - name: Build signed release APK
+        working-directory: android
         env:
           RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: flutter build apk --release --split-per-abi
+        run: ./gradlew assembleRelease
 
       - name: Build signed release AAB
+        working-directory: android
         env:
           RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: flutter build appbundle --release
+        run: ./gradlew bundleRelease
 
-      - name: Name release artifacts
+      - name: Collect release artifacts
         id: artifacts
         env:
           VERSION_NAME: ${{ steps.version.outputs.name }}
@@ -127,51 +138,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p release-artifacts
-          shopt -s nullglob
 
-          apk_files=(build/app/outputs/flutter-apk/app-*-release.apk)
+          apk="build/app/outputs/apk/release/app-release.apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
 
-          [[ ${#apk_files[@]} -gt 0 ]] || {
-            echo "::error::No split release APK was generated."
+          mkdir -p release-artifacts
+
+          [[ -f "$apk" ]] || {
+            echo "::error::Release APK was not generated at $apk."
             exit 1
           }
 
           [[ -f "$aab" ]] || {
-            echo "::error::Release AAB was not generated."
+            echo "::error::Release AAB was not generated at $aab."
             exit 1
           }
 
-          arm64_artifact=""
+          named_apk="release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-release.apk"
+          named_aab="release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-release.aab"
 
-          for apk in "${apk_files[@]}"; do
-            abi="${apk##*/app-}"
-            abi="${abi%-release.apk}"
+          cp "$apk" "$named_apk"
+          cp "$aab" "$named_aab"
 
-            artifact="release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-${abi}-release.apk"
-            cp "$apk" "$artifact"
-
-            if [[ "$abi" == "arm64-v8a" ]]; then
-              arm64_artifact="$artifact"
-            fi
-          done
-
-          [[ -n "$arm64_artifact" ]] || {
-            echo "::error::arm64-v8a APK was not generated."
-            exit 1
-          }
-
-          cp "$aab" \
-            "release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-release.aab"
-
-          echo "arm64_path=$arm64_artifact" >> "$GITHUB_OUTPUT"
+          echo "apk_path=$named_apk" >> "$GITHUB_OUTPUT"
+          echo "aab_path=$named_aab" >> "$GITHUB_OUTPUT"
 
       - name: Verify APK and AAB signatures
         env:
-          APK_DIR: build/app/outputs/flutter-apk
-          PRIMARY_APK_PATH: ${{ steps.artifacts.outputs.arm64_path }}
-          AAB_PATH: build/app/outputs/bundle/release/app-release.aab
+          APK_PATH: ${{ steps.artifacts.outputs.apk_path }}
+          AAB_PATH: ${{ steps.artifacts.outputs.aab_path }}
           EXPECTED_APPLICATION_ID: com.ruby.factor_ruby
           EXPECTED_VERSION_NAME: ${{ steps.version.outputs.name }}
           EXPECTED_VERSION_CODE: ${{ steps.version.outputs.code }}
@@ -180,7 +175,6 @@ jobs:
           set -euo pipefail
 
           sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
-
           apksigner_bin="$(command -v apksigner || true)"
 
           if [[ -z "$apksigner_bin" && -n "$sdk_root" ]]; then
@@ -195,28 +189,26 @@ jobs:
             exit 1
           fi
 
-          shopt -s nullglob
-          apk_files=("$APK_DIR"/app-*-release.apk)
+          apk_verify_log="$RUNNER_TEMP/apksigner-verify.txt"
 
-          [[ ${#apk_files[@]} -gt 0 ]] || {
-            echo "::error::No APK found for verification."
-            exit 1
-          }
+          "$apksigner_bin" verify --verbose "$APK_PATH" \
+            > "$apk_verify_log" 2>&1
 
-          for apk in "${apk_files[@]}"; do
-            "$apksigner_bin" verify --verbose "$apk"
-          done
+          cat "$apk_verify_log"
 
-          if ! unzip -l "$AAB_PATH" \
-            | grep -Eiq 'META-INF/[^ ]+\.(RSA|DSA|EC)'; then
-            echo "::error::The AAB does not contain a signing certificate entry."
+          if ! grep -Eiq 'Verified using v[234] scheme.*: true' "$apk_verify_log"; then
+            echo "::error::APK signature verification did not confirm a v2/v3/v4 signature."
             exit 1
           fi
 
-          jarsigner -verify -verbose -certs "$AAB_PATH" \
-            > "$RUNNER_TEMP/aab-signature.txt" 2>&1
+          echo "APK signature verification passed."
 
-          grep -q "jar verified" "$RUNNER_TEMP/aab-signature.txt"
+          aab_verify_log="$RUNNER_TEMP/jarsigner-verify.txt"
+
+          jarsigner -verify -verbose -certs "$AAB_PATH" \
+            > "$aab_verify_log" 2>&1
+
+          grep -Eiq 'jar verified' "$aab_verify_log"
           echo "AAB signature verification passed."
 
           apkanalyzer_bin="$(command -v apkanalyzer || true)"
@@ -229,22 +221,22 @@ jobs:
           fi
 
           if [[ -n "$apkanalyzer_bin" ]]; then
-            [[ "$("$apkanalyzer_bin" manifest application-id "$PRIMARY_APK_PATH")" \
+            [[ "$("$apkanalyzer_bin" manifest application-id "$APK_PATH")" \
               == "$EXPECTED_APPLICATION_ID" ]]
 
-            [[ "$("$apkanalyzer_bin" manifest version-name "$PRIMARY_APK_PATH")" \
+            [[ "$("$apkanalyzer_bin" manifest version-name "$APK_PATH")" \
               == "$EXPECTED_VERSION_NAME" ]]
 
-            [[ "$("$apkanalyzer_bin" manifest version-code "$PRIMARY_APK_PATH")" \
+            [[ "$("$apkanalyzer_bin" manifest version-code "$APK_PATH")" \
               == "$EXPECTED_VERSION_CODE" ]]
 
-            if "$apkanalyzer_bin" manifest print "$PRIMARY_APK_PATH" \
+            if "$apkanalyzer_bin" manifest print "$APK_PATH" \
               | grep -q 'android:debuggable="true"'; then
               echo "::error::The release APK is debuggable."
               exit 1
             fi
 
-            echo "APK applicationId, version and debuggable flag verified."
+            echo "APK metadata and non-debuggable state verified."
           else
             echo "::warning::apkanalyzer is not available; metadata checks were skipped."
           fi
