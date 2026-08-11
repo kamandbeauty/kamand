@@ -1,6 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
+  static String? get _fontFamily {
+    try {
+      return GoogleFonts.vazirmatn().fontFamily;
+    } catch (_) {
+      return 'Vazirmatn';
+    }
+  }
+
+  static TextTheme _textTheme(Brightness b) {
+    final base = b == Brightness.dark ? ThemeData.dark() : ThemeData.light();
+    try {
+      return GoogleFonts.vazirmatnTextTheme(base.textTheme).apply(
+        bodyColor: b == Brightness.dark ? Colors.white : RubyTextPrimary,
+        displayColor: b == Brightness.dark ? Colors.white : RubyTextPrimary,
+      );
+    } catch (_) {
+      return base.textTheme;
+    }
+  }
+
   // ─────────────────────────────────────────
   // Ruby Brand — Theme Tokens (Spec §22)
   // ─────────────────────────────────────────
@@ -41,19 +62,20 @@ class AppTheme {
       surface: Colors.white,
       brightness: Brightness.light,
     ),
-    fontFamily: 'Vazirmatn',
+    fontFamily: _fontFamily,
+    textTheme: _textTheme(Brightness.light),
     appBarTheme: AppBarTheme(
       backgroundColor: accent,
       elevation: 0,
       centerTitle: true,
       scrolledUnderElevation: 0,
       foregroundColor: Colors.white,
-      iconTheme: IconThemeData(color: Colors.white),
+      iconTheme: const IconThemeData(color: Colors.white),
       titleTextStyle: TextStyle(
         color: Colors.white,
         fontSize: 18,
         fontWeight: FontWeight.w900,
-        fontFamily: 'Vazirmatn',
+        fontFamily: _fontFamily,
       ),
     ),
     cardTheme: CardThemeData(
@@ -73,10 +95,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        textStyle: const TextStyle(
+        textStyle: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          fontFamily: 'Vazirmatn',
+          fontFamily: _fontFamily,
         ),
       ),
     ),
@@ -112,18 +134,19 @@ class AppTheme {
       surface: cardDark,
       brightness: Brightness.dark,
     ),
-    fontFamily: 'Vazirmatn',
-    appBarTheme: const AppBarTheme(
+    fontFamily: _fontFamily,
+    textTheme: _textTheme(Brightness.dark),
+    appBarTheme: AppBarTheme(
       backgroundColor: cardDark,
       elevation: 0,
       centerTitle: true,
       scrolledUnderElevation: 0,
-      iconTheme: IconThemeData(color: Colors.white),
+      iconTheme: const IconThemeData(color: Colors.white),
       titleTextStyle: TextStyle(
         color: Colors.white,
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        fontFamily: 'Vazirmatn',
+        fontFamily: _fontFamily,
       ),
     ),
     cardTheme: CardThemeData(
@@ -143,10 +166,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        textStyle: const TextStyle(
+        textStyle: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          fontFamily: 'Vazirmatn',
+          fontFamily: _fontFamily,
         ),
       ),
     ),

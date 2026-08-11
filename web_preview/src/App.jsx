@@ -424,7 +424,11 @@ export default function App() {
         {activeTab === 'products' && (
           <ProductManagementView
             products={products}
-            onAddProduct={(p) => setProducts([...products, p])}
+            onAddProduct={(p) => {
+              const next = [...products, p];
+              setProducts(next);
+              saveState('products', next);
+            }}
             onEditProduct={(p) => setProducts(products.map(item => item.id === p.id ? p : item))}
             onDeleteProduct={(id) => setProducts(products.filter(item => item.id !== id))}
             onBack={() => setActiveTab('dashboard')}

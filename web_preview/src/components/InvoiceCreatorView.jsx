@@ -30,7 +30,8 @@ export default function InvoiceCreatorView({
   onSelectTab,
   onAddTab,
   onOpenWindowsModal,
-  onUpdateTabState
+  onUpdateTabState,
+  onAddProduct
 }) {
   const [number, setNumber] = useState(editingInvoice?.number || '۱');
   const [customerName, setCustomerName] = useState(editingInvoice?.customerName || '');
@@ -499,7 +500,7 @@ export default function InvoiceCreatorView({
         </div>
 
         {/* ایجاد سطر + کاتالوگ */}
-        <div className="h-11 flex items-center justify-end gap-4 px-3 border-t border-slate-100 dark:border-slate-700">
+        <div className="h-12 flex items-center justify-between gap-2 px-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/30">
           <button
             type="button"
             onClick={() => setShowCatalogModal(true)}
@@ -508,10 +509,42 @@ export default function InvoiceCreatorView({
             <Package className="w-3.5 h-3.5" />
             <span>کاتالوگ</span>
           </button>
+          {items.some((it, i) => i === selectedRow && String(it.title||'').trim()) && (
+            <button
+              type="button"
+              onClick={() => {
+                const it = items[selectedRow];
+                if (!it || !String(it.title||'').trim()) return;
+                // bubble via custom event - parent may not have handler; use alert fallback
+                const name = String(it.title).trim();
+                const exists = products.some(p => p.name === name);
+                if (exists) { alert('این کالا از قبل در کاتالوگ هست'); return; }
+                // Need onAddProduct prop - check
+                if (typeof onAddProduct === 'function') {
+                  onAddProduct({
+                    id: `p-${Date.now()}`,
+                    code: `${100+products.length+1}`,
+                    name,
+                    unit: it.unit || 'عدد',
+                    buyPrice: 0,
+                    sellPrice: parseFloat(it.unitPrice)||0,
+                    stock: 0,
+                    notes: ''
+                  });
+                  alert(`«${name}» به کاتالوگ اضافه شد`);
+                } else {
+                  alert('برای افزودن به کاتالوگ، از صفحه کالاها استفاده کنید');
+                }
+              }}
+              className="flex items-center gap-1 text-[#F97316] font-extrabold text-[12px] px-2"
+            >
+              <span>افزودن به کاتالوگ</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={addItemRow}
-            className="flex items-center gap-1.5 text-[#F97316] font-extrabold text-[13px]"
+            className="flex items-center gap-1.5 text-[#F97316] font-extrabold text-[13px] mr-auto"
           >
             <span>ایجاد</span>
             <span className="w-[22px] h-[22px] rounded-md bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">

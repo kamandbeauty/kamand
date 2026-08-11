@@ -38,6 +38,9 @@ dependencies:
   shamsi_date: ^1.0.2
   intl: ^0.20.2
 
+  # فونت فارسی زیبا
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
