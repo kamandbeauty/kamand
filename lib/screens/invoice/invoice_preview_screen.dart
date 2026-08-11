@@ -760,34 +760,68 @@ if (inv.cardNumber.isNotEmpty) ...[
                           }),
                         ],
                         const SizedBox(height: 20),
-                        // در فاکتور فقط مهر فروشنده نمایش داده می‌شود؛ امضا حذف شده است.
+                        // یک گزینهٔ واحد «مهر و امضا» هر دو مورد را پایین فاکتور نشان می‌دهد.
                         Builder(builder: (_) {
                           final settings = ref.watch(settingsProvider);
                           final showStamp = settings.showStamp && biz.stampPath.isNotEmpty;
-                          return Column(
+                          final showSignature = settings.showStamp && biz.signaturePath.isNotEmpty;
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              if (showStamp)
-                                Container(
-                                  height: 88,
-                                  width: double.infinity,
-                                  alignment: Alignment.center,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF1F5F9),
-                                  ),
-                                  child: Image.file(
-                                    File(biz.stampPath),
-                                    height: 80,
-                                    fit: BoxFit.contain,
-                                    filterQuality: FilterQuality.high,
-                                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                  ),
-                                )
-                              else
-                                const SizedBox(height: 56),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'مهر فروشنده',
-                                style: TextStyle(fontSize: 10, color: _slate400),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    if (showStamp)
+                                      Container(
+                                        height: 88,
+                                        width: double.infinity,
+                                        alignment: Alignment.center,
+                                        color: const Color(0xFFF1F5F9),
+                                        child: Image.file(
+                                          File(biz.stampPath),
+                                          height: 80,
+                                          fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.high,
+                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                        ),
+                                      )
+                                    else
+                                      const SizedBox(height: 56),
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'مهر فروشنده',
+                                      style: TextStyle(fontSize: 10, color: _slate400),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    if (showSignature)
+                                      Container(
+                                        height: 88,
+                                        width: double.infinity,
+                                        alignment: Alignment.center,
+                                        color: const Color(0xFFF1F5F9),
+                                        child: Image.file(
+                                          File(biz.signaturePath),
+                                          height: 80,
+                                          fit: BoxFit.contain,
+                                          filterQuality: FilterQuality.high,
+                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                        ),
+                                      )
+                                    else
+                                      const SizedBox(height: 56),
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'امضای فروشنده',
+                                      style: TextStyle(fontSize: 10, color: _slate400),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           );

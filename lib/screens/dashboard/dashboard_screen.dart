@@ -1528,15 +1528,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 return Column(
                   children: [
                     _checkRow(
-                      label: 'نمایش مهر روی فاکتور',
+                      label: 'نمایش مهر و امضا روی فاکتور',
                       value: st.showStamp,
                       dark: dark,
                       onChanged: (v) {
+                        final enabled = v ?? false;
                         ref.read(settingsProvider.notifier).updateSettings(
-                              st.copyWith(showStamp: v ?? false),
+                              st.copyWith(showStamp: enabled, showSignature: enabled),
                             );
                       },
-                      trailing: biz.stampPath.isEmpty
+                      trailing: (biz.stampPath.isEmpty || biz.signaturePath.isEmpty)
                           ? TextButton(
                               onPressed: () {
                                 Navigator.push(
