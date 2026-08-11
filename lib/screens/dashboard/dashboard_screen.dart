@@ -1537,7 +1537,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               st.copyWith(showStamp: enabled, showSignature: enabled),
                             );
                       },
-                      trailing: (biz.stampPath.isEmpty || biz.signaturePath.isEmpty)
+                      trailing: (biz.stampPath.isEmpty && biz.signaturePath.isEmpty)
                           ? TextButton(
                               onPressed: () {
                                 Navigator.push(

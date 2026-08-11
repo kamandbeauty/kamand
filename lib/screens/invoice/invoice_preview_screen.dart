@@ -760,68 +760,35 @@ if (inv.cardNumber.isNotEmpty) ...[
                           }),
                         ],
                         const SizedBox(height: 20),
-                        // یک گزینهٔ واحد «مهر و امضا» هر دو مورد را پایین فاکتور نشان می‌دهد.
+                        // مهر و امضا از یک تصویر واحد در پایین فاکتور نمایش داده می‌شود.
                         Builder(builder: (_) {
                           final settings = ref.watch(settingsProvider);
-                          final showStamp = settings.showStamp && biz.stampPath.isNotEmpty;
-                          final showSignature = settings.showStamp && biz.signaturePath.isNotEmpty;
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                          final markPath = biz.stampPath.isNotEmpty
+                              ? biz.stampPath
+                              : biz.signaturePath;
+                          final showMark = settings.showStamp && markPath.isNotEmpty;
+                          return Column(
                             children: [
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    if (showStamp)
-                                      Container(
-                                        height: 88,
-                                        width: double.infinity,
-                                        alignment: Alignment.center,
-                                        color: const Color(0xFFF1F5F9),
-                                        child: Image.file(
-                                          File(biz.stampPath),
-                                          height: 80,
-                                          fit: BoxFit.contain,
-                                          filterQuality: FilterQuality.high,
-                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                        ),
-                                      )
-                                    else
-                                      const SizedBox(height: 56),
-                                    const SizedBox(height: 6),
-                                    const Text(
-                                      'مهر فروشنده',
-                                      style: TextStyle(fontSize: 10, color: _slate400),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    if (showSignature)
-                                      Container(
-                                        height: 88,
-                                        width: double.infinity,
-                                        alignment: Alignment.center,
-                                        color: const Color(0xFFF1F5F9),
-                                        child: Image.file(
-                                          File(biz.signaturePath),
-                                          height: 80,
-                                          fit: BoxFit.contain,
-                                          filterQuality: FilterQuality.high,
-                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                        ),
-                                      )
-                                    else
-                                      const SizedBox(height: 56),
-                                    const SizedBox(height: 6),
-                                    const Text(
-                                      'امضای فروشنده',
-                                      style: TextStyle(fontSize: 10, color: _slate400),
-                                    ),
-                                  ],
-                                ),
+                              if (showMark)
+                                Container(
+                                  height: 96,
+                                  width: double.infinity,
+                                  alignment: Alignment.center,
+                                  color: const Color(0xFFF1F5F9),
+                                  child: Image.file(
+                                    File(markPath),
+                                    height: 88,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
+                                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                  ),
+                                )
+                              else
+                                const SizedBox(height: 56),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'مهر و امضا',
+                                style: TextStyle(fontSize: 10, color: _slate400),
                               ),
                             ],
                           );
