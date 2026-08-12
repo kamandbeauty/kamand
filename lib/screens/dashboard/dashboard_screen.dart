@@ -13,7 +13,6 @@ import '../../providers/customer_provider.dart';
 import '../../providers/product_provider.dart';
 import '../customer/customer_list_screen.dart';
 import '../product/product_list_screen.dart';
-import '../financial/financial_dashboard_screen.dart';
 import '../settings/settings_screen.dart';
 import '../invoice/invoice_list_screen.dart';
 import '../customize/header_customize_screen.dart';
@@ -22,6 +21,8 @@ import '../invoice/invoice_preview_screen.dart';
 import '../../providers/bank_card_provider.dart';
 import '../../core/utils/replace_on_type_field.dart';
 import '../../core/utils/thousand_separator_formatter.dart';
+import '../../core/utils/prefs_store.dart';
+import '../../core/utils/prefs_store.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -173,24 +174,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _activeTabId = first.id;
     _tabSeq = 2;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ویرایش مستقیم از constructor
-      if (widget.editInvoice != null) {
-        _loadInvoiceForEdit(widget.editInvoice!);
-        return;
-      }
-      // ویرایش از provider (از صفحه پیش‌نمایش / لیست)
-      final req = ref.read(invoiceEditRequestProvider);
-      if (req != null) {
-        ref.read(invoiceEditRequestProvider.notifier).state = null;
-        _loadInvoiceForEdit(req);
-        return;
-      }
-      final settings = ref.read(settingsProvider);
-      if (settings.startingInvoiceNum > 0) {
-        setState(() => _invoiceNumber =
-            PersianNumberFormatter.toPersian(settings.startingInvoiceNum.toString()));
-      }
+      _restoreInitialForm();
     });
+  }
+
+  Future<void> _restoreInitialForm() async {
+    // ویرایش مستقیم از constructor
+    if (widget.editInvoice != null) {
+      _loadInvoiceForEdit(widget.editInvoice!);
+      return;
+    }
+
+    // ویرایش از provider (از صفحه پیش‌نمایش / لیست)
+    final req = ref.read(invoiceEditRequestProvider);
+    if (req != null) {
+      ref.read(invoiceEditRequestProvider.notifier).state = null;
+      _loadInvoiceForEdit(req);
+      return;
+    }
+
+    // آخرین پیش‌نویس ذخیره‌شده بعد از بستن برنامه دوباره روی خانه باز می‌شود.
+    final draft = await PrefsStore.loadDraft();
+    if (draft != null && mounted) {
+      _loadInvoiceForEdit(draft, asDraft: true);
+      return;
+    }
+
+    final settings = ref.read(settingsProvider);
+    if (settings.startingInvoiceNum > 0 && mounted) {
+      setState(() => _invoiceNumber =
+          PersianNumberFormatter.toPersian(settings.startingInvoiceNum.toString()));
+    }
   }
 
   @override
@@ -230,9 +244,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   /// پر کردن فرم هوم با داده فاکتور برای ویرایش (همان UI داشبورد)
-  void _loadInvoiceForEdit(InvoiceModel e) {
+  void _loadInvoiceForEdit(InvoiceModel e, {bool asDraft = false}) {
     setState(() {
-      _editId = e.id;
+      _editId = asDraft ? null : e.id;
       _customerName = e.customerName == 'مشتری عمومی' ? '' : e.customerName;
       _customerPhone = e.customerPhone;
       _invoiceNumber = PersianNumberFormatter.toPersian(e.number);
@@ -303,6 +317,64 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+
+  Future<void> _persistDraft() async {
+    if (_editId != null) return;
+
+    final hasItems = _items.any(
+      (item) => item.title.trim().isNotEmpty || item.unitPrice > 0 || item.totalPrice > 0,
+    );
+    final hasExtra = _customerName.trim().isNotEmpty ||
+        _customerPhone.trim().isNotEmpty ||
+        _notes.trim().isNotEmpty ||
+        _hasShipping ||
+        _hasDiscount ||
+        _hasDeposit ||
+        _hasPrevDebt;
+
+    if (!hasItems && !hasExtra) {
+      await PrefsStore.clearDraft();
+      return;
+    }
+
+    final draftDate = _dateLabel.isNotEmpty ? _dateLabel : _todayLabel();
+    final draft = InvoiceModel(
+      id: 'draft-home',
+      number: _faToEn(_invoiceNumber),
+      customerId: '',
+      customerName: _customerName,
+      customerPhone: _customerPhone,
+      type: _invoiceType,
+      paymentType: _paymentType,
+      status: 'draft',
+      date: draftDate,
+      items: _items
+          .map(
+            (item) => InvoiceItemModel(
+              id: item.id,
+              title: item.title,
+              quantity: item.quantity,
+              unit: item.unit,
+              unitPrice: item.unitPrice,
+              totalPrice: item.totalPrice,
+            ),
+          )
+          .toList(),
+      subtotal: _itemsTotal,
+      discountPercent: _discountIsPercent ? _discountAmount : 0,
+      discountAmount: _resolvedDiscount,
+      shippingFee: _shippingVal,
+      previousDebt: _prevDebtVal,
+      deposit: _depositVal,
+      totalAmount: _finalTotal,
+      paidAmount: 0,
+      remainingAmount: _finalTotal,
+      notes: _notes,
+      cardNumber: '',
+      createdAt: draftDate,
+    );
+    await PrefsStore.saveDraft(draft);
+  }
 
   String _typeLabelOf(String t) {
     switch (t) {
@@ -593,6 +665,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  List<ProductModel> _matchingProducts(String query) {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return const <ProductModel>[];
+    return ref
+        .read(productListProvider)
+        .where((product) => product.name.toLowerCase().contains(normalized))
+        .toList();
+  }
+
+  void _selectProductForRow(int idx, ProductModel product) {
+    if (idx < 0 || idx >= _items.length) return;
+    setState(() {
+      _items[idx] = InvoiceItemModel(
+        id: _items[idx].id,
+        title: product.name,
+        quantity: 1,
+        unit: product.unit,
+        unitPrice: product.sellPrice,
+        totalPrice: product.sellPrice,
+      );
+      _selectedRow = idx;
+      _formGen++;
+    });
+  }
+
   void _addCurrentProductToCatalog(int idx) {
     final it = _items[idx];
     final name = it.title.trim();
@@ -789,6 +886,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
 
     ref.read(invoiceListProvider.notifier).saveInvoice(inv);
+    PrefsStore.clearDraft();
 
     // آماده‌سازی فرم برای فاکتور بعدی
     final nextNum = (int.tryParse(numEn) ?? 1004) + 1;
@@ -821,6 +919,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ref.read(invoiceEditRequestProvider.notifier).state = null;
         _loadInvoiceForEdit(next);
       }
+    });
+
+    // هر تغییر فیلد/ردیف در فریم بعدی به‌عنوان پیش‌نویس ذخیره می‌شود.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _persistDraft();
     });
 
     return Scaffold(
@@ -937,10 +1040,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             // 1) نوار نارنجی اصلی دقیقاً با نقش دکمهٔ سریع تصویر مرجع
             InkWell(
-              onTap: () => _resetFormForNew(),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
+              ),
               borderRadius: BorderRadius.circular(34),
               child: Container(
-                height: 82,
+                height: 62,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(34),
                   gradient: LinearGradient(
@@ -965,8 +1071,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     children: [
                       const SizedBox(width: 18),
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 42,
+                        height: 42,
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -1098,6 +1204,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ...List.generate(_items.length, (idx) {
                     final it = _items[idx];
                     final isSelected = _selectedRow == idx;
+                    final suggestions = it.title.trim().length >= 2
+                        ? _matchingProducts(it.title)
+                        : const <ProductModel>[];
                     return InkWell(
                       onTap: () => setState(() => _selectedRow = idx),
                       child: Container(
@@ -1119,8 +1228,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
                                     child: Row(
                                       children: [
-                                        _itemThumbnail(it.title, dark),
-                                        const SizedBox(width: 8),
                                         Expanded(
                                           child: Column(
                                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1157,6 +1264,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                     ),
                                                 ],
                                               ),
+                                              if (suggestions.isNotEmpty)
+                                                ...suggestions.take(3).map(
+                                                      (product) => InkWell(
+                                                        onTap: () => _selectProductForRow(idx, product),
+                                                        child: Padding(
+                                                          padding: const EdgeInsets.only(top: 4),
+                                                          child: Row(
+                                                            children: [
+                                                              Icon(Icons.add_circle_outline, size: 14, color: _orange),
+                                                              const SizedBox(width: 4),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  product.name,
+                                                                  maxLines: 1,
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                  textAlign: TextAlign.right,
+                                                                  style: const TextStyle(
+                                                                    fontSize: 10,
+                                                                    color: _orange,
+                                                                    fontWeight: FontWeight.w700,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                              if (it.title.trim().isNotEmpty)
+                                                Align(
+                                                  alignment: Alignment.centerRight,
+                                                  child: TextButton.icon(
+                                                    onPressed: () => _addCurrentProductToCatalog(idx),
+                                                    icon: const Icon(Icons.playlist_add, size: 14),
+                                                    label: const Text('افزودن به کاتالوگ'),
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor: _orange,
+                                                      padding: EdgeInsets.zero,
+                                                      minimumSize: Size.zero,
+                                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                      textStyle: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
+                                                    ),
+                                                  ),
+                                                ),
                                               Align(
                                                 alignment: Alignment.centerRight,
                                                 child: Text(
@@ -1287,19 +1438,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),
                     ),
                     child: Directionality(
-                      textDirection: TextDirection.ltr,
+                      textDirection: TextDirection.rtl,
                       child: Row(
                         children: [
                           _referencePill(
                             icon: Icons.add,
-                            label: 'افزودن آیتم',
+                            label: 'افزودن ردیف',
                             color: accent,
                             onTap: _addItem,
                           ),
                           const SizedBox(width: 12),
                           _referencePill(
                             icon: Icons.qr_code_scanner,
-                            label: 'بارکد / کاتالوگ',
+                            label: 'لیست محصولات',
                             color: Colors.teal,
                             onTap: _showProductCatalog,
                           ),
@@ -1481,40 +1632,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 10),
 
-            // 5) دو گروه انتخابی کنار هم، مثل تصویر مرجع
+            // 5) نوع پرداخت و نوع فاکتور در ردیف‌های جدا، مطابق تصویر مرجع
             _grayCard(
               dark: dark,
               padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _choiceGroup(
-                        title: 'نوع پرداخت',
-                        dark: dark,
-                        children: [
-                          _radio(label: 'نقدی', value: 'cash', group: _paymentType, onChanged: (v) => setState(() => _paymentType = v!), dark: dark),
-                          const SizedBox(width: 10),
-                          _radio(label: 'غیر نقدی', value: 'non_cash', group: _paymentType, onChanged: (v) => setState(() => _paymentType = v!), dark: dark),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _choiceGroup(
-                        title: 'نوع فاکتور',
-                        dark: dark,
-                        children: [
-                          _radio(label: 'فاکتور فروش', value: 'sale', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
-                          const SizedBox(width: 8),
-                          _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  _choiceRow(
+                    title: 'نوع پرداخت',
+                    dark: dark,
+                    children: [
+                      _radio(label: 'نقدی', value: 'cash', group: _paymentType, onChanged: (v) => setState(() => _paymentType = v!), dark: dark),
+                      const SizedBox(width: 14),
+                      _radio(label: 'غیر نقدی', value: 'non_cash', group: _paymentType, onChanged: (v) => setState(() => _paymentType = v!), dark: dark),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
+                  const SizedBox(height: 14),
+                  _choiceRow(
+                    title: 'نوع فاکتور',
+                    dark: dark,
+                    children: [
+                      _radio(label: 'پیش فاکتور', value: 'proforma', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
+                      const SizedBox(width: 12),
+                      _radio(label: 'فاکتور فروش', value: 'sale', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
+                      const SizedBox(width: 12),
+                      _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
+                    ],
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -1824,24 +1971,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _itemThumbnail(String title, bool dark) {
-    final icon = title.trim().isEmpty ? Icons.view_in_ar_outlined : Icons.coffee_outlined;
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        color: dark ? _slate700 : const Color(0xFFF1F3F7),
-        borderRadius: BorderRadius.circular(13),
-      ),
-      alignment: Alignment.center,
-      child: Icon(
-        icon,
-        size: 30,
-        color: dark ? _slate400 : const Color(0xFFB8BEC8),
-      ),
-    );
-  }
-
   void _showProductCatalog() {
     final products = ref.read(productListProvider);
     showModalBottomSheet(
@@ -1859,7 +1988,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const Padding(
                 padding: EdgeInsets.fromLTRB(18, 18, 18, 10),
                 child: Text(
-                  'بارکد / کاتالوگ',
+                  'لیست محصولات',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
                 ),
               ),
@@ -2024,6 +2153,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required bool dark,
   }) {
     final accent = Theme.of(context).colorScheme.primary;
+    final fontFamily = DefaultTextStyle.of(context).style.fontFamily;
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Row(
@@ -2038,12 +2168,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   color: dark ? Colors.white : _slate800,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
+                  fontFamily: fontFamily,
                 ),
                 children: [
                   TextSpan(text: '$label '),
                   TextSpan(
                     text: value,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontFamily: fontFamily,
+                    ),
                   ),
                 ],
               ),
@@ -2283,30 +2417,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _choiceGroup({
+  Widget _choiceRow({
     required String title,
     required bool dark,
     required List<Widget> children,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          title,
-          textAlign: TextAlign.right,
-          style: TextStyle(
-            fontSize: 12,
-            color: dark ? Colors.white : _slate700,
-            fontWeight: FontWeight.w800,
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 92,
+            child: Text(
+              title,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                color: dark ? Colors.white : _slate700,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          reverse: true,
-          child: Row(children: children),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: Row(children: children),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2535,7 +2676,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         const Divider(),
         ListTile(leading: const Icon(Icons.people), title: const Text('مشتریان'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const CustomerListScreen()));}),
         ListTile(leading: const Icon(Icons.inventory_2), title: const Text('محصولات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const ProductListScreen()));}),
-        ListTile(leading: const Icon(Icons.account_balance_wallet), title: const Text('گزارش مالی'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const FinancialDashboardScreen()));}),
         ListTile(leading: const Icon(Icons.settings), title: const Text('تنظیمات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const SettingsScreen()));}),
       ]),
     );

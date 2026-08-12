@@ -24,6 +24,7 @@ dependencies:
   path: ^1.9.0
   image_picker: ^1.0.8
   image: ^4.3.0
+  file_picker: ^8.1.7
 
   # Share invoice image / file
   share_plus: ^10.1.4

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/customer_model.dart';
+import '../core/utils/prefs_store.dart';
 import '../database/app_database.dart';
 
 final customerListProvider =
@@ -11,42 +12,21 @@ final customerListProvider =
 class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
   final AppDatabase? db;
 
-  CustomerListNotifier([this.db])
-      : super([
-          CustomerModel(
-            id: 'c1',
-            name: 'رضا محمدی',
-            mobile: '09121112233',
-            phone: '02144556677',
-            address: 'تهران، سعادت‌آباد، خیابان سرو غربی، پلاک ۴۵',
-            notes: 'مشتری خوش‌حساب، تحویل حضوری',
-            balance: 1500000,
-            createdAt: '1405/05/15',
-          ),
-          CustomerModel(
-            id: 'c2',
-            name: 'زهرا کاظمی',
-            mobile: '09359876543',
-            phone: '02122334455',
-            address: 'اصفهان، خیابان چهارباغ عباسی، مجتمع کوثر',
-            notes: 'ارسال با پست پیشتاز',
-            balance: 0,
-            createdAt: '1405/05/18',
-          ),
-          CustomerModel(
-            id: 'c3',
-            name: 'شرکت پویاتک',
-            mobile: '09129998877',
-            phone: '02188776655',
-            address: 'مشهد، بلوار سجاد، بزرگمهر شمالی، پلاک ۸',
-            notes: 'خریدار عمده قطعات الکترونیک',
-            balance: 4200000,
-            createdAt: '1405/05/19',
-          ),
-        ]);
+  CustomerListNotifier([this.db]) : super(const []) {
+    _hydrate();
+  }
+
+  Future<void> _hydrate() async {
+    state = await PrefsStore.loadCustomers();
+  }
+
+  void _persist() {
+    PrefsStore.saveCustomers(state);
+  }
 
   void addCustomer(CustomerModel customer) {
     state = [...state, customer];
+    _persist();
     db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 
@@ -55,48 +35,39 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
       for (final item in state)
         if (item.id == customer.id) customer else item,
     ];
+    _persist();
     db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 
   void deleteCustomer(String id) {
     state = state.where((item) => item.id != id).toList();
+    _persist();
   }
 
   void recordPayment(String id, double amount) {
-    state = [
-      for (final item in state)
-        if (item.id == id)
-          CustomerModel(
-            id: item.id,
-            name: item.name,
-            mobile: item.mobile,
-            phone: item.phone,
-            address: item.address,
-            notes: item.notes,
-            balance: (item.balance - amount) < 0 ? 0 : item.balance - amount,
-            createdAt: item.createdAt,
-          )
-        else
-          item,
-    ];
+    state = state.map((item) {
+      if (item.id != id) return item;
+      return _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble());
+    }).toList();
+    _persist();
   }
 
   void updateBalance(String id, double delta) {
-    state = [
-      for (final item in state)
-        if (item.id == id)
-          CustomerModel(
-            id: item.id,
-            name: item.name,
-            mobile: item.mobile,
-            phone: item.phone,
-            address: item.address,
-            notes: item.notes,
-            balance: (item.balance + delta) < 0 ? 0 : item.balance + delta,
-            createdAt: item.createdAt,
-          )
-        else
-          item,
-    ];
+    state = state.map((item) {
+      if (item.id != id) return item;
+      return _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble());
+    }).toList();
+    _persist();
   }
+
+  CustomerModel _withBalance(CustomerModel item, double balance) => CustomerModel(
+        id: item.id,
+        name: item.name,
+        mobile: item.mobile,
+        phone: item.phone,
+        address: item.address,
+        notes: item.notes,
+        balance: balance,
+        createdAt: item.createdAt,
+      );
 }

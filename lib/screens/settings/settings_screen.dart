@@ -1,7 +1,17 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/customer_provider.dart';
+import '../../providers/invoice_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../core/utils/prefs_store.dart';
 import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
@@ -106,14 +116,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.backup_outlined),
                   title: const Text('پشتیبان‌گیری و بازیابی محلی'),
+                  subtitle: const Text('خروجی JSON از اطلاعات برنامه'),
                   trailing: const Icon(Icons.chevron_left),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('نسخه پشتیبان با موفقیت روی حافظه ذخیره شد.'),
-                      ),
-                    );
-                  },
+                  onTap: _showBackupSheet,
                 ),
               ],
             ),
@@ -159,6 +164,109 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _showBackupSheet() async {
+    if (!mounted) return;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 8),
+              child: Text(
+                'پشتیبان‌گیری و بازیابی',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_download_outlined, color: _orange),
+              title: const Text('ساخت فایل پشتیبان'),
+              subtitle: const Text('ذخیره و اشتراک‌گذاری فایل JSON'),
+              onTap: () => Navigator.pop(ctx, 'export'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_upload_outlined, color: _orange),
+              title: const Text('بازگردانی فایل پشتیبان'),
+              subtitle: const Text('انتخاب فایل JSON از حافظه گوشی'),
+              onTap: () => Navigator.pop(ctx, 'import'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    if (action == 'export') {
+      await _exportBackup();
+    } else if (action == 'import') {
+      await _importBackup();
+    }
+  }
+
+  Future<void> _exportBackup() async {
+    try {
+      final payload = await PrefsStore.exportAll();
+      final directory = await getApplicationDocumentsDirectory();
+      final name = 'factor-ruby-backup-${DateTime.now().millisecondsSinceEpoch}.json';
+      final file = File('${directory.path}/$name');
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(payload),
+        flush: true,
+      );
+
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/json', name: name)],
+        subject: 'پشتیبان فاکتور ساز روبی',
+        text: 'فایل پشتیبان اطلاعات فاکتور ساز روبی',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ساخت پشتیبان انجام نشد: $error')),
+      );
+    }
+  }
+
+  Future<void> _importBackup() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: false,
+      );
+      if (result == null || result.files.single.path == null) return;
+
+      final file = File(result.files.single.path!);
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is! Map) {
+        throw const FormatException('ساختار فایل پشتیبان معتبر نیست');
+      }
+
+      await PrefsStore.importAll(Map<String, dynamic>.from(decoded));
+      ref.invalidate(userProvider);
+      ref.invalidate(businessProvider);
+      ref.invalidate(settingsProvider);
+      ref.invalidate(invoiceListProvider);
+      ref.invalidate(customerListProvider);
+      ref.invalidate(productListProvider);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('پشتیبان با موفقیت بازگردانی شد.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('بازگردانی پشتیبان انجام نشد: $error')),
+      );
+    }
   }
 
   Widget _infoRow(String k, String v) {

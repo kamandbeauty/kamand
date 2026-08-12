@@ -21,7 +21,6 @@ lib/
     ├── invoice/
     ├── customer/
     ├── product/
-    ├── financial/
     └── settings/
 ```
 

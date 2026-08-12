@@ -96,27 +96,34 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
     );
   }
 
-  void _save() {
-    final biz = ref.read(businessProvider);
-    final st = ref.read(settingsProvider);
-    final updated = biz.copyWith(
-      shopName: _nameCtrl.text.trim().isEmpty ? biz.shopName : _nameCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-      address: _descCtrl.text.trim(),
-      logoPath: _logoPath ?? biz.logoPath,
-      stampPath: _stampPath ?? '',
-      // یک تصویر واحد برای مهر و امضا استفاده می‌شود.
-      signaturePath: _stampPath ?? biz.signaturePath,
-    );
-    ref.read(businessProvider.notifier).updateBusiness(updated);
-    // ذخیره رنگ روی گوشی + اعمال روی تم اپ و فاکتور
-    ref.read(settingsProvider.notifier).updateSettings(
-          st.copyWith(accentColor: _selectedColor.value),
-        );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تنظیمات فاکتور، رنگ و مهر و امضا ذخیره شد')),
-    );
-    Navigator.pop(context);
+  Future<void> _save() async {
+    try {
+      final biz = ref.read(businessProvider);
+      final st = ref.read(settingsProvider);
+      final updated = biz.copyWith(
+        shopName: _nameCtrl.text.trim().isEmpty ? biz.shopName : _nameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+        address: _descCtrl.text.trim(),
+        logoPath: _logoPath ?? biz.logoPath,
+        stampPath: _stampPath ?? '',
+        // یک تصویر واحد برای مهر و امضا استفاده می‌شود.
+        signaturePath: _stampPath ?? biz.signaturePath,
+      );
+      await ref.read(businessProvider.notifier).updateBusiness(updated);
+      await ref.read(settingsProvider.notifier).updateSettings(
+            st.copyWith(accentColor: _selectedColor.value),
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تنظیمات فاکتور، رنگ و مهر و امضا ذخیره شد')),
+      );
+      Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ذخیره تنظیمات انجام نشد: $error')),
+      );
+    }
   }
 
   @override

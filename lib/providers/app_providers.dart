@@ -12,13 +12,13 @@ class UserNotifier extends StateNotifier<UserModel> {
   UserNotifier()
       : super(UserModel(
           id: 'u1',
-          name: 'علی علوی',
+          name: '',
           phone: '',
-          country: 'ایران',
-          province: 'تهران',
-          city: 'تهران',
-          usageType: 'store',
-          isOnboarded: true,
+          country: '',
+          province: '',
+          city: '',
+          usageType: '',
+          isOnboarded: false,
         )) {
     _hydrate();
   }
@@ -43,14 +43,14 @@ class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
   BusinessNotifier()
       : super(BusinessProfileModel(
           id: 'b1',
-          shopName: 'فاکتور ساز روبی',
-          phone: '۰۲۱-۸۸۸۸۹۹۹۹',
-          address: 'تهران، خیابان ولیعصر، پلاک ۱۲۴',
-          taxId: '۱۰۱۰۹۸۷۶۵۴۳',
+          shopName: '',
+          phone: '',
+          address: '',
+          taxId: '',
           logoPath: '',
           stampPath: '',
           signaturePath: '',
-          bankCards: ['6037-9975-1234-5678', '5022-2910-8765-4321'],
+          bankCards: const [],
         )) {
     _hydrate();
   }
@@ -74,7 +74,7 @@ final settingsProvider =
 class SettingsNotifier extends StateNotifier<AppSettingsModel> {
   SettingsNotifier()
       : super(AppSettingsModel(
-          startingInvoiceNum: 1004,
+          startingInvoiceNum: 1,
           templateStyle: 'modern',
           showLogo: true,
           showCardNum: true,
