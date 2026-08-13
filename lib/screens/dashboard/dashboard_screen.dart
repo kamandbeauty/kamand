@@ -690,7 +690,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         targetAnchor: Alignment.bottomRight,
         followerAnchor: Alignment.topRight,
         offset: const Offset(0, 6),
-        child: _productPopupContent(row),
+        // Overlay روی صفحهٔ کامل constraint می‌دهد؛ با UnconstrainedBox
+        // اندازهٔ پاپ‌آپ را به اندازهٔ واقعی نوشته‌ها برمی‌گردانیم.
+        child: UnconstrainedBox(
+          alignment: Alignment.topRight,
+          child: _productPopupContent(row),
+        ),
       ),
     );
     overlay.insert(_productPopup!);
