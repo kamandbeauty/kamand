@@ -484,7 +484,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final phoneCtrl = TextEditingController(text: business.phone);
     final addressCtrl = TextEditingController(text: business.address);
     final taxCtrl = TextEditingController(text: business.taxId);
-    final cardsCtrl = TextEditingController(text: business.bankCards.join('\n'));
 
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -557,15 +556,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: cardsCtrl,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'شماره کارت‌ها (هر خط یک کارت)',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                  ),
-                ),
                 const SizedBox(height: 20),
                 SizedBox(
                   height: 48,
@@ -589,18 +579,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (saved == true && mounted) {
-      final cards = cardsCtrl.text
-          .split(RegExp(r'[\n,]'))
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
       ref.read(businessProvider.notifier).updateBusiness(
             business.copyWith(
               shopName: shopCtrl.text.trim().isEmpty ? 'فاکتور ساز روبی' : shopCtrl.text.trim(),
               phone: phoneCtrl.text.trim(),
               address: addressCtrl.text.trim(),
               taxId: taxCtrl.text.trim(),
-              bankCards: cards,
             ),
           );
       ScaffoldMessenger.of(context).showSnackBar(
@@ -612,7 +596,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     phoneCtrl.dispose();
     addressCtrl.dispose();
     taxCtrl.dispose();
-    cardsCtrl.dispose();
   }
 
   Future<void> _editInvoiceSettings(

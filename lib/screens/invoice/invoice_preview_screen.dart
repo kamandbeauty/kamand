@@ -691,20 +691,36 @@ if (inv.cardNumber.isNotEmpty) ...[
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Row(
-                                    textDirection: TextDirection.rtl,
+                                    textDirection: TextDirection.ltr,
                                     children: [
-                                      const Icon(Icons.credit_card, color: Color(0xFF0284C7), size: 20),
-                                      const SizedBox(width: 8),
                                       const Expanded(
                                         child: Text(
-                                          'شماره کارت جهت واریز',
+                                          'اپلیکیشن فاکتور ساز روبی',
+                                          textAlign: TextAlign.left,
                                           style: TextStyle(
-                                            fontSize: 10,
-                                            color: Color(0xFF0284C7),
+                                            fontSize: 9,
+                                            color: Color(0xFF64748B),
                                             fontWeight: FontWeight.w700,
                                           ),
-                                          textAlign: TextAlign.right,
                                         ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Row(
+                                        textDirection: TextDirection.rtl,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.credit_card, color: Color(0xFF0284C7), size: 20),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'شماره کارت جهت واریز',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Color(0xFF0284C7),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -767,44 +783,39 @@ if (inv.cardNumber.isNotEmpty) ...[
                               ? biz.stampPath
                               : biz.signaturePath;
                           final showMark = settings.showStamp && markPath.isNotEmpty;
-                          return Column(
-                            children: [
-                              if (showMark)
-                                Container(
-                                  height: 96,
-                                  width: double.infinity,
-                                  alignment: Alignment.center,
-                                  color: const Color(0xFFF1F5F9),
-                                  child: Image.file(
-                                    File(markPath),
-                                    height: 88,
-                                    fit: BoxFit.contain,
-                                    filterQuality: FilterQuality.high,
-                                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child: SizedBox(
+                              width: 160,
+                              child: Column(
+                                children: [
+                                  if (showMark)
+                                    Container(
+                                      height: 72,
+                                      width: 150,
+                                      alignment: Alignment.center,
+                                      color: Colors.transparent,
+                                      child: Image.file(
+                                        File(markPath),
+                                        height: 64,
+                                        fit: BoxFit.contain,
+                                        filterQuality: FilterQuality.high,
+                                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                      ),
+                                    )
+                                  else
+                                    const SizedBox(height: 56),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'مهر و امضا',
+                                    style: TextStyle(fontSize: 9, color: _slate400),
                                   ),
-                                )
-                              else
-                                const SizedBox(height: 56),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'مهر و امضا',
-                                style: TextStyle(fontSize: 10, color: _slate400),
+                                ],
                               ),
-                            ],
+                            ),
                           );
                         }),
                         const SizedBox(height: 18),
-                        const Center(
-                          child: Text(
-                            'اپلیکیشن فاکتور ساز روبی',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF94A3B8),
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),

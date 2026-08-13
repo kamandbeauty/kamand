@@ -180,7 +180,7 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
     } else {
       ref.read(bankCardListProvider.notifier).addCard(model);
     }
-    ref.read(selectedBankCardProvider.notifier).state = model;
+    ref.read(selectedBankCardProvider.notifier).select(model);
     if (!mounted) return;
     Navigator.of(context).pop(); // بستن صفحه ایجاد کارت
     ScaffoldMessenger.of(context).showSnackBar(

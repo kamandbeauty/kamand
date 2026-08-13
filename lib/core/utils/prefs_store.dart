@@ -6,6 +6,7 @@ import '../../models/app_settings_model.dart';
 import '../../models/invoice_model.dart';
 import '../../models/customer_model.dart';
 import '../../models/product_model.dart';
+import '../../models/bank_card_model.dart';
 
 /// ذخیره پایدار اطلاعات کاربر، فاکتورها و تنظیمات روی گوشی.
 class PrefsStore {
@@ -16,6 +17,8 @@ class PrefsStore {
   static const _kCustomers = 'ruby_customers_v1';
   static const _kProducts = 'ruby_products_v1';
   static const _kDraft = 'ruby_invoice_draft_v1';
+  static const _kBankCards = 'ruby_bank_cards_v1';
+  static const _kSelectedBankCard = 'ruby_selected_bank_card_v1';
 
   static Future<SharedPreferences> get _p async => SharedPreferences.getInstance();
 
@@ -79,6 +82,26 @@ class PrefsStore {
     return list.map(ProductModel.fromMap).toList();
   }
 
+  static Future<void> saveBankCards(List<BankCardModel> cards) async {
+    final p = await _p;
+    await p.setString(_kBankCards, jsonEncode(cards.map((e) => e.toMap()).toList()));
+  }
+
+  static Future<List<BankCardModel>> loadBankCards() async {
+    final list = await _loadList(_kBankCards);
+    return list.map(BankCardModel.fromMap).toList();
+  }
+
+  static Future<void> saveSelectedBankCardId(String id) async {
+    final p = await _p;
+    await p.setString(_kSelectedBankCard, id);
+  }
+
+  static Future<String?> loadSelectedBankCardId() async {
+    final p = await _p;
+    return p.getString(_kSelectedBankCard);
+  }
+
   static Future<void> saveDraft(InvoiceModel draft) async {
     final p = await _p;
     await p.setString(_kDraft, jsonEncode(draft.toMap()));
@@ -105,6 +128,8 @@ class PrefsStore {
       'customers': (await loadCustomers()).map((e) => e.toMap()).toList(),
       'products': (await loadProducts()).map((e) => e.toMap()).toList(),
       'draft': (await loadDraft())?.toMap(),
+      'bankCards': (await loadBankCards()).map((e) => e.toMap()).toList(),
+      'selectedBankCardId': await loadSelectedBankCardId(),
     };
   }
 
@@ -125,6 +150,12 @@ class PrefsStore {
     }
     if (data['products'] is List) {
       await saveProducts(_mapList(data['products']).map(ProductModel.fromMap).toList());
+    }
+    if (data['bankCards'] is List) {
+      await saveBankCards(_mapList(data['bankCards']).map(BankCardModel.fromMap).toList());
+    }
+    if (data['selectedBankCardId'] is String && (data['selectedBankCardId'] as String).isNotEmpty) {
+      await saveSelectedBankCardId(data['selectedBankCardId'] as String);
     }
     if (draft != null) {
       await saveDraft(InvoiceModel.fromMap(draft));

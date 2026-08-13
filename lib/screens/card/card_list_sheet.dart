@@ -50,11 +50,34 @@ class CardListSheet extends ConsumerWidget {
                     itemBuilder: (ctx, idx){
                       final c = cards[idx];
                       return _CardItem(card: c, onTap: (){
-                        ref.read(selectedBankCardProvider.notifier).state = c;
+                        ref.read(selectedBankCardProvider.notifier).select(c);
                         Navigator.pop(context);
                       });
                     },
                   ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CardCreateScreen()),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('افزودن کارت جدید', style: TextStyle(fontWeight: FontWeight.w900)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2196F3),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
           ),
         ],
       ),

@@ -1,21 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/utils/prefs_store.dart';
 import '../models/bank_card_model.dart';
 
-final bankCardListProvider = StateNotifierProvider<BankCardListNotifier, List<BankCardModel>>((ref)=> BankCardListNotifier());
-final selectedBankCardProvider = StateProvider<BankCardModel?>((ref)=> null);
+final bankCardListProvider = StateNotifierProvider<BankCardListNotifier, List<BankCardModel>>((ref) {
+  return BankCardListNotifier();
+});
+
+final selectedBankCardProvider = StateNotifierProvider<SelectedBankCardNotifier, BankCardModel?>((ref) {
+  final notifier = SelectedBankCardNotifier(ref);
+  ref.listen<List<BankCardModel>>(bankCardListProvider, (_, cards) {
+    notifier.sync(cards);
+  }, fireImmediately: true);
+  return notifier;
+});
 
 class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
-  BankCardListNotifier(): super([]);
+  BankCardListNotifier() : super(const []) {
+    _hydrate();
+  }
 
-  void addCard(BankCardModel c){
+  Future<void> _hydrate() async {
+    state = await PrefsStore.loadBankCards();
+  }
+
+  void _persist() {
+    PrefsStore.saveBankCards(state);
+  }
+
+  void addCard(BankCardModel c) {
     state = [...state, c];
+    _persist();
   }
-  void updateCard(BankCardModel c){
-    state = [for(final e in state) if(e.id==c.id) c else e];
+
+  void updateCard(BankCardModel c) {
+    state = [for (final e in state) if (e.id == c.id) c else e];
+    _persist();
   }
-  void deleteCard(String id){
-    state = state.where((e)=> e.id != id).toList();
+
+  void deleteCard(String id) {
+    state = state.where((e) => e.id != id).toList();
+    _persist();
+  }
+}
+
+class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
+  final Ref ref;
+  String? _selectedId;
+
+  SelectedBankCardNotifier(this.ref) : super(null) {
+    _loadSelectedId();
+  }
+
+  Future<void> _loadSelectedId() async {
+    _selectedId = await PrefsStore.loadSelectedBankCardId();
+    sync(ref.read(bankCardListProvider));
+  }
+
+  void sync(List<BankCardModel> cards) {
+    if (cards.isEmpty) {
+      state = null;
+      return;
+    }
+    final selected = cards.where((c) => c.id == _selectedId).toList();
+    if (selected.isNotEmpty) {
+      state = selected.first;
+    } else if (state == null) {
+      // اگر انتخاب قبلی وجود نداشت، اولین کارت انتخاب می‌شود.
+      state = cards.first;
+      _selectedId = cards.first.id;
+      PrefsStore.saveSelectedBankCardId(cards.first.id);
+    }
+  }
+
+  void select(BankCardModel card) {
+    _selectedId = card.id;
+    state = card;
+    PrefsStore.saveSelectedBankCardId(card.id);
   }
 }
 
@@ -52,7 +113,6 @@ String detectBankName(String cardNumber){
     '505416': 'بانک گردشگری',
     '606373': 'بانک قرض الحسنه مهر',
   };
-  // try 6 then 4
   if(map.containsKey(bin)) return map[bin]!;
   final bin4 = digits.substring(0,4);
   const map4 = {'6104':'بانک ملت','6037':'بانک ملی','5892':'بانک سپه'};
