@@ -108,7 +108,7 @@ String formatCardGrouped(String cardNumber) {
   if (d.isEmpty) return '';
   final buf = StringBuffer();
   for (var i = 0; i < d.length; i++) {
-    if (i > 0 && i % 4 == 0) buf.write(' ');
+    if (i > 0 && i % 4 == 0) buf.write(' - ');
     buf.write(d[i]);
   }
   return PersianNumberFormatter.toPersian(buf.toString());
