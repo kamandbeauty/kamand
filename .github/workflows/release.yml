@@ -112,23 +112,21 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: ./gradlew clean
 
-      - name: Build signed release APK
-        working-directory: android
+      - name: Build signed release APKs (split by ABI)
         env:
           RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: flutter build apk --release --split-per-abi
 
       - name: Build signed release AAB
-        working-directory: android
         env:
           RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew bundleRelease
+        run: flutter build appbundle --release
 
       - name: Collect release artifacts
         id: artifacts
@@ -139,33 +137,44 @@ jobs:
         run: |
           set -euo pipefail
 
-          apk="build/app/outputs/apk/release/app-release.apk"
+          apk_dir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
 
           mkdir -p release-artifacts
 
-          [[ -f "$apk" ]] || {
-            echo "::error::Release APK was not generated at $apk."
-            exit 1
-          }
+          apk_paths=()
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            source_apk="$apk_dir/app-${abi}-release.apk"
+            named_apk="release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-${abi}-release.apk"
+
+            [[ -f "$source_apk" ]] || {
+              echo "::error::Split release APK was not generated at $source_apk."
+              exit 1
+            }
+
+            cp "$source_apk" "$named_apk"
+            apk_paths+=("$named_apk")
+          done
 
           [[ -f "$aab" ]] || {
             echo "::error::Release AAB was not generated at $aab."
             exit 1
           }
 
-          named_apk="release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-release.apk"
           named_aab="release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-release.aab"
-
-          cp "$apk" "$named_apk"
           cp "$aab" "$named_aab"
 
-          echo "apk_path=$named_apk" >> "$GITHUB_OUTPUT"
+          {
+            echo "apk_paths<<EOF"
+            printf '%s\n' "${apk_paths[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
           echo "aab_path=$named_aab" >> "$GITHUB_OUTPUT"
 
       - name: Verify APK and AAB signatures
         env:
-          APK_PATH: ${{ steps.artifacts.outputs.apk_path }}
+          APK_PATHS: ${{ steps.artifacts.outputs.apk_paths }}
           AAB_PATH: ${{ steps.artifacts.outputs.aab_path }}
           EXPECTED_APPLICATION_ID: com.ruby.factor_ruby
           EXPECTED_VERSION_NAME: ${{ steps.version.outputs.name }}
@@ -189,19 +198,26 @@ jobs:
             exit 1
           fi
 
-          apk_verify_log="$RUNNER_TEMP/apksigner-verify.txt"
+          while IFS= read -r APK_PATH; do
+            [[ -n "$APK_PATH" ]] || continue
 
-          "$apksigner_bin" verify --verbose "$APK_PATH" \
-            > "$apk_verify_log" 2>&1
+            apk_name="$(basename "$APK_PATH")"
+            apk_verify_log="$RUNNER_TEMP/${apk_name}.apksigner-verify.txt"
 
-          cat "$apk_verify_log"
+            "$apksigner_bin" verify --verbose "$APK_PATH" \
+              > "$apk_verify_log" 2>&1
 
-          if ! grep -Eiq 'Verified using v[234] scheme.*: true' "$apk_verify_log"; then
-            echo "::error::APK signature verification did not confirm a v2/v3/v4 signature."
-            exit 1
-          fi
+            cat "$apk_verify_log"
 
-          echo "APK signature verification passed."
+            if ! grep -Eiq 'Verified using v[234] scheme.*: true' "$apk_verify_log"; then
+              echo "::error::APK signature verification failed for $APK_PATH."
+              exit 1
+            fi
+
+            echo "APK signature verification passed: $APK_PATH"
+          done <<< "$APK_PATHS"
+
+          APK_PATH="$(printf '%s\n' "$APK_PATHS" | sed '/^[[:space:]]*$/d' | head -n 1)"
 
           aab_verify_log="$RUNNER_TEMP/jarsigner-verify.txt"
 
@@ -211,47 +227,45 @@ jobs:
           grep -Eiq 'jar verified' "$aab_verify_log"
           echo "AAB signature verification passed."
 
-          # apkanalyzer اختیاری است و نباید مانع آپلود Artifact شود.
           apkanalyzer_bin="$(command -v apkanalyzer || true)"
 
           if [[ -n "$apkanalyzer_bin" ]]; then
             actual_application_id="$(
               "$apkanalyzer_bin" manifest application-id "$APK_PATH" \
                 2>/dev/null || true
-            )
+            )"
 
             actual_version_name="$(
               "$apkanalyzer_bin" manifest version-name "$APK_PATH" \
                 2>/dev/null || true
-            )
+            )"
 
             actual_version_code="$(
               "$apkanalyzer_bin" manifest version-code "$APK_PATH" \
                 2>/dev/null || true
-            )
+            )"
 
             actual_application_id="$(
               printf '%s' "$actual_application_id" \
                 | tr -d '\r' | xargs
-            )
+            )"
 
             actual_version_name="$(
               printf '%s' "$actual_version_name" \
                 | tr -d '\r' | xargs
-            )
+            )"
 
             actual_version_code="$(
               printf '%s' "$actual_version_code" \
                 | tr -d '\r' | xargs
-            )
+            )"
 
             if [[ -z "$actual_application_id" ||
                   -z "$actual_version_name" ||
                   -z "$actual_version_code" ]]; then
-              echo "::warning::apkanalyzer could not read APK metadata; signature verification already passed, so metadata checks were skipped."
+              echo "::warning::APK metadata could not be read; signature checks already passed."
             else
               echo "APK metadata: applicationId=$actual_application_id versionName=$actual_version_name versionCode=$actual_version_code"
-              echo "Expected metadata: applicationId=$EXPECTED_APPLICATION_ID versionName=$EXPECTED_VERSION_NAME versionCode=$EXPECTED_VERSION_CODE"
 
               if [[ "$actual_application_id" != "$EXPECTED_APPLICATION_ID" ]]; then
                 echo "::error::Unexpected applicationId: $actual_application_id"
