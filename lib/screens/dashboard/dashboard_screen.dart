@@ -9,6 +9,8 @@ import '../../core/utils/persian_number_formatter.dart';
 import '../../models/invoice_model.dart';
 import '../../models/invoice_item_model.dart';
 import '../../models/product_model.dart';
+import '../../models/customer_model.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
@@ -151,6 +153,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final List<_DraftTab> _draftTabs = [];
   String _activeTabId = '';
   int _tabSeq = 1;
+
+  static const List<String> _jalaliMonths = <String>[
+    '',
+    'فروردین',
+    'اردیبهشت',
+    'خرداد',
+    'تیر',
+    'مرداد',
+    'شهریور',
+    'مهر',
+    'آبان',
+    'آذر',
+    'دی',
+    'بهمن',
+    'اسفند',
+  ];
+
+  static const List<String> _jalaliWeekdays = <String>[
+    'شنبه',
+    'یکشنبه',
+    'دوشنبه',
+    'سه‌شنبه',
+    'چهارشنبه',
+    'پنجشنبه',
+    'جمعه',
+  ];
 
   bool get _isEditing => _editId != null;
 
@@ -871,36 +899,305 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Future<void> _editInvoiceDate() async {
-    final controller = TextEditingController(text: _dateLabel);
-    final value = await showDialog<String>(
+  Future<void> _showCustomerPicker() async {
+    final customers = ref.read(customerListProvider);
+    final accent = Color(ref.read(settingsProvider).accentColor);
+    final selected = await showModalBottomSheet<CustomerModel>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('تغییر تاریخ فاکتور'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textAlign: TextAlign.center,
-          textDirection: TextDirection.rtl,
-          decoration: const InputDecoration(
-            labelText: 'تاریخ فارسی',
-            hintText: 'مثلاً ۲۰ مرداد ۱۴۰۵',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('ثبت تاریخ'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
+      builder: (sheetContext) {
+        var query = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final normalized = query.trim().toLowerCase();
+            final filtered = normalized.isEmpty
+                ? customers
+                : customers.where((customer) {
+                    final haystack = '${customer.name} ${customer.mobile} ${customer.phone}'.toLowerCase();
+                    return haystack.contains(normalized);
+                  }).toList();
+
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(ctx).size.height * 0.66,
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'انتخاب مشتری',
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          autofocus: true,
+                          onChanged: (value) => setSheetState(() => query = value),
+                          textAlign: TextAlign.right,
+                          decoration: InputDecoration(
+                            hintText: 'جست‌وجوی نام یا شماره مشتری',
+                            prefixIcon: const Icon(Icons.search),
+                            filled: true,
+                            fillColor: const Color(0xFFF6F7FB),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Expanded(
+                          child: filtered.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    customers.isEmpty
+                                        ? 'هنوز مشتری‌ای ثبت نشده است'
+                                        : 'مشتری موردنظر پیدا نشد',
+                                    style: const TextStyle(color: _slate500, fontWeight: FontWeight.w700),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  itemCount: filtered.length,
+                                  separatorBuilder: (_, __) => const Divider(height: 1),
+                                  itemBuilder: (_, index) {
+                                    final customer = filtered[index];
+                                    final phone = customer.mobile.isNotEmpty
+                                        ? customer.mobile
+                                        : customer.phone;
+                                    final isSelected = customer.name.trim() == _customerName.trim();
+                                    return ListTile(
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                                      leading: CircleAvatar(
+                                        backgroundColor: accent.withValues(alpha: 0.12),
+                                        foregroundColor: accent,
+                                        child: Text(
+                                          customer.name.isEmpty ? 'م' : customer.name[0],
+                                          style: const TextStyle(fontWeight: FontWeight.w900),
+                                        ),
+                                      ),
+                                      title: Text(
+                                        customer.name,
+                                        style: const TextStyle(fontWeight: FontWeight.w800),
+                                      ),
+                                      subtitle: phone.isEmpty ? null : Text(phone, textDirection: TextDirection.ltr),
+                                      trailing: isSelected
+                                          ? Icon(Icons.check_circle, color: accent)
+                                          : const Icon(Icons.chevron_left, color: _slate400),
+                                      onTap: () => Navigator.pop(sheetContext, customer),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
-    controller.dispose();
-    if (value != null && value.trim().isNotEmpty && mounted) {
-      setState(() => _dateLabel = value.trim());
+
+    if (selected == null || !mounted) return;
+    final phone = selected.mobile.isNotEmpty ? selected.mobile : selected.phone;
+    setState(() {
+      _customerName = selected.name;
+      _customerPhone = phone;
+      _setCtrl(_nameCtrl, selected.name);
+      _setCtrl(_phoneCtrl, phone);
+      final i = _draftTabs.indexWhere((tab) => tab.id == _activeTabId);
+      if (i >= 0) _draftTabs[i].title = selected.name;
+    });
+  }
+
+  Future<void> _editInvoiceDate() async {
+    final accent = Color(ref.read(settingsProvider).accentColor);
+    final initial = _parseJalaliLabel(_dateLabel) ?? Jalali.now();
+    final selected = await showModalBottomSheet<Jalali>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (sheetContext) {
+        var visibleMonth = Jalali(initial.year, initial.month, 1);
+        var picked = initial;
+
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final firstDay = Jalali(visibleMonth.year, visibleMonth.month, 1);
+            final leading = firstDay.weekDay - 1;
+            final days = firstDay.monthLength;
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          IconButton(
+                            tooltip: 'ماه بعد',
+                            onPressed: () => setSheetState(
+                              () => visibleMonth = visibleMonth.addMonths(1),
+                            ),
+                            icon: const Icon(Icons.chevron_left),
+                          ),
+                          Expanded(
+                            child: Text(
+                              '${_jalaliMonths[visibleMonth.month]} ${PersianNumberFormatter.toPersian(visibleMonth.year.toString())}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'ماه قبل',
+                            onPressed: () => setSheetState(
+                              () => visibleMonth = visibleMonth.addMonths(-1),
+                            ),
+                            icon: const Icon(Icons.chevron_right),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          for (final dayName in _jalaliWeekdays)
+                            Expanded(
+                              child: Text(
+                                dayName.substring(0, 1),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: _slate500,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: leading + days,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 7,
+                          crossAxisSpacing: 5,
+                          mainAxisSpacing: 5,
+                          childAspectRatio: 1.15,
+                        ),
+                        itemBuilder: (_, index) {
+                          if (index < leading) return const SizedBox.shrink();
+                          final day = index - leading + 1;
+                          final isPicked = picked.year == visibleMonth.year &&
+                              picked.month == visibleMonth.month &&
+                              picked.day == day;
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () => setSheetState(
+                              () => picked = Jalali(visibleMonth.year, visibleMonth.month, day),
+                            ),
+                            child: Container(
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: isPicked ? accent : const Color(0xFFF6F7FB),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                PersianNumberFormatter.toPersian(day.toString()),
+                                style: TextStyle(
+                                  color: isPicked ? Colors.white : _slate800,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'تاریخ انتخاب‌شده: ${_formatJalaliDisplay(picked)}',
+                              style: const TextStyle(fontSize: 11, color: _slate500),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(sheetContext, picked),
+                            child: const Text('ثبت تاریخ'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (selected != null && mounted) {
+      setState(() => _dateLabel = _formatJalaliDisplay(selected));
     }
+  }
+
+  String _formatJalaliDisplay(Jalali date) {
+    return '${PersianNumberFormatter.toPersian(date.day.toString())} ${_jalaliMonths[date.month]} ${PersianNumberFormatter.toPersian(date.year.toString())}';
+  }
+
+  Jalali? _parseJalaliLabel(String value) {
+    final text = _faToEn(value.trim());
+    final numeric = RegExp(r'^(\d{4})\s*[/\-]\s*(\d{1,2})\s*[/\-]\s*(\d{1,2})').firstMatch(text);
+    try {
+      if (numeric != null) {
+        return Jalali(
+          int.parse(numeric.group(1)!),
+          int.parse(numeric.group(2)!),
+          int.parse(numeric.group(3)!),
+        );
+      }
+      final month = _jalaliMonths.indexWhere((item) => item.isNotEmpty && value.contains(item));
+      final words = RegExp(r'^(\d{1,2})\s+.+\s+(\d{4})$').firstMatch(text);
+      if (month > 0 && words != null) {
+        return Jalali(int.parse(words.group(2)!), month, int.parse(words.group(1)!));
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
   }
 
   String _todayLabel() {
@@ -1016,10 +1313,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     String numEn = _faToEn(_invoiceNumber);
     final jalaliEn = JalaliHelper.getTodayJalali();
-    // اگر در حالت ویرایش تاریخ قبلی را نگه داریم
-    final dateToStore = _isEditing && _dateLabel.isNotEmpty
-        ? _faToEn(_dateLabel.replaceAll('-', '/'))
-        : jalaliEn;
+    // تاریخ انتخاب‌شده از تقویم برای فاکتور جدید و ویرایش‌شده یکسان ذخیره شود.
+    final pickedDate = _parseJalaliLabel(_dateLabel);
+    final dateToStore = pickedDate == null
+        ? jalaliEn
+        : '${pickedDate.year}/${pickedDate.month.toString().padLeft(2, '0')}/${pickedDate.day.toString().padLeft(2, '0')}';
     final jalaliFa = PersianNumberFormatter.toPersian(dateToStore);
 
     InvoiceModel? existing;
@@ -1309,7 +1607,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _showCustomerPicker,
+                      icon: Icon(Icons.people_alt_outlined, color: accent, size: 18),
+                      label: Text(
+                        'انتخاب مشتری از لیست',
+                        style: TextStyle(
+                          color: accent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   _customerField(
                     icon: Icons.phone_outlined,
                     label: 'شماره مشتری',
