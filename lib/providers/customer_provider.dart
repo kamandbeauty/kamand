@@ -11,10 +11,13 @@ final customerListProvider =
 
 class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
   final AppDatabase? db;
+  late final Future<void> _hydrated;
 
   CustomerListNotifier([this.db]) : super(const []) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     state = await PrefsStore.loadCustomers();
@@ -24,9 +27,11 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
     PrefsStore.saveCustomers(state);
   }
 
-  void addCustomer(CustomerModel customer) {
+  Future<void> addCustomer(CustomerModel customer) async {
+    // تضمین کن اولین ذخیره بعد از hydrate شدن فهرست قبلی انجام شود.
+    await _hydrated;
     state = [...state, customer];
-    _persist();
+    await PrefsStore.saveCustomers(state);
     db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 

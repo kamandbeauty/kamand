@@ -106,7 +106,7 @@ class CustomerListScreen extends ConsumerWidget {
     );
 
     if (saved == true) {
-      ref.read(customerListProvider.notifier).addCustomer(
+      await ref.read(customerListProvider.notifier).addCustomer(
             CustomerModel(
               id: 'customer-${DateTime.now().millisecondsSinceEpoch}',
               name: nameCtrl.text.trim(),

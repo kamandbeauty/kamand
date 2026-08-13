@@ -13,10 +13,13 @@ final invoiceEditRequestProvider = StateProvider<InvoiceModel?>((ref) => null);
 
 class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   final AppDatabase? db;
+  late final Future<void> _hydrated;
 
   InvoiceListNotifier([this.db]) : super(const []) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     state = await PrefsStore.loadInvoices();
@@ -26,7 +29,10 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     PrefsStore.saveInvoices(state);
   }
 
-  void saveInvoice(InvoiceModel invoice) {
+  Future<void> saveInvoice(InvoiceModel invoice) async {
+    // اگر کاربر خیلی سریع ذخیره کند، hydrate نباید فهرست تازه را با لیست قدیمی
+    // جایگزین کند و باعث ناپدید شدن فاکتور شود.
+    await _hydrated;
     final index = state.indexWhere((i) => i.id == invoice.id);
     state = index >= 0
         ? [
@@ -34,7 +40,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
               if (i == index) invoice else state[i],
           ]
         : [...state, invoice];
-    _persist();
+    await PrefsStore.saveInvoices(state);
     db?.persistInvoiceRecord(
       invoice.id,
       invoice.number,

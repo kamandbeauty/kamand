@@ -231,6 +231,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final draft = await PrefsStore.loadDraft();
     if (draft != null && mounted) {
       _loadInvoiceForEdit(draft, asDraft: true);
+      final nextAfterSaved = await _nextInvoiceNumber();
+      final draftNumber = int.tryParse(_faToEn(draft.number).replaceAll(RegExp(r'\D'), ''));
+      // پیش‌نویس‌های قدیمی که شمارهٔ تکراری ۱ دارند، شمارهٔ بعدی بگیرند.
+      if (draftNumber == null || draftNumber < nextAfterSaved) {
+        setState(() => _invoiceNumber = PersianNumberFormatter.toPersian(nextAfterSaved.toString()));
+        _snapshotCurrentToActiveTab();
+      }
       return;
     }
 
@@ -916,8 +923,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _showCustomerPicker() async {
+    // قبل از ساخت شیت صبر کن تا فهرست از SharedPreferences خوانده شده باشد؛
+    // به این ترتیب بار اول هم لیست خالیِ موقت نمایش داده نمی‌شود.
+    await ref.read(customerListProvider.notifier).ensureLoaded();
     var customers = ref.read(customerListProvider);
-    // اولین بار ممکن است Provider هنوز hydrate نشده باشد؛ مستقیم از حافظه بخوان.
     if (customers.isEmpty) {
       final persistedCustomers = await PrefsStore.loadCustomers();
       if (persistedCustomers.isNotEmpty) customers = persistedCustomers;
@@ -1407,9 +1416,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       createdAt: existing?.createdAt ?? jalaliFa,
     );
 
-    ref.read(invoiceListProvider.notifier).saveInvoice(inv);
-    // ذخیرهٔ کامل فهرست را await کن تا بلافاصله بعد از بستن برنامه از بین نرود.
-    await PrefsStore.saveInvoices(ref.read(invoiceListProvider));
+    // صبر کن هم hydrate قبلی و هم ذخیرهٔ واقعی فهرست کامل شود.
+    await ref.read(invoiceListProvider.notifier).saveInvoice(inv);
     await PrefsStore.clearDraft();
 
     // آماده‌سازی فرم برای فاکتور بعدی
