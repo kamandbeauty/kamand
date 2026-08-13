@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/invoice_model.dart';
+import '../models/invoice_item_model.dart';
 import '../core/utils/prefs_store.dart';
 import '../database/app_database.dart';
 
@@ -50,9 +51,78 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     );
   }
 
-  void deleteInvoice(String id) {
+  Future<void> deleteInvoice(String id) async {
+    await _hydrated;
     state = state.where((i) => i.id != id).toList();
-    _persist();
+    await PrefsStore.saveInvoices(state);
+  }
+
+  Future<InvoiceModel> copyInvoice(InvoiceModel source) async {
+    await _hydrated;
+
+    var nextNumber = 1;
+    for (final invoice in state) {
+      final number = int.tryParse(_toEnglishDigits(invoice.number).trim());
+      if (number != null && number >= nextNumber) nextNumber = number + 1;
+    }
+
+    final copied = InvoiceModel(
+      id: 'inv-${DateTime.now().millisecondsSinceEpoch}-copy',
+      number: nextNumber.toString(),
+      customerId: source.customerId,
+      customerName: source.customerName,
+      customerPhone: source.customerPhone,
+      type: source.type,
+      paymentType: source.paymentType,
+      status: source.status,
+      date: source.date,
+      items: source.items
+          .map(
+            (item) => InvoiceItemModel(
+              id: '${item.id}-copy-${DateTime.now().microsecondsSinceEpoch}',
+              title: item.title,
+              quantity: item.quantity,
+              unit: item.unit,
+              unitPrice: item.unitPrice,
+              totalPrice: item.totalPrice,
+            ),
+          )
+          .toList(),
+      subtotal: source.subtotal,
+      discountPercent: source.discountPercent,
+      discountAmount: source.discountAmount,
+      shippingFee: source.shippingFee,
+      previousDebt: source.previousDebt,
+      deposit: source.deposit,
+      totalAmount: source.totalAmount,
+      paidAmount: source.paidAmount,
+      remainingAmount: source.remainingAmount,
+      notes: source.notes,
+      cardNumber: source.cardNumber,
+      cardBank: source.cardBank,
+      cardOwner: source.cardOwner,
+      createdAt: source.createdAt,
+    );
+
+    state = [...state, copied];
+    await PrefsStore.saveInvoices(state);
+    db?.persistInvoiceRecord(
+      copied.id,
+      copied.number,
+      copied.customerName,
+      copied.date,
+      copied.totalAmount,
+    );
+    return copied;
+  }
+
+  String _toEnglishDigits(String value) {
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+    var result = value;
+    for (var i = 0; i < persian.length; i++) {
+      result = result.replaceAll(persian[i], '$i');
+    }
+    return result;
   }
 
   void convertProformaToInvoice(String id) {

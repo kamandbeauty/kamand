@@ -43,6 +43,48 @@ class InvoiceListScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _copyInvoice(BuildContext context, WidgetRef ref, InvoiceModel inv) async {
+    final copied = await ref.read(invoiceListProvider.notifier).copyInvoice(inv);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'فاکتور کپی شد؛ شماره ${PersianNumberFormatter.toPersian(copied.number)}',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteInvoice(BuildContext context, WidgetRef ref, InvoiceModel inv) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف فاکتور'),
+        content: Text(
+          'فاکتور شماره ${PersianNumberFormatter.toPersian(inv.number)} حذف شود؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    await ref.read(invoiceListProvider.notifier).deleteInvoice(inv.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('فاکتور حذف شد')),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final invoices = ref.watch(invoiceListProvider);
@@ -78,11 +120,67 @@ class InvoiceListScreen extends ConsumerWidget {
                     onTap: ()=> _showDetail(context, ref, inv),
                     title: Text(inv.customerName.isEmpty? 'مشتری عمومی': inv.customerName, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark? Colors.white: _slate800)),
                     subtitle: Text('فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم', style: TextStyle(fontSize: 11, color: _slate500)),
-                    trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-                      Text(PersianNumberFormatter.formatCurrency(inv.totalAmount), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: dark? Colors.white: _slate800)),
-                      const SizedBox(height: 4),
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: _statusColor(inv).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)), child: Text(_statusLabel(inv), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: _statusColor(inv)))),
-                    ]),
+                    trailing: SizedBox(
+                      width: 132,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            PersianNumberFormatter.formatCurrency(inv.totalAmount),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              color: dark ? Colors.white : _slate800,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _statusColor(inv).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _statusLabel(inv),
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: _statusColor(inv),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 30,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: 'کپی فاکتور',
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                  constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                                  iconSize: 17,
+                                  color: _orange,
+                                  onPressed: () => _copyInvoice(context, ref, inv),
+                                  icon: const Icon(Icons.copy_outlined),
+                                ),
+                                IconButton(
+                                  tooltip: 'حذف فاکتور',
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                  constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                                  iconSize: 17,
+                                  color: Colors.redAccent,
+                                  onPressed: () => _deleteInvoice(context, ref, inv),
+                                  icon: const Icon(Icons.delete_outline),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
