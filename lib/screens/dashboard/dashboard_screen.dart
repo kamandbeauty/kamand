@@ -142,6 +142,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int? _selectedRow;
   int? _typingRow;
   Timer? _suggestionTimer;
+  OverlayEntry? _productPopup;
+  final Map<int, LayerLink> _productLinks = <int, LayerLink>{};
   /// با هر بار load ویرایش افزایش می‌یابد تا فیلدهای جدول دوباره ساخته شوند
   int _formGen = 0;
 
@@ -221,6 +223,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _discountCtrl.dispose();
     _prevDebtCtrl.dispose();
     _suggestionTimer?.cancel();
+    _productPopup?.remove();
+    _productPopup = null;
     super.dispose();
   }
 
@@ -670,6 +674,92 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  LayerLink _productLink(int row) {
+    return _productLinks.putIfAbsent(row, LayerLink.new);
+  }
+
+  void _showProductPopup(int row) {
+    _productPopup?.remove();
+    _productPopup = null;
+    final link = _productLink(row);
+    final overlay = Overlay.of(context);
+    _productPopup = OverlayEntry(
+      builder: (_) => CompositedTransformFollower(
+        link: link,
+        showWhenUnlinked: false,
+        targetAnchor: Alignment.bottomRight,
+        followerAnchor: Alignment.topRight,
+        offset: const Offset(0, 6),
+        child: _productPopupContent(row),
+      ),
+    );
+    overlay.insert(_productPopup!);
+  }
+
+  Widget _productPopupContent(int row) {
+    if (row < 0 || row >= _items.length) return const SizedBox.shrink();
+    final query = _items[row].title.trim();
+    final suggestions = _matchingProducts(query).take(3).toList();
+    if (query.length < 2 || (suggestions.isEmpty && query.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+    return Material(
+      elevation: 12,
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 280,
+        constraints: const BoxConstraints(maxHeight: 190),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _orange.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (suggestions.isNotEmpty)
+              ...suggestions.map(
+                (product) => InkWell(
+                  onTap: () => _selectProductForRow(row, product),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.add_circle_outline, size: 16, color: _orange),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${product.name} · ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (query.isNotEmpty)
+              TextButton.icon(
+                onPressed: () => _addCurrentProductToCatalog(row),
+                icon: const Icon(Icons.playlist_add, size: 17),
+                label: const Text('ذخیره محصول در کاتالوگ'),
+                style: TextButton.styleFrom(
+                  foregroundColor: _orange,
+                  textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _markTyping(int row) {
     _suggestionTimer?.cancel();
     if (mounted) {
@@ -678,13 +768,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _selectedRow = row;
       });
     }
-    _suggestionTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted) setState(() => _typingRow = null);
-    });
+    _showProductPopup(row);
+    _suggestionTimer = Timer(const Duration(seconds: 4), _hideSuggestions);
   }
 
   void _hideSuggestions() {
     _suggestionTimer?.cancel();
+    _productPopup?.remove();
+    _productPopup = null;
     if (mounted) setState(() => _typingRow = null);
   }
 
@@ -1148,12 +1239,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           color: Colors.white,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.add, color: accent, size: 32),
+                        child: Icon(Icons.tune_outlined, color: accent, size: 28),
                       ),
                       Expanded(
                         child: Center(
                           child: Text(
-                            'برای افزودن سریع کلیک کنید',
+                            'تنظیمات سریع فاکتور',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,
@@ -1280,9 +1371,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     final it = _items[idx];
                     final isSelected = _selectedRow == idx;
                     final rowNumber = PersianNumberFormatter.toPersian((idx + 1).toString());
-                    final suggestions = it.title.trim().length >= 2
-                        ? _matchingProducts(it.title)
-                        : const <ProductModel>[];
                     return InkWell(
                       onTap: () => setState(() => _selectedRow = idx),
                       child: Container(
@@ -1321,8 +1409,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Expanded(
-                                                    child: TextField(
-                                                      controller: TextEditingController(text: it.title)
+                                                    child: CompositedTransformTarget(
+                                                      link: _productLink(idx),
+                                                      child: TextField(
+                                                        controller: TextEditingController(text: it.title)
                                                         ..selection = TextSelection.collapsed(offset: it.title.length),
                                                       onChanged: (v) {
                                                         _updateItem(idx, title: v);
@@ -1353,50 +1443,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                     ),
                                                 ],
                                               ),
-                                              if (_typingRow == idx && suggestions.isNotEmpty)
-                                                ...suggestions.take(3).map(
-                                                      (product) => InkWell(
-                                                        onTap: () => _selectProductForRow(idx, product),
-                                                        child: Padding(
-                                                          padding: const EdgeInsets.only(top: 4),
-                                                          child: Row(
-                                                            children: [
-                                                              Icon(Icons.add_circle_outline, size: 14, color: _orange),
-                                                              const SizedBox(width: 4),
-                                                              Expanded(
-                                                                child: Text(
-                                                                  product.name,
-                                                                  maxLines: 1,
-                                                                  overflow: TextOverflow.ellipsis,
-                                                                  textAlign: TextAlign.right,
-                                                                  style: const TextStyle(
-                                                                    fontSize: 10,
-                                                                    color: _orange,
-                                                                    fontWeight: FontWeight.w700,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                              if (_typingRow == idx && it.title.trim().isNotEmpty)
-                                                Align(
-                                                  alignment: Alignment.centerRight,
-                                                  child: TextButton.icon(
-                                                    onPressed: () => _addCurrentProductToCatalog(idx),
-                                                    icon: const Icon(Icons.playlist_add, size: 14),
-                                                    label: const Text('افزودن به کاتالوگ'),
-                                                    style: TextButton.styleFrom(
-                                                      foregroundColor: _orange,
-                                                      padding: EdgeInsets.zero,
-                                                      minimumSize: Size.zero,
-                                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                      textStyle: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
-                                                    ),
-                                                  ),
-                                                ),
                                             ],
                                           ),
                                         ),

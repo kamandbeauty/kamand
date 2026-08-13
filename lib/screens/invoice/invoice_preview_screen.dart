@@ -215,6 +215,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
 
   void _openShareMenu() {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = Color(ref.read(settingsProvider).accentColor);
     showModalBottomSheet(
       context: context,
       backgroundColor: dark ? _slate800 : Colors.white,
@@ -253,7 +254,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                 const SizedBox(height: 16),
                 _shareTile(
                   icon: Icons.image_outlined,
-                  color: _orange,
+                  color: accent,
                   title: 'ارسال عکس فاکتور',
                   subtitle: 'اشتراک تصویر PNG',
                   onTap: () {
@@ -422,21 +423,37 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: 48,
-                              height: 48,
+                              width: 64,
+                              height: 64,
                               decoration: BoxDecoration(
-                                color: _orange,
+                                color: accent,
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               alignment: Alignment.center,
-                              child: const Text(
-                                'ف',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 22,
-                                ),
-                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: biz.logoPath.isNotEmpty && File(biz.logoPath).existsSync()
+                                  ? Image.file(
+                                      File(biz.logoPath),
+                                      width: 64,
+                                      height: 64,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Text(
+                                        'ف',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 22,
+                                        ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'ف',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 22,
+                                      ),
+                                    ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -479,7 +496,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                                   Text(
                                     _typeTitle,
                                     style: const TextStyle(
-                                      color: _orange,
+                                      color: accent,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 12,
                                     ),
