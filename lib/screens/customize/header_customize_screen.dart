@@ -92,7 +92,13 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
       }
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$title ذخیره شد (کراپ + حذف پس‌زمینه سفید)')),
+      SnackBar(
+        content: Text(
+          kind == 'logo'
+              ? '$title ذخیره شد (بدون تغییر پس‌زمینه)'
+              : '$title ذخیره شد (کراپ + حذف پس‌زمینه سفید)',
+        ),
+      ),
     );
   }
 

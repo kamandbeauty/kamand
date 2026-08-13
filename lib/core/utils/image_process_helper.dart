@@ -108,7 +108,9 @@ class ImageProcessHelper {
       bottom: bottom,
     );
 
-    if (removeWhite) {
+    // لوگو باید دقیقاً با پس‌زمینهٔ اصلی خودش ذخیره شود؛ حذف سفید فقط برای
+    // مهر و امضا انجام می‌شود تا رنگ‌ها و جزئیات سفید لوگو از بین نرود.
+    if (removeWhite && kind != 'logo') {
       // آستانه پایین‌تر برای اسکن‌های خاکستری
       decoded = removeNearWhiteBackground(decoded, threshold: 220, softness: 40);
       // پاس دوم برای سفیدهای باقی‌مانده

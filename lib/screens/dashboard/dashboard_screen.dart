@@ -708,9 +708,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       color: Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 280,
-        constraints: const BoxConstraints(maxHeight: 190),
-        padding: const EdgeInsets.all(8),
+        width: 224,
+        constraints: const BoxConstraints(maxHeight: 138),
+        padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
@@ -725,18 +725,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 (product) => InkWell(
                   onTap: () => _selectProductForRow(row, product),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
                     child: Row(
                       children: [
-                        const Icon(Icons.add_circle_outline, size: 16, color: _orange),
-                        const SizedBox(width: 6),
+                        const Icon(Icons.add_circle_outline, size: 14, color: _orange),
+                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             '${product.name} · ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ],
@@ -747,11 +747,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             if (query.isNotEmpty)
               TextButton.icon(
                 onPressed: () => _addCurrentProductToCatalog(row),
-                icon: const Icon(Icons.playlist_add, size: 17),
+                icon: const Icon(Icons.playlist_add, size: 15),
                 label: const Text('ذخیره محصول در کاتالوگ'),
                 style: TextButton.styleFrom(
                   foregroundColor: _orange,
-                  textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
+                  minimumSize: const Size(0, 30),
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  textStyle: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
                 ),
               ),
           ],
@@ -803,7 +805,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _formGen++;
       _typingRow = null;
     });
-    _suggestionTimer?.cancel();
+    // انتخاب از پیشنهاد باید همان لحظه پاپ‌آپ را ببندد.
+    _hideSuggestions();
   }
 
   void _addCurrentProductToCatalog(int idx) {

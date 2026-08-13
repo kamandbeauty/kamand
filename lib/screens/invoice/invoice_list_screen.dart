@@ -17,7 +17,7 @@ class InvoiceListScreen extends ConsumerWidget {
   const InvoiceListScreen({super.key});
 
   String _statusLabel(InvoiceModel inv) {
-    if (inv.type == 'proforma') return 'پیش‌فاکتور';
+    if (inv.type == 'proforma') return 'پیش فاکتور';
     switch (inv.status) {
       case 'paid': return 'پرداخت شده';
       case 'unpaid': return 'پرداخت نشده';

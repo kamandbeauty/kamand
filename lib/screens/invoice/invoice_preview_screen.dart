@@ -49,7 +49,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
   String get _typeTitle {
     switch (inv.type) {
       case 'proforma':
-        return 'پیش‌فاکتور';
+        return 'پیش فاکتور';
       case 'purchase':
         return 'فاکتور خرید';
       default:
@@ -425,8 +425,10 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             Container(
                               width: 64,
                               height: 64,
+                              // اطراف لوگوی انتخاب‌شده نباید با رنگ تم پر شود؛
+                              // خود تصویر (ازجمله پس‌زمینهٔ سفیدش) دست‌نخورده می‌ماند.
                               decoration: BoxDecoration(
-                                color: accent,
+                                color: Colors.transparent,
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               alignment: Alignment.center,
@@ -711,18 +713,22 @@ if (inv.cardNumber.isNotEmpty) ...[
                                     textDirection: TextDirection.ltr,
                                     children: [
                                       Expanded(
-                                        child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                            color: Colors.black,
-                                            child: const Text(
-                                              'اپلیکیشن فاکتور ساز روبی',
-                                              textAlign: TextAlign.left,
-                                              style: TextStyle(
-                                                fontSize: 9,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w700,
+                                        child: Transform.translate(
+                                          // از پدینگ داخلی کارت عبور می‌کند و به گوشهٔ چپ می‌چسبد.
+                                          offset: const Offset(-12, 0),
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                              color: Colors.black,
+                                              child: const Text(
+                                                'اپلیکیشن فاکتور ساز روبی',
+                                                textAlign: TextAlign.left,
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
                                               ),
                                             ),
                                           ),

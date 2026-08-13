@@ -29,7 +29,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   double _top = 0.05;
   double _right = 0.95;
   double _bottom = 0.95;
-  bool _removeWhite = true;
+  late bool _removeWhite;
   bool _busy = false;
   Uint8List? _previewBytes;
   Size? _imgSize;
@@ -37,6 +37,9 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   @override
   void initState() {
     super.initState();
+    // لوگو باید با پس‌زمینه و رنگ‌های اصلی خودش ذخیره شود؛
+    // حذف پس‌زمینه فقط برای مهر و امضا فعال است.
+    _removeWhite = widget.kind != 'logo';
     _load();
   }
 
@@ -61,7 +64,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
         top: _top,
         right: _right,
         bottom: _bottom,
-        removeWhite: _removeWhite,
+        removeWhite: widget.kind == 'logo' ? false : _removeWhite,
       );
       if (!mounted) return;
       Navigator.pop(context, path);
@@ -149,20 +152,30 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
             child: Column(
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  activeColor: _orange,
-                  title: const Text(
-                    'حذف پس‌زمینه سفید',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                if (widget.kind != 'logo')
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: _orange,
+                    title: const Text(
+                      'حذف پس‌زمینه سفید',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
+                    subtitle: const Text(
+                      'پیکسل‌های سفید/روشن شفاف می‌شوند',
+                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                    ),
+                    value: _removeWhite,
+                    onChanged: (v) => setState(() => _removeWhite = v),
                   ),
-                  subtitle: const Text(
-                    'پیکسل‌های سفید/روشن شفاف می‌شوند',
-                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                if (widget.kind == 'logo')
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'لوگو بدون تغییر پس‌زمینه ذخیره می‌شود',
+                      style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  value: _removeWhite,
-                  onChanged: (v) => setState(() => _removeWhite = v),
-                ),
                 const SizedBox(height: 8),
                 const Text(
                   'گوشه‌های کادر را بکشید تا ناحیه مهر/امضا انتخاب شود',
