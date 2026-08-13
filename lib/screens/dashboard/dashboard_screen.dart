@@ -234,11 +234,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return;
     }
 
-    final settings = ref.read(settingsProvider);
-    if (settings.startingInvoiceNum > 0 && mounted) {
-      setState(() => _invoiceNumber =
-          PersianNumberFormatter.toPersian(settings.startingInvoiceNum.toString()));
+    // تنظیمات و فاکتورهای قبلی را مستقیم از حافظه بخوان تا قبل از hydrate
+    // شدن Provider، شمارهٔ شروع دوباره روی ۱ نیفتد.
+    final nextNumber = await _nextInvoiceNumber();
+    if (mounted) {
+      setState(() => _invoiceNumber = PersianNumberFormatter.toPersian(nextNumber.toString()));
+      _snapshotCurrentToActiveTab();
     }
+  }
+
+  Future<int> _nextInvoiceNumber() async {
+    final settings = await PrefsStore.loadSettings();
+    final invoices = await PrefsStore.loadInvoices();
+    var next = settings?.startingInvoiceNum ?? 1;
+    if (next < 1) next = 1;
+
+    for (final invoice in invoices) {
+      final number = int.tryParse(_faToEn(invoice.number).replaceAll(RegExp(r'\D'), ''));
+      if (number != null && number >= next) next = number + 1;
+    }
+    return next;
   }
 
   @override
@@ -529,8 +544,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _addNewDraftTab() {
     _snapshotCurrentToActiveTab();
     final settings = ref.read(settingsProvider);
-    // شماره بعدی
-    final base = settings.startingInvoiceNum + _draftTabs.length;
+    // شمارهٔ تب جدید از شمارهٔ فعلی جلوتر باشد، نه همیشه ۱.
+    final currentNumber = int.tryParse(_faToEn(_invoiceNumber)) ?? settings.startingInvoiceNum;
+    final base = currentNumber + 1;
     final numFa = PersianNumberFormatter.toPersian(base.toString());
     final tab = _DraftTab(
       id: 'tab-${DateTime.now().millisecondsSinceEpoch}',
@@ -900,7 +916,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _showCustomerPicker() async {
-    final customers = ref.read(customerListProvider);
+    var customers = ref.read(customerListProvider);
+    // اولین بار ممکن است Provider هنوز hydrate نشده باشد؛ مستقیم از حافظه بخوان.
+    if (customers.isEmpty) {
+      final persistedCustomers = await PrefsStore.loadCustomers();
+      if (persistedCustomers.isNotEmpty) customers = persistedCustomers;
+    }
+    if (!mounted) return;
     final accent = Color(ref.read(settingsProvider).accentColor);
     final selected = await showModalBottomSheet<CustomerModel>(
       context: context,
@@ -1286,7 +1308,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
-  void _saveInvoice() {
+  Future<void> _saveInvoice() async {
     final cleanItems = _items
         .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0 || e.totalPrice > 0)
         .toList();
@@ -1311,7 +1333,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         (card.isNotEmpty ? detectBankName(card) : '');
     final cardOwner = selectedCard?.persianName ?? '';
 
-    String numEn = _faToEn(_invoiceNumber);
+    String numEn = _faToEn(_invoiceNumber).trim();
+    if (numEn.isEmpty) numEn = '1';
+
+    // برای فاکتور جدید شمارهٔ تکراری نده؛ این بررسی مستقیم از SharedPreferences
+    // انجام می‌شود تا به زمان hydrate شدن Provider وابسته نباشد.
+    if (!_isEditing) {
+      final persistedInvoices = await PrefsStore.loadInvoices();
+      final usedNumbers = persistedInvoices
+          .map((invoice) => int.tryParse(_faToEn(invoice.number).trim()))
+          .whereType<int>()
+          .toSet();
+      var candidate = int.tryParse(numEn) ?? 1;
+      while (usedNumbers.contains(candidate)) {
+        candidate++;
+      }
+      numEn = candidate.toString();
+    }
+
     final jalaliEn = JalaliHelper.getTodayJalali();
     // تاریخ انتخاب‌شده از تقویم برای فاکتور جدید و ویرایش‌شده یکسان ذخیره شود.
     final pickedDate = _parseJalaliLabel(_dateLabel);
@@ -1369,7 +1408,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
 
     ref.read(invoiceListProvider.notifier).saveInvoice(inv);
-    PrefsStore.clearDraft();
+    // ذخیرهٔ کامل فهرست را await کن تا بلافاصله بعد از بستن برنامه از بین نرود.
+    await PrefsStore.saveInvoices(ref.read(invoiceListProvider));
+    await PrefsStore.clearDraft();
 
     // آماده‌سازی فرم برای فاکتور بعدی
     final nextNum = (int.tryParse(numEn) ?? 1004) + 1;
