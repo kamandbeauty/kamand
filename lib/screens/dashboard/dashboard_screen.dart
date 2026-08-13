@@ -706,57 +706,65 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Material(
       elevation: 12,
       color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 196,
-        constraints: const BoxConstraints(maxHeight: 112),
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _orange.withValues(alpha: 0.25)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (suggestions.isNotEmpty)
-              ...suggestions.map(
-                (product) => InkWell(
-                  onTap: () => _selectProductForRow(row, product),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.add_circle_outline, size: 13, color: _orange),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(
-                            '${product.name} · ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
+      borderRadius: BorderRadius.circular(10),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 240),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _orange.withValues(alpha: 0.25)),
+          ),
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...suggestions.map(
+                  (product) => InkWell(
+                    onTap: () => _selectProductForRow(row, product),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add_circle_outline, size: 13, color: _orange),
+                          const SizedBox(width: 3),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 210),
+                            child: Text(
+                              '${product.name} · ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            if (query.isNotEmpty)
-              TextButton.icon(
-                onPressed: () => _addCurrentProductToCatalog(row),
-                icon: const Icon(Icons.playlist_add, size: 13),
-                label: const Text('ذخیره محصول در کاتالوگ'),
-                style: TextButton.styleFrom(
-                  foregroundColor: _orange,
-                  minimumSize: const Size(0, 24),
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  textStyle: const TextStyle(fontSize: 8, fontWeight: FontWeight.w800),
-                ),
-              ),
-          ],
+                if (query.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () => _addCurrentProductToCatalog(row),
+                    icon: const Icon(Icons.playlist_add, size: 13),
+                    label: const Text(
+                      'ذخیره محصول در کاتالوگ',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _orange,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1438,6 +1446,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                         textDirection: TextDirection.rtl,
                                                         textAlign: TextAlign.right,
                                                         decoration: const InputDecoration(
+                                                          filled: true,
+                                                          fillColor: Colors.white,
                                                           border: InputBorder.none,
                                                           hintText: 'نام کالا / خدمت',
                                                           hintTextDirection: TextDirection.rtl,
@@ -1854,12 +1864,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.right,
                 decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
                   border: InputBorder.none,
                   hintText: 'توضیحات',
                   hintTextDirection: TextDirection.rtl,
                   hintStyle: TextStyle(color: _slate400, fontSize: 12),
                 ),
-                style: TextStyle(fontSize: 12, color: dark ? Colors.white : _slate800),
+                style: const TextStyle(fontSize: 12, color: _slate800),
               ),
             ),
             const SizedBox(height: 10),

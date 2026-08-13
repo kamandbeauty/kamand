@@ -720,7 +720,10 @@ if (inv.cardNumber.isNotEmpty) ...[
                                             alignment: Alignment.topLeft,
                                             child: Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                              color: Colors.black,
+                                              decoration: BoxDecoration(
+                                                color: Colors.black,
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
                                               child: const Text(
                                                 'اپلیکیشن فاکتور ساز روبی',
                                                 textAlign: TextAlign.left,
