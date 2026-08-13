@@ -40,35 +40,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Profile Header Card — tap to edit user
-          Card(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _editUserProfile(context, user),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: _orange.withValues(alpha: 0.12),
-                  child: Text(
-                    user.name.isNotEmpty ? user.name[0] : 'ر',
-                    style: const TextStyle(
-                      color: _orange,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-                title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(
-                  '${user.city.isNotEmpty ? user.city : '—'} · ${user.country}\n'
-                  'کسب‌وکار: ${business.shopName}',
-                ),
-                isThreeLine: true,
-                trailing: const Icon(Icons.edit_outlined, color: _orange),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
 
           Card(
             child: Column(
@@ -98,19 +69,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.palette_outlined),
-                  title: const Text('حالت تاریک / روشن'),
-                  trailing: Switch(
-                    activeColor: _orange,
-                    value: settings.themeMode == 'dark',
-                    onChanged: (val) {
-                      ref.read(settingsProvider.notifier).updateSettings(
-                            AppSettingsModel.fromMap(
-                              settings.toMap()..['themeMode'] = val ? 'dark' : 'light',
-                            ),
-                          );
-                    },
-                  ),
+                  leading: const Icon(Icons.palette_outlined, color: _orange),
+                  title: const Text('انتخاب رنگ و تم برنامه'),
+                  subtitle: const Text('رنگ اصلی برنامه و فاکتور'),
+                  trailing: const Icon(Icons.chevron_left),
+                  onTap: _showThemePicker,
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -164,6 +127,71 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _showThemePicker() async {
+    const colors = [
+      Color(0xFFF97316),
+      Color(0xFFE9573F),
+      Color(0xFF8B5CF6),
+      Color(0xFF2563EB),
+      Color(0xFF0F766E),
+      Color(0xFF16A34A),
+      Color(0xFFDB2777),
+      Color(0xFF475569),
+    ];
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'انتخاب رنگ و تم برنامه',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 18,
+              runSpacing: 18,
+              children: colors
+                  .map(
+                    (color) => InkWell(
+                      onTap: () => Navigator.pop(ctx, color.value),
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected != null && mounted) {
+      final current = ref.read(settingsProvider);
+      await ref.read(settingsProvider.notifier).updateSettings(
+            current.copyWith(
+              accentColor: selected,
+              themeMode: 'light',
+            ),
+          );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('رنگ برنامه ذخیره شد')),
+      );
+    }
   }
 
   Future<void> _showBackupSheet() async {

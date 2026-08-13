@@ -757,6 +757,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  Future<void> _editInvoiceDate() async {
+    final controller = TextEditingController(text: _dateLabel);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تغییر تاریخ فاکتور'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.rtl,
+          decoration: const InputDecoration(
+            labelText: 'تاریخ فارسی',
+            hintText: 'مثلاً ۲۰ مرداد ۱۴۰۵',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('ثبت تاریخ'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value != null && value.trim().isNotEmpty && mounted) {
+      setState(() => _dateLabel = value.trim());
+    }
+  }
+
   String _todayLabel() {
     final jalali = JalaliHelper.getTodayJalali(); // 1405/05/20
     // نمایش مثل عکس: دوشنبه ۱۹ مرداد ۱۴۰۵
@@ -1190,11 +1222,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _metaInfo(
-                            icon: Icons.calendar_today_outlined,
-                            label: 'تاریخ:',
-                            value: _dateLabel,
-                            dark: dark,
+                          child: InkWell(
+                            onTap: _editInvoiceDate,
+                            borderRadius: BorderRadius.circular(12),
+                            child: _metaInfo(
+                              icon: Icons.calendar_today_outlined,
+                              label: 'تاریخ:',
+                              value: _dateLabel,
+                              dark: dark,
+                            ),
                           ),
                         ),
                       ],

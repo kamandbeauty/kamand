@@ -21,20 +21,14 @@ class FactorRubyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
 
-    ThemeMode currentThemeMode = ThemeMode.light;
-    if (settings.themeMode == 'dark') {
-      currentThemeMode = ThemeMode.dark;
-    } else if (settings.themeMode == 'system') {
-      currentThemeMode = ThemeMode.system;
-    }
-
     final accent = Color(settings.accentColor);
     return MaterialApp(
       title: 'فاکتور ساز روبی',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightThemeWith(accent),
       darkTheme: AppTheme.darkThemeWith(accent),
-      themeMode: currentThemeMode,
+      // تم تاریک حذف شده؛ فقط تم روشن با رنگ انتخابی کاربر استفاده می‌شود.
+      themeMode: ThemeMode.light,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

@@ -693,14 +693,21 @@ if (inv.cardNumber.isNotEmpty) ...[
                                   Row(
                                     textDirection: TextDirection.ltr,
                                     children: [
-                                      const Expanded(
-                                        child: Text(
-                                          'اپلیکیشن فاکتور ساز روبی',
-                                          textAlign: TextAlign.left,
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            color: Color(0xFF64748B),
-                                            fontWeight: FontWeight.w700,
+                                      Expanded(
+                                        child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                            color: Colors.black,
+                                            child: const Text(
+                                              'اپلیکیشن فاکتور ساز روبی',
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
