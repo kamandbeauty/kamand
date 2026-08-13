@@ -69,7 +69,7 @@ class AppSettingsModel {
       };
 
   factory AppSettingsModel.fromMap(Map<String, dynamic> map) => AppSettingsModel(
-        startingInvoiceNum: map['startingInvoiceNum'] ?? 1004,
+        startingInvoiceNum: map['startingInvoiceNum'] ?? 1,
         templateStyle: map['templateStyle'] ?? 'modern',
         showLogo: map['showLogo'] ?? true,
         showCardNum: map['showCardNum'] ?? true,

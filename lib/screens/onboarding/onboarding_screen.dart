@@ -18,11 +18,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   final TextEditingController _nameController = TextEditingController();
   String _selectedCountry = 'ایران';
-  String _selectedProvince = 'تهران';
-  String _selectedCity = 'تهران';
+  String _selectedCity = '';
   String _selectedUsageType = 'store';
-
-  final List<String> _provinces = ['تهران', 'خراسان رضوی', 'اصفهان', 'فارس', 'آذربایجان شرقی', 'البرز', 'خوزستان'];
 
   static const _onboardingRed = Color(0xFFE9573F);
 
@@ -40,7 +37,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
 
-    if (_step < 5) {
+    if (_step < 4) {
       setState(() => _step++);
     } else {
       final updatedUser = UserModel(
@@ -48,8 +45,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         name: _nameController.text.trim(),
         phone: '',
         country: _selectedCountry,
-        province: _selectedCountry == 'ایران' ? _selectedProvince : '',
-        city: _selectedCity,
+        province: '',
+        city: _selectedCity.trim(),
         usageType: _selectedUsageType,
         isOnboarded: true,
       );
@@ -77,7 +74,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: Column(
           children: [
             LinearProgressIndicator(
-              value: _step / 5,
+              value: _step / 4,
               minHeight: 4,
               backgroundColor: firstStep ? Colors.white.withValues(alpha: 0.25) : Colors.grey.shade200,
               color: firstStep ? Colors.white : AppTheme.primaryBlue,
@@ -85,7 +82,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
               child: Text(
-                'مرحله $_step از ۵',
+                'مرحله $_step از ۴',
                 style: TextStyle(
                   color: firstStep ? Colors.white : AppTheme.primaryBlue,
                   fontWeight: FontWeight.bold,
@@ -104,7 +101,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (_step > 1 && _step < 5)
+                  if (_step > 1 && _step < 4)
                     OutlinedButton(
                       onPressed: _prevStep,
                       style: OutlinedButton.styleFrom(
@@ -126,7 +123,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
                           )
                         : null,
-                    child: Text(_step == 5 ? 'شروع استفاده از روبی' : 'بعدی'),
+                    child: Text(_step == 4 ? 'شروع استفاده از روبی' : 'بعدی'),
                   ),
                 ],
               ),
@@ -230,25 +227,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case 3:
         return Column(
           children: [
+            const SizedBox(height: 24),
             const Text(
-              'استان و شهر محل استقرار',
+              'شهر محل فعالیت',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 24),
-            if (_selectedCountry == 'ایران') ...[
-              DropdownButtonFormField<String>(
-                value: _selectedProvince,
-                decoration: const InputDecoration(labelText: 'استان'),
-                items: _provinces
-                    .map((p) => DropdownMenuItem(value: p, child: Text(p)))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedProvince = v!),
-              ),
-              const SizedBox(height: 16),
-            ],
+            const SizedBox(height: 10),
+            const Text(
+              'نام شهر را وارد کنید',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 28),
             TextFormField(
-              initialValue: _selectedCity,
-              decoration: const InputDecoration(labelText: 'شهر'),
+              initialValue: '',
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(
+                labelText: 'شهر',
+                hintText: 'مثلاً تهران',
+                border: OutlineInputBorder(),
+              ),
               onChanged: (v) => _selectedCity = v,
             ),
           ],
@@ -258,7 +255,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         return Column(
           children: [
             const Text(
-              'نوع استفاده از برنامه',
+              'نوع کسب‌وکار یا استفاده شما',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
@@ -290,25 +287,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                 );
               },
-            ),
-          ],
-        );
-
-      case 5:
-        return Column(
-          children: [
-            const SizedBox(height: 20),
-            const Icon(Icons.verified, size: 64, color: Colors.green),
-            const SizedBox(height: 20),
-            Text(
-              'خوش آمدید، ${_nameController.text}! 🎉',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'اطلاعات شما ذخیره شد و اکنون می‌توانید صدور فاکتور را آغاز کنید.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],
         );

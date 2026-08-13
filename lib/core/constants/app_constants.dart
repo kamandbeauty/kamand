@@ -24,6 +24,7 @@ class AppConstants {
 
   static const List<Map<String, String>> usageTypes = [
     {'id': 'store', 'title': 'فروشگاه'},
+    {'id': 'online_store', 'title': 'فروشگاه اینترنتی'},
     {'id': 'services', 'title': 'خدمات'},
     {'id': 'wholesale', 'title': 'عمده‌فروشی'},
     {'id': 'freelance', 'title': 'فریلنسر'},

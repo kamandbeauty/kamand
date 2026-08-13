@@ -217,7 +217,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final name = 'factor-ruby-backup-${DateTime.now().millisecondsSinceEpoch}.json';
       final file = File('${directory.path}/$name');
       await file.writeAsString(
-        const JsonEncoder.withIndent('  ').convert(payload),
+        JsonEncoder.withIndent('  ').convert(payload),
         flush: true,
       );
 
@@ -293,6 +293,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _usageLabel(String id) {
     const map = {
       'store': 'فروشگاه',
+      'online_store': 'فروشگاه اینترنتی',
       'services': 'خدمات',
       'wholesale': 'عمده‌فروشی',
       'freelance': 'فریلنسر',

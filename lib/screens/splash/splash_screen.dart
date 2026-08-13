@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
+import '../../core/utils/prefs_store.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
@@ -44,9 +45,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     Timer(const Duration(milliseconds: 1500), _goNext);
   }
 
-  void _goNext() {
+  Future<void> _goNext() async {
     if (!mounted) return;
-    final user = ref.read(userProvider);
+    // قبل از تصمیم‌گیری، کاربر ذخیره‌شده را بخوان تا آنبوردینگ فقط یک‌بار دیده شود.
+    final savedUser = await PrefsStore.loadUser();
+    if (!mounted) return;
+    final user = savedUser ?? ref.read(userProvider);
     final next = user.isOnboarded
         ? const DashboardScreen()
         : const OnboardingScreen();
