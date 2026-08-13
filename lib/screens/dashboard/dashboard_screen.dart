@@ -699,7 +699,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _productPopupContent(int row) {
     if (row < 0 || row >= _items.length) return const SizedBox.shrink();
     final query = _items[row].title.trim();
-    final suggestions = _matchingProducts(query).take(3).toList();
+    final suggestions = _matchingProducts(query).take(2).toList();
     if (query.length < 2 || (suggestions.isEmpty && query.isEmpty)) {
       return const SizedBox.shrink();
     }
@@ -708,9 +708,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       color: Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 224,
-        constraints: const BoxConstraints(maxHeight: 138),
-        padding: const EdgeInsets.all(5),
+        width: 196,
+        constraints: const BoxConstraints(maxHeight: 112),
+        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
@@ -725,18 +725,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 (product) => InkWell(
                   onTap: () => _selectProductForRow(row, product),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
                     child: Row(
                       children: [
-                        const Icon(Icons.add_circle_outline, size: 14, color: _orange),
-                        const SizedBox(width: 4),
+                        const Icon(Icons.add_circle_outline, size: 13, color: _orange),
+                        const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             '${product.name} · ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ],
@@ -747,13 +747,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             if (query.isNotEmpty)
               TextButton.icon(
                 onPressed: () => _addCurrentProductToCatalog(row),
-                icon: const Icon(Icons.playlist_add, size: 15),
+                icon: const Icon(Icons.playlist_add, size: 13),
                 label: const Text('ذخیره محصول در کاتالوگ'),
                 style: TextButton.styleFrom(
                   foregroundColor: _orange,
-                  minimumSize: const Size(0, 30),
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  textStyle: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
+                  minimumSize: const Size(0, 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  textStyle: const TextStyle(fontSize: 8, fontWeight: FontWeight.w800),
                 ),
               ),
           ],
@@ -792,6 +792,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _selectProductForRow(int idx, ProductModel product) {
     if (idx < 0 || idx >= _items.length) return;
+
+    // قبل از بازسازی فرم، خود OverlayEntry را حذف کن تا پاپ‌آپ حتی
+    // در صورت تغییر لینک فیلد هم روی صفحه باقی نماند.
+    _suggestionTimer?.cancel();
+    final popup = _productPopup;
+    _productPopup = null;
+    popup?.remove();
+
+    if (!mounted) return;
     setState(() {
       _items[idx] = InvoiceItemModel(
         id: _items[idx].id,
@@ -805,8 +814,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _formGen++;
       _typingRow = null;
     });
-    // انتخاب از پیشنهاد باید همان لحظه پاپ‌آپ را ببندد.
-    _hideSuggestions();
   }
 
   void _addCurrentProductToCatalog(int idx) {

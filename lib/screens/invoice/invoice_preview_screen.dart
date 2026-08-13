@@ -714,10 +714,10 @@ if (inv.cardNumber.isNotEmpty) ...[
                                     children: [
                                       Expanded(
                                         child: Transform.translate(
-                                          // از پدینگ داخلی کارت عبور می‌کند و به گوشهٔ چپ می‌چسبد.
-                                          offset: const Offset(-12, 0),
+                                          // به گوشهٔ چپ و بالای خود کادر می‌چسبد.
+                                          offset: const Offset(-12, -12),
                                           child: Align(
-                                            alignment: Alignment.centerLeft,
+                                            alignment: Alignment.topLeft,
                                             child: Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                               color: Colors.black,
