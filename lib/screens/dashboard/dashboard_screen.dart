@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -138,6 +140,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _depositAmount = 0;
   double _prevDebtAmount = 0;
   int? _selectedRow;
+  int? _typingRow;
+  Timer? _suggestionTimer;
   /// با هر بار load ویرایش افزایش می‌یابد تا فیلدهای جدول دوباره ساخته شوند
   int _formGen = 0;
 
@@ -216,6 +220,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _depositCtrl.dispose();
     _discountCtrl.dispose();
     _prevDebtCtrl.dispose();
+    _suggestionTimer?.cancel();
     super.dispose();
   }
 
@@ -665,6 +670,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  void _markTyping(int row) {
+    _suggestionTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _typingRow = row;
+        _selectedRow = row;
+      });
+    }
+    _suggestionTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _typingRow = null);
+    });
+  }
+
+  void _hideSuggestions() {
+    _suggestionTimer?.cancel();
+    if (mounted) setState(() => _typingRow = null);
+  }
+
   List<ProductModel> _matchingProducts(String query) {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return const <ProductModel>[];
@@ -687,7 +710,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
       _selectedRow = idx;
       _formGen++;
+      _typingRow = null;
     });
+    _suggestionTimer?.cancel();
   }
 
   void _addCurrentProductToCatalog(int idx) {
@@ -695,10 +720,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final name = it.title.trim();
     if (name.isEmpty) return;
     final products = ref.read(productListProvider);
-    final exists = products.any((p) => p.name.trim() == name);
-    if (exists) {
+    final existingIndex = products.indexWhere((p) => p.name.trim() == name);
+    if (existingIndex >= 0) {
+      final old = products[existingIndex];
+      final updated = ProductModel(
+        id: old.id,
+        code: old.code,
+        name: old.name,
+        unit: it.unit.isEmpty ? old.unit : it.unit,
+        buyPrice: old.buyPrice,
+        sellPrice: it.unitPrice > 0 ? it.unitPrice : old.sellPrice,
+        stock: old.stock,
+        notes: old.notes,
+      );
+      ref.read(productListProvider.notifier).updateProduct(updated);
+      _hideSuggestions();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('این کالا از قبل در کاتالوگ هست')),
+        SnackBar(content: Text('قیمت آخر «$name» در کاتالوگ به‌روز شد')),
       );
       return;
     }
@@ -713,6 +751,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       notes: '',
     );
     ref.read(productListProvider.notifier).addProduct(p);
+    _hideSuggestions();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('«$name» به کاتالوگ اضافه شد')),
     );
@@ -1204,6 +1243,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ...List.generate(_items.length, (idx) {
                     final it = _items[idx];
                     final isSelected = _selectedRow == idx;
+                    final rowNumber = PersianNumberFormatter.toPersian((idx + 1).toString());
                     final suggestions = it.title.trim().length >= 2
                         ? _matchingProducts(it.title)
                         : const <ProductModel>[];
@@ -1235,12 +1275,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                             children: [
                                               Row(
                                                 children: [
+                                                  Text(
+                                                    '$rowNumber -',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: dark ? _slate400 : _slate600,
+                                                      fontWeight: FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
                                                   Expanded(
                                                     child: TextField(
                                                       controller: TextEditingController(text: it.title)
                                                         ..selection = TextSelection.collapsed(offset: it.title.length),
-                                                      onChanged: (v) => _updateItem(idx, title: v),
-                                                      onTap: () => setState(() => _selectedRow = idx),
+                                                      onChanged: (v) {
+                                                        _updateItem(idx, title: v);
+                                                        _markTyping(idx);
+                                                      },
+                                                      onTap: () => _markTyping(idx),
                                                       textDirection: TextDirection.rtl,
                                                       textAlign: TextAlign.right,
                                                       decoration: const InputDecoration(
@@ -1257,14 +1309,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                       ),
                                                     ),
                                                   ),
+                                                  // ضربدر در ابتدای ردیف قرار می‌گیرد.
                                                   if (isSelected)
                                                     InkWell(
                                                       onTap: () => _removeRow(idx),
-                                                      child: const Icon(Icons.close, size: 17, color: _slate500),
+                                                      child: const Icon(Icons.close, size: 20, color: _slate500),
                                                     ),
                                                 ],
                                               ),
-                                              if (suggestions.isNotEmpty)
+                                              if (_typingRow == idx && suggestions.isNotEmpty)
                                                 ...suggestions.take(3).map(
                                                       (product) => InkWell(
                                                         onTap: () => _selectProductForRow(idx, product),
@@ -1292,7 +1345,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                         ),
                                                       ),
                                                     ),
-                                              if (it.title.trim().isNotEmpty)
+                                              if (_typingRow == idx && it.title.trim().isNotEmpty)
                                                 Align(
                                                   alignment: Alignment.centerRight,
                                                   child: TextButton.icon(
@@ -1308,22 +1361,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                     ),
                                                   ),
                                                 ),
-                                              Align(
-                                                alignment: Alignment.centerRight,
-                                                child: Text(
-                                                  'کد: ${PersianNumberFormatter.toPersian((123456 + idx * 100).toString())}',
-                                                  style: TextStyle(
-                                                    fontSize: 9,
-                                                    color: dark ? _slate400 : _slate400,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ),
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(width: 4),
-                                        Icon(Icons.more_horiz, color: _orange, size: 20),
                                       ],
                                     ),
                                   ),
