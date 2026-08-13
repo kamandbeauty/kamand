@@ -115,72 +115,99 @@ class InvoiceListScreen extends ConsumerWidget {
                 final inv = sorted[idx];
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(color: dark? _slate800: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: dark? _slate700: const Color(0xFFE2E8F0))),
-                  child: ListTile(
-                    onTap: ()=> _showDetail(context, ref, inv),
-                    title: Text(inv.customerName.isEmpty? 'مشتری عمومی': inv.customerName, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: dark? Colors.white: _slate800)),
-                    subtitle: Text('فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم', style: TextStyle(fontSize: 11, color: _slate500)),
-                    trailing: SizedBox(
-                      width: 132,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            PersianNumberFormatter.formatCurrency(inv.totalAmount),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 12,
-                              color: dark ? Colors.white : _slate800,
-                            ),
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: dark ? _slate800 : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: dark ? _slate700 : const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        onTap: () => _showDetail(context, ref, inv),
+                        contentPadding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                        title: Text(
+                          inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: dark ? Colors.white : _slate800,
                           ),
-                          const SizedBox(height: 3),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: _statusColor(inv).withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              _statusLabel(inv),
+                        ),
+                        subtitle: Text(
+                          'فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
+                          style: const TextStyle(fontSize: 11, color: _slate500),
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              PersianNumberFormatter.formatCurrency(inv.totalAmount),
                               style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: _statusColor(inv),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                                color: dark ? Colors.white : _slate800,
                               ),
                             ),
-                          ),
-                          SizedBox(
-                            height: 30,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  tooltip: 'کپی فاکتور',
-                                  padding: EdgeInsets.zero,
-                                  visualDensity: VisualDensity.compact,
-                                  constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                                  iconSize: 17,
-                                  color: _orange,
-                                  onPressed: () => _copyInvoice(context, ref, inv),
-                                  icon: const Icon(Icons.copy_outlined),
+                            const SizedBox(height: 3),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _statusColor(inv).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _statusLabel(inv),
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: _statusColor(inv),
                                 ),
-                                IconButton(
-                                  tooltip: 'حذف فاکتور',
-                                  padding: EdgeInsets.zero,
-                                  visualDensity: VisualDensity.compact,
-                                  constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                                  iconSize: 17,
-                                  color: Colors.redAccent,
-                                  onPressed: () => _deleteInvoice(context, ref, inv),
-                                  icon: const Icon(Icons.delete_outline),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _copyInvoice(context, ref, inv),
+                                icon: const Icon(Icons.copy_outlined, size: 17),
+                                label: const Text('کپی فاکتور'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: _orange,
+                                  minimumSize: const Size(0, 36),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                                  side: BorderSide(color: _orange.withValues(alpha: 0.5)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _deleteInvoice(context, ref, inv),
+                                icon: const Icon(Icons.delete_outline, size: 17),
+                                label: const Text('حذف فاکتور'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.redAccent,
+                                  minimumSize: const Size(0, 36),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                                  side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.45)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
