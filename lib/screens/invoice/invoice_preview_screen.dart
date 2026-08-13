@@ -439,19 +439,19 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                                       width: 64,
                                       height: 64,
                                       fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const Text(
+                                      errorBuilder: (_, __, ___) => Text(
                                         'ف',
                                         style: TextStyle(
-                                          color: Colors.white,
+                                          color: accent,
                                           fontWeight: FontWeight.w900,
                                           fontSize: 22,
                                         ),
                                       ),
                                     )
-                                  : const Text(
+                                  : Text(
                                       'ف',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: accent,
                                         fontWeight: FontWeight.w900,
                                         fontSize: 22,
                                       ),
