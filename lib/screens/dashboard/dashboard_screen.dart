@@ -1797,7 +1797,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     dark: dark,
                     children: [
                       _radio(label: 'نقدی', value: 'cash', group: _paymentType, onChanged: (v) => setState(() => _paymentType = v!), dark: dark),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 4),
                       _radio(label: 'غیر نقدی', value: 'non_cash', group: _paymentType, onChanged: (v) => setState(() => _paymentType = v!), dark: dark),
                     ],
                   ),
@@ -1809,9 +1809,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     dark: dark,
                     children: [
                       _radio(label: 'پیش فاکتور', value: 'proforma', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 4),
                       _radio(label: 'فاکتور فروش', value: 'sale', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 4),
                       _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
                     ],
                   ),
@@ -2583,7 +2583,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Row(
         children: [
           SizedBox(
-            width: 92,
+            width: 78,
             child: Text(
               title,
               textAlign: TextAlign.right,
@@ -2594,7 +2594,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -2613,12 +2613,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       onTap: ()=> onChanged(value),
       borderRadius: BorderRadius.circular(20),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(label, style: TextStyle(fontSize: 11, color: selected? _orange: (dark? _slate400: _slate500), fontWeight: selected? FontWeight.w800: FontWeight.w500)),
-        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 10, color: selected? _orange: (dark? _slate400: _slate500), fontWeight: selected? FontWeight.w800: FontWeight.w500)),
+        const SizedBox(width: 3),
         Container(
-          width: 20, height: 20,
+          width: 18, height: 18,
           decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: selected? _orange: _slate400, width: 2), color: selected? _orange: Colors.transparent),
-          child: selected? const Center(child: Icon(Icons.circle, size: 10, color: Colors.white)): null,
+          child: selected? const Center(child: Icon(Icons.circle, size: 9, color: Colors.white)): null,
         ),
       ]),
     );
