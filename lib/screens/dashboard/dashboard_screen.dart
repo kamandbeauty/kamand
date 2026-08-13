@@ -1391,6 +1391,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
                                     child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
                                         Expanded(
                                           child: Column(
@@ -1413,44 +1414,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                       link: _productLink(idx),
                                                       child: TextField(
                                                         controller: (TextEditingController(text: it.title)
-                                                          ..selection = TextSelection.collapsed(offset: it.title.length)),
-                                                      onChanged: (v) {
-                                                        _updateItem(idx, title: v);
-                                                        _markTyping(idx);
-                                                      },
-                                                      onTap: () => _markTyping(idx),
-                                                      maxLines: 3,
-                                                      minLines: 1,
-                                                      textInputAction: TextInputAction.newline,
-                                                      textDirection: TextDirection.rtl,
-                                                      textAlign: TextAlign.right,
-                                                      decoration: const InputDecoration(
-                                                        border: InputBorder.none,
-                                                        hintText: 'نام کالا / خدمت',
-                                                        hintTextDirection: TextDirection.rtl,
-                                                        contentPadding: EdgeInsets.zero,
-                                                        isDense: true,
-                                                      ),
-                                                      style: TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.w800,
-                                                        color: _slate800,
+                                                          ..selection = TextSelection.collapsed(
+                                                            offset: it.title.length,
+                                                          )),
+                                                        onChanged: (v) {
+                                                          _updateItem(idx, title: v);
+                                                          _markTyping(idx);
+                                                        },
+                                                        onTap: () => _markTyping(idx),
+                                                        maxLines: 3,
+                                                        minLines: 1,
+                                                        textInputAction: TextInputAction.newline,
+                                                        textDirection: TextDirection.rtl,
+                                                        textAlign: TextAlign.right,
+                                                        decoration: const InputDecoration(
+                                                          border: InputBorder.none,
+                                                          hintText: 'نام کالا / خدمت',
+                                                          hintTextDirection: TextDirection.rtl,
+                                                          contentPadding: EdgeInsets.zero,
+                                                          isDense: true,
+                                                        ),
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.w800,
+                                                          color: _slate800,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                              ),
-                                                  // ضربدر در ابتدای ردیف قرار می‌گیرد.
-                                                  if (isSelected)
-                                                    InkWell(
-                                                      onTap: () => _removeRow(idx),
-                                                      child: const Icon(Icons.close, size: 20, color: _slate500),
-                                                    ),
                                                 ],
                                               ),
                                             ],
                                           ),
                                         ),
+                                        // ضربدر در ابتدای/سمت چپ ردیف قرار می‌گیرد.
+                                        if (isSelected)
+                                          InkWell(
+                                            onTap: () => _removeRow(idx),
+                                            child: const Icon(Icons.close, size: 20, color: _slate500),
+                                          ),
                                       ],
                                     ),
                                   ),
