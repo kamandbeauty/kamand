@@ -50,8 +50,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // قبل از تصمیم‌گیری، کاربر ذخیره‌شده را بخوان تا آنبوردینگ فقط یک‌بار دیده شود.
     final savedUser = await PrefsStore.loadUser();
     if (!mounted) return;
-    final user = savedUser ?? ref.read(userProvider);
-    final next = user.isOnboarded
+    final isOnboarded = savedUser?.isOnboarded ?? ref.read(userProvider).isOnboarded;
+    final next = isOnboarded
         ? const DashboardScreen()
         : const OnboardingScreen();
 
