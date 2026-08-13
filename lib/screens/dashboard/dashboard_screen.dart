@@ -1419,6 +1419,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                         _markTyping(idx);
                                                       },
                                                       onTap: () => _markTyping(idx),
+                                                      maxLines: 3,
+                                                      minLines: 1,
+                                                      textInputAction: TextInputAction.newline,
                                                       textDirection: TextDirection.rtl,
                                                       textAlign: TextAlign.right,
                                                       decoration: const InputDecoration(
