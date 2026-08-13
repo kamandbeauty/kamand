@@ -495,7 +495,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                                 children: [
                                   Text(
                                     _typeTitle,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: accent,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 12,

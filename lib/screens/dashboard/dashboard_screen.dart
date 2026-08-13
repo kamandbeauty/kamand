@@ -1438,6 +1438,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                       ),
                                                     ),
                                                   ),
+                                                ),
+                                              ),
                                                   // ضربدر در ابتدای ردیف قرار می‌گیرد.
                                                   if (isSelected)
                                                     InkWell(
