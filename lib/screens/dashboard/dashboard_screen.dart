@@ -1412,8 +1412,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                     child: CompositedTransformTarget(
                                                       link: _productLink(idx),
                                                       child: TextField(
-                                                        controller: TextEditingController(text: it.title)
-                                                        ..selection = TextSelection.collapsed(offset: it.title.length),
+                                                        controller: (TextEditingController(text: it.title)
+                                                          ..selection = TextSelection.collapsed(offset: it.title.length)),
                                                       onChanged: (v) {
                                                         _updateItem(idx, title: v);
                                                         _markTyping(idx);
