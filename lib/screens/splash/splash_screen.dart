@@ -86,8 +86,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             width: size.width,
             height: size.height,
             child: Image.asset(
-              'assets/images/rubilogo.jpg',
-              fit: BoxFit.cover,
+              'assets/images/logo.webp',
+              fit: BoxFit.contain,
               width: size.width,
               height: size.height,
               errorBuilder: (_, __, ___) {
