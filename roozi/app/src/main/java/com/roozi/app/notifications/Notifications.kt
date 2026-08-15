@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -40,6 +41,12 @@ object Notifications {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
 
+    /**
+     * Posts a reminder. The POST_NOTIFICATIONS permission is verified by
+     * [hasPermission] before any notify() call; lint cannot follow that through
+     * a helper, hence the explicit annotation.
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS, conditional = true)
     fun show(context: Context, taskId: Long, title: String) {
         ensureChannel(context)
         if (!hasPermission(context)) return

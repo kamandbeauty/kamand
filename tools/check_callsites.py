@@ -21,11 +21,16 @@ FUN_RE = re.compile(r"^(?:@\w+(?:\([^)]*\))?\s*)*(?:private |internal |public )?
 
 
 COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
+LINE_COMMENT_RE = re.compile(r"//[^\n]*")
 
 
 def strip_comments(text: str) -> str:
-    """Remove block comments (KDoc can legally sit inside a parameter list)."""
-    return COMMENT_RE.sub(" ", text)
+    """Remove comments.
+
+    Both block KDoc and line comments can legally sit inside a parameter list,
+    and a comma inside one would otherwise be mistaken for a parameter break.
+    """
+    return LINE_COMMENT_RE.sub("", COMMENT_RE.sub(" ", text))
 
 
 def kt_files():
@@ -89,7 +94,8 @@ def collect_declarations():
                 p = p.strip()
                 if not p:
                     continue
-                pm = re.match(r"(?:@\w+\s*)*(?:vararg\s+)?(\w+)\s*:", p)
+                # strip any annotations (e.g. @Composable) before the name
+                pm = re.match(r"(?:@\w+(?:\([^)]*\))?\s*)*(?:vararg\s+)?(\w+)\s*:", p)
                 if pm:
                     params[pm.group(1)] = "=" in p
             if name in decls and decls[name] != params:
