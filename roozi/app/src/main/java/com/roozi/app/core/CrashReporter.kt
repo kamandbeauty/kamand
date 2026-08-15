@@ -54,7 +54,9 @@ object CrashReporter {
     /** The last recorded crash, or null when the app has never crashed. */
     fun lastCrash(context: Context): String? {
         val file = File(context.applicationContext.filesDir, FILE_NAME)
-        return if (file.exists()) file.readText().takeIf { it.isNotBlank() } else null
+        if (!file.exists()) return null
+        val text = runCatching { file.readText() }.getOrNull()
+        return if (text.isNullOrBlank()) null else text
     }
 
     fun clear(context: Context) {

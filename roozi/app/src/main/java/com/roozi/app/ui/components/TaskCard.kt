@@ -108,9 +108,13 @@ fun SwipeableTaskCard(
             val bg = if (deleting) colors.danger else colors.success
             val icon = if (deleting) Icons.Rounded.DeleteOutline else Icons.Rounded.Check
             val label = stringResource(if (deleting) R.string.action_delete else R.string.action_done)
+            // The hint must sit at the edge the card is being pulled AWAY from,
+            // i.e. the edge that is being revealed first — otherwise the label
+            // hides under the card until the very end of the gesture.
             val alignment = when (direction) {
                 SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                else -> Alignment.CenterEnd
+                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                else -> Alignment.CenterStart
             }
             Box(
                 Modifier

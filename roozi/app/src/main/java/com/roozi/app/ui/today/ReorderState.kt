@@ -7,8 +7,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
 import com.roozi.app.data.repo.Task
 
 /**
@@ -22,7 +20,12 @@ class ReorderState internal constructor(
     initial: List<Task>,
     private val onCommit: (List<Long>) -> Unit
 ) {
-    var items: SnapshotStateList<Task> = initial.toMutableStateList()
+    /**
+     * Backed by mutableStateOf so that *replacing* the list is observable.
+     * A plain `var` holding a SnapshotStateList would only publish in-place
+     * mutations, and a freshly added task would never show up.
+     */
+    var items: List<Task> by mutableStateOf(initial)
         private set
 
     var draggingId: Long? by mutableStateOf(null)
@@ -42,9 +45,7 @@ class ReorderState internal constructor(
      */
     internal fun syncFrom(source: List<Task>) {
         if (draggingId != null) return
-        if (items.size != source.size || items.map { it.id } != source.map { it.id }) {
-            items = source.toMutableStateList()
-        }
+        if (items != source) items = source
     }
 
     fun onDragStart(id: Long) {
@@ -67,11 +68,11 @@ class ReorderState internal constructor(
         if (index < 0) return
 
         if (accumulated >= rowHeight && index < items.lastIndex) {
-            items.add(index + 1, items.removeAt(index))
+            items = items.toMutableList().apply { add(index + 1, removeAt(index)) }
             accumulated -= rowHeight
             dragOffset -= rowHeight
         } else if (accumulated <= -rowHeight && index > 0) {
-            items.add(index - 1, items.removeAt(index))
+            items = items.toMutableList().apply { add(index - 1, removeAt(index)) }
             accumulated += rowHeight
             dragOffset += rowHeight
         }

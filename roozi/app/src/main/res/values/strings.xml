@@ -242,4 +242,7 @@
     <string name="crash_subtitle">این گزارش را کپی کنید و برای ما بفرستید تا مشکل را برطرف کنیم.</string>
     <string name="crash_copy">کپی گزارش</string>
     <string name="crash_continue">ادامه</string>
+    <string name="home_done_and_left">امروز %1$s کار انجام دادی و %2$s تا مونده</string>
+    <string name="home_all_done">هر %1$s کار امروز رو انجام دادی 🎉</string>
+    <string name="home_none_done">امروز %1$s کار داری</string>
 </resources>

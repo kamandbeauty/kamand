@@ -44,6 +44,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -258,11 +260,21 @@ private fun DayCell(
     onClick: () -> Unit
 ) {
     val colors = RooziTheme.colors
+    val hasTasks = (load?.total ?: 0) > 0
+    val allDone = hasTasks && load!!.done >= load.total
+
+    // Days with tasks are tinted so the month reads at a glance: green when the
+    // day is fully done, warm when work is still pending.
+    val loadTint = when {
+        !hasTasks -> Color.Transparent
+        allDone -> colors.tint(colors.success)
+        else -> colors.tint(colors.orange)
+    }
     val background by animateColorAsState(
         when {
             isSelected -> colors.coral
             isToday -> colors.tint(colors.coral)
-            else -> Color.Transparent
+            else -> loadTint
         },
         tween(220),
         label = "dayBg"
@@ -271,6 +283,8 @@ private fun DayCell(
         when {
             isSelected -> Color.White
             isToday -> colors.onTint(colors.coral)
+            hasTasks && allDone -> colors.onTint(colors.success)
+            hasTasks -> colors.onTint(colors.orange)
             else -> colors.textPrimary
         },
         tween(220),
@@ -298,7 +312,12 @@ private fun DayCell(
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .background(background, CircleShape)
+                    .clip(CircleShape)
+                    .then(
+                        if (isSelected) Modifier.background(
+                            Brush.linearGradient(listOf(colors.coral, colors.purple))
+                        ) else Modifier.background(background)
+                    )
                     .then(
                         if (isToday && !isSelected)
                             Modifier.border(1.5.dp, colors.coral.copy(alpha = 0.55f), CircleShape)
@@ -306,7 +325,13 @@ private fun DayCell(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(label, style = MaterialTheme.typography.labelLarge, color = textColor)
+                Text(
+                    label,
+                    style = if (isSelected)
+                        MaterialTheme.typography.labelLarge.copy(shadow = accentTextShadow())
+                    else MaterialTheme.typography.labelLarge,
+                    color = textColor
+                )
             }
         }
         DayIndicator(load = load, selected = isSelected)
@@ -336,16 +361,20 @@ private fun DayIndicator(load: DayLoad?, selected: Boolean) {
 /** Compact strip of day-cards used for quick date picking inside the add sheet. */
 @Composable
 fun DayCountBadge(count: String, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        color = RooziTheme.colors.tint(RooziTheme.colors.coral),
-        shape = RoundedCornerShape(10.dp)
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(RooziTheme.colors.coral, RooziTheme.colors.purple)
+                )
+            )
+            .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
         Text(
             count,
-            style = MaterialTheme.typography.labelSmall,
-            color = RooziTheme.colors.onTint(RooziTheme.colors.coral),
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            style = MaterialTheme.typography.labelSmall.copy(shadow = accentTextShadow()),
+            color = Color.White
         )
     }
 }

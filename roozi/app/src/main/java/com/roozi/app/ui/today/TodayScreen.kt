@@ -361,9 +361,24 @@ private fun GreetingHeader(
     Column(Modifier.fillMaxWidth()) {
         Text(title, style = MaterialTheme.typography.headlineSmall, color = colors.textPrimary)
         Spacer(Modifier.height(4.dp))
+        // Progress at a glance: what is done and what is still waiting.
         Text(
-            text = if (state.total == 0) stringResource(R.string.home_no_tasks)
-            else stringResource(R.string.home_tasks_count, formatter.digits(state.total)),
+            text = when {
+                state.total == 0 -> stringResource(R.string.home_no_tasks)
+                state.allDone -> stringResource(
+                    R.string.home_all_done,
+                    formatter.digits(state.total)
+                )
+                state.done == 0 -> stringResource(
+                    R.string.home_none_done,
+                    formatter.digits(state.total)
+                )
+                else -> stringResource(
+                    R.string.home_done_and_left,
+                    formatter.digits(state.done),
+                    formatter.digits(state.remaining)
+                )
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = colors.textSecondary
         )

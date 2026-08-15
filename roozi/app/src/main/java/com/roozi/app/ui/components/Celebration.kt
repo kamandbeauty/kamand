@@ -84,9 +84,9 @@ fun CelebrationOverlay(
                     )
                 }
             }
-            RooziCard(
-                modifier = Modifier.fillMaxWidth(),
-                color = colors.tint(colors.mint)
+            AccentCard(
+                accent = colors.mint,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -96,14 +96,14 @@ fun CelebrationOverlay(
                     Text("🎉", style = MaterialTheme.typography.headlineMedium)
                     Text(
                         title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.textPrimary,
+                        style = MaterialTheme.typography.titleMedium.copy(shadow = accentTextShadow()),
+                        color = Color.White,
                         textAlign = TextAlign.Center
                     )
                     Text(
                         subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.textSecondary,
+                        style = MaterialTheme.typography.bodyMedium.copy(shadow = accentTextShadow()),
+                        color = Color.White,
                         textAlign = TextAlign.Center
                     )
                 }

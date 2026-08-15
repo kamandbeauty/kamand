@@ -34,6 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -72,21 +76,21 @@ fun Pill(
     leading: String? = null
 ) {
     val colors = RooziTheme.colors
-    Surface(
-        modifier = modifier,
-        color = colors.tint(color),
-        shape = CircleShape
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(Brush.linearGradient(listOf(color, color.darken(0.12f))))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             if (leading != null) Text(leading, style = MaterialTheme.typography.labelMedium)
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelMedium,
-                color = colors.onTint(color),
+                style = MaterialTheme.typography.labelMedium.copy(shadow = accentTextShadow()),
+                color = Color.White,
                 maxLines = 1
             )
         }
@@ -240,4 +244,43 @@ fun IconLabel(icon: ImageVector, text: String, tint: Color = LocalContentColor.c
         Spacer(Modifier.width(4.dp))
         Text(text, style = MaterialTheme.typography.labelMedium, color = tint)
     }
+}
+
+/** Soft drop shadow that keeps white text legible on a coloured fill. */
+fun accentTextShadow(): Shadow = Shadow(
+    color = Color(0x59000000),
+    offset = Offset(0f, 2f),
+    blurRadius = 4f
+)
+
+/** Slightly darker variant of a colour, used for subtle gradients. */
+fun Color.darken(amount: Float): Color = Color(
+    red = red * (1f - amount),
+    green = green * (1f - amount),
+    blue = blue * (1f - amount),
+    alpha = alpha
+)
+
+/**
+ * A solid, colour-filled card.
+ *
+ * Deliberately does NOT use [RooziCard]: that draws an elevation shadow, and a
+ * translucent fill lets the shadow show through as a visible rectangle behind
+ * the content. Here the fill is opaque and drawn directly, so coloured panels
+ * stay clean and their white text reads well.
+ */
+@Composable
+fun AccentCard(
+    accent: Color,
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(22.dp),
+    contentPadding: PaddingValues = PaddingValues(16.dp),
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(Brush.linearGradient(listOf(accent, accent.darken(0.12f))))
+            .padding(contentPadding)
+    ) { content() }
 }

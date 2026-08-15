@@ -48,9 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -69,6 +67,9 @@ import com.roozi.app.ui.MainViewModel
 import com.roozi.app.ui.TasksViewModel
 import com.roozi.app.ui.components.EmptyState
 import com.roozi.app.ui.components.Pill
+import com.roozi.app.ui.components.AccentCard
+import com.roozi.app.ui.components.accentTextShadow
+import com.roozi.app.ui.components.darken
 import com.roozi.app.ui.components.RooziCard
 import com.roozi.app.ui.components.SectionHeader
 import com.roozi.app.ui.components.SelectableChip
@@ -456,51 +457,27 @@ private fun PaletteSwatch(
 
 @Composable
 private fun StatCard(value: String, label: String, accent: Color, modifier: Modifier = Modifier) {
-    // Solid accent fill drawn directly: passing a translucent colour to a
-    // shadowed Surface made the elevation shadow show through as a visible
-    // rectangle behind the text.
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.linearGradient(listOf(accent, accent.darken(0.12f)))
-            )
-            .padding(vertical = 16.dp, horizontal = 12.dp),
-        contentAlignment = Alignment.Center
+    AccentCard(
+        accent = accent,
+        modifier = modifier,
+        contentPadding = PaddingValues(vertical = 16.dp, horizontal = 12.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Text(
                 value,
-                style = MaterialTheme.typography.titleLarge.copy(shadow = statTextShadow()),
+                style = MaterialTheme.typography.titleLarge.copy(shadow = accentTextShadow()),
                 color = Color.White
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.labelSmall.copy(shadow = statTextShadow()),
+                style = MaterialTheme.typography.labelSmall.copy(shadow = accentTextShadow()),
                 color = Color.White,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
-
-/** Soft drop shadow that keeps white text legible on a coloured fill. */
-private fun statTextShadow() = Shadow(
-    color = Color(0x59000000),
-    offset = Offset(0f, 2f),
-    blurRadius = 4f
-)
-
-/** Slightly darker variant of a colour, for a subtle vertical gradient. */
-private fun Color.darken(amount: Float): Color = Color(
-    red = red * (1f - amount),
-    green = green * (1f - amount),
-    blue = blue * (1f - amount),
-    alpha = alpha
-)
-
-@Composable
 private fun ActionTile(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
@@ -508,17 +485,21 @@ private fun ActionTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val colors = RooziTheme.colors
     Column(
         modifier
-            .background(colors.tint(accent), RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(Brush.linearGradient(listOf(accent, accent.darken(0.12f))))
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(icon, contentDescription = null, tint = colors.onTint(accent))
+        Icon(icon, contentDescription = null, tint = Color.White)
         Spacer(Modifier.height(6.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = colors.textPrimary)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium.copy(shadow = accentTextShadow()),
+            color = Color.White
+        )
     }
 }
 
