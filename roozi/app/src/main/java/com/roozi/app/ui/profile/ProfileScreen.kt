@@ -478,6 +478,8 @@ private fun StatCard(value: String, label: String, accent: Color, modifier: Modi
         }
     }
 }
+
+@Composable
 private fun ActionTile(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
