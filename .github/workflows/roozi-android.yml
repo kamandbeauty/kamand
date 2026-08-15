@@ -1,0 +1,98 @@
+name: ROOZI Android
+
+on:
+  push:
+    branches:
+      - "arena/01a002a3-kamand"
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: roozi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test & build ROOZI
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: roozi
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # Real correctness checks — these SHOULD block the build.
+      # Covers the Jalali calendar, recurrence rules and the streak logic.
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      # Lint is advisory: a style warning must never stop you getting an APK.
+      - name: Android Lint (advisory)
+        continue-on-error: true
+        run: ./gradlew :app:lintDebug --stacktrace
+
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Build release AAB
+        run: ./gradlew :app:bundleRelease --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: roozi-release-apk
+          path: roozi/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: roozi-release-aab
+          path: roozi/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Upload test & lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roozi-reports
+          path: |
+            roozi/app/build/reports/**
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### ROOZI build"
+            echo ""
+            if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+              size=$(du -h app/build/outputs/apk/release/app-release.apk | cut -f1)
+              echo "APK built successfully (size: $size)"
+            elif ls app/build/outputs/apk/release/*.apk >/dev/null 2>&1; then
+              echo "APK built successfully"
+            else
+              echo "No APK produced — check the logs above."
+            fi
+            echo ""
+            echo "Download it from the **Artifacts** section of this run."
+          } >> "$GITHUB_STEP_SUMMARY"
