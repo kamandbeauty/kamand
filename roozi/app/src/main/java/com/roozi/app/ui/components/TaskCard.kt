@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,18 +38,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.drawWithContent
@@ -90,22 +90,26 @@ fun SwipeableTaskCard(
     animateCompletion: Boolean = false
 ) {
     val colors = RooziTheme.colors
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     val dismissState = rememberSwipeToDismissBoxState(
         positionalThreshold = { total -> total * 0.42f }
     )
 
+    // SwipeToDismissBox already mirrors itself for RTL, so StartToEnd always
+    // means "the card moved right" in both directions. Adding another rtl
+    // check on top double-corrects and inverts the gesture in Persian, which
+    // is exactly what happened before: swiping right deleted the task.
+    //   swipe RIGHT (StartToEnd) -> done
+    //   swipe LEFT  (EndToStart) -> delete
     LaunchedEffect(dismissState.currentValue) {
         when (dismissState.currentValue) {
             SwipeToDismissBoxValue.StartToEnd -> {
-                // Visually: swipe towards the "start" edge.
-                if (rtl) onDelete() else onToggle()
+                onToggle()
                 dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
 
             SwipeToDismissBoxValue.EndToStart -> {
-                if (rtl) onToggle() else onDelete()
+                onDelete()
                 dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
 
@@ -118,18 +122,17 @@ fun SwipeableTaskCard(
         modifier = modifier,
         backgroundContent = {
             val direction = dismissState.dismissDirection
-            val deleting = if (rtl) direction == SwipeToDismissBoxValue.StartToEnd
-            else direction == SwipeToDismissBoxValue.EndToStart
+            val deleting = direction == SwipeToDismissBoxValue.EndToStart
             val bg = if (deleting) colors.danger else colors.success
             val icon = if (deleting) Icons.Rounded.DeleteOutline else Icons.Rounded.Check
             val label = stringResource(if (deleting) R.string.action_delete else R.string.action_done)
 
-            // Which edge is being uncovered. The card slides towards the
-            // opposite side, so the hint belongs on the edge it moves away from.
-            val alignment = when (direction) {
-                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-                else -> Alignment.CenterStart
-            }
+            // The card slides right on StartToEnd, uncovering the LEFT edge;
+            // it slides left on EndToStart, uncovering the RIGHT edge.
+            // AbsoluteAlignment keeps this unambiguous under RTL.
+            val onLeft = direction == SwipeToDismissBoxValue.StartToEnd
+            val alignment =
+                if (onLeft) AbsoluteAlignment.CenterLeft else AbsoluteAlignment.CenterRight
 
             // The hint tracks the gap instead of sitting at a fixed inset.
             // Pinned at a fixed padding it only cleared the card near the end
@@ -151,9 +154,9 @@ fun SwipeableTaskCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .padding(
-                            start = if (alignment == Alignment.CenterStart) inset else 0.dp,
-                            end = if (alignment == Alignment.CenterEnd) inset else 0.dp
+                        .absolutePadding(
+                            left = if (onLeft) inset else 0.dp,
+                            right = if (onLeft) 0.dp else inset
                         )
                         .graphicsLayer {
                             alpha = appear

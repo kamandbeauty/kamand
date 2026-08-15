@@ -30,7 +30,6 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -70,7 +69,6 @@ import com.roozi.app.data.repo.Task
 import com.roozi.app.ui.LocalDateFormatter
 import com.roozi.app.ui.MainViewModel
 import com.roozi.app.ui.TasksViewModel
-import com.roozi.app.ui.components.EmptyState
 import com.roozi.app.ui.components.Pill
 import com.roozi.app.ui.components.AccentCard
 import com.roozi.app.ui.components.accentTextShadow
@@ -104,7 +102,6 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
 
     val stats by tasksViewModel.stats.collectAsStateWithLifecycle()
-    val completed by tasksViewModel.completed.collectAsStateWithLifecycle()
     val categories by tasksViewModel.categories.collectAsStateWithLifecycle()
 
     var showNameDialog by rememberSaveable { mutableStateOf(false) }
@@ -392,36 +389,6 @@ fun ProfileScreen(
             }
         }
 
-        item("completedHeader") {
-            SectionHeader(
-                stringResource(R.string.completed_tasks),
-                trailing = {
-                    if (completed.isNotEmpty()) {
-                        TextButton(onClick = { tasksViewModel.deleteAllCompleted() }) {
-                            Text(
-                                stringResource(R.string.delete_all_completed),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = colors.danger
-                            )
-                        }
-                    }
-                }
-            )
-        }
-
-        if (completed.isEmpty()) {
-            item("completedEmpty") {
-                EmptyState(emoji = "✅", title = stringResource(R.string.empty_completed))
-            }
-        } else {
-            items(completed.take(20), key = { it.id }) { task ->
-                CompletedRow(
-                    task = task,
-                    onRestore = { tasksViewModel.toggleTask(task) },
-                    onDelete = { tasksViewModel.deleteTask(task) }
-                )
-            }
-        }
     }
 
     if (showNameDialog) {
@@ -599,35 +566,6 @@ private fun CategoryRow(category: Category, onDelete: () -> Unit) {
                     contentDescription = stringResource(R.string.delete),
                     tint = colors.danger
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CompletedRow(task: Task, onRestore: () -> Unit, onDelete: () -> Unit) {
-    val colors = RooziTheme.colors
-    val formatter = LocalDateFormatter.current
-    RooziCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    task.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = colors.textPrimary,
-                    textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
-                )
-                Text(
-                    task.dueDate?.let { formatter.relativeDate(it) } ?: stringResource(R.string.no_date),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.textSecondary
-                )
-            }
-            IconButton(onClick = onRestore) {
-                Icon(Icons.Rounded.Restore, contentDescription = stringResource(R.string.restore), tint = colors.mint)
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Rounded.DeleteOutline, contentDescription = stringResource(R.string.delete), tint = colors.danger)
             }
         }
     }
