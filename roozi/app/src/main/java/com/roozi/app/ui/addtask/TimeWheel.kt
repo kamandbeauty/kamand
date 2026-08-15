@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -22,7 +23,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.roozi.app.core.date.DateFormatter
 import com.roozi.app.ui.theme.RooziTheme
@@ -30,7 +33,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * Simple snapping wheel used for hours & minutes.
- * Renders with the locale's digits and works in both directions.
+ *
+ * Digits follow the UI locale, but the hour/minute order is fixed left-to-right
+ * so it matches how the resulting time is displayed everywhere else.
  */
 @Composable
 fun TimeWheelPicker(
@@ -40,34 +45,40 @@ fun TimeWheelPicker(
     modifier: Modifier = Modifier
 ) {
     val colors = RooziTheme.colors
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.surfaceMuted, RoundedCornerShape(18.dp))
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Wheel(
-            count = 24,
-            selected = minutesOfDay / 60,
-            label = { formatter.digits(it.toString().padStart(2, '0')) },
-            onSelect = { onChange(it * 60 + minutesOfDay % 60) },
-            modifier = Modifier.width(72.dp)
-        )
-        Text(
-            ":",
-            style = MaterialTheme.typography.titleLarge,
-            color = colors.textSecondary,
-            modifier = Modifier.padding(horizontal = 6.dp)
-        )
-        Wheel(
-            count = 12,
-            selected = (minutesOfDay % 60) / 5,
-            label = { formatter.digits((it * 5).toString().padStart(2, '0')) },
-            onSelect = { onChange((minutesOfDay / 60) * 60 + it * 5) },
-            modifier = Modifier.width(72.dp)
-        )
+
+    // A clock always reads hours-then-minutes from the left, exactly like the
+    // HH:MM text this picker edits. Under RTL a plain Row puts the hour wheel
+    // on the right, so the two disagreed and the columns looked swapped.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(colors.surfaceMuted, RoundedCornerShape(18.dp))
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Wheel(
+                count = 24,
+                selected = minutesOfDay / 60,
+                label = { formatter.digits(it.toString().padStart(2, '0')) },
+                onSelect = { onChange(it * 60 + minutesOfDay % 60) },
+                modifier = Modifier.width(72.dp)
+            )
+            Text(
+                ":",
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(horizontal = 6.dp)
+            )
+            Wheel(
+                count = 12,
+                selected = (minutesOfDay % 60) / 5,
+                label = { formatter.digits((it * 5).toString().padStart(2, '0')) },
+                onSelect = { onChange((minutesOfDay / 60) * 60 + it * 5) },
+                modifier = Modifier.width(72.dp)
+            )
+        }
     }
 }
 

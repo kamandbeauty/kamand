@@ -1,68 +1,74 @@
 package com.roozi.app
 
+import com.roozi.app.ui.components.SwipeDirection
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * Swipe direction contract for task rows.
  *
- * SwipeToDismissBox already mirrors itself for RTL, so the enum describes the
- * *visual* movement in both layout directions:
- *   StartToEnd -> the card moves right
- *   EndToStart -> the card moves left
+ * material3's SwipeToDismissBox mirrors its *anchors* under RTL, not the drag:
+ * the gesture is read with reverseDirection = false and the row is placed at the
+ * raw offset, so a physical right-swipe is always a positive offset. Only the
+ * enum labels swap sides — under RTL StartToEnd sits at -width and EndToStart at
+ * +width.
  *
- * A previous version added another `if (rtl)` on top of that, which
- * double-corrected and inverted the gesture in Persian: swiping right deleted
- * the task instead of completing it.
+ * So the rule the UI must follow is: decide from the *movement*, never from the
+ * enum name. Right = done, left = delete, in both locales.
  */
-private enum class Dir { StartToEnd, EndToStart, Settled }
+private const val LTR = false
+private const val RTL = true
 
-private fun action(direction: Dir): String = when (direction) {
-    Dir.StartToEnd -> "done"
-    Dir.EndToStart -> "delete"
-    Dir.Settled -> "none"
-}
+private fun action(startToEnd: Boolean, rtl: Boolean): String =
+    if (SwipeDirection.movedRight(startToEnd, rtl)) "done" else "delete"
 
-private fun label(direction: Dir): String =
-    if (direction == Dir.EndToStart) "delete" else "done"
+/** The hint must sit in the gap the row uncovered, derived from the offset sign. */
+private fun gapOnLeft(offsetPx: Float): Boolean = offsetPx > 0f
 
-/** True when the revealed gap is on the left (the card moved right). */
-private fun gapOnLeft(direction: Dir): Boolean = direction == Dir.StartToEnd
+private fun label(offsetPx: Float): String = if (gapOnLeft(offsetPx)) "done" else "delete"
 
 class SwipeActionMappingTest {
 
     @Test
     fun swipeRightCompletes_inBothLayoutDirections() {
-        // The mapping is direction-agnostic by design, so one assertion covers
-        // both locales; the point is that no rtl branch exists any more.
-        assertEquals("done", action(Dir.StartToEnd))
+        // LTR: moving right settles on StartToEnd. RTL: it settles on EndToStart.
+        assertEquals("done", action(startToEnd = true, rtl = LTR))
+        assertEquals("done", action(startToEnd = false, rtl = RTL))
     }
 
     @Test
     fun swipeLeftDeletes_inBothLayoutDirections() {
-        assertEquals("delete", action(Dir.EndToStart))
+        assertEquals("delete", action(startToEnd = false, rtl = LTR))
+        assertEquals("delete", action(startToEnd = true, rtl = RTL))
     }
 
     @Test
-    fun labelAlwaysMatchesTheAction() {
-        listOf(Dir.StartToEnd, Dir.EndToStart).forEach { direction ->
+    fun rtlInvertsTheEnumButNotTheGesture() {
+        // The regression: reading the enum directly flipped the action in Persian.
+        listOf(true, false).forEach { startToEnd ->
             assertEquals(
-                "the hint must not promise a different action",
-                action(direction),
-                label(direction)
+                "the same enum value must mean opposite movement across locales",
+                SwipeDirection.movedRight(startToEnd, LTR),
+                !SwipeDirection.movedRight(startToEnd, RTL)
             )
         }
     }
 
     @Test
-    fun hintSitsInTheGapThatOpened() {
-        assertTrue("card moved right -> gap on the left", gapOnLeft(Dir.StartToEnd))
-        assertTrue("card moved left -> gap on the right", !gapOnLeft(Dir.EndToStart))
+    fun labelAlwaysMatchesTheAction() {
+        // Positive offset = moved right = done; the hint reads from the same sign
+        // the action does, so the two cannot disagree.
+        assertEquals(action(startToEnd = true, rtl = LTR), label(120f))
+        assertEquals(action(startToEnd = false, rtl = LTR), label(-120f))
+        assertEquals(action(startToEnd = false, rtl = RTL), label(120f))
+        assertEquals(action(startToEnd = true, rtl = RTL), label(-120f))
     }
 
     @Test
-    fun settledDoesNothing() {
-        assertEquals("none", action(Dir.Settled))
+    fun hintSitsInTheGapThatOpened() {
+        assertTrue("card moved right -> gap on the left", gapOnLeft(80f))
+        assertFalse("card moved left -> gap on the right", gapOnLeft(-80f))
     }
 }

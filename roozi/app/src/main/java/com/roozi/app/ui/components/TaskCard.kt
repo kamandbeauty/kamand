@@ -45,10 +45,12 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.drawWithContent
@@ -90,47 +92,50 @@ fun SwipeableTaskCard(
     animateCompletion: Boolean = false
 ) {
     val colors = RooziTheme.colors
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     val dismissState = rememberSwipeToDismissBoxState(
         positionalThreshold = { total -> total * 0.42f }
     )
 
-    // SwipeToDismissBox already mirrors itself for RTL, so StartToEnd always
-    // means "the card moved right" in both directions. Adding another rtl
-    // check on top double-corrects and inverts the gesture in Persian, which
-    // is exactly what happened before: swiping right deleted the task.
-    //   swipe RIGHT (StartToEnd) -> done
-    //   swipe LEFT  (EndToStart) -> delete
-    LaunchedEffect(dismissState.currentValue) {
-        when (dismissState.currentValue) {
-            SwipeToDismissBoxValue.StartToEnd -> {
-                onToggle()
-                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-            }
-
-            SwipeToDismissBoxValue.EndToStart -> {
-                onDelete()
-                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-            }
-
-            SwipeToDismissBoxValue.Settled -> Unit
+    // SwipeToDismissBox (material3 1.3.x) does not mirror the *gesture*: the
+    // drag runs with reverseDirection = false and the content is placed at the
+    // raw pixel offset, so a physical right-swipe always yields a positive
+    // offset. What flips under RTL is only which enum value sits on which
+    // anchor — StartToEnd is placed at -width and EndToStart at +width.
+    //
+    // dismissDirection is derived from the offset sign, so the background hint
+    // below is already correct in both locales; currentValue is the anchor's
+    // label, so acting on it directly inverts the gesture in Persian.
+    //   card moved RIGHT -> done
+    //   card moved LEFT  -> delete
+    LaunchedEffect(dismissState.currentValue, rtl) {
+        val settled = dismissState.currentValue
+        if (settled == SwipeToDismissBoxValue.Settled) return@LaunchedEffect
+        if (SwipeDirection.movedRight(settled == SwipeToDismissBoxValue.StartToEnd, rtl)) {
+            onToggle()
+        } else {
+            onDelete()
         }
+        dismissState.snapTo(SwipeToDismissBoxValue.Settled)
     }
 
     SwipeToDismissBox(
         state = dismissState,
         modifier = modifier,
         backgroundContent = {
-            val direction = dismissState.dismissDirection
-            val deleting = direction == SwipeToDismissBoxValue.EndToStart
+            // dismissDirection is derived from the raw offset sign rather than
+            // from the anchor labels, so it is the one signal that already means
+            // the same thing in both layout directions.
+            val offsetPx = runCatching { dismissState.requireOffset() }.getOrDefault(0f)
+            val onLeft = offsetPx > 0f // card moved right -> the gap opens on the left
+
+            val deleting = !onLeft
             val bg = if (deleting) colors.danger else colors.success
             val icon = if (deleting) Icons.Rounded.DeleteOutline else Icons.Rounded.Check
             val label = stringResource(if (deleting) R.string.action_delete else R.string.action_done)
 
-            // The card slides right on StartToEnd, uncovering the LEFT edge;
-            // it slides left on EndToStart, uncovering the RIGHT edge.
-            // AbsoluteAlignment keeps this unambiguous under RTL.
-            val onLeft = direction == SwipeToDismissBoxValue.StartToEnd
+            // AbsoluteAlignment keeps the side unambiguous under RTL.
             val alignment =
                 if (onLeft) AbsoluteAlignment.CenterLeft else AbsoluteAlignment.CenterRight
 
@@ -138,8 +143,7 @@ fun SwipeableTaskCard(
             // Pinned at a fixed padding it only cleared the card near the end
             // of the gesture; following the revealed width makes it readable
             // from the first few pixels of the swipe.
-            val revealedPx = runCatching { abs(dismissState.requireOffset()) }.getOrDefault(0f)
-            val revealed = with(LocalDensity.current) { revealedPx.toDp() }
+            val revealed = with(LocalDensity.current) { abs(offsetPx).toDp() }
             val inset = (revealed - HINT_WIDTH).coerceIn(0.dp, HINT_MAX_INSET)
             val appear = (revealed.value / HINT_FULLY_VISIBLE_AT.value).coerceIn(0f, 1f)
 
