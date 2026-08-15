@@ -1,12 +1,9 @@
 pluginManagement {
     repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+        // No content filter here: the KSP plugin marker lives on the Gradle
+        // Plugin Portal / Maven Central, and over-filtering google() has caused
+        // plugin resolution to fail outright.
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
