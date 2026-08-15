@@ -47,7 +47,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -453,20 +456,49 @@ private fun PaletteSwatch(
 
 @Composable
 private fun StatCard(value: String, label: String, accent: Color, modifier: Modifier = Modifier) {
-    val colors = RooziTheme.colors
-    RooziCard(modifier, color = colors.tint(accent), contentPadding = PaddingValues(14.dp)) {
+    // Solid accent fill drawn directly: passing a translucent colour to a
+    // shadowed Surface made the elevation shadow show through as a visible
+    // rectangle behind the text.
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(22.dp))
+            .background(
+                Brush.linearGradient(listOf(accent, accent.darken(0.12f)))
+            )
+            .padding(vertical = 16.dp, horizontal = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Text(value, style = MaterialTheme.typography.titleLarge, color = colors.onTint(accent))
+            Text(
+                value,
+                style = MaterialTheme.typography.titleLarge.copy(shadow = statTextShadow()),
+                color = Color.White
+            )
             Spacer(Modifier.height(2.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary,
+                style = MaterialTheme.typography.labelSmall.copy(shadow = statTextShadow()),
+                color = Color.White,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
+
+/** Soft drop shadow that keeps white text legible on a coloured fill. */
+private fun statTextShadow() = Shadow(
+    color = Color(0x59000000),
+    offset = Offset(0f, 2f),
+    blurRadius = 4f
+)
+
+/** Slightly darker variant of a colour, for a subtle vertical gradient. */
+private fun Color.darken(amount: Float): Color = Color(
+    red = red * (1f - amount),
+    green = green * (1f - amount),
+    blue = blue * (1f - amount),
+    alpha = alpha
+)
 
 @Composable
 private fun ActionTile(
