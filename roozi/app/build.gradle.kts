@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,10 +19,11 @@ if (providers.environmentVariable("CI").orNull == "true") {
 val rooziApplicationId: String = (project.findProperty("applicationId") as String?) ?: "com.roozi.app"
 val rooziAppName: String = (project.findProperty("appName") as String?) ?: "ROOZI"
 
-// Read once, outside android { }, where `java.util` is not shadowed.
-val keystoreProps: java.util.Properties? =
+// Read once, outside android { }. NOTE: `java` is a Gradle extension name, so
+// java.util.* must be imported explicitly rather than fully qualified here.
+val keystoreProps: Properties? =
     rootProject.file("keystore.properties").takeIf { it.exists() }?.let { file ->
-        java.util.Properties().apply { file.inputStream().use { stream -> load(stream) } }
+        Properties().apply { file.inputStream().use { stream -> load(stream) } }
     }
 
 android {
