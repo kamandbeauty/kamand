@@ -116,7 +116,6 @@ fun CalendarScreen(
                 // as "nothing was scheduled" — same screen, honest wording.
                 val future = selectedDate.isAfter(today)
                 EmptyState(
-                    emoji = if (future) "✨" else "🗓️",
                     title = stringResource(
                         if (future) R.string.empty_future else R.string.no_tasks_this_day
                     )

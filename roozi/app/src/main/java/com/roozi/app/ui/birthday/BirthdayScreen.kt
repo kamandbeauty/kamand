@@ -131,7 +131,6 @@ fun BirthdayScreen(
         if (people.isEmpty()) {
             item("empty") {
                 EmptyState(
-                    emoji = "🎂",
                     title = stringResource(R.string.empty_birthdays),
                     subtitle = stringResource(R.string.empty_birthdays_sub)
                 )

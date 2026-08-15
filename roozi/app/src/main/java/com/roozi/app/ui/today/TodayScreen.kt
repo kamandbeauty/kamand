@@ -165,7 +165,6 @@ fun TodayScreen(
         if (state.tasks.isEmpty() && pendingUndated.isEmpty()) {
             item(key = "empty") {
                 EmptyState(
-                    emoji = "🌴",
                     title = stringResource(R.string.empty_today),
                     subtitle = stringResource(R.string.empty_today_sub)
                 )

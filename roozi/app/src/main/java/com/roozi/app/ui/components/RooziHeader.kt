@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -21,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -31,16 +31,18 @@ import androidx.compose.ui.unit.dp
 import com.roozi.app.R
 import com.roozi.app.ui.theme.RooziTheme
 
+/** Height of the sheen arc that sells the "polished glass" reading. */
+private val GlassSheenHeight = 30.dp
+
 /**
- * The app's top bar.
+ * The app's top bar, styled as frosted glass.
  *
- * Previously this was a fully transparent [androidx.compose.material3.TopAppBar],
- * so the app name and the search icon sat directly on the scrolling page with
- * nothing behind them — they read as loose elements floating in space, and list
- * content slid underneath them. This gives them a real surface: a brand gradient
- * band, rounded at the bottom so it reads as a header rather than a slab, with
- * the title anchored next to the mark and the search action inside a tinted
- * circle so it looks like a button instead of a stray glyph.
+ * Content scrolls underneath rather than being pushed clear of it, so the bar
+ * is deliberately translucent: the page tints it as it passes. A real gaussian
+ * blur is not used because Modifier.blur needs API 31 and minSdk here is 24 —
+ * the frost is faked instead with a translucent brand wash, a diagonal sheen
+ * across the top and a bright hairline along the bottom edge, which is what
+ * actually reads as glass at this size.
  */
 @Composable
 fun RooziHeader(
@@ -48,21 +50,47 @@ fun RooziHeader(
     modifier: Modifier = Modifier
 ) {
     val colors = RooziTheme.colors
+    val dark = colors.isDark
 
-    // Slightly deeper than the page gradient it sits on, so the band separates
-    // from the content without needing a shadow.
-    val band = Brush.linearGradient(
-        colors = listOf(colors.coral, colors.purple),
-        start = Offset.Zero,
-        end = Offset.Infinite
+    // Frosted, not merely see-through. Real glass diffuses what is behind it;
+    // with no blur available the same effect has to come from opacity, so this
+    // is tuned to leave the page a soft ghost rather than legible text that
+    // would collide with the title scrolling past underneath.
+    val wash = Brush.horizontalGradient(
+        listOf(
+            colors.coral.copy(alpha = if (dark) 0.80f else 0.76f),
+            colors.purple.copy(alpha = if (dark) 0.80f else 0.76f)
+        )
     )
+
+    // Glass is brightest where light enters and dims below; without this
+    // falloff the panel reads as flat translucent plastic.
+    val sheen = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (dark) 0.14f else 0.30f),
+            Color.Transparent
+        )
+    )
+
+    val shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+
+    // Text stays white on both themes: it sits on the brand wash, not on the
+    // page, so it must not follow the page's foreground colour.
+    val onGlass = Color.White
 
     Box(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp))
-            .background(band)
+            .clip(shape)
+            .background(wash)
     ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(GlassSheenHeight)
+                .background(sheen)
+        )
+
         Row(
             Modifier
                 .fillMaxWidth()
@@ -78,7 +106,7 @@ fun RooziHeader(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = onGlass
             )
 
             Spacer(Modifier.weight(1f))
@@ -90,7 +118,7 @@ fun RooziHeader(
                 Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.20f))
+                    .background(Color.White.copy(alpha = if (dark) 0.16f else 0.26f))
                     .clickable(
                         onClick = onSearch,
                         role = Role.Button,
@@ -101,10 +129,20 @@ fun RooziHeader(
                 Icon(
                     Icons.Rounded.Search,
                     contentDescription = stringResource(R.string.search),
-                    tint = Color.White,
+                    tint = onGlass,
                     modifier = Modifier.size(22.dp)
                 )
             }
         }
+
+        // Lit bottom edge — the cue that separates a pane of glass from a
+        // simple translucent fill.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .align(Alignment.BottomCenter)
+                .background(Color.White.copy(alpha = if (dark) 0.20f else 0.45f))
+        )
     }
 }

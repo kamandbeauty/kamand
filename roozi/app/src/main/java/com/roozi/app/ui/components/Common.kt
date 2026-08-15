@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -202,7 +201,6 @@ fun SectionHeader(
 
 @Composable
 fun EmptyState(
-    emoji: String,
     title: String,
     subtitle: String? = null,
     modifier: Modifier = Modifier
@@ -211,15 +209,10 @@ fun EmptyState(
         modifier = modifier.fillMaxWidth().padding(vertical = 40.dp, horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // The mascot carries the brand; the emoji rides along as context.
-        Box(contentAlignment = Alignment.BottomEnd) {
-            RooziMascot(size = 78.dp)
-            Text(
-                emoji,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.offset(x = 6.dp, y = 2.dp)
-            )
-        }
+        // The mascot alone carries the brand here. A second emoji pinned to its
+        // corner only repeated the one already in the title string and read as
+        // a stray sticker floating off the character.
+        RooziMascot(size = 78.dp)
         Spacer(Modifier.height(16.dp))
         Text(
             title,

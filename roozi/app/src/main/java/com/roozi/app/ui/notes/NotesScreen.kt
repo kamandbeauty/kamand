@@ -125,12 +125,13 @@ fun NotesScreen(
                 // filter, so it opens its own screen instead of filtering notes.
                 item(key = "shelf-birthdays") {
                     BookShelfItem(
+                        // No caption: the other shelves count notes, and this
+                        // one had a tagline that described nothing.
                         title = stringResource(R.string.notebook_birthdays),
-                        subtitle = stringResource(R.string.birthdays_subtitle),
+                        subtitle = "",
                         color = colors.pink,
                         selected = false,
-                        onClick = onOpenBirthdays,
-                        badge = "🎂"
+                        onClick = onOpenBirthdays
                     )
                 }
                 item(key = "shelf-all") {
@@ -185,7 +186,6 @@ fun NotesScreen(
         if (notes.isEmpty()) {
             item(key = "empty") {
                 EmptyState(
-                    emoji = "📝",
                     title = stringResource(
                         if (filter is NoteFilter.InNotebook) R.string.empty_notebook
                         else R.string.empty_notes

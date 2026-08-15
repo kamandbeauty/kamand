@@ -122,7 +122,7 @@ fun SearchScreen(
         Spacer(Modifier.height(8.dp))
 
         if (results.isEmpty()) {
-            EmptyState(emoji = "🔎", title = stringResource(R.string.empty_search))
+            EmptyState(title = stringResource(R.string.empty_search))
         } else {
             LazyColumn(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),

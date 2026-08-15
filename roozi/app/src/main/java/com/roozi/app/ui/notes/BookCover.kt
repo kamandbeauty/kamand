@@ -146,25 +146,16 @@ fun BookShelfItem(
     color: Color,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    /** Optional emblem drawn on the cover; used by the birthday notebook. */
-    badge: String? = null
+    modifier: Modifier = Modifier
 ) {
     val colors = RooziTheme.colors
     Column(
         modifier = modifier.width(92.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            BookCover(color = color, selected = selected, onClick = onClick)
-            if (badge != null) {
-                Text(
-                    badge,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(start = 12.dp, bottom = 6.dp)
-                )
-            }
-        }
+        // The cover is drawn bare: an emblem floating on it read as a sticker
+        // stuck to the book rather than part of it.
+        BookCover(color = color, selected = selected, onClick = onClick)
         Spacer(Modifier.height(8.dp))
         Text(
             text = title,
@@ -174,12 +165,16 @@ fun BookShelfItem(
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center
         )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.labelSmall,
-            color = colors.textSecondary.copy(alpha = 0.75f),
-            maxLines = 1,
-            textAlign = TextAlign.Center
-        )
+        // Blank for shelves that have nothing worth counting, so the row keeps
+        // an even baseline without inventing a caption.
+        if (subtitle.isNotBlank()) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.textSecondary.copy(alpha = 0.75f),
+                maxLines = 1,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
