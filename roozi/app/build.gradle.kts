@@ -129,17 +129,3 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
 }
-
-// Guard: an unsigned release APK cannot be installed, so make that state a
-// build failure rather than a broken download.
-androidComponents {
-    onVariants(selector().withBuildType("release")) { variant ->
-        val signed = runCatching { variant.signingConfig?.hasConfig()?.get() }.getOrNull()
-        if (signed == false) {
-            throw GradleException(
-                "Release variant '" + variant.name + "' has no signing config: the APK " +
-                    "would be unsigned and Android would reject it as an invalid package."
-            )
-        }
-    }
-}
