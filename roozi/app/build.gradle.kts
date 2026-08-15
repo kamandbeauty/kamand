@@ -17,6 +17,12 @@ if (providers.environmentVariable("CI").orNull == "true") {
 val rooziApplicationId: String = (project.findProperty("applicationId") as String?) ?: "com.roozi.app"
 val rooziAppName: String = (project.findProperty("appName") as String?) ?: "ROOZI"
 
+// Read once, outside android { }, where `java.util` is not shadowed.
+val keystoreProps: java.util.Properties? =
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.let { file ->
+        java.util.Properties().apply { file.inputStream().use { stream -> load(stream) } }
+    }
+
 android {
     namespace = "com.roozi.app"
     compileSdk = 35
@@ -39,9 +45,9 @@ android {
     // Optional release signing. The config is only created when
     // keystore.properties exists — an empty signingConfig is rejected by AGP,
     // so CI (which has no keystore) must not declare one at all.
-    val keystoreProps = rootProject.file("keystore.properties").takeIf { it.exists() }?.let { file ->
-        java.util.Properties().apply { file.inputStream().use { load(it) } }
-    }
+    // NOTE: inside android { } the name `java` resolves to AGP's own `java`
+    // property, so java.util.Properties cannot be referenced here. The keystore
+    // is therefore read outside the android block (see `keystoreProps` above).
 
     if (keystoreProps != null) {
         signingConfigs {
