@@ -103,14 +103,34 @@ class TaskRepository(
         return newId
     }
 
-    /** Reminder fires at the task time, or at 9:00 when the task has no time. */
+    /**
+     * Resolves when a reminder should fire.
+     *
+     * Rules that matter in practice:
+     *  - A task with no date still gets a reminder: it means "today".
+     *  - A task with no time defaults to 9:00.
+     *  - If that moment has already passed (e.g. it is 14:00 and the default is
+     *    9:00 today, or the user picks an earlier time), the reminder rolls to
+     *    the next day instead of being silently dropped — previously the alarm
+     *    was simply never scheduled and the user saw nothing.
+     */
     private fun reminderTimestamp(date: LocalDate?, minutes: Int?, enabled: Boolean): Long? {
-        if (!enabled || date == null) return null
-        val m = minutes ?: (9 * 60)
-        return date.atStartOfDay(ZoneId.systemDefault())
-            .plusMinutes(m.toLong())
-            .toInstant()
-            .toEpochMilli()
+        if (!enabled) return null
+        val zone = ZoneId.systemDefault()
+        val day = date ?: LocalDate.now(zone)
+        val m = minutes ?: DEFAULT_REMINDER_MINUTES
+
+        var moment = day.atStartOfDay(zone).plusMinutes(m.toLong())
+        if (moment.toInstant().toEpochMilli() <= System.currentTimeMillis()) {
+            // Only roll forward when the user did not deliberately pick a past
+            // day; a reminder on an explicitly past date is meaningless.
+            if (date == null || !day.isBefore(LocalDate.now(zone))) {
+                moment = moment.plusDays(1)
+            } else {
+                return null
+            }
+        }
+        return moment.toInstant().toEpochMilli()
     }
 
     /**
@@ -178,10 +198,11 @@ class TaskRepository(
     /** Moves a task to another day (or clears its date when [date] is null). */
     suspend fun moveToDate(taskId: Long, date: LocalDate?) {
         val task = taskDao.findById(taskId) ?: return
+        val reminderAt = reminderTimestamp(date, task.dueTime, task.reminderEnabled)
         val updated = task.copy(
             dueDate = date?.toEpochDay(),
-            reminderTime = reminderTimestamp(date, task.dueTime, task.reminderEnabled),
-            reminderEnabled = task.reminderEnabled && date != null
+            reminderTime = reminderAt,
+            reminderEnabled = task.reminderEnabled && reminderAt != null
         )
         taskDao.update(updated)
         syncReminder(updated)
@@ -254,5 +275,8 @@ class TaskRepository(
     private companion object {
         /** Safety valve when catching up a long-neglected repeating task. */
         const val MAX_ROLL_FORWARD_STEPS = 1200
+
+        /** Time of day used when a task has a reminder but no explicit time. */
+        const val DEFAULT_REMINDER_MINUTES = 9 * 60
     }
 }

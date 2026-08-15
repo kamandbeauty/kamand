@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -158,7 +159,7 @@ class MainActivity : ComponentActivity() {
                                 theme = current.theme,
                                 language = current.language,
                                 palette = current.palette,
-                                onRequestNotificationPermission = ::requestNotificationPermissionIfNeeded,
+                                onRequestNotificationPermission = ::ensureNotificationPermission,
                                 openAddSheet = pendingQuickAdd,
                                 onAddSheetOpened = { pendingQuickAdd = false }
                             )
@@ -181,17 +182,46 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Asked only when the user is about to create a task (i.e. when a reminder
-     * becomes plausible), never on first launch.
+     * Asked when the user actually switches a reminder on.
+     *
+     * Unlike the soft prompt above this ignores notificationPromptShown: if
+     * reminders are being enabled, the permission is genuinely required, and
+     * silently doing nothing would leave the user with a reminder that can
+     * never fire. When the system will no longer show the dialog we send the
+     * user to the app's notification settings instead.
      */
-    private fun requestNotificationPermissionIfNeeded() {
+    fun ensureNotificationPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        val settings = mainViewModel.settings.value ?: return
-        if (settings.notificationPromptShown) return
         if (com.roozi.app.notifications.Notifications.hasPermission(this)) return
-        mainViewModel.markNotificationPromptShown()
-        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+
+        if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) ||
+            !mainViewModel.settings.value?.notificationPromptShown.orFalse()
+        ) {
+            mainViewModel.markNotificationPromptShown()
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            openNotificationSettings()
+        }
     }
+
+    /** Opens this app's notification settings so a denied permission is fixable. */
+    fun openNotificationSettings() {
+        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        }
+        runCatching { startActivity(intent) }.onFailure {
+            runCatching {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        android.net.Uri.fromParts("package", packageName, null)
+                    )
+                )
+            }
+        }
+    }
+
+    private fun Boolean?.orFalse(): Boolean = this ?: false
 
     companion object {
         const val EXTRA_QUICK_ADD = "roozi.extra.quick_add"

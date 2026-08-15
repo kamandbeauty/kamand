@@ -102,7 +102,8 @@ fun AddTaskSheet(
     editing: Task?,
     defaultDate: LocalDate,
     onDismiss: () -> Unit,
-    onSave: (TaskDraft) -> Unit
+    onSave: (TaskDraft) -> Unit,
+    onReminderEnabled: () -> Unit = {}
 ) {
     val colors = RooziTheme.colors
 
@@ -118,7 +119,8 @@ fun AddTaskSheet(
             categories = categories,
             editing = editing,
             defaultDate = defaultDate,
-            onSave = onSave
+            onSave = onSave,
+            onReminderEnabled = onReminderEnabled
         )
     }
 }
@@ -140,7 +142,8 @@ private fun AddTaskContent(
     categories: List<Category>,
     editing: Task?,
     defaultDate: LocalDate,
-    onSave: (TaskDraft) -> Unit
+    onSave: (TaskDraft) -> Unit,
+    onReminderEnabled: () -> Unit
 ) {
     val colors = RooziTheme.colors
     val keyboard = LocalSoftwareKeyboardController.current
@@ -205,7 +208,7 @@ private fun AddTaskContent(
                     onSave(
                         TaskDraft(
                             editing?.id ?: 0L, title, description, categoryId,
-                            dueDate, dueTime, priority, reminder && dueDate != null, repeat
+                            dueDate, dueTime, priority, reminder, repeat
                         )
                     )
                 }
@@ -357,14 +360,20 @@ private fun AddTaskContent(
                 val reminderDate = dueDate
                 ReminderRow(
                     enabled = reminder,
-                    label = if (reminderDate != null && reminder)
+                    label = if (reminder)
                         stringResource(
                             R.string.reminder_at,
-                            formatter.relativeDate(reminderDate),
+                            // No date means the reminder is for today.
+                            formatter.relativeDate(reminderDate ?: LocalDate.now()),
                             formatter.time(dueTime ?: defaultReminderMinutes())
                         )
                     else stringResource(R.string.reminder_off),
-                    onToggle = { reminder = it }
+                    onToggle = { wanted ->
+                        reminder = wanted
+                        // Ask exactly when the user opts in, so a reminder can
+                        // never be saved that the system would silently block.
+                        if (wanted) onReminderEnabled()
+                    }
                 )
             }
         }
@@ -382,7 +391,7 @@ private fun AddTaskContent(
                         dueDate = dueDate,
                         dueTimeMinutes = dueTime,
                         priority = priority,
-                        reminderEnabled = reminder && dueDate != null,
+                        reminderEnabled = reminder,
                         repeat = repeat
                     )
                 )

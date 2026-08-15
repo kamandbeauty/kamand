@@ -306,6 +306,7 @@ fun RooziAppScaffold(
                 sheetVisible = false
                 editingTask = null
             },
+            onReminderEnabled = onRequestNotificationPermission,
             onSave = { draft ->
                 tasksViewModel.saveTask(
                     id = draft.id,
@@ -354,6 +355,7 @@ fun RooziAppScaffold(
                 close()
             },
             onToggleReminder = { enabled ->
+                if (enabled) onRequestNotificationPermission()
                 tasksViewModel.setReminder(task, enabled)
                 close()
             },
