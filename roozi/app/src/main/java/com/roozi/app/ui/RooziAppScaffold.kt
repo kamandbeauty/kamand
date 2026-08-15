@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -30,9 +29,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -79,6 +75,7 @@ import com.roozi.app.ui.notes.NoteEditorSheet
 import com.roozi.app.ui.notes.NotebookDialog
 import com.roozi.app.ui.notes.NotesScreen
 import com.roozi.app.ui.profile.ProfileScreen
+import com.roozi.app.ui.components.RooziHeader
 import com.roozi.app.ui.search.SearchScreen
 import com.roozi.app.ui.theme.RooziTheme
 import com.roozi.app.ui.theme.ThemePalette
@@ -186,22 +183,7 @@ fun RooziAppScaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AnimatedVisibility(visible = showBars, enter = fadeIn(), exit = fadeOut()) {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
-                    actions = {
-                        IconButton(onClick = { navController.navigate(Routes.SEARCH) }) {
-                            Icon(
-                                Icons.Rounded.Search,
-                                contentDescription = stringResource(R.string.search),
-                                tint = colors.textSecondary
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = colors.textPrimary
-                    )
-                )
+                RooziHeader(onSearch = { navController.navigate(Routes.SEARCH) })
             }
         },
         bottomBar = {

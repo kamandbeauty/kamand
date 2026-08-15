@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -93,6 +96,8 @@ fun PersonDetailScreen(
 
     val taskCreated = stringResource(R.string.gift_task_created)
 
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -102,7 +107,9 @@ fun PersonDetailScreen(
         contentPadding = PaddingValues(
             start = 20.dp,
             end = 20.dp,
-            top = contentPadding.calculateTopPadding() + 8.dp,
+            // The app header is hidden on this route, so the scaffold's top
+            // inset collapses; the status bar must be cleared here instead.
+            top = contentPadding.calculateTopPadding() + statusBar + 8.dp,
             bottom = contentPadding.calculateBottomPadding() + 96.dp
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)

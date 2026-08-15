@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,6 +67,9 @@ fun SearchScreen(
         modifier
             .fillMaxSize()
             .background(colors.background)
+            // This screen hides the app header, so it owns the status bar inset
+            // itself; without this the search field sits under the clock.
+            .statusBarsPadding()
             .padding(top = 12.dp)
     ) {
         Column(Modifier.padding(horizontal = 16.dp)) {
