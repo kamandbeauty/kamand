@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import com.roozi.app.ui.today.CompletionAnimator
 
 /**
@@ -118,7 +120,7 @@ fun rememberPenStrikeModifier(
                 )
                 // 2) it writes across the title, ink following the nib
                 val draw = tween<Float>(CompletionAnimator.PEN_DRAW_MS, easing = FastOutSlowInEasing)
-                kotlinx.coroutines.coroutineScope {
+                coroutineScope {
                     launch { pen.animateTo(1f, draw) }
                     launch { line.animateTo(1f, draw) }
                 }
