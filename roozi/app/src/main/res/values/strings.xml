@@ -160,7 +160,7 @@
     <string name="onboarding_next">بعدی</string>
     <string name="onboarding_skip">رد کردن</string>
     <string name="onboarding_start">بزن بریم 🚀</string>
-    <string name="onboarding_name_question">دوست داریم به چه اسمی صدات کنیم؟</string>
+    <string name="onboarding_name_question">دوست داری به چه اسمی صدات کنم؟</string>
     <string name="onboarding_name_hint">اسم تو</string>
     <string name="onboarding_continue">ادامه</string>
 
@@ -245,4 +245,12 @@
     <string name="home_done_and_left">امروز %1$s کار انجام دادی و %2$s تا مونده</string>
     <string name="home_all_done">هر %1$s کار امروز رو انجام دادی 🎉</string>
     <string name="home_none_done">امروز %1$s کار داری</string>
+    <string name="notif_diagnostics">بررسی اعلان‌ها</string>
+    <string name="notif_test">ارسال اعلان آزمایشی</string>
+    <string name="notif_test_sent">اعلان آزمایشی ارسال شد</string>
+    <string name="notif_blocked">اعلان‌ها خاموش‌اند — برای روشن کردن بزنید</string>
+    <string name="notif_exact_blocked">اجازه «هشدار دقیق» داده نشده؛ یادآوری ممکن است با تأخیر برسد</string>
+    <string name="notif_ok">اعلان‌ها فعال است ✓</string>
+    <string name="notif_battery_hint">اگر یادآوری نمی‌رسد، در تنظیمات گوشی برای «روزی» اجرای خودکار را روشن و محدودیت باتری را بردارید.</string>
+    <string name="notif_open_settings">تنظیمات اعلان</string>
 </resources>

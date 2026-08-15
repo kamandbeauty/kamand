@@ -19,6 +19,9 @@ object Notifications {
 
     const val CHANNEL_ID = "roozi_task_reminders"
 
+    /** Reserved id for the diagnostic notification. */
+    private const val TEST_NOTIFICATION_ID = 999_999L
+
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -85,6 +88,15 @@ object Notifications {
             .build()
 
         runCatching { NotificationManagerCompat.from(context).notify(taskId.toInt(), notification) }
+    }
+
+    /**
+     * Posts an immediate notification so the user can verify the whole chain
+     * (channel + permission + OEM policy) without waiting for a real reminder.
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS, conditional = true)
+    fun showTest(context: Context) {
+        show(context, TEST_NOTIFICATION_ID, context.getString(R.string.notif_test))
     }
 
     fun dismiss(context: Context, taskId: Long) {

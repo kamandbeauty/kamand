@@ -143,7 +143,7 @@
     <string name="onboarding_next">Next</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_start">Let\'s go 🚀</string>
-    <string name="onboarding_name_question">What should we call you?</string>
+    <string name="onboarding_name_question">What should I call you?</string>
     <string name="onboarding_name_hint">Your name</string>
     <string name="onboarding_continue">Continue</string>
 
@@ -227,4 +227,12 @@
     <string name="home_done_and_left">You did %1$s today, %2$s to go</string>
     <string name="home_all_done">You finished all %1$s tasks today 🎉</string>
     <string name="home_none_done">You have %1$s tasks today</string>
+    <string name="notif_diagnostics">Notification check</string>
+    <string name="notif_test">Send a test notification</string>
+    <string name="notif_test_sent">Test notification sent</string>
+    <string name="notif_blocked">Notifications are off — tap to enable</string>
+    <string name="notif_exact_blocked">Exact alarms are not allowed; reminders may be delayed</string>
+    <string name="notif_ok">Notifications are enabled ✓</string>
+    <string name="notif_battery_hint">If reminders never arrive, allow autostart and remove battery restrictions for ROOZI in system settings.</string>
+    <string name="notif_open_settings">Notification settings</string>
 </resources>

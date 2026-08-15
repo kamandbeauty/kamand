@@ -7,6 +7,17 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!--
+      Reminders are user-set alarm clocks for a specific moment, which is
+      exactly the use case USE_EXACT_ALARM covers; it is granted on install and
+      needs no runtime prompt. SCHEDULE_EXACT_ALARM is declared for Android 12
+      only (API 31/32), where USE_EXACT_ALARM does not yet exist.
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+
     <application
         android:name=".RooziApp"
         android:allowBackup="true"

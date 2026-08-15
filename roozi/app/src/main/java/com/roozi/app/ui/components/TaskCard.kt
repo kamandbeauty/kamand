@@ -49,7 +49,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.graphicsLayer
 import com.roozi.app.R
 import com.roozi.app.data.local.Priority
 import com.roozi.app.data.repo.Task
@@ -62,6 +70,11 @@ import androidx.compose.ui.res.stringResource
  * Swipe → mark as done, swipe ← delete (with undo). The gesture directions are
  * expressed in *visual* terms so they feel identical in RTL and LTR.
  */
+/** Approximate width of the icon + label hint. */
+private val HINT_WIDTH = 96.dp
+private val HINT_MAX_INSET = 24.dp
+private val HINT_FULLY_VISIBLE_AT = 72.dp
+
 @Composable
 fun SwipeableTaskCard(
     task: Task,
@@ -108,23 +121,44 @@ fun SwipeableTaskCard(
             val bg = if (deleting) colors.danger else colors.success
             val icon = if (deleting) Icons.Rounded.DeleteOutline else Icons.Rounded.Check
             val label = stringResource(if (deleting) R.string.action_delete else R.string.action_done)
-            // The hint must sit at the edge the card is being pulled AWAY from,
-            // i.e. the edge that is being revealed first — otherwise the label
-            // hides under the card until the very end of the gesture.
+
+            // Which edge is being uncovered. The card slides towards the
+            // opposite side, so the hint belongs on the edge it moves away from.
             val alignment = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
                 SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
                 else -> Alignment.CenterStart
             }
+
+            // The hint tracks the gap instead of sitting at a fixed inset.
+            // Pinned at a fixed padding it only cleared the card near the end
+            // of the gesture; following the revealed width makes it readable
+            // from the first few pixels of the swipe.
+            val revealedPx = runCatching { abs(dismissState.requireOffset()) }.getOrDefault(0f)
+            val revealed = with(LocalDensity.current) { revealedPx.toDp() }
+            val inset = (revealed - HINT_WIDTH).coerceIn(0.dp, HINT_MAX_INSET)
+            val appear = (revealed.value / HINT_FULLY_VISIBLE_AT.value).coerceIn(0f, 1f)
+
             Box(
                 Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(22.dp))
-                    .background(bg.copy(alpha = 0.16f))
-                    .padding(horizontal = 24.dp),
+                    .background(bg.copy(alpha = 0.16f * appear.coerceAtLeast(0.35f)))
+                    .padding(horizontal = 12.dp),
                 contentAlignment = alignment
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(
+                            start = if (alignment == Alignment.CenterStart) inset else 0.dp,
+                            end = if (alignment == Alignment.CenterEnd) inset else 0.dp
+                        )
+                        .graphicsLayer {
+                            alpha = appear
+                            scaleX = 0.85f + 0.15f * appear
+                            scaleY = 0.85f + 0.15f * appear
+                        }
+                ) {
                     Icon(icon, contentDescription = null, tint = bg)
                     Spacer(Modifier.width(8.dp))
                     Text(label, style = MaterialTheme.typography.labelLarge, color = bg)
@@ -181,14 +215,48 @@ fun TaskCardContent(
                         Text(task.category.icon, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.width(6.dp))
                     }
+                    // The strike-through is drawn by hand rather than via
+                    // TextDecoration so it can animate: a pen sweeping across
+                    // the title the moment the task is ticked.
+                    val strike by animateFloatAsState(
+                        targetValue = if (task.isCompleted) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = if (task.isCompleted) 340 else 180,
+                            easing = FastOutSlowInEasing
+                        ),
+                        label = "strike"
+                    )
                     Text(
                         text = task.title,
                         style = MaterialTheme.typography.titleSmall,
                         color = colors.textPrimary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .drawWithContent {
+                                drawContent()
+                                if (strike > 0f) {
+                                    val y = size.height / 2f
+                                    val end = size.width * strike
+                                    // Ink trail
+                                    drawLine(
+                                        color = accent,
+                                        start = Offset(0f, y),
+                                        end = Offset(end, y),
+                                        strokeWidth = 2.dp.toPx(),
+                                        cap = StrokeCap.Round
+                                    )
+                                    // Pen nib leading the stroke while drawing
+                                    if (strike < 1f) {
+                                        drawCircle(
+                                            color = accent,
+                                            radius = 2.6.dp.toPx(),
+                                            center = Offset(end, y)
+                                        )
+                                    }
+                                }
+                            }
                     )
                 }
                 if (task.description.isNotBlank()) {

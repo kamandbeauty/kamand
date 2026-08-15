@@ -28,6 +28,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Upload
 import androidx.compose.material3.AlertDialog
@@ -55,6 +57,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.roozi.app.MainActivity
+import com.roozi.app.notifications.Notifications
+import com.roozi.app.notifications.ReminderScheduler
 import com.roozi.app.R
 import com.roozi.app.data.backup.BackupManager
 import com.roozi.app.data.prefs.AppLanguage
@@ -320,6 +325,69 @@ fun ProfileScreen(
                         accent = colors.turquoise,
                         onClick = { importLauncher.launch(arrayOf(BackupManager.MIME, "text/plain", "*/*")) }
                     )
+                }
+            }
+        }
+
+        // Notification diagnostics: reminders depend on a permission, an exact
+        // alarm capability and OEM battery policy. Surfacing all three (plus a
+        // one-tap test) turns "it doesn't work" into something actionable.
+        item("notifDiagnostics") {
+            SectionHeader(stringResource(R.string.notif_diagnostics))
+        }
+
+        item("notifCard") {
+            val activity = LocalContext.current as? MainActivity
+            val notifGranted = Notifications.hasPermission(context)
+            val exactGranted = remember { ReminderScheduler(context).canScheduleExact() }
+
+            RooziCard(Modifier.fillMaxWidth()) {
+                Column {
+                    Text(
+                        text = if (notifGranted) stringResource(R.string.notif_ok)
+                        else stringResource(R.string.notif_blocked),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (notifGranted) colors.mint else colors.danger,
+                        modifier = Modifier.clickable { activity?.openNotificationSettings() }
+                    )
+                    if (!exactGranted) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.notif_exact_blocked),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.orange
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        stringResource(R.string.notif_battery_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.textSecondary
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ActionTile(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Rounded.NotificationsActive,
+                            label = stringResource(R.string.notif_test),
+                            accent = colors.purple,
+                            onClick = {
+                                Notifications.showTest(context)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.notif_test_sent),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                        ActionTile(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Rounded.Settings,
+                            label = stringResource(R.string.notif_open_settings),
+                            accent = colors.turquoise,
+                            onClick = { activity?.openNotificationSettings() }
+                        )
+                    }
                 }
             }
         }
