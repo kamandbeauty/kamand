@@ -99,10 +99,12 @@ fun <T> ChipRow(
     items: List<T>,
     selected: T?,
     onSelect: (T) -> Unit,
-    label: (T) -> String,
+    // These run inside composition (callers use stringResource / theme colours),
+    // so they must be @Composable lambdas.
+    label: @Composable (T) -> String,
     modifier: Modifier = Modifier,
-    accent: (T) -> Color = { RooziTheme.colors.coral },
-    leading: (T) -> String? = { null },
+    accent: @Composable (T) -> Color = { RooziTheme.colors.coral },
+    leading: @Composable (T) -> String? = { null },
     contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp)
 ) {
     // NOTE: the `items` parameter shadows the LazyListScope.items DSL function,
