@@ -24,6 +24,9 @@ object Notifications {
     /** Reserved id for the diagnostic notification. */
     private const val TEST_NOTIFICATION_ID = 999_999L
 
+    /** Keeps birthday notification ids clear of task ids. */
+    private const val BIRTHDAY_ID_OFFSET = 500_000L
+
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -114,6 +117,71 @@ object Notifications {
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS, conditional = true)
     fun showTest(context: Context) {
         show(context, TEST_NOTIFICATION_ID, context.getString(R.string.notif_test))
+    }
+
+    /**
+     * Birthday reminder. Uses the same branded layout as task reminders but a
+     * cake badge and its own id space, so a birthday and a task reminder can
+     * both be on screen without overwriting each other.
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS, conditional = true)
+    fun showBirthday(context: Context, personId: Long, name: String, daysUntil: Int) {
+        ensureChannel(context)
+        if (!hasPermission(context)) return
+
+        val persian = context.resources.configuration.locales[0].language != "en"
+        val title: String
+        val body: String
+        if (daysUntil <= 0) {
+            title = context.getString(R.string.notif_birthday_today_title, name)
+            body = context.getString(R.string.notif_birthday_today_body)
+        } else {
+            title = context.getString(R.string.notif_birthday_soon_title, name)
+            body = if (daysUntil == 1) {
+                context.getString(R.string.notif_birthday_tomorrow_body)
+            } else {
+                context.getString(
+                    R.string.notif_birthday_soon_body,
+                    PersianNumbers.format(daysUntil, persian)
+                )
+            }
+        }
+
+        val contentIntent = PendingIntent.getActivity(
+            context,
+            (personId + BIRTHDAY_ID_OFFSET).toInt(),
+            Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val content = RemoteViews(context.packageName, R.layout.notification_reminder).apply {
+            setTextViewText(R.id.notif_icon, "🎂")
+            setTextViewText(R.id.notif_title, title)
+            setTextViewText(R.id.notif_time, body)
+            setViewVisibility(R.id.notif_action, android.view.View.GONE)
+        }
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFFFF6B6B.toInt())
+            .setColorized(true)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setCustomContentView(content)
+            .setCustomBigContentView(content)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .build()
+
+        runCatching {
+            NotificationManagerCompat.from(context)
+                .notify((personId + BIRTHDAY_ID_OFFSET).toInt(), notification)
+        }
     }
 
     /** Localized "now" line under the reminder title. */

@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import com.roozi.app.core.CrashReporter
 import com.roozi.app.data.prefs.UserPreferences
+import com.roozi.app.data.repo.BirthdayRepository
 import com.roozi.app.data.repo.NoteRepository
 import com.roozi.app.data.repo.TaskRepository
 import com.roozi.app.notifications.Notifications
@@ -35,6 +36,7 @@ class RooziApp : Application() {
     val preferences: UserPreferences by lazy { UserPreferences(this) }
     val repository: TaskRepository by lazy { TaskRepository(this) }
     val noteRepository: NoteRepository by lazy { NoteRepository(this) }
+    val birthdayRepository: BirthdayRepository by lazy { BirthdayRepository(this) }
 
     override fun onCreate() {
         super.onCreate()
@@ -51,6 +53,8 @@ class RooziApp : Application() {
                 .onFailure { Log.e(TAG, "Seeding default notebooks failed", it) }
             runCatching { repository.rescheduleAllReminders() }
                 .onFailure { Log.e(TAG, "Rescheduling reminders failed", it) }
+            runCatching { birthdayRepository.rescheduleAll() }
+                .onFailure { Log.e(TAG, "Rescheduling birthday reminders failed", it) }
         }
     }
 

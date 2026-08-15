@@ -26,4 +26,7 @@ enum class TopLevelDestination(
 
 object Routes {
     const val SEARCH = "search"
+    const val BIRTHDAYS = "birthdays"
+    const val BIRTHDAY_PERSON = "birthday_person"
+    const val BIRTHDAY_MESSAGES = "birthday_messages"
 }

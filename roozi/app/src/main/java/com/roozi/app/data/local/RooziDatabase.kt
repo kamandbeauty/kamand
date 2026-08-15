@@ -12,9 +12,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TaskEntity::class,
         CategoryEntity::class,
         NoteEntity::class,
-        NotebookEntity::class
+        NotebookEntity::class,
+        BirthdayPersonEntity::class,
+        GiftIdeaEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class RooziDatabase : RoomDatabase() {
@@ -23,6 +25,8 @@ abstract class RooziDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun noteDao(): NoteDao
     abstract fun notebookDao(): NotebookDao
+    abstract fun birthdayDao(): BirthdayDao
+    abstract fun giftIdeaDao(): GiftIdeaDao
 
     companion object {
         @Volatile
@@ -80,13 +84,57 @@ abstract class RooziDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v3 -> v4 adds the birthday notebook. Additive only: tasks, notes and
+         * settings are untouched.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `birthday_people` (
+                        `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        `name` TEXT NOT NULL,
+                        `birthMonth` INTEGER NOT NULL,
+                        `birthDay` INTEGER NOT NULL,
+                        `birthYear` INTEGER,
+                        `relationship` TEXT NOT NULL DEFAULT '',
+                        `avatar` TEXT NOT NULL DEFAULT '',
+                        `notes` TEXT NOT NULL DEFAULT '',
+                        `reminderEnabled` INTEGER NOT NULL,
+                        `reminderOffset` INTEGER NOT NULL DEFAULT 1,
+                        `favoriteMessageId` INTEGER NOT NULL DEFAULT 0,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_birthday_people_birthMonth` ON `birthday_people` (`birthMonth`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_birthday_people_birthDay` ON `birthday_people` (`birthDay`)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `gift_ideas` (
+                        `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        `personId` INTEGER NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `isCompleted` INTEGER NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        FOREIGN KEY(`personId`) REFERENCES `birthday_people`(`id`)
+                            ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_gift_ideas_personId` ON `gift_ideas` (`personId`)")
+            }
+        }
+
         fun get(context: Context): RooziDatabase = instance ?: synchronized(this) {
             instance ?: build(context.applicationContext).also { instance = it }
         }
 
         private fun build(context: Context): RooziDatabase =
             Room.databaseBuilder(context, RooziDatabase::class.java, "roozi.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 // Last-resort safety net: if a database from an unknown/older
                 // build cannot be migrated, recreate it instead of throwing on
                 // open — an unopenable database would crash the app on every

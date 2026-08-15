@@ -62,6 +62,7 @@ import com.roozi.app.R
 import com.roozi.app.data.backup.BackupManager
 import com.roozi.app.data.prefs.AppLanguage
 import com.roozi.app.data.prefs.ThemeMode
+import com.roozi.app.data.repo.BirthdayPerson
 import com.roozi.app.data.repo.Note
 import com.roozi.app.data.repo.Notebook
 import com.roozi.app.data.repo.Task
@@ -70,6 +71,10 @@ import com.roozi.app.navigation.TopLevelDestination
 import com.roozi.app.ui.addtask.AddTaskSheet
 import com.roozi.app.ui.components.TaskActionsSheet
 import com.roozi.app.ui.calendar.CalendarScreen
+import com.roozi.app.ui.birthday.BirthdayScreen
+import com.roozi.app.ui.birthday.MessagePickerScreen
+import com.roozi.app.ui.birthday.PersonDetailScreen
+import com.roozi.app.ui.birthday.PersonEditorSheet
 import com.roozi.app.ui.notes.NoteEditorSheet
 import com.roozi.app.ui.notes.NotebookDialog
 import com.roozi.app.ui.notes.NotesScreen
@@ -115,6 +120,13 @@ fun RooziAppScaffold(
     var noteSheetVisible by remember { mutableStateOf(false) }
     var editingNote by remember { mutableStateOf<Note?>(null) }
     var notebookDialog by remember { mutableStateOf<NotebookDialogRequest?>(null) }
+
+    // Birthday notebook
+    val birthdayViewModel: BirthdayViewModel = viewModel(factory = BirthdayViewModel.Factory)
+    val personSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var personSheetVisible by remember { mutableStateOf(false) }
+    var editingPerson by remember { mutableStateOf<BirthdayPerson?>(null) }
+    val openPerson by birthdayViewModel.openPerson.collectAsStateWithLifecycle()
     val notebooks by notesViewModel.notebooks.collectAsStateWithLifecycle()
     val noteFilter by notesViewModel.filter.collectAsStateWithLifecycle()
     val lastDeletedNote by notesViewModel.lastDeleted.collectAsStateWithLifecycle()
@@ -161,7 +173,11 @@ fun RooziAppScaffold(
         }
     }
 
-    val showBars = currentRoute != Routes.SEARCH
+    val showBars = currentRoute !in setOf(
+        Routes.SEARCH,
+        Routes.BIRTHDAY_PERSON,
+        Routes.BIRTHDAY_MESSAGES
+    )
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -246,11 +262,16 @@ fun RooziAppScaffold(
                 exit = scaleOut() + fadeOut()
             ) {
                 val haptics = LocalHapticFeedback.current
+                val onBirthdays = currentRoute == Routes.BIRTHDAYS
                 val onNotesTab = currentRoute == TopLevelDestination.NOTES.route
                 FloatingActionButton(
                     onClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        if (onNotesTab) {
+                        if (onBirthdays) {
+                            editingPerson = null
+                            personSheetVisible = true
+                            onRequestNotificationPermission()
+                        } else if (onNotesTab) {
                             editingNote = null
                             noteSheetVisible = true
                         } else {
@@ -280,7 +301,11 @@ fun RooziAppScaffold(
                         Icon(
                             Icons.Rounded.Add,
                             contentDescription = stringResource(
-                                if (onNotesTab) R.string.cd_add_note else R.string.cd_add_task
+                                when {
+                                    onBirthdays -> R.string.cd_add_birthday
+                                    onNotesTab -> R.string.cd_add_note
+                                    else -> R.string.cd_add_task
+                                }
                             ),
                             modifier = Modifier.size(28.dp)
                         )
@@ -327,7 +352,58 @@ fun RooziAppScaffold(
                         editingNote = note
                         noteSheetVisible = true
                     },
-                    onEditNotebook = { book -> notebookDialog = NotebookDialogRequest(book) }
+                    onEditNotebook = { book -> notebookDialog = NotebookDialogRequest(book) },
+                    onOpenBirthdays = { navController.navigate(Routes.BIRTHDAYS) }
+                )
+            }
+
+            composable(Routes.BIRTHDAYS) {
+                BirthdayScreen(
+                    viewModel = birthdayViewModel,
+                    contentPadding = padding,
+                    onBack = { navController.popBackStack() },
+                    onAddPerson = {
+                        editingPerson = null
+                        personSheetVisible = true
+                    },
+                    onOpenPerson = { person ->
+                        birthdayViewModel.openPerson(person.id)
+                        navController.navigate(Routes.BIRTHDAY_PERSON)
+                    }
+                )
+            }
+
+            composable(Routes.BIRTHDAY_PERSON) {
+                val person = openPerson
+                if (person == null) {
+                    // The person was deleted while open; fall back rather than
+                    // showing an empty screen.
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                } else {
+                    PersonDetailScreen(
+                        viewModel = birthdayViewModel,
+                        person = person,
+                        contentPadding = padding,
+                        onBack = { navController.popBackStack() },
+                        onEdit = {
+                            editingPerson = person
+                            personSheetVisible = true
+                        },
+                        onPickMessage = { navController.navigate(Routes.BIRTHDAY_MESSAGES) }
+                    )
+                }
+            }
+
+            composable(Routes.BIRTHDAY_MESSAGES) {
+                val person = openPerson
+                MessagePickerScreen(
+                    personName = person?.name,
+                    selectedMessageId = person?.favoriteMessageId ?: 0,
+                    contentPadding = padding,
+                    onBack = { navController.popBackStack() },
+                    onUseMessage = { messageId ->
+                        person?.let { birthdayViewModel.setFavoriteMessage(it.id, messageId) }
+                    }
                 )
             }
             composable(TopLevelDestination.PROFILE.route) {
@@ -432,6 +508,48 @@ fun RooziAppScaffold(
                 {
                     notesViewModel.deleteNotebook(book)
                     notebookDialog = null
+                }
+            }
+        )
+    }
+
+    if (personSheetVisible) {
+        val formatter = LocalDateFormatter.current
+        PersonEditorSheet(
+            sheetState = personSheetState,
+            formatter = formatter,
+            editing = editingPerson,
+            onDismiss = {
+                personSheetVisible = false
+                editingPerson = null
+            },
+            onDelete = editingPerson?.let { person ->
+                {
+                    birthdayViewModel.deletePerson(person)
+                    scope.launch {
+                        personSheetState.hide()
+                        personSheetVisible = false
+                        editingPerson = null
+                    }
+                }
+            },
+            onSave = { draft ->
+                birthdayViewModel.savePerson(
+                    id = draft.id,
+                    name = draft.name,
+                    birthMonth = draft.birthMonth,
+                    birthDay = draft.birthDay,
+                    birthYear = draft.birthYear,
+                    relationship = draft.relationship,
+                    avatar = draft.avatar,
+                    notes = draft.notes,
+                    reminderEnabled = draft.reminderEnabled,
+                    reminderOffset = draft.reminderOffset
+                )
+                scope.launch {
+                    personSheetState.hide()
+                    personSheetVisible = false
+                    editingPerson = null
                 }
             }
         )

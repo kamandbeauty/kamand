@@ -12,6 +12,7 @@ class RescheduleWorker(context: Context, params: WorkerParameters) : CoroutineWo
     override suspend fun doWork(): ListenableWorker.Result = try {
         Notifications.ensureChannel(applicationContext)
         TaskRepository(applicationContext).rescheduleAllReminders()
+        com.roozi.app.data.repo.BirthdayRepository(applicationContext).rescheduleAll()
         ListenableWorker.Result.success()
     } catch (t: Throwable) {
         ListenableWorker.Result.retry()

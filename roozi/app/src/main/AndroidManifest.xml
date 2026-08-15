@@ -52,6 +52,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".notifications.BirthdayReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.roozi.app.action.BIRTHDAY" />
+            </intent-filter>
+        </receiver>
+
         <!-- Home screen widgets -->
         <receiver
             android:name=".widget.TodayWidgetProvider"

@@ -146,14 +146,25 @@ fun BookShelfItem(
     color: Color,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Optional emblem drawn on the cover; used by the birthday notebook. */
+    badge: String? = null
 ) {
     val colors = RooziTheme.colors
     Column(
         modifier = modifier.width(92.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        BookCover(color = color, selected = selected, onClick = onClick)
+        Box(contentAlignment = Alignment.Center) {
+            BookCover(color = color, selected = selected, onClick = onClick)
+            if (badge != null) {
+                Text(
+                    badge,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(start = 12.dp, bottom = 6.dp)
+                )
+            }
+        }
         Spacer(Modifier.height(8.dp))
         Text(
             text = title,

@@ -70,6 +70,7 @@ fun NotesScreen(
     viewModel: NotesViewModel,
     onOpenNote: (Note?) -> Unit,
     onEditNotebook: (Notebook?) -> Unit,
+    onOpenBirthdays: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
@@ -120,6 +121,18 @@ fun NotesScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
+                // Always first: the birthday notebook is a destination, not a
+                // filter, so it opens its own screen instead of filtering notes.
+                item(key = "shelf-birthdays") {
+                    BookShelfItem(
+                        title = stringResource(R.string.notebook_birthdays),
+                        subtitle = stringResource(R.string.birthdays_subtitle),
+                        color = colors.pink,
+                        selected = false,
+                        onClick = onOpenBirthdays,
+                        badge = "🎂"
+                    )
+                }
                 item(key = "shelf-all") {
                     BookShelfItem(
                         title = stringResource(R.string.all_notes),

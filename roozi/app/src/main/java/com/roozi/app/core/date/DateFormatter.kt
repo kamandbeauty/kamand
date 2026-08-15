@@ -23,6 +23,9 @@ class DateFormatter(private val context: Context, val persian: Boolean) {
 
     fun digits(text: String): String = if (persian) PersianNumbers.toPersian(text) else text
 
+    /** Localized Jalali month names, Farvardin first. */
+    fun jalaliMonthNames(): List<String> = jalaliMonths.toList()
+
     /** Weekday header labels for the calendar grid, in display order. */
     fun weekdayHeaders(): List<String> =
         if (persian) jalaliWeekdaysShort.toList() else gregorianWeekdaysShort.toList()
@@ -73,6 +76,25 @@ class DateFormatter(private val context: Context, val persian: Boolean) {
         val h = (minutesOfDay / 60).coerceIn(0, 23)
         val m = (minutesOfDay % 60).coerceIn(0, 59)
         return PersianNumbers.twoDigits(h, persian) + ":" + PersianNumbers.twoDigits(m, persian)
+    }
+
+    /**
+     * A recurring day/month with no year, e.g. «۲۵ مرداد».
+     * Used for birthdays, which are anniversaries rather than absolute dates.
+     */
+    fun jalaliDayMonth(month: Int, day: Int): String {
+        val safeMonth = month.coerceIn(1, 12)
+        return if (persian) {
+            "${digits(day)} ${jalaliMonths[safeMonth - 1]}"
+        } else {
+            "${digits(day)} ${jalaliMonths[safeMonth - 1]}"
+        }
+    }
+
+    /** Full Jalali date including the year, e.g. «۲۵ مرداد ۱۳۶۳». */
+    fun jalaliFull(year: Int, month: Int, day: Int): String {
+        val safeMonth = month.coerceIn(1, 12)
+        return "${digits(day)} ${jalaliMonths[safeMonth - 1]} ${digits(year)}"
     }
 
     fun percent(value: Int): String = context.getString(R.string.progress_percent, digits(value))
