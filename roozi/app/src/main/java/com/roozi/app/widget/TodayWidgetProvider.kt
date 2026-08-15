@@ -91,6 +91,7 @@ class TodayWidgetProvider : AppWidgetProvider() {
         views.setPendingIntentTemplate(R.id.widget_list, toggleTemplate)
 
         views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_today_title))
+        views.setTextViewText(R.id.widget_date, summary.dateLabel)
         views.setTextViewText(R.id.widget_progress, summary.progressLabel)
         views.setProgressBar(R.id.widget_progress_bar, summary.total.coerceAtLeast(1), summary.done, false)
 

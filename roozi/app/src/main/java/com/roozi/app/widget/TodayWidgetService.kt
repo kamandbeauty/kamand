@@ -25,6 +25,7 @@ class TodayWidgetService : RemoteViewsService() {
 private class TodayWidgetFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
 
     private var tasks: List<TaskEntity> = emptyList()
+    private var categoryColors: Map<Long, Int> = emptyMap()
     private var formatter: DateFormatter = DateFormatter(context, persian = true)
 
     override fun onCreate() = Unit
@@ -33,11 +34,16 @@ private class TodayWidgetFactory(private val context: Context) : RemoteViewsServ
         val language = WidgetData.language(context)
         val localized = WidgetData.localizedContext(context, language)
         formatter = DateFormatter(localized, language.isPersian)
+        val db = RooziDatabase.get(context)
         tasks = runCatching {
-            RooziDatabase.get(context).taskDao()
-                .todayAgendaBlocking(LocalDate.now().toEpochDay())
-                .take(MAX_ROWS)
+            db.taskDao().todayAgendaBlocking(LocalDate.now().toEpochDay()).take(MAX_ROWS)
         }.getOrDefault(emptyList())
+
+        // Row accents mirror the category colours used inside the app.
+        categoryColors = runCatching {
+            kotlinx.coroutines.runBlocking { db.categoryDao().observeAll().first() }
+                .associate { it.id to it.color }
+        }.getOrDefault(emptyMap())
     }
 
     override fun onDestroy() {
@@ -52,6 +58,11 @@ private class TodayWidgetFactory(private val context: Context) : RemoteViewsServ
 
         views.setTextViewText(R.id.row_title, task.title)
         views.setTextViewText(R.id.row_check, if (task.isCompleted) "✓" else "○")
+
+        // Category colour bar; falls back to the brand accent.
+        val accent = task.categoryId?.let { categoryColors[it] } ?: color(R.color.widget_accent)
+        views.setInt(R.id.row_accent, "setBackgroundColor", accent)
+        views.setTextColor(R.id.row_check, accent)
 
         // Strike-through and dimming for completed rows.
         // Colours come from resources so the widget follows light/dark mode.
@@ -97,7 +108,13 @@ private class TodayWidgetFactory(private val context: Context) : RemoteViewsServ
 /** Shared helpers for widget rendering. */
 object WidgetData {
 
-    data class Summary(val done: Int, val total: Int, val progressLabel: String)
+    data class Summary(
+        val done: Int,
+        val total: Int,
+        val progressLabel: String,
+        /** Localized date shown under the widget title, e.g. «شنبه ۲۴ مرداد». */
+        val dateLabel: String
+    )
 
     /**
      * The language the user actually chose in the app (not the device locale).
@@ -135,6 +152,7 @@ object WidgetData {
             PersianNumbers.format(done, persian),
             PersianNumbers.format(total, persian)
         )
-        return Summary(done, total, label)
+        val dateLabel = DateFormatter(localized, persian).weekdayAndDate(LocalDate.now())
+        return Summary(done, total, label, dateLabel)
     }
 }
