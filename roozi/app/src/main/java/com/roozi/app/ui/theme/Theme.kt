@@ -33,6 +33,7 @@ val RooziShapes = Shapes(
 @Composable
 fun RooziTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
+    palette: ThemePalette = ThemePalette.RAINBOW,
     content: @Composable () -> Unit
 ) {
     val dark = when (themeMode) {
@@ -40,7 +41,7 @@ fun RooziTheme(
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    val tokens = if (dark) DarkRooziColors else LightRooziColors
+    val tokens = rooziColorsOf(palette, dark)
 
     // Crossfade the main surfaces when the theme flips.
     val animSpec = tween<Color>(durationMillis = 420)

@@ -73,6 +73,7 @@ class BackupManager(private val context: Context, private val repository: TaskRe
                     .put("priority", t.priority)
                     .put("reminderEnabled", t.reminderEnabled)
                     .put("reminderTime", t.reminderTime ?: JSONObject.NULL)
+                    .put("repeatRule", t.repeatRule)
                     .put("sortOrder", t.sortOrder)
             )
         }
@@ -115,6 +116,7 @@ class BackupManager(private val context: Context, private val repository: TaskRe
                 priority = o.optInt("priority", 1),
                 reminderEnabled = o.optBoolean("reminderEnabled", false),
                 reminderTime = o.optNullableLong("reminderTime"),
+                repeatRule = o.optString("repeatRule", ""),
                 sortOrder = o.optInt("sortOrder", 0)
             )
         }
@@ -128,7 +130,7 @@ class BackupManager(private val context: Context, private val repository: TaskRe
 
     companion object {
         const val FORMAT = "roozi-backup"
-        const val VERSION = 1
+        const val VERSION = 2
         const val MIME = "application/json"
 
         fun suggestedFileName(): String {

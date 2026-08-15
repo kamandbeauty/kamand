@@ -1,12 +1,14 @@
 package com.roozi.app.data.repo
 
 import android.content.Context
+import com.roozi.app.core.recurrence.RecurrenceRule
 import com.roozi.app.data.local.CategoryEntity
 import com.roozi.app.data.local.DayCount
 import com.roozi.app.data.local.Priority
 import com.roozi.app.data.local.RooziDatabase
 import com.roozi.app.data.local.TaskEntity
 import com.roozi.app.notifications.ReminderScheduler
+import com.roozi.app.widget.TodayWidgetProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -44,6 +46,9 @@ class TaskRepository(
 
     val completedTasks: Flow<List<Task>> = taskDao.observeCompleted().combineWithCategories()
 
+    /** Backlog of tasks without a date. */
+    val undatedTasks: Flow<List<Task>> = taskDao.observeUndated().combineWithCategories()
+
     fun dayCounts(from: LocalDate, to: LocalDate): Flow<List<DayCount>> =
         taskDao.observeDayCounts(from.toEpochDay(), to.toEpochDay())
 
@@ -65,10 +70,12 @@ class TaskRepository(
         title: String,
         description: String = "",
         categoryId: Long? = null,
-        dueDate: LocalDate? = LocalDate.now(),
+        /** Null is a first-class value: the task simply has no date. */
+        dueDate: LocalDate? = null,
         dueTimeMinutes: Int? = null,
         priority: Priority = Priority.MEDIUM,
-        reminderEnabled: Boolean = false
+        reminderEnabled: Boolean = false,
+        repeat: RecurrenceRule = RecurrenceRule.None
     ): Long {
         val existing = if (id != 0L) taskDao.findById(id) else null
         val reminderAt = reminderTimestamp(dueDate, dueTimeMinutes, reminderEnabled)
@@ -85,12 +92,14 @@ class TaskRepository(
             priority = priority.value,
             reminderEnabled = reminderEnabled && reminderAt != null,
             reminderTime = reminderAt,
+            repeatRule = repeat.serialize(),
             sortOrder = existing?.sortOrder ?: taskDao.nextSortOrder()
         )
         val newId = if (id == 0L) taskDao.insert(entity) else {
             taskDao.update(entity); id
         }
         syncReminder(entity.copy(id = newId))
+        notifyWidgets()
         return newId
     }
 
@@ -104,6 +113,14 @@ class TaskRepository(
             .toEpochMilli()
     }
 
+    /**
+     * Pushes a refresh to any placed home-screen widget. Called only from real
+     * mutations, so widgets stay in sync without any background polling.
+     */
+    private fun notifyWidgets() {
+        runCatching { TodayWidgetProvider.notifyChanged(context) }
+    }
+
     private fun syncReminder(task: TaskEntity) {
         val at = task.reminderTime
         if (task.reminderEnabled && !task.isCompleted && at != null && at > System.currentTimeMillis()) {
@@ -113,6 +130,10 @@ class TaskRepository(
         }
     }
 
+    /**
+     * Completing a repeating task closes the current occurrence and immediately
+     * schedules the next one, so a recurring task never disappears from the plan.
+     */
     suspend fun setCompleted(taskId: Long, completed: Boolean) {
         val task = taskDao.findById(taskId) ?: return
         val updated = task.copy(
@@ -121,11 +142,52 @@ class TaskRepository(
         )
         taskDao.update(updated)
         syncReminder(updated)
+
+        if (completed) rollForwardIfRepeating(updated)
+        notifyWidgets()
+    }
+
+    private suspend fun rollForwardIfRepeating(task: TaskEntity) {
+        val rule = RecurrenceRule.parse(task.repeatRule)
+        if (!rule.isRepeating) return
+        val base = task.dueDate?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.now()
+        val next = rule.nextAfter(base) ?: return
+
+        val nextEntity = task.copy(
+            id = 0,
+            dueDate = next.toEpochDay(),
+            isCompleted = false,
+            completedAt = null,
+            createdAt = System.currentTimeMillis(),
+            reminderTime = reminderTimestamp(next, task.dueTime, task.reminderEnabled)
+        )
+        val newId = taskDao.insert(nextEntity)
+        syncReminder(nextEntity.copy(id = newId))
+    }
+
+    /** Moves a task to another day (or clears its date when [date] is null). */
+    suspend fun moveToDate(taskId: Long, date: LocalDate?) {
+        val task = taskDao.findById(taskId) ?: return
+        val updated = task.copy(
+            dueDate = date?.toEpochDay(),
+            reminderTime = reminderTimestamp(date, task.dueTime, task.reminderEnabled),
+            reminderEnabled = task.reminderEnabled && date != null
+        )
+        taskDao.update(updated)
+        syncReminder(updated)
+        notifyWidgets()
+    }
+
+    /** Persists a drag & drop reordering. */
+    suspend fun applyOrder(ids: List<Long>) {
+        taskDao.applyOrder(ids)
+        notifyWidgets()
     }
 
     suspend fun delete(taskId: Long) {
         scheduler.cancel(taskId)
         taskDao.deleteById(taskId)
+        notifyWidgets()
     }
 
     /** Re-inserts a previously deleted task (undo). Keeps the original id. */
@@ -133,9 +195,13 @@ class TaskRepository(
         val entity = task.toEntity()
         taskDao.insert(entity)
         syncReminder(entity)
+        notifyWidgets()
     }
 
-    suspend fun deleteAllCompleted() = taskDao.deleteCompleted()
+    suspend fun deleteAllCompleted() {
+        taskDao.deleteCompleted()
+        notifyWidgets()
+    }
 
     suspend fun addCategory(name: String, icon: String, color: Int): Long =
         categoryDao.upsert(CategoryEntity(name = name.trim(), icon = icon, color = color))
@@ -172,5 +238,6 @@ class TaskRepository(
         categoryDao.replaceAll(categories)
         taskDao.insertAll(tasks)
         rescheduleAllReminders()
+        notifyWidgets()
     }
 }

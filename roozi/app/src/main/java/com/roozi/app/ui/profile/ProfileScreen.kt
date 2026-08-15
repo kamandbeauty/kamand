@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,6 +73,8 @@ import com.roozi.app.ui.components.TaskCardContent
 import com.roozi.app.ui.components.WeeklyBars
 import com.roozi.app.ui.displayName
 import com.roozi.app.ui.theme.RooziTheme
+import com.roozi.app.ui.theme.ThemePalette
+import com.roozi.app.ui.theme.rooziColorsOf
 import kotlinx.coroutines.launch
 
 @Composable
@@ -82,6 +85,7 @@ fun ProfileScreen(
     userName: String,
     theme: ThemeMode,
     language: AppLanguage,
+    palette: ThemePalette,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
@@ -238,6 +242,37 @@ fun ProfileScreen(
             }
         }
 
+        item("palette") {
+            RooziCard(Modifier.fillMaxWidth()) {
+                Column {
+                    Text(
+                        stringResource(R.string.theme_palette),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = colors.textPrimary
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(ThemePalette.free) { option ->
+                            PaletteSwatch(
+                                option = option,
+                                selected = palette == option,
+                                dark = colors.isDark,
+                                onClick = { mainViewModel.setPalette(option) }
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        stringResource(R.string.theme_premium_soon),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.textSecondary
+                    )
+                }
+            }
+        }
+
         item("categoriesHeader") {
             SectionHeader(
                 stringResource(R.string.manage_categories),
@@ -373,6 +408,46 @@ private fun ProfileHeader(userName: String, streakText: String, onEditName: () -
                 Icon(Icons.Rounded.Edit, contentDescription = stringResource(R.string.edit_name), tint = colors.textSecondary)
             }
         }
+    }
+}
+
+/** Live preview chip: shows the palette's own colours, not a generic dot. */
+@Composable
+private fun PaletteSwatch(
+    option: ThemePalette,
+    selected: Boolean,
+    dark: Boolean,
+    onClick: () -> Unit
+) {
+    val colors = RooziTheme.colors
+    val preview = rooziColorsOf(option, dark)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(
+                    Brush.linearGradient(listOf(preview.coral, preview.purple)),
+                    CircleShape
+                )
+                .then(
+                    if (selected) Modifier.border(3.dp, colors.textPrimary.copy(alpha = 0.75f), CircleShape)
+                    else Modifier.border(1.dp, colors.outline, CircleShape)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(option.emoji, style = MaterialTheme.typography.titleMedium)
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            stringResource(option.labelRes),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) colors.textPrimary else colors.textSecondary
+        )
     }
 }
 

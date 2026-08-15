@@ -62,5 +62,10 @@ data class TaskEntity(
     val reminderEnabled: Boolean = false,
     /** Absolute epoch millis of the reminder trigger. */
     val reminderTime: Long? = null,
+    /**
+     * Serialized [com.roozi.app.core.recurrence.RecurrenceRule].
+     * Empty string means the task does not repeat.
+     */
+    @ColumnInfo(defaultValue = "") val repeatRule: String = "",
     val sortOrder: Int = 0
 )

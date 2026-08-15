@@ -3,6 +3,7 @@ package com.roozi.app.data.repo
 import androidx.compose.runtime.Immutable
 import com.roozi.app.data.local.CategoryEntity
 import com.roozi.app.data.local.Priority
+import com.roozi.app.core.recurrence.RecurrenceRule
 import com.roozi.app.data.local.TaskEntity
 import java.time.LocalDate
 
@@ -33,9 +34,12 @@ data class Task(
     val priority: Priority,
     val reminderEnabled: Boolean,
     val reminderTime: Long?,
+    val repeat: RecurrenceRule,
     val sortOrder: Int
 ) {
     val hasTime: Boolean get() = dueTimeMinutes != null
+    val hasDate: Boolean get() = dueDate != null
+    val isRepeating: Boolean get() = repeat.isRepeating
 }
 
 fun TaskEntity.toDomain(categories: Map<Long, Category>): Task = Task(
@@ -51,6 +55,7 @@ fun TaskEntity.toDomain(categories: Map<Long, Category>): Task = Task(
     priority = Priority.from(priority),
     reminderEnabled = reminderEnabled,
     reminderTime = reminderTime,
+    repeat = RecurrenceRule.parse(repeatRule),
     sortOrder = sortOrder
 )
 
@@ -67,6 +72,7 @@ fun Task.toEntity(): TaskEntity = TaskEntity(
     priority = priority.value,
     reminderEnabled = reminderEnabled,
     reminderTime = reminderTime,
+    repeatRule = repeat.serialize(),
     sortOrder = sortOrder
 )
 

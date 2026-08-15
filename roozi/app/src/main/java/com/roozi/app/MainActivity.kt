@@ -2,6 +2,7 @@ package com.roozi.app
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -15,7 +16,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -38,6 +41,9 @@ class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels { MainViewModel.Factory }
     private val tasksViewModel: TasksViewModel by viewModels { TasksViewModel.Factory }
 
+    /** Set when launched from the Quick Add widget. */
+    private var pendingQuickAdd by mutableStateOf(false)
+
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result handled by system */ }
 
@@ -51,6 +57,7 @@ class MainActivity : ComponentActivity() {
 
         val app = application as RooziApp
         val backupManager = BackupManager(applicationContext, app.repository)
+        pendingQuickAdd = intent?.getBooleanExtra(EXTRA_QUICK_ADD, false) == true
 
         setContent {
             val settings by mainViewModel.settings.collectAsStateWithLifecycle()
@@ -63,7 +70,7 @@ class MainActivity : ComponentActivity() {
             val localizedContext = rememberLocalizedContext(current.language)
             val formatter = rememberDateFormatter(persian)
 
-            RooziTheme(themeMode = current.theme) {
+            RooziTheme(themeMode = current.theme, palette = current.palette) {
                 CompositionLocalProvider(
                     LocalContext provides localizedContext,
                     LocalLayoutDirection provides if (persian) LayoutDirection.Rtl else LayoutDirection.Ltr,
@@ -89,13 +96,22 @@ class MainActivity : ComponentActivity() {
                                 userName = current.name,
                                 theme = current.theme,
                                 language = current.language,
-                                onRequestNotificationPermission = ::requestNotificationPermissionIfNeeded
+                                palette = current.palette,
+                                onRequestNotificationPermission = ::requestNotificationPermissionIfNeeded,
+                                openAddSheet = pendingQuickAdd,
+                                onAddSheetOpened = { pendingQuickAdd = false }
                             )
                         }
                     }
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_QUICK_ADD, false)) pendingQuickAdd = true
     }
 
     override fun onResume() {
@@ -114,6 +130,10 @@ class MainActivity : ComponentActivity() {
         if (com.roozi.app.notifications.Notifications.hasPermission(this)) return
         mainViewModel.markNotificationPromptShown()
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    companion object {
+        const val EXTRA_QUICK_ADD = "roozi.extra.quick_add"
     }
 }
 

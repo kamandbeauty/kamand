@@ -1,10 +1,9 @@
 package com.roozi.app.ui.today
 
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,21 +14,31 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.roozi.app.R
+import com.roozi.app.data.local.Priority
 import com.roozi.app.data.repo.Task
 import com.roozi.app.ui.LocalDateFormatter
 import com.roozi.app.ui.TasksViewModel
@@ -44,23 +53,36 @@ import com.roozi.app.ui.components.SwipeableTaskCard
 import com.roozi.app.ui.displayName
 import com.roozi.app.ui.theme.RooziTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import kotlin.math.roundToInt
 
+/**
+ * The Daily Planner.
+ *
+ * Section order is intentional: greeting → progress → quick add → the timed
+ * plan → anytime tasks → undated backlog → completed. Nothing below the fold
+ * competes with "what should I do next?".
+ */
 @Composable
 fun TodayScreen(
     viewModel: TasksViewModel,
     userName: String,
     onOpenTask: (Task) -> Unit,
+    onTaskActions: (Task) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.todayState.collectAsStateWithLifecycle()
     val celebrate by viewModel.celebrate.collectAsStateWithLifecycle()
+    val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val undated by viewModel.undated.collectAsStateWithLifecycle()
+    val today by viewModel.today.collectAsStateWithLifecycle()
     val formatter = LocalDateFormatter.current
     val colors = RooziTheme.colors
-    val today by viewModel.today.collectAsStateWithLifecycle()
-    val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val haptics = LocalHapticFeedback.current
+    val listState = rememberLazyListState()
 
     LaunchedEffect(state.total, state.done) { viewModel.onProgressChanged(state) }
     LaunchedEffect(celebrate) {
@@ -70,35 +92,35 @@ fun TodayScreen(
         }
     }
 
-    val pending = state.tasks.filter { !it.isCompleted }
-    val done = state.tasks.filter { it.isCompleted }
+    val timed = state.timed
+    val anytime = state.anytime
+    val doneTasks = state.completedTasks
+    val pendingUndated = undated.filter { !it.isCompleted }
+
+    // Drag & drop applies to the "anytime" group, where manual order is meaningful.
+    val reorder = rememberReorderState(
+        items = anytime,
+        onCommit = { ids -> viewModel.persistOrder(ids) }
+    )
 
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(listOf(colors.gradientStart, colors.background))
-            ),
+            .background(Brush.verticalGradient(listOf(colors.gradientStart, colors.background))),
         contentPadding = PaddingValues(
             start = 20.dp,
             end = 20.dp,
             top = contentPadding.calculateTopPadding() + 12.dp,
             bottom = contentPadding.calculateBottomPadding() + 96.dp
         ),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item(key = "header") {
-            GreetingHeader(
-                userName = userName,
-                state = state,
-                today = today,
-                streak = stats.streak
-            )
+            GreetingHeader(userName = userName, state = state, today = today, streak = stats.streak)
         }
 
-        item(key = "progress") {
-            ProgressCard(state = state)
-        }
+        item(key = "progress") { ProgressCard(state = state) }
 
         item(key = "celebration") {
             CelebrationOverlay(
@@ -108,7 +130,14 @@ fun TodayScreen(
             )
         }
 
-        if (state.tasks.isEmpty()) {
+        item(key = "quickadd") {
+            QuickAddBar(
+                persian = formatter.persian,
+                onAdd = { title -> viewModel.quickAdd(title, today) }
+            )
+        }
+
+        if (state.tasks.isEmpty() && pendingUndated.isEmpty()) {
             item(key = "empty") {
                 EmptyState(
                     emoji = "🌴",
@@ -116,80 +145,154 @@ fun TodayScreen(
                     subtitle = stringResource(R.string.empty_today_sub)
                 )
             }
-        } else {
-            item(key = "sectionPending") {
-                Spacer(Modifier.height(4.dp))
+        }
+
+        // ---- The timed plan -------------------------------------------------
+        if (timed.isNotEmpty()) {
+            item(key = "timedHeader") {
+                Spacer(Modifier.height(2.dp))
                 SectionHeader(
-                    title = stringResource(R.string.today_tasks),
-                    trailing = {
-                        Text(
-                            formatter.digits(pending.size),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = colors.textSecondary
-                        )
-                    }
+                    title = stringResource(R.string.section_plan_today),
+                    trailing = { CountLabel(timed.size) }
                 )
             }
-
-            items(pending, key = { it.id }) { task ->
-                TaskRow(
+            items(timed, key = { "t${it.id}" }) { task ->
+                PlannerRow(
                     task = task,
                     viewModel = viewModel,
                     onOpenTask = onOpenTask,
+                    onTaskActions = onTaskActions,
                     modifier = Modifier.animateItem()
                 )
             }
+        }
 
-            if (done.isNotEmpty()) {
-                item(key = "sectionDone") {
-                    Spacer(Modifier.height(8.dp))
-                    SectionHeader(
-                        title = stringResource(R.string.completed_tasks),
-                        trailing = {
-                            Text(
-                                formatter.digits(done.size),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = colors.textSecondary
+        // ---- Anytime today (no clock time) — reorderable ---------------------
+        if (anytime.isNotEmpty()) {
+            item(key = "anytimeHeader") {
+                Spacer(Modifier.height(2.dp))
+                SectionHeader(
+                    title = stringResource(R.string.section_anytime),
+                    trailing = { CountLabel(anytime.size) }
+                )
+            }
+            items(reorder.items, key = { "a${it.id}" }) { task ->
+                val isDragging = reorder.draggingId == task.id
+                PlannerRow(
+                    task = task,
+                    viewModel = viewModel,
+                    onOpenTask = onOpenTask,
+                    onTaskActions = onTaskActions,
+                    modifier = Modifier
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .graphicsLayer {
+                            translationY = if (isDragging) reorder.dragOffset else 0f
+                            scaleX = if (isDragging) 1.03f else 1f
+                            scaleY = if (isDragging) 1.03f else 1f
+                        }
+                        .then(if (isDragging) Modifier else Modifier.animateItem())
+                        .pointerInput(task.id, reorder.items.size) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    reorder.onDragStart(task.id)
+                                },
+                                onDrag = { change, amount ->
+                                    change.consume()
+                                    reorder.onDrag(amount.y, ROW_HEIGHT_PX)
+                                },
+                                onDragEnd = { reorder.onDragEnd() },
+                                onDragCancel = { reorder.onDragEnd() }
                             )
                         }
-                    )
-                }
-                items(done, key = { it.id }) { task ->
-                    TaskRow(
-                        task = task,
-                        viewModel = viewModel,
-                        onOpenTask = onOpenTask,
-                        modifier = Modifier.animateItem()
-                    )
-                }
+                )
+            }
+        }
+
+        // ---- Undated backlog -------------------------------------------------
+        if (pendingUndated.isNotEmpty()) {
+            item(key = "undatedHeader") {
+                Spacer(Modifier.height(2.dp))
+                SectionHeader(
+                    title = stringResource(R.string.section_no_date),
+                    trailing = { CountLabel(pendingUndated.size) }
+                )
+            }
+            items(pendingUndated, key = { "u${it.id}" }) { task ->
+                PlannerRow(
+                    task = task,
+                    viewModel = viewModel,
+                    onOpenTask = onOpenTask,
+                    onTaskActions = onTaskActions,
+                    modifier = Modifier.animateItem()
+                )
+            }
+        }
+
+        // ---- Completed --------------------------------------------------------
+        if (doneTasks.isNotEmpty()) {
+            item(key = "doneHeader") {
+                Spacer(Modifier.height(2.dp))
+                SectionHeader(
+                    title = stringResource(R.string.completed_tasks),
+                    trailing = { CountLabel(doneTasks.size) }
+                )
+            }
+            items(doneTasks, key = { "d${it.id}" }) { task ->
+                PlannerRow(
+                    task = task,
+                    viewModel = viewModel,
+                    onOpenTask = onOpenTask,
+                    onTaskActions = onTaskActions,
+                    modifier = Modifier.animateItem()
+                )
             }
         }
     }
 }
 
+private const val ROW_HEIGHT_PX = 210f
+
 @Composable
-private fun TaskRow(
+private fun CountLabel(count: Int) {
+    val formatter = LocalDateFormatter.current
+    Text(
+        formatter.digits(count),
+        style = MaterialTheme.typography.labelLarge,
+        color = RooziTheme.colors.textSecondary
+    )
+}
+
+@Composable
+private fun PlannerRow(
     task: Task,
     viewModel: TasksViewModel,
     onOpenTask: (Task) -> Unit,
+    onTaskActions: (Task) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val formatter = LocalDateFormatter.current
+    val haptics = LocalHapticFeedback.current
+
+    // Undated tasks must never show a fake date, and untimed ones never a fake clock.
     val subtitle = buildString {
-        append(task.dueDate?.let { formatter.relativeDate(it) } ?: stringResource(R.string.no_date))
-        task.dueTimeMinutes?.let {
-            append(" · ")
-            append(formatter.time(it))
+        val date = task.dueDate
+        if (date == null) {
+            append(stringResource(R.string.section_no_date))
+        } else {
+            append(formatter.relativeDate(date))
+            task.dueTimeMinutes?.let { append(" · "); append(formatter.time(it)) }
         }
     }
+
     val priorityLabel = stringResource(
         when (task.priority) {
-            com.roozi.app.data.local.Priority.LOW -> R.string.priority_low
-            com.roozi.app.data.local.Priority.MEDIUM -> R.string.priority_medium
-            com.roozi.app.data.local.Priority.HIGH -> R.string.priority_high
+            Priority.LOW -> R.string.priority_low
+            Priority.MEDIUM -> R.string.priority_medium
+            Priority.HIGH -> R.string.priority_high
         }
     )
-    val haptics = LocalHapticFeedback.current
+
     SwipeableTaskCard(
         task = task,
         subtitle = subtitle,
@@ -200,10 +303,14 @@ private fun TaskRow(
             viewModel.toggleTask(task)
         },
         onClick = { onOpenTask(task) },
+        onLongClick = { onTaskActions(task) },
         onDelete = { viewModel.deleteTask(task) },
         modifier = modifier
     )
 }
+
+@Composable
+private fun rememberHour(): Int = remember { LocalTime.now().hour }
 
 @Composable
 private fun GreetingHeader(
@@ -214,7 +321,7 @@ private fun GreetingHeader(
 ) {
     val colors = RooziTheme.colors
     val formatter = LocalDateFormatter.current
-    val hour = remberHour()
+    val hour = rememberHour()
 
     val greetingRes = when (hour) {
         in 5..11 -> R.string.greeting_morning
@@ -261,19 +368,19 @@ private fun GreetingHeader(
 }
 
 @Composable
-private fun remberHour(): Int = androidx.compose.runtime.remember { LocalTime.now().hour }
-
-@Composable
 private fun ProgressCard(state: TodayUiState) {
     val colors = RooziTheme.colors
     val formatter = LocalDateFormatter.current
-    val hour = remberHour()
+    val hour = rememberHour()
 
+    // Message reacts to the shape of the day, not just to a percentage.
     val message = when {
         state.total == 0 && hour >= 20 -> stringResource(R.string.smart_night)
         state.total == 0 -> stringResource(R.string.smart_start)
         state.allDone -> stringResource(R.string.smart_done)
+        state.remaining == 1 -> stringResource(R.string.smart_last_one)
         state.progress >= 0.6f -> stringResource(R.string.smart_almost)
+        state.progress >= 0.5f -> stringResource(R.string.smart_half)
         state.done > 0 -> stringResource(R.string.smart_going_well)
         hour >= 20 -> stringResource(R.string.smart_night)
         else -> stringResource(R.string.smart_start)
@@ -299,11 +406,7 @@ private fun ProgressCard(state: TodayUiState) {
                     color = colors.textSecondary
                 )
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    message,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.textPrimary
-                )
+                Text(message, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
             }
         }
     }

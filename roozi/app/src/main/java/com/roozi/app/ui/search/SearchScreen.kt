@@ -104,6 +104,7 @@ fun SearchScreen(
                     when (it) {
                         TaskFilter.ALL -> R.string.filter_all
                         TaskFilter.TODAY -> R.string.filter_today
+                        TaskFilter.NO_DATE -> R.string.filter_no_date
                         TaskFilter.UNDONE -> R.string.filter_undone
                         TaskFilter.DONE -> R.string.filter_done
                         TaskFilter.IMPORTANT -> R.string.filter_important
@@ -117,7 +118,7 @@ fun SearchScreen(
         Spacer(Modifier.height(8.dp))
 
         if (results.isEmpty()) {
-            EmptyState(emoji = "🔍", title = stringResource(R.string.no_search_result))
+            EmptyState(emoji = "🔎", title = stringResource(R.string.empty_search))
         } else {
             LazyColumn(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -125,7 +126,10 @@ fun SearchScreen(
             ) {
                 items(results, key = { it.id }) { task ->
                     val subtitle = buildString {
-                        append(task.dueDate?.let { formatter.relativeDate(it) } ?: stringResource(R.string.no_date))
+                        append(
+                            task.dueDate?.let { formatter.relativeDate(it) }
+                                ?: stringResource(R.string.section_no_date)
+                        )
                         task.dueTimeMinutes?.let { append(" · "); append(formatter.time(it)) }
                     }
                     SwipeableTaskCard(

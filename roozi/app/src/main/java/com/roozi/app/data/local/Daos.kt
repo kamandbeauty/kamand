@@ -27,17 +27,30 @@ interface TaskDao {
     )
     fun observeByDate(epochDay: Long): Flow<List<TaskEntity>>
 
-    /** Tasks for today plus any unfinished task from an earlier day (carried over). */
+    /**
+     * Tasks for today plus any unfinished task carried over from an earlier day.
+     * Undated tasks are deliberately excluded — they have their own section.
+     * Ordering: timed tasks first (by clock), then untimed, honouring sortOrder.
+     */
     @Query(
         """
         SELECT * FROM tasks
         WHERE dueDate = :epochDay
            OR (dueDate IS NOT NULL AND dueDate < :epochDay AND isCompleted = 0)
-           OR (dueDate IS NULL AND isCompleted = 0)
-        ORDER BY isCompleted ASC, sortOrder ASC, dueTime IS NULL, dueTime ASC, createdAt DESC
+        ORDER BY isCompleted ASC, dueTime IS NULL, sortOrder ASC, dueTime ASC, createdAt DESC
         """
     )
     fun observeTodayAgenda(epochDay: Long): Flow<List<TaskEntity>>
+
+    /** The "بدون تاریخ" backlog: tasks the user has not scheduled yet. */
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE dueDate IS NULL
+        ORDER BY isCompleted ASC, sortOrder ASC, createdAt DESC
+        """
+    )
+    fun observeUndated(): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE isCompleted = 1 ORDER BY completedAt DESC")
     fun observeCompleted(): Flow<List<TaskEntity>>
@@ -89,6 +102,29 @@ interface TaskDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tasks: List<TaskEntity>)
+
+    @Query("UPDATE tasks SET sortOrder = :sortOrder WHERE id = :id")
+    suspend fun updateSortOrder(id: Long, sortOrder: Int)
+
+    /** Applies a whole reordered list in one transaction (drag & drop). */
+    @Transaction
+    suspend fun applyOrder(ids: List<Long>) {
+        ids.forEachIndexed { index, id -> updateSortOrder(id, index) }
+    }
+
+    /**
+     * Blocking read used by the home-screen widget, which runs outside a
+     * coroutine scope in a short-lived broadcast/RemoteViews context.
+     */
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE dueDate = :epochDay
+           OR (dueDate IS NOT NULL AND dueDate < :epochDay AND isCompleted = 0)
+        ORDER BY isCompleted ASC, dueTime IS NULL, sortOrder ASC, dueTime ASC, createdAt DESC
+        """
+    )
+    fun todayAgendaBlocking(epochDay: Long): List<TaskEntity>
 }
 
 @Dao

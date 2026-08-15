@@ -6,7 +6,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
@@ -68,7 +71,8 @@ fun SwipeableTaskCard(
     onToggle: () -> Unit,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null
 ) {
     val colors = RooziTheme.colors
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -130,12 +134,14 @@ fun SwipeableTaskCard(
                 categoryLabel = categoryLabel,
                 priorityLabel = priorityLabel,
                 onToggle = onToggle,
-                onClick = onClick
+                onClick = onClick,
+                onLongClick = onLongClick
             )
         }
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskCardContent(
     task: Task,
@@ -144,7 +150,8 @@ fun TaskCardContent(
     priorityLabel: String,
     onToggle: () -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null
 ) {
     val colors = RooziTheme.colors
     val accent = task.category?.let { Color(it.color) } ?: colors.purple
@@ -154,7 +161,7 @@ fun TaskCardContent(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .clickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,6 +218,14 @@ fun TaskCardContent(
                     if (task.reminderEnabled) {
                         Icon(
                             Icons.Rounded.Notifications,
+                            contentDescription = null,
+                            tint = colors.textSecondary,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+                    if (task.isRepeating) {
+                        Icon(
+                            Icons.Rounded.Repeat,
                             contentDescription = null,
                             tint = colors.textSecondary,
                             modifier = Modifier.size(13.dp)

@@ -63,6 +63,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.roozi.app.R
 import com.roozi.app.core.date.DateFormatter
+import com.roozi.app.core.recurrence.RecurrenceRule
 import com.roozi.app.data.local.Priority
 import com.roozi.app.data.repo.Category
 import com.roozi.app.data.repo.Task
@@ -82,7 +83,8 @@ data class TaskDraft(
     val dueDate: LocalDate?,
     val dueTimeMinutes: Int?,
     val priority: Priority,
-    val reminderEnabled: Boolean
+    val reminderEnabled: Boolean,
+    val repeat: RecurrenceRule
 )
 
 /**
@@ -146,10 +148,16 @@ private fun AddTaskContent(
     var title by rememberSaveable(editing?.id) { mutableStateOf(editing?.title ?: "") }
     var description by rememberSaveable(editing?.id) { mutableStateOf(editing?.description ?: "") }
     var categoryId by rememberSaveable(editing?.id) { mutableStateOf(editing?.category?.id) }
-    var dueDate by remember(editing?.id) { mutableStateOf(editing?.dueDate ?: defaultDate) }
+    // A brand-new task starts with NO date: the user opts in, never out.
+    var dueDate by remember(editing?.id) { mutableStateOf(editing?.dueDate) }
     var dueTime by rememberSaveable(editing?.id) { mutableStateOf(editing?.dueTimeMinutes) }
     var priority by rememberSaveable(editing?.id) { mutableStateOf(editing?.priority ?: Priority.MEDIUM) }
     var reminder by rememberSaveable(editing?.id) { mutableStateOf(editing?.reminderEnabled ?: false) }
+    // RecurrenceRule is not Parcelable; persist its compact string form instead.
+    var repeatRaw by rememberSaveable(editing?.id) {
+        mutableStateOf(editing?.repeat?.serialize() ?: "")
+    }
+    val repeat = RecurrenceRule.parse(repeatRaw)
 
     var expanded by rememberSaveable { mutableStateOf(editing != null) }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
@@ -197,7 +205,7 @@ private fun AddTaskContent(
                     onSave(
                         TaskDraft(
                             editing?.id ?: 0L, title, description, categoryId,
-                            dueDate, dueTime, priority, reminder
+                            dueDate, dueTime, priority, reminder && dueDate != null, repeat
                         )
                     )
                 }
@@ -216,7 +224,7 @@ private fun AddTaskContent(
             SummaryChip(
                 icon = Icons.Rounded.CalendarMonth,
                 text = dueDate?.let { formatter.relativeDate(it) } ?: stringResource(R.string.no_date),
-                onClick = { showDatePicker = true }
+                onClick = { showDatePicker = !showDatePicker }
             )
             SummaryChip(
                 icon = Icons.Rounded.Schedule,
@@ -251,6 +259,11 @@ private fun AddTaskContent(
                         showDatePicker = false
                     }
                 )
+                if (dueDate != null) {
+                    TextButton(onClick = { dueDate = null; showDatePicker = false }) {
+                        Text(stringResource(R.string.remove_date))
+                    }
+                }
             }
         }
 
@@ -333,6 +346,14 @@ private fun AddTaskContent(
                 }
 
                 Spacer(Modifier.height(14.dp))
+                FieldLabel(stringResource(R.string.repeat))
+                RepeatPicker(
+                    formatter = formatter,
+                    value = repeat,
+                    onChange = { repeatRaw = it.serialize() }
+                )
+
+                Spacer(Modifier.height(14.dp))
                 val reminderDate = dueDate
                 ReminderRow(
                     enabled = reminder,
@@ -361,7 +382,8 @@ private fun AddTaskContent(
                         dueDate = dueDate,
                         dueTimeMinutes = dueTime,
                         priority = priority,
-                        reminderEnabled = reminder && dueDate != null
+                        reminderEnabled = reminder && dueDate != null,
+                        repeat = repeat
                     )
                 )
             },

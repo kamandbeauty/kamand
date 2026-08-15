@@ -63,10 +63,12 @@ import com.roozi.app.data.repo.Task
 import com.roozi.app.navigation.Routes
 import com.roozi.app.navigation.TopLevelDestination
 import com.roozi.app.ui.addtask.AddTaskSheet
+import com.roozi.app.ui.components.TaskActionsSheet
 import com.roozi.app.ui.calendar.CalendarScreen
 import com.roozi.app.ui.profile.ProfileScreen
 import com.roozi.app.ui.search.SearchScreen
 import com.roozi.app.ui.theme.RooziTheme
+import com.roozi.app.ui.theme.ThemePalette
 import com.roozi.app.ui.today.TodayScreen
 import kotlinx.coroutines.launch
 
@@ -79,8 +81,12 @@ fun RooziAppScaffold(
     userName: String,
     theme: ThemeMode,
     language: AppLanguage,
+    palette: ThemePalette,
     onRequestNotificationPermission: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Opens the add sheet immediately (launched from the Quick Add widget). */
+    openAddSheet: Boolean = false,
+    onAddSheetOpened: () -> Unit = {}
 ) {
     val colors = RooziTheme.colors
     val navController = rememberNavController()
@@ -92,6 +98,8 @@ fun RooziAppScaffold(
 
     var sheetVisible by remember { mutableStateOf(false) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
+    var actionsTask by remember { mutableStateOf<Task?>(null) }
+    val actionsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val categories by tasksViewModel.categories.collectAsStateWithLifecycle()
     val selectedDate by tasksViewModel.selectedDate.collectAsStateWithLifecycle()
@@ -113,6 +121,14 @@ fun RooziAppScaffold(
 
     // Keep "today" fresh when the app returns from the background across midnight.
     LaunchedEffect(Unit) { tasksViewModel.refreshToday() }
+
+    LaunchedEffect(openAddSheet) {
+        if (openAddSheet) {
+            editingTask = null
+            sheetVisible = true
+            onAddSheetOpened()
+        }
+    }
 
     val showBars = currentRoute != Routes.SEARCH
 
@@ -238,7 +254,8 @@ fun RooziAppScaffold(
                     onOpenTask = { task ->
                         editingTask = task
                         sheetVisible = true
-                    }
+                    },
+                    onTaskActions = { task -> actionsTask = task }
                 )
             }
             composable(TopLevelDestination.CALENDAR.route) {
@@ -248,7 +265,8 @@ fun RooziAppScaffold(
                     onOpenTask = { task ->
                         editingTask = task
                         sheetVisible = true
-                    }
+                    },
+                    onTaskActions = { task -> actionsTask = task }
                 )
             }
             composable(TopLevelDestination.PROFILE.route) {
@@ -259,6 +277,7 @@ fun RooziAppScaffold(
                     userName = userName,
                     theme = theme,
                     language = language,
+                    palette = palette,
                     contentPadding = padding
                 )
             }
@@ -296,13 +315,51 @@ fun RooziAppScaffold(
                     dueDate = draft.dueDate,
                     dueTimeMinutes = draft.dueTimeMinutes,
                     priority = draft.priority,
-                    reminderEnabled = draft.reminderEnabled
+                    reminderEnabled = draft.reminderEnabled,
+                    repeat = draft.repeat
                 )
                 scope.launch {
                     sheetState.hide()
                     sheetVisible = false
                     editingTask = null
                 }
+            }
+        )
+    }
+
+    actionsTask?.let { task ->
+        val formatter = LocalDateFormatter.current
+        fun close() {
+            scope.launch {
+                actionsSheetState.hide()
+                actionsTask = null
+            }
+        }
+        TaskActionsSheet(
+            sheetState = actionsSheetState,
+            task = task,
+            formatter = formatter,
+            onDismiss = { actionsTask = null },
+            onEdit = {
+                actionsTask = null
+                editingTask = task
+                sheetVisible = true
+            },
+            onToggleComplete = {
+                tasksViewModel.toggleTask(task)
+                close()
+            },
+            onMoveTo = { date ->
+                tasksViewModel.moveTask(task, date)
+                close()
+            },
+            onToggleReminder = { enabled ->
+                tasksViewModel.setReminder(task, enabled)
+                close()
+            },
+            onDelete = {
+                tasksViewModel.deleteTask(task)
+                close()
             }
         )
     }

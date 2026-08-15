@@ -41,6 +41,7 @@ import com.roozi.app.ui.theme.RooziTheme
 fun CalendarScreen(
     viewModel: TasksViewModel,
     onOpenTask: (Task) -> Unit,
+    onTaskActions: (Task) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
@@ -124,6 +125,7 @@ fun CalendarScreen(
                     ),
                     onToggle = { viewModel.toggleTask(task) },
                     onClick = { onOpenTask(task) },
+                    onLongClick = { onTaskActions(task) },
                     onDelete = { viewModel.deleteTask(task) },
                     modifier = Modifier.animateItem()
                 )

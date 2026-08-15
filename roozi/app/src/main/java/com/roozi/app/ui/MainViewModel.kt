@@ -11,6 +11,7 @@ import com.roozi.app.data.prefs.AppLanguage
 import com.roozi.app.data.prefs.ThemeMode
 import com.roozi.app.data.prefs.UserPreferences
 import com.roozi.app.data.prefs.UserSettings
+import com.roozi.app.ui.theme.ThemePalette
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -29,6 +30,8 @@ class MainViewModel(private val prefs: UserPreferences) : ViewModel() {
     fun setTheme(mode: ThemeMode) = viewModelScope.launch { prefs.setTheme(mode) }
 
     fun setLanguage(language: AppLanguage) = viewModelScope.launch { prefs.setLanguage(language) }
+
+    fun setPalette(palette: ThemePalette) = viewModelScope.launch { prefs.setPalette(palette) }
 
     fun markNotificationPromptShown() = viewModelScope.launch { prefs.setNotificationPromptShown(true) }
 

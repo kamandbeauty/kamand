@@ -53,6 +53,8 @@ data class RooziColors(
     val pink: Color,
     val gradientStart: Color,
     val gradientEnd: Color,
+    val progressStart: Color,
+    val progressEnd: Color,
     val priorityLow: Color,
     val priorityMedium: Color,
     val priorityHigh: Color,
@@ -80,6 +82,33 @@ private fun darken(color: Color, amount: Float): Color = Color(
     alpha = color.alpha
 )
 
+/**
+ * Builds the token set for a palette. Accent hues (yellow/mint/pink…) stay
+ * shared across palettes so category colours remain recognisable, while the
+ * structural colours follow the selected theme.
+ */
+fun rooziColorsOf(palette: ThemePalette, dark: Boolean): RooziColors {
+    val p = if (dark) palette.dark else palette.light
+    val base = if (dark) DarkRooziColors else LightRooziColors
+    return base.copy(
+        isDark = dark,
+        background = p.background,
+        surface = p.surface,
+        surfaceMuted = p.surfaceMuted,
+        textPrimary = p.textPrimary,
+        textSecondary = p.textSecondary,
+        coral = p.primary,
+        purple = p.secondary,
+        orange = p.accent,
+        gradientStart = p.gradientStart,
+        gradientEnd = p.gradientEnd,
+        progressStart = p.progressStart,
+        progressEnd = p.progressEnd,
+        priorityHigh = p.primary,
+        priorityMedium = p.accent
+    )
+}
+
 val LightRooziColors = RooziColors(
     isDark = false,
     background = LightBackground,
@@ -97,6 +126,8 @@ val LightRooziColors = RooziColors(
     pink = Pink,
     gradientStart = Color(0xFFFFF1EA),
     gradientEnd = Color(0xFFF2ECFF),
+    progressStart = Coral,
+    progressEnd = Purple,
     priorityLow = Turquoise,
     priorityMedium = Orange,
     priorityHigh = Coral,
@@ -121,6 +152,8 @@ val DarkRooziColors = RooziColors(
     pink = Color(0xFFFF97C4),
     gradientStart = Color(0xFF221E2E),
     gradientEnd = Color(0xFF191824),
+    progressStart = Color(0xFFFF8080),
+    progressEnd = Color(0xFF9B84FF),
     priorityLow = Color(0xFF57D6EE),
     priorityMedium = Color(0xFFFFB067),
     priorityHigh = Color(0xFFFF8080),

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import com.roozi.app.ui.theme.ThemePalette
 import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
@@ -26,7 +27,8 @@ data class UserSettings(
     val onboardingDone: Boolean = false,
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val language: AppLanguage = AppLanguage.PERSIAN,
-    val notificationPromptShown: Boolean = false
+    val notificationPromptShown: Boolean = false,
+    val palette: ThemePalette = ThemePalette.RAINBOW
 )
 
 private val Context.dataStore by preferencesDataStore(name = "roozi_settings")
@@ -39,6 +41,7 @@ class UserPreferences(private val context: Context) {
         val THEME = stringPreferencesKey("theme_mode")
         val LANGUAGE = stringPreferencesKey("language")
         val NOTIF_PROMPT = booleanPreferencesKey("notification_prompt_shown")
+        val PALETTE = stringPreferencesKey("theme_palette")
     }
 
     val settings: Flow<UserSettings> = context.dataStore.data.map { it.toSettings() }
@@ -49,7 +52,8 @@ class UserPreferences(private val context: Context) {
         theme = runCatching { ThemeMode.valueOf(this[Keys.THEME] ?: ThemeMode.SYSTEM.name) }
             .getOrDefault(ThemeMode.SYSTEM),
         language = AppLanguage.fromTag(this[Keys.LANGUAGE]),
-        notificationPromptShown = this[Keys.NOTIF_PROMPT] ?: false
+        notificationPromptShown = this[Keys.NOTIF_PROMPT] ?: false,
+        palette = ThemePalette.fromId(this[Keys.PALETTE])
     )
 
     suspend fun setName(name: String) = context.dataStore.edit { it[Keys.NAME] = name.trim() }
@@ -63,4 +67,7 @@ class UserPreferences(private val context: Context) {
 
     suspend fun setNotificationPromptShown(shown: Boolean) =
         context.dataStore.edit { it[Keys.NOTIF_PROMPT] = shown }
+
+    suspend fun setPalette(palette: ThemePalette) =
+        context.dataStore.edit { it[Keys.PALETTE] = palette.id }
 }

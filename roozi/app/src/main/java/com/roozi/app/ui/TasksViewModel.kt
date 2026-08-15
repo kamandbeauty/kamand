@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.roozi.app.core.recurrence.RecurrenceRule
 import com.roozi.app.data.local.Priority
 import com.roozi.app.data.repo.Category
 import com.roozi.app.data.repo.Task
@@ -23,7 +24,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 
-enum class TaskFilter { ALL, TODAY, UNDONE, DONE, IMPORTANT }
+enum class TaskFilter { ALL, TODAY, NO_DATE, UNDONE, DONE, IMPORTANT }
 
 /** Inclusive date window the calendar currently needs indicators for. */
 data class DateRange(val start: LocalDate, val endInclusive: LocalDate)
@@ -33,6 +34,14 @@ data class TodayUiState(
     val total: Int = 0,
     val done: Int = 0
 ) {
+    /** Scheduled tasks with a clock time — the actual day plan. */
+    val timed: List<Task> get() = tasks.filter { !it.isCompleted && it.hasTime }
+
+    /** Dated for today but without a time: no fake clock values. */
+    val anytime: List<Task> get() = tasks.filter { !it.isCompleted && !it.hasTime }
+
+    val completedTasks: List<Task> get() = tasks.filter { it.isCompleted }
+
     val remaining: Int get() = (total - done).coerceAtLeast(0)
     val progress: Float get() = if (total == 0) 0f else done.toFloat() / total
     val percent: Int get() = (progress * 100).toInt()
@@ -88,6 +97,10 @@ class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState())
 
+    /** The "بدون تاریخ" backlog. */
+    val undated: StateFlow<List<Task>> = repository.undatedTasks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val selectedDayTasks: StateFlow<List<Task>> = _selectedDate
         .flatMapLatest { repository.tasksOn(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -117,6 +130,7 @@ class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
                     when (filter) {
                         TaskFilter.ALL -> true
                         TaskFilter.TODAY -> task.dueDate == today
+                        TaskFilter.NO_DATE -> task.dueDate == null
                         TaskFilter.UNDONE -> !task.isCompleted
                         TaskFilter.DONE -> task.isCompleted
                         TaskFilter.IMPORTANT -> task.priority == Priority.HIGH
@@ -212,7 +226,8 @@ class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
         dueDate: LocalDate?,
         dueTimeMinutes: Int?,
         priority: Priority,
-        reminderEnabled: Boolean
+        reminderEnabled: Boolean,
+        repeat: RecurrenceRule = RecurrenceRule.None
     ) = viewModelScope.launch {
         repository.saveTask(
             id = id,
@@ -222,8 +237,42 @@ class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
             dueDate = dueDate,
             dueTimeMinutes = dueTimeMinutes,
             priority = priority,
-            reminderEnabled = reminderEnabled
+            reminderEnabled = reminderEnabled,
+            repeat = repeat
         )
+    }
+
+    /**
+     * The fastest possible path: a title and nothing else.
+     * No date, no time, no reminder — exactly what "خرید نان" needs.
+     */
+    fun quickAdd(title: String, date: LocalDate? = null) = viewModelScope.launch {
+        if (title.isBlank()) return@launch
+        repository.saveTask(title = title, dueDate = date)
+    }
+
+    /** Move a task to another day, or clear its date entirely. */
+    fun moveTask(task: Task, date: LocalDate?) = viewModelScope.launch {
+        repository.moveToDate(task.id, date)
+    }
+
+    fun setReminder(task: Task, enabled: Boolean) = viewModelScope.launch {
+        repository.saveTask(
+            id = task.id,
+            title = task.title,
+            description = task.description,
+            categoryId = task.category?.id,
+            dueDate = task.dueDate,
+            dueTimeMinutes = task.dueTimeMinutes,
+            priority = task.priority,
+            reminderEnabled = enabled,
+            repeat = task.repeat
+        )
+    }
+
+    /** Persist a drag & drop reordering of the visible list. */
+    fun persistOrder(ids: List<Long>) = viewModelScope.launch {
+        repository.applyOrder(ids)
     }
 
     fun addCategory(name: String, icon: String, color: Int) = viewModelScope.launch {
