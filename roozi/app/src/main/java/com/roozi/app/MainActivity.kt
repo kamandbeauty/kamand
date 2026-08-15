@@ -185,6 +185,26 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
+     * Opens the alarm screen directly so its look can be checked on demand.
+     *
+     * A test notification cannot demonstrate this: the system only escalates a
+     * full-screen intent to an actual full screen while the device is locked,
+     * so from inside the app it would always arrive as a banner. Starting the
+     * Activity from the foreground is allowed and sidesteps that.
+     */
+    fun previewAlarmScreen() {
+        runCatching {
+            startActivity(
+                AlarmActivity.createIntent(
+                    context = this,
+                    taskId = AlarmActivity.PREVIEW_TASK_ID,
+                    title = getString(R.string.alarm_preview_task)
+                )
+            )
+        }
+    }
+
+    /**
      * Opens the "Manage full screen intents" special-access page.
      *
      * Android 14 withholds this permission from apps it does not classify as

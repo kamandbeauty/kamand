@@ -414,4 +414,6 @@
     <string name="alarm_fullscreen_blocked">Full-screen reminder permission is off — tap to enable</string>
     <string name="notification_birthday_channel_name">Birthdays</string>
     <string name="notification_birthday_channel_desc">Reminders for upcoming birthdays</string>
+    <string name="alarm_preview">Preview the full-screen reminder</string>
+    <string name="alarm_preview_task">An important task</string>
 </resources>

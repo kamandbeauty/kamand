@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
@@ -398,6 +399,17 @@ fun ProfileScreen(
                             onClick = { activity?.openNotificationSettings() }
                         )
                     }
+                    Spacer(Modifier.height(10.dp))
+                    // A posted test notification only goes full-screen when the
+                    // device is locked, so it cannot show what the alarm screen
+                    // looks like. Opening it directly from the foreground can.
+                    ActionTile(
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Rounded.Alarm,
+                        label = stringResource(R.string.alarm_preview),
+                        accent = colors.coral,
+                        onClick = { activity?.previewAlarmScreen() }
+                    )
                 }
             }
         }

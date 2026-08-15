@@ -51,10 +51,10 @@ class AlarmActivity : ComponentActivity() {
             return
         }
 
-        // The banner and the full-screen screen are two faces of one reminder;
-        // leaving the banner behind would have the user dismiss it twice.
-        Notifications.dismiss(this, taskId)
-
+        // The notification is deliberately left in the shade while this screen
+        // is up. Dismissing it here would destroy the reminder outright if the
+        // user pressed home instead of choosing an action; it is cancelled when
+        // snooze or acknowledge is actually pressed.
         val settings = runCatching {
             runBlocking { UserPreferences(this@AlarmActivity).settings.first() }
         }.getOrNull()
@@ -77,7 +77,7 @@ class AlarmActivity : ComponentActivity() {
                             PersianNumbers.format(SNOOZE_MINUTES, persian)
                         ),
                         onSnooze = { snooze(taskId, title) },
-                        onGotIt = { finishAndRemoveTask() }
+                        onGotIt = { dismiss(taskId) }
                     )
                 }
             }
@@ -86,13 +86,25 @@ class AlarmActivity : ComponentActivity() {
 
     /** Re-arms the same reminder a few minutes out. */
     private fun snooze(taskId: Long, title: String) {
+        // The preview is a mock-up of a reminder, not one: re-arming it would
+        // make a notification appear later for a task that does not exist.
+        if (taskId == PREVIEW_TASK_ID) {
+            dismiss(taskId)
+            return
+        }
         val at = System.currentTimeMillis() + SNOOZE_MINUTES * 60_000L
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 runCatching { ReminderScheduler(applicationContext).schedule(taskId, title, at) }
             }
-            finishAndRemoveTask()
+            dismiss(taskId)
         }
+    }
+
+    /** Clears the paired notification and closes; the reminder is resolved. */
+    private fun dismiss(taskId: Long) {
+        Notifications.dismiss(applicationContext, taskId)
+        finishAndRemoveTask()
     }
 
     private fun clockNow(persian: Boolean): String {
@@ -126,6 +138,12 @@ class AlarmActivity : ComponentActivity() {
 
         /** Matches the shortest interval the wheel picker offers. */
         const val SNOOZE_MINUTES = 5
+
+        /**
+         * Id used by the Profile preview. It matches no real row, so snoozing
+         * the preview cannot schedule an alarm for a task that does not exist.
+         */
+        const val PREVIEW_TASK_ID = 999_998L
 
         /** Named createIntent so it cannot shadow Activity.intent inside this class. */
         fun createIntent(context: Context, taskId: Long, title: String): Intent =

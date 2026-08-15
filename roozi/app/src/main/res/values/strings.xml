@@ -434,4 +434,6 @@
     <string name="alarm_fullscreen_blocked">اجازه «یادآوری تمام‌صفحه» داده نشده — برای روشن کردن بزنید</string>
     <string name="notification_birthday_channel_name">تولدها</string>
     <string name="notification_birthday_channel_desc">یادآوری تولد نزدیکان</string>
+    <string name="alarm_preview">دیدن صفحه یادآوری تمام‌صفحه</string>
+    <string name="alarm_preview_task">یک کار ضروری</string>
 </resources>
