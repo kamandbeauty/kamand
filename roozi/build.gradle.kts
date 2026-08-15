@@ -16,13 +16,6 @@ plugins {
 // ---------------------------------------------------------------------------
 val isCi = providers.environmentVariable("CI").orNull == "true"
 
-// Configuration-phase probe: if this annotation appears in the run, the build
-// scripts configured successfully and the failure is in a task (compile/KSP/test).
-// If it is absent, configuration itself failed.
-if (isCi) {
-    logger.lifecycle("::warning::CONFIG-OK root build script configured")
-}
-
 if (isCi) {
     subprojects {
         // Kotlin compiler diagnostics -> annotations. Uses the generic Task API
@@ -73,10 +66,6 @@ if (isCi) {
 
     // Any failing task -> annotation naming the task and its cause chain, so the
     // failing phase is identifiable even when the log cannot be downloaded.
-
-    gradle.taskGraph.beforeTask {
-        logger.lifecycle("::warning::TASK-START " + path)
-    }
 
     gradle.taskGraph.afterTask {
         val failure = state.failure

@@ -12,9 +12,6 @@ plugins {
 // They can also be overridden from the command line, e.g.
 //   ./gradlew assembleRelease -PapplicationId=com.example.roozi -PappName="روزی"
 // ---------------------------------------------------------------------------
-if (providers.environmentVariable("CI").orNull == "true") {
-    logger.lifecycle("::warning::APP-PLUGINS-OK plugins applied")
-}
 
 val rooziApplicationId: String = (project.findProperty("applicationId") as String?) ?: "com.roozi.app"
 val rooziAppName: String = (project.findProperty("appName") as String?) ?: "ROOZI"
@@ -68,8 +65,15 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (keystoreProps != null) {
-                signingConfig = signingConfigs.getByName("releaseConfig")
+
+            // A release build MUST always be signed: Android refuses to install
+            // an unsigned APK ("package invalid" / "problem parsing the
+            // package"). With a real keystore we use it; otherwise we fall back
+            // to the debug key so CI artifacts stay installable for testing.
+            signingConfig = if (keystoreProps != null) {
+                signingConfigs.getByName("releaseConfig")
+            } else {
+                signingConfigs.getByName("debug")
             }
         }
         debug {
@@ -93,9 +97,6 @@ android {
     }
 }
 
-if (providers.environmentVariable("CI").orNull == "true") {
-    logger.lifecycle("::warning::APP-ANDROID-OK android block configured")
-}
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -129,8 +130,16 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
 }
 
-// Configuration-phase probe (CI only): if this annotation is missing from a run,
-// the :app build script failed to configure.
-if (providers.environmentVariable("CI").orNull == "true") {
-    logger.lifecycle("::warning::APP-CONFIG-OK app build script configured")
+// Guard: an unsigned release APK cannot be installed, so make that state a
+// build failure rather than a broken download.
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        val signed = runCatching { variant.signingConfig?.hasConfig()?.get() }.getOrNull()
+        if (signed == false) {
+            throw GradleException(
+                "Release variant '" + variant.name + "' has no signing config: the APK " +
+                    "would be unsigned and Android would reject it as an invalid package."
+            )
+        }
+    }
 }
