@@ -10,6 +10,10 @@ plugins {
 // They can also be overridden from the command line, e.g.
 //   ./gradlew assembleRelease -PapplicationId=com.example.roozi -PappName="روزی"
 // ---------------------------------------------------------------------------
+if (providers.environmentVariable("CI").orNull == "true") {
+    logger.lifecycle("::warning::APP-PLUGINS-OK plugins applied")
+}
+
 val rooziApplicationId: String = (project.findProperty("applicationId") as String?) ?: "com.roozi.app"
 val rooziAppName: String = (project.findProperty("appName") as String?) ?: "ROOZI"
 
@@ -78,6 +82,10 @@ android {
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     }
+}
+
+if (providers.environmentVariable("CI").orNull == "true") {
+    logger.lifecycle("::warning::APP-ANDROID-OK android block configured")
 }
 
 dependencies {
