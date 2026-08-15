@@ -61,7 +61,7 @@ fun NotebookDialog(
             Column {
                 // Live preview
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    BookCover(emoji = icon, color = Color(color), width = 76.dp, height = 94.dp)
+                    BookCover(color = Color(color), width = 76.dp, height = 94.dp)
                 }
                 Spacer(Modifier.height(14.dp))
 

@@ -30,6 +30,7 @@ import com.roozi.app.data.repo.Task
 import com.roozi.app.ui.LocalDateFormatter
 import com.roozi.app.ui.TasksViewModel
 import com.roozi.app.ui.components.EmptyState
+import com.roozi.app.ui.components.Pill
 import com.roozi.app.ui.components.RooziCalendar
 import com.roozi.app.ui.components.RooziCard
 import com.roozi.app.ui.components.SectionHeader
@@ -89,10 +90,20 @@ fun CalendarScreen(
                 SectionHeader(
                     title = formatter.weekdayAndDate(date),
                     trailing = {
-                        Text(
-                            stringResource(R.string.day_task_count, formatter.digits(tasks.size)),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = colors.textSecondary
+                        // Count chip picks up the day's state: green when the
+                        // day is clear, warm while work is still pending.
+                        val allDone = tasks.isNotEmpty() && tasks.all { it.isCompleted }
+                        val chip = when {
+                            tasks.isEmpty() -> colors.textSecondary
+                            allDone -> colors.success
+                            else -> colors.orange
+                        }
+                        Pill(
+                            text = stringResource(
+                                R.string.day_task_count,
+                                formatter.digits(tasks.size)
+                            ),
+                            color = chip
                         )
                     }
                 )

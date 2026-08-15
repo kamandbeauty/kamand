@@ -119,7 +119,7 @@ fun RooziCalendar(
             todayHighlighted = selectedDate == today
         )
         Spacer(Modifier.height(10.dp))
-        WeekdayHeaderRow(formatter.weekdayHeaders())
+        WeekdayHeaderRow(formatter.weekdayHeaders(), if (persian) 6 else 0)
         Spacer(Modifier.height(4.dp))
         HorizontalPager(
             state = pagerState,
@@ -147,61 +147,83 @@ private fun MonthHeader(
     todayHighlighted: Boolean
 ) {
     val colors = RooziTheme.colors
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    // A coloured band gives the calendar an identity instead of the flat
+    // white sheet a default DatePicker has.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Brush.linearGradient(listOf(colors.coral, colors.purple)))
+            .padding(horizontal = 6.dp, vertical = 6.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onPrevious, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
-                    contentDescription = stringResource(R.string.previous_month),
-                    tint = colors.textSecondary
-                )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onPrevious, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
+                        contentDescription = stringResource(R.string.previous_month),
+                        tint = Color.White
+                    )
+                }
+                AnimatedContent(
+                    targetState = title,
+                    transitionSpec = {
+                        (slideInHorizontally { it / 3 } + fadeIn(tween(180))) togetherWith
+                            (slideOutHorizontally { -it / 3 } + fadeOut(tween(140)))
+                    },
+                    label = "monthTitle"
+                ) { text ->
+                    Text(
+                        text,
+                        style = MaterialTheme.typography.titleMedium.copy(shadow = accentTextShadow()),
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
+                IconButton(onClick = onNext, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                        contentDescription = stringResource(R.string.next_month),
+                        tint = Color.White
+                    )
+                }
             }
-            AnimatedContent(
-                targetState = title,
-                transitionSpec = {
-                    (slideInHorizontally { it / 3 } + fadeIn(tween(180))) togetherWith
-                        (slideOutHorizontally { -it / 3 } + fadeOut(tween(140)))
-                },
-                label = "monthTitle"
-            ) { text ->
+            // Translucent "today" chip so it reads on the gradient.
+            Box(
+                Modifier
+                    .padding(end = 6.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (todayHighlighted) Color.White.copy(alpha = 0.30f)
+                        else Color.White.copy(alpha = 0.16f)
+                    )
+                    .clickable(onClick = onToday)
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            ) {
                 Text(
-                    text,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.textPrimary,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-            }
-            IconButton(onClick = onNext, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                    contentDescription = stringResource(R.string.next_month),
-                    tint = colors.textSecondary
+                    stringResource(R.string.calendar_today),
+                    style = MaterialTheme.typography.labelLarge.copy(shadow = accentTextShadow()),
+                    color = Color.White
                 )
             }
         }
-        SelectableChip(
-            text = stringResource(R.string.calendar_today),
-            selected = todayHighlighted,
-            accent = colors.coral,
-            onClick = onToday
-        )
     }
 }
 
 @Composable
-private fun WeekdayHeaderRow(labels: List<String>) {
+private fun WeekdayHeaderRow(labels: List<String>, weekendIndex: Int) {
     val colors = RooziTheme.colors
     Row(Modifier.fillMaxWidth()) {
-        labels.forEach { label ->
+        labels.forEachIndexed { index, label ->
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary,
+                // The weekend column is warmer, like a paper wall calendar.
+                color = if (index == weekendIndex) colors.coral else colors.textSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f)
             )

@@ -1,5 +1,7 @@
 package com.roozi.app.ui.notes
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -34,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -119,7 +122,6 @@ fun NotesScreen(
             ) {
                 item(key = "shelf-all") {
                     BookShelfItem(
-                        emoji = "🗂️",
                         title = stringResource(R.string.all_notes),
                         subtitle = stringResource(R.string.note_count, notes.size.localized()),
                         color = colors.coral,
@@ -129,7 +131,6 @@ fun NotesScreen(
                 }
                 items(notebooks, key = { "shelf-${it.id}" }) { book ->
                     BookShelfItem(
-                        emoji = book.icon,
                         title = book.displayName(),
                         subtitle = stringResource(R.string.note_count, book.noteCount.localized()),
                         color = Color(book.color),
@@ -139,7 +140,6 @@ fun NotesScreen(
                 }
                 item(key = "shelf-loose") {
                     BookShelfItem(
-                        emoji = "📄",
                         title = stringResource(R.string.loose_notes),
                         subtitle = "",
                         color = colors.textSecondary,
@@ -245,14 +245,6 @@ private fun NoteCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                if (note.pinned) {
-                    Icon(
-                        Icons.Rounded.PushPin,
-                        contentDescription = null,
-                        tint = accent,
-                        modifier = Modifier.size(15.dp)
-                    )
-                }
             }
             if (note.body.isNotBlank()) {
                 Spacer(Modifier.height(4.dp))
@@ -265,9 +257,19 @@ private fun NoteCard(
                 )
             }
         }
+        // A single pin conveys the state: faint when off, solid accent when on.
+        val pinTint by animateColorAsState(
+            targetValue = if (note.pinned) accent else colors.textSecondary.copy(alpha = 0.38f),
+            label = "pinTint"
+        )
+        val pinScale by animateFloatAsState(
+            targetValue = if (note.pinned) 1.12f else 1f,
+            animationSpec = spring(dampingRatio = 0.45f, stiffness = 700f),
+            label = "pinScale"
+        )
         Box(
             Modifier
-                .size(44.dp)
+                .size(48.dp)
                 .clickable { onTogglePin() },
             contentAlignment = Alignment.Center
         ) {
@@ -276,8 +278,10 @@ private fun NoteCard(
                 contentDescription = stringResource(
                     if (note.pinned) R.string.note_unpin else R.string.note_pin
                 ),
-                tint = if (note.pinned) accent else colors.textSecondary.copy(alpha = 0.45f),
-                modifier = Modifier.size(17.dp)
+                tint = pinTint,
+                modifier = Modifier
+                    .size(18.dp)
+                    .scale(pinScale)
             )
         }
     }

@@ -41,7 +41,6 @@ import com.roozi.app.ui.theme.RooziTheme
  */
 @Composable
 fun BookCover(
-    emoji: String,
     color: Color,
     modifier: Modifier = Modifier,
     width: Dp = 84.dp,
@@ -114,6 +113,16 @@ fun BookCover(
                 )
             }
 
+            // A blank label plate: gives the cover structure without an icon.
+            val plateW = (w - spineW) * 0.56f
+            val plateH = h * 0.30f
+            drawRoundRect(
+                color = Color(0x1FFFFFFF),
+                topLeft = Offset(spineW + (w - w * 0.10f - spineW - plateW) / 2f, h * 0.24f),
+                size = Size(plateW, plateH),
+                cornerRadius = CornerRadius(w * 0.045f, w * 0.045f)
+            )
+
             // Gloss: a soft diagonal highlight across the cover.
             val gloss = Path().apply {
                 moveTo(w * 0.30f, 0f)
@@ -125,19 +134,13 @@ fun BookCover(
             drawPath(gloss, Color(0x14FFFFFF))
         }
 
-        // Cover emoji, nudged off the spine so it sits centred on the cover.
-        Text(
-            text = emoji,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(start = width * 0.14f, bottom = height * 0.06f)
-        )
+
     }
 }
 
 /** A book plus its title and note count — one item on the shelf. */
 @Composable
 fun BookShelfItem(
-    emoji: String,
     title: String,
     subtitle: String,
     color: Color,
@@ -150,7 +153,7 @@ fun BookShelfItem(
         modifier = modifier.width(92.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        BookCover(emoji = emoji, color = color, selected = selected, onClick = onClick)
+        BookCover(color = color, selected = selected, onClick = onClick)
         Spacer(Modifier.height(8.dp))
         Text(
             text = title,
