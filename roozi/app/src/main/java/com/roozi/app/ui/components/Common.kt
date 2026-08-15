@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -104,13 +105,14 @@ fun <T> ChipRow(
     leading: (T) -> String? = { null },
     contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp)
 ) {
+    // NOTE: the `items` parameter shadows the LazyListScope.items DSL function,
+    // so the count-based overload is called explicitly on the scope receiver.
     LazyRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = contentPadding
     ) {
-        items(items.size) { index ->
-            val item = items[index]
+        itemsIndexed(items) { _, item ->
             SelectableChip(
                 text = label(item),
                 selected = item == selected,
