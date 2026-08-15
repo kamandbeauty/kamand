@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">روزی</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_today">امروز</string>
+    <string name="nav_calendar">تقویم</string>
+    <string name="nav_profile">پروفایل</string>
+
+    <!-- Greetings -->
+    <string name="greeting_morning">صبح بخیر</string>
+    <string name="greeting_noon">ظهر بخیر</string>
+    <string name="greeting_evening">عصر بخیر</string>
+    <string name="greeting_night">شب بخیر</string>
+    <string name="greeting_morning_emoji">☀️</string>
+    <string name="greeting_noon_emoji">🌤️</string>
+    <string name="greeting_evening_emoji">🌇</string>
+    <string name="greeting_night_emoji">🌙</string>
+    <string name="greeting_no_name">👋</string>
+
+    <!-- Home smart messages -->
+    <string name="home_tasks_count">امروز %1$s کار داری</string>
+    <string name="home_no_tasks">امروز کاری نداری</string>
+    <string name="smart_start">روزت رو شروع کنیم؟ ☀️</string>
+    <string name="smart_going_well">عالی پیش میری! 🔥</string>
+    <string name="smart_almost">تقریباً تمومه! 💪</string>
+    <string name="smart_done">امروز رو عالی ساختی! 🎉</string>
+    <string name="smart_night">وقت استراحته 🌙</string>
+
+    <!-- Progress -->
+    <string name="progress_title">پیشرفت امروز</string>
+    <string name="progress_of">%1$s از %2$s</string>
+    <string name="progress_percent">%1$s٪</string>
+
+    <!-- Task list -->
+    <string name="today_tasks">کارهای امروز</string>
+    <string name="completed_tasks">انجام‌شده‌ها</string>
+    <string name="task_today">امروز</string>
+    <string name="task_tomorrow">فردا</string>
+    <string name="task_yesterday">دیروز</string>
+    <string name="no_date">بدون تاریخ</string>
+
+    <!-- Add task -->
+    <string name="add_task">افزودن کار</string>
+    <string name="edit_task">ویرایش کار</string>
+    <string name="task_title">عنوان کار</string>
+    <string name="task_title_hint">چه کاری داری؟</string>
+    <string name="task_description">توضیحات</string>
+    <string name="task_description_hint">توضیح کوتاه (اختیاری)</string>
+    <string name="category">دسته‌بندی</string>
+    <string name="date">تاریخ</string>
+    <string name="time">ساعت</string>
+    <string name="priority">اولویت</string>
+    <string name="reminder">یادآوری</string>
+    <string name="save_task">ذخیره کار</string>
+    <string name="more_options">گزینه‌های بیشتر</string>
+    <string name="less_options">بستن گزینه‌ها</string>
+
+    <!-- Priority -->
+    <string name="priority_low">کم</string>
+    <string name="priority_medium">متوسط</string>
+    <string name="priority_high">زیاد</string>
+
+    <!-- Categories -->
+    <string name="category_personal">شخصی</string>
+    <string name="category_work">کار</string>
+    <string name="category_shopping">خرید</string>
+    <string name="category_health">سلامتی</string>
+    <string name="category_study">مطالعه</string>
+    <string name="category_other">سایر</string>
+    <string name="new_category">دسته‌بندی جدید</string>
+    <string name="category_name">نام دسته‌بندی</string>
+    <string name="manage_categories">مدیریت دسته‌بندی‌ها</string>
+    <string name="add">افزودن</string>
+    <string name="color">رنگ</string>
+    <string name="icon">آیکون</string>
+
+    <!-- Reminder -->
+    <string name="reminder_at">یادآوری %1$s ساعت %2$s</string>
+    <string name="reminder_off">بدون یادآوری</string>
+    <string name="reminder_needs_time">برای یادآوری، ساعت را انتخاب کن</string>
+    <string name="notification_channel_name">یادآوری کارها</string>
+    <string name="notification_channel_desc">یادآوری کارهای روزانه</string>
+    <string name="notification_title">یادآوری روزی</string>
+    <string name="notification_permission_rationale">برای دریافت یادآوری، اجازه اعلان لازم است</string>
+
+    <!-- Calendar -->
+    <string name="calendar_today">امروز</string>
+    <string name="previous_month">ماه قبل</string>
+    <string name="next_month">ماه بعد</string>
+    <string name="tasks_of_day">کارهای این روز</string>
+    <string name="no_tasks_this_day">برای این روز کاری ثبت نشده</string>
+    <string name="day_task_count">%1$s کار</string>
+
+    <!-- Search & filter -->
+    <string name="search">جستجو</string>
+    <string name="search_hint">جستجو در کارها…</string>
+    <string name="filter_all">همه</string>
+    <string name="filter_today">امروز</string>
+    <string name="filter_undone">انجام نشده</string>
+    <string name="filter_done">انجام شده</string>
+    <string name="filter_important">مهم</string>
+    <string name="no_search_result">چیزی پیدا نشد</string>
+
+    <!-- Swipe / actions -->
+    <string name="action_done">انجام شد</string>
+    <string name="action_delete">حذف</string>
+    <string name="task_deleted">کار حذف شد</string>
+    <string name="undo">برگردان</string>
+    <string name="restore">بازگردانی</string>
+    <string name="delete_all_completed">حذف همه انجام‌شده‌ها</string>
+    <string name="cancel">انصراف</string>
+    <string name="confirm">تأیید</string>
+    <string name="close">بستن</string>
+    <string name="delete">حذف</string>
+
+    <!-- Celebration -->
+    <string name="celebration_title">عالی بود!</string>
+    <string name="celebration_subtitle">امروز تمومش کردی 🎉</string>
+
+    <!-- Empty states -->
+    <string name="empty_today">امروز کاری نداری 🌴</string>
+    <string name="empty_today_sub">اولین کارت رو اضافه کن ✨</string>
+    <string name="empty_completed">هنوز کاری انجام نشده</string>
+
+    <!-- Profile / settings -->
+    <string name="profile">پروفایل</string>
+    <string name="my_stats">آمار من</string>
+    <string name="stats_done">انجام‌شده</string>
+    <string name="stats_undone">انجام‌نشده</string>
+    <string name="stats_rate">درصد موفقیت</string>
+    <string name="streak">روز متوالی</string>
+    <string name="streak_value">🔥 %1$s روز متوالی</string>
+    <string name="weekly_performance">عملکرد هفتگی</string>
+    <string name="settings">تنظیمات</string>
+    <string name="theme">حالت نمایش</string>
+    <string name="theme_system">سیستم</string>
+    <string name="theme_light">روشن</string>
+    <string name="theme_dark">تیره</string>
+    <string name="language">زبان</string>
+    <string name="language_fa">فارسی</string>
+    <string name="language_en">English</string>
+    <string name="your_name">نام شما</string>
+    <string name="edit_name">تغییر نام</string>
+    <string name="save">ذخیره</string>
+
+    <!-- Backup -->
+    <string name="backup">پشتیبان‌گیری</string>
+    <string name="export_backup">خروجی گرفتن</string>
+    <string name="import_backup">بازیابی از فایل</string>
+    <string name="backup_success">پشتیبان با موفقیت ذخیره شد</string>
+    <string name="backup_failed">ذخیره پشتیبان انجام نشد</string>
+    <string name="restore_success">اطلاعات بازیابی شد</string>
+    <string name="restore_failed">بازیابی انجام نشد</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">کارهای روزت، ساده و سبک</string>
+    <string name="onboarding_desc_1">در چند ثانیه کار جدید بساز و روزت را مرتب کن</string>
+    <string name="onboarding_title_2">تقویم شمسی و یادآوری</string>
+    <string name="onboarding_desc_2">برنامه‌ات را روی تقویم ببین و به‌موقع یادآوری بگیر</string>
+    <string name="onboarding_title_3">پیشرفتت را دنبال کن</string>
+    <string name="onboarding_desc_3">درصد موفقیت، آمار و روزهای متوالی‌ات را ببین</string>
+    <string name="onboarding_next">بعدی</string>
+    <string name="onboarding_skip">رد کردن</string>
+    <string name="onboarding_start">بزن بریم 🚀</string>
+    <string name="onboarding_name_question">دوست داریم به چه اسمی صدات کنیم؟</string>
+    <string name="onboarding_name_hint">اسم تو</string>
+    <string name="onboarding_continue">ادامه</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_add_task">افزودن کار جدید</string>
+    <string name="cd_toggle_task">تغییر وضعیت انجام کار</string>
+    <string name="cd_back">بازگشت</string>
+    <string name="cd_progress_ring">حلقه پیشرفت روزانه</string>
+</resources>

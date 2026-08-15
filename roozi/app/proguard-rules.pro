@@ -1,0 +1,3 @@
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod
+-keep class com.roozi.app.data.backup.** { *; }
+-dontwarn org.jetbrains.annotations.**

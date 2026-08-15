@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Rounded "card" plate -->
+    <path
+        android:pathData="M36,32 L72,32 A8,8 0 0 1 80,40 L80,68 A8,8 0 0 1 72,76 L36,76 A8,8 0 0 1 28,68 L28,40 A8,8 0 0 1 36,32 Z"
+        android:fillColor="#FFFFFFFF"
+        android:fillAlpha="0.96" />
+    <!-- Check mark -->
+    <path
+        android:pathData="M40,55 L49,64 L68,44"
+        android:strokeColor="#FFFF6B6B"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
