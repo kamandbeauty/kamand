@@ -1,0 +1,59 @@
+name: ROOZI Android
+
+on:
+  push:
+    branches:
+      - "arena/01a002a3-kamand"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ROOZI APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: roozi
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests (Jalali calendar & backup)
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Lint (abort on errors)
+        run: ./gradlew :app:lintDebug --stacktrace
+
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Build release AAB
+        run: ./gradlew :app:bundleRelease --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: roozi-release-apk
+          path: roozi/app/build/outputs/apk/release/*.apk
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: roozi-release-aab
+          path: roozi/app/build/outputs/bundle/release/*.aab
+
+      - name: Upload test & lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roozi-reports
+          path: |
+            roozi/app/build/reports/**

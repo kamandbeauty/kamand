@@ -1,12 +1,8 @@
 package com.roozi.app.ui.today
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,6 +36,7 @@ import com.roozi.app.ui.TasksViewModel
 import com.roozi.app.ui.TodayUiState
 import com.roozi.app.ui.components.CelebrationOverlay
 import com.roozi.app.ui.components.EmptyState
+import com.roozi.app.ui.components.Pill
 import com.roozi.app.ui.components.ProgressRing
 import com.roozi.app.ui.components.RooziCard
 import com.roozi.app.ui.components.SectionHeader
@@ -61,6 +60,7 @@ fun TodayScreen(
     val formatter = LocalDateFormatter.current
     val colors = RooziTheme.colors
     val today by viewModel.today.collectAsStateWithLifecycle()
+    val stats by viewModel.stats.collectAsStateWithLifecycle()
 
     LaunchedEffect(state.total, state.done) { viewModel.onProgressChanged(state) }
     LaunchedEffect(celebrate) {
@@ -88,7 +88,12 @@ fun TodayScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item(key = "header") {
-            GreetingHeader(userName = userName, state = state, today = today)
+            GreetingHeader(
+                userName = userName,
+                state = state,
+                today = today,
+                streak = stats.streak
+            )
         }
 
         item(key = "progress") {
@@ -127,7 +132,12 @@ fun TodayScreen(
             }
 
             items(pending, key = { it.id }) { task ->
-                TaskRow(task = task, viewModel = viewModel, onOpenTask = onOpenTask)
+                TaskRow(
+                    task = task,
+                    viewModel = viewModel,
+                    onOpenTask = onOpenTask,
+                    modifier = Modifier.animateItem()
+                )
             }
 
             if (done.isNotEmpty()) {
@@ -145,7 +155,12 @@ fun TodayScreen(
                     )
                 }
                 items(done, key = { it.id }) { task ->
-                    TaskRow(task = task, viewModel = viewModel, onOpenTask = onOpenTask)
+                    TaskRow(
+                        task = task,
+                        viewModel = viewModel,
+                        onOpenTask = onOpenTask,
+                        modifier = Modifier.animateItem()
+                    )
                 }
             }
         }
@@ -153,7 +168,12 @@ fun TodayScreen(
 }
 
 @Composable
-private fun TaskRow(task: Task, viewModel: TasksViewModel, onOpenTask: (Task) -> Unit) {
+private fun TaskRow(
+    task: Task,
+    viewModel: TasksViewModel,
+    onOpenTask: (Task) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val formatter = LocalDateFormatter.current
     val subtitle = buildString {
         append(task.dueDate?.let { formatter.relativeDate(it) } ?: stringResource(R.string.no_date))
@@ -169,25 +189,29 @@ private fun TaskRow(task: Task, viewModel: TasksViewModel, onOpenTask: (Task) ->
             com.roozi.app.data.local.Priority.HIGH -> R.string.priority_high
         }
     )
-    AnimatedVisibility(
-        visible = true,
-        enter = fadeIn(tween(220)) + scaleIn(initialScale = 0.94f) + slideInVertically { it / 6 },
-        exit = fadeOut(tween(160)) + shrinkVertically()
-    ) {
-        SwipeableTaskCard(
-            task = task,
-            subtitle = subtitle,
-            categoryLabel = task.category?.displayName(),
-            priorityLabel = priorityLabel,
-            onToggle = { viewModel.toggleTask(task) },
-            onClick = { onOpenTask(task) },
-            onDelete = { viewModel.deleteTask(task) }
-        )
-    }
+    val haptics = LocalHapticFeedback.current
+    SwipeableTaskCard(
+        task = task,
+        subtitle = subtitle,
+        categoryLabel = task.category?.displayName(),
+        priorityLabel = priorityLabel,
+        onToggle = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            viewModel.toggleTask(task)
+        },
+        onClick = { onOpenTask(task) },
+        onDelete = { viewModel.deleteTask(task) },
+        modifier = modifier
+    )
 }
 
 @Composable
-private fun GreetingHeader(userName: String, state: TodayUiState, today: LocalDate) {
+private fun GreetingHeader(
+    userName: String,
+    state: TodayUiState,
+    today: LocalDate,
+    streak: Int
+) {
     val colors = RooziTheme.colors
     val formatter = LocalDateFormatter.current
     val hour = remberHour()
@@ -218,12 +242,21 @@ private fun GreetingHeader(userName: String, state: TodayUiState, today: LocalDa
             style = MaterialTheme.typography.bodyMedium,
             color = colors.textSecondary
         )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = formatter.weekdayAndDate(today),
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.textSecondary.copy(alpha = 0.8f)
-        )
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = formatter.weekdayAndDate(today),
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.textSecondary.copy(alpha = 0.8f)
+            )
+            if (streak > 0) {
+                Spacer(Modifier.width(8.dp))
+                Pill(
+                    text = stringResource(R.string.streak_value, formatter.digits(streak)),
+                    color = colors.orange
+                )
+            }
+        }
     }
 }
 

@@ -141,7 +141,8 @@ fun SearchScreen(
                         ),
                         onToggle = { viewModel.toggleTask(task) },
                         onClick = { onOpenTask(task) },
-                        onDelete = { viewModel.deleteTask(task) }
+                        onDelete = { viewModel.deleteTask(task) },
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
