@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [TaskEntity::class, CategoryEntity::class],
     version = 2,
-    exportSchema = true
+    exportSchema = false
 )
 abstract class RooziDatabase : RoomDatabase() {
 

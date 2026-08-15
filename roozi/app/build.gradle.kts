@@ -76,11 +76,6 @@ android {
     }
 }
 
-// Room's exported schemas (top-level KSP extension — not a defaultConfig block).
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.splashscreen)
@@ -111,4 +106,10 @@ dependencies {
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
+}
+
+// Configuration-phase probe (CI only): if this annotation is missing from a run,
+// the :app build script failed to configure.
+if (providers.environmentVariable("CI").orNull == "true") {
+    logger.lifecycle("::warning::APP-CONFIG-OK app build script configured")
 }
