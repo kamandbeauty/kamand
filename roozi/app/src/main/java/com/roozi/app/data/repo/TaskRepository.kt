@@ -151,7 +151,17 @@ class TaskRepository(
         val rule = RecurrenceRule.parse(task.repeatRule)
         if (!rule.isRepeating) return
         val base = task.dueDate?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.now()
-        val next = rule.nextAfter(base) ?: return
+
+        // If the task is ticked off late, walking one step could still land in
+        // the past. Advance until the occurrence is today or later so a
+        // long-neglected repeating task reappears on the plan, not behind it.
+        val today = LocalDate.now()
+        var next = rule.nextAfter(base) ?: return
+        var guard = 0
+        while (next.isBefore(today) && guard < MAX_ROLL_FORWARD_STEPS) {
+            next = rule.nextAfter(next) ?: return
+            guard++
+        }
 
         val nextEntity = task.copy(
             id = 0,
@@ -239,5 +249,10 @@ class TaskRepository(
         taskDao.insertAll(tasks)
         rescheduleAllReminders()
         notifyWidgets()
+    }
+
+    private companion object {
+        /** Safety valve when catching up a long-neglected repeating task. */
+        const val MAX_ROLL_FORWARD_STEPS = 1200
     }
 }

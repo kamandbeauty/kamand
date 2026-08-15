@@ -171,10 +171,20 @@ fun TodayScreen(
         if (anytime.isNotEmpty()) {
             item(key = "anytimeHeader") {
                 Spacer(Modifier.height(2.dp))
-                SectionHeader(
-                    title = stringResource(R.string.section_anytime),
-                    trailing = { CountLabel(anytime.size) }
-                )
+                Column {
+                    SectionHeader(
+                        title = stringResource(R.string.section_anytime),
+                        trailing = { CountLabel(anytime.size) }
+                    )
+                    if (anytime.size > 1) {
+                        Text(
+                            stringResource(R.string.reorder_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.textSecondary.copy(alpha = 0.75f),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
             }
             items(reorder.items, key = { "a${it.id}" }) { task ->
                 val isDragging = reorder.draggingId == task.id
@@ -213,10 +223,18 @@ fun TodayScreen(
         if (pendingUndated.isNotEmpty()) {
             item(key = "undatedHeader") {
                 Spacer(Modifier.height(2.dp))
-                SectionHeader(
-                    title = stringResource(R.string.section_no_date),
-                    trailing = { CountLabel(pendingUndated.size) }
-                )
+                Column {
+                    SectionHeader(
+                        title = stringResource(R.string.section_no_date),
+                        trailing = { CountLabel(pendingUndated.size) }
+                    )
+                    Text(
+                        stringResource(R.string.section_no_date_sub),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.textSecondary.copy(alpha = 0.75f),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
             }
             items(pendingUndated, key = { "u${it.id}" }) { task ->
                 PlannerRow(

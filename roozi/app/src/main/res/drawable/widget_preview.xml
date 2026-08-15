@@ -3,7 +3,7 @@
     <item>
         <shape android:shape="rectangle">
             <corners android:radius="22dp" />
-            <solid android:color="#FFFDF7F4" />
+            <solid android:color="@color/widget_surface" />
         </shape>
     </item>
     <item android:drawable="@drawable/ic_splash_logo" android:gravity="center" />

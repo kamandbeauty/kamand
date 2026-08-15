@@ -20,7 +20,7 @@
             android:layout_weight="1"
             android:fontFamily="@font/vazirmatn_semibold"
             android:textSize="15sp"
-            android:textColor="#241F2E"
+            android:textColor="@color/widget_text_primary"
             android:text="@string/widget_today_title" />
 
         <TextView
@@ -29,7 +29,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/vazirmatn_medium"
             android:textSize="13sp"
-            android:textColor="#6C6579" />
+            android:textColor="@color/widget_text_secondary" />
 
         <TextView
             android:id="@+id/widget_add"
@@ -39,7 +39,7 @@
             android:gravity="center"
             android:text="+"
             android:textSize="19sp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/widget_on_accent"
             android:background="@drawable/widget_fab"
             android:contentDescription="@string/widget_quick_add" />
     </LinearLayout>
@@ -72,6 +72,6 @@
         android:gravity="center"
         android:fontFamily="@font/vazirmatn_regular"
         android:textSize="14sp"
-        android:textColor="#6C6579"
+        android:textColor="@color/widget_text_secondary"
         android:text="@string/widget_empty" />
 </LinearLayout>

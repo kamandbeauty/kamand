@@ -2,7 +2,6 @@ package com.roozi.app.widget
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
@@ -12,6 +11,9 @@ import com.roozi.app.core.util.PersianNumbers
 import com.roozi.app.data.local.RooziDatabase
 import com.roozi.app.data.local.TaskEntity
 import com.roozi.app.data.prefs.AppLanguage
+import com.roozi.app.data.prefs.UserPreferences
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 
 /** Feeds the widget's task list. */
@@ -31,9 +33,11 @@ private class TodayWidgetFactory(private val context: Context) : RemoteViewsServ
         val language = WidgetData.language(context)
         val localized = WidgetData.localizedContext(context, language)
         formatter = DateFormatter(localized, language.isPersian)
-        tasks = RooziDatabase.get(context).taskDao()
-            .todayAgendaBlocking(LocalDate.now().toEpochDay())
-            .take(MAX_ROWS)
+        tasks = runCatching {
+            RooziDatabase.get(context).taskDao()
+                .todayAgendaBlocking(LocalDate.now().toEpochDay())
+                .take(MAX_ROWS)
+        }.getOrDefault(emptyList())
     }
 
     override fun onDestroy() {
@@ -50,12 +54,13 @@ private class TodayWidgetFactory(private val context: Context) : RemoteViewsServ
         views.setTextViewText(R.id.row_check, if (task.isCompleted) "✓" else "○")
 
         // Strike-through and dimming for completed rows.
+        // Colours come from resources so the widget follows light/dark mode.
         if (task.isCompleted) {
             views.setInt(R.id.row_title, "setPaintFlags", STRIKE_FLAGS)
-            views.setTextColor(R.id.row_title, Color.parseColor("#8A8595"))
+            views.setTextColor(R.id.row_title, color(R.color.widget_text_muted))
         } else {
             views.setInt(R.id.row_title, "setPaintFlags", BASE_FLAGS)
-            views.setTextColor(R.id.row_title, Color.parseColor("#241F2E"))
+            views.setTextColor(R.id.row_title, color(R.color.widget_text_primary))
         }
 
         val time = task.dueTime
@@ -73,6 +78,8 @@ private class TodayWidgetFactory(private val context: Context) : RemoteViewsServ
         )
         return views
     }
+
+    private fun color(id: Int): Int = androidx.core.content.ContextCompat.getColor(context, id)
 
     override fun getLoadingView(): RemoteViews? = null
     override fun getViewTypeCount(): Int = 1
@@ -92,11 +99,16 @@ object WidgetData {
 
     data class Summary(val done: Int, val total: Int, val progressLabel: String)
 
-    fun language(context: Context): AppLanguage {
-        // DataStore is async; the widget needs a synchronous answer, so we fall
-        // back to the device locale, which the user has already matched in-app.
+    /**
+     * The language the user actually chose in the app (not the device locale).
+     * Always called from a background thread — both RemoteViewsFactory callbacks
+     * and the provider's IO coroutine — so blocking on DataStore is safe here.
+     */
+    fun language(context: Context): AppLanguage = runCatching {
+        runBlocking { UserPreferences(context).settings.first().language }
+    }.getOrElse {
         val tag = context.resources.configuration.locales[0].language
-        return if (tag == "en") AppLanguage.ENGLISH else AppLanguage.PERSIAN
+        if (tag == "en") AppLanguage.ENGLISH else AppLanguage.PERSIAN
     }
 
     fun localizedContext(context: Context, language: AppLanguage): Context {
@@ -111,8 +123,10 @@ object WidgetData {
     fun summary(context: Context): Summary {
         val language = language(context)
         val localized = localizedContext(context, language)
-        val tasks = RooziDatabase.get(context).taskDao()
-            .todayAgendaBlocking(LocalDate.now().toEpochDay())
+        val tasks = runCatching {
+            RooziDatabase.get(context).taskDao()
+                .todayAgendaBlocking(LocalDate.now().toEpochDay())
+        }.getOrDefault(emptyList())
         val done = tasks.count { it.isCompleted }
         val total = tasks.size
         val persian = language.isPersian

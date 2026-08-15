@@ -42,7 +42,6 @@
     <string name="task_description">Description</string>
     <string name="task_description_hint">Short note (optional)</string>
     <string name="category">Category</string>
-    <string name="date">Date</string>
     <string name="time">Time</string>
     <string name="priority">Priority</string>
     <string name="reminder">Reminder</string>
@@ -89,7 +88,6 @@
     <string name="filter_undone">Not done</string>
     <string name="filter_done">Done</string>
     <string name="filter_important">Important</string>
-    <string name="no_search_result">Nothing found</string>
 
     <string name="action_done">Done</string>
     <string name="action_delete">Delete</string>
@@ -98,7 +96,6 @@
     <string name="restore">Restore</string>
     <string name="delete_all_completed">Clear all completed</string>
     <string name="cancel">Cancel</string>
-    <string name="confirm">Confirm</string>
     <string name="close">Close</string>
     <string name="delete">Delete</string>
 
@@ -157,7 +154,6 @@
 
     <!-- Phase 2: planner sections -->
     <string name="section_plan_today">Today\'s plan</string>
-    <string name="section_timed">Scheduled</string>
     <string name="section_anytime">Anytime today</string>
     <string name="section_no_date">No date</string>
     <string name="section_no_date_sub">Tasks without a time yet</string>
@@ -178,7 +174,6 @@
     <string name="repeat">Repeat</string>
     <string name="repeat_never">No repeat</string>
     <string name="repeat_daily">Every day</string>
-    <string name="repeat_weekly">Every week</string>
     <string name="repeat_monthly">Every month</string>
     <string name="repeat_weekdays">Specific days</string>
     <string name="repeat_custom">Custom</string>
@@ -186,9 +181,7 @@
     <string name="repeat_on_days">Weekly: %1$s</string>
 
     <!-- Task actions -->
-    <string name="task_actions">Task options</string>
     <string name="action_edit">Edit</string>
-    <string name="action_change_date">Change date</string>
     <string name="action_reminder_on">Turn reminder on</string>
     <string name="action_reminder_off">Turn reminder off</string>
     <string name="action_uncomplete">Mark as not done</string>
@@ -218,7 +211,6 @@
 
     <!-- Reorder -->
     <string name="reorder_hint">Hold and drag to reorder</string>
-    <string name="cd_drag_handle">Drag handle</string>
 
     <!-- Widget -->
     <string name="widget_today_title">☀️ Today</string>

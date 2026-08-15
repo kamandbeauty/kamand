@@ -74,6 +74,45 @@ class RecurrenceRuleTest {
         assertTrue(next.day <= next.lengthOfMonth)
     }
 
+    /**
+     * Mirrors TaskRepository.rollForwardIfRepeating: a task ticked off long
+     * after its due date must resurface today or later, never in the past.
+     */
+    private fun rollForward(rule: RecurrenceRule, base: LocalDate, today: LocalDate): LocalDate {
+        var next = rule.nextAfter(base)!!
+        var guard = 0
+        while (next.isBefore(today) && guard < 1200) {
+            next = rule.nextAfter(next)!!
+            guard++
+        }
+        return next
+    }
+
+    @Test
+    fun neglectedRepeatingTask_catchesUpToTodayOrLater() {
+        val today = LocalDate.of(2026, 8, 14)
+        val stale = today.minusDays(90)
+        val rules = listOf(
+            RecurrenceRule.Daily,
+            RecurrenceRule.EveryNDays(3),
+            RecurrenceRule.Monthly,
+            RecurrenceRule.Weekly(setOf(DayOfWeek.SATURDAY, DayOfWeek.MONDAY))
+        )
+        rules.forEach { rule ->
+            val next = rollForward(rule, stale, today)
+            assertTrue("${rule.serialize()} resurfaced in the past", !next.isBefore(today))
+        }
+    }
+
+    @Test
+    fun neglectedWeekly_keepsCorrectWeekday() {
+        val today = LocalDate.of(2026, 8, 14)
+        val rule = RecurrenceRule.Weekly(setOf(DayOfWeek.SATURDAY))
+        val next = rollForward(rule, today.minusDays(400), today)
+        assertTrue(!next.isBefore(today))
+        assertEquals(DayOfWeek.SATURDAY, next.dayOfWeek)
+    }
+
     @Test
     fun emptyWeekly_behavesLikeDaily() {
         assertEquals("DAILY", RecurrenceRule.Weekly(emptySet()).serialize())

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget palette. Overridden in values-night so widgets follow the system theme. -->
+<resources>
+    <color name="widget_surface">#FDF7F4</color>
+    <color name="widget_text_primary">#241F2E</color>
+    <color name="widget_text_secondary">#6C6579</color>
+    <color name="widget_text_muted">#8A8595</color>
+    <color name="widget_track">#F0EAF5</color>
+    <color name="widget_accent">#FF6B6B</color>
+    <color name="widget_on_accent">#FFFFFF</color>
+</resources>

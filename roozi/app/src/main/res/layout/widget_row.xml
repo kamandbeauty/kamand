@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textSize="14sp"
-        android:textColor="#FF6B6B"
+        android:textColor="@color/widget_accent"
         android:fontFamily="@font/vazirmatn_semibold"
         android:text="○" />
 
@@ -29,7 +29,7 @@
         android:ellipsize="end"
         android:fontFamily="@font/vazirmatn_regular"
         android:textSize="14sp"
-        android:textColor="#241F2E" />
+        android:textColor="@color/widget_text_primary" />
 
     <TextView
         android:id="@+id/row_time"
@@ -37,5 +37,5 @@
         android:layout_height="wrap_content"
         android:fontFamily="@font/vazirmatn_medium"
         android:textSize="12sp"
-        android:textColor="#6C6579" />
+        android:textColor="@color/widget_text_secondary" />
 </LinearLayout>

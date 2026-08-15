@@ -48,7 +48,6 @@
     <string name="task_description">توضیحات</string>
     <string name="task_description_hint">توضیح کوتاه (اختیاری)</string>
     <string name="category">دسته‌بندی</string>
-    <string name="date">تاریخ</string>
     <string name="time">ساعت</string>
     <string name="priority">اولویت</string>
     <string name="reminder">یادآوری</string>
@@ -100,7 +99,6 @@
     <string name="filter_undone">انجام نشده</string>
     <string name="filter_done">انجام شده</string>
     <string name="filter_important">مهم</string>
-    <string name="no_search_result">چیزی پیدا نشد</string>
 
     <!-- Swipe / actions -->
     <string name="action_done">انجام شد</string>
@@ -110,7 +108,6 @@
     <string name="restore">بازگردانی</string>
     <string name="delete_all_completed">حذف همه انجام‌شده‌ها</string>
     <string name="cancel">انصراف</string>
-    <string name="confirm">تأیید</string>
     <string name="close">بستن</string>
     <string name="delete">حذف</string>
 
@@ -175,7 +172,6 @@
 
     <!-- Phase 2: planner sections -->
     <string name="section_plan_today">برنامه امروز</string>
-    <string name="section_timed">کارهای زمان‌دار</string>
     <string name="section_anytime">هر وقت امروز</string>
     <string name="section_no_date">بدون تاریخ</string>
     <string name="section_no_date_sub">کارهایی که هنوز زمان ندارند</string>
@@ -196,7 +192,6 @@
     <string name="repeat">تکرار</string>
     <string name="repeat_never">بدون تکرار</string>
     <string name="repeat_daily">هر روز</string>
-    <string name="repeat_weekly">هر هفته</string>
     <string name="repeat_monthly">هر ماه</string>
     <string name="repeat_weekdays">روزهای خاص</string>
     <string name="repeat_custom">سفارشی</string>
@@ -204,9 +199,7 @@
     <string name="repeat_on_days">هر هفته: %1$s</string>
 
     <!-- Task actions -->
-    <string name="task_actions">گزینه‌های کار</string>
     <string name="action_edit">ویرایش</string>
-    <string name="action_change_date">تغییر تاریخ</string>
     <string name="action_reminder_on">فعال کردن یادآوری</string>
     <string name="action_reminder_off">غیرفعال کردن یادآوری</string>
     <string name="action_uncomplete">برگرداندن به انجام‌نشده</string>
@@ -236,7 +229,6 @@
 
     <!-- Reorder -->
     <string name="reorder_hint">برای جابه‌جایی نگه دار و بکش</string>
-    <string name="cd_drag_handle">دستگیره جابه‌جایی</string>
 
     <!-- Widget -->
     <string name="widget_today_title">☀️ امروز</string>

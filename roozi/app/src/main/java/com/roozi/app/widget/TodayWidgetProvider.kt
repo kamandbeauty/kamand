@@ -26,7 +26,18 @@ import kotlinx.coroutines.launch
 class TodayWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        ids.forEach { id -> render(context, manager, id) }
+        // Room refuses blocking queries on the main thread (and onUpdate runs
+        // there), so the summary is read on IO and the views pushed afterwards.
+        val appContext = context.applicationContext
+        val pending = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val summary = WidgetData.summary(appContext)
+                ids.forEach { id -> render(appContext, manager, id, summary) }
+            } finally {
+                pending.finish()
+            }
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -51,7 +62,12 @@ class TodayWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun render(context: Context, manager: AppWidgetManager, widgetId: Int) {
+    private fun render(
+        context: Context,
+        manager: AppWidgetManager,
+        widgetId: Int,
+        summary: WidgetData.Summary
+    ) {
         val views = RemoteViews(context.packageName, R.layout.widget_today)
 
         views.setOnClickPendingIntent(R.id.widget_root, openAppIntent(context))
@@ -74,7 +90,6 @@ class TodayWidgetProvider : AppWidgetProvider() {
         )
         views.setPendingIntentTemplate(R.id.widget_list, toggleTemplate)
 
-        val summary = WidgetData.summary(context)
         views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_today_title))
         views.setTextViewText(R.id.widget_progress, summary.progressLabel)
         views.setProgressBar(R.id.widget_progress_bar, summary.total.coerceAtLeast(1), summary.done, false)
