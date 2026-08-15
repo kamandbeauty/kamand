@@ -76,6 +76,8 @@ import com.roozi.app.ui.notes.NotebookDialog
 import com.roozi.app.ui.notes.NotesScreen
 import com.roozi.app.ui.profile.ProfileScreen
 import com.roozi.app.ui.components.RooziHeader
+import com.roozi.app.ui.components.liquidGlassSource
+import com.roozi.app.ui.components.rememberLiquidGlassState
 import com.roozi.app.ui.search.SearchScreen
 import com.roozi.app.ui.theme.RooziTheme
 import com.roozi.app.ui.theme.ThemePalette
@@ -176,6 +178,9 @@ fun RooziAppScaffold(
         Routes.BIRTHDAY_MESSAGES
     )
 
+    // Backdrop the header refracts. Captured from the page content below.
+    val glass = rememberLiquidGlassState()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = colors.background,
@@ -183,7 +188,10 @@ fun RooziAppScaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AnimatedVisibility(visible = showBars, enter = fadeIn(), exit = fadeOut()) {
-                RooziHeader(onSearch = { navController.navigate(Routes.SEARCH) })
+                RooziHeader(
+                    onSearch = { navController.navigate(Routes.SEARCH) },
+                    glass = glass
+                )
             }
         },
         bottomBar = {
@@ -238,8 +246,11 @@ fun RooziAppScaffold(
             }
         },
         floatingActionButton = {
+            // Profile is settings, not a collection — there is nothing to
+            // create there, so the button would do nothing meaningful.
+            val canCreate = currentRoute != TopLevelDestination.PROFILE.route
             AnimatedVisibility(
-                visible = showBars,
+                visible = showBars && canCreate,
                 enter = scaleIn(spring(dampingRatio = 0.55f)) + fadeIn(),
                 exit = scaleOut() + fadeOut()
             ) {
@@ -299,7 +310,9 @@ fun RooziAppScaffold(
         NavHost(
             navController = navController,
             startDestination = TopLevelDestination.TODAY.route,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .liquidGlassSource(glass),
             enterTransition = { fadeIn(androidx.compose.animation.core.tween(220)) },
             exitTransition = { fadeOut(androidx.compose.animation.core.tween(160)) }
         ) {

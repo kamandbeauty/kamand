@@ -47,19 +47,25 @@ private val GlassSheenHeight = 30.dp
 @Composable
 fun RooziHeader(
     onSearch: () -> Unit,
+    glass: LiquidGlassState,
     modifier: Modifier = Modifier
 ) {
     val colors = RooziTheme.colors
     val dark = colors.isDark
 
-    // Frosted, not merely see-through. Real glass diffuses what is behind it;
-    // with no blur available the same effect has to come from opacity, so this
-    // is tuned to leave the page a soft ghost rather than legible text that
-    // would collide with the title scrolling past underneath.
+    // The backdrop behind this panel is genuinely blurred, so the tint only has
+    // to colour the glass — not hide the page. A heavy wash here would bury the
+    // refraction that makes it read as glass instead of a coloured bar.
+    val hasBlur = glass.blurSupported
+    val tintAlpha = when {
+        !hasBlur -> if (dark) 0.80f else 0.76f // no blur: opacity must do the work
+        dark -> 0.30f
+        else -> 0.26f
+    }
     val wash = Brush.horizontalGradient(
         listOf(
-            colors.coral.copy(alpha = if (dark) 0.80f else 0.76f),
-            colors.purple.copy(alpha = if (dark) 0.80f else 0.76f)
+            colors.coral.copy(alpha = tintAlpha),
+            colors.purple.copy(alpha = tintAlpha)
         )
     )
 
@@ -67,7 +73,7 @@ fun RooziHeader(
     // falloff the panel reads as flat translucent plastic.
     val sheen = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (dark) 0.14f else 0.30f),
+            Color.White.copy(alpha = if (dark) 0.18f else 0.34f),
             Color.Transparent
         )
     )
@@ -78,10 +84,13 @@ fun RooziHeader(
     // page, so it must not follow the page's foreground colour.
     val onGlass = Color.White
 
+    // Order matters: clip first so the refracted backdrop is confined to the
+    // rounded shape, then the backdrop, then the tint on top of it.
     Box(
         modifier
             .fillMaxWidth()
             .clip(shape)
+            .then(liquidGlassBackdrop(glass))
             .background(wash)
     ) {
         Box(
