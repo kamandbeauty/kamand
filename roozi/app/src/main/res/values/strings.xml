@@ -238,4 +238,8 @@
     <string name="widget_today_description">کارهای امروز و پیشرفت روزانه</string>
     <string name="widget_quick_add_description">افزودن سریع کار جدید</string>
     <string name="list_separator">، </string>
+    <string name="crash_title">برنامه در اجرای قبلی بسته شد</string>
+    <string name="crash_subtitle">این گزارش را کپی کنید و برای ما بفرستید تا مشکل را برطرف کنیم.</string>
+    <string name="crash_copy">کپی گزارش</string>
+    <string name="crash_continue">ادامه</string>
 </resources>

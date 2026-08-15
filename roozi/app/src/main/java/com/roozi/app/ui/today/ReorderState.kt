@@ -1,6 +1,7 @@
 package com.roozi.app.ui.today
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -32,10 +33,16 @@ class ReorderState internal constructor(
 
     private var accumulated = 0f
 
-    /** Re-syncs from the database while no drag is in progress. */
+    /**
+     * Re-syncs from the database while no drag is in progress.
+     *
+     * Must be called from a side effect, never straight from composition:
+     * writing snapshot state during composition throws at draw time
+     * ("Cannot modify state during composition") and takes the app down.
+     */
     internal fun syncFrom(source: List<Task>) {
         if (draggingId != null) return
-        if (items.map { it.id } != source.map { it.id } || items != source) {
+        if (items.size != source.size || items.map { it.id } != source.map { it.id }) {
             items = source.toMutableStateList()
         }
     }
@@ -84,6 +91,8 @@ fun rememberReorderState(
     onCommit: (List<Long>) -> Unit
 ): ReorderState {
     val state = remember { ReorderState(items, onCommit) }
-    state.syncFrom(items)
+    // Sync in a side effect: doing it inline would mutate snapshot state while
+    // the composition is running, which Compose rejects.
+    LaunchedEffect(items) { state.syncFrom(items) }
     return state
 }

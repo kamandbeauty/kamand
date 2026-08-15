@@ -2,6 +2,7 @@ package com.roozi.app
 
 import android.app.Application
 import android.util.Log
+import com.roozi.app.core.CrashReporter
 import com.roozi.app.data.prefs.UserPreferences
 import com.roozi.app.data.repo.TaskRepository
 import com.roozi.app.notifications.Notifications
@@ -35,6 +36,9 @@ class RooziApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Installed first so it can capture failures from anything below.
+        CrashReporter.install(this)
+
         runCatching { Notifications.ensureChannel(this) }
             .onFailure { Log.e(TAG, "Could not create the notification channel", it) }
 

@@ -25,10 +25,12 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.roozi.app.core.CrashReporter
 import com.roozi.app.data.backup.BackupManager
 import com.roozi.app.data.prefs.AppLanguage
 import com.roozi.app.ui.LocalDateFormatter
 import com.roozi.app.ui.MainViewModel
+import com.roozi.app.ui.components.CrashReportScreen
 import com.roozi.app.ui.RooziAppScaffold
 import com.roozi.app.ui.TasksViewModel
 import com.roozi.app.ui.onboarding.OnboardingScreen
@@ -76,6 +78,22 @@ class MainActivity : ComponentActivity() {
                     LocalLayoutDirection provides if (persian) LayoutDirection.Rtl else LayoutDirection.Ltr,
                     LocalDateFormatter provides DateFormatterFor(localizedContext, persian)
                 ) {
+                    // If the previous launch crashed, surface the report first
+                    // instead of dropping the user into a screen that may crash
+                    // again with no explanation.
+                    var crash by remember { mutableStateOf(CrashReporter.lastCrash(applicationContext)) }
+                    val pendingCrash = crash
+                    if (pendingCrash != null) {
+                        CrashReportScreen(
+                            report = pendingCrash,
+                            onDismiss = {
+                                CrashReporter.clear(applicationContext)
+                                crash = null
+                            }
+                        )
+                        return@CompositionLocalProvider
+                    }
+
                     Crossfade(
                         targetState = current.onboardingDone,
                         animationSpec = tween(320),
