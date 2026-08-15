@@ -1,9 +1,11 @@
 package com.roozi.app
 
 import android.app.Application
+import android.util.Log
 import com.roozi.app.data.prefs.UserPreferences
 import com.roozi.app.data.repo.TaskRepository
 import com.roozi.app.notifications.Notifications
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,17 +17,36 @@ import kotlinx.coroutines.launch
  */
 class RooziApp : Application() {
 
-    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * Startup work must never be able to take the process down: an uncaught
+     * exception in this scope (a corrupt database, a denied alarm, …) would
+     * otherwise crash the app on every single launch, leaving the user with no
+     * way back in. Failures are logged and the app continues.
+     */
+    private val startupErrorHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e(TAG, "Startup task failed", throwable)
+    }
+
+    val applicationScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Default + startupErrorHandler)
 
     val preferences: UserPreferences by lazy { UserPreferences(this) }
     val repository: TaskRepository by lazy { TaskRepository(this) }
 
     override fun onCreate() {
         super.onCreate()
-        Notifications.ensureChannel(this)
+        runCatching { Notifications.ensureChannel(this) }
+            .onFailure { Log.e(TAG, "Could not create the notification channel", it) }
+
         applicationScope.launch(Dispatchers.IO) {
-            repository.ensureSeeded()
-            repository.rescheduleAllReminders()
+            runCatching { repository.ensureSeeded() }
+                .onFailure { Log.e(TAG, "Seeding default categories failed", it) }
+            runCatching { repository.rescheduleAllReminders() }
+                .onFailure { Log.e(TAG, "Rescheduling reminders failed", it) }
         }
+    }
+
+    private companion object {
+        const val TAG = "RooziApp"
     }
 }

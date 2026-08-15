@@ -38,6 +38,11 @@ abstract class RooziDatabase : RoomDatabase() {
         private fun build(context: Context): RooziDatabase =
             Room.databaseBuilder(context, RooziDatabase::class.java, "roozi.db")
                 .addMigrations(MIGRATION_1_2)
+                // Last-resort safety net: if a database from an unknown/older
+                // build cannot be migrated, recreate it instead of throwing on
+                // open — an unopenable database would crash the app on every
+                // launch with no way for the user to recover.
+                .fallbackToDestructiveMigration()
                 .build()
     }
 }
