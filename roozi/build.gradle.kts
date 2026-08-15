@@ -16,6 +16,13 @@ plugins {
 // ---------------------------------------------------------------------------
 val isCi = providers.environmentVariable("CI").orNull == "true"
 
+// Configuration-phase probe: if this annotation appears in the run, the build
+// scripts configured successfully and the failure is in a task (compile/KSP/test).
+// If it is absent, configuration itself failed.
+if (isCi) {
+    logger.lifecycle("::warning::CONFIG-OK root build script configured")
+}
+
 if (isCi) {
     subprojects {
         // Unit test failures -> workflow annotations carrying the assertion message.
