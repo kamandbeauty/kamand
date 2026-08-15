@@ -52,6 +52,10 @@ if (isCi) {
     // Any failing task -> annotation naming the task and its cause chain, so the
     // failing phase is identifiable even when the log cannot be downloaded.
 
+    gradle.taskGraph.beforeTask {
+        logger.lifecycle("::warning::TASK-START ${'$'}path")
+    }
+
     gradle.taskGraph.afterTask {
         val failure = state.failure
         if (failure != null) {
