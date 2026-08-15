@@ -41,10 +41,10 @@
     <string name="no_date">بدون تاریخ</string>
 
     <!-- Add task -->
-    <string name="add_task">افزودن کار</string>
+    <string name="add_task">کار جدید ✨</string>
     <string name="edit_task">ویرایش کار</string>
     <string name="task_title">عنوان کار</string>
-    <string name="task_title_hint">چه کاری داری؟</string>
+    <string name="task_title_hint">چه کاری باید انجام بدی؟</string>
     <string name="task_description">توضیحات</string>
     <string name="task_description_hint">توضیح کوتاه (اختیاری)</string>
     <string name="category">دسته‌بندی</string>
@@ -253,4 +253,5 @@
     <string name="notif_ok">اعلان‌ها فعال است ✓</string>
     <string name="notif_battery_hint">اگر یادآوری نمی‌رسد، در تنظیمات گوشی برای «روزی» اجرای خودکار را روشن و محدودیت باتری را بردارید.</string>
     <string name="notif_open_settings">تنظیمات اعلان</string>
+    <string name="hero_done_of">%1$s از %2$s کار انجام شده</string>
 </resources>

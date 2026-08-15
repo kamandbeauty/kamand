@@ -85,7 +85,9 @@ fun SwipeableTaskCard(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
-    onLongClick: (() -> Unit)? = null
+    onLongClick: (() -> Unit)? = null,
+    /** True only for a genuine incomplete → complete transition. */
+    animateCompletion: Boolean = false
 ) {
     val colors = RooziTheme.colors
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -173,7 +175,8 @@ fun SwipeableTaskCard(
                 priorityLabel = priorityLabel,
                 onToggle = onToggle,
                 onClick = onClick,
-                onLongClick = onLongClick
+                onLongClick = onLongClick,
+                animateCompletion = animateCompletion
             )
         }
     )
@@ -189,7 +192,8 @@ fun TaskCardContent(
     onToggle: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onLongClick: (() -> Unit)? = null
+    onLongClick: (() -> Unit)? = null,
+    animateCompletion: Boolean = false
 ) {
     val colors = RooziTheme.colors
     val accent = task.category?.let { Color(it.color) } ?: colors.purple
@@ -215,17 +219,6 @@ fun TaskCardContent(
                         Text(task.category.icon, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.width(6.dp))
                     }
-                    // The strike-through is drawn by hand rather than via
-                    // TextDecoration so it can animate: a pen sweeping across
-                    // the title the moment the task is ticked.
-                    val strike by animateFloatAsState(
-                        targetValue = if (task.isCompleted) 1f else 0f,
-                        animationSpec = tween(
-                            durationMillis = if (task.isCompleted) 340 else 180,
-                            easing = FastOutSlowInEasing
-                        ),
-                        label = "strike"
-                    )
                     Text(
                         text = task.title,
                         style = MaterialTheme.typography.titleSmall,
@@ -234,29 +227,13 @@ fun TaskCardContent(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
                             .weight(1f, fill = false)
-                            .drawWithContent {
-                                drawContent()
-                                if (strike > 0f) {
-                                    val y = size.height / 2f
-                                    val end = size.width * strike
-                                    // Ink trail
-                                    drawLine(
-                                        color = accent,
-                                        start = Offset(0f, y),
-                                        end = Offset(end, y),
-                                        strokeWidth = 2.dp.toPx(),
-                                        cap = StrokeCap.Round
-                                    )
-                                    // Pen nib leading the stroke while drawing
-                                    if (strike < 1f) {
-                                        drawCircle(
-                                            color = accent,
-                                            radius = 2.6.dp.toPx(),
-                                            center = Offset(end, y)
-                                        )
-                                    }
-                                }
-                            }
+                            .then(
+                                rememberPenStrikeModifier(
+                                    completed = task.isCompleted,
+                                    animate = animateCompletion,
+                                    color = accent
+                                )
+                            )
                     )
                 }
                 if (task.description.isNotBlank()) {
@@ -333,9 +310,10 @@ fun AnimatedCheckbox(
         if (checked) accent else colors.textSecondary.copy(alpha = 0.45f),
         label = "checkBorder"
     )
+    // Short overshoot so ticking feels physical; reverses cleanly on uncheck.
     val scale by animateFloatAsState(
         targetValue = if (checked) 1f else 0.92f,
-        animationSpec = spring(dampingRatio = 0.45f, stiffness = 500f),
+        animationSpec = spring(dampingRatio = 0.38f, stiffness = 900f),
         label = "checkScale"
     )
     val iconSize by animateDpAsState(if (checked) 17.dp else 0.dp, spring(dampingRatio = 0.5f), label = "checkIcon")

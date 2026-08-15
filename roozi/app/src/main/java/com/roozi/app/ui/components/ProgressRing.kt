@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -43,7 +44,9 @@ fun ProgressRing(
     contentDescription: String,
     modifier: Modifier = Modifier,
     ringSize: Dp = 112.dp,
-    ringStroke: Dp = 12.dp
+    ringStroke: Dp = 12.dp,
+    /** True when the ring sits on the coloured hero card. */
+    onGradient: Boolean = false
 ) {
     val colors = RooziTheme.colors
     val animated by animateFloatAsState(
@@ -52,10 +55,16 @@ fun ProgressRing(
         label = "progress"
     )
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val track = colors.surfaceMuted
-    val brush = Brush.sweepGradient(
-        listOf(colors.coral, colors.orange, colors.yellow, colors.mint, colors.purple, colors.coral)
-    )
+    // On the gradient hero the ring is white-on-translucent so it stays legible
+    // whatever the theme accent is; elsewhere it keeps the playful sweep.
+    val track = if (onGradient) Color.White.copy(alpha = 0.28f) else colors.surfaceMuted
+    val brush = if (onGradient) {
+        Brush.sweepGradient(listOf(Color.White, Color.White))
+    } else {
+        Brush.sweepGradient(
+            listOf(colors.coral, colors.orange, colors.yellow, colors.mint, colors.purple, colors.coral)
+        )
+    }
     val label = contentDescription
 
     Box(
@@ -90,8 +99,20 @@ fun ProgressRing(
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(centerTop, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
-            Text(centerBottom, style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
+            Text(
+                centerTop,
+                style = if (onGradient)
+                    MaterialTheme.typography.titleLarge.copy(shadow = accentTextShadow())
+                else MaterialTheme.typography.titleLarge,
+                color = if (onGradient) Color.White else colors.textPrimary
+            )
+            Text(
+                centerBottom,
+                style = if (onGradient)
+                    MaterialTheme.typography.labelMedium.copy(shadow = accentTextShadow())
+                else MaterialTheme.typography.labelMedium,
+                color = if (onGradient) Color.White.copy(alpha = 0.88f) else colors.textSecondary
+            )
         }
     }
 }

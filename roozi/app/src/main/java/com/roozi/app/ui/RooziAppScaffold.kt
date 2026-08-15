@@ -43,6 +43,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -89,6 +91,7 @@ fun RooziAppScaffold(
     onAddSheetOpened: () -> Unit = {}
 ) {
     val colors = RooziTheme.colors
+    val outlineColor = colors.outline
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -165,7 +168,18 @@ fun RooziAppScaffold(
             ) {
                 NavigationBar(
                     containerColor = colors.surface,
-                    tonalElevation = 0.dp
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.drawWithContent {
+                        drawContent()
+                        // Hairline instead of a shadow, so the bar reads as part
+                        // of the page rather than a floating slab.
+                        drawLine(
+                            color = outlineColor,
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, 0f),
+                            strokeWidth = 1f
+                        )
+                    }
                 ) {
                     TopLevelDestination.entries.forEach { destination ->
                         val selected = backStackEntry?.destination?.hierarchy

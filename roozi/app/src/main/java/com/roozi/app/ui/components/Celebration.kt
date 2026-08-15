@@ -12,8 +12,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -93,7 +95,9 @@ fun CelebrationOverlay(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text("🎉", style = MaterialTheme.typography.headlineMedium)
+                    // Mascot celebrates with the user (§20) — small, not childish.
+                    RooziMascot(size = 56.dp, blink = false)
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         title,
                         style = MaterialTheme.typography.titleMedium.copy(shadow = accentTextShadow()),

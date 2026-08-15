@@ -28,10 +28,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.roozi.app.ui.components.accentTextShadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -52,6 +57,7 @@ import com.roozi.app.ui.components.SectionHeader
 import com.roozi.app.ui.components.SwipeableTaskCard
 import com.roozi.app.ui.displayName
 import com.roozi.app.ui.theme.RooziTheme
+import com.roozi.app.ui.theme.timeOfDayGradient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -81,8 +87,22 @@ fun TodayScreen(
     val today by viewModel.today.collectAsStateWithLifecycle()
     val formatter = LocalDateFormatter.current
     val colors = RooziTheme.colors
+    val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    // Respect the system "remove animations" setting (§24/§25).
+    val reduceMotion = remember {
+        runCatching {
+            android.provider.Settings.Global.getFloat(
+                context.contentResolver,
+                android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,
+                1f
+            ) == 0f
+        }.getOrDefault(false)
+    }
+    val animator = rememberCompletionAnimator(scope, reduceMotion)
 
     LaunchedEffect(state.total, state.done) { viewModel.onProgressChanged(state) }
     LaunchedEffect(celebrate) {
@@ -92,10 +112,15 @@ fun TodayScreen(
         }
     }
 
-    val timed = state.timed
-    val anytime = state.anytime
-    val doneTasks = state.completedTasks
-    val pendingUndated = undated.filter { !it.isCompleted }
+    // A task being struck through stays in its original section until the pen
+    // finishes; otherwise its list key changes, the row is recreated and the
+    // animation is destroyed mid-flight.
+    val holding: (Task) -> Boolean = { animator.holdsPosition(it.id) }
+
+    val timed = state.tasks.filter { (!it.isCompleted || holding(it)) && it.hasTime }
+    val anytime = state.tasks.filter { (!it.isCompleted || holding(it)) && !it.hasTime }
+    val doneTasks = state.completedTasks.filterNot(holding)
+    val pendingUndated = undated.filter { !it.isCompleted || holding(it) }
 
     // Drag & drop applies to the "anytime" group, where manual order is meaningful.
     val reorder = rememberReorderState(
@@ -107,7 +132,7 @@ fun TodayScreen(
         state = listState,
         modifier = modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(colors.gradientStart, colors.background))),
+            .background(Brush.verticalGradient(colors.timeOfDayGradient(rememberHour()))),
         contentPadding = PaddingValues(
             start = 20.dp,
             end = 20.dp,
@@ -162,6 +187,7 @@ fun TodayScreen(
                     viewModel = viewModel,
                     onOpenTask = onOpenTask,
                     onTaskActions = onTaskActions,
+                    animator = animator,
                     modifier = Modifier.animateItem()
                 )
             }
@@ -193,6 +219,7 @@ fun TodayScreen(
                     viewModel = viewModel,
                     onOpenTask = onOpenTask,
                     onTaskActions = onTaskActions,
+                    animator = animator,
                     modifier = Modifier
                         .zIndex(if (isDragging) 1f else 0f)
                         .graphicsLayer {
@@ -242,6 +269,7 @@ fun TodayScreen(
                     viewModel = viewModel,
                     onOpenTask = onOpenTask,
                     onTaskActions = onTaskActions,
+                    animator = animator,
                     modifier = Modifier.animateItem()
                 )
             }
@@ -262,6 +290,7 @@ fun TodayScreen(
                     viewModel = viewModel,
                     onOpenTask = onOpenTask,
                     onTaskActions = onTaskActions,
+                    animator = animator,
                     modifier = Modifier.animateItem()
                 )
             }
@@ -287,6 +316,7 @@ private fun PlannerRow(
     viewModel: TasksViewModel,
     onOpenTask: (Task) -> Unit,
     onTaskActions: (Task) -> Unit,
+    animator: CompletionAnimator,
     modifier: Modifier = Modifier
 ) {
     val formatter = LocalDateFormatter.current
@@ -300,6 +330,18 @@ private fun PlannerRow(
         } else {
             append(formatter.relativeDate(date))
             task.dueTimeMinutes?.let { append(" · "); append(formatter.time(it)) }
+        }
+    }
+
+    // Animate only on a real incomplete → complete transition.
+    val animateCompletion = animator.isAnimating(task.id)
+    val onToggle = {
+        if (task.isCompleted) {
+            animator.onUncompleted(task.id)
+            viewModel.toggleTask(task)
+        } else {
+            animator.onCompleted(task.id)
+            viewModel.toggleTask(task)
         }
     }
 
@@ -318,11 +360,12 @@ private fun PlannerRow(
         priorityLabel = priorityLabel,
         onToggle = {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            viewModel.toggleTask(task)
+            onToggle()
         },
         onClick = { onOpenTask(task) },
         onLongClick = { onTaskActions(task) },
         onDelete = { viewModel.deleteTask(task) },
+        animateCompletion = animateCompletion,
         modifier = modifier
     )
 }
@@ -419,7 +462,16 @@ private fun ProgressCard(state: TodayUiState) {
         else -> stringResource(R.string.smart_start)
     }
 
-    RooziCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(18.dp)) {
+    // Hero card: the one place a gradient is used on Today, so it stays special.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(26.dp))
+            .background(
+                Brush.linearGradient(listOf(colors.coral, colors.purple))
+            )
+            .padding(18.dp)
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             ProgressRing(
                 progress = state.progress,
@@ -429,17 +481,34 @@ private fun ProgressCard(state: TodayUiState) {
                     formatter.digits(state.done),
                     formatter.digits(state.total)
                 ),
-                contentDescription = stringResource(R.string.cd_progress_ring)
+                contentDescription = stringResource(R.string.cd_progress_ring),
+                onGradient = true
             )
             Spacer(Modifier.width(18.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     stringResource(R.string.progress_title),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = colors.textSecondary
+                    style = MaterialTheme.typography.labelMedium.copy(shadow = accentTextShadow()),
+                    color = Color.White.copy(alpha = 0.9f)
                 )
                 Spacer(Modifier.height(4.dp))
-                Text(message, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
+                Text(
+                    message,
+                    style = MaterialTheme.typography.titleMedium.copy(shadow = accentTextShadow()),
+                    color = Color.White
+                )
+                if (state.total > 0) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        stringResource(
+                            R.string.hero_done_of,
+                            formatter.digits(state.done),
+                            formatter.digits(state.total)
+                        ),
+                        style = MaterialTheme.typography.labelMedium.copy(shadow = accentTextShadow()),
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                }
             }
         }
     }

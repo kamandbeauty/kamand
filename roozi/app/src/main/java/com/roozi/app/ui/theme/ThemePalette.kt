@@ -67,13 +67,13 @@ enum class ThemePalette(
             accent = Color(0xFFFFB067),
             progressStart = Color(0xFFFF8080),
             progressEnd = Color(0xFF9B84FF),
-            background = Color(0xFF14131A),
-            surface = Color(0xFF1E1C26),
-            surfaceMuted = Color(0xFF262433),
+            background = Color(0xFF141327),
+            surface = Color(0xFF1E1D38),
+            surfaceMuted = Color(0xFF282746),
             textPrimary = Color(0xFFF3EFF8),
             textSecondary = Color(0xFFA9A2B8),
-            gradientStart = Color(0xFF221E2E),
-            gradientEnd = Color(0xFF191824)
+            gradientStart = Color(0xFF221F3D),
+            gradientEnd = Color(0xFF17162B)
         )
     ),
 

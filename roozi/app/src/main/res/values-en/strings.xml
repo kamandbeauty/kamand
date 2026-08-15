@@ -35,7 +35,7 @@
     <string name="task_yesterday">Yesterday</string>
     <string name="no_date">No date</string>
 
-    <string name="add_task">Add task</string>
+    <string name="add_task">New task ✨</string>
     <string name="edit_task">Edit task</string>
     <string name="task_title">Task title</string>
     <string name="task_title_hint">What do you need to do?</string>
@@ -235,4 +235,5 @@
     <string name="notif_ok">Notifications are enabled ✓</string>
     <string name="notif_battery_hint">If reminders never arrive, allow autostart and remove battery restrictions for ROOZI in system settings.</string>
     <string name="notif_open_settings">Notification settings</string>
+    <string name="hero_done_of">%1$s of %2$s tasks done</string>
 </resources>

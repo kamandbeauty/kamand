@@ -218,6 +218,38 @@ private fun AddTaskContent(
 
         Spacer(Modifier.height(10.dp))
 
+        // §14: one-tap scheduling. Today / Tomorrow cover the vast majority of
+        // cases; the calendar chip below stays for everything else.
+        val today = remember { LocalDate.now() }
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SelectableChip(
+                text = stringResource(R.string.task_today),
+                selected = dueDate == today,
+                accent = colors.coral,
+                onClick = { dueDate = if (dueDate == today) null else today }
+            )
+            SelectableChip(
+                text = stringResource(R.string.task_tomorrow),
+                selected = dueDate == today.plusDays(1),
+                accent = colors.orange,
+                onClick = {
+                    val tomorrow = today.plusDays(1)
+                    dueDate = if (dueDate == tomorrow) null else tomorrow
+                }
+            )
+            SelectableChip(
+                text = stringResource(R.string.pick_a_day),
+                selected = showDatePicker,
+                accent = colors.purple,
+                onClick = { showDatePicker = !showDatePicker }
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
         // Quick summary row: date / time / options toggle
         Row(
             Modifier.fillMaxWidth(),
