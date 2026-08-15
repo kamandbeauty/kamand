@@ -24,14 +24,12 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // App name is injected so it can be changed without touching the manifest.
-        // The localized launcher label lives in strings.xml (app_name) for fa/en.
-        manifestPlaceholders["appNameDefault"] = rooziAppName
+        // The launcher label comes from the localized app_name resource; the
+        // -PappName override is applied as a resValue so it works for both locales.
+        resValue("string", "app_name_override", rooziAppName)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
-
-        ksp { arg("room.schemaLocation", "$projectDir/schemas") }
     }
 
     signingConfigs {
@@ -76,6 +74,11 @@ android {
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     }
+}
+
+// Room's exported schemas (top-level KSP extension — not a defaultConfig block).
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

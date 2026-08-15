@@ -40,10 +40,40 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      # Build in stages so a failure points at the exact phase.
+      - name: Compile app sources
+        run: |
+          set -o pipefail
+          ./gradlew :app:compileDebugKotlin --stacktrace 2>&1 | tee /tmp/gradle.log
+
+      - name: Compile unit test sources
+        run: |
+          set -o pipefail
+          ./gradlew :app:compileDebugUnitTestKotlin --stacktrace 2>&1 | tee -a /tmp/gradle.log
+
       # Real correctness checks — these SHOULD block the build.
       # Covers the Jalali calendar, recurrence rules and the streak logic.
       - name: Unit tests
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee -a /tmp/gradle.log
+
+      # Compiler/test errors are echoed as annotations so they are readable
+      # through the API even when raw log download is unavailable.
+      - name: Report failure details
+        if: failure()
+        run: |
+          echo "### Build failure" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          grep -E "^e: |^w: .*error|error:|FAILURE:|FAILED|Caused by:|Execution failed|expected:|actual:|AssertionError" /tmp/gradle.log \
+            | grep -v "Deprecated Gradle features" | head -60 | tee -a "$GITHUB_STEP_SUMMARY" > /tmp/errs.txt || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          n=0
+          while IFS= read -r line && [ $n -lt 25 ]; do
+            clean=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r/ /g')
+            echo "::error::${clean}"
+            n=$((n+1))
+          done < /tmp/errs.txt
 
       # Lint is advisory: a style warning must never stop you getting an APK.
       - name: Android Lint (advisory)
