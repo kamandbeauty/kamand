@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
         splash.setKeepOnScreenCondition { !settingsReady }
 
         val app = application as RooziApp
-        val backupManager = BackupManager(applicationContext, app.repository)
+        val backupManager = BackupManager(applicationContext, app.repository, app.noteRepository)
         pendingQuickAdd = intent?.getBooleanExtra(EXTRA_QUICK_ADD, false) == true
 
         setContent {

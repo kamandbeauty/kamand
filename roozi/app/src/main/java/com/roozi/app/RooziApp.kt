@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import com.roozi.app.core.CrashReporter
 import com.roozi.app.data.prefs.UserPreferences
+import com.roozi.app.data.repo.NoteRepository
 import com.roozi.app.data.repo.TaskRepository
 import com.roozi.app.notifications.Notifications
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -33,6 +34,7 @@ class RooziApp : Application() {
 
     val preferences: UserPreferences by lazy { UserPreferences(this) }
     val repository: TaskRepository by lazy { TaskRepository(this) }
+    val noteRepository: NoteRepository by lazy { NoteRepository(this) }
 
     override fun onCreate() {
         super.onCreate()
@@ -45,6 +47,8 @@ class RooziApp : Application() {
         applicationScope.launch(Dispatchers.IO) {
             runCatching { repository.ensureSeeded() }
                 .onFailure { Log.e(TAG, "Seeding default categories failed", it) }
+            runCatching { noteRepository.ensureSeeded() }
+                .onFailure { Log.e(TAG, "Seeding default notebooks failed", it) }
             runCatching { repository.rescheduleAllReminders() }
                 .onFailure { Log.e(TAG, "Rescheduling reminders failed", it) }
         }

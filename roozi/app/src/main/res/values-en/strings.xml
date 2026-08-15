@@ -236,4 +236,39 @@
     <string name="notif_battery_hint">If reminders never arrive, allow autostart and remove battery restrictions for ROOZI in system settings.</string>
     <string name="notif_open_settings">Notification settings</string>
     <string name="hero_done_of">%1$s of %2$s tasks done</string>
+
+    <!-- Notes -->
+    <string name="nav_notes">Notes</string>
+    <string name="notes_title">Notes</string>
+    <string name="notebooks_title">Notebooks</string>
+    <string name="all_notes">All notes</string>
+    <string name="loose_notes">No notebook</string>
+    <string name="new_note">New note ✨</string>
+    <string name="edit_note">Edit note</string>
+    <string name="note_title">Title</string>
+    <string name="note_title_hint">Note title</string>
+    <string name="note_body">Text</string>
+    <string name="note_body_hint">Write whatever is on your mind…</string>
+    <string name="note_save">Save note</string>
+    <string name="note_notebook">Notebook</string>
+    <string name="note_color">Color</string>
+    <string name="note_pin">Pin</string>
+    <string name="note_unpin">Unpin</string>
+    <string name="note_deleted">Note deleted</string>
+    <string name="note_count">%1$s notes</string>
+    <string name="new_notebook">New notebook</string>
+    <string name="notebook_name">Notebook name</string>
+    <string name="notebook_cover">Cover</string>
+    <string name="notebook_delete">Delete notebook</string>
+    <string name="notebook_delete_hint">Notes are kept; they just move out of the notebook.</string>
+    <string name="notebook_personal">Personal</string>
+    <string name="notebook_ideas">Ideas</string>
+    <string name="notebook_work">Work</string>
+    <string name="empty_notes">No notes yet 📝</string>
+    <string name="empty_notes_sub">Write your first note ✨</string>
+    <string name="empty_notebook">This notebook is empty 🌱</string>
+    <string name="search_notes_hint">Search notes…</string>
+    <string name="cd_add_note">Add a new note</string>
+    <string name="cd_open_notebook">Open notebook</string>
+    <string name="notification_now">Reminder · %1$s</string>
 </resources>

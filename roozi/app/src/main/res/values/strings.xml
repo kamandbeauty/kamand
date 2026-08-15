@@ -254,4 +254,39 @@
     <string name="notif_battery_hint">اگر یادآوری نمی‌رسد، در تنظیمات گوشی برای «روزی» اجرای خودکار را روشن و محدودیت باتری را بردارید.</string>
     <string name="notif_open_settings">تنظیمات اعلان</string>
     <string name="hero_done_of">%1$s از %2$s کار انجام شده</string>
+
+    <!-- Notes -->
+    <string name="nav_notes">یادداشت</string>
+    <string name="notes_title">یادداشت‌ها</string>
+    <string name="notebooks_title">دفترها</string>
+    <string name="all_notes">همه یادداشت‌ها</string>
+    <string name="loose_notes">بدون دفتر</string>
+    <string name="new_note">یادداشت جدید ✨</string>
+    <string name="edit_note">ویرایش یادداشت</string>
+    <string name="note_title">عنوان</string>
+    <string name="note_title_hint">عنوان یادداشت</string>
+    <string name="note_body">متن</string>
+    <string name="note_body_hint">هرچی توی ذهنته بنویس…</string>
+    <string name="note_save">ذخیره یادداشت</string>
+    <string name="note_notebook">دفتر</string>
+    <string name="note_color">رنگ</string>
+    <string name="note_pin">سنجاق</string>
+    <string name="note_unpin">برداشتن سنجاق</string>
+    <string name="note_deleted">یادداشت حذف شد</string>
+    <string name="note_count">%1$s یادداشت</string>
+    <string name="new_notebook">دفتر جدید</string>
+    <string name="notebook_name">نام دفتر</string>
+    <string name="notebook_cover">جلد</string>
+    <string name="notebook_delete">حذف دفتر</string>
+    <string name="notebook_delete_hint">یادداشت‌ها پاک نمی‌شوند و بدون دفتر می‌مانند.</string>
+    <string name="notebook_personal">شخصی</string>
+    <string name="notebook_ideas">ایده‌ها</string>
+    <string name="notebook_work">کار</string>
+    <string name="empty_notes">هنوز یادداشتی نداری 📝</string>
+    <string name="empty_notes_sub">اولین یادداشتت رو بنویس ✨</string>
+    <string name="empty_notebook">این دفتر خالیه 🌱</string>
+    <string name="search_notes_hint">جستجو در یادداشت‌ها…</string>
+    <string name="cd_add_note">افزودن یادداشت جدید</string>
+    <string name="cd_open_notebook">باز کردن دفتر</string>
+    <string name="notification_now">یادآوری · %1$s</string>
 </resources>

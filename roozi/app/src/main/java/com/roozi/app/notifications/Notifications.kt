@@ -8,10 +8,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.widget.RemoteViews
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.roozi.app.core.util.PersianNumbers
 import com.roozi.app.MainActivity
 import com.roozi.app.R
 
@@ -74,14 +76,29 @@ object Notifications {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Custom layout so the reminder carries the app's identity instead of
+        // the system's default grey card. DecoratedCustomViewStyle is avoided:
+        // it would re-add the system header around our own artwork.
+        val content = RemoteViews(context.packageName, R.layout.notification_reminder).apply {
+            setTextViewText(R.id.notif_title, title)
+            setTextViewText(R.id.notif_time, subtitle(context))
+            setTextViewText(R.id.notif_action, context.getString(R.string.action_done))
+            setOnClickPendingIntent(R.id.notif_action, doneIntent)
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFFFF6B6B.toInt())
+            .setColorized(true)
+            // Text versions are still supplied: they are what shows on
+            // wearables, Android Auto and any launcher that ignores custom views.
             .setContentTitle(context.getString(R.string.notification_title))
             .setContentText(title)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(title))
+            .setCustomContentView(content)
+            .setCustomBigContentView(content)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
             .addAction(0, context.getString(R.string.action_done), doneIntent)
@@ -97,6 +114,15 @@ object Notifications {
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS, conditional = true)
     fun showTest(context: Context) {
         show(context, TEST_NOTIFICATION_ID, context.getString(R.string.notif_test))
+    }
+
+    /** Localized "now" line under the reminder title. */
+    private fun subtitle(context: Context): String {
+        val persian = context.resources.configuration.locales[0].language != "en"
+        val now = java.time.LocalTime.now()
+        val time = PersianNumbers.twoDigits(now.hour, persian) + ":" +
+            PersianNumbers.twoDigits(now.minute, persian)
+        return context.getString(R.string.notification_now, time)
     }
 
     fun dismiss(context: Context, taskId: Long) {

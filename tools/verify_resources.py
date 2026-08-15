@@ -131,7 +131,10 @@ def check_no_hardcoded_persian():
     """No Persian text may be hardcoded in Kotlin UI code."""
     persian = re.compile(r"[\u0600-\u06FF]")
     allowed = {
-        os.path.join("com", "roozi", "app", "data", "repo", "DefaultCategories.kt"),  # seed fallback names
+        # Seed rows store a fallback name in the DB; the UI resolves the real
+        # label from resources via labelRes(), so these are never user-visible.
+        os.path.join("com", "roozi", "app", "data", "repo", "DefaultCategories.kt"),
+        os.path.join("com", "roozi", "app", "data", "repo", "NoteRepository.kt"),
         os.path.join("com", "roozi", "app", "core", "util", "PersianNumbers.kt"),  # digit tables
     }
     for path in kotlin_files():

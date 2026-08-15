@@ -3,6 +3,7 @@ package com.roozi.app.navigation
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.automirrored.rounded.StickyNote2
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -15,6 +16,7 @@ enum class TopLevelDestination(
 ) {
     TODAY("today", R.string.nav_today, Icons.Rounded.WbSunny),
     CALENDAR("calendar", R.string.nav_calendar, Icons.Rounded.CalendarMonth),
+    NOTES("notes", R.string.nav_notes, Icons.AutoMirrored.Rounded.StickyNote2),
     PROFILE("profile", R.string.nav_profile, Icons.Rounded.Person);
 
     companion object {

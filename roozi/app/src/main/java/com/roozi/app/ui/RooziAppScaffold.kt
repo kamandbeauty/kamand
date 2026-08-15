@@ -53,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -61,12 +62,17 @@ import com.roozi.app.R
 import com.roozi.app.data.backup.BackupManager
 import com.roozi.app.data.prefs.AppLanguage
 import com.roozi.app.data.prefs.ThemeMode
+import com.roozi.app.data.repo.Note
+import com.roozi.app.data.repo.Notebook
 import com.roozi.app.data.repo.Task
 import com.roozi.app.navigation.Routes
 import com.roozi.app.navigation.TopLevelDestination
 import com.roozi.app.ui.addtask.AddTaskSheet
 import com.roozi.app.ui.components.TaskActionsSheet
 import com.roozi.app.ui.calendar.CalendarScreen
+import com.roozi.app.ui.notes.NoteEditorSheet
+import com.roozi.app.ui.notes.NotebookDialog
+import com.roozi.app.ui.notes.NotesScreen
 import com.roozi.app.ui.profile.ProfileScreen
 import com.roozi.app.ui.search.SearchScreen
 import com.roozi.app.ui.theme.RooziTheme
@@ -102,6 +108,16 @@ fun RooziAppScaffold(
     var sheetVisible by remember { mutableStateOf(false) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var actionsTask by remember { mutableStateOf<Task?>(null) }
+
+    // Notes tab state
+    val notesViewModel: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
+    val noteSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var noteSheetVisible by remember { mutableStateOf(false) }
+    var editingNote by remember { mutableStateOf<Note?>(null) }
+    var notebookDialog by remember { mutableStateOf<NotebookDialogRequest?>(null) }
+    val notebooks by notesViewModel.notebooks.collectAsStateWithLifecycle()
+    val noteFilter by notesViewModel.filter.collectAsStateWithLifecycle()
+    val lastDeletedNote by notesViewModel.lastDeleted.collectAsStateWithLifecycle()
     val actionsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val categories by tasksViewModel.categories.collectAsStateWithLifecycle()
@@ -120,6 +136,18 @@ fun RooziAppScaffold(
         )
         if (result == SnackbarResult.ActionPerformed) tasksViewModel.undoDelete()
         else tasksViewModel.clearLastDeleted()
+    }
+
+    val noteDeletedMessage = stringResource(R.string.note_deleted)
+    LaunchedEffect(lastDeletedNote) {
+        val note = lastDeletedNote ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = noteDeletedMessage,
+            actionLabel = undoLabel,
+            duration = SnackbarDuration.Short
+        )
+        if (result == SnackbarResult.ActionPerformed) notesViewModel.undoDelete()
+        else notesViewModel.clearLastDeleted()
     }
 
     // Keep "today" fresh when the app returns from the background across midnight.
@@ -218,12 +246,18 @@ fun RooziAppScaffold(
                 exit = scaleOut() + fadeOut()
             ) {
                 val haptics = LocalHapticFeedback.current
+                val onNotesTab = currentRoute == TopLevelDestination.NOTES.route
                 FloatingActionButton(
                     onClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        editingTask = null
-                        sheetVisible = true
-                        onRequestNotificationPermission()
+                        if (onNotesTab) {
+                            editingNote = null
+                            noteSheetVisible = true
+                        } else {
+                            editingTask = null
+                            sheetVisible = true
+                            onRequestNotificationPermission()
+                        }
                     },
                     containerColor = Color.Transparent,
                     contentColor = Color.White,
@@ -245,7 +279,9 @@ fun RooziAppScaffold(
                     ) {
                         Icon(
                             Icons.Rounded.Add,
-                            contentDescription = stringResource(R.string.cd_add_task),
+                            contentDescription = stringResource(
+                                if (onNotesTab) R.string.cd_add_note else R.string.cd_add_task
+                            ),
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -281,6 +317,17 @@ fun RooziAppScaffold(
                         sheetVisible = true
                     },
                     onTaskActions = { task -> actionsTask = task }
+                )
+            }
+            composable(TopLevelDestination.NOTES.route) {
+                NotesScreen(
+                    viewModel = notesViewModel,
+                    contentPadding = padding,
+                    onOpenNote = { note ->
+                        editingNote = note
+                        noteSheetVisible = true
+                    },
+                    onEditNotebook = { book -> notebookDialog = NotebookDialogRequest(book) }
                 )
             }
             composable(TopLevelDestination.PROFILE.route) {
@@ -342,6 +389,54 @@ fun RooziAppScaffold(
         )
     }
 
+    if (noteSheetVisible) {
+        NoteEditorSheet(
+            sheetState = noteSheetState,
+            editing = editingNote,
+            notebooks = notebooks,
+            // A new note lands in the notebook the user is currently browsing.
+            defaultNotebookId = (noteFilter as? NoteFilter.InNotebook)?.notebookId,
+            onDismiss = {
+                noteSheetVisible = false
+                editingNote = null
+            },
+            onSave = { draft ->
+                notesViewModel.saveNote(
+                    id = draft.id,
+                    title = draft.title,
+                    body = draft.body,
+                    notebookId = draft.notebookId,
+                    color = draft.color,
+                    pinned = draft.pinned
+                )
+                scope.launch {
+                    noteSheetState.hide()
+                    noteSheetVisible = false
+                    editingNote = null
+                }
+            }
+        )
+    }
+
+    notebookDialog?.let { request ->
+        NotebookDialog(
+            editing = request.notebook,
+            onDismiss = { notebookDialog = null },
+            onConfirm = { name, icon, color ->
+                val existing = request.notebook
+                if (existing == null) notesViewModel.addNotebook(name, icon, color)
+                else notesViewModel.updateNotebook(existing, name, icon, color)
+                notebookDialog = null
+            },
+            onDelete = request.notebook?.takeIf { !it.isBuiltIn }?.let { book ->
+                {
+                    notesViewModel.deleteNotebook(book)
+                    notebookDialog = null
+                }
+            }
+        )
+    }
+
     actionsTask?.let { task ->
         val formatter = LocalDateFormatter.current
         fun close() {
@@ -380,3 +475,6 @@ fun RooziAppScaffold(
         )
     }
 }
+
+/** Wrapper so `null` can mean "create" while still using a nullable state. */
+private data class NotebookDialogRequest(val notebook: Notebook?)
