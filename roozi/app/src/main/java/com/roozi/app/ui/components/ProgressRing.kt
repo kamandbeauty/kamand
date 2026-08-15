@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.roozi.app.ui.theme.RooziTheme
@@ -40,8 +42,8 @@ fun ProgressRing(
     centerBottom: String,
     contentDescription: String,
     modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 112.dp,
-    strokeWidth: androidx.compose.ui.unit.Dp = 12.dp
+    ringSize: Dp = 112.dp,
+    ringStroke: Dp = 12.dp
 ) {
     val colors = RooziTheme.colors
     val animated by animateFloatAsState(
@@ -54,17 +56,18 @@ fun ProgressRing(
     val brush = Brush.sweepGradient(
         listOf(colors.coral, colors.orange, colors.yellow, colors.mint, colors.purple, colors.coral)
     )
+    val label = contentDescription
 
     Box(
         modifier = modifier
-            .size(size)
-            .semantics { this.contentDescription = contentDescription },
+            .size(ringSize)
+            .semantics { this.contentDescription = label },
         contentAlignment = Alignment.Center
     ) {
-        Canvas(Modifier.size(size)) {
-            val stroke = strokeWidth.toPx()
-            val inset = stroke / 2f
-            val arcSize = Size(this.size.width - stroke, this.size.height - stroke)
+        Canvas(Modifier.size(ringSize)) {
+            val strokePx = ringStroke.toPx()
+            val inset = strokePx / 2f
+            val arcSize = Size(size.width - strokePx, size.height - strokePx)
             drawArc(
                 color = track,
                 startAngle = 0f,
@@ -72,7 +75,7 @@ fun ProgressRing(
                 useCenter = false,
                 topLeft = Offset(inset, inset),
                 size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Round)
+                style = Stroke(width = strokePx, cap = StrokeCap.Round)
             )
             if (animated > 0f) {
                 drawArc(
@@ -82,32 +85,25 @@ fun ProgressRing(
                     useCenter = false,
                     topLeft = Offset(inset, inset),
                     size = arcSize,
-                    style = Stroke(width = stroke, cap = StrokeCap.Round)
+                    style = Stroke(width = strokePx, cap = StrokeCap.Round)
                 )
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                centerTop,
-                style = MaterialTheme.typography.titleLarge,
-                color = colors.textPrimary
-            )
-            Text(
-                centerBottom,
-                style = MaterialTheme.typography.labelMedium,
-                color = colors.textSecondary
-            )
+            Text(centerTop, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
+            Text(centerBottom, style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
         }
     }
 }
 
-/** Slim animated bar used in the weekly stats chart. */
+/** Slim animated bars used by the weekly statistics chart. */
 @Composable
 fun WeeklyBars(
     values: List<Float>,
     labels: List<String>,
     modifier: Modifier = Modifier,
-    barHeight: androidx.compose.ui.unit.Dp = 92.dp
+    barHeight: Dp = 92.dp,
+    barWidth: Dp = 22.dp
 ) {
     val colors = RooziTheme.colors
     Row(
@@ -122,30 +118,21 @@ fun WeeklyBars(
                 label = "bar$index"
             )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 22.dp, height = barHeight),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Canvas(Modifier.size(width = 22.dp, height = barHeight)) {
-                        val radius = 11.dp.toPx()
+                Canvas(Modifier.size(width = barWidth, height = barHeight)) {
+                    val radius = CornerRadius(size.width / 2f, size.width / 2f)
+                    drawRoundRect(color = colors.surfaceMuted, cornerRadius = radius)
+                    val filled = size.height * value
+                    if (filled > 1f) {
                         drawRoundRect(
-                            color = track(colors.surfaceMuted),
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius, radius)
+                            brush = Brush.verticalGradient(
+                                colors = listOf(colors.coral, colors.purple),
+                                startY = size.height - filled,
+                                endY = size.height
+                            ),
+                            topLeft = Offset(0f, size.height - filled),
+                            size = Size(size.width, filled),
+                            cornerRadius = radius
                         )
-                        val h = this.size.height * value
-                        if (h > 1f) {
-                            drawRoundRect(
-                                brush = Brush.verticalGradient(
-                                    listOf(colors.coral, colors.purple),
-                                    startY = this.size.height - h,
-                                    endY = this.size.height
-                                ),
-                                topLeft = Offset(0f, this.size.height - h),
-                                size = Size(this.size.width, h),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius, radius)
-                            )
-                        }
                     }
                 }
                 Spacer(Modifier.height(6.dp))
@@ -158,5 +145,3 @@ fun WeeklyBars(
         }
     }
 }
-
-private fun track(color: androidx.compose.ui.graphics.Color) = color

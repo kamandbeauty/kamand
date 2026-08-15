@@ -51,6 +51,9 @@ import com.roozi.app.ui.theme.RooziTheme
 
 private data class Page(val emoji: String, val titleRes: Int, val descRes: Int)
 
+/** Which step of the onboarding flow is showing. */
+private data class Step(val naming: Boolean, val page: Int)
+
 private val pages = listOf(
     Page("✨", R.string.onboarding_title_1, R.string.onboarding_desc_1),
     Page("🗓️", R.string.onboarding_title_2, R.string.onboarding_desc_2),
@@ -85,21 +88,21 @@ fun OnboardingScreen(
 
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             AnimatedContent(
-                targetState = askName to index,
+                targetState = Step(askName, index),
                 transitionSpec = {
                     (slideInHorizontally { it / 4 } + fadeIn(tween(250))) togetherWith
                         (slideOutHorizontally { -it / 4 } + fadeOut(tween(180)))
                 },
                 label = "onboarding"
-            ) { (naming, page) ->
-                if (naming) {
+            ) { step ->
+                if (step.naming) {
                     NameStep(
                         name = name,
                         onNameChange = { name = it },
                         onSubmit = { onFinish(name) }
                     )
                 } else {
-                    PageContent(pages[page])
+                    PageContent(pages[step.page])
                 }
             }
         }

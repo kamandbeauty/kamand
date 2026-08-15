@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -268,11 +269,7 @@ fun AnimatedCheckbox(
                 .size(26.dp)
                 .scale(scale)
                 .background(fill, CircleShape)
-                .then(
-                    Modifier.border(
-                        color = borderColor
-                    )
-                ),
+                .border(2.dp, borderColor, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -284,10 +281,6 @@ fun AnimatedCheckbox(
         }
     }
 }
-
-private fun Modifier.border(color: Color) = this.then(
-    androidx.compose.foundation.border(2.dp, color, CircleShape)
-)
 
 @Composable
 fun PriorityIndicator(priority: Priority, label: String, modifier: Modifier = Modifier) {

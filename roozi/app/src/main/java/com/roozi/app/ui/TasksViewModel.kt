@@ -25,6 +25,9 @@ import java.time.ZoneId
 
 enum class TaskFilter { ALL, TODAY, UNDONE, DONE, IMPORTANT }
 
+/** Inclusive date window the calendar currently needs indicators for. */
+data class DateRange(val start: LocalDate, val endInclusive: LocalDate)
+
 data class TodayUiState(
     val tasks: List<Task> = emptyList(),
     val total: Int = 0,
@@ -90,7 +93,7 @@ class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val dayLoads: StateFlow<Map<LocalDate, DayLoad>> = _visibleRange
-        .flatMapLatest { (from, to) -> repository.dayCounts(from, to) }
+        .flatMapLatest { range -> repository.dayCounts(range.start, range.endInclusive) }
         .map { counts ->
             counts.associate { LocalDate.ofEpochDay(it.dueDate) to DayLoad(it.total, it.done) }
         }
@@ -170,7 +173,7 @@ class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
     }
 
     fun setVisibleMonth(first: LocalDate, last: LocalDate) {
-        _visibleRange.value = first.minusDays(7) to last.plusDays(7)
+        _visibleRange.value = DateRange(first.minusDays(7), last.plusDays(7))
     }
 
     fun setQuery(value: String) {
@@ -246,8 +249,8 @@ class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
         _celebrate.value = false
     }
 
-    private fun monthRangeOf(date: LocalDate): Pair<LocalDate, LocalDate> =
-        date.minusDays(45) to date.plusDays(45)
+    private fun monthRangeOf(date: LocalDate): DateRange =
+        DateRange(date.minusDays(45), date.plusDays(45))
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

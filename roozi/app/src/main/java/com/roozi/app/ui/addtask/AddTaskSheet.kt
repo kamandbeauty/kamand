@@ -333,12 +333,13 @@ private fun AddTaskContent(
                 }
 
                 Spacer(Modifier.height(14.dp))
+                val reminderDate = dueDate
                 ReminderRow(
                     enabled = reminder,
-                    label = if (dueDate != null && reminder)
+                    label = if (reminderDate != null && reminder)
                         stringResource(
                             R.string.reminder_at,
-                            formatter.relativeDate(dueDate!!),
+                            formatter.relativeDate(reminderDate),
                             formatter.time(dueTime ?: defaultReminderMinutes())
                         )
                     else stringResource(R.string.reminder_off),
