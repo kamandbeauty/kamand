@@ -32,16 +32,20 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
-    signingConfigs {
-        create("releaseConfig") {
-            // Optional signing: provide keystore.properties (see SIGNING section in README)
-            val propsFile = rootProject.file("keystore.properties")
-            if (propsFile.exists()) {
-                val props = java.util.Properties().apply { propsFile.inputStream().use { load(it) } }
-                storeFile = rootProject.file(props.getProperty("storeFile"))
-                storePassword = props.getProperty("storePassword")
-                keyAlias = props.getProperty("keyAlias")
-                keyPassword = props.getProperty("keyPassword")
+    // Optional release signing. The config is only created when
+    // keystore.properties exists — an empty signingConfig is rejected by AGP,
+    // so CI (which has no keystore) must not declare one at all.
+    val keystoreProps = rootProject.file("keystore.properties").takeIf { it.exists() }?.let { file ->
+        java.util.Properties().apply { file.inputStream().use { load(it) } }
+    }
+
+    if (keystoreProps != null) {
+        signingConfigs {
+            create("releaseConfig") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
             }
         }
     }
@@ -51,7 +55,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (rootProject.file("keystore.properties").exists()) {
+            if (keystoreProps != null) {
                 signingConfig = signingConfigs.getByName("releaseConfig")
             }
         }
