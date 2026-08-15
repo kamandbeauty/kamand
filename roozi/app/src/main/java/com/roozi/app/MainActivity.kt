@@ -3,7 +3,6 @@ package com.roozi.app
 import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -26,11 +25,10 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.roozi.app.core.CrashReporter
+import com.roozi.app.core.LocaleContext
 import com.roozi.app.data.backup.BackupManager
 import com.roozi.app.data.prefs.AppLanguage
 import com.roozi.app.data.prefs.UserPreferences
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import com.roozi.app.ui.LocalDateFormatter
 import com.roozi.app.ui.MainViewModel
 import com.roozi.app.ui.components.CrashReportScreen
@@ -39,7 +37,6 @@ import com.roozi.app.ui.TasksViewModel
 import com.roozi.app.ui.onboarding.OnboardingScreen
 import com.roozi.app.ui.rememberDateFormatter
 import com.roozi.app.ui.theme.RooziTheme
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -55,25 +52,8 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result handled by system */ }
 
-    /**
-     * Applies the user's language to the Activity itself.
-     *
-     * This is the correct place for it: wrapping LocalContext in the
-     * composition would hide the Activity from APIs that need it (activity
-     * results, permissions), while this keeps the whole context chain intact.
-     */
     override fun attachBaseContext(newBase: Context) {
-        val language = runCatching {
-            runBlocking { UserPreferences(newBase).settings.first().language }
-        }.getOrDefault(AppLanguage.PERSIAN)
-
-        val locale = Locale(language.tag)
-        Locale.setDefault(locale)
-        val config = Configuration(newBase.resources.configuration).apply {
-            setLocale(locale)
-            setLayoutDirection(locale)
-        }
-        super.attachBaseContext(newBase.createConfigurationContext(config))
+        super.attachBaseContext(LocaleContext.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -202,6 +182,24 @@ class MainActivity : ComponentActivity() {
         } else {
             openNotificationSettings()
         }
+    }
+
+    /**
+     * Opens the "Manage full screen intents" special-access page.
+     *
+     * Android 14 withholds this permission from apps it does not classify as
+     * alarm or calling apps, and it cannot be requested with a runtime dialog —
+     * settings is the only route.
+     */
+    fun openFullScreenIntentSettings() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            openNotificationSettings()
+            return
+        }
+        val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+            data = android.net.Uri.fromParts("package", packageName, null)
+        }
+        runCatching { startActivity(intent) }.onFailure { openNotificationSettings() }
     }
 
     /** Opens this app's notification settings so a denied permission is fixable. */

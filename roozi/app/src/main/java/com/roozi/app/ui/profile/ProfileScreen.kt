@@ -355,6 +355,19 @@ fun ProfileScreen(
                             color = colors.orange
                         )
                     }
+                    // Full-screen reminders need a special access grant on
+                    // Android 14+, which no runtime dialog can ask for.
+                    if (!Notifications.canUseFullScreen(context)) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.alarm_fullscreen_blocked),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.orange,
+                            modifier = Modifier.clickable {
+                                activity?.openFullScreenIntentSettings()
+                            }
+                        )
+                    }
                     Spacer(Modifier.height(6.dp))
                     Text(
                         stringResource(R.string.notif_battery_hint),

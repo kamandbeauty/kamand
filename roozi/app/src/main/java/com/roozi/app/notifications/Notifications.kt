@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
 import android.os.Build
 import android.widget.RemoteViews
 import androidx.annotation.RequiresPermission
@@ -14,12 +15,27 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.roozi.app.core.util.PersianNumbers
+import com.roozi.app.AlarmActivity
 import com.roozi.app.MainActivity
 import com.roozi.app.R
 
 object Notifications {
 
-    const val CHANNEL_ID = "roozi_task_reminders"
+    /**
+     * Bumped when channel settings change: Android freezes a channel's
+     * importance/sound at creation, so an existing install would otherwise keep
+     * the old non-alarm behaviour forever.
+     */
+    const val CHANNEL_ID = "roozi_task_reminders_v2"
+
+    private const val LEGACY_CHANNEL_ID = "roozi_task_reminders"
+
+    /**
+     * Birthdays keep their own channel. They are a gentle heads-up days in
+     * advance, not something to be woken up by, so they must not inherit the
+     * task channel's alarm sound and full-screen treatment.
+     */
+    const val BIRTHDAY_CHANNEL_ID = "roozi_birthdays"
 
     /** Reserved id for the diagnostic notification. */
     private const val TEST_NOTIFICATION_ID = 999_999L
@@ -40,14 +56,57 @@ object Notifications {
             enableLights(true)
             lightColor = 0xFFFF6B6B.toInt()
             enableVibration(true)
+            // USAGE_ALARM makes reminders ring at alarm volume and pass through
+            // Do Not Disturb's alarm exception, matching the full-screen
+            // treatment they now get. Channel settings are immutable after
+            // creation, hence the version bump in CHANNEL_ID.
+            setSound(
+                android.media.RingtoneManager
+                    .getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build()
+            )
         }
         manager.createNotificationChannel(channel)
+        // The pre-alarm channel would otherwise linger in system settings as a
+        // dead entry the user can still toggle.
+        runCatching { manager.deleteNotificationChannel(LEGACY_CHANNEL_ID) }
+
+        if (manager.getNotificationChannel(BIRTHDAY_CHANNEL_ID) == null) {
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    BIRTHDAY_CHANNEL_ID,
+                    context.getString(R.string.notification_birthday_channel_name),
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = context.getString(R.string.notification_birthday_channel_desc)
+                    enableLights(true)
+                    lightColor = 0xFFFF7EB6.toInt()
+                }
+            )
+        }
     }
 
     fun hasPermission(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Whether the OS will honour a full-screen intent.
+     *
+     * Android 14 turned USE_FULL_SCREEN_INTENT into a special access permission;
+     * it is pre-granted only to alarm and calling apps, and the user can revoke
+     * it. When it is off the system silently downgrades the notification to a
+     * heads-up banner, so this is checked rather than assumed.
+     */
+    fun canUseFullScreen(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        return runCatching { manager.canUseFullScreenIntent() }.getOrDefault(false)
+    }
 
     /**
      * Posts a reminder. The POST_NOTIFICATIONS permission is verified by
@@ -79,6 +138,28 @@ object Notifications {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val snoozeIntent = PendingIntent.getBroadcast(
+            context,
+            (taskId + 2_000_000).toInt(),
+            Intent(context, ReminderReceiver::class.java).apply {
+                action = ReminderReceiver.ACTION_SNOOZE
+                data = android.net.Uri.parse("roozi://snooze/$taskId")
+                putExtra(ReminderReceiver.EXTRA_TASK_ID, taskId)
+                putExtra(ReminderReceiver.EXTRA_TITLE, title)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // The alarm screen is launched by the system, not by us: a background
+        // activity start would be blocked, whereas a full-screen intent on a
+        // high-importance notification is the sanctioned path.
+        val fullScreenIntent = PendingIntent.getActivity(
+            context,
+            (taskId + 3_000_000).toInt(),
+            AlarmActivity.createIntent(context, taskId, title),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         // Custom layout so the reminder carries the app's identity instead of
         // the system's default grey card. DecoratedCustomViewStyle is avoided:
         // it would re-add the system header around our own artwork.
@@ -89,7 +170,7 @@ object Notifications {
             setOnClickPendingIntent(R.id.notif_action, doneIntent)
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFFFF6B6B.toInt())
             .setColorized(true)
@@ -100,14 +181,26 @@ object Notifications {
             .setCustomContentView(content)
             .setCustomBigContentView(content)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            // CATEGORY_ALARM is what tells the system (and Do Not Disturb) that
+            // this is a user-set alarm rather than a passive reminder, which is
+            // also the category a full-screen intent is expected to carry.
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
+            .addAction(0, context.getString(R.string.alarm_snooze), snoozeIntent)
             .addAction(0, context.getString(R.string.action_done), doneIntent)
-            .build()
 
-        runCatching { NotificationManagerCompat.from(context).notify(taskId.toInt(), notification) }
+        if (canUseFullScreen(context)) {
+            // true = show full-screen even when the device is unlocked; the OS
+            // still downgrades it to a heads-up banner while in use, which is
+            // the intended behaviour rather than a fallback.
+            builder.setFullScreenIntent(fullScreenIntent, true)
+        }
+
+        runCatching {
+            NotificationManagerCompat.from(context).notify(taskId.toInt(), builder.build())
+        }
     }
 
     /**
@@ -163,7 +256,7 @@ object Notifications {
             setViewVisibility(R.id.notif_action, android.view.View.GONE)
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, BIRTHDAY_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(0xFFFF6B6B.toInt())
             .setColorized(true)
@@ -171,7 +264,7 @@ object Notifications {
             .setContentText(body)
             .setCustomContentView(content)
             .setCustomBigContentView(content)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
