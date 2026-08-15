@@ -28,6 +28,8 @@ object Notifications {
      */
     const val CHANNEL_ID = "roozi_task_reminders_v2"
 
+    private const val TAG = "Notifications"
+
     private const val LEGACY_CHANNEL_ID = "roozi_task_reminders"
 
     /**
@@ -109,12 +111,36 @@ object Notifications {
     }
 
     /**
+     * Whether the app may draw over other apps.
+     *
+     * Not required by AOSP for a full-screen intent, but MIUI/HyperOS gate
+     * background activity starts behind their own "display pop-up windows while
+     * running in the background" switch, which is off by default and is the
+     * usual reason a reminder stays a banner on a Xiaomi device. That switch has
+     * no public API; the overlay grant lives on the same settings page and is
+     * the closest signal that can actually be read.
+     */
+    fun canDrawOverlays(context: Context): Boolean =
+        runCatching { android.provider.Settings.canDrawOverlays(context) }.getOrDefault(false)
+
+    /** True on the OEM skins that add their own background-launch gate. */
+    fun isXiaomi(): Boolean {
+        val vendor = (Build.MANUFACTURER + " " + Build.BRAND).lowercase()
+        return "xiaomi" in vendor || "redmi" in vendor || "poco" in vendor
+    }
+
+    /**
      * Posts a reminder. The POST_NOTIFICATIONS permission is verified by
      * [hasPermission] before any notify() call; lint cannot follow that through
      * a helper, hence the explicit annotation.
+     *
+     * @param startScreen open the alarm screen as well as posting. Only true for
+     *   a reminder delivered by an exact alarm, which is exempt from the
+     *   background-activity restrictions; the WorkManager backstop is not, so it
+     *   posts the notification and lets the system decide.
      */
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS, conditional = true)
-    fun show(context: Context, taskId: Long, title: String) {
+    fun show(context: Context, taskId: Long, title: String, startScreen: Boolean = false) {
         ensureChannel(context)
         if (!hasPermission(context)) return
 
@@ -191,7 +217,8 @@ object Notifications {
             .addAction(0, context.getString(R.string.alarm_snooze), snoozeIntent)
             .addAction(0, context.getString(R.string.action_done), doneIntent)
 
-        if (canUseFullScreen(context)) {
+        val fullScreen = canUseFullScreen(context)
+        if (fullScreen) {
             // true = show full-screen even when the device is unlocked; the OS
             // still downgrades it to a heads-up banner while in use, which is
             // the intended behaviour rather than a fallback.
@@ -200,6 +227,20 @@ object Notifications {
 
         runCatching {
             NotificationManagerCompat.from(context).notify(taskId.toInt(), builder.build())
+        }
+
+        // Posting a full-screen intent is not a guarantee: the system only
+        // escalates it while the screen is off or locked, and MIUI drops it
+        // outright for apps it has not whitelisted. An exact alarm is exempt
+        // from background-activity limits, so when the reminder came from one
+        // the screen is also started directly. AlarmActivity is singleInstance,
+        // so if the system already opened it this is a no-op.
+        if (fullScreen && startScreen) {
+            runCatching {
+                context.startActivity(AlarmActivity.createIntent(context, taskId, title))
+            }.onFailure {
+                android.util.Log.w(TAG, "Could not start the alarm screen directly", it)
+            }
         }
     }
 

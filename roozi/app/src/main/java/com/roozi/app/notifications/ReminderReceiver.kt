@@ -53,7 +53,9 @@ class ReminderReceiver : BroadcastReceiver() {
                         val task = RooziDatabase.get(appContext).taskDao().findById(taskId)
                         val title = task?.title ?: intent.getStringExtra(EXTRA_TITLE)
                         if (task != null && !task.isCompleted && task.reminderEnabled && title != null) {
-                            Notifications.show(appContext, taskId, title)
+                            // Delivered by an exact alarm, so this path may
+                            // start the alarm screen itself.
+                            Notifications.show(appContext, taskId, title, startScreen = true)
                         }
                     }
                 }

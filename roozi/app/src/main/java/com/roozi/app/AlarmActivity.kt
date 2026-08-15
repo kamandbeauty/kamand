@@ -9,6 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.lifecycleScope
@@ -39,17 +42,24 @@ class AlarmActivity : ComponentActivity() {
         super.attachBaseContext(LocaleContext.wrap(newBase))
     }
 
+    /**
+     * Current reminder. Held as state because the activity is singleInstance:
+     * a second reminder arriving while this one is up is delivered to the same
+     * instance, and without this the screen would keep showing the first title.
+     */
+    private var current by mutableStateOf<Reminder?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         showOverLockScreen()
         enableEdgeToEdge()
 
-        val taskId = intent?.getLongExtra(EXTRA_TASK_ID, -1L) ?: -1L
-        val title = intent?.getStringExtra(EXTRA_TITLE).orEmpty()
-        if (taskId <= 0 || title.isBlank()) {
+        val first = reminderFrom(intent)
+        if (first == null) {
             finish()
             return
         }
+        current = first
 
         // The notification is deliberately left in the shade while this screen
         // is up. Dismissing it here would destroy the reminder outright if the
@@ -69,20 +79,35 @@ class AlarmActivity : ComponentActivity() {
                     LocalLayoutDirection provides
                         if (persian) LayoutDirection.Rtl else LayoutDirection.Ltr
                 ) {
+                    val reminder = current ?: return@CompositionLocalProvider
                     AlarmScreen(
-                        title = title,
+                        title = reminder.title,
                         time = clockNow(persian),
                         snoozeLabel = getString(
                             R.string.alarm_snooze_for,
                             PersianNumbers.format(SNOOZE_MINUTES, persian)
                         ),
-                        onSnooze = { snooze(taskId, title) },
-                        onGotIt = { dismiss(taskId) }
+                        onSnooze = { snooze(reminder.id, reminder.title) },
+                        onGotIt = { dismiss(reminder.id) }
                     )
                 }
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        reminderFrom(intent)?.let { current = it }
+    }
+
+    private fun reminderFrom(intent: Intent?): Reminder? {
+        val id = intent?.getLongExtra(EXTRA_TASK_ID, -1L) ?: -1L
+        val title = intent?.getStringExtra(EXTRA_TITLE).orEmpty()
+        return if (id > 0 && title.isNotBlank()) Reminder(id, title) else null
+    }
+
+    private data class Reminder(val id: Long, val title: String)
 
     /** Re-arms the same reminder a few minutes out. */
     private fun snooze(taskId: Long, title: String) {
@@ -148,7 +173,10 @@ class AlarmActivity : ComponentActivity() {
         /** Named createIntent so it cannot shadow Activity.intent inside this class. */
         fun createIntent(context: Context, taskId: Long, title: String): Intent =
             Intent(context, AlarmActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                // The activity has its own taskAffinity, so NEW_TASK is enough
+                // to give it a separate task. CLEAR_TASK is deliberately absent:
+                // it would tear down whatever the user had open in the app.
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 putExtra(EXTRA_TASK_ID, taskId)
                 putExtra(EXTRA_TITLE, title)
             }

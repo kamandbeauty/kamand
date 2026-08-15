@@ -26,12 +26,14 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.roozi.app.core.CrashReporter
 import com.roozi.app.core.LocaleContext
+import com.roozi.app.notifications.Notifications
 import com.roozi.app.data.backup.BackupManager
 import com.roozi.app.data.prefs.AppLanguage
 import com.roozi.app.data.prefs.UserPreferences
 import com.roozi.app.ui.LocalDateFormatter
 import com.roozi.app.ui.MainViewModel
 import com.roozi.app.ui.components.CrashReportScreen
+import com.roozi.app.ui.components.FullScreenAlarmDialog
 import com.roozi.app.ui.RooziAppScaffold
 import com.roozi.app.ui.TasksViewModel
 import com.roozi.app.ui.onboarding.OnboardingScreen
@@ -45,6 +47,9 @@ class MainActivity : ComponentActivity() {
 
     /** Set when launched from the Quick Add widget. */
     private var pendingQuickAdd by mutableStateOf(false)
+
+    /** Raised when a reminder is enabled but full-screen alarms are blocked. */
+    private var pendingFullScreenPrompt by mutableStateOf(false)
 
     /** Language the Activity was created with; a change requires recreate(). */
     private var appliedLanguage: AppLanguage? = null
@@ -143,6 +148,17 @@ class MainActivity : ComponentActivity() {
                                 openAddSheet = pendingQuickAdd,
                                 onAddSheetOpened = { pendingQuickAdd = false }
                             )
+
+                            if (pendingFullScreenPrompt) {
+                                FullScreenAlarmDialog(
+                                    xiaomi = Notifications.isXiaomi(),
+                                    onDismiss = { pendingFullScreenPrompt = false },
+                                    onConfirm = {
+                                        pendingFullScreenPrompt = false
+                                        openFullScreenIntentSettings()
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -171,8 +187,14 @@ class MainActivity : ComponentActivity() {
      * user to the app's notification settings instead.
      */
     fun ensureNotificationPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        if (com.roozi.app.notifications.Notifications.hasPermission(this)) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            ensureFullScreenCapability()
+            return
+        }
+        if (Notifications.hasPermission(this)) {
+            ensureFullScreenCapability()
+            return
+        }
 
         if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) ||
             !mainViewModel.settings.value?.notificationPromptShown.orFalse()
@@ -182,6 +204,22 @@ class MainActivity : ComponentActivity() {
         } else {
             openNotificationSettings()
         }
+    }
+
+    /**
+     * Asks for the full-screen capability the first time a reminder is enabled.
+     *
+     * Without this the alarm screen could never appear on a real reminder:
+     * Android 14 withholds USE_FULL_SCREEN_INTENT from apps it does not classify
+     * as alarm or calling apps, there is no runtime dialog for it, and nothing
+     * in the app ever sent the user to the settings page that grants it. The
+     * prompt is shown once so enabling reminders does not turn into nagging.
+     */
+    private fun ensureFullScreenCapability() {
+        if (Notifications.canUseFullScreen(this)) return
+        if (mainViewModel.settings.value?.fullScreenPromptShown.orFalse()) return
+        mainViewModel.markFullScreenPromptShown()
+        pendingFullScreenPrompt = true
     }
 
     /**
@@ -222,20 +260,37 @@ class MainActivity : ComponentActivity() {
         runCatching { startActivity(intent) }.onFailure { openNotificationSettings() }
     }
 
+    /**
+     * Opens the "display over other apps" page.
+     *
+     * On MIUI this is the page that also carries the background pop-up switch
+     * the alarm screen needs; there is no public API to jump straight to it.
+     */
+    fun openOverlaySettings() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            android.net.Uri.fromParts("package", packageName, null)
+        )
+        runCatching { startActivity(intent) }.onFailure { openAppDetailsSettings() }
+    }
+
     /** Opens this app's notification settings so a denied permission is fixable. */
     fun openNotificationSettings() {
         val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
             putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
         }
-        runCatching { startActivity(intent) }.onFailure {
-            runCatching {
-                startActivity(
-                    Intent(
-                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        android.net.Uri.fromParts("package", packageName, null)
-                    )
+        runCatching { startActivity(intent) }.onFailure { openAppDetailsSettings() }
+    }
+
+    /** Last-resort settings target; every OEM has this page. */
+    private fun openAppDetailsSettings() {
+        runCatching {
+            startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.fromParts("package", packageName, null)
                 )
-            }
+            )
         }
     }
 

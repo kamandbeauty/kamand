@@ -369,6 +369,18 @@ fun ProfileScreen(
                             }
                         )
                     }
+                    // MIUI blocks background activity starts behind its own
+                    // switch, which is the usual reason a reminder stays a
+                    // banner on these devices even with everything else granted.
+                    if (Notifications.isXiaomi() && !Notifications.canDrawOverlays(context)) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.alarm_xiaomi_popup_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.orange,
+                            modifier = Modifier.clickable { activity?.openOverlaySettings() }
+                        )
+                    }
                     Spacer(Modifier.height(6.dp))
                     Text(
                         stringResource(R.string.notif_battery_hint),
