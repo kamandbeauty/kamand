@@ -31,16 +31,19 @@ if (System.getenv("CI") == "true") {
     gradle.buildFinished {
         val root = failure
         if (root != null) {
-            generateSequence(root as Throwable) { it.cause }
-                .mapNotNull { t -> t.message?.let { "${t.javaClass.simpleName}: ${'$'}it" } }
-                .take(8)
-                .forEachIndexed { index, message ->
-                    val clean = message
-                        .replace(Regex("[\\r\\n]+"), " ")
-                        .replace("%", "%25")
-                        .take(600)
-                    println("::error::[${'$'}index] ${'$'}clean")
-                }
+            var t: Throwable? = root
+            var index = 0
+            while (t != null && index < 8) {
+                val message = t.javaClass.simpleName + ": " + (t.message ?: "")
+                val clean = message
+                    .replace("\r", " ")
+                    .replace("\n", " ")
+                    .replace("%", "%25")
+                    .take(600)
+                println("::error::[" + index + "] " + clean)
+                t = t.cause
+                index++
+            }
         }
     }
 }
