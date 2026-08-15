@@ -25,6 +25,28 @@ if (isCi) {
 
 if (isCi) {
     subprojects {
+        // Kotlin compiler diagnostics -> annotations. Uses the generic Task API
+        // plus a logging listener so no Kotlin-plugin types are needed here.
+        tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }
+            .configureEach {
+                logging.addStandardErrorListener { output ->
+                    output.lineSequence()
+                        .filter { it.startsWith("e: ") }
+                        .take(40)
+                        .forEach { line ->
+                            println("::error::" + line.replace("%", "%25").take(600))
+                        }
+                }
+                logging.addStandardOutputListener { output ->
+                    output.lineSequence()
+                        .filter { it.startsWith("e: ") }
+                        .take(40)
+                        .forEach { line ->
+                            println("::error::" + line.replace("%", "%25").take(600))
+                        }
+                }
+            }
+
         // Unit test failures -> workflow annotations carrying the assertion message.
         tasks.withType(Test::class.java).configureEach {
             testLogging {
@@ -41,7 +63,7 @@ if (isCi) {
                                 ?.replace(Regex("[\\r\\n]+"), " ")
                                 ?.take(400)
                                 ?: "unknown failure"
-                            logger.lifecycle("::error::TEST FAILED ${'$'}{descriptor.className}.${'$'}{descriptor.name} :: ${'$'}cause")
+                            logger.lifecycle("::error::TEST FAILED " + descriptor.className + "." + descriptor.name + " :: " + cause)
                         }
                     }
                 )
@@ -53,7 +75,7 @@ if (isCi) {
     // failing phase is identifiable even when the log cannot be downloaded.
 
     gradle.taskGraph.beforeTask {
-        logger.lifecycle("::warning::TASK-START ${'$'}path")
+        logger.lifecycle("::warning::TASK-START " + path)
     }
 
     gradle.taskGraph.afterTask {
@@ -64,7 +86,7 @@ if (isCi) {
                 .joinToString(" | ")
                 .replace(Regex("[\\r\\n]+"), " ")
                 .take(700)
-            logger.lifecycle("::error::TASK FAILED ${'$'}path :: ${'$'}msg")
+            logger.lifecycle("::error::TASK FAILED " + path + " :: " + msg)
         }
     }
 }
