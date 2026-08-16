@@ -66,9 +66,13 @@ fun rememberLiquidGlassState(): LiquidGlassState {
 fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
     .onGloballyPositioned { state.sourceOrigin = it.positionInWindow() }
     .drawWithContent {
+        // The ContentDrawScope has to be captured before entering record's
+        // lambda: inside it the receiver is a plain DrawScope, which has no
+        // drawContent().
+        val scope = this
         // DrawScope.record(layer) — the receiver supplies density, layout
         // direction and size, unlike GraphicsLayer.record which needs all three.
-        record(state.layer) { this@drawWithContent.drawContent() }
+        record(state.layer) { scope.drawContent() }
         drawLayer(state.layer)
         state.captured = true
     }
