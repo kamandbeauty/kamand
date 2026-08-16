@@ -58,7 +58,7 @@ fun RooziHeader(
     // The backdrop behind this panel is genuinely blurred, so the tint only has
     // to colour the glass — not hide the page. A heavy wash here would bury the
     // refraction that makes it read as glass instead of a coloured bar.
-    val hasBlur = glass.blurSupported
+    val hasBlur = glass.supported
     val tintAlpha = when {
         !hasBlur -> if (dark) 0.80f else 0.76f // no blur: opacity must do the work
         dark -> 0.34f

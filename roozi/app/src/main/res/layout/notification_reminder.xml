@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Custom reminder notification.
+  Custom content area for the reminder notification.
 
-  A plain notification inherits the system's grey styling; this one carries the
-  ROOZI gradient and Vazirmatn text so a reminder is recognisable in a crowded
-  shade.
+  Apps targeting Android 12+ cannot post a fully custom notification: the system
+  wraps this view in its own template, which supplies the app icon, the app name
+  and the expand chevron. Only the area below that header belongs to us, so this
+  layout carries no icon of its own — the badge that used to sit here simply
+  duplicated the icon the system already draws a few pixels to its left.
 
-  Sizes deliberately track the platform's own notification metrics (14sp title,
-  12sp body, 40dp avatar). Earlier values were a third larger, which made the
-  row tower over every other notification and pushed the title onto two lines.
+  The gradient fills edge to edge with no outer margin, so the coloured area
+  covers the whole content region the template allows rather than floating as a
+  pill inside it.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -16,27 +18,15 @@
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:background="@drawable/notification_background"
-    android:paddingStart="12dp"
-    android:paddingEnd="12dp"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp">
-
-    <!-- Clock badge, sized like a standard notification avatar. -->
-    <TextView
-        android:id="@+id/notif_icon"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:gravity="center"
-        android:includeFontPadding="false"
-        android:text="⏰"
-        android:textSize="17sp"
-        android:background="@drawable/notification_icon_badge" />
+    android:paddingStart="14dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginStart="10dp"
         android:orientation="vertical">
 
         <TextView

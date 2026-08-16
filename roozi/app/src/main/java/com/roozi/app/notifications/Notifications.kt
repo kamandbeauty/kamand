@@ -218,7 +218,6 @@ object Notifications {
         )
 
         val content = RemoteViews(context.packageName, R.layout.notification_reminder).apply {
-            setTextViewText(R.id.notif_icon, "🎂")
             setTextViewText(R.id.notif_title, title)
             setTextViewText(R.id.notif_time, body)
             setViewVisibility(R.id.notif_action, android.view.View.GONE)
