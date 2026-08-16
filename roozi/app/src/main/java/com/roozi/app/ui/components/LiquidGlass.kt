@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -54,6 +56,28 @@ class LiquidGlassState internal constructor(internal val layer: GraphicsLayer) {
     /** Window position of the captured content. */
     internal var sourceOrigin by mutableStateOf(Offset.Zero)
 
+    /**
+     * Redraws registered by glass panes.
+     *
+     * The glass is a sibling of the page, not its parent, so scrolling the page
+     * does not invalidate the header on its own — without this the pane would
+     * keep showing whatever the backdrop looked like when it last drew.
+     *
+     * These are plain callbacks rather than snapshot state on purpose: the page
+     * signals them from its draw phase, and writing observable state there
+     * would schedule another draw, which writes again — an endless loop.
+     */
+    private val panes = mutableListOf<() -> Unit>()
+
+    internal fun registerPane(invalidate: () -> Unit): () -> Unit {
+        panes += invalidate
+        return { panes -= invalidate }
+    }
+
+    internal fun onSourceDrawn() {
+        for (i in panes.indices) panes[i].invoke()
+    }
+
     /** RenderEffect needs API 31; below that glass falls back to its tint. */
     internal val blurSupported: Boolean
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -85,6 +109,7 @@ fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
             size = IntSize(size.width.roundToInt(), size.height.roundToInt())
         ) { scope.drawContent() }
         drawLayer(state.layer)
+        state.onSourceDrawn()
     }
 
 /**
@@ -113,7 +138,15 @@ fun LiquidGlassSurface(
     // Compiling an AGSL program is expensive, so the refractor is created once
     // and only its uniforms change per frame.
     val refractor = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) GlassRefractor() else null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // RuntimeShader throws if the AGSL fails to compile, and some GPU
+            // drivers reject programs the spec allows. Falling back to plain
+            // blur is a cosmetic downgrade; letting it propagate would take the
+            // whole app down at startup.
+            runCatching { GlassRefractor() }.getOrNull()
+        } else {
+            null
+        }
     }
 
     // Drives the rim ripple and the specular sweep. Read inside the layer block,
@@ -134,6 +167,14 @@ fun LiquidGlassSurface(
             ),
             label = "glassTime"
         )
+    }
+
+    // Bumping this from the page's draw callback re-runs the graphicsLayer
+    // block below, which is what pulls a fresh copy of the backdrop through.
+    var repaint by remember { mutableIntStateOf(0) }
+    DisposableEffect(state) {
+        val unregister = state.registerPane { repaint++ }
+        onDispose { unregister() }
     }
 
     Box(modifier.clip(shape)) {
@@ -167,6 +208,10 @@ fun LiquidGlassSurface(
                         }
                     }
                     .drawBehind {
+                        // Read here, in the phase that actually paints the
+                        // backdrop: a page repaint bumps this and re-runs this
+                        // block, so the glass tracks the page as it scrolls.
+                        @Suppress("UNUSED_EXPRESSION") repaint
                         // A layer that was never recorded has no display list
                         // to sample, and drawing it would throw.
                         if (state.layer.size.width == 0 || state.layer.size.height == 0) return@drawBehind
