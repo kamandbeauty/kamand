@@ -3,8 +3,12 @@
   Custom reminder notification.
 
   A plain notification inherits the system's grey styling; this one carries the
-  ROOZI gradient, a large clock badge and Vazirmatn text so a reminder is
-  instantly recognisable in a crowded shade.
+  ROOZI gradient and Vazirmatn text so a reminder is recognisable in a crowded
+  shade.
+
+  Sizes deliberately track the platform's own notification metrics (14sp title,
+  12sp body, 40dp avatar). Earlier values were a third larger, which made the
+  row tower over every other notification and pushed the title onto two lines.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -12,71 +16,75 @@
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:background="@drawable/notification_background"
-    android:paddingStart="14dp"
-    android:paddingEnd="16dp"
-    android:paddingTop="14dp"
-    android:paddingBottom="14dp">
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
-    <!-- Large clock badge -->
+    <!-- Clock badge, sized like a standard notification avatar. -->
     <TextView
         android:id="@+id/notif_icon"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:gravity="center"
+        android:includeFontPadding="false"
         android:text="⏰"
-        android:textSize="27sp"
+        android:textSize="17sp"
         android:background="@drawable/notification_icon_badge" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginStart="14dp"
+        android:layout_marginStart="10dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/notif_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:maxLines="2"
+            android:maxLines="1"
             android:ellipsize="end"
             android:fontFamily="@font/vazirmatn_bold"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textColor="#FFFFFFFF"
-            android:shadowColor="#73000000"
+            android:shadowColor="#59000000"
             android:shadowDx="0"
-            android:shadowDy="2"
-            android:shadowRadius="4" />
+            android:shadowDy="1"
+            android:shadowRadius="3" />
 
         <TextView
             android:id="@+id/notif_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="1dp"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:fontFamily="@font/vazirmatn_medium"
-            android:textSize="13sp"
-            android:textColor="#EAFFFFFF"
-            android:shadowColor="#59000000"
+            android:textSize="12sp"
+            android:textColor="#E0FFFFFF"
+            android:shadowColor="#40000000"
             android:shadowDx="0"
             android:shadowDy="1"
-            android:shadowRadius="3" />
+            android:shadowRadius="2" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/notif_action"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
+        android:layout_marginStart="8dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:maxLines="1"
         android:background="@drawable/notification_action"
         android:fontFamily="@font/vazirmatn_semibold"
-        android:textSize="13sp"
+        android:textSize="12sp"
         android:textColor="#FFFFFFFF"
-        android:shadowColor="#59000000"
+        android:shadowColor="#40000000"
         android:shadowDx="0"
         android:shadowDy="1"
-        android:shadowRadius="3" />
+        android:shadowRadius="2" />
 </LinearLayout>

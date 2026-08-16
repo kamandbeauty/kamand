@@ -20,13 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
@@ -47,8 +47,7 @@ import kotlin.math.roundToInt
  * A translucent tint only dims what is behind it; glass has to actually
  * *resample* the backdrop. So the page paints itself once into an offscreen
  * layer, and every glass surface re-draws that layer — shifted to its own
- * position, blurred and refracted — which is what produces the smeared,
- * bent look instead of a flat wash.
+ * position, blurred and refracted.
  */
 @Stable
 class LiquidGlassState internal constructor(internal val layer: GraphicsLayer) {
@@ -78,7 +77,7 @@ class LiquidGlassState internal constructor(internal val layer: GraphicsLayer) {
         for (i in panes.indices) panes[i].invoke()
     }
 
-    /** RenderEffect needs API 31; below that glass falls back to its tint. */
+    /** Modifier.blur needs API 31; below that glass falls back to its tint. */
     internal val blurSupported: Boolean
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 }
@@ -113,24 +112,23 @@ fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
     }
 
 /**
- * A pane of Liquid Glass: draws the refracted backdrop, then [content] on top.
+ * A pane of Liquid Glass: draws the blurred backdrop, then [content] on top.
  *
- * The effect is installed with `Modifier.graphicsLayer { renderEffect = … }` on
- * a dedicated child that sits *behind* the content. Two reasons this shape is
- * required rather than incidental:
+ * The blur is `Modifier.blur`, not a RenderEffect assigned by hand. Several
+ * earlier attempts set the effect manually and it silently never applied — the
+ * page stayed perfectly sharp through the pane. This modifier is the supported
+ * path and manages its own offscreen buffer, which is what those attempts were
+ * missing.
  *
- *  - the framework's own RenderNode is what actually honours a RenderEffect;
- *    an earlier version set the effect on a hand-managed GraphicsLayer and it
- *    silently never applied, which is why the header stayed sharp;
- *  - a graphicsLayer wraps everything drawn after it, so if the backdrop and
- *    the content shared one layer the title and icons would blur too.
+ * The refraction shader is layered on top of it where AGSL exists (API 33+),
+ * via graphicsLayer *after* blur so it distorts an already-frosted image.
  */
 @Composable
 fun LiquidGlassSurface(
     state: LiquidGlassState,
     shape: Shape,
     modifier: Modifier = Modifier,
-    radius: Dp = 30.dp,
+    radius: Dp = 24.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     var origin by remember { mutableStateOf(Offset.Zero) }
@@ -149,8 +147,7 @@ fun LiquidGlassSurface(
         }
     }
 
-    // Drives the rim ripple and the specular sweep. Read inside the layer block,
-    // which re-runs on each draw, so the animation never recomposes the header.
+    // Drives the rim ripple and the specular sweep.
     val still = rememberReduceMotion()
     val transition = rememberInfiniteTransition(label = "liquidGlass")
     val time by if (still) {
@@ -169,8 +166,8 @@ fun LiquidGlassSurface(
         )
     }
 
-    // Bumping this from the page's draw callback re-runs the graphicsLayer
-    // block below, which is what pulls a fresh copy of the backdrop through.
+    // Bumped from the page's draw callback; read in drawBehind below so the
+    // pane repaints as the page scrolls underneath it.
     var repaint by remember { mutableIntStateOf(0) }
     DisposableEffect(state) {
         val unregister = state.registerPane { repaint++ }
@@ -183,38 +180,33 @@ fun LiquidGlassSurface(
                 Modifier
                     .matchParentSize()
                     .onGloballyPositioned { origin = it.positionInWindow() }
-                    // graphicsLayer must precede drawBehind so the layer wraps
-                    // it: the effect filters what the modifiers *after* it
-                    // draw. Reversed, the backdrop would be painted outside the
-                    // layer and pass through untouched.
+                    // Refraction sits outermost so it warps the blurred result.
                     .graphicsLayer {
-                        val r = radius.toPx()
-                        // The SDK check is spelled out rather than relying on
-                        // refractor being null below API 33: lint cannot follow
-                        // that implication and flags the call as unguarded.
-                        renderEffect = if (
+                        // Spelled out rather than relying on refractor being
+                        // null below API 33: lint cannot follow that
+                        // implication and flags the call as unguarded.
+                        if (
                             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                             refractor != null
                         ) {
-                            refractor.effect(
+                            renderEffect = refractor.effect(
                                 width = size.width,
                                 height = size.height,
-                                blurRadius = r,
                                 time = time,
                                 sheen = if (still) 0f else SHEEN_STRENGTH
                             )
-                        } else {
-                            BlurEffect(r, r, TileMode.Decal)
                         }
                     }
+                    .blur(radius, BlurredEdgeTreatment(shape))
                     .drawBehind {
-                        // Read here, in the phase that actually paints the
-                        // backdrop: a page repaint bumps this and re-runs this
-                        // block, so the glass tracks the page as it scrolls.
+                        // Read so a page repaint re-runs this block, keeping the
+                        // glass in step with what is scrolling behind it.
                         @Suppress("UNUSED_EXPRESSION") repaint
                         // A layer that was never recorded has no display list
                         // to sample, and drawing it would throw.
-                        if (state.layer.size.width == 0 || state.layer.size.height == 0) return@drawBehind
+                        if (state.layer.size.width == 0 || state.layer.size.height == 0) {
+                            return@drawBehind
+                        }
                         // The shared layer holds the whole page, so shift it by
                         // this pane's offset within that page; otherwise the
                         // glass would show the page's top-left corner rather

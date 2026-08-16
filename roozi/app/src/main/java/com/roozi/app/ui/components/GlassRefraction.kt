@@ -2,7 +2,6 @@ package com.roozi.app.ui.components
 
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
-import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -78,7 +77,7 @@ half4 main(float2 fragCoord) {
 """
 
 /**
- * Builds the blur + refraction effect chain.
+ * Builds the refraction effect.
  *
  * RuntimeShader is API 33, two levels above RenderEffect itself, so this is
  * kept separate from the caller and only instantiated behind a version check.
@@ -98,7 +97,6 @@ internal class GlassRefractor {
     fun effect(
         width: Float,
         height: Float,
-        blurRadius: Float,
         time: Float,
         sheen: Float
     ): ComposeRenderEffect {
@@ -108,13 +106,11 @@ internal class GlassRefractor {
         shader.setFloatUniform("time", time)
         shader.setFloatUniform("sheen", sheen)
 
-        // Chain order: the inner effect runs first, so the shader refracts
-        // content that is already frosted. Refracting first and blurring after
-        // would smear the distortion away again.
-        return RenderEffect.createChainEffect(
-            RenderEffect.createRuntimeShaderEffect(shader, "content"),
-            RenderEffect.createBlurEffect(blurRadius, blurRadius, Shader.TileMode.DECAL)
-        ).asComposeRenderEffect()
+        // No blur is chained here: Modifier.blur supplies it, and this effect
+        // is installed outside that modifier so it warps the frosted result.
+        return RenderEffect
+            .createRuntimeShaderEffect(shader, "content")
+            .asComposeRenderEffect()
     }
 
     private companion object {
