@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlurEffect
@@ -136,10 +138,14 @@ fun LiquidGlassSurface(
 
     Box(modifier.clip(shape)) {
         if (state.blurSupported) {
-            Box(
+            Spacer(
                 Modifier
                     .matchParentSize()
                     .onGloballyPositioned { origin = it.positionInWindow() }
+                    // graphicsLayer must precede drawBehind so the layer wraps
+                    // it: the effect filters what the modifiers *after* it
+                    // draw. Reversed, the backdrop would be painted outside the
+                    // layer and pass through untouched.
                     .graphicsLayer {
                         val r = radius.toPx()
                         renderEffect = refractor?.effect(
@@ -150,10 +156,10 @@ fun LiquidGlassSurface(
                             sheen = if (still) 0f else SHEEN_STRENGTH
                         ) ?: BlurEffect(r, r, TileMode.Decal)
                     }
-                    .drawWithContent {
+                    .drawBehind {
                         // A layer that was never recorded has no display list
                         // to sample, and drawing it would throw.
-                        if (state.layer.size.width == 0 || state.layer.size.height == 0) return@drawWithContent
+                        if (state.layer.size.width == 0 || state.layer.size.height == 0) return@drawBehind
                         // The shared layer holds the whole page, so shift it by
                         // this pane's offset within that page; otherwise the
                         // glass would show the page's top-left corner rather
