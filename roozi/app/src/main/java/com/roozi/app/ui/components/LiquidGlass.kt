@@ -95,6 +95,12 @@ fun liquidGlassBackdrop(
     var origin by remember { mutableStateOf(Offset.Zero) }
     val glassLayer = rememberGraphicsLayer()
 
+    // Compiling an AGSL program is expensive, so the refractor is created once
+    // and only its uniforms change per frame.
+    val refractor = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) GlassRefractor() else null
+    }
+
     return Modifier
         .onGloballyPositioned { origin = it.positionInWindow() }
         .drawWithContent {
@@ -106,9 +112,11 @@ fun liquidGlassBackdrop(
 
             if (state.blurSupported && ready && size.minDimension > 0f) {
                 val r = radius.toPx()
+                // Refraction where AGSL exists (API 33+), plain frost below it.
                 // Decal stops the edges sampling repeated copies of the
                 // backdrop, which would ghost along the panel's borders.
-                glassLayer.renderEffect = BlurEffect(r, r, TileMode.Decal)
+                glassLayer.renderEffect = refractor?.effect(size.width, size.height, r)
+                    ?: BlurEffect(r, r, TileMode.Decal)
                 glassLayer.record(
                     density = this,
                     layoutDirection = layoutDirection,
