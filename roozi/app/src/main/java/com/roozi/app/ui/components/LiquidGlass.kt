@@ -1,12 +1,14 @@
 package com.roozi.app.ui.components
 
 import android.os.Build
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -15,11 +17,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -38,8 +43,8 @@ import kotlin.math.roundToInt
  * A translucent tint only dims what is behind it; glass has to actually
  * *resample* the backdrop. So the page paints itself once into an offscreen
  * layer, and every glass surface re-draws that layer — shifted to its own
- * position and blurred — which is what produces the smeared, refracted look
- * instead of a flat wash.
+ * position, blurred and refracted — which is what produces the smeared,
+ * bent look instead of a flat wash.
  */
 @Stable
 class LiquidGlassState internal constructor(internal val layer: GraphicsLayer) {
@@ -72,9 +77,6 @@ fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
         // lambda: inside it the receiver is a plain DrawScope, which has no
         // drawContent().
         val scope = this
-        // GraphicsLayer.record with explicit density/layoutDirection/size. The
-        // shorter DrawScope.record(layer) overload is not present across all
-        // Compose 1.7.x releases, so the long form is used deliberately.
         state.layer.record(
             density = this,
             layoutDirection = layoutDirection,
@@ -84,25 +86,27 @@ fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
     }
 
 /**
- * Modifier that draws the blurred, offset backdrop behind a glass surface.
+ * A pane of Liquid Glass: draws the refracted backdrop, then [content] on top.
  *
- * Apply to the panel itself: it renders the backdrop first, then the panel's
- * own content on top.
+ * The effect is installed with `Modifier.graphicsLayer { renderEffect = … }` on
+ * a dedicated child that sits *behind* the content. Two reasons this shape is
+ * required rather than incidental:
  *
- * The blur lives on a second layer owned by this surface, which re-draws the
- * shared one. Setting the effect on the shared layer instead would blur the
- * page itself, since that is the very layer the page paints with — the reason
- * an earlier attempt produced no glass at all.
- *
- * @param radius blur strength — larger reads as thicker, more frosted glass.
+ *  - the framework's own RenderNode is what actually honours a RenderEffect;
+ *    an earlier version set the effect on a hand-managed GraphicsLayer and it
+ *    silently never applied, which is why the header stayed sharp;
+ *  - a graphicsLayer wraps everything drawn after it, so if the backdrop and
+ *    the content shared one layer the title and icons would blur too.
  */
 @Composable
-fun liquidGlassBackdrop(
+fun LiquidGlassSurface(
     state: LiquidGlassState,
-    radius: Dp = 30.dp
-): Modifier {
+    shape: Shape,
+    modifier: Modifier = Modifier,
+    radius: Dp = 30.dp,
+    content: @Composable BoxScope.() -> Unit
+) {
     var origin by remember { mutableStateOf(Offset.Zero) }
-    val glassLayer = rememberGraphicsLayer()
 
     // Compiling an AGSL program is expensive, so the refractor is created once
     // and only its uniforms change per frame.
@@ -110,9 +114,8 @@ fun liquidGlassBackdrop(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) GlassRefractor() else null
     }
 
-    // Drives the rim ripple and the specular sweep. Held as State and read
-    // inside the draw phase, so the animation redraws the header without
-    // recomposing it every frame.
+    // Drives the rim ripple and the specular sweep. Read inside the layer block,
+    // which re-runs on each draw, so the animation never recomposes the header.
     val still = rememberReduceMotion()
     val transition = rememberInfiniteTransition(label = "liquidGlass")
     val time by if (still) {
@@ -131,47 +134,41 @@ fun liquidGlassBackdrop(
         )
     }
 
-    return Modifier
-        .onGloballyPositioned { origin = it.positionInWindow() }
-        .drawWithContent {
-            // A layer that was never recorded has no display list to sample;
-            // reading its size is how that is detected without writing
-            // snapshot state from the draw phase, which would not reliably
-            // invalidate this surface anyway.
-            val ready = state.layer.size.width > 0 && state.layer.size.height > 0
-
-            if (state.blurSupported && ready && size.minDimension > 0f) {
-                val r = radius.toPx()
-                // Refraction where AGSL exists (API 33+), plain frost below it.
-                // Decal stops the edges sampling repeated copies of the
-                // backdrop, which would ghost along the panel's borders.
-                glassLayer.renderEffect = refractor?.effect(
-                    width = size.width,
-                    height = size.height,
-                    blurRadius = r,
-                    time = time,
-                    sheen = if (still) 0f else SHEEN_STRENGTH
-                ) ?: BlurEffect(r, r, TileMode.Decal)
-                glassLayer.record(
-                    density = this,
-                    layoutDirection = layoutDirection,
-                    size = IntSize(size.width.roundToInt(), size.height.roundToInt())
-                ) {
-                    // The shared layer holds the whole page, so shift it by
-                    // this panel's offset within that page; otherwise the glass
-                    // would show the page's top-left corner rather than what is
-                    // actually behind it.
-                    translate(
-                        left = state.sourceOrigin.x - origin.x,
-                        top = state.sourceOrigin.y - origin.y
-                    ) {
-                        drawLayer(state.layer)
+    Box(modifier.clip(shape)) {
+        if (state.blurSupported) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .onGloballyPositioned { origin = it.positionInWindow() }
+                    .graphicsLayer {
+                        val r = radius.toPx()
+                        renderEffect = refractor?.effect(
+                            width = size.width,
+                            height = size.height,
+                            blurRadius = r,
+                            time = time,
+                            sheen = if (still) 0f else SHEEN_STRENGTH
+                        ) ?: BlurEffect(r, r, TileMode.Decal)
                     }
-                }
-                drawLayer(glassLayer)
-            }
-            drawContent()
+                    .drawWithContent {
+                        // A layer that was never recorded has no display list
+                        // to sample, and drawing it would throw.
+                        if (state.layer.size.width == 0 || state.layer.size.height == 0) return@drawWithContent
+                        // The shared layer holds the whole page, so shift it by
+                        // this pane's offset within that page; otherwise the
+                        // glass would show the page's top-left corner rather
+                        // than what is actually behind it.
+                        translate(
+                            left = state.sourceOrigin.x - origin.x,
+                            top = state.sourceOrigin.y - origin.y
+                        ) {
+                            drawLayer(state.layer)
+                        }
+                    }
+            )
         }
+        content()
+    }
 }
 
 /** Number of ripple periods per animation loop; keeps the restart seamless. */

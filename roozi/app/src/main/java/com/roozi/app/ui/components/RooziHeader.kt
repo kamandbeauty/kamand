@@ -93,28 +93,32 @@ fun RooziHeader(
     // page, so it must not follow the page's foreground colour.
     val onGlass = Color.White
 
-    // Order matters: clip first so the refracted backdrop is confined to the
-    // rounded shape, then the backdrop, then the tint on top of it.
-    Box(
-        modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .then(liquidGlassBackdrop(glass))
-            .background(wash)
-            // A lit rim around the pane. Glass catches light along its edges,
-            // and this is what gives the panel thickness instead of looking
-            // like a coloured rectangle painted onto the page.
-            .border(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = if (dark) 0.34f else 0.60f),
-                        Color.White.copy(alpha = if (dark) 0.10f else 0.20f)
-                    )
-                ),
-                shape = shape
-            )
+    // The surface draws the refracted backdrop behind everything below it; the
+    // tint, sheen and rim are then painted over that, on top of the glass.
+    LiquidGlassSurface(
+        state = glass,
+        shape = shape,
+        modifier = modifier.fillMaxWidth()
     ) {
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(wash)
+                // A lit rim around the pane. Glass catches light along its
+                // edges, and this is what gives the panel thickness instead of
+                // looking like a coloured rectangle painted onto the page.
+                .border(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = if (dark) 0.34f else 0.60f),
+                            Color.White.copy(alpha = if (dark) 0.10f else 0.20f)
+                        )
+                    ),
+                    shape = shape
+                )
+        )
+
         Box(
             Modifier
                 .fillMaxWidth()
