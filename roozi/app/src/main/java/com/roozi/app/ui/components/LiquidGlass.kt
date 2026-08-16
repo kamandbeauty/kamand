@@ -28,25 +28,15 @@ import kotlin.math.roundToInt
  *
  * A translucent tint only dims what is behind it; glass has to actually
  * *resample* the backdrop. So the page paints itself once into an offscreen
- * layer, and every glass surface draws that same layer back — shifted to its
- * own position and blurred — which is what produces the smeared, refracted
- * look instead of a flat wash.
- *
- * The blur is a [BlurEffect] on the captured layer rather than `Modifier.blur`
- * on the panel: it must apply to the backdrop, not to the panel's own children,
- * or the title and icons would smear along with it.
+ * layer, and every glass surface re-draws that layer — shifted to its own
+ * position and blurred — which is what produces the smeared, refracted look
+ * instead of a flat wash.
  */
 @Stable
 class LiquidGlassState internal constructor(internal val layer: GraphicsLayer) {
 
     /** Window position of the captured content. */
     internal var sourceOrigin by mutableStateOf(Offset.Zero)
-
-    /**
-     * True once the source has drawn at least once. Sampling the layer before
-     * that throws, since it has no recorded display list yet.
-     */
-    internal var captured by mutableStateOf(false)
 
     /** RenderEffect needs API 31; below that glass falls back to its tint. */
     internal val blurSupported: Boolean
@@ -63,7 +53,8 @@ fun rememberLiquidGlassState(): LiquidGlassState {
  * Marks the content whose pixels the glass refracts.
  *
  * The drawing is recorded into the shared layer and immediately drawn back, so
- * the page looks unchanged while leaving a copy for the glass to sample.
+ * the page looks unchanged while leaving a copy for the glass to sample. The
+ * layer itself never carries a RenderEffect — the page must stay sharp.
  */
 fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
     .onGloballyPositioned { state.sourceOrigin = it.positionInWindow() }
@@ -81,40 +72,60 @@ fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
             size = IntSize(size.width.roundToInt(), size.height.roundToInt())
         ) { scope.drawContent() }
         drawLayer(state.layer)
-        state.captured = true
     }
 
 /**
  * Modifier that draws the blurred, offset backdrop behind a glass surface.
  *
  * Apply to the panel itself: it renders the backdrop first, then the panel's
- * own content on top. This is a @Composable factory rather than a plain
- * extension because each surface needs to remember its own position — creating
- * that state inside a normal function would allocate a fresh one every draw.
+ * own content on top.
+ *
+ * The blur lives on a second layer owned by this surface, which re-draws the
+ * shared one. Setting the effect on the shared layer instead would blur the
+ * page itself, since that is the very layer the page paints with — the reason
+ * an earlier attempt produced no glass at all.
  *
  * @param radius blur strength — larger reads as thicker, more frosted glass.
  */
 @Composable
 fun liquidGlassBackdrop(
     state: LiquidGlassState,
-    radius: Dp = 26.dp
+    radius: Dp = 30.dp
 ): Modifier {
     var origin by remember { mutableStateOf(Offset.Zero) }
+    val glassLayer = rememberGraphicsLayer()
+
     return Modifier
         .onGloballyPositioned { origin = it.positionInWindow() }
         .drawWithContent {
-            if (state.blurSupported && state.captured) {
+            // A layer that was never recorded has no display list to sample;
+            // reading its size is how that is detected without writing
+            // snapshot state from the draw phase, which would not reliably
+            // invalidate this surface anyway.
+            val ready = state.layer.size.width > 0 && state.layer.size.height > 0
+
+            if (state.blurSupported && ready && size.minDimension > 0f) {
                 val r = radius.toPx()
                 // Decal stops the edges sampling repeated copies of the
                 // backdrop, which would ghost along the panel's borders.
-                state.layer.renderEffect = BlurEffect(r, r, TileMode.Decal)
-
-                // The layer holds the whole page, so shift it by this panel's
-                // offset within that page; otherwise the glass would show the
-                // page's top-left corner rather than what is actually behind.
-                val dx = state.sourceOrigin.x - origin.x
-                val dy = state.sourceOrigin.y - origin.y
-                translate(left = dx, top = dy) { drawLayer(state.layer) }
+                glassLayer.renderEffect = BlurEffect(r, r, TileMode.Decal)
+                glassLayer.record(
+                    density = this,
+                    layoutDirection = layoutDirection,
+                    size = IntSize(size.width.roundToInt(), size.height.roundToInt())
+                ) {
+                    // The shared layer holds the whole page, so shift it by
+                    // this panel's offset within that page; otherwise the glass
+                    // would show the page's top-left corner rather than what is
+                    // actually behind it.
+                    translate(
+                        left = state.sourceOrigin.x - origin.x,
+                        top = state.sourceOrigin.y - origin.y
+                    ) {
+                        drawLayer(state.layer)
+                    }
+                }
+                drawLayer(glassLayer)
             }
             drawContent()
         }

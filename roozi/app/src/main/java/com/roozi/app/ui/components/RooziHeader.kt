@@ -1,6 +1,7 @@
 package com.roozi.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -59,21 +61,28 @@ fun RooziHeader(
     val hasBlur = glass.blurSupported
     val tintAlpha = when {
         !hasBlur -> if (dark) 0.80f else 0.76f // no blur: opacity must do the work
-        dark -> 0.30f
-        else -> 0.26f
+        dark -> 0.34f
+        else -> 0.30f
     }
-    val wash = Brush.horizontalGradient(
-        listOf(
-            colors.coral.copy(alpha = tintAlpha),
-            colors.purple.copy(alpha = tintAlpha)
-        )
+
+    // Diagonal rather than flat: real glass picks up light unevenly across its
+    // face, and an even wash is what made this read as a faded bar.
+    val wash = Brush.linearGradient(
+        colorStops = arrayOf(
+            0f to colors.coral.copy(alpha = tintAlpha + 0.10f),
+            0.55f to colors.purple.copy(alpha = tintAlpha),
+            1f to colors.purple.copy(alpha = tintAlpha + 0.06f)
+        ),
+        start = Offset.Zero,
+        end = Offset(0f, Float.POSITIVE_INFINITY)
     )
 
     // Glass is brightest where light enters and dims below; without this
     // falloff the panel reads as flat translucent plastic.
     val sheen = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (dark) 0.18f else 0.34f),
+            Color.White.copy(alpha = if (dark) 0.26f else 0.46f),
+            Color.White.copy(alpha = if (dark) 0.06f else 0.12f),
             Color.Transparent
         )
     )
@@ -92,6 +101,19 @@ fun RooziHeader(
             .clip(shape)
             .then(liquidGlassBackdrop(glass))
             .background(wash)
+            // A lit rim around the pane. Glass catches light along its edges,
+            // and this is what gives the panel thickness instead of looking
+            // like a coloured rectangle painted onto the page.
+            .border(
+                width = 1.dp,
+                brush = Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (dark) 0.34f else 0.60f),
+                        Color.White.copy(alpha = if (dark) 0.10f else 0.20f)
+                    )
+                ),
+                shape = shape
+            )
     ) {
         Box(
             Modifier
