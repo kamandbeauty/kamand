@@ -148,13 +148,23 @@ fun LiquidGlassSurface(
                     // layer and pass through untouched.
                     .graphicsLayer {
                         val r = radius.toPx()
-                        renderEffect = refractor?.effect(
-                            width = size.width,
-                            height = size.height,
-                            blurRadius = r,
-                            time = time,
-                            sheen = if (still) 0f else SHEEN_STRENGTH
-                        ) ?: BlurEffect(r, r, TileMode.Decal)
+                        // The SDK check is spelled out rather than relying on
+                        // refractor being null below API 33: lint cannot follow
+                        // that implication and flags the call as unguarded.
+                        renderEffect = if (
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            refractor != null
+                        ) {
+                            refractor.effect(
+                                width = size.width,
+                                height = size.height,
+                                blurRadius = r,
+                                time = time,
+                                sheen = if (still) 0f else SHEEN_STRENGTH
+                            )
+                        } else {
+                            BlurEffect(r, r, TileMode.Decal)
+                        }
                     }
                     .drawBehind {
                         // A layer that was never recorded has no display list
