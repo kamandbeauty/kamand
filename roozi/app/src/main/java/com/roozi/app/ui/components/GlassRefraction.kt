@@ -29,6 +29,8 @@ uniform shader content;
 uniform float2 size;
 uniform float aberration;
 uniform float bulge;
+uniform float time;
+uniform float sheen;
 
 half4 main(float2 fragCoord) {
     float2 uv = fragCoord / size;
@@ -45,7 +47,12 @@ half4 main(float2 fragCoord) {
     float2 dir = toCentre / max(dist, 0.0001);
     float push = rim * bulge * (1.0 - smoothstep(0.0, 0.9, dist));
 
-    float2 warped = clamp(uv + dir * push, 0.0, 1.0) * size;
+    // A slow travelling ripple along the rim, so the glass reads as liquid
+    // rather than a fixed lens. Amplitude is a fraction of the bulge; any
+    // larger and the text behind it visibly wobbles.
+    float ripple = sin(uv.x * 14.0 - time * 1.8) * 0.0022 * rim;
+
+    float2 warped = clamp(uv + dir * push + float2(0.0, ripple), 0.0, 1.0) * size;
 
     // Split the channels across the same rim gradient. Green stays put and
     // carries the alpha, so the image keeps its position and coverage.
@@ -54,7 +61,19 @@ half4 main(float2 fragCoord) {
     half red = content.eval(clamp(warped + float2(split, 0.0), float2(0.0), size)).r;
     half blue = content.eval(clamp(warped - float2(split, 0.0), float2(0.0), size)).b;
 
-    return half4(red, centre.g, blue, centre.a);
+    half4 color = half4(red, centre.g, blue, centre.a);
+
+    // Specular highlight sweeping across the pane. Multiplied by alpha so it
+    // cannot paint light onto fully transparent pixels outside the panel.
+    float sweep = fract(uv.x - time * 0.12);
+    float band = smoothstep(0.42, 0.5, sweep) * smoothstep(0.58, 0.5, sweep);
+    color.rgb += half3(band * sheen * float(centre.a));
+
+    // The lit lip along the bottom edge where the pane catches light.
+    float lip = smoothstep(0.05, 0.0, distFromBottom);
+    color.rgb += half3(lip * 0.16 * float(centre.a));
+
+    return color;
 }
 """
 
@@ -71,10 +90,23 @@ internal class GlassRefractor {
 
     private val shader = RuntimeShader(REFRACTION_AGSL)
 
-    fun effect(width: Float, height: Float, blurRadius: Float): ComposeRenderEffect {
+    /**
+     * @param time seconds, driving the rim ripple and the specular sweep. Pass
+     *   a constant to hold the glass still.
+     * @param sheen strength of the moving highlight; 0 disables it.
+     */
+    fun effect(
+        width: Float,
+        height: Float,
+        blurRadius: Float,
+        time: Float,
+        sheen: Float
+    ): ComposeRenderEffect {
         shader.setFloatUniform("size", width, height)
         shader.setFloatUniform("aberration", ABERRATION)
         shader.setFloatUniform("bulge", BULGE)
+        shader.setFloatUniform("time", time)
+        shader.setFloatUniform("sheen", sheen)
 
         // Chain order: the inner effect runs first, so the shader refracts
         // content that is already frosted. Refracting first and blurring after

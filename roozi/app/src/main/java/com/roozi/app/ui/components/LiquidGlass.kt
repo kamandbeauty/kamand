@@ -1,9 +1,16 @@
 package com.roozi.app.ui.components
 
 import android.os.Build
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -21,6 +28,8 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.roozi.app.ui.rememberReduceMotion
+import kotlin.math.PI
 import kotlin.math.roundToInt
 
 /**
@@ -101,6 +110,27 @@ fun liquidGlassBackdrop(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) GlassRefractor() else null
     }
 
+    // Drives the rim ripple and the specular sweep. Held as State and read
+    // inside the draw phase, so the animation redraws the header without
+    // recomposing it every frame.
+    val still = rememberReduceMotion()
+    val transition = rememberInfiniteTransition(label = "liquidGlass")
+    val time by if (still) {
+        remember { mutableFloatStateOf(0f) }
+    } else {
+        transition.animateFloat(
+            initialValue = 0f,
+            // A whole number of ripple periods, so the loop restart is seamless
+            // rather than jumping mid-wave.
+            targetValue = (2f * PI).toFloat() / 1.8f * RIPPLE_LOOPS,
+            animationSpec = infiniteRepeatable(
+                animation = tween(RIPPLE_PERIOD_MS, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "glassTime"
+        )
+    }
+
     return Modifier
         .onGloballyPositioned { origin = it.positionInWindow() }
         .drawWithContent {
@@ -115,8 +145,13 @@ fun liquidGlassBackdrop(
                 // Refraction where AGSL exists (API 33+), plain frost below it.
                 // Decal stops the edges sampling repeated copies of the
                 // backdrop, which would ghost along the panel's borders.
-                glassLayer.renderEffect = refractor?.effect(size.width, size.height, r)
-                    ?: BlurEffect(r, r, TileMode.Decal)
+                glassLayer.renderEffect = refractor?.effect(
+                    width = size.width,
+                    height = size.height,
+                    blurRadius = r,
+                    time = time,
+                    sheen = if (still) 0f else SHEEN_STRENGTH
+                ) ?: BlurEffect(r, r, TileMode.Decal)
                 glassLayer.record(
                     density = this,
                     layoutDirection = layoutDirection,
@@ -138,3 +173,11 @@ fun liquidGlassBackdrop(
             drawContent()
         }
 }
+
+/** Number of ripple periods per animation loop; keeps the restart seamless. */
+private const val RIPPLE_LOOPS = 6f
+
+private const val RIPPLE_PERIOD_MS = 21_000
+
+/** Strength of the moving specular highlight. */
+private const val SHEEN_STRENGTH = 0.10f

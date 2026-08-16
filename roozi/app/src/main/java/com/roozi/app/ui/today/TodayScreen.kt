@@ -55,6 +55,7 @@ import com.roozi.app.ui.components.ProgressRing
 import com.roozi.app.ui.components.RooziCard
 import com.roozi.app.ui.components.SectionHeader
 import com.roozi.app.ui.components.SwipeableTaskCard
+import com.roozi.app.ui.rememberReduceMotion
 import com.roozi.app.ui.displayName
 import com.roozi.app.ui.theme.RooziTheme
 import com.roozi.app.ui.theme.timeOfDayGradient
@@ -93,15 +94,7 @@ fun TodayScreen(
     val scope = rememberCoroutineScope()
 
     // Respect the system "remove animations" setting (§24/§25).
-    val reduceMotion = remember {
-        runCatching {
-            android.provider.Settings.Global.getFloat(
-                context.contentResolver,
-                android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,
-                1f
-            ) == 0f
-        }.getOrDefault(false)
-    }
+    val reduceMotion = rememberReduceMotion()
     val animator = rememberCompletionAnimator(scope, reduceMotion)
 
     LaunchedEffect(state.total, state.done) { viewModel.onProgressChanged(state) }
