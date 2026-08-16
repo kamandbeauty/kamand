@@ -19,7 +19,9 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 /**
  * Shared backdrop for Liquid Glass surfaces.
@@ -70,9 +72,14 @@ fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
         // lambda: inside it the receiver is a plain DrawScope, which has no
         // drawContent().
         val scope = this
-        // DrawScope.record(layer) — the receiver supplies density, layout
-        // direction and size, unlike GraphicsLayer.record which needs all three.
-        record(state.layer) { scope.drawContent() }
+        // GraphicsLayer.record with explicit density/layoutDirection/size. The
+        // shorter DrawScope.record(layer) overload is not present across all
+        // Compose 1.7.x releases, so the long form is used deliberately.
+        state.layer.record(
+            density = this,
+            layoutDirection = layoutDirection,
+            size = IntSize(size.width.roundToInt(), size.height.roundToInt())
+        ) { scope.drawContent() }
         drawLayer(state.layer)
         state.captured = true
     }
