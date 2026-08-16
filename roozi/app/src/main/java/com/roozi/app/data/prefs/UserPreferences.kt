@@ -28,7 +28,6 @@ data class UserSettings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val language: AppLanguage = AppLanguage.PERSIAN,
     val notificationPromptShown: Boolean = false,
-    val fullScreenPromptShown: Boolean = false,
     val palette: ThemePalette = ThemePalette.RAINBOW
 )
 
@@ -42,7 +41,6 @@ class UserPreferences(private val context: Context) {
         val THEME = stringPreferencesKey("theme_mode")
         val LANGUAGE = stringPreferencesKey("language")
         val NOTIF_PROMPT = booleanPreferencesKey("notification_prompt_shown")
-        val FULLSCREEN_PROMPT = booleanPreferencesKey("fullscreen_prompt_shown")
         val PALETTE = stringPreferencesKey("theme_palette")
     }
 
@@ -55,7 +53,6 @@ class UserPreferences(private val context: Context) {
             .getOrDefault(ThemeMode.SYSTEM),
         language = AppLanguage.fromTag(this[Keys.LANGUAGE]),
         notificationPromptShown = this[Keys.NOTIF_PROMPT] ?: false,
-        fullScreenPromptShown = this[Keys.FULLSCREEN_PROMPT] ?: false,
         palette = ThemePalette.fromId(this[Keys.PALETTE])
     )
 
@@ -70,9 +67,6 @@ class UserPreferences(private val context: Context) {
 
     suspend fun setNotificationPromptShown(shown: Boolean) =
         context.dataStore.edit { it[Keys.NOTIF_PROMPT] = shown }
-
-    suspend fun setFullScreenPromptShown(shown: Boolean) =
-        context.dataStore.edit { it[Keys.FULLSCREEN_PROMPT] = shown }
 
     suspend fun setPalette(palette: ThemePalette) =
         context.dataStore.edit { it[Keys.PALETTE] = palette.id }

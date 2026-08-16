@@ -15,7 +15,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.roozi.app.core.util.PersianNumbers
-import com.roozi.app.AlarmActivity
 import com.roozi.app.MainActivity
 import com.roozi.app.R
 
@@ -23,14 +22,13 @@ object Notifications {
 
     /**
      * Bumped when channel settings change: Android freezes a channel's
-     * importance/sound at creation, so an existing install would otherwise keep
-     * the old non-alarm behaviour forever.
+     * importance and sound at creation, so an existing install would otherwise
+     * keep the previous behaviour forever. v3 drops the alarm ringtone that the
+     * full-screen alarm needed.
      */
-    const val CHANNEL_ID = "roozi_task_reminders_v2"
+    const val CHANNEL_ID = "roozi_task_reminders_v3"
 
-    private const val TAG = "Notifications"
-
-    private const val LEGACY_CHANNEL_ID = "roozi_task_reminders"
+    private val LEGACY_CHANNEL_IDS = listOf("roozi_task_reminders", "roozi_task_reminders_v2")
 
     /**
      * Birthdays keep their own channel. They are a gentle heads-up days in
@@ -58,23 +56,25 @@ object Notifications {
             enableLights(true)
             lightColor = 0xFFFF6B6B.toInt()
             enableVibration(true)
-            // USAGE_ALARM makes reminders ring at alarm volume and pass through
-            // Do Not Disturb's alarm exception, matching the full-screen
-            // treatment they now get. Channel settings are immutable after
-            // creation, hence the version bump in CHANNEL_ID.
+            // The default notification tone at notification volume. An alarm
+            // ringtone would keep ringing at alarm volume and cut through Do
+            // Not Disturb, which a reminder that is no longer full-screen has
+            // no business doing.
             setSound(
                 android.media.RingtoneManager
-                    .getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    .getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION),
                 AudioAttributes.Builder()
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                     .build()
             )
         }
         manager.createNotificationChannel(channel)
-        // The pre-alarm channel would otherwise linger in system settings as a
-        // dead entry the user can still toggle.
-        runCatching { manager.deleteNotificationChannel(LEGACY_CHANNEL_ID) }
+        // Superseded channels would otherwise linger in system settings as
+        // dead entries the user can still toggle.
+        LEGACY_CHANNEL_IDS.forEach { old ->
+            runCatching { manager.deleteNotificationChannel(old) }
+        }
 
         if (manager.getNotificationChannel(BIRTHDAY_CHANNEL_ID) == null) {
             manager.createNotificationChannel(
@@ -97,50 +97,12 @@ object Notifications {
             PackageManager.PERMISSION_GRANTED
 
     /**
-     * Whether the OS will honour a full-screen intent.
-     *
-     * Android 14 turned USE_FULL_SCREEN_INTENT into a special access permission;
-     * it is pre-granted only to alarm and calling apps, and the user can revoke
-     * it. When it is off the system silently downgrades the notification to a
-     * heads-up banner, so this is checked rather than assumed.
-     */
-    fun canUseFullScreen(context: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
-        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
-        return runCatching { manager.canUseFullScreenIntent() }.getOrDefault(false)
-    }
-
-    /**
-     * Whether the app may draw over other apps.
-     *
-     * Not required by AOSP for a full-screen intent, but MIUI/HyperOS gate
-     * background activity starts behind their own "display pop-up windows while
-     * running in the background" switch, which is off by default and is the
-     * usual reason a reminder stays a banner on a Xiaomi device. That switch has
-     * no public API; the overlay grant lives on the same settings page and is
-     * the closest signal that can actually be read.
-     */
-    fun canDrawOverlays(context: Context): Boolean =
-        runCatching { android.provider.Settings.canDrawOverlays(context) }.getOrDefault(false)
-
-    /** True on the OEM skins that add their own background-launch gate. */
-    fun isXiaomi(): Boolean {
-        val vendor = (Build.MANUFACTURER + " " + Build.BRAND).lowercase()
-        return "xiaomi" in vendor || "redmi" in vendor || "poco" in vendor
-    }
-
-    /**
      * Posts a reminder. The POST_NOTIFICATIONS permission is verified by
      * [hasPermission] before any notify() call; lint cannot follow that through
      * a helper, hence the explicit annotation.
-     *
-     * @param startScreen open the alarm screen as well as posting. Only true for
-     *   a reminder delivered by an exact alarm, which is exempt from the
-     *   background-activity restrictions; the WorkManager backstop is not, so it
-     *   posts the notification and lets the system decide.
      */
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS, conditional = true)
-    fun show(context: Context, taskId: Long, title: String, startScreen: Boolean = false) {
+    fun show(context: Context, taskId: Long, title: String) {
         ensureChannel(context)
         if (!hasPermission(context)) return
 
@@ -176,16 +138,6 @@ object Notifications {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // The alarm screen is launched by the system, not by us: a background
-        // activity start would be blocked, whereas a full-screen intent on a
-        // high-importance notification is the sanctioned path.
-        val fullScreenIntent = PendingIntent.getActivity(
-            context,
-            (taskId + 3_000_000).toInt(),
-            AlarmActivity.createIntent(context, taskId, title),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         // Custom layout so the reminder carries the app's identity instead of
         // the system's default grey card. DecoratedCustomViewStyle is avoided:
         // it would re-add the system header around our own artwork.
@@ -207,40 +159,15 @@ object Notifications {
             .setCustomContentView(content)
             .setCustomBigContentView(content)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            // CATEGORY_ALARM is what tells the system (and Do Not Disturb) that
-            // this is a user-set alarm rather than a passive reminder, which is
-            // also the category a full-screen intent is expected to carry.
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
             .addAction(0, context.getString(R.string.alarm_snooze), snoozeIntent)
             .addAction(0, context.getString(R.string.action_done), doneIntent)
 
-        val fullScreen = canUseFullScreen(context)
-        if (fullScreen) {
-            // true = show full-screen even when the device is unlocked; the OS
-            // still downgrades it to a heads-up banner while in use, which is
-            // the intended behaviour rather than a fallback.
-            builder.setFullScreenIntent(fullScreenIntent, true)
-        }
-
         runCatching {
             NotificationManagerCompat.from(context).notify(taskId.toInt(), builder.build())
-        }
-
-        // Posting a full-screen intent is not a guarantee: the system only
-        // escalates it while the screen is off or locked, and MIUI drops it
-        // outright for apps it has not whitelisted. An exact alarm is exempt
-        // from background-activity limits, so when the reminder came from one
-        // the screen is also started directly. AlarmActivity is singleInstance,
-        // so if the system already opened it this is a no-op.
-        if (fullScreen && startScreen) {
-            runCatching {
-                context.startActivity(AlarmActivity.createIntent(context, taskId, title))
-            }.onFailure {
-                android.util.Log.w(TAG, "Could not start the alarm screen directly", it)
-            }
         }
     }
 

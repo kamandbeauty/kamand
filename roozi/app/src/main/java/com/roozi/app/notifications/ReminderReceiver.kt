@@ -3,7 +3,6 @@ package com.roozi.app.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.roozi.app.AlarmActivity
 import com.roozi.app.data.local.RooziDatabase
 import com.roozi.app.data.repo.TaskRepository
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +41,7 @@ class ReminderReceiver : BroadcastReceiver() {
                                 taskId,
                                 title,
                                 System.currentTimeMillis() +
-                                    AlarmActivity.SNOOZE_MINUTES * 60_000L
+                                    SNOOZE_MINUTES * 60_000L
                             )
                         }
                         Notifications.dismiss(appContext, taskId)
@@ -53,9 +52,7 @@ class ReminderReceiver : BroadcastReceiver() {
                         val task = RooziDatabase.get(appContext).taskDao().findById(taskId)
                         val title = task?.title ?: intent.getStringExtra(EXTRA_TITLE)
                         if (task != null && !task.isCompleted && task.reminderEnabled && title != null) {
-                            // Delivered by an exact alarm, so this path may
-                            // start the alarm screen itself.
-                            Notifications.show(appContext, taskId, title, startScreen = true)
+                            Notifications.show(appContext, taskId, title)
                         }
                     }
                 }
@@ -69,6 +66,9 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_REMIND = "com.roozi.app.action.REMIND"
         const val ACTION_COMPLETE = "com.roozi.app.action.COMPLETE"
         const val ACTION_SNOOZE = "com.roozi.app.action.SNOOZE"
+
+        /** How far ahead the snooze action re-arms a reminder. */
+        const val SNOOZE_MINUTES = 5
         const val EXTRA_TASK_ID = "task_id"
         const val EXTRA_TITLE = "task_title"
     }

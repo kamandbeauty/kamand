@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
@@ -356,31 +355,6 @@ fun ProfileScreen(
                             color = colors.orange
                         )
                     }
-                    // Full-screen reminders need a special access grant on
-                    // Android 14+, which no runtime dialog can ask for.
-                    if (!Notifications.canUseFullScreen(context)) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            stringResource(R.string.alarm_fullscreen_blocked),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.orange,
-                            modifier = Modifier.clickable {
-                                activity?.openFullScreenIntentSettings()
-                            }
-                        )
-                    }
-                    // MIUI blocks background activity starts behind its own
-                    // switch, which is the usual reason a reminder stays a
-                    // banner on these devices even with everything else granted.
-                    if (Notifications.isXiaomi() && !Notifications.canDrawOverlays(context)) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            stringResource(R.string.alarm_xiaomi_popup_hint),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.orange,
-                            modifier = Modifier.clickable { activity?.openOverlaySettings() }
-                        )
-                    }
                     Spacer(Modifier.height(6.dp))
                     Text(
                         stringResource(R.string.notif_battery_hint),
@@ -411,17 +385,6 @@ fun ProfileScreen(
                             onClick = { activity?.openNotificationSettings() }
                         )
                     }
-                    Spacer(Modifier.height(10.dp))
-                    // A posted test notification only goes full-screen when the
-                    // device is locked, so it cannot show what the alarm screen
-                    // looks like. Opening it directly from the foreground can.
-                    ActionTile(
-                        modifier = Modifier.fillMaxWidth(),
-                        icon = Icons.Rounded.Alarm,
-                        label = stringResource(R.string.alarm_preview),
-                        accent = colors.coral,
-                        onClick = { activity?.previewAlarmScreen() }
-                    )
                 }
             }
         }

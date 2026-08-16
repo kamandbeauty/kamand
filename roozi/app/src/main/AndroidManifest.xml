@@ -14,15 +14,6 @@
       only (API 31/32), where USE_EXACT_ALARM does not yet exist.
     -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-
-    <!--
-      Reminders are alarm-clock style: the full-screen screen is how the user
-      is expected to see one they set for a specific moment. On Android 14+
-      this is a special access permission that the OS may withhold, so every
-      use is guarded by Notifications.canUseFullScreen(); when it is off the
-      reminder degrades to a heads-up banner.
-    -->
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32" />
@@ -51,22 +42,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!--
-          The alarm screen. singleInstance + excludeFromRecents keep it out of
-          the normal back stack: it is an interruption, not a destination, and
-          must never be left behind in recents after being dismissed.
-        -->
-        <activity
-            android:name=".AlarmActivity"
-            android:exported="false"
-            android:launchMode="singleInstance"
-            android:excludeFromRecents="true"
-            android:taskAffinity=".alarm"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|layoutDirection|locale"
-            android:theme="@style/Theme.Roozi" />
 
         <receiver
             android:name=".notifications.ReminderReceiver"

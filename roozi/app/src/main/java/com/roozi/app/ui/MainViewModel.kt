@@ -35,7 +35,6 @@ class MainViewModel(private val prefs: UserPreferences) : ViewModel() {
 
     fun markNotificationPromptShown() = viewModelScope.launch { prefs.setNotificationPromptShown(true) }
 
-    fun markFullScreenPromptShown() = viewModelScope.launch { prefs.setFullScreenPromptShown(true) }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

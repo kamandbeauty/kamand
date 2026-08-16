@@ -423,23 +423,8 @@
     <string name="name_suffix_3">جان</string>
     <string name="name_suffix_4">عزیزم</string>
     <string name="name_suffix_5">عزیز</string>
-    <!-- Full-screen reminder (alarm style) -->
-    <string name="alarm_now">زمان انجام:</string>
-    <string name="alarm_got_it">فهمیدم</string>
+    <!-- Reminder actions -->
     <string name="alarm_snooze">تعویق</string>
-    <string name="alarm_snooze_for">%1$s دقیقه دیگر</string>
-    <string name="alarm_snoozed">یادآوری %1$s دقیقه دیگر تکرار می‌شود</string>
-    <string name="alarm_fullscreen">یادآوری تمام‌صفحه</string>
-    <string name="alarm_fullscreen_desc">یادآوری‌ها مثل زنگ ساعت تمام‌صفحه نشان داده شوند</string>
-    <string name="alarm_fullscreen_blocked">اجازه «یادآوری تمام‌صفحه» داده نشده — برای روشن کردن بزنید</string>
     <string name="notification_birthday_channel_name">تولدها</string>
     <string name="notification_birthday_channel_desc">یادآوری تولد نزدیکان</string>
-    <string name="alarm_preview">دیدن صفحه یادآوری تمام‌صفحه</string>
-    <string name="alarm_preview_task">یک کار ضروری</string>
-    <string name="alarm_permission_title">یادآوری تمام‌صفحه</string>
-    <string name="alarm_permission_body">برای اینکه یادآوری‌ها مثل زنگ ساعت تمام‌صفحه نشان داده شوند، باید اجازه‌ی «یادآوری تمام‌صفحه» را بدهی. بدون آن، یادآوری فقط به شکل یک نوار بالای صفحه می‌آید.</string>
-    <string name="alarm_permission_body_xiaomi">برای اینکه یادآوری‌ها مثل زنگ ساعت تمام‌صفحه نشان داده شوند، باید اجازه‌ی «یادآوری تمام‌صفحه» را بدهی.\n\nدر گوشی‌های شیائومی یک تنظیم دیگر هم لازم است: در «سایر مجوزها»، گزینه‌ی «نمایش پنجره بازشو در پس‌زمینه» را روشن کن.</string>
-    <string name="alarm_permission_open">باز کردن تنظیمات</string>
-    <string name="alarm_permission_later">بعداً</string>
-    <string name="alarm_xiaomi_popup_hint">شیائومی: «نمایش پنجره بازشو در پس‌زمینه» خاموش است — برای روشن کردن بزنید</string>
 </resources>

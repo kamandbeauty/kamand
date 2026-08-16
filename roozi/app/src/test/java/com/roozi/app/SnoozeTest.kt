@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Snooze contract for the full-screen alarm.
+ * Snooze contract for the reminder notification's snooze action.
  *
  * Snoozing re-arms the *same* reminder id a fixed number of minutes out, so the
  * scheduler replaces the pending alarm instead of stacking a second one.
@@ -25,7 +25,7 @@ class SnoozeTest {
     @Test
     fun snoozeIsAlwaysInTheFuture() {
         // A non-positive delay would make the scheduler drop the WorkManager
-        // backstop, leaving only the alarm.
+        // backstop, leaving only the exact alarm.
         val now = System.currentTimeMillis()
         assertTrue(snoozeAt(now) > now)
     }

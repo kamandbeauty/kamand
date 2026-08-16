@@ -403,23 +403,8 @@
     <string name="name_suffix_3">جان</string>
     <string name="name_suffix_4">عزیزم</string>
     <string name="name_suffix_5">عزیز</string>
-    <!-- Full-screen reminder (alarm style) -->
-    <string name="alarm_now">Time for:</string>
-    <string name="alarm_got_it">Got it</string>
+    <!-- Reminder actions -->
     <string name="alarm_snooze">Snooze</string>
-    <string name="alarm_snooze_for">%1$s min</string>
-    <string name="alarm_snoozed">Reminder will repeat in %1$s minutes</string>
-    <string name="alarm_fullscreen">Full-screen reminder</string>
-    <string name="alarm_fullscreen_desc">Show reminders full-screen, like an alarm clock</string>
-    <string name="alarm_fullscreen_blocked">Full-screen reminder permission is off — tap to enable</string>
     <string name="notification_birthday_channel_name">Birthdays</string>
     <string name="notification_birthday_channel_desc">Reminders for upcoming birthdays</string>
-    <string name="alarm_preview">Preview the full-screen reminder</string>
-    <string name="alarm_preview_task">An important task</string>
-    <string name="alarm_permission_title">Full-screen reminder</string>
-    <string name="alarm_permission_body">To show reminders full-screen like an alarm clock, grant the full-screen reminder permission. Without it a reminder only arrives as a banner at the top of the screen.</string>
-    <string name="alarm_permission_body_xiaomi">To show reminders full-screen like an alarm clock, grant the full-screen reminder permission.\n\nXiaomi phones need one more setting: under Other permissions, turn on "Display pop-up windows while running in the background".</string>
-    <string name="alarm_permission_open">Open settings</string>
-    <string name="alarm_permission_later">Later</string>
-    <string name="alarm_xiaomi_popup_hint">Xiaomi: "Display pop-up windows while running in the background" is off — tap to enable</string>
 </resources>
