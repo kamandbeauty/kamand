@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
@@ -27,6 +28,11 @@ class ProductListScreen extends ConsumerWidget {
     return double.tryParse(_englishDigits(value).replaceAll(',', '').trim()) ?? 0;
   }
 
+  String _integerText(double? value) {
+    if (value == null) return '';
+    return value.round().toString();
+  }
+
   String _nextCode(List<ProductModel> products) {
     var max = 100;
     for (final product in products) {
@@ -44,9 +50,9 @@ class ProductListScreen extends ConsumerWidget {
     final nameCtrl = TextEditingController(text: product?.name ?? '');
     final codeCtrl = TextEditingController(text: product?.code ?? '');
     final unitCtrl = TextEditingController(text: product?.unit ?? 'عدد');
-    final buyCtrl = TextEditingController(text: product?.buyPrice.toString() ?? '');
-    final sellCtrl = TextEditingController(text: product?.sellPrice.toString() ?? '');
-    final stockCtrl = TextEditingController(text: product?.stock.toString() ?? '0');
+    final buyCtrl = TextEditingController(text: _integerText(product?.buyPrice));
+    final sellCtrl = TextEditingController(text: _integerText(product?.sellPrice));
+    final stockCtrl = TextEditingController(text: product == null ? '0' : _integerText(product.stock));
     final notesCtrl = TextEditingController(text: product?.notes ?? '');
 
     final saved = await showModalBottomSheet<bool>(
@@ -128,7 +134,10 @@ class ProductListScreen extends ConsumerWidget {
                       Expanded(
                         child: TextField(
                           controller: sellCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹]')),
+                          ],
                           textAlign: TextAlign.right,
                           decoration: const InputDecoration(
                             labelText: 'قیمت فروش',
@@ -140,7 +149,10 @@ class ProductListScreen extends ConsumerWidget {
                       Expanded(
                         child: TextField(
                           controller: buyCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹]')),
+                          ],
                           textAlign: TextAlign.right,
                           decoration: const InputDecoration(
                             labelText: 'قیمت خرید',
@@ -153,7 +165,10 @@ class ProductListScreen extends ConsumerWidget {
                   const SizedBox(height: 10),
                   TextField(
                     controller: stockCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹]')),
+                    ],
                     textAlign: TextAlign.right,
                     decoration: const InputDecoration(
                       labelText: 'موجودی',
@@ -190,9 +205,9 @@ class ProductListScreen extends ConsumerWidget {
                           code: code,
                           name: name,
                           unit: unitCtrl.text.trim().isEmpty ? 'عدد' : unitCtrl.text.trim(),
-                          buyPrice: _number(buyCtrl.text),
-                          sellPrice: _number(sellCtrl.text),
-                          stock: _number(stockCtrl.text),
+                          buyPrice: _number(buyCtrl.text).roundToDouble(),
+                          sellPrice: _number(sellCtrl.text).roundToDouble(),
+                          stock: _number(stockCtrl.text).roundToDouble(),
                           notes: notesCtrl.text.trim(),
                         );
                         if (product == null) {
@@ -351,7 +366,7 @@ class ProductListScreen extends ConsumerWidget {
                             ),
                           ),
                           subtitle: Text(
-                            'موجودی: ${PersianNumberFormatter.toPersian(product.stock)} ${product.unit}\nقیمت فروش: ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
+                            'موجودی: ${PersianNumberFormatter.toPersian(product.stock.round())} ${product.unit}\nقیمت فروش: ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
                             style: const TextStyle(fontSize: 11, color: _slate500),
                           ),
                         ),
