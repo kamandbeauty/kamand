@@ -140,10 +140,12 @@ fun RooziHeader(
         ) {
             // The app's own logo rather than the abstract mascot, so the header
             // matches the icon the user tapped to get here.
+            // Constrained by height only: the koala is taller than it is wide,
+            // and a square size() would letterbox it into a smaller figure.
             Image(
                 painter = painterResource(R.drawable.ic_brand_mark),
                 contentDescription = null,
-                modifier = Modifier.size(38.dp)
+                modifier = Modifier.height(38.dp)
             )
 
             Spacer(Modifier.width(12.dp))
