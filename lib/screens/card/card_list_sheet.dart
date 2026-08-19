@@ -11,6 +11,7 @@ void showCardListSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.white,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (ctx) => const CardListSheet(),
@@ -57,7 +58,12 @@ class CardListSheet extends ConsumerWidget {
                   ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              16 + MediaQuery.of(context).padding.bottom,
+            ),
             child: SizedBox(
               width: double.infinity,
               height: 48,

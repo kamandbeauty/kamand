@@ -3192,21 +3192,91 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildDrawer() {
     final user = ref.watch(userProvider);
+    final accent = Color(ref.watch(settingsProvider).accentColor);
     return Drawer(
-      child: ListView(padding: EdgeInsets.zero, children: [
-        UserAccountsDrawerHeader(
-          accountName: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-          accountEmail: Text('${user.country} - ${user.city}'),
-          currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: Text(user.name.isNotEmpty? user.name[0]: 'ر', style: const TextStyle(color: _orange, fontWeight: FontWeight.w900, fontSize: 24))),
-          decoration: const BoxDecoration(color: _orange),
-        ),
-        ListTile(leading: const Icon(Icons.add_circle_outline, color: _orange), title: const Text('ثبت فاکتور جدید', style: TextStyle(fontWeight: FontWeight.w800)), onTap: ()=> Navigator.pop(context)),
-        ListTile(leading: const Icon(Icons.receipt_long, color: _orange), title: const Text('لیست فاکتورها', style: TextStyle(fontWeight: FontWeight.w800)), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const InvoiceListScreen()));}),
-        const Divider(),
-        ListTile(leading: const Icon(Icons.people), title: const Text('مشتریان'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const CustomerListScreen()));}),
-        ListTile(leading: const Icon(Icons.inventory_2), title: const Text('محصولات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const ProductListScreen()));}),
-        ListTile(leading: const Icon(Icons.settings), title: const Text('تنظیمات'), onTap: (){ Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_)=> const SettingsScreen()));}),
-      ]),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(color: accent),
+            margin: EdgeInsets.zero,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.asset(
+                    'assets/images/logo.webp',
+                    width: 62,
+                    height: 62,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.receipt_long,
+                      color: Colors.white,
+                      size: 42,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                const Text(
+                  'فاکتور ساز روبی',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'فاکتور بزن ، ساده و سریع',
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          if (user.name.trim().isNotEmpty)
+            ListTile(
+              leading: Icon(Icons.person_outline, color: accent),
+              title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text('${user.country} - ${user.city}'),
+            ),
+          ListTile(
+            leading: Icon(Icons.add_circle_outline, color: accent),
+            title: const Text('ثبت فاکتور جدید', style: TextStyle(fontWeight: FontWeight.w800)),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: Icon(Icons.receipt_long, color: accent),
+            title: const Text('لیست فاکتورها', style: TextStyle(fontWeight: FontWeight.w800)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoiceListScreen()));
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.people),
+            title: const Text('مشتریان'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.inventory_2),
+            title: const Text('محصولات'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('تنظیمات'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            },
+          ),
+        ],
+      ),
     );
   }
 
