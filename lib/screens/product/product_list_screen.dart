@@ -363,12 +363,6 @@ class ProductListScreen extends ConsumerWidget {
                             runSpacing: 5,
                             children: [
                               _actionButton(
-                                label: 'درج',
-                                icon: Icons.add_circle_outline,
-                                color: _orange,
-                                onPressed: () => _showProductForm(context, ref),
-                              ),
-                              _actionButton(
                                 label: 'کپی',
                                 icon: Icons.copy_outlined,
                                 color: Colors.blue,
