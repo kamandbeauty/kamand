@@ -35,40 +35,60 @@ DENSITIES = {
 
 # Adaptive icons are authored on a 108dp canvas.
 ADAPTIVE_DP = 108
-# Only the centre 66dp is guaranteed visible after the launcher's mask.
-SAFE_DP = 66
 
+# How much of that canvas the artwork covers.
+#
+# The 66dp safe zone is the rule for artwork that must not be clipped at all —
+# a logo on empty space. This source is already an icon-shaped card that fills
+# its own canvas, so insetting it to 66dp rendered a shrunken sticker floating
+# on a dull border. Bleeding it to 100dp lets the launcher's mask round the
+# card's own corners, which is what the artwork was drawn for, while the last
+# 8dp of margin keeps the outermost pixels clear of the harshest crops.
+ARTWORK_DP = 100
+
+# No <monochrome> layer: Android flattens it to a single-colour silhouette for
+# themed icons, and a detailed full-colour illustration collapses into an
+# unreadable blob. Omitting it makes the launcher fall back to the normal icon.
 ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@mipmap/ic_launcher_background" />
     <foreground android:drawable="@mipmap/ic_launcher_foreground" />
-    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
 </adaptive-icon>
 """
 
 
 def dominant_edge_colour(img: Image.Image) -> tuple[int, int, int]:
-    """Average the outer border, which is the colour the mask will crop into."""
-    rgb = img.convert("RGB")
-    w, h = rgb.size
-    band = max(1, min(w, h) // 24)
-    px = rgb.load()
+    """
+    The colour the launcher's mask will crop into.
+
+    Sampled along a ring just inside the artwork and restricted to opaque
+    pixels. Source icons are usually a rounded card on a transparent canvas, so
+    averaging the literal outer border reads mostly empty pixels and yields a
+    muddy near-black instead of the card's own colour.
+    """
+    px = img.load()
+    w, h = img.size
+    inset = max(2, min(w, h) // 12)
     total = [0, 0, 0]
     count = 0
-    for x in range(w):
-        for y in list(range(band)) + list(range(h - band, h)):
-            r, g, b = px[x, y]
-            total[0] += r
-            total[1] += g
-            total[2] += b
-            count += 1
-    for y in range(h):
-        for x in list(range(band)) + list(range(w - band, w)):
-            r, g, b = px[x, y]
-            total[0] += r
-            total[1] += g
-            total[2] += b
-            count += 1
+    for x in range(inset, w - inset):
+        for y in (inset, h - inset - 1):
+            r, g, b, a = px[x, y]
+            if a > 200:
+                total[0] += r
+                total[1] += g
+                total[2] += b
+                count += 1
+    for y in range(inset, h - inset):
+        for x in (inset, w - inset - 1):
+            r, g, b, a = px[x, y]
+            if a > 200:
+                total[0] += r
+                total[1] += g
+                total[2] += b
+                count += 1
+    if count == 0:
+        return (255, 255, 255)
     return tuple(c // count for c in total)
 
 
@@ -115,15 +135,11 @@ def main() -> int:
         rounded.save(out_dir / "ic_launcher_round.png")
         print(f"  mipmap-{suffix}: {size}px")
 
-    # Adaptive layers, authored at xxxhdpi (4x) for crisp scaling.
-    scale = 4
-    canvas = ADAPTIVE_DP * scale
-    safe = SAFE_DP * scale
-
+    # Adaptive layers, one set per density.
     for suffix, dp_px in DENSITIES.items():
         density_scale = dp_px / 48  # mdpi baseline
         c = int(ADAPTIVE_DP * density_scale)
-        s = int(SAFE_DP * density_scale)
+        s = int(ARTWORK_DP * density_scale)
 
         fg = Image.new("RGBA", (c, c), (0, 0, 0, 0))
         art = src.resize((s, s), Image.LANCZOS)
@@ -134,7 +150,7 @@ def main() -> int:
         bg = Image.new("RGBA", (c, c), edge + (255,))
         bg.save(RES / f"mipmap-{suffix}" / "ic_launcher_background.png")
 
-    print(f"  adaptive layers written (safe zone {SAFE_DP}/{ADAPTIVE_DP}dp)")
+    print(f"  adaptive layers written (artwork {ARTWORK_DP}/{ADAPTIVE_DP}dp)")
 
     for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
         (RES / "mipmap-anydpi-v26" / name).write_text(ADAPTIVE_XML)
