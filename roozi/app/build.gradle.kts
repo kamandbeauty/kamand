@@ -31,8 +31,10 @@ android {
         applicationId = rooziApplicationId
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        // versionCode must rise on every upload; the store rejects a file whose
+        // code it has already seen, regardless of the name shown to users.
+        versionCode = 2
+        versionName = "1.0.1"
 
         // The launcher label comes from the localized app_name resource; the
         // -PappName override is applied as a resValue so it works for both locales.
