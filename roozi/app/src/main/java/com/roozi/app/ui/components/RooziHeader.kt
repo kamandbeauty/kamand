@@ -1,6 +1,7 @@
 package com.roozi.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -133,7 +135,13 @@ fun RooziHeader(
                 .padding(start = 20.dp, end = 12.dp, top = 6.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RooziMascot(size = 34.dp, blink = false)
+            // The app's own logo rather than the abstract mascot, so the header
+            // matches the icon the user tapped to get here.
+            Image(
+                painter = painterResource(R.drawable.ic_brand_mark),
+                contentDescription = null,
+                modifier = Modifier.size(38.dp)
+            )
 
             Spacer(Modifier.width(12.dp))
 
