@@ -57,14 +57,15 @@ fun RooziHeader(
     val colors = RooziTheme.colors
     val dark = colors.isDark
 
-    // The backdrop behind this panel is genuinely blurred, so the tint only has
-    // to colour the glass — not hide the page. A heavy wash here would bury the
-    // refraction that makes it read as glass instead of a coloured bar.
+    // Deep enough to read as a solid brand colour, still short of opaque so the
+    // blurred page keeps showing through. Past roughly 0.65 the refraction
+    // disappears and the panel becomes a plain coloured bar, so this is the
+    // upper end of what can be called glass.
     val hasBlur = glass.supported
     val tintAlpha = when {
-        !hasBlur -> if (dark) 0.80f else 0.76f // no blur: opacity must do the work
-        dark -> 0.34f
-        else -> 0.30f
+        !hasBlur -> if (dark) 0.86f else 0.82f // no blur: opacity must do the work
+        dark -> 0.58f
+        else -> 0.54f
     }
 
     // Diagonal rather than flat: real glass picks up light unevenly across its
@@ -80,11 +81,13 @@ fun RooziHeader(
     )
 
     // Glass is brightest where light enters and dims below; without this
-    // falloff the panel reads as flat translucent plastic.
+    // falloff the panel reads as flat translucent plastic. Lifted alongside the
+    // deeper tint — a stronger wash swallows the highlight, and losing it is
+    // what would make the pane look like paint rather than glass.
     val sheen = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (dark) 0.26f else 0.46f),
-            Color.White.copy(alpha = if (dark) 0.06f else 0.12f),
+            Color.White.copy(alpha = if (dark) 0.34f else 0.54f),
+            Color.White.copy(alpha = if (dark) 0.10f else 0.18f),
             Color.Transparent
         )
     )
@@ -113,8 +116,8 @@ fun RooziHeader(
                     width = 1.dp,
                     brush = Brush.verticalGradient(
                         listOf(
-                            Color.White.copy(alpha = if (dark) 0.34f else 0.60f),
-                            Color.White.copy(alpha = if (dark) 0.10f else 0.20f)
+                            Color.White.copy(alpha = if (dark) 0.42f else 0.70f),
+                            Color.White.copy(alpha = if (dark) 0.14f else 0.26f)
                         )
                     ),
                     shape = shape
