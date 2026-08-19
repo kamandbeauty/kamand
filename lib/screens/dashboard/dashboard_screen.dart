@@ -1586,51 +1586,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   textDirection: TextDirection.ltr,
                   child: Row(
                     children: [
-                      const SizedBox(width: 14),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          'assets/images/logo.webp',
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.receipt_long,
+                      const Spacer(),
+                      Expanded(
+                        child: Text(
+                          'تنظیمات فاکتور',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
                             color: Colors.white,
-                            size: 34,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: const [
-                            Text(
-                              'فاکتور ساز روبی',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            SizedBox(height: 3),
-                            Text(
-                              'فاکتور بزن ، ساده و سریع',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                       const Icon(Icons.tune_outlined, color: Colors.white, size: 25),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 18),
                     ],
                   ),
                 ),
@@ -3191,7 +3160,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildDrawer() {
-    final user = ref.watch(userProvider);
     final accent = Color(ref.watch(settingsProvider).accentColor);
     return Drawer(
       child: ListView(
@@ -3231,12 +3199,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ],
             ),
           ),
-          if (user.name.trim().isNotEmpty)
-            ListTile(
-              leading: Icon(Icons.person_outline, color: accent),
-              title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-              subtitle: Text('${user.country} - ${user.city}'),
-            ),
           ListTile(
             leading: Icon(Icons.add_circle_outline, color: accent),
             title: const Text('ثبت فاکتور جدید', style: TextStyle(fontWeight: FontWeight.w800)),
