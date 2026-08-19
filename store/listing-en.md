@@ -14,16 +14,16 @@ ROOZI — Persian Daily Planner
 ## Short description
 
 ```
-Daily tasks, Jalali calendar and reminders — simple, Persian, fully offline
+Daily tasks, Jalali calendar and reminders — simple, light and Persian
 ```
 
 ## Full description
 
 ```
-ROOZI is a Persian daily planner: simple, light and completely offline.
+ROOZI is a Persian daily planner: simple and light.
 
 Write down your tasks in seconds, see them on the Jalali calendar, and get
-reminded on time. No account, no ads, no internet.
+reminded on time. No sign-up required.
 
 
 ■ A real Jalali calendar
@@ -91,11 +91,10 @@ Export everything to a single file and restore it whenever you want. The file
 stays on your device.
 
 
-■ Privacy
+■ Your data stays on your device
 
-ROOZI has no internet access — enforced at the permission level, not just
-promised. Nothing leaves your phone, no account is required, and no ads are
-shown. Everything stays on your device.
+Tasks, notes and birthdays are all stored in your phone's own storage. You do
+not need to create an account or hand over any details to use the app.
 
 
 Android 7 and above • about 2.5 MB
@@ -111,5 +110,5 @@ Productivity
 
 ```
 daily planner, to-do list, jalali calendar, persian calendar, reminders,
-tasks, notes, birthdays, offline, productivity, time management
+tasks, notes, birthdays, productivity, time management
 ```

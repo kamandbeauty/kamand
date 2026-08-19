@@ -156,7 +156,13 @@ def check_no_hardcoded_persian():
 def check_manifest():
     manifest = open(os.path.join(ROOT, "AndroidManifest.xml"), encoding="utf-8").read()
     if "android.permission.INTERNET" in manifest:
-        errors.append("app must stay offline: INTERNET permission present")
+        # A warning rather than an error: ads are planned, and they need this
+        # permission. It still gets flagged because adding it silently would
+        # contradict the store listing and the privacy answers filed with it.
+        warnings.append(
+            "INTERNET permission present - update the store listing and the "
+            "privacy questionnaire to match"
+        )
     if 'android:supportsRtl="true"' not in manifest:
         errors.append("supportsRtl must be enabled")
     for required in (".MainActivity", ".RooziApp", ".notifications.ReminderReceiver", ".notifications.BootReceiver"):
