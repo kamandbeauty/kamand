@@ -698,6 +698,7 @@ if (inv.cardNumber.isNotEmpty) ...[
                             final ownerName = inv.cardOwner.isNotEmpty
                                 ? inv.cardOwner
                                 : (match?.persianName?.toString() ?? '');
+                            final sheba = match?.spacedSheba?.toString() ?? '';
                             final grouped = formatCardGrouped(inv.cardNumber);
                             return Container(
                               padding: const EdgeInsets.all(12),
@@ -803,6 +804,38 @@ if (inv.cardNumber.isNotEmpty) ...[
                                       ),
                                     ),
                                   ),
+                                  if (sheba.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      textDirection: TextDirection.rtl,
+                                      children: [
+                                        const Text(
+                                          'شماره شبا:',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF0284C7),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Directionality(
+                                            textDirection: TextDirection.ltr,
+                                            child: Text(
+                                              sheba,
+                                              textAlign: TextAlign.right,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF334155),
+                                                fontFeatures: [ui.FontFeature.tabularFigures()],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
                               ),
                             );
