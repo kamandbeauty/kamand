@@ -1493,9 +1493,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             );
                           },
                         )
-                      : IconButton(
-                          icon: Icon(Icons.menu, color: dark ? Colors.white : _slate700, size: 30),
-                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                      : Padding(
+                          padding: const EdgeInsets.only(left: 16),
+                          child: Directionality(
+                            textDirection: TextDirection.rtl,
+                            child: Text(
+                              _todayLabel(),
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                color: dark ? _slate400 : _slate600,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
                         ),
                 ),
                 Align(
@@ -1524,35 +1535,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ),
                         )
-                      : Padding(
-                          padding: const EdgeInsets.only(right: 16),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(11),
-                                child: Image.asset(
-                                  'assets/images/logo.webp',
-                                  width: 42,
-                                  height: 42,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Icon(
-                                    Icons.pets,
-                                    color: accent,
-                                    size: 30,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                'روبی',
-                                style: TextStyle(
-                                  color: accent,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ],
-                          ),
+                      : IconButton(
+                          icon: Icon(Icons.menu, color: dark ? Colors.white : _slate700, size: 30),
+                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                         ),
                 ),
               ],
@@ -1601,30 +1586,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   textDirection: TextDirection.ltr,
                   child: Row(
                     children: [
-                      const SizedBox(width: 18),
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.tune_outlined, color: accent, size: 28),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            'تنظیمات سریع فاکتور',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                            ),
+                      const SizedBox(width: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          'assets/images/logo.webp',
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.receipt_long,
+                            color: Colors.white,
+                            size: 34,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: const [
+                            Text(
+                              'فاکتور ساز روبی',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'فاکتور بزن ، ساده و سریع',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.tune_outlined, color: Colors.white, size: 25),
+                      const SizedBox(width: 14),
                     ],
                   ),
                 ),
