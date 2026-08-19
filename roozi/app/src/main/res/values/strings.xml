@@ -427,4 +427,6 @@
     <string name="alarm_snooze">تعویق</string>
     <string name="notification_birthday_channel_name">تولدها</string>
     <string name="notification_birthday_channel_desc">یادآوری تولد نزدیکان</string>
+    <string name="app_version">نسخه %1$s</string>
+    <string name="designed_by">طراحی شده توسط استودیو جاوید</string>
 </resources>

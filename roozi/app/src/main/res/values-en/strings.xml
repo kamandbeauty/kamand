@@ -407,4 +407,6 @@
     <string name="alarm_snooze">Snooze</string>
     <string name="notification_birthday_channel_name">Birthdays</string>
     <string name="notification_birthday_channel_desc">Reminders for upcoming birthdays</string>
+    <string name="app_version">Version %1$s</string>
+    <string name="designed_by">طراحی شده توسط استودیو جاوید</string>
 </resources>

@@ -389,6 +389,9 @@ fun ProfileScreen(
             }
         }
 
+        item("appFooter") {
+            AppFooter()
+        }
     }
 
     if (showNameDialog) {
@@ -667,4 +670,45 @@ private fun NewCategoryDialog(onDismiss: () -> Unit, onConfirm: (String, String,
         containerColor = colors.surface,
         shape = RoundedCornerShape(24.dp)
     )
+}
+
+/**
+ * Version and studio credit, closing the settings list.
+ *
+ * The version is read from the installed package rather than BuildConfig, so it
+ * always reports what the user actually has installed — including the .debug
+ * suffix builds carry — instead of a constant that could drift from the APK.
+ */
+@Composable
+private fun AppFooter() {
+    val colors = RooziTheme.colors
+    val formatter = LocalDateFormatter.current
+    val context = LocalContext.current
+
+    val version = remember(context) {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull().orEmpty()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (version.isNotBlank()) {
+            Text(
+                text = stringResource(R.string.app_version, formatter.digits(version)),
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.textSecondary
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+        Text(
+            text = stringResource(R.string.designed_by),
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.textSecondary.copy(alpha = 0.75f)
+        )
+    }
 }
