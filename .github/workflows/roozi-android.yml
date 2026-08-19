@@ -26,16 +26,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
+      # Held at v5 deliberately. v6 moves the caching component to a closed
+      # licence whose Terms of Use are accepted simply by upgrading, which is a
+      # decision for the repository owner rather than a routine version bump.
       - name: Setup Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
@@ -145,14 +148,14 @@ jobs:
           echo "APK is signed with the upload certificate."
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: roozi-release-apk
           path: roozi/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
       - name: Upload AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: roozi-release-aab
           path: roozi/app/build/outputs/bundle/release/*.aab
@@ -160,7 +163,7 @@ jobs:
 
       - name: Upload test & lint reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: roozi-reports
           path: |
