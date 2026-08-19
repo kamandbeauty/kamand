@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">روزی</string>
+    <string name="app_name">روزی | لیست کارها</string>
+    <!-- Header title. The launcher label carries the full name; the bar has
+         room for one word beside the logo and the search button. -->
+    <string name="app_name_short">روزی</string>
 
     <!-- Bottom navigation -->
     <string name="nav_today">امروز</string>

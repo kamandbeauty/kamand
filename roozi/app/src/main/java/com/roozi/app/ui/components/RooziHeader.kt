@@ -151,7 +151,7 @@ fun RooziHeader(
             Spacer(Modifier.width(12.dp))
 
             Text(
-                text = stringResource(R.string.app_name),
+                text = stringResource(R.string.app_name_short),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = onGlass

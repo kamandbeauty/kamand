@@ -8,7 +8,7 @@ For any store that asks for an English listing. The Persian text in
 ## App name
 
 ```
-ROOZI — Persian Daily Planner
+ROOZI | To-Do List
 ```
 
 ## Short description
