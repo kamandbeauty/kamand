@@ -922,6 +922,54 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  Future<void> _editInvoiceNumber() async {
+    final controller = TextEditingController(text: _invoiceNumber);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ویرایش شماره فاکتور'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.ltr,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹]')),
+            LengthLimitingTextInputFormatter(12),
+          ],
+          decoration: const InputDecoration(
+            labelText: 'شماره فاکتور',
+            hintText: 'مثلاً ۱۰۵',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('انصراف'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('ثبت شماره'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    if (value == null || !mounted) return;
+    final digits = _faToEn(value).replaceAll(RegExp(r'[^0-9]'), '');
+    final number = int.tryParse(digits);
+    if (number == null || number <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('شماره فاکتور باید یک عدد مثبت باشد')),
+      );
+      return;
+    }
+    setState(() => _invoiceNumber = PersianNumberFormatter.toPersian(number.toString()));
+  }
+
   Future<void> _showCustomerPicker() async {
     // قبل از ساخت شیت صبر کن تا فهرست از SharedPreferences خوانده شده باشد؛
     // به این ترتیب بار اول هم لیست خالیِ موقت نمایش داده نمی‌شود.
@@ -1669,11 +1717,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: _metaInfo(
-                            icon: Icons.description_outlined,
-                            label: 'شماره فاکتور:',
-                            value: PersianNumberFormatter.toPersian(_invoiceNumber),
-                            dark: dark,
+                          child: InkWell(
+                            onTap: _editInvoiceNumber,
+                            borderRadius: BorderRadius.circular(12),
+                            child: _metaInfo(
+                              icon: Icons.description_outlined,
+                              label: 'شماره فاکتور:',
+                              value: PersianNumberFormatter.toPersian(_invoiceNumber),
+                              dark: dark,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
