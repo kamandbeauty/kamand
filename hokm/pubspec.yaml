@@ -1,0 +1,43 @@
+name: hokm
+description: "حکم کماند — بازی کارتی حکم چهارنفرهٔ آفلاین با هوش مصنوعی"
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # Flame game engine (rendering, effects, tap handling)
+  flame: ^1.18.0
+  # Audio (wraps audioplayers) — SFX pools + music loop
+  flame_audio: ^2.10.7
+  # Local persistence (settings + save game)
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/
+    - assets/images/
+    - assets/fonts/
+  fonts:
+    - family: VazirmatnFD
+      fonts:
+        - asset: assets/fonts/Vazirmatn-FD-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Vazirmatn-FD-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Vazirmatn-FD-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Vazirmatn-FD-Bold.ttf
+          weight: 700

@@ -1,0 +1,29 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+.ephemeral/
+
+# Android
+android/.gradle/
+android/local.properties
+android/app/debug
+android/app/profile
+android/app/release
+*.jks
+*.keystore
+key.properties
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.fvm/
+
+# Test coverage
+coverage/
+
+# کش Pub (در Crash مفید است)
+**/doc/api/
