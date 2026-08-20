@@ -15,9 +15,15 @@ on:
 permissions:
   contents: write
 
+# اجرای موازیِ چند پوش روی یک شاخه را لغو می‌کند تا همیشه آخرین کد تست شود.
+concurrency:
+  group: hokm-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -48,6 +54,22 @@ jobs:
           flutter test --reporter expanded 2>&1 \
             | tail -c 40000 | tee "$GITHUB_WORKSPACE/test.txt"
 
+      # خطاهای تحلیلگر و تست را به صورت annotation روی کامیت می‌نشاند تا
+      # مستقیم در صفحهٔ PR/کامیت دیده شوند (بدون نیاز به بازکردن لاگ).
+      - name: Annotate analyzer & test problems
+        if: always() && (steps.analyze.outcome == 'failure' || steps.tests.outcome == 'failure')
+        run: |
+          grep -aE "^\s*(error|warning)\s+•" "$GITHUB_WORKSPACE/analyze.txt" 2>/dev/null \
+            | head -40 | sed "s/^[[:space:]]*//" \
+            | while IFS= read -r line; do
+                echo "::error title=flutter-analyze::${line}"
+              done || true
+          grep -aE "TestFailure|EXCEPTION CAUGHT|Expected:|Actual:" "$GITHUB_WORKSPACE/test.txt" 2>/dev/null \
+            | head -40 | sed "s/^[[:space:]]*//" \
+            | while IFS= read -r line; do
+                echo "::error title=flutter-test::${line}"
+              done || true
+
       - name: Publish diagnostics as commit comment
         if: always() && (steps.analyze.outcome == 'failure' || steps.tests.outcome == 'failure')
         env:
@@ -62,7 +84,14 @@ jobs:
             echo "<details><summary>flutter analyze</summary>"
             echo ""
             echo '```'
-            cat "$GITHUB_WORKSPACE/analyze.txt" 2>/dev/null || echo "(not available)"
+            if [ -f "$GITHUB_WORKSPACE/analyze.txt" ]; then
+              grep -aE "^\s*(error|warning)\s+•" "$GITHUB_WORKSPACE/analyze.txt" \
+                || echo "(no errors/warnings)"
+              echo ""
+              echo "info items: $(grep -acE '^\s*info\s+•' "$GITHUB_WORKSPACE/analyze.txt" || echo 0)"
+            else
+              echo "(not available)"
+            fi
             echo '```'
             echo "</details><details><summary>flutter test</summary>"
             echo ""
@@ -77,6 +106,7 @@ jobs:
   build-apk:
     needs: analyze-test
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
