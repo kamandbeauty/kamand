@@ -261,6 +261,7 @@ class HokmGame extends FlameGame {
         ..motionSpeedFactor = _speed
         ..priority = 1
         ..angle = 0
+        ..winner = false
         ..scale = Vector2.zero()
         ..position = layout.deckCenter +
             Vector2((i % 5) - 2.0, (i % 4) - 1.5) * 0.6;
@@ -577,6 +578,9 @@ class HokmGame extends FlameGame {
     // مکث کوتاه برای دیده شدن‌ِ آخرین کارت
     await Future<void>.delayed(Duration(milliseconds: (620 * _speed).round()));
 
+    // برقِ ورق‌طلا روی کارت برندهٔ دست
+    centerZone[winner]?.winner = true;
+
     add(WinGlowPulse(
       center: layout.seatAnchor(winner) * 0.82 + layout.trickCenter * 0.18,
       color: palette.accent,
@@ -604,6 +608,7 @@ class HokmGame extends FlameGame {
     // پارک کارت‌ها در انبار تیم (پنهان در مقیاس کوچک)
     for (final comp in centerZone.values) {
       comp.faceUp = false;
+      comp.winner = false;
       comp.scale.setAll(0.0);
       comp.priority = 4;
     }

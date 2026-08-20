@@ -45,6 +45,7 @@ abstract final class CardRenderer {
     Rect rect,
     PlayingCard card, {
     bool highlighted = false,
+    double? foilPhase,
   }) {
     final w = rect.width;
     final r = radius(w);
@@ -80,6 +81,32 @@ abstract final class CardRenderer {
       _paintCourt(canvas, rect, card, color);
     } else {
       _paintPips(canvas, rect, card, color);
+    }
+
+    // برق ورق‌طلا برای کارت برندهٔ دست — نوار نورانیِ موربِ متحرک
+    if (foilPhase != null) {
+      final bandW = w * 0.55;
+      final x = rect.left - bandW + (w + bandW * 2) * foilPhase;
+      final c = rect.center;
+      final band = Rect.fromLTWH(
+          x, rect.top - rect.height * 0.4, bandW, rect.height * 1.8);
+      canvas.save();
+      canvas.clipRRect(rrect);
+      canvas.translate(c.dx, c.dy);
+      canvas.rotate(-0.42);
+      canvas.translate(-c.dx, -c.dy);
+      canvas.drawRect(
+        band,
+        Paint()
+          ..shader = const LinearGradient(
+            colors: [
+              Color(0x00F6DE8D),
+              Color(0x4DF6DE8D),
+              Color(0x00F6DE8D),
+            ],
+          ).createShader(band),
+      );
+      canvas.restore();
     }
 
     // برجستگی انتخاب: قاب طلایی
@@ -373,7 +400,11 @@ abstract final class CardRenderer {
   // ================================================================
 
   static void paintBack(
-      Canvas canvas, Rect rect, CardBackStyle style) {
+    Canvas canvas,
+    Rect rect,
+    CardBackStyle style, {
+    double? shimmer,
+  }) {
     final w = rect.width;
     final rrect =
         RRect.fromRectAndRadius(rect, Radius.circular(radius(w)));
@@ -411,6 +442,32 @@ abstract final class CardRenderer {
         _backPersianTile(canvas, rect, ink);
       case CardBackStyle.diagonal:
         _backDiagonal(canvas, rect, ink);
+    }
+
+    // برقِ عبوریِ آرامِ پشت کارت (چرخهٔ ~۴ ثانیه، داخل کلیپ بماند)
+    if (shimmer != null) {
+      final cycle = (shimmer % 4.2) / 4.2;
+      final bandW = w * 0.40;
+      final x = rect.left - bandW + (w + bandW * 2) * cycle;
+      final c = rect.center;
+      final band = Rect.fromLTWH(
+          x, rect.top - rect.height * 0.4, bandW, rect.height * 1.8);
+      canvas.save();
+      canvas.translate(c.dx, c.dy);
+      canvas.rotate(0.30);
+      canvas.translate(-c.dx, -c.dy);
+      canvas.drawRect(
+        band,
+        Paint()
+          ..shader = const LinearGradient(
+            colors: [
+              Color(0x00FFFFFF),
+              Color(0x17FFFFFF),
+              Color(0x00FFFFFF),
+            ],
+          ).createShader(band),
+      );
+      canvas.restore();
     }
 
     canvas.restore();

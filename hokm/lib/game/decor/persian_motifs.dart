@@ -209,15 +209,15 @@ abstract final class PersianMotifs {
 
   /// گرادیانِ طلاییِ متحرک؛ [phase] بین ۰ و ۱ برقِ عبوری را جابه‌جا می‌کند.
   static Shader goldShader(Rect rect, {double phase = 0.35}) {
-    final p = phase.clamp(0.0, 1.0);
+    final p = phase.clamp(0.0, 1.0).toDouble();
     return LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       stops: [
         0.0,
-        (p - 0.16).clamp(0.02, 0.9),
-        p.clamp(0.05, 0.95),
-        (p + 0.16).clamp(0.1, 0.98),
+        (p - 0.16).clamp(0.02, 0.9).toDouble(),
+        p.clamp(0.05, 0.95).toDouble(),
+        (p + 0.16).clamp(0.1, 0.98).toDouble(),
         1.0,
       ],
       colors: const [
