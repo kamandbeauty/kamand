@@ -1,0 +1,66 @@
+name: Hokm (Flutter) CI
+
+on:
+  push:
+    branches: ["arena/**", "memory", "master", "main"]
+    paths:
+      - "hokm/**"
+      - ".github/workflows/hokm.yml"
+  pull_request:
+    paths:
+      - "hokm/**"
+      - ".github/workflows/hokm.yml"
+  workflow_dispatch:
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        working-directory: hokm
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: hokm
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run engine & AI tests
+        working-directory: hokm
+        run: flutter test --reporter expanded
+
+  build-apk:
+    needs: analyze-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build APK (release)
+        working-directory: hokm
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hokm-release-apk
+          path: hokm/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
