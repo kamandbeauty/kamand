@@ -742,6 +742,23 @@ class HokmGame extends FlameGame {
     return badge;
   }
 
+  /// جشنِ بردن دست (دور): موج نور روی پشته‌های تیم برنده + تپش نشان‌ها.
+  /// درست پیش از نمایش برگهٔ نتیجهٔ دست صدا زده می‌شود.
+  void celebrateRoundWinner(int winnerTeamIndex) {
+    if (!_sceneBuilt) return;
+    for (final seat in Seat.values) {
+      if (seat.teamIndex != winnerTeamIndex) continue;
+      add(WinGlowPulse(
+        center: layout.seatPilePosition(seat),
+        color: palette.accent,
+        maxRadius: layout.cardWidth * 1.15,
+        sparkCount: 10,
+      ));
+      final badge = _trickBadges[seat];
+      if (badge != null && badge.count > 0) badge.bump(badge.count);
+    }
+  }
+
   // ================================================================
   // تعامل انسان
   // ================================================================

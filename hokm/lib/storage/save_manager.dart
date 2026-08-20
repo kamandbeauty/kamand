@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../game_engine/scoring/score_manager.dart';
 import '../game_engine/state/game_enums.dart';
 import '../game_engine/state/game_state.dart';
 
@@ -12,6 +13,7 @@ class SavedMatch {
     required this.difficulty,
     required this.savedAtMillis,
     required this.humanSeat,
+    this.history = const [],
   });
 
   final GameState state;
@@ -19,12 +21,16 @@ class SavedMatch {
   final int savedAtMillis;
   final Seat humanSeat;
 
+  /// تاریخچهٔ دست‌ها (جدول امتیازات) — از دید تیم انسان.
+  final List<RoundRecord> history;
+
   Map<String, dynamic> toJson() => {
         'version': 1,
         'state': state.toJson(),
         'difficulty': difficulty.index,
         'savedAt': savedAtMillis,
         'humanSeat': humanSeat.index,
+        'history': [for (final r in history) r.toJson()],
       };
 
   factory SavedMatch.fromJson(Map<String, dynamic> json) => SavedMatch(
@@ -33,6 +39,12 @@ class SavedMatch {
             .values[(json['difficulty'] as int).clamp(0, 2).toInt()],
         savedAtMillis: json['savedAt'] as int,
         humanSeat: Seat.fromIndex(json['humanSeat'] as int? ?? 0),
+        // سازگار با ذخیره‌های قدیمی (بدون تاریخچه).
+        history: [
+          if (json['history'] is List)
+            for (final r in json['history'] as List)
+              RoundRecord.fromJson(r as Map<String, dynamic>),
+        ],
       );
 }
 

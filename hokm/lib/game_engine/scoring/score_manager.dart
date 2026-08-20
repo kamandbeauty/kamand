@@ -76,6 +76,30 @@ class RoundRecord {
   /// برچسب قانون ویژهٔ این دست (برای ستون «قانون»).
   String get ruleLabel =>
       isHakimKoot ? 'حاکم‌کوت' : (isKoot ? 'کوت' : '—');
+
+  Map<String, dynamic> toJson() => {
+        'roundNumber': roundNumber,
+        'tricksUs': tricksUs,
+        'tricksThem': tricksThem,
+        'totalUs': totalUs,
+        'totalThem': totalThem,
+        'winnerIsUs': winnerIsUs,
+        'pointsAwarded': pointsAwarded,
+        'isKoot': isKoot,
+        'isHakimKoot': isHakimKoot,
+      };
+
+  factory RoundRecord.fromJson(Map<String, dynamic> json) => RoundRecord(
+        roundNumber: json['roundNumber'] as int,
+        tricksUs: json['tricksUs'] as int,
+        tricksThem: json['tricksThem'] as int,
+        totalUs: json['totalUs'] as int,
+        totalThem: json['totalThem'] as int,
+        winnerIsUs: json['winnerIsUs'] as bool,
+        pointsAwarded: json['pointsAwarded'] as int,
+        isKoot: json['isKoot'] as bool,
+        isHakimKoot: json['isHakimKoot'] as bool,
+      );
 }
 
 /// مدیر امتیاز — منطق امتیازدهی استاندارد حکم:

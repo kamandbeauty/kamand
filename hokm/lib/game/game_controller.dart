@@ -136,7 +136,9 @@ class GameController extends ChangeNotifier implements GameEventListener {
     _eventQueue.clear();
     _pumping = false;
     _awaitingHuman = false;
-    roundHistory.clear();
+    roundHistory
+      ..clear()
+      ..addAll(saved.history);
     _resetHud();
 
     _engine = HokmEngine(matchTarget: saved.state.matchTarget);
@@ -354,6 +356,7 @@ class GameController extends ChangeNotifier implements GameEventListener {
         // رویداد MatchEnded همان‌جا در صف است و نتیجهٔ نهایی نمایش داده می‌شود.
         final matchEndsNow = _eventQueue.any((e) => e is MatchEndedEvent);
         showRoundResult = !matchEndsNow;
+        game?.celebrateRoundWinner(event.result.winnerTeamIndex);
         if (event.result.winnerTeamIndex == humanSeat.teamIndex) {
           _sound.roundWin();
         }
@@ -515,6 +518,7 @@ class GameController extends ChangeNotifier implements GameEventListener {
       difficulty: _settings.model.aiDifficulty,
       savedAtMillis: DateTime.now().millisecondsSinceEpoch,
       humanSeat: humanSeat,
+      history: List.of(roundHistory),
     )));
   }
 
