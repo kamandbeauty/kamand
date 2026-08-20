@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fills the whole content area the system template gives us. The corners are
+  square on purpose: the template already rounds and clips the card, so an
+  inner radius only carved pale notches out of the gradient.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:startColor="#FFFF6B6B"
+        android:centerColor="#FFFF7E8F"
+        android:endColor="#FF7C5CFF"
+        android:angle="315"
+        android:type="linear" />
+</shape>

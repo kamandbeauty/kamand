@@ -10,12 +10,23 @@ For each top-level fun declared in the project it collects the parameter names
 and which ones have defaults, then verifies every named-argument call site:
   * passes no unknown parameter names
   * supplies every parameter that has no default
+
+The same checks apply to any app forked out of ROOZI, so the module directory
+is selectable with --module (default: roozi).
 """
+import argparse
 import os
 import re
 import sys
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "roozi", "app", "src")
+REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+
+def module_root(module: str) -> str:
+    return os.path.join(REPO, module, "app", "src")
+
+
+ROOT = module_root("roozi")
 
 FUN_RE = re.compile(r"^(?:@\w+(?:\([^)]*\))?\s*)*(?:private |internal |public )?fun\s+(?:<[^>]+>\s*)?(\w+)\s*\(", re.M)
 
@@ -155,6 +166,15 @@ def check_calls(decls):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--module", default="roozi", help="app module directory (default: roozi)")
+    args = ap.parse_args()
+    global ROOT
+    ROOT = module_root(args.module)
+    if not os.path.isdir(ROOT):
+        print(f"ERROR: no such module: {args.module}")
+        return 1
+
     decls, dupes = collect_declarations()
     errors = check_calls(decls)
 

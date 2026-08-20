@@ -4,8 +4,12 @@ build/
 roozi/.gradle/
 roozi/build/
 roozi/app/build/
+app2/.gradle/
+app2/build/
+app2/app/build/
 local.properties
 roozi/local.properties
+app2/local.properties
 captures/
 *.apk
 *.aab
@@ -14,6 +18,7 @@ captures/
 
 # Signing secrets — هرگز commit نشوند
 roozi/keystore.properties
+app2/keystore.properties
 *.jks
 *.keystore
 

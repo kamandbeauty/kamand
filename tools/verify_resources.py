@@ -4,15 +4,25 @@
 Runs without the Android SDK so the project can be validated in any
 environment: XML well-formedness, fa/en string parity, R.* reference
 resolution, hardcoded-Persian-string detection and manifest sanity.
+
+Apps forked out of ROOZI reuse the same rules, so the module directory is
+selectable with --module (default: roozi).
 """
+import argparse
 import os
 import re
 import sys
 import xml.etree.ElementTree as ET
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "roozi", "app", "src", "main")
-RES = os.path.join(ROOT, "res")
-JAVA = os.path.join(ROOT, "java")
+REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+
+def module_paths(module):
+    root = os.path.join(REPO, module, "app", "src", "main")
+    return root, os.path.join(root, "res"), os.path.join(root, "java")
+
+
+ROOT, RES, JAVA = module_paths("roozi")
 
 errors = []
 warnings = []
@@ -130,16 +140,17 @@ def check_r_references(strings, arrays):
 def check_no_hardcoded_persian():
     """No Persian text may be hardcoded in Kotlin UI code."""
     persian = re.compile(r"[\u0600-\u06FF]")
-    allowed = {
-        # Seed rows store a fallback name in the DB; the UI resolves the real
-        # label from resources via labelRes(), so these are never user-visible.
-        os.path.join("com", "roozi", "app", "data", "repo", "DefaultCategories.kt"),
-        os.path.join("com", "roozi", "app", "data", "repo", "NoteRepository.kt"),
-        os.path.join("com", "roozi", "app", "core", "util", "PersianNumbers.kt"),  # digit tables
+    # Seed rows store a fallback name in the DB; the UI resolves the real label
+    # from resources via labelRes(), so these are never user-visible. Matched by
+    # trailing path so the same list works for any forked package name.
+    allowed_tails = {
+        os.path.join("data", "repo", "DefaultCategories.kt"),
+        os.path.join("data", "repo", "NoteRepository.kt"),
+        os.path.join("core", "util", "PersianNumbers.kt"),  # digit tables
     }
     for path in kotlin_files():
         rel = os.path.relpath(path, JAVA)
-        if rel in allowed:
+        if any(rel.endswith(tail) for tail in allowed_tails):
             continue
         for i, line in enumerate(open(path, encoding="utf-8"), 1):
             stripped = line.strip()
@@ -165,9 +176,13 @@ def check_manifest():
         )
     if 'android:supportsRtl="true"' not in manifest:
         errors.append("supportsRtl must be enabled")
-    for required in (".MainActivity", ".RooziApp", ".notifications.ReminderReceiver", ".notifications.BootReceiver"):
+    for required in (".MainActivity", ".notifications.ReminderReceiver", ".notifications.BootReceiver"):
         if required not in manifest:
             errors.append(f"manifest missing component {required}")
+    # The Application subclass is named after the brand (RooziApp, <Prefix>App),
+    # so it is matched by shape rather than by an exact name.
+    if not re.search(r'android:name="\.\w+App"', manifest):
+        errors.append("manifest missing the Application component")
 
 
 def check_fonts():
@@ -197,6 +212,15 @@ def check_launcher_icons():
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--module", default="roozi", help="app module directory (default: roozi)")
+    args = ap.parse_args()
+    global ROOT, RES, JAVA
+    ROOT, RES, JAVA = module_paths(args.module)
+    if not os.path.isdir(ROOT):
+        print(f"ERROR: no such module: {args.module}")
+        return 1
+
     check_xml_wellformed()
     strings, arrays = check_locale_parity()
     check_r_references(strings, arrays)

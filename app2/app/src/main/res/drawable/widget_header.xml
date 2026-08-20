@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Brand gradient header. Corners are rounded only at the top so it sits
+     flush inside the widget's rounded background. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners
+        android:topLeftRadius="22dp"
+        android:topRightRadius="22dp"
+        android:bottomLeftRadius="0dp"
+        android:bottomRightRadius="0dp" />
+    <gradient
+        android:startColor="#FFFF6B6B"
+        android:centerColor="#FFFF7E8F"
+        android:endColor="#FF7C5CFF"
+        android:angle="315"
+        android:type="linear" />
+</shape>
