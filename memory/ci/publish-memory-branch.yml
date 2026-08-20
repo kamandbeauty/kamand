@@ -1,0 +1,75 @@
+name: Publish MEMORY branch
+
+# Creates the standalone `memory-app` branch entirely on GitHub, so the app can
+# be split out without git installed anywhere. It runs the same
+# tools/extract_memory_branch.sh a human would run locally — one procedure, so
+# the two paths cannot drift apart.
+#
+# Manual trigger only: this force-pushes a branch, which is never something to
+# do automatically on every commit.
+#
+# Setup: copy this file to .github/workflows/publish-memory-branch.yml, then
+# run it from the Actions tab.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Name of the branch to create"
+        required: true
+        default: "memory-app"
+      confirm:
+        description: 'Type "yes" to confirm — this REPLACES that branch if it exists'
+        required: true
+        default: "no"
+
+# Needed to push the new branch back. The default token is scoped to this
+# repository only.
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Extract and push
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Refuse unconfirmed runs
+        if: inputs.confirm != 'yes'
+        run: |
+          echo "::error::Set the confirm input to 'yes'. This replaces the '${{ inputs.branch }}' branch."
+          exit 1
+
+      # Full history: the script creates an orphan branch and pushes it, which
+      # a shallow clone cannot do.
+      - name: Checkout the source branch
+        uses: actions/checkout@v7
+        with:
+          ref: arena/01a002a3-kamand
+          fetch-depth: 0
+
+      - name: Identify the commit author
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract the app onto its own branch
+        run: bash tools/extract_memory_branch.sh --branch "${{ inputs.branch }}" --force
+
+      - name: Push it
+        run: git push --force origin "${{ inputs.branch }}"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Branch \`${{ inputs.branch }}\` published"
+            echo ""
+            echo "- files: $(git ls-tree -r --name-only '${{ inputs.branch }}' | wc -l)"
+            echo "- commit: \`$(git rev-parse --short '${{ inputs.branch }}')\` (no parent history)"
+            echo ""
+            echo "Browse it: ${{ github.server_url }}/${{ github.repository }}/tree/${{ inputs.branch }}"
+            echo ""
+            echo "Next: copy \`ci/memory-android.yml\` from that branch into its"
+            echo "\`.github/workflows/\` to get signed APK and AAB builds."
+          } >> "$GITHUB_STEP_SUMMARY"

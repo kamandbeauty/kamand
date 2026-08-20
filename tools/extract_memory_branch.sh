@@ -60,8 +60,16 @@ if ! git rev-parse --verify --quiet "$SOURCE_REF^{commit}" >/dev/null; then
     fail "No such ref: $SOURCE_REF"
 fi
 
+# Run from the wrong branch this would otherwise fail deep inside the copy
+# step with a confusing message, so it is caught up front with the fix.
 if ! git cat-file -e "$SOURCE_REF:memory/app/build.gradle.kts" 2>/dev/null; then
-    fail "$SOURCE_REF does not contain memory/app — wrong branch?"
+    CURRENT=$(git branch --show-current 2>/dev/null || echo "detached HEAD")
+    printf '\033[31mERROR: the memory app is not on this branch (%s).\033[0m\n' "$CURRENT" >&2
+    printf '\nSwitch to the branch that has it, then run this again:\n' >&2
+    printf '  git fetch origin\n' >&2
+    printf '  git switch arena/01a002a3-kamand\n' >&2
+    printf '  bash tools/extract_memory_branch.sh\n\n' >&2
+    exit 1
 fi
 
 if git rev-parse --verify --quiet "refs/heads/$BRANCH" >/dev/null; then
