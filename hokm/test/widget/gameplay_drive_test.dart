@@ -64,6 +64,16 @@ void main() {
 
       if (!controller.hasMatch) break;
 
+      if (i % 10 == 0) {
+        final s = controller.state;
+        final handsLen =
+            s.players.map((p) => '${p.seat.name}:${p.hand.length}').join(' ');
+        print('[dbg] i=$i phase=${s.phase} turn=${s.currentTurn} '
+            'trickCards=${s.currentTrick?.cards.length} tricks=${s.tricksWon} '
+            'hands=[$handsLen] humanTurn=${controller.isHumanTurn} '
+            'banner=${controller.banner}');
+      }
+
       if (controller.showTrumpPicker) {
         controller.onHumanTrumpSelected(Suit.values[i % Suit.values.length]);
         trumpPicked = true;
