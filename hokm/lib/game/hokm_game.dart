@@ -4,7 +4,9 @@ import 'dart:ui' hide TextStyle;
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/animation.dart' show Curves;
-import 'package:flutter/painting.dart' show TextStyle;
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/painting.dart'
+    show TextPainter, TextSpan, TextStyle;
 
 import '../game_engine/managers/deal_manager.dart';
 import '../game_engine/managers/hukum_manager.dart';
@@ -57,6 +59,34 @@ class HokmGame extends FlameGame {
 
   bool _sceneBuilt = false;
 
+  /// اگر ساخت صحنه شکست بخورد، متن خطا را روی بوم نشان می‌دهیم تا
+  /// کاربر به‌جای صفحهٔ خاکستریِ بی‌معنا، خودِ خطا را ببیند و گزارش کند.
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    final err = lastSceneError;
+    if (err == null) return;
+    final w = hasLayout ? canvasSize.x : 320.0;
+    final tp = TextPainter(
+      text: TextSpan(
+        text: 'Scene build error:\n$err',
+        style: const TextStyle(
+          color: Color(0xFFFF9090),
+          fontSize: 13,
+          height: 1.35,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 8,
+      ellipsis: '…',
+    )..layout(maxWidth: w * 0.9);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 120, w, tp.height + 28),
+      Paint()..color = const Color(0xCC1A0408),
+    );
+    tp.paint(canvas, Offset(w * 0.05, 134));
+  }
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -65,9 +95,24 @@ class HokmGame extends FlameGame {
     if (size.x > 0 && size.y > 0) _buildScene(size);
   }
 
+  /// آخرین خطای ساخت صحنه (برای عیب‌یابی — در logcat هم چاپ می‌شود).
+  Object? lastSceneError;
+
   void _buildScene(Vector2 viewSize) {
     if (_sceneBuilt) return;
-    _sceneBuilt = true;
+    try {
+      _buildSceneUnsafe(viewSize);
+      _sceneBuilt = true;
+      _lastSize = viewSize.clone();
+    } on Object catch (e, st) {
+      // ساخت ناموفق صحنه نباید اپ را بشکند؛ پایان‌نیافتن _sceneBuilt
+      // باعث تلاش دوباره در resize بعدی می‌شود.
+      lastSceneError = e;
+      debugPrint('HokmGame._buildScene failed: $e\n$st');
+    }
+  }
+
+  void _buildSceneUnsafe(Vector2 viewSize) {
     layout = TableLayout(viewSize);
     palette = TablePalette.of(_settings.tableTheme);
 
@@ -724,6 +769,8 @@ class HokmGame extends FlameGame {
   // Resize
   // ================================================================
 
+  Vector2? _lastSize;
+
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
@@ -732,6 +779,16 @@ class HokmGame extends FlameGame {
       _buildScene(size);
       return;
     }
+    // GameWidget در هر build این متد را صدا می‌زند؛ اگر اندازه تغییر
+    // نکرده باشد (مثلاً HUD به‌روزرسانی شده) نباید چیدمان و حرکت‌ها
+    // خراب شوند — بازچینی فقط هنگام تغییر واقعی اندازه.
+    final last = _lastSize;
+    if (last != null &&
+        (last.x - size.x).abs() < 0.5 &&
+        (last.y - size.y).abs() < 0.5) {
+      return;
+    }
+    _lastSize = size.clone();
     layout = TableLayout(size);
     _background.size = size.clone();
     for (final comp in cardPool.values) {

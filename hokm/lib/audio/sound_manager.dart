@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 /// * صداها WAV کوتاه‌اند و در assets/audio/ قرار دارند.
 /// * [enabled] از تنظیمات می‌آید؛ خاموش‌بودن یعنی هیچ پخشی رخ ندهد.
 /// * موسیقی پس‌زمینه جدا با [musicOn] کنترل می‌شود.
+/// * با رفتن اپ به پس‌زمینه، موسیقی مکث می‌کند و با بازگشت ادامه می‌یابد
+///   ([handleAppPaused] / [handleAppResumed]).
 class SoundManager {
   SoundManager._();
 
@@ -17,6 +19,9 @@ class SoundManager {
   static const String _musicFile = 'music_ambient.wav';
   bool _musicPlaying = false;
   bool _cacheWarmed = false;
+
+  /// اگر قبل از رفتن اپ به پس‌زمینه موسیقی پخش می‌شد، با بازگشت ادامه می‌دهیم.
+  bool _resumeMusicOnForeground = false;
 
   static const List<String> _sfx = <String>[
     'card_pick.wav',
@@ -43,10 +48,20 @@ class SoundManager {
     }
   }
 
+  /// مصرف حتمی خطای Future پخش — تا پخش ناموفق هیچ‌وقت
+  /// به unhandled error تبدیل نشود (مهم در release و تست).
+  void _consume(Future<dynamic> future, String what) {
+    future.then(
+      (_) {},
+      onError: (Object e, StackTrace st) =>
+          debugPrint('SoundManager $what failed: $e'),
+    );
+  }
+
   void _play(String file, {double volume = 1.0}) {
     if (!enabled) return;
     try {
-      FlameAudio.play(file, volume: volume);
+      _consume(FlameAudio.play(file, volume: volume), 'play $file');
     } on Object catch (e) {
       debugPrint('SoundManager play $file failed: $e');
     }
@@ -71,7 +86,7 @@ class SoundManager {
     if (!musicOn || _musicPlaying) return;
     _musicPlaying = true;
     try {
-      FlameAudio.bgm.play(_musicFile, volume: 0.35);
+      _consume(FlameAudio.bgm.play(_musicFile, volume: 0.35), 'music');
     } on Object catch (e) {
       debugPrint('SoundManager music failed: $e');
       _musicPlaying = false;
@@ -81,7 +96,8 @@ class SoundManager {
   void stopMusic() {
     if (!_musicPlaying) return;
     _musicPlaying = false;
-    FlameAudio.bgm.stop();
+    _resumeMusicOnForeground = false;
+    _consume(FlameAudio.bgm.stop(), 'stop music');
   }
 
   /// هم‌گام‌سازی با تنظیمات.
@@ -91,5 +107,22 @@ class SoundManager {
     } else {
       stopMusic();
     }
+  }
+
+  // --- چرخهٔ عمر اپلیکیشن ---
+
+  /// اپ به پس‌زمینه رفت — موسیقی را (موقتاً) مکث کن تا صدا نماند.
+  void handleAppPaused() {
+    if (!_musicPlaying) return;
+    _resumeMusicOnForeground = true;
+    _consume(FlameAudio.bgm.pause(), 'pause music');
+  }
+
+  /// اپ به پیش‌زمینه برگشت — موسیقی را اگر پخش می‌شد ادامه بده.
+  void handleAppResumed() {
+    if (!_resumeMusicOnForeground) return;
+    _resumeMusicOnForeground = false;
+    if (!musicOn) return;
+    _consume(FlameAudio.bgm.resume(), 'resume music');
   }
 }
