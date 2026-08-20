@@ -113,12 +113,6 @@ abstract final class AppTheme {
         color: gold.withOpacity(0.16),
         thickness: 1,
       ),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        },
-      ),
     );
   }
 }
