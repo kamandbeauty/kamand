@@ -71,16 +71,16 @@ class GameArt {
   ui.Image? get facePaperImage => _images[facePaperFile];
 
   /// برش cover-fit: منبع را طوری می‌برد که دقیقاً مقصد را بپوشاند.
-  static Rect coverSrc(ui.Image image, Rect dst) {
+  static ui.Rect coverSrc(ui.Image image, ui.Rect dst) {
     final imgW = image.width.toDouble();
     final imgH = image.height.toDouble();
     final imgRatio = imgW / imgH;
     final dstRatio = dst.width / dst.height;
     if (imgRatio > dstRatio) {
       final w = imgH * dstRatio;
-      return Rect.fromLTWH((imgW - w) / 2, 0, w, imgH);
+      return ui.Rect.fromLTWH((imgW - w) / 2, 0, w, imgH);
     }
     final h = imgW / dstRatio;
-    return Rect.fromLTWH(0, (imgH - h) / 2, imgW, h);
+    return ui.Rect.fromLTWH(0, (imgH - h) / 2, imgW, h);
   }
 }

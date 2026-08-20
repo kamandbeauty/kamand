@@ -4,7 +4,6 @@ import 'package:hokm/ai/players/ai_player.dart';
 import 'package:hokm/game_engine/engine_events.dart';
 import 'package:hokm/game_engine/game_event_listener.dart';
 import 'package:hokm/game_engine/hokm_engine.dart';
-import 'package:hokm/game_engine/models/playing_card.dart';
 import 'package:hokm/game_engine/state/game_enums.dart';
 
 /// شنونده‌ای که همهٔ رویدادها را جمع می‌کند (برای assert روی جریان بازی).

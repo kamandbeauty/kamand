@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../audio/sound_manager.dart';
 import '../../core/app_strings.dart';
 import '../../core/app_theme.dart';
-import '../../game/cards/card_renderer.dart';
 import '../../game_engine/state/game_enums.dart';
 import '../../storage/save_manager.dart';
 import '../../storage/settings_model.dart';

@@ -6,7 +6,6 @@ import 'package:hokm/ai/memory/memory_tracker.dart';
 import 'package:hokm/ai/strategy/hukum_selector.dart';
 import 'package:hokm/ai/strategy/strategy_engine.dart';
 import 'package:hokm/game_engine/models/playing_card.dart';
-import 'package:hokm/game_engine/models/rank.dart';
 import 'package:hokm/game_engine/models/suit.dart';
 import 'package:hokm/game_engine/models/trick.dart';
 import 'package:hokm/game_engine/rules/game_rules.dart';
