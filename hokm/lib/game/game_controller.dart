@@ -321,6 +321,9 @@ class GameController extends ChangeNotifier implements GameEventListener {
         // رویداد MatchEnded همان‌جا در صف است و نتیجهٔ نهایی نمایش داده می‌شود.
         final matchEndsNow = _eventQueue.any((e) => e is MatchEndedEvent);
         showRoundResult = !matchEndsNow;
+        if (event.result.winnerTeamIndex == humanSeat.teamIndex) {
+          _sound.roundWin();
+        }
         _save();
         notifyListeners();
         return true;
