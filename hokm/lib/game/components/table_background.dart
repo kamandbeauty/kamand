@@ -6,6 +6,7 @@ import 'package:flame/extensions.dart';
 import 'package:flutter/painting.dart'
     show Alignment, LinearGradient, RadialGradient;
 
+import '../art/game_art.dart';
 import '../decor/persian_motifs.dart';
 import '../table/table_theme.dart';
 
@@ -19,6 +20,10 @@ class TableBackground extends PositionComponent {
 
   /// پالت فعال — از تنظیمات به‌صورت زنده قابل تعویض است.
   TablePalette palette;
+
+  /// تصویرِ اختیاریِ فرش (از assets/images/art/table) — اگر موجود باشد
+  /// جایگرین گرادیان فرش می‌شود؛ نقش‌مایه‌ها روی آن همچنان اجرا می‌شوند.
+  Image? feltImage;
 
   double _t = 0; // ساعت شست‌وشوی نور
 
@@ -88,19 +93,34 @@ class TableBackground extends PositionComponent {
       );
     }
 
-    // ۳) فرش مرکزی با گرادیان شعاعی (نور از بالای مرکز)
-    final feltPaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(0, -0.25),
-        radius: 1.25,
-        stops: const [0.0, 0.62, 1.0],
-        colors: [
-          palette.feltCenter,
-          Color.lerp(palette.feltCenter, palette.feltEdge, 0.55)!,
-          palette.feltEdge,
-        ],
-      ).createShader(feltRect);
-    canvas.drawRRect(feltRRect, feltPaint);
+    // ۳) فرش مرکزی — تصویرِ اختصاصی اگر هست (cover-fit)؛ وگرنه گرادیان شعاعی
+    final feltImage = this.feltImage;
+    if (feltImage != null) {
+      canvas.save();
+      canvas.clipRRect(feltRRect);
+      canvas.drawImageRect(
+        feltImage,
+        GameArt.coverSrc(feltImage, feltRect),
+        feltRect,
+        Paint()..filterQuality = FilterQuality.medium,
+      );
+      canvas.restore();
+    } else {
+      canvas.drawRRect(
+        feltRRect,
+        Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(0, -0.25),
+            radius: 1.25,
+            stops: const [0.0, 0.62, 1.0],
+            colors: [
+              palette.feltCenter,
+              Color.lerp(palette.feltCenter, palette.feltEdge, 0.55)!,
+              palette.feltEdge,
+            ],
+          ).createShader(feltRect),
+      );
+    }
 
     // ۴) گره‌چینیِ ظریف فرش — ستاره‌های هشت‌پر روی گرید
     PersianMotifs.girih(

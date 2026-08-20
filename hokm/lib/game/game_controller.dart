@@ -232,6 +232,13 @@ class GameController extends ChangeNotifier implements GameEventListener {
     final game = _game;
     switch (event) {
       case MatchStartedEvent():
+        // شروع مسابقه: اول کارت‌ها وسط جمع و برِ کامل زده می‌شود
+        // (مثلِ میز واقعی) و بعد حاکم تعیین می‌شود.
+        if (game != null) {
+          _sound.shuffle();
+          await game.animateShuffle();
+        }
+        if (session != _session) return false;
         return true;
 
       case HakimDeterminedEvent():

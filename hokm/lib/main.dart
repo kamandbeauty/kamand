@@ -39,22 +39,26 @@ class HokmApp extends StatefulWidget {
   State<HokmApp> createState() => _HokmAppState();
 }
 
-class _HokmAppState extends State<HokmApp> with WidgetsBindingObserver {
+class _HokmAppState extends State<HokmApp> {
+  /// شنوندهٔ مدرن چرخهٔ عمر — همهٔ حالت‌ها (از جمله hidden) را پوشش می‌دهد.
+  late final AppLifecycleListener _lifecycleListener;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: _handleLifecycle,
+    );
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    _lifecycleListener.dispose();
     super.dispose();
   }
 
-  /// رفتن اپلیکیشن به پس‌زمینه → مکث موسیقی؛ بازگشت → ادامه.
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  /// رفتن اپلیکیشن به پس‌زمینه → توقف موسیقی؛ بازگشت → شروع دوباره.
+  void _handleLifecycle(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
         SoundManager.instance.handleAppResumed();

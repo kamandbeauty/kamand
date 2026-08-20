@@ -15,6 +15,7 @@ import '../../game_engine/models/playing_card.dart';
 import '../../game_engine/models/rank.dart';
 import '../../game_engine/models/suit.dart';
 import '../../storage/settings_model.dart' show CardBackStyle;
+import '../art/game_art.dart';
 import '../decor/persian_motifs.dart';
 import 'suit_paths.dart';
 
@@ -63,6 +64,20 @@ abstract final class CardRenderer {
             : const [Color(0xFFFEFEFC), Color(0xFFF5F1E8)],
       ).createShader(rect);
     canvas.drawRRect(rrect, bodyPaint);
+
+    // بافت کاغذیِ اختیاری روی رویه (اگر asset موجود باشد)
+    final paper = GameArt.instance.facePaperImage;
+    if (paper != null) {
+      canvas.save();
+      canvas.clipRRect(rrect);
+      canvas.drawImageRect(
+        paper,
+        GameArt.coverSrc(paper, rect),
+        rect,
+        Paint()..color = const Color(0x2EFFFFFF),
+      );
+      canvas.restore();
+    }
 
     // قاب داخلی دوخطِ زرنگ (هویت تذهیب)
     final innerRect = rect.deflate(w * 0.035);
@@ -451,40 +466,52 @@ abstract final class CardRenderer {
     canvas.save();
     canvas.clipRRect(rrect);
 
-    // پایه
-    final base = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: switch (style) {
-          CardBackStyle.classic => const [Color(0xFF33509E), Color(0xFF21356E)],
-          CardBackStyle.persianTile =>
-            const [Color(0xFF7A1F2B), Color(0xFF521219)],
-          CardBackStyle.diagonal =>
-            const [Color(0xFF1F4438), Color(0xFF122B22)],
-        },
-      ).createShader(rect);
-    canvas.drawRect(rect, base);
+    // اگر تصویر اختصاصیِ پشت کارت موجود است همان را می‌کشیم (cover-fit)
+    // و الگوهای رویه‌ای را رد می‌کنیم؛ قاب زرنگ و برقِ عبوری باقی می‌مانند.
+    final backImage = GameArt.instance.cardBackImage(style);
+    if (backImage != null) {
+      canvas.drawImageRect(
+        backImage,
+        GameArt.coverSrc(backImage, rect),
+        rect,
+        Paint()..filterQuality = FilterQuality.medium,
+      );
+    } else {
+      // پایه
+      final base = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: switch (style) {
+            CardBackStyle.classic => const [Color(0xFF33509E), Color(0xFF21356E)],
+            CardBackStyle.persianTile =>
+              const [Color(0xFF7A1F2B), Color(0xFF521219)],
+            CardBackStyle.diagonal =>
+              const [Color(0xFF1F4438), Color(0xFF122B22)],
+          },
+        ).createShader(rect);
+      canvas.drawRect(rect, base);
 
-    final ink = Paint()
-      ..color = (switch (style) {
-        CardBackStyle.classic => const Color(0xFF9DB4F0),
-        CardBackStyle.persianTile => const Color(0xFFE8C87E),
-        CardBackStyle.diagonal => const Color(0xFF7FD4B2),
-      })
-          .withOpacity(0.30);
+      final ink = Paint()
+        ..color = (switch (style) {
+          CardBackStyle.classic => const Color(0xFF9DB4F0),
+          CardBackStyle.persianTile => const Color(0xFFE8C87E),
+          CardBackStyle.diagonal => const Color(0xFF7FD4B2),
+        })
+            .withOpacity(0.30);
 
-    switch (style) {
-      case CardBackStyle.classic:
-        _backLattice(canvas, rect, ink, diamondScale: 1.4);
-      case CardBackStyle.persianTile:
-        _backPersianTile(canvas, rect, ink);
-      case CardBackStyle.diagonal:
-        _backDiagonal(canvas, rect, ink);
+      switch (style) {
+        case CardBackStyle.classic:
+          _backLattice(canvas, rect, ink, diamondScale: 1.4);
+        case CardBackStyle.persianTile:
+          _backPersianTile(canvas, rect, ink);
+        case CardBackStyle.diagonal:
+          _backDiagonal(canvas, rect, ink);
+      }
+
+      // مدالیون مرکزی — نشانِ هویت روی پشت کارت
+      _backMedallion(canvas, rect, style, ink);
     }
-
-    // مدالیون مرکزی — نشانِ هویت روی پشت کارت
-    _backMedallion(canvas, rect, style, ink);
 
     // برقِ عبوریِ آرامِ پشت کارت (چرخهٔ ~۴ ثانیه، داخل کلیپ بماند)
     if (shimmer != null) {

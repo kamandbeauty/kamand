@@ -69,8 +69,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
-        // توقف ساعت بازی (بدون تغییر منطق مسابقه) + ذخیرهٔ خودکار.
+        // توقف ساعت بازی (بدون تغییر منطق مسابقه) + سکوت موسیقی
+        // (سپر دوم پشتِ AppLifecycleListener در main) + ذخیرهٔ خودکار.
         _game.paused = true;
+        SoundManager.instance.handleAppPaused();
         _controller.saveNow();
     }
   }

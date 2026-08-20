@@ -13,6 +13,7 @@ import '../game_engine/managers/hukum_manager.dart';
 import '../game_engine/models/playing_card.dart';
 import '../game_engine/state/game_enums.dart';
 import '../storage/settings_model.dart';
+import 'art/game_art.dart';
 import 'components/card_component.dart';
 import 'components/table_background.dart';
 import 'components/trick_badge.dart';
@@ -99,6 +100,12 @@ class HokmGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    // تصاویر اختیاری (بک‌گراند/پشت کارت) — نبودشان مجاز و بی‌اثر است.
+    try {
+      await GameArt.instance.load();
+    } on Object catch (e) {
+      debugPrint('GameArt load failed (procedural fallback): $e');
+    }
     // اگر اندازه همین حالا معلوم است، صحنه را بساز؛ در غیر این صورت
     // اولین onGameResize آن را می‌سازد.
     if (size.x > 0 && size.y > 0) _buildScene(size);
@@ -128,7 +135,8 @@ class HokmGame extends FlameGame {
     _background = TableBackground(palette: palette)
       ..size = viewSize.clone()
       ..position = Vector2.zero()
-      ..priority = 0;
+      ..priority = 0
+      ..feltImage = GameArt.instance.tableImage(_settings.tableTheme);
     add(_background);
 
     _turnIndicator = TurnIndicator(glowColor: palette.accent)
@@ -240,6 +248,7 @@ class HokmGame extends FlameGame {
     if (!_sceneBuilt) return;
     palette = TablePalette.of(settings.tableTheme);
     _background.palette = palette;
+    _background.feltImage = GameArt.instance.tableImage(settings.tableTheme);
     for (final comp in cardPool.values) {
       comp.cardBackStyle = settings.cardBack;
       comp.motionSpeedFactor = settings.animationSpeed.multiplier;
@@ -342,76 +351,93 @@ class HokmGame extends FlameGame {
     // بسیار مهم: زون‌ها و پشته‌های دست قبل باید پاک شوند؛
     // وگرنه از دستِ دوم به بعد چیدمان روی بقایای دست قبلی به‌هم می‌ریزد.
     resetTable();
-    // ۱) کارت‌ها از هر سو به مرکز جمع می‌شوند و دکه می‌سازند.
+
     final all = cardPool.values.toList();
+
+    // ۱) هجوم کارت‌ها از چهار سمت به مرکز — با قوسِ بلند و چرخشِ آزاد
     final futures = <Future<void>>[];
     for (var i = 0; i < all.length; i++) {
       final comp = all[i];
       comp.faceUp = false;
       comp.scale.setAll(0.62);
       comp.priority = 40 + i;
-      // جهت ورود متفاوت — حس جمع شدن از دست بازیکنان
       final from = switch (i % 4) {
-        0 => Vector2(layout.viewSize.x / 2, layout.viewSize.y + layout.cardHeight),
+        0 => Vector2(
+            layout.viewSize.x / 2, layout.viewSize.y + layout.cardHeight),
         1 => Vector2(layout.viewSize.x / 2, -layout.cardHeight),
-        2 => Vector2(-layout.cardWidth, layout.viewSize.y * 0.4),
-        _ => Vector2(layout.viewSize.x + layout.cardWidth, layout.viewSize.y * 0.4),
+        2 =>
+          Vector2(-layout.cardWidth, layout.viewSize.y * (0.25 + (i % 5) * 0.1)),
+        _ => Vector2(layout.viewSize.x + layout.cardWidth,
+            layout.viewSize.y * (0.25 + (i % 5) * 0.1)),
       };
       comp.position = from;
-      comp.angle = 0;
+      comp.angle = (_rng.nextDouble() * 30 - 15) * math.pi / 180;
       futures.add(comp.animateMotion([
         MotionSegment(
           to: layout.deckCenter +
-              Vector2(_rng.nextDouble() * 6 - 3, _rng.nextDouble() * 5 - 2.5),
-          angleTo: (_rng.nextDouble() * 6 - 3) * math.pi / 180,
+              Vector2(_rng.nextDouble() * 10 - 5, _rng.nextDouble() * 8 - 4),
+          angleTo: (_rng.nextDouble() * 10 - 5) * math.pi / 180,
           duration: Duration(
-              milliseconds: ((340 + (i % 8) * 26) * _speed).round()),
-          curve: Curves.easeOutCubic,
-          arc: layout.cardHeight * 0.35,
+              milliseconds: ((380 + (i % 8) * 34) * _speed).round()),
+          curve: HokmCurves.deal,
+          arc: layout.cardHeight * 0.5,
         ),
       ]));
-      if (i % 9 == 8) {
+      if (i % 10 == 9) {
         await Future.wait(futures);
         futures.clear();
       }
     }
     await Future.wait(futures);
 
-    // ۲) دسته کردن و جابه‌جایی (دو نیم‌دسته) × ۲ بار
+    // ۲) مربع‌شدنِ دکه با برخوردِ نرم (تقِ بازیگر)
+    await Future.wait(all.map((c) => c.animateMotion([
+          MotionSegment(
+            to: layout.deckCenter,
+            angleTo: 0,
+            duration: Duration(milliseconds: (200 * _speed).round()),
+            curve: Curves.easeOutBack,
+          ),
+        ])));
+
+    // ۳) دو نیم‌دسته × ۲ بار — شکافت بلند + ریفلِ زیگزاگی
     for (var round = 0; round < 2; round++) {
       final halfNo = all.length ~/ 2;
       final left = all.sublist(0, halfNo);
       final right = all.sublist(halfNo);
-      final offset = layout.cardWidth * 0.85;
-      final gap = layout.cardHeight * 0.12;
+      final offset = layout.cardWidth * 0.95;
+      final gap = layout.cardHeight * 0.14;
 
-      // جدا شدن دو نیم‌دسته
+      // شکافتن دو نیم‌دسته با خیز (دسته‌ها از روی میز بلند می‌شوند)
       final splitFutures = <Future<void>>[];
       for (final c in left) {
         splitFutures.add(c.animateMotion([
           MotionSegment(
-            to: layout.deckCenter + Vector2(-offset, -gap * 0.3),
-            angleTo: -6 * math.pi / 180,
-            duration: Duration(milliseconds: (260 * _speed).round()),
-            curve: Curves.easeInOutCubic,
-            arc: gap,
+            to: layout.deckCenter + Vector2(-offset, -gap * 0.4),
+            angleTo: -7 * math.pi / 180,
+            scaleTo: 0.66,
+            duration: Duration(milliseconds: (280 * _speed).round()),
+            curve: HokmCurves.snatch,
+            arc: gap * 1.4,
           ),
         ]));
       }
       for (final c in right) {
         splitFutures.add(c.animateMotion([
           MotionSegment(
-            to: layout.deckCenter + Vector2(offset, -gap * 0.3),
-            angleTo: 6 * math.pi / 180,
-            duration: Duration(milliseconds: (260 * _speed).round()),
-            curve: Curves.easeInOutCubic,
-            arc: gap,
+            to: layout.deckCenter + Vector2(offset, -gap * 0.4),
+            angleTo: 7 * math.pi / 180,
+            scaleTo: 0.66,
+            duration: Duration(milliseconds: (280 * _speed).round()),
+            curve: HokmCurves.snatch,
+            arc: gap * 1.4,
           ),
         ]));
       }
       await Future.wait(splitFutures);
+      await Future<void>.delayed(Duration(milliseconds: (90 * _speed).round()));
 
-      // ۳) درهم‌رفتن (ری‌فل) — نیم‌دسته‌ها زیگزاگ در هم می‌روند
+      // درهم‌رفتن (ریفل) — زیگزاگ با پرش‌های ریز
       final riffleFutures = <Future<void>>[];
       for (var i = 0; i < halfNo; i++) {
         final fromLeft = left[i];
@@ -421,10 +447,11 @@ class HokmGame extends FlameGame {
           MotionSegment(
             to: layout.deckCenter + Vector2(zig, (i * 0.55)),
             angleTo: 0,
+            scaleTo: 0.62,
             duration: Duration(
-                milliseconds: ((150 + i * 6) * _speed).round()),
+                milliseconds: ((170 + i * 6) * _speed).round()),
             curve: Curves.easeOutCubic,
-            arc: layout.cardHeight * 0.10,
+            arc: layout.cardHeight * 0.12,
           ),
         ]));
         if (fromRight != null) {
@@ -432,10 +459,11 @@ class HokmGame extends FlameGame {
             MotionSegment(
               to: layout.deckCenter + Vector2(-zig, (i * 0.55) + 0.9),
               angleTo: 0,
+              scaleTo: 0.62,
               duration: Duration(
-                  milliseconds: ((165 + i * 6) * _speed).round()),
+                  milliseconds: ((185 + i * 6) * _speed).round()),
               curve: Curves.easeOutCubic,
-              arc: layout.cardHeight * 0.10,
+              arc: layout.cardHeight * 0.12,
             ),
           ]));
         }
@@ -443,22 +471,69 @@ class HokmGame extends FlameGame {
       await Future.wait(riffleFutures);
     }
 
-    // ۴) مربع نهایی دکه با یک «تکان» ملایم
-    final squareFutures = all.map((c) => c.animateMotion([
+    // ۴) بریدن دکه — نیمهٔ بالا می‌پرد کنار، نیمهٔ پایین می‌نشیند زیرش
+    {
+      final halfNo = all.length ~/ 2;
+      final topHalf = all.sublist(0, halfNo);
+      final bottomHalf = all.sublist(halfNo);
+      final cutGap = layout.cardWidth * 1.15;
+      final cutFutures = <Future<void>>[
+        for (final c in topHalf)
+          c.animateMotion([
+            MotionSegment(
+              to: layout.deckCenter + Vector2(-cutGap, -layout.cardHeight * 0.12),
+              angleTo: -5 * math.pi / 180,
+              duration: Duration(milliseconds: (240 * _speed).round()),
+              curve: HokmCurves.snatch,
+              arc: layout.cardHeight * 0.4,
+            ),
+          ]),
+        for (final c in bottomHalf)
+          c.animateMotion([
+            MotionSegment(
+              to: layout.deckCenter + Vector2(cutGap * 0.9, 0),
+              angleTo: 2 * math.pi / 180,
+              duration: Duration(milliseconds: (240 * _speed).round()),
+              curve: Curves.easeInOutCubic,
+              arc: layout.cardHeight * 0.10,
+            ),
+          ]),
+      ];
+      await Future.wait(cutFutures);
+      await Future<void>.delayed(Duration(milliseconds: (60 * _speed).round()));
+      // برگشت نیمهٔ بلندشده روی نیمهٔ دیگر (کات کامل می‌شود)
+      await Future.wait(topHalf.map((c) => c.animateMotion([
+            MotionSegment(
+              to: layout.deckCenter + Vector2(cutGap * 0.9, -1.2),
+              angleTo: 0,
+              duration: Duration(milliseconds: (220 * _speed).round()),
+              curve: HokmCurves.settle,
+              arc: layout.cardHeight * 0.22,
+            ),
+          ])));
+    }
+
+    // ۵) مربع نهایی + نشست نرم + جرقهٔ ظریف زر روی دکه
+    await Future.wait(all.map((c) => c.animateMotion([
           MotionSegment(
             to: layout.deckCenter,
             angleTo: 0,
-            duration: Duration(milliseconds: (180 * _speed).round()),
-            curve: Curves.easeOutBack,
+            scaleTo: 0.62,
+            duration: Duration(milliseconds: (210 * _speed).round()),
+            curve: HokmCurves.settle,
           ),
-        ]));
-    await Future.wait(squareFutures);
+        ])));
+    add(WinGlowPulse(
+      center: layout.deckCenter,
+      color: palette.accent,
+      maxRadius: layout.cardWidth * 0.9,
+      sparkCount: 8,
+    ));
 
     // تنظیم ترتیب اولویت دکه (بالای دکه = آخرین کارت)
     var pr = 10;
     for (final c in all) {
       c.priority = pr++;
-      // موقعیت دکه: پشت به بالا، آمادهٔ پخش
       c.position = layout.deckCenter;
       c.scale.setAll(0.62);
       c.angle = 0;
@@ -494,10 +569,11 @@ class HokmGame extends FlameGame {
         final scale = layout.handScale(step.seat);
 
         dealIndex++;
-        unawaitedFuture(_flyAndLand(comp, slot, scale, isFaceUp));
+        unawaitedFuture(_flyAndLand(comp, slot, scale, isFaceUp, dealIndex));
         zone.add(comp);
+        // ریتم آرام‌تر — دست‌دادن باید دیده شود (۵→۴→۴)
         await Future<void>.delayed(
-            Duration(milliseconds: (62 * _speed).round()));
+            Duration(milliseconds: (105 * _speed).round() + (dealIndex % 3) * 12));
       }
     }
   }
@@ -512,36 +588,37 @@ class HokmGame extends FlameGame {
     await Future.wait(futures);
   }
 
+  /// پروازِ یک کارت از دکه به جایش در دست — قوس بلند، پیچش ملایم در مسیر،
+  /// «نشستِ نرم» دو مرحله‌ای، و برای کارت‌های انسان یک فلیپِ سه‌بعدی‌نما.
   Future<void> _flyAndLand(CardComponent comp,
       ({Vector2 position, double angle}) slot, double scale,
-      bool faceUp) async {
+      bool faceUp, int dealIndex) async {
+    // پیچش کوچکِ قطعی در میانهٔ راه — حس پرتاب ورق به‌جای رباتیک
+    final wobble = ((dealIndex * 37) % 9 - 4) * 0.016;
     await comp.animateMotion([
+      MotionSegment(
+        to: slot.position + Vector2(0, -layout.cardHeight * 0.05),
+        angleTo: (slot.angle + wobble),
+        scaleTo: scale * 1.04,
+        duration: Duration(milliseconds: (330 * _speed).round()),
+        curve: HokmCurves.deal,
+        arc: layout.cardHeight * 0.72,
+      ),
+      // نشست نرم — کمی رد شدن از هدف و برگشت
       MotionSegment(
         to: slot.position,
         angleTo: slot.angle,
         scaleTo: scale,
-        duration: Duration(milliseconds: (300 * _speed).round()),
-        curve: Curves.easeInOutCubic,
-        arc: layout.cardHeight * 0.55,
+        duration: Duration(milliseconds: (130 * _speed).round()),
+        curve: HokmCurves.settle,
       ),
     ]);
-    // کارت‌های انسان: رو شدن با پاپ-فلیپ
+    // کارت‌های انسان: رو شدن با فلیپِ سه‌بعدی‌نما + برقِ ظریف
     if (faceUp) {
-      await comp.animateMotion([
-        MotionSegment(
-          scaleTo: scale * 0.02,
-          duration: Duration(milliseconds: (70 * _speed).round()),
-          curve: Curves.easeIn,
-        ),
-      ]);
-      comp.faceUp = true;
-      await comp.animateMotion([
-        MotionSegment(
-          scaleTo: scale,
-          duration: Duration(milliseconds: (110 * _speed).round()),
-          curve: Curves.easeOutBack,
-        ),
-      ]);
+      await comp.flip(
+        duration: Duration(milliseconds: (300 * _speed).round()),
+        onHalf: () => comp.faceUp = true,
+      );
     }
   }
 

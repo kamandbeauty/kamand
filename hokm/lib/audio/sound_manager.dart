@@ -111,18 +111,26 @@ class SoundManager {
 
   // --- چرخهٔ عمر اپلیکیشن ---
 
-  /// اپ به پس‌زمینه رفت — موسیقی را (موقتاً) مکث کن تا صدا نماند.
+  /// اپ به پس‌زمینه رفت — موسیقی را کاملاً متوقف می‌کنیم.
+  ///
+  /// چرا stop و نه pause؟ چون نسخه‌های flame_audio/audioplayers ممکن است
+  /// خودشان روی برخی گذارهای چرخهٔ عمر (مثلاً inactive) پخش را resume کنند؛
+  /// با stop هیچ playerی برای resumeِ خودکار باقی نمی‌ماند و سکوتِ پس‌زمینه
+  /// تضمین می‌شود. موسیقی ambient لوپ است و شروع دوبارهٔ آن از ابتدا
+  /// اخلالی در تجربه ایجاد نمی‌کند.
   void handleAppPaused() {
-    if (!_musicPlaying) return;
-    _resumeMusicOnForeground = true;
-    _consume(FlameAudio.bgm.pause(), 'pause music');
+    final wasPlaying = _musicPlaying;
+    _resumeMusicOnForeground = wasPlaying;
+    _musicPlaying = false;
+    if (wasPlaying) {
+      _consume(FlameAudio.bgm.stop(), 'stop music (background)');
+    }
   }
 
-  /// اپ به پیش‌زمینه برگشت — موسیقی را اگر پخش می‌شد ادامه بده.
+  /// اپ به پیش‌زمینه برگشت — موسیقی را اگر پخش می‌شد از نو شروع کن.
   void handleAppResumed() {
     if (!_resumeMusicOnForeground) return;
     _resumeMusicOnForeground = false;
-    if (!musicOn) return;
-    _consume(FlameAudio.bgm.resume(), 'resume music');
+    startMusic(); // startMusic خودش musicOn و تکرار را چک می‌کند
   }
 }

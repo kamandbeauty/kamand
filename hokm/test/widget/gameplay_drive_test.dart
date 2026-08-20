@@ -50,7 +50,7 @@ void main() {
     var roundsContinued = 0;
     var peakTricks = 0;
 
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 700; i++) {
       await tester.pump(const Duration(milliseconds: 200));
       final error = tester.takeException();
       if (error != null) {
@@ -110,7 +110,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 4));
     expect(tester.takeException(), isNull);
-  }, timeout: const Timeout(Duration(minutes: 4)));
+  }, timeout: const Timeout(Duration(minutes: 6)));
 
   testWidgets('tap events reach TapCallbacks components of the scene',
       (tester) async {
