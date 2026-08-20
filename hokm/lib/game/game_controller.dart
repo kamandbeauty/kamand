@@ -521,8 +521,20 @@ class GameController extends ChangeNotifier implements GameEventListener {
   /// ذخیرهٔ دستی (خروج از صفحهٔ بازی).
   void saveNow() => _save();
 
+  bool _disposed = false;
+
+  /// پس از dispose، اعلان‌ها بی‌اثر می‌شوند — کارهای زمان‌بندی‌شدهٔ قدیمی
+  /// (Future.delayed ریتم AI/انیمیشن) ممکن است کمی بعدتر ادامه یابند و
+  /// نباید به notifyListeners ِ یک کنترلرِ مرده برسند.
+  @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+  }
+
   @override
   void dispose() {
+    _disposed = true;
     _session++;
     _eventQueue.clear();
     super.dispose();
