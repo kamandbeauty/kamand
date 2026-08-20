@@ -5,11 +5,11 @@ on:
     branches: ["arena/**", "memory", "master", "main"]
     paths:
       - "hokm/**"
-      - ".github/workflows/hokm.yml"
+      - ".github/workflows/hokm-flutter.yml"
   pull_request:
     paths:
       - "hokm/**"
-      - ".github/workflows/hokm.yml"
+      - ".github/workflows/hokm-flutter.yml"
   workflow_dispatch:
 
 jobs:
