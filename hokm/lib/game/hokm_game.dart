@@ -3,6 +3,7 @@ import 'dart:ui' hide TextStyle;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
+import 'package:flutter/animation.dart' show Curves;
 import 'package:flutter/painting.dart' show TextStyle;
 
 import '../game_engine/managers/deal_manager.dart';

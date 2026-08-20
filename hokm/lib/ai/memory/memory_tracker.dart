@@ -81,10 +81,11 @@ class MemoryTracker {
   }
 
   /// آیا [card] قوی‌ترین کارتِ باقی‌ماندهٔ خالش است؟
-  /// (همهٔ کارت‌های بالاتر دیده شده‌اند یا در دست خودم است و پایین‌ترند.)
+  /// (همهٔ کارت‌های بالاتر دیده شده‌اند یا در دست خودم است.)
   bool isHighestRemaining(PlayingCard card) {
     for (final rank in Rank.values) {
-      if (rank.value <= card.rank.value) break;
+      // فقط رتبه‌های بالاتر از کارت مهم‌اند؛ پایین‌ترها معیار نیستند.
+      if (rank.value <= card.rank.value) continue;
       final higher = PlayingCard(card.suit, rank);
       if (seen.contains(higher) || myHand.contains(higher)) continue;
       return false; // یک کارت بالاتر هنوز بیرون است.

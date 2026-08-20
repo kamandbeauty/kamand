@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
+import 'package:flutter/painting.dart' show RadialGradient;
 
 /// پالس نورانی کوتاه برای بردن دور — یک موج نرم که باز می‌شود و محو می‌شود.
 class WinGlowPulse extends Component {

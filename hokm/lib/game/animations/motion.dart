@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' show Curve, Curves;
+
+import 'package:flutter/animation.dart' show Curve, Curves;
 
 import 'package:flame/components.dart';
 

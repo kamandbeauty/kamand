@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
+import 'package:flutter/painting.dart' show Alignment, RadialGradient;
 
 import '../table/table_theme.dart';
 
@@ -13,7 +14,8 @@ import '../table/table_theme.dart';
 class TableBackground extends PositionComponent {
   TableBackground({required this.palette});
 
-  final TablePalette palette;
+  /// پالت فعال — از تنظیمات به‌صورت زنده قابل تعویض است.
+  TablePalette palette;
 
   @override
   void render(Canvas canvas) {

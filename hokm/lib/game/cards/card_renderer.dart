@@ -2,7 +2,13 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/painting.dart'
-    show TextPainter, TextSpan, TextStyle;
+    show
+        Alignment,
+        LinearGradient,
+        RadialGradient,
+        TextPainter,
+        TextSpan,
+        TextStyle;
 
 import '../../game_engine/models/playing_card.dart';
 import '../../game_engine/models/rank.dart';
