@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hokm/ai/ai_view.dart';
 import 'package:hokm/ai/players/ai_player.dart';
 import 'package:hokm/game_engine/hokm_engine.dart';
+import 'package:hokm/game_engine/models/suit.dart';
 import 'package:hokm/game_engine/rules/game_rules.dart';
 import 'package:hokm/game_engine/state/game_enums.dart';
 

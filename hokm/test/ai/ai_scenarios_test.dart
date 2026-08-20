@@ -56,9 +56,9 @@ void main() {
     test('void in led suit: may play trump (and should cut when beaten)', () {
       final strategy =
           StrategyEngine(difficulty: AiDifficulty.normal, random: Random(2));
-      // خشت نداریم؛ زمینه خشت و حریف با K خشت جلو است.
+      // خشت نداریم؛ زمینه خشت و حریف (غرب) با K خشت جلو است.
       final hand = [c('S_3'), c('S_9'), c('H_8')];
-      final current = trick(['0:D_K']); // west led, currently winning.
+      final current = trick(['1:D_K']); // غرب (حریف شمال) آغازگر و جلو است.
       final view = AiGameView.testing(
         mySeat: Seat.north, // یارِ آغازگر نیست → حریف جلو است
         myHand: hand,
