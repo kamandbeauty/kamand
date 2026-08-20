@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- بازی کاملاً آفلاین است؛ هیچ مجوز اینترنتی نیاز نیست. -->
     <application
-        android:label="حکم کماند"
+        android:label="حکم با هوش مصنوعی"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"

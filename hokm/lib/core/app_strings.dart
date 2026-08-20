@@ -1,6 +1,6 @@
 /// همهٔ متن‌های فارسی برنامه — یک‌جا برای نگهداری راحت.
 abstract final class AppStrings {
-  static const String appName = 'حکم کماند';
+  static const String appName = 'حکم با هوش مصنوعی';
 
   // خانه
   static const String continueGame = 'ادامهٔ بازی';
