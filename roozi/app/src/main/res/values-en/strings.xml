@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ROOZI | To-Do List</string>
+    <!-- The launcher label stays Persian in both locales: it is the brand
+         name the store lists, and it should read the same everywhere. -->
+    <string name="app_name">روزی | لیست کارها</string>
     <string name="app_name_short">ROOZI</string>
 
     <string name="nav_today">Today</string>
@@ -225,9 +227,8 @@
     <string name="crash_subtitle">Copy this report and send it to us so we can fix the problem.</string>
     <string name="crash_copy">Copy report</string>
     <string name="crash_continue">Continue</string>
-    <string name="home_done_and_left">You did %1$s today, %2$s to go</string>
+    <string name="home_done_and_left">You did %1$s tasks today and %2$s are left</string>
     <string name="home_all_done">You finished all %1$s tasks today 🎉</string>
-    <string name="home_none_done">You have %1$s tasks today</string>
     <string name="notif_diagnostics">Notification check</string>
     <string name="notif_test">Send a test notification</string>
     <string name="notif_test_sent">Test notification sent</string>

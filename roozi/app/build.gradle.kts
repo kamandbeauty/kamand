@@ -14,7 +14,7 @@ plugins {
 // ---------------------------------------------------------------------------
 
 val rooziApplicationId: String = (project.findProperty("applicationId") as String?) ?: "com.roozi.app"
-val rooziAppName: String = (project.findProperty("appName") as String?) ?: "ROOZI | To-Do List"
+val rooziAppName: String = (project.findProperty("appName") as String?) ?: "روزی | لیست کارها"
 
 // Read once, outside android { }. NOTE: `java` is a Gradle extension name, so
 // java.util.* must be imported explicitly rather than fully qualified here.

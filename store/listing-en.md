@@ -8,8 +8,10 @@ For any store that asks for an English listing. The Persian text in
 ## App name
 
 ```
-ROOZI | To-Do List
+روزی | لیست کارها
 ```
+
+The launcher label and store name stay Persian in every locale.
 
 ## Short description
 

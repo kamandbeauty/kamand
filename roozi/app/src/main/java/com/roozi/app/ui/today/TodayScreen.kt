@@ -404,10 +404,9 @@ private fun GreetingHeader(
                     R.string.home_all_done,
                     formatter.digits(state.total)
                 )
-                state.done == 0 -> stringResource(
-                    R.string.home_none_done,
-                    formatter.digits(state.total)
-                )
+                // One sentence for every in-progress state, including "none done
+                // yet". A separate phrasing for zero made the line change shape
+                // the moment the first task was ticked.
                 else -> stringResource(
                     R.string.home_done_and_left,
                     formatter.digits(state.done),
