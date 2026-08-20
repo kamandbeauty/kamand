@@ -35,10 +35,10 @@ class TableLayout {
     northScale = 0.72;
 
     // ستون‌های حریف‌ها
+    backScale = 0.66;
     westHandCenter = Vector2(cardHeight * 0.36 * backScale + 8, h * 0.40);
     eastHandCenter = Vector2(w - cardHeight * 0.36 * backScale - 8, h * 0.40);
     sideStep = cardWidth * 0.26;
-    backScale = 0.66;
 
     // دکه (وسط میز — زمان بر و پخش)
     deckCenter = trickCenter.clone()..y -= cardHeight * 0.05;
