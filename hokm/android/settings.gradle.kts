@@ -6,7 +6,8 @@ pluginManagement {
             ?: throw GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
     }
 
-    includeBuild(flutterSdkPath)
+    // پلاگین Gradle فلاتر از داخل SDK می‌آید (نه ریشهٔ SDK).
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
         google()
