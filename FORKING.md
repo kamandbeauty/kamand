@@ -28,27 +28,31 @@
 
 ```bash
 python3 tools/fork_app.py \
-  --dir app2 \
-  --package com.javidstudio.app2 \
-  --prefix App2 \
-  --name-fa "اپ دوم" \
-  --name-en "App2"
+  --dir memory \
+  --package com.studiojavid.memory \
+  --prefix Memory \
+  --name-fa "دفتر خاطرات و تولد" \
+  --name-fa-short "خاطرات" \
+  --name-en "Memory"
 ```
+
+`--name-fa` نام کامل لانچر است و `--name-fa-short` واژه‌ای که داخل جمله‌های
+فارسی جای «روزی» می‌نشیند (مثلاً در متن نوتیفیکیشن).
 
 اسکریپت در یک پاس همهٔ چیزهایی را که هویت روزی را حمل می‌کنند بازنویسی می‌کند:
 
 | مورد | از | به |
 |---|---|---|
-| Application ID و namespace | `com.roozi.app` | `--package` |
-| مسیر پکیج کاتلین | `java/com/roozi/app/…` | `java/com/javidstudio/app2/…` |
-| پیشوند تایپ‌ها | `RooziTheme`, `RooziDatabase`, `RooziHeader`, … | `--prefix` |
-| نام تم‌ها | `Theme.Roozi.Splash` | `Theme.App2.Splash` |
-| فایل دیتابیس | `roozi.db` | `app2.db` |
-| اکشن‌های Broadcast | `com.roozi.app.action.REMIND` | `com.javidstudio.app2.action.REMIND` |
-| فرمت فایل پشتیبان | `roozi-backup` | `app2-backup` |
-| `rootProject.name` | `ROOZI` | `APP2` |
-| ورک‌فلو | `roozi/ci/roozi-android.yml` | `app2/ci/app2-android.yml` (نام جاب، `working-directory`، نام artifactها) |
-| `app_name` / `app_name_short` | روزی | `--name-fa` / `--name-en` |
+| Application ID و namespace | `com.roozi.app` | `com.studiojavid.memory` |
+| مسیر پکیج کاتلین | `java/com/roozi/app/…` | `java/com/studiojavid/memory/…` |
+| پیشوند تایپ‌ها | `RooziTheme`, `RooziDatabase`, `RooziHeader`, … | `Memory` |
+| نام تم‌ها | `Theme.Roozi.Splash` | `Theme.Memory.Splash` |
+| فایل دیتابیس | `roozi.db` | `memory.db` |
+| اکشن‌های Broadcast | `com.roozi.app.action.REMIND` | `com.studiojavid.memory.action.REMIND` |
+| فرمت فایل پشتیبان | `roozi-backup` | `memory-backup` |
+| `rootProject.name` | `ROOZI` | `MEMORY` |
+| ورک‌فلو | `roozi/ci/roozi-android.yml` | `memory/ci/memory-android.yml` (نام جاب، `working-directory`، نام artifactها) |
+| `app_name` / `app_name_short` | روزی | دفتر خاطرات و تولد / Memory |
 | `versionCode` / `versionName` | ۲ / 1.0.1 | ۱ / 1.0.0 |
 
 کپی نمی‌شوند: `build/`, `.gradle/`, `keystore.properties`, `release.keystore`,
@@ -61,24 +65,24 @@ python3 tools/fork_app.py \
 انتشار زیر یک حساب کافه‌بازار درست است. اگر اپ دوم کلید جداگانه می‌خواهد:
 
 ```bash
-python3 tools/fork_app.py … --secret-prefix APP2
+python3 tools/fork_app.py … --secret-prefix MEMORY
 ```
 
-آن‌وقت باید چهار سکرت `APP2_RELEASE_KEYSTORE_BASE64` و بقیه را در تنظیمات مخزن
+آن‌وقت باید چهار سکرت `MEMORY_RELEASE_KEYSTORE_BASE64` و بقیه را در تنظیمات مخزن
 بسازید.
 
 ## بعد از فورک
 
 ```bash
-python3 tools/verify_resources.py --module app2
-python3 tools/check_callsites.py  --module app2
+python3 tools/verify_resources.py --module memory
+python3 tools/check_callsites.py  --module memory
 ```
 
 هر دو اسکریپت حالا پارامتر `--module` می‌گیرند و پیش‌فرضشان `roozi` است، پس
 بررسی‌های قبلی روزی دست‌نخورده کار می‌کنند.
 
-سپس فایل `app2/ci/app2-android.yml` را از طریق ویرایشگر وب گیت‌هاب در
-`.github/workflows/app2-android.yml` کپی کنید — توکن ربات اجازهٔ ساخت یا
+سپس فایل `memory/ci/memory-android.yml` را از طریق ویرایشگر وب گیت‌هاب در
+`.github/workflows/memory-android.yml` کپی کنید — توکن ربات اجازهٔ ساخت یا
 ویرایش فایل‌های `.github/workflows/` را ندارد.
 
 ## تغییر نام بعدی
