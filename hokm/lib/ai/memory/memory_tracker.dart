@@ -19,7 +19,7 @@ class MemoryTracker {
     required this.me,
     required this.seen,
     required this.myHand,
-    required voids,
+    required Map<Seat, Set<Suit>> voids,
   }) : _voids = voids;
 
   final Seat me;

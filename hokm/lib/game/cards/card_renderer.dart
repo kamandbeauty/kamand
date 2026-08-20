@@ -285,7 +285,7 @@ abstract final class CardRenderer {
       badgeR,
       Paint()
         ..shader = RadialGradient(
-          begin: Alignment.topLeft,
+          center: const Alignment(-0.35, -0.55),
           colors: [color.withOpacity(0.16), color.withOpacity(0.05)],
         ).createShader(badgeRect),
     );

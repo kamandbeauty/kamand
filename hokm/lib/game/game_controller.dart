@@ -149,7 +149,7 @@ class GameController extends ChangeNotifier implements GameEventListener {
           if (state.currentTrick != null)
             for (final p in state.currentTrick!.cards) p.seat: p.card,
         },
-        tricksWonByTeam: state.tricksWon,
+        tricksWonByTeam: {0: state.tricksWon[0], 1: state.tricksWon[1]},
       );
     }
     notifyListeners();

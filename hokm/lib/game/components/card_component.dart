@@ -19,9 +19,9 @@ class CardComponent extends PositionComponent
   CardComponent({
     required this.card,
     required this.cardBackStyle,
-    bool faceUp = false,
+    this.faceUp = false,
     this.onTapped,
-  })  : faceUp = faceUp;
+  });
 
   PlayingCard card;
   CardBackStyle cardBackStyle;

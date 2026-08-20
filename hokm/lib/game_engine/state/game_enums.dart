@@ -3,15 +3,14 @@
 /// ترتیب چرخش نوبت در حکم «به سمت راست» است؛ با چیدمان صفحهٔ عمودی
 /// (بازیکن انسانی پایین صفحه و رو به مرکز) این یعنی روی تصویر:
 /// پایین → چپ → بالا → راست. [next] همان ترتیب را پیاده‌سازی می‌کند.
+///
+/// توجه: `index` داخلیِ خودِ Enum استفاده می‌شود (ترتیب تعریف:‌
+/// south=0، west=1، north=2، east=3) — همان ترتیبِ ذخیره‌سازی.
 enum Seat {
-  south(0),
-  west(1),
-  north(2),
-  east(3);
-
-  const Seat(this.index);
-
-  final int index;
+  south,
+  west,
+  north,
+  east;
 
   /// نفر بعدی در نوبت (چرخهٔ ثابت: south→west→north→east→south).
   Seat get next => Seat.values[(index + 1) % 4];

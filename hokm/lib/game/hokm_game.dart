@@ -667,26 +667,21 @@ class HokmGame extends FlameGame {
   }) {
     if (!_sceneBuilt) return;
     resetTable();
-    var parkedS = 0, parkedT1 = 0;
-    final parked0 = tricksWonByTeam[0] ?? 0;
-    final parked1 = tricksWonByTeam[1] ?? 0;
+    // کارت‌های قبلاً برده‌شده → انبار تیم‌ها (۴ کارت به ازای هر دور).
+    var parked = 0;
+    final limitTeam0 = (tricksWonByTeam[0] ?? 0) * 4;
 
-    // کارت‌های قبلاً برده‌شده → انبار تیم‌ها
     for (final comp in cardPool.values) {
       final inHand = hands.values.any((list) => list.contains(comp.card));
       final inCenter = centerCards.values.contains(comp.card);
       if (!inHand && !inCenter) {
-        final teamIdx = (parkedS < parked0 * 4) ? 0 : 1;
+        final teamIdx = (parked < limitTeam0) ? 0 : 1;
         final target = layout.teamPilePosition(teamIdx);
         comp.position = target;
         comp.faceUp = false;
         comp.scale.setAll(0.0);
         comp.priority = 4;
-        if (teamIdx == 0) {
-          parkedS++;
-        } else {
-          parkedT1++;
-        }
+        parked++;
       }
     }
 

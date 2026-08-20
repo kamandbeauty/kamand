@@ -5,10 +5,8 @@ import 'package:flutter/services.dart';
 import '../../audio/sound_manager.dart';
 import '../../core/app_strings.dart';
 import '../../core/app_theme.dart';
-import '../../core/persian_utils.dart';
 import '../../game/game_controller.dart';
 import '../../game/hokm_game.dart';
-import '../../game_engine/state/game_enums.dart';
 import '../../storage/save_manager.dart';
 import '../../storage/settings_repository.dart';
 import 'widgets/game_banner.dart';
@@ -111,7 +109,7 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         if (await _confirmLeave() && mounted && context.mounted) {
           Navigator.of(context).pop();
