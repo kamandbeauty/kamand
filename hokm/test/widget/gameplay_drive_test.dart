@@ -16,11 +16,12 @@ import 'package:hokm/storage/settings_model.dart';
 import 'package:hokm/storage/settings_repository.dart';
 
 /// تست رانندگی کامل — بخش‌هایی از یک مسابقهٔ واقعی را با فریم‌های واقعی
-/// Flame پیش می‌برد. هر استثنای فریم‌ورک = شکست تست.
+/// Flame و با لمس واقعی کارت‌های انسان پیش می‌برد. هر استثنای فریم‌ورک
+/// یا عدم پیشروی مسابقه = شکست تست.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Driven full-match segment completes tricks without errors',
+  testWidgets('Driven match segment completes tricks with real taps',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final settings = await SettingsController.load();
@@ -44,16 +45,10 @@ void main() {
 
     await controller.startNewMatch();
 
-    var humanCalls = 0;
-    var tapCallbackSuccessful = 0;
+    var humanTaps = 0;
     var trumpPicked = false;
     var roundsContinued = 0;
-
-    final previousCallback = game.onHumanCardTapped;
-    game.onHumanCardTapped = (PlayingCard card) {
-      tapCallbackSuccessful++;
-      previousCallback?.call(card);
-    };
+    var peakTricks = 0;
 
     for (var i = 0; i < 500; i++) {
       await tester.pump(const Duration(milliseconds: 200));
@@ -64,14 +59,16 @@ void main() {
 
       if (!controller.hasMatch) break;
 
-      if (i % 10 == 0) {
+      final nowTricks =
+          controller.state.tricksWon[0] + controller.state.tricksWon[1];
+      if (nowTricks > peakTricks) peakTricks = nowTricks;
+
+      if (i % 25 == 0) {
         final s = controller.state;
-        final handsLen =
-            s.players.map((p) => '${p.seat.name}:${p.hand.length}').join(' ');
         print('[dbg] i=$i phase=${s.phase} turn=${s.currentTurn} '
-            'trickCards=${s.currentTrick?.cards.length} tricks=${s.tricksWon} '
-            'hands=[$handsLen] humanTurn=${controller.isHumanTurn} '
-            'banner=${controller.banner}');
+            'tricks=${s.tricksWon} peak=$peakTricks '
+            'southHand=${s.playerAt(Seat.south).hand.length} '
+            'humanTurn=${controller.isHumanTurn}');
       }
 
       if (controller.showTrumpPicker) {
@@ -90,15 +87,8 @@ void main() {
 
       if (controller.isHumanTurn &&
           controller.state.phase == GamePhase.playing) {
-        final hand = controller.state.playerAt(Seat.south).hand;
-        final trick = controller.state.currentTrick;
-        final List<PlayingCard> legal = trick == null
-            ? List<PlayingCard>.of(hand)
-            : GameRules.legalPlays(hand, trick);
-        if (legal.isNotEmpty) {
-          humanCalls++;
-          game.onHumanCardTapped?.call(legal.first);
-        }
+        final tapped = await _tapFirstLegalCard(tester, game, controller);
+        if (tapped) humanTaps++;
         continue;
       }
     }
@@ -106,14 +96,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(tester.takeException(), isNull);
 
-    final tricksDone = controller.hasMatch
-        ? controller.state.tricksWon[0] + controller.state.tricksWon[1]
-        : 0;
+    // حداقل یک دور کامل باید در این بازه جمع‌شده باشد (شمارندهٔ
+    // tricksWon دوربه‌دور صفر می‌شود، پس اوج آن را نگه می‌داریم).
     expect(
-      tricksDone,
+      peakTricks,
       greaterThan(0),
       reason: 'game did not advance: trumpPicked=$trumpPicked '
-          'humanCalls=$humanCalls taps=$tapCallbackSuccessful '
+          'humanTaps=$humanTaps roundsContinued=$roundsContinued '
           'phase=${controller.phase}',
     );
 
@@ -154,9 +143,46 @@ void main() {
   });
 }
 
+/// اولین کارت مجاز دست انسان را با لمس واقعی روی GameWidget بازی می‌کند.
+Future<bool> _tapFirstLegalCard(
+  WidgetTester tester,
+  HokmGame game,
+  GameController controller,
+) async {
+  final hand = controller.state.playerAt(Seat.south).hand;
+  if (hand.isEmpty) return false;
+  final trick = controller.state.currentTrick;
+  final List<PlayingCard> legal = trick == null
+      ? List<PlayingCard>.of(hand)
+      : GameRules.legalPlays(hand, trick);
+  if (legal.isEmpty) return false;
+
+  final zone = game.handZones[Seat.south]!;
+  var zoneIndex = -1;
+  for (var i = 0; i < zone.length; i++) {
+    if (zone[i].card == legal.first) {
+      zoneIndex = i;
+      break;
+    }
+  }
+  if (zoneIndex < 0) return false;
+
+  final slot = game.layout.humanHandSlot(zoneIndex, zone.length);
+  var tapX = slot.position.x;
+  if (zoneIndex < zone.length - 1) {
+    // نوار قابل‌مشاهدهٔ کارت‌های زیرپوششی سمت چپ آن‌هاست؛ مرکز ممکن است
+    // زیر کارت بعدی باشد.
+    tapX = slot.position.x -
+        game.layout.cardWidth / 2 +
+        game.layout.humanStep * 0.4;
+  }
+  await tester.tapAt(Offset(tapX, slot.position.y));
+  await tester.pump(const Duration(milliseconds: 50));
+  return true;
+}
+
 /// کاوشگر لمس — تشخیص مستقل اینکه خط لولهٔ رویدادهای لمسی Flame
-/// (ثبت پویای MultiTapDispatcher پس از سوار شدن کامپوننت) در
-/// پیکربندی ویجت ما کار می‌کند.
+/// (ثبت پویای MultiTapDispatcher پس از سوار شدن کامپوننت) کار می‌کند.
 class _TapProbe extends PositionComponent with TapCallbacks {
   var downs = 0;
   var ups = 0;
@@ -172,4 +198,3 @@ class _TapProbe extends PositionComponent with TapCallbacks {
     ups++;
   }
 }
-
