@@ -42,7 +42,7 @@ data class Note(
     }
 }
 
-/** Built-in notebooks, mirroring how DefaultCategories seeds task categories. */
+/** Notebooks seeded on first launch so the shelf is never empty. */
 object DefaultNotebooks {
 
     const val PERSONAL = "personal"
@@ -77,9 +77,11 @@ object DefaultNotebooks {
 }
 
 /**
- * Notes and notebooks. Mirrors [TaskRepository] in shape so the two feature
- * areas stay consistent, but is intentionally a separate class: notes have no
- * reminders, recurrence or widget coupling.
+ * Notes and notebooks.
+ *
+ * Kept separate from [MemoryRepository] on purpose: a note is filed by topic
+ * and edited whenever, while a diary page is keyed by its date and there is
+ * exactly one per day. Merging them would force one model onto both.
  */
 class NoteRepository(
     context: Context,

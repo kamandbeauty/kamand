@@ -49,7 +49,6 @@
 
 # --- Manifest components ----------------------------------------------------
 # Receivers/services are created reflectively by the framework.
--keep class com.studiojavid.memory.widget.** { *; }
 -keep class com.studiojavid.memory.notifications.** { *; }
 -keep class * extends android.app.Application { *; }
 -keep class * extends android.content.BroadcastReceiver { *; }

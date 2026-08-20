@@ -2,70 +2,49 @@ package com.studiojavid.memory.data.local
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Priority of a task. Stored as an ordinal-independent int so reordering the
- * enum can never corrupt existing data.
+ * How the day felt. Stored as a stable int rather than an ordinal so the enum
+ * can be reordered or extended without rewriting existing rows.
  */
-enum class Priority(val value: Int) {
-    LOW(0), MEDIUM(1), HIGH(2);
+enum class Mood(val value: Int) {
+    UNSET(0), AWFUL(1), BAD(2), OKAY(3), GOOD(4), GREAT(5);
 
     companion object {
-        fun from(value: Int): Priority = entries.firstOrNull { it.value == value } ?: MEDIUM
+        fun from(value: Int): Mood = entries.firstOrNull { it.value == value } ?: UNSET
     }
 }
 
+/**
+ * One diary page.
+ *
+ * [date] is an epoch day and is **unique**: this is a dated journal, one page
+ * per day, so re-opening a day edits the existing page instead of stacking a
+ * second one. Storing the civil date rather than a timestamp keeps the page
+ * attached to the day it describes even if the user travels across time zones.
+ *
+ * [photoUri] holds a single image copied into app-private storage. A copy is
+ * necessary because a gallery `content://` permission does not survive a reboot
+ * or the user deleting the original.
+ */
 @Entity(
-    tableName = "categories",
-    indices = [Index(value = ["name"], unique = true)]
+    tableName = "memories",
+    indices = [Index(value = ["date"], unique = true), Index("mood")]
 )
-data class CategoryEntity(
+data class MemoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String,
-    /** Emoji shown next to the category. */
-    val icon: String,
-    /** ARGB color packed into an Int. */
-    val color: Int,
-    /** Resource key for built-in categories so they can be localized. */
-    @ColumnInfo(defaultValue = "") val builtInKey: String = "",
-    val createdAt: Long = System.currentTimeMillis()
-)
-
-@Entity(
-    tableName = "tasks",
-    foreignKeys = [
-        ForeignKey(
-            entity = CategoryEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["categoryId"],
-            onDelete = ForeignKey.SET_NULL
-        )
-    ],
-    indices = [Index("categoryId"), Index("dueDate"), Index("isCompleted")]
-)
-data class TaskEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val title: String,
-    val description: String = "",
-    val categoryId: Long? = null,
+    /** Epoch day of the page. */
+    val date: Long,
+    val title: String = "",
+    val body: String = "",
+    val mood: Int = Mood.UNSET.value,
+    /** Emoji tags, comma separated; empty when none. */
+    @ColumnInfo(defaultValue = "") val tags: String = "",
+    /** File name inside the app-private photos directory; empty when none. */
+    @ColumnInfo(defaultValue = "") val photoUri: String = "",
+    val favorite: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
-    /** Epoch day (UTC-independent civil date). Null = no date. */
-    val dueDate: Long? = null,
-    /** Minutes since midnight. Null = all-day. */
-    val dueTime: Int? = null,
-    val isCompleted: Boolean = false,
-    val completedAt: Long? = null,
-    val priority: Int = Priority.MEDIUM.value,
-    val reminderEnabled: Boolean = false,
-    /** Absolute epoch millis of the reminder trigger. */
-    val reminderTime: Long? = null,
-    /**
-     * Serialized [com.studiojavid.memory.core.recurrence.RecurrenceRule].
-     * Empty string means the task does not repeat.
-     */
-    @ColumnInfo(defaultValue = "") val repeatRule: String = "",
-    val sortOrder: Int = 0
+    val updatedAt: Long = System.currentTimeMillis()
 )

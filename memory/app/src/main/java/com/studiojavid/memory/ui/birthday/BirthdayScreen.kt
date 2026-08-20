@@ -23,9 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,7 +48,8 @@ import com.studiojavid.memory.ui.components.MemoryCalendar
 import com.studiojavid.memory.ui.components.MemoryCard
 import com.studiojavid.memory.ui.components.SectionHeader
 import com.studiojavid.memory.ui.components.accentTextShadow
-import com.studiojavid.memory.ui.components.DayLoad
+import com.studiojavid.memory.data.local.Mood
+import com.studiojavid.memory.ui.components.DayMark
 import com.studiojavid.memory.ui.theme.MemoryTheme
 import java.time.LocalDate
 
@@ -63,7 +62,6 @@ import java.time.LocalDate
 @Composable
 fun BirthdayScreen(
     viewModel: BirthdayViewModel,
-    onBack: () -> Unit,
     onAddPerson: () -> Unit,
     onOpenPerson: (BirthdayPerson) -> Unit,
     contentPadding: PaddingValues,
@@ -75,10 +73,12 @@ fun BirthdayScreen(
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
 
-    // Days that have a birthday, for the calendar indicators.
-    val loads: Map<LocalDate, DayLoad> = remember(people) {
-        people.groupBy { LocalDate.now().plusDays(it.daysUntil.toLong()) }
-            .mapValues { (_, list) -> DayLoad(total = list.size, done = 0) }
+    // Days that have a birthday, for the calendar indicators. Mood is UNSET
+    // because a birthday carries no diary mood; the dot alone is the signal.
+    val marks: Map<LocalDate, DayMark> = remember(people) {
+        people.associate {
+            LocalDate.now().plusDays(it.daysUntil.toLong()) to DayMark(Mood.UNSET, false)
+        }
     }
 
     val onSelectedDay = remember(people, selectedDate) {
@@ -104,21 +104,11 @@ fun BirthdayScreen(
     ) {
         item("header") {
             Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                            tint = colors.textSecondary
-                        )
-                    }
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        "🎂 " + stringResource(R.string.notebook_birthdays),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = colors.textPrimary
-                    )
-                }
+                Text(
+                    "🎂 " + stringResource(R.string.notebook_birthdays),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = colors.textPrimary
+                )
                 Text(
                     stringResource(R.string.birthdays_header_sub),
                     style = MaterialTheme.typography.bodyMedium,
@@ -160,7 +150,7 @@ fun BirthdayScreen(
                     formatter = formatter,
                     selectedDate = selectedDate,
                     onSelectDate = viewModel::selectDate,
-                    loads = loads,
+                    marks = marks,
                     today = today,
                     onVisibleMonthChange = {}
                 )

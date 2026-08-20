@@ -8,7 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.studiojavid.memory.data.repo.BirthdayPerson
 import com.studiojavid.memory.data.repo.BirthdayRepository
 import com.studiojavid.memory.data.repo.GiftIdea
-import com.studiojavid.memory.data.repo.TaskRepository
+import com.studiojavid.memory.data.repo.NoteRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,7 +22,7 @@ import java.time.LocalDate
 @OptIn(ExperimentalCoroutinesApi::class)
 class BirthdayViewModel(
     private val repository: BirthdayRepository,
-    private val taskRepository: TaskRepository
+    private val noteRepository: NoteRepository
 ) : ViewModel() {
 
     val people: StateFlow<List<BirthdayPerson>> = repository.people
@@ -102,25 +102,20 @@ class BirthdayViewModel(
     }
 
     /**
-     * Turns a gift idea into a real task, dated a few days before the birthday
-     * so there is time to actually buy it.
+     * Files a gift idea as a note so it survives outside the person's page and
+     * can be found from the notes tab. [body] carries the whose-and-when
+     * context the caller composed from resources.
      */
-    fun giftIdeaToTask(idea: GiftIdea, person: BirthdayPerson, title: String) =
-        viewModelScope.launch {
-            val birthday = LocalDate.now().plusDays(person.daysUntil.toLong())
-            val due = birthday.minusDays(GIFT_LEAD_DAYS)
-            val dueDate = if (due.isBefore(LocalDate.now())) LocalDate.now() else due
-            taskRepository.saveTask(title = title, dueDate = dueDate)
-        }
+    fun giftIdeaToNote(title: String, body: String) = viewModelScope.launch {
+        if (title.isBlank()) return@launch
+        noteRepository.saveNote(title = title, body = body, notebookId = null)
+    }
 
     companion object {
-        /** Buy the gift a few days early, not on the day itself. */
-        private const val GIFT_LEAD_DAYS = 2L
-
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = app()
-                BirthdayViewModel(app.birthdayRepository, app.repository)
+                BirthdayViewModel(app.birthdayRepository, app.noteRepository)
             }
         }
     }

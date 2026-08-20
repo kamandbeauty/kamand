@@ -2,17 +2,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Reminders only. No INTERNET permission as of 1.0.0; adding one is a
-         store-listing and privacy-declaration change, not just a manifest edit. -->
+    <!-- Birthday reminders only. Photos use the Photo Picker, which needs no
+         storage permission at all. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <!--
-      Reminders are user-set alarm clocks for a specific moment, which is
-      exactly the use case USE_EXACT_ALARM covers; it is granted on install and
-      needs no runtime prompt. SCHEDULE_EXACT_ALARM is declared for Android 12
-      only (API 31/32), where USE_EXACT_ALARM does not yet exist.
+      A birthday reminder must land on the right morning, which is what
+      USE_EXACT_ALARM covers; it is granted on install and needs no runtime
+      prompt. SCHEDULE_EXACT_ALARM is declared for Android 12 only (API 31/32),
+      where USE_EXACT_ALARM does not yet exist.
     -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission
@@ -45,51 +45,12 @@
         </activity>
 
         <receiver
-            android:name=".notifications.ReminderReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.studiojavid.memory.action.REMIND" />
-                <action android:name="com.studiojavid.memory.action.COMPLETE" />
-                <action android:name="com.studiojavid.memory.action.SNOOZE" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
             android:name=".notifications.BirthdayReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.studiojavid.memory.action.BIRTHDAY" />
             </intent-filter>
         </receiver>
-
-        <!-- Home screen widgets -->
-        <receiver
-            android:name=".widget.TodayWidgetProvider"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.studiojavid.memory.widget.TOGGLE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_today_info" />
-        </receiver>
-
-        <receiver
-            android:name=".widget.QuickAddWidgetProvider"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_quick_add_info" />
-        </receiver>
-
-        <service
-            android:name=".widget.TodayWidgetService"
-            android:permission="android.permission.BIND_REMOTEVIEWS"
-            android:exported="false" />
 
         <receiver
             android:name=".notifications.BootReceiver"

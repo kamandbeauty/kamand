@@ -33,29 +33,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.studiojavid.memory.R
-import com.studiojavid.memory.data.local.Priority
-import com.studiojavid.memory.data.repo.Task
 import com.studiojavid.memory.ui.LocalDateFormatter
-import com.studiojavid.memory.ui.TaskFilter
-import com.studiojavid.memory.ui.TasksViewModel
+import com.studiojavid.memory.ui.MemoryFilter
+import com.studiojavid.memory.ui.MemoryViewModel
 import com.studiojavid.memory.ui.components.ChipRow
 import com.studiojavid.memory.ui.components.EmptyState
-import com.studiojavid.memory.ui.components.SwipeableTaskCard
-import com.studiojavid.memory.ui.displayName
+import com.studiojavid.memory.ui.components.MemoryPageCard
 import com.studiojavid.memory.ui.theme.MemoryTheme
+import java.time.LocalDate
 
 @Composable
 fun SearchScreen(
-    viewModel: TasksViewModel,
+    viewModel: MemoryViewModel,
     onBack: () -> Unit,
-    onOpenTask: (Task) -> Unit,
+    onOpenPage: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val colors = MemoryTheme.colors
     val formatter = LocalDateFormatter.current
     val query by viewModel.query.collectAsStateWithLifecycle()
     val filter by viewModel.filter.collectAsStateWithLifecycle()
-    val results by viewModel.searchResults.collectAsStateWithLifecycle()
+    val results by viewModel.pages.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
@@ -100,18 +98,15 @@ fun SearchScreen(
         }
         Spacer(Modifier.height(10.dp))
         ChipRow(
-            items = TaskFilter.entries.toList(),
+            items = MemoryFilter.entries.toList(),
             selected = filter,
             onSelect = viewModel::setFilter,
             label = {
                 stringResource(
                     when (it) {
-                        TaskFilter.ALL -> R.string.filter_all
-                        TaskFilter.TODAY -> R.string.filter_today
-                        TaskFilter.NO_DATE -> R.string.filter_no_date
-                        TaskFilter.UNDONE -> R.string.filter_undone
-                        TaskFilter.DONE -> R.string.filter_done
-                        TaskFilter.IMPORTANT -> R.string.filter_important
+                        MemoryFilter.ALL -> R.string.filter_all
+                        MemoryFilter.FAVORITES -> R.string.filter_favorites
+                        MemoryFilter.WITH_PHOTO -> R.string.filter_with_photo
                     }
                 )
             },
@@ -128,28 +123,13 @@ fun SearchScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(results, key = { it.id }) { task ->
-                    val subtitle = buildString {
-                        append(
-                            task.dueDate?.let { formatter.relativeDate(it) }
-                                ?: stringResource(R.string.section_no_date)
-                        )
-                        task.dueTimeMinutes?.let { append(" · "); append(formatter.time(it)) }
-                    }
-                    SwipeableTaskCard(
-                        task = task,
-                        subtitle = subtitle,
-                        categoryLabel = task.category?.displayName(),
-                        priorityLabel = stringResource(
-                            when (task.priority) {
-                                Priority.LOW -> R.string.priority_low
-                                Priority.MEDIUM -> R.string.priority_medium
-                                Priority.HIGH -> R.string.priority_high
-                            }
-                        ),
-                        onToggle = { viewModel.toggleTask(task) },
-                        onClick = { onOpenTask(task) },
-                        onDelete = { viewModel.deleteTask(task) },
+                items(results, key = { it.id }) { page ->
+                    MemoryPageCard(
+                        page = page,
+                        dateLabel = formatter.weekdayAndDate(page.date),
+                        photo = viewModel.photoFile(page.photo),
+                        onClick = { onOpenPage(page.date) },
+                        onToggleFavorite = { viewModel.toggleFavorite(page) },
                         modifier = Modifier.animateItem()
                     )
                 }

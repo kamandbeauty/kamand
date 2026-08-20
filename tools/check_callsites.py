@@ -54,25 +54,49 @@ def kt_files():
 def split_params(sig: str):
     """Split a parameter list on top-level commas.
 
-    Lambda arrows (`->`) must not be mistaken for a closing generic bracket,
-    so they are masked out before the depth scan.
+    Angle brackets are ambiguous in Kotlin: `Map<Long, X>` is a generic, but
+    `a > 0` is a comparison. Counting every `>` as a closing bracket drove the
+    depth negative and split a trailing-lambda argument in the middle, so `<`
+    only opens a generic when it directly follows an identifier, and `>` only
+    closes one while such a generic is open.
+
+    Braces are counted too: an argument may be a lambda containing commas.
+    Lambda arrows and the comparison operators `->`, `<=`, `>=` are masked out
+    first so they can never be read as brackets.
     """
-    sig = sig.replace("->", "\x00\x00")
+    for token, mask in (("->", "\x00\x00"), ("<=", "\x01\x01"), (">=", "\x02\x02")):
+        sig = sig.replace(token, mask)
+
+    def unmask(text):
+        for token, mask in (("->", "\x00\x00"), ("<=", "\x01\x01"), (">=", "\x02\x02")):
+            text = text.replace(mask, token)
+        return text
+
     depth = 0
+    angle = 0
     cur = ""
     out = []
+    prev = ""
     for ch in sig:
-        if ch in "(<[":
+        if ch in "([{":
             depth += 1
-        elif ch in ")>]":
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "<" and (prev.isalnum() or prev in "_?"):
+            angle += 1
+            depth += 1
+        elif ch == ">" and angle > 0:
+            angle -= 1
             depth -= 1
         if ch == "," and depth == 0:
-            out.append(cur.replace("\x00\x00", "->"))
+            out.append(unmask(cur))
             cur = ""
         else:
             cur += ch
+        if not ch.isspace():
+            prev = ch
     if cur.strip():
-        out.append(cur.replace("\x00\x00", "->"))
+        out.append(unmask(cur))
     return out
 
 

@@ -5,8 +5,8 @@ import org.junit.Test
 import java.time.LocalDate
 
 /**
- * The streak rule mirrored from TasksViewModel: consecutive days with at least
- * one completion, ending today or (grace period) yesterday.
+ * The writing-streak rule mirrored from MemoryViewModel: consecutive days that
+ * have a diary page, ending today or (grace period) yesterday.
  */
 private fun streakOf(days: Set<LocalDate>, today: LocalDate): Int {
     var cursor = if (days.contains(today)) today else today.minusDays(1)
@@ -24,7 +24,7 @@ class StreakTest {
     private val today = LocalDate.of(2026, 8, 14)
 
     @Test
-    fun noCompletions_isZero() {
+    fun noPages_isZero() {
         assertEquals(0, streakOf(emptySet(), today))
     }
 
@@ -52,7 +52,7 @@ class StreakTest {
     }
 
     @Test
-    fun staleCompletions_resetToZero() {
+    fun stalePages_resetToZero() {
         val days = setOf(today.minusDays(5), today.minusDays(6))
         assertEquals(0, streakOf(days, today))
     }

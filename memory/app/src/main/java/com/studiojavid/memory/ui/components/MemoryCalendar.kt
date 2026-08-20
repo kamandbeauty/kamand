@@ -58,12 +58,14 @@ import androidx.compose.ui.unit.dp
 import com.studiojavid.memory.R
 import com.studiojavid.memory.core.date.DateFormatter
 import com.studiojavid.memory.core.date.MonthPage
+import com.studiojavid.memory.data.local.Mood
 import com.studiojavid.memory.ui.theme.MemoryTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 /** Task load per day used to draw the indicator dots. */
-data class DayLoad(val total: Int, val done: Int)
+/** What the month grid needs to know about a day: mood, and whether it has a photo. */
+data class DayMark(val mood: Mood, val hasPhoto: Boolean)
 
 /**
  * Month calendar that renders a genuine Jalali month in Persian and a
@@ -74,7 +76,7 @@ fun MemoryCalendar(
     formatter: DateFormatter,
     selectedDate: LocalDate,
     onSelectDate: (LocalDate) -> Unit,
-    loads: Map<LocalDate, DayLoad>,
+    marks: Map<LocalDate, DayMark>,
     onVisibleMonthChange: (MonthPage) -> Unit,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now()
@@ -131,7 +133,7 @@ fun MemoryCalendar(
                 formatter = formatter,
                 selectedDate = selectedDate,
                 today = today,
-                loads = loads,
+                marks = marks,
                 onSelectDate = onSelectDate
             )
         }
@@ -237,7 +239,7 @@ private fun MonthGrid(
     formatter: DateFormatter,
     selectedDate: LocalDate,
     today: LocalDate,
-    loads: Map<LocalDate, DayLoad>,
+    marks: Map<LocalDate, DayMark>,
     onSelectDate: (LocalDate) -> Unit
 ) {
     val blanks = month.leadingBlanks
@@ -257,7 +259,7 @@ private fun MonthGrid(
                                 date = date,
                                 isToday = date == today,
                                 isSelected = date == selectedDate,
-                                load = loads[date],
+                                mark = marks[date],
                                 accessibilityLabel = formatter.fullDate(date),
                                 onClick = { onSelectDate(date) }
                             )
@@ -277,26 +279,22 @@ private fun DayCell(
     date: LocalDate,
     isToday: Boolean,
     isSelected: Boolean,
-    load: DayLoad?,
+    mark: DayMark?,
     accessibilityLabel: String,
     onClick: () -> Unit
 ) {
     val colors = MemoryTheme.colors
-    val hasTasks = (load?.total ?: 0) > 0
-    val allDone = hasTasks && load!!.done >= load.total
+    val written = mark != null
 
-    // Days with tasks are tinted so the month reads at a glance: green when the
-    // day is fully done, warm when work is still pending.
-    val loadTint = when {
-        !hasTasks -> Color.Transparent
-        allDone -> colors.tint(colors.success)
-        else -> colors.tint(colors.orange)
-    }
+    // A written day is tinted with its own mood, so a month of the calendar
+    // reads as a mood map rather than a grid of identical dots.
+    val moodAccent = mark?.mood?.takeIf { it != Mood.UNSET }?.color() ?: colors.purple
+    val writtenTint = if (written) colors.tint(moodAccent) else Color.Transparent
     val background by animateColorAsState(
         when {
             isSelected -> colors.coral
             isToday -> colors.tint(colors.coral)
-            else -> loadTint
+            else -> writtenTint
         },
         tween(220),
         label = "dayBg"
@@ -305,8 +303,7 @@ private fun DayCell(
         when {
             isSelected -> Color.White
             isToday -> colors.onTint(colors.coral)
-            hasTasks && allDone -> colors.onTint(colors.success)
-            hasTasks -> colors.onTint(colors.orange)
+            written -> colors.onTint(moodAccent)
             else -> colors.textPrimary
         },
         tween(220),
@@ -356,25 +353,21 @@ private fun DayCell(
                 )
             }
         }
-        DayIndicator(load = load, selected = isSelected)
+        DayIndicator(mark = mark, selected = isSelected)
     }
 }
 
 @Composable
-private fun DayIndicator(load: DayLoad?, selected: Boolean) {
+private fun DayIndicator(mark: DayMark?, selected: Boolean) {
     val colors = MemoryTheme.colors
+    val accent = mark?.mood?.takeIf { it != Mood.UNSET }?.color() ?: colors.purple
     Box(Modifier.height(8.dp), contentAlignment = Alignment.Center) {
-        if (load != null && load.total > 0) {
-            val allDone = load.done >= load.total
-            val color = when {
-                selected -> Color.White
-                allDone -> colors.success
-                else -> colors.orange
-            }
+        if (mark != null) {
+            val color = if (selected) Color.White else accent
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                repeat(minOf(load.total, 3)) {
-                    Box(Modifier.size(4.dp).background(color, CircleShape))
-                }
+                Box(Modifier.size(4.dp).background(color, CircleShape))
+                // A second dot marks the days that also carry a photo.
+                if (mark.hasPhoto) Box(Modifier.size(4.dp).background(color, CircleShape))
             }
         }
     }

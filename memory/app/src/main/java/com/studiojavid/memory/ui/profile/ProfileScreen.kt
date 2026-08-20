@@ -58,17 +58,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.studiojavid.memory.MainActivity
 import com.studiojavid.memory.notifications.Notifications
-import com.studiojavid.memory.notifications.ReminderScheduler
+import com.studiojavid.memory.notifications.BirthdayScheduler
 import com.studiojavid.memory.R
 import com.studiojavid.memory.data.backup.BackupManager
 import com.studiojavid.memory.data.prefs.AppLanguage
 import com.studiojavid.memory.data.prefs.ThemeMode
-import com.studiojavid.memory.data.repo.Category
-import com.studiojavid.memory.data.repo.DefaultCategories
-import com.studiojavid.memory.data.repo.Task
+import com.studiojavid.memory.data.local.Mood
 import com.studiojavid.memory.ui.LocalDateFormatter
 import com.studiojavid.memory.ui.MainViewModel
-import com.studiojavid.memory.ui.TasksViewModel
+import com.studiojavid.memory.ui.MemoryViewModel
 import com.studiojavid.memory.ui.components.Pill
 import com.studiojavid.memory.ui.components.AccentCard
 import com.studiojavid.memory.ui.components.accentTextShadow
@@ -76,7 +74,10 @@ import com.studiojavid.memory.ui.components.darken
 import com.studiojavid.memory.ui.components.MemoryCard
 import com.studiojavid.memory.ui.components.SectionHeader
 import com.studiojavid.memory.ui.components.SelectableChip
-import com.studiojavid.memory.ui.components.TaskCardContent
+import com.studiojavid.memory.ui.components.color
+import com.studiojavid.memory.ui.components.emoji
+import com.studiojavid.memory.ui.components.label
+import com.studiojavid.memory.ui.components.selectableMoods
 import com.studiojavid.memory.ui.components.WeeklyBars
 import com.studiojavid.memory.ui.displayName
 import com.studiojavid.memory.ui.theme.MemoryTheme
@@ -86,7 +87,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
-    tasksViewModel: TasksViewModel,
+    memoryViewModel: MemoryViewModel,
     mainViewModel: MainViewModel,
     backupManager: BackupManager,
     userName: String,
@@ -101,11 +102,9 @@ fun ProfileScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val stats by tasksViewModel.stats.collectAsStateWithLifecycle()
-    val categories by tasksViewModel.categories.collectAsStateWithLifecycle()
+    val stats by memoryViewModel.stats.collectAsStateWithLifecycle()
 
     var showNameDialog by rememberSaveable { mutableStateOf(false) }
-    var showCategoryDialog by rememberSaveable { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(BackupManager.MIME)
@@ -161,20 +160,20 @@ fun ProfileScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatCard(
                     modifier = Modifier.weight(1f),
-                    value = formatter.digits(stats.completed),
-                    label = stringResource(R.string.stats_done),
+                    value = formatter.digits(stats.total),
+                    label = stringResource(R.string.stats_pages),
                     accent = colors.mint
                 )
                 StatCard(
                     modifier = Modifier.weight(1f),
-                    value = formatter.digits(stats.pending),
-                    label = stringResource(R.string.stats_undone),
+                    value = formatter.digits(stats.thisMonth),
+                    label = stringResource(R.string.stats_this_month),
                     accent = colors.orange
                 )
                 StatCard(
                     modifier = Modifier.weight(1f),
-                    value = formatter.percent(stats.successRate),
-                    label = stringResource(R.string.stats_rate),
+                    value = formatter.digits(stats.favorites),
+                    label = stringResource(R.string.stats_favorites),
                     accent = colors.purple
                 )
             }
@@ -184,14 +183,15 @@ fun ProfileScreen(
             MemoryCard(Modifier.fillMaxWidth()) {
                 Column {
                     Text(
-                        stringResource(R.string.weekly_performance),
+                        stringResource(R.string.weekly_writing),
                         style = MaterialTheme.typography.titleSmall,
                         color = colors.textPrimary
                     )
                     Spacer(Modifier.height(14.dp))
-                    val max = (stats.weekly.maxOrNull() ?: 0).coerceAtLeast(1).toFloat()
+                    // A day was either written or it was not; there is no
+                    // magnitude to scale, so the bar is full or empty.
                     WeeklyBars(
-                        values = stats.weekly.map { it / max },
+                        values = stats.weekly.map { if (it) 1f else 0f },
                         labels = stats.weeklyDates.map { formatter.digits(formatter.shortDate(it).takeWhile { c -> c != ' ' }) }
                     )
                 }
@@ -279,25 +279,30 @@ fun ProfileScreen(
             }
         }
 
-        item("categoriesHeader") {
-            SectionHeader(
-                stringResource(R.string.manage_categories),
-                trailing = {
-                    IconButton(onClick = { showCategoryDialog = true }) {
-                        Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_category), tint = colors.coral)
-                    }
-                }
-            )
-        }
+        item("moodHeader") { SectionHeader(stringResource(R.string.mood_breakdown)) }
 
-        item("categories") {
+        item("moods") {
             MemoryCard(Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    categories.forEach { category ->
-                        CategoryRow(
-                            category = category,
-                            onDelete = { tasksViewModel.deleteCategory(category) }
-                        )
+                if (stats.moodCounts.isEmpty()) {
+                    Text(
+                        stringResource(R.string.mood_breakdown_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.textSecondary
+                    )
+                } else {
+                    // Shares are of the *moody* pages, not of all pages: a page
+                    // saved without a mood would otherwise silently shrink every
+                    // bar and make the percentages not add up.
+                    val moodTotal = stats.moodCounts.values.sum().coerceAtLeast(1)
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        selectableMoods.forEach { mood ->
+                            MoodBreakdownRow(
+                                mood = mood,
+                                count = stats.moodCounts[mood] ?: 0,
+                                share = (stats.moodCounts[mood] ?: 0).toFloat() / moodTotal,
+                                countLabel = formatter.digits(stats.moodCounts[mood] ?: 0)
+                            )
+                        }
                     }
                 }
             }
@@ -336,7 +341,7 @@ fun ProfileScreen(
         item("notifCard") {
             val activity = LocalContext.current as? MainActivity
             val notifGranted = Notifications.hasPermission(context)
-            val exactGranted = remember { ReminderScheduler(context).canScheduleExact() }
+            val exactGranted = remember { BirthdayScheduler(context).canScheduleExact() }
 
             MemoryCard(Modifier.fillMaxWidth()) {
                 Column {
@@ -405,15 +410,6 @@ fun ProfileScreen(
         )
     }
 
-    if (showCategoryDialog) {
-        NewCategoryDialog(
-            onDismiss = { showCategoryDialog = false },
-            onConfirm = { name, icon, color ->
-                tasksViewModel.addCategory(name, icon, color)
-                showCategoryDialog = false
-            }
-        )
-    }
 }
 
 @Composable
@@ -544,37 +540,6 @@ private fun ActionTile(
 }
 
 @Composable
-private fun CategoryRow(category: Category, onDelete: () -> Unit) {
-    val colors = MemoryTheme.colors
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Box(
-            Modifier
-                .size(34.dp)
-                .background(colors.tint(Color(category.color)), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(category.icon, style = MaterialTheme.typography.bodyMedium)
-        }
-        Spacer(Modifier.width(10.dp))
-        Text(
-            category.displayName(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.textPrimary,
-            modifier = Modifier.weight(1f)
-        )
-        if (!category.isBuiltIn) {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Rounded.DeleteOutline,
-                    contentDescription = stringResource(R.string.delete),
-                    tint = colors.danger
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun NameDialog(initial: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var value by remember { mutableStateOf(initial) }
     AlertDialog(
@@ -592,82 +557,6 @@ private fun NameDialog(initial: String, onDismiss: () -> Unit, onConfirm: (Strin
         confirmButton = { TextButton(onClick = { onConfirm(value) }) { Text(stringResource(R.string.save)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
         containerColor = MemoryTheme.colors.surface,
-        shape = RoundedCornerShape(24.dp)
-    )
-}
-
-@Composable
-private fun NewCategoryDialog(onDismiss: () -> Unit, onConfirm: (String, String, Int) -> Unit) {
-    val colors = MemoryTheme.colors
-    var name by remember { mutableStateOf("") }
-    var icon by remember { mutableStateOf(DefaultCategories.emojis.first()) }
-    var color by remember { mutableStateOf(DefaultCategories.palette.first()) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.new_category)) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    label = { Text(stringResource(R.string.category_name)) }
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(stringResource(R.string.icon), style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
-                Spacer(Modifier.height(6.dp))
-                androidx.compose.foundation.lazy.LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(DefaultCategories.emojis) { emoji ->
-                        Box(
-                            Modifier
-                                .size(38.dp)
-                                .background(
-                                    if (emoji == icon) colors.tint(Color(color)) else colors.surfaceMuted,
-                                    CircleShape
-                                )
-                                .clickable { icon = emoji },
-                            contentAlignment = Alignment.Center
-                        ) { Text(emoji) }
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-                Text(stringResource(R.string.color), style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
-                Spacer(Modifier.height(6.dp))
-                androidx.compose.foundation.lazy.LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(DefaultCategories.palette) { paletteColor ->
-                        Box(
-                            Modifier
-                                .size(32.dp)
-                                .background(Color(paletteColor), CircleShape)
-                                .clickable { color = paletteColor },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (paletteColor == color) {
-                                Box(
-                                    Modifier
-                                        .size(12.dp)
-                                        .background(Color.White, CircleShape)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { if (name.isNotBlank()) onConfirm(name, icon, color) },
-                enabled = name.isNotBlank()
-            ) { Text(stringResource(R.string.add)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-        containerColor = colors.surface,
         shape = RoundedCornerShape(24.dp)
     )
 }
@@ -709,6 +598,50 @@ private fun AppFooter() {
             text = stringResource(R.string.designed_by),
             style = MaterialTheme.typography.labelSmall,
             color = colors.textSecondary.copy(alpha = 0.75f)
+        )
+    }
+}
+
+/**
+ * One mood's share of the diary, as a labelled bar.
+ *
+ * The bar is drawn even at zero so the five moods keep fixed positions and the
+ * list does not reshuffle as counts change.
+ */
+@Composable
+private fun MoodBreakdownRow(mood: Mood, count: Int, share: Float, countLabel: String) {
+    val colors = MemoryTheme.colors
+    val accent = mood.color()
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(mood.emoji, style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.width(10.dp))
+        Text(
+            mood.label(),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.textSecondary,
+            modifier = Modifier.width(56.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Box(
+            Modifier
+                .weight(1f)
+                .height(10.dp)
+                .background(colors.surfaceMuted, RoundedCornerShape(5.dp))
+        ) {
+            if (count > 0) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(share.coerceIn(0f, 1f))
+                        .height(10.dp)
+                        .background(accent, RoundedCornerShape(5.dp))
+                )
+            }
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            countLabel,
+            style = MaterialTheme.typography.labelMedium,
+            color = colors.textPrimary
         )
     }
 }

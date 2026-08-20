@@ -18,15 +18,16 @@ import java.util.concurrent.TimeUnit
 /**
  * Schedules birthday reminders.
  *
- * Mirrors [ReminderScheduler]: an exact alarm plus a WorkManager backstop,
- * because OEM battery managers drop inexact alarms. Ids are offset so birthday
- * alarms can never collide with task alarms.
+ * An exact alarm plus a WorkManager backstop, because OEM battery managers
+ * drop inexact alarms — and a birthday reminder that arrives a day late has
+ * already failed at the only thing it exists to do.
  */
 class BirthdayScheduler(private val context: Context) {
 
     private val alarmManager: AlarmManager? = context.getSystemService()
 
-    private fun canScheduleExact(): Boolean =
+    /** Also read by the profile diagnostics card, hence not private. */
+    fun canScheduleExact(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
             alarmManager?.canScheduleExactAlarms() == true
 

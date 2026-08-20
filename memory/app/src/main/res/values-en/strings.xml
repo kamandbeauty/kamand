@@ -5,118 +5,36 @@
     <string name="app_name">دفتر خاطرات و تولد</string>
     <string name="app_name_short">Memory</string>
 
-    <string name="nav_today">Today</string>
     <string name="nav_calendar">Calendar</string>
     <string name="nav_profile">Profile</string>
 
-    <string name="greeting_morning">Good morning</string>
-    <string name="greeting_noon">Good afternoon</string>
-    <string name="greeting_evening">Good evening</string>
-    <string name="greeting_night">Good night</string>
-    <string name="greeting_morning_emoji">☀️</string>
-    <string name="greeting_noon_emoji">🌤️</string>
-    <string name="greeting_evening_emoji">🌇</string>
-    <string name="greeting_night_emoji">🌙</string>
     <string name="greeting_no_name">👋</string>
 
-    <string name="home_tasks_count">You have %1$s tasks today</string>
-    <string name="home_no_tasks">Nothing planned today</string>
-    <string name="smart_start">Let\'s start the day? ☀️</string>
-    <string name="smart_going_well">You\'re on fire! 🔥</string>
-    <string name="smart_almost">Almost there! 💪</string>
-    <string name="smart_done">You nailed today! 🎉</string>
-    <string name="smart_night">Time to rest 🌙</string>
-
-    <string name="progress_title">Today\'s progress</string>
-    <string name="progress_of">%1$s of %2$s</string>
     <string name="progress_percent">%1$s%%</string>
 
-    <string name="today_tasks">Today\'s tasks</string>
-    <string name="completed_tasks">Completed</string>
     <string name="task_today">Today</string>
     <string name="task_tomorrow">Tomorrow</string>
     <string name="task_yesterday">Yesterday</string>
-    <string name="no_date">No date</string>
 
-    <string name="add_task">New task ✨</string>
-    <string name="edit_task">Edit task</string>
-    <string name="task_title">Task title</string>
-    <string name="task_title_hint">What do you need to do?</string>
-    <string name="task_description">Description</string>
-    <string name="task_description_hint">Short note (optional)</string>
-    <string name="category">Category</string>
-    <string name="time">Time</string>
-    <string name="priority">Priority</string>
-    <string name="reminder">Reminder</string>
-    <string name="save_task">Save task</string>
-    <string name="more_options">More options</string>
-    <string name="less_options">Hide options</string>
-
-    <string name="priority_low">Low</string>
-    <string name="priority_medium">Medium</string>
-    <string name="priority_high">High</string>
-
-    <string name="category_personal">Personal</string>
-    <string name="category_work">Work</string>
-    <string name="category_shopping">Shopping</string>
-    <string name="category_health">Health</string>
-    <string name="category_study">Study</string>
-    <string name="category_other">Other</string>
-    <string name="new_category">New category</string>
-    <string name="category_name">Category name</string>
-    <string name="manage_categories">Manage categories</string>
-    <string name="add">Add</string>
-    <string name="color">Color</string>
-    <string name="icon">Icon</string>
-
-    <string name="reminder_at">Reminder %1$s at %2$s</string>
-    <string name="reminder_off">No reminder</string>
-    <string name="reminder_needs_time">Pick a time to set a reminder</string>
     <string name="notification_channel_name">Task reminders</string>
     <string name="notification_channel_desc">Reminders for your daily tasks</string>
     <string name="notification_title">MEMORY reminder</string>
-    <string name="notification_permission_rationale">Allow notifications to receive reminders</string>
 
     <string name="calendar_today">Today</string>
     <string name="previous_month">Previous month</string>
     <string name="next_month">Next month</string>
-    <string name="tasks_of_day">Tasks of the day</string>
-    <string name="no_tasks_this_day">No tasks for this day</string>
-    <string name="day_task_count">%1$s tasks</string>
 
     <string name="search">Search</string>
     <string name="search_hint">Search tasks…</string>
     <string name="filter_all">All</string>
-    <string name="filter_today">Today</string>
-    <string name="filter_undone">Not done</string>
-    <string name="filter_done">Done</string>
-    <string name="filter_important">Important</string>
 
     <string name="action_done">Done</string>
-    <string name="action_delete">Delete</string>
-    <string name="task_deleted">Task deleted</string>
     <string name="undo">Undo</string>
-    <string name="restore">Restore</string>
-    <string name="delete_all_completed">Clear all completed</string>
     <string name="cancel">Cancel</string>
-    <string name="close">Close</string>
     <string name="delete">Delete</string>
 
-    <string name="celebration_title">Well done!</string>
-    <string name="celebration_subtitle">You finished today 🎉</string>
-
-    <string name="empty_today">Nothing to do today 🌴</string>
-    <string name="empty_today_sub">Add your first task ✨</string>
-    <string name="empty_completed">Nothing completed yet</string>
-
-    <string name="profile">Profile</string>
     <string name="my_stats">My stats</string>
-    <string name="stats_done">Completed</string>
-    <string name="stats_undone">Pending</string>
-    <string name="stats_rate">Success rate</string>
-    <string name="streak">day streak</string>
     <string name="streak_value">🔥 %1$s day streak</string>
-    <string name="weekly_performance">Weekly performance</string>
     <string name="settings">Settings</string>
     <string name="theme">Appearance</string>
     <string name="theme_system">System</string>
@@ -150,57 +68,22 @@
     <string name="onboarding_name_hint">Your name</string>
     <string name="onboarding_continue">Continue</string>
 
-    <string name="cd_add_task">Add a new task</string>
-    <string name="cd_toggle_task">Toggle task completion</string>
     <string name="cd_back">Back</string>
-    <string name="cd_progress_ring">Daily progress ring</string>
 
     <!-- Phase 2: planner sections -->
-    <string name="section_plan_today">Today\'s plan</string>
-    <string name="section_anytime">Anytime today</string>
-    <string name="section_no_date">No date</string>
-    <string name="section_no_date_sub">Tasks without a time yet</string>
-    <string name="move_to_today">Move to today</string>
-    <string name="move_to_tomorrow">Move to tomorrow</string>
-    <string name="pick_a_day">Pick a day</string>
-    <string name="remove_date">Remove date</string>
 
     <!-- Quick add -->
-    <string name="quick_add_hint">Write a task…</string>
-    <string name="quick_add">Quick add</string>
-    <string name="voice_input">Voice input</string>
-    <string name="voice_prompt">Say your task…</string>
-    <string name="voice_unavailable">Voice input is not available on this device</string>
-    <string name="mic_permission_needed">Microphone permission is needed for voice input</string>
 
     <!-- Repeat -->
-    <string name="repeat">Repeat</string>
-    <string name="repeat_never">No repeat</string>
-    <string name="repeat_daily">Every day</string>
-    <string name="repeat_monthly">Every month</string>
-    <string name="repeat_weekdays">Specific days</string>
-    <string name="repeat_custom">Custom</string>
-    <string name="repeat_every_n_days">Every %1$s days</string>
-    <string name="repeat_on_days">Weekly: %1$s</string>
 
     <!-- Task actions -->
-    <string name="action_edit">Edit</string>
-    <string name="action_reminder_on">Turn reminder on</string>
-    <string name="action_reminder_off">Turn reminder off</string>
-    <string name="action_uncomplete">Mark as not done</string>
 
     <!-- Smart greetings -->
-    <string name="smart_half">Halfway there! 👏</string>
-    <string name="smart_last_one">Just one left! 💪</string>
 
     <!-- Empty states -->
-    <string name="empty_future">Nothing planned yet ✨</string>
-    <string name="empty_category">Nothing here yet 🌱</string>
     <string name="empty_search">We found nothing 🔎</string>
-    <string name="empty_no_date">Empty here — undated tasks will show up 🌱</string>
 
     <!-- Filters -->
-    <string name="filter_no_date">No date</string>
 
     <!-- Themes -->
     <string name="theme_palette">Color theme</string>
@@ -213,22 +96,17 @@
     <string name="theme_premium_soon">More themes coming soon</string>
 
     <!-- Reorder -->
-    <string name="reorder_hint">Hold and drag to reorder</string>
 
     <!-- Widget -->
     <string name="widget_today_title">☀️ Today</string>
     <string name="widget_quick_add">Add task</string>
     <string name="widget_empty">Nothing to do today 🌴</string>
-    <string name="widget_progress">%1$s of %2$s</string>
     <string name="widget_today_description">Today\'s tasks and daily progress</string>
     <string name="widget_quick_add_description">Quickly add a new task</string>
-    <string name="list_separator">, </string>
     <string name="crash_title">The app closed unexpectedly last time</string>
     <string name="crash_subtitle">Copy this report and send it to us so we can fix the problem.</string>
     <string name="crash_copy">Copy report</string>
     <string name="crash_continue">Continue</string>
-    <string name="home_done_and_left">You did %1$s tasks today and %2$s are left</string>
-    <string name="home_all_done">You finished all %1$s tasks today 🎉</string>
     <string name="notif_diagnostics">Notification check</string>
     <string name="notif_test">Send a test notification</string>
     <string name="notif_test_sent">Test notification sent</string>
@@ -237,7 +115,6 @@
     <string name="notif_ok">Notifications are enabled ✓</string>
     <string name="notif_battery_hint">If reminders never arrive, allow autostart and remove battery restrictions for MEMORY in system settings.</string>
     <string name="notif_open_settings">Notification settings</string>
-    <string name="hero_done_of">%1$s of %2$s tasks done</string>
 
     <!-- Notes -->
     <string name="nav_notes">Notes</string>
@@ -269,27 +146,21 @@
     <string name="empty_notes">No notes yet 📝</string>
     <string name="empty_notes_sub">Write your first note ✨</string>
     <string name="empty_notebook">This notebook is empty 🌱</string>
-    <string name="search_notes_hint">Search notes…</string>
     <string name="cd_add_note">Add a new note</string>
-    <string name="cd_open_notebook">Open notebook</string>
     <string name="notification_now">Reminder · %1$s</string>
 
     <!-- Birthday notebook -->
     <string name="notebook_birthdays">Birthdays</string>
-    <string name="birthdays_subtitle">Never forget a birthday ❤️</string>
     <string name="birthdays_header_sub">Keep the people who matter close ❤️</string>
     <string name="upcoming_birthdays">Coming up</string>
-    <string name="all_people">Everyone</string>
     <string name="birthday_calendar">Birthday calendar</string>
     <string name="add_birthday">Add birthday</string>
     <string name="edit_birthday">Edit birthday</string>
     <string name="person_name">Name</string>
     <string name="person_name_hint">e.g. Mum</string>
     <string name="birth_date">Birth date</string>
-    <string name="birth_year">Birth year</string>
     <string name="birth_year_optional">Birth year (optional)</string>
     <string name="birth_year_hint">e.g. 1363</string>
-    <string name="relationship">Relationship</string>
     <string name="relationship_optional">Relationship (optional)</string>
     <string name="rel_mother">Mother</string>
     <string name="rel_father">Father</string>
@@ -308,10 +179,8 @@
     <string name="birthday_in_days">in %1$s days</string>
     <string name="birthday_today_full">It\'s their birthday today! 🎉</string>
     <string name="turns_age">turns %1$s</string>
-    <string name="current_age">%1$s years old</string>
     <string name="save_person">Save</string>
     <string name="delete_person">Delete</string>
-    <string name="person_deleted">Deleted</string>
     <string name="empty_birthdays">No birthdays yet 🎂</string>
     <string name="empty_birthdays_sub">Add your first one ❤️</string>
     <string name="no_birthday_on_day">No birthdays on this day</string>
@@ -321,8 +190,6 @@
     <string name="gift_idea_hint">e.g. perfume</string>
     <string name="add_gift_idea">Add idea</string>
     <string name="convert_to_task">Turn into a task</string>
-    <string name="gift_task_title">Buy %1$s for %2$s</string>
-    <string name="gift_task_created">Task created ✓</string>
     <string name="birthday_reminder">Reminder</string>
     <string name="reminder_on_day">On the day</string>
     <string name="reminder_days_before">%1$s days before</string>
@@ -333,7 +200,6 @@
     <string name="use_for_person">Use for this person</string>
     <string name="message_saved">Message saved ✓</string>
     <string name="share_message">Share</string>
-    <string name="favorite_message">Chosen message</string>
     <string name="msg_cat_warm">Warm</string>
     <string name="msg_cat_emotional">Heartfelt</string>
     <string name="msg_cat_happy">Cheerful</string>
@@ -411,4 +277,58 @@
     <string name="notification_birthday_channel_desc">Reminders for upcoming birthdays</string>
     <string name="app_version">Version %1$s</string>
     <string name="designed_by">طراحی شده توسط استودیو جاوید</string>
+
+    <!-- Diary: pages, moods, photos -->
+    <string name="nav_diary">Diary</string>
+    <string name="nav_birthdays">Birthdays</string>
+    <string name="greeting_named">Hi %1$s 👋</string>
+    <string name="writing_streak">%1$s days in a row</string>
+    <string name="on_this_day">On this day</string>
+    <string name="recent_memories">Recent memories</string>
+    <string name="memory_count">%1$s memories</string>
+    <string name="no_memories_yet">No memories yet</string>
+    <string name="no_memories_hint">Start today — a few lines is enough.</string>
+    <string name="today_page_title">Today\'s memory</string>
+    <string name="today_page_empty_title">How was your day?</string>
+    <string name="today_page_empty_hint">Tap to write…</string>
+    <string name="new_memory">New memory</string>
+    <string name="edit_memory">Edit memory</string>
+    <string name="memory_title">Title</string>
+    <string name="memory_title_hint">e.g. A good day</string>
+    <string name="memory_body">Your memory</string>
+    <string name="memory_body_hint">What happened today?</string>
+    <string name="memory_tags">Tags</string>
+    <string name="memory_photo">Photo</string>
+    <string name="memory_save">Save memory</string>
+    <string name="add_photo">Add a photo</string>
+    <string name="remove_photo">Remove photo</string>
+    <string name="photo_missing">Photo not found</string>
+    <string name="cd_memory_photo">Memory photo</string>
+    <string name="favorite_memory">Add to favorites</string>
+    <string name="unfavorite_memory">Remove from favorites</string>
+    <string name="delete_memory">Delete memory</string>
+    <string name="memory_deleted">Memory deleted</string>
+    <string name="cd_add_memory">Write a memory</string>
+    <string name="mood_question">How did today feel?</string>
+    <string name="mood_unset">Not set</string>
+    <string name="mood_awful">Awful</string>
+    <string name="mood_bad">Bad</string>
+    <string name="mood_okay">Okay</string>
+    <string name="mood_good">Good</string>
+    <string name="mood_great">Great</string>
+    <string name="mood_breakdown">My moods</string>
+    <string name="mood_breakdown_empty">No mood recorded on any memory yet.</string>
+    <string name="blank_day_title">This day is empty</string>
+    <string name="blank_day_hint">Tap to write this day\'s memory</string>
+    <string name="future_day_title">Not yet</string>
+    <string name="future_day_hint">Memories can only be written for today and the past</string>
+    <string name="filter_favorites">Favorites</string>
+    <string name="filter_with_photo">With photo</string>
+    <string name="stats_pages">Memories</string>
+    <string name="stats_this_month">This month</string>
+    <string name="stats_favorites">Favorites</string>
+    <string name="weekly_writing">Writing this past week</string>
+    <string name="gift_note_title">Gift: %1$s for %2$s</string>
+    <string name="gift_note_body">For %1$s\'s birthday (%2$s)</string>
+    <string name="gift_note_created">Added to notes ✓</string>
 </resources>

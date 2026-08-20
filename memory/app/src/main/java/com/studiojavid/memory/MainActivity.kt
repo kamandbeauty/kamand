@@ -34,7 +34,7 @@ import com.studiojavid.memory.ui.LocalDateFormatter
 import com.studiojavid.memory.ui.MainViewModel
 import com.studiojavid.memory.ui.components.CrashReportScreen
 import com.studiojavid.memory.ui.MemoryAppScaffold
-import com.studiojavid.memory.ui.TasksViewModel
+import com.studiojavid.memory.ui.MemoryViewModel
 import com.studiojavid.memory.ui.onboarding.OnboardingScreen
 import com.studiojavid.memory.ui.rememberDateFormatter
 import com.studiojavid.memory.ui.theme.MemoryTheme
@@ -42,10 +42,7 @@ import com.studiojavid.memory.ui.theme.MemoryTheme
 class MainActivity : ComponentActivity() {
 
     private val mainViewModel: MainViewModel by viewModels { MainViewModel.Factory }
-    private val tasksViewModel: TasksViewModel by viewModels { TasksViewModel.Factory }
-
-    /** Set when launched from the Quick Add widget. */
-    private var pendingQuickAdd by mutableStateOf(false)
+    private val memoryViewModel: MemoryViewModel by viewModels { MemoryViewModel.Factory }
 
     /** Language the Activity was created with; a change requires recreate(). */
     private var appliedLanguage: AppLanguage? = null
@@ -66,8 +63,12 @@ class MainActivity : ComponentActivity() {
         splash.setKeepOnScreenCondition { !settingsReady }
 
         val app = application as MemoryApp
-        val backupManager = BackupManager(applicationContext, app.repository, app.noteRepository)
-        pendingQuickAdd = intent?.getBooleanExtra(EXTRA_QUICK_ADD, false) == true
+        val backupManager = BackupManager(
+            applicationContext,
+            app.memoryRepository,
+            app.noteRepository,
+            app.birthdayRepository
+        )
 
         setContent {
             val settings by mainViewModel.settings.collectAsStateWithLifecycle()
@@ -133,16 +134,14 @@ class MainActivity : ComponentActivity() {
                             )
                         } else {
                             MemoryAppScaffold(
-                                tasksViewModel = tasksViewModel,
+                                memoryViewModel = memoryViewModel,
                                 mainViewModel = mainViewModel,
                                 backupManager = backupManager,
                                 userName = current.name,
                                 theme = current.theme,
                                 language = current.language,
                                 palette = current.palette,
-                                onRequestNotificationPermission = ::ensureNotificationPermission,
-                                openAddSheet = pendingQuickAdd,
-                                onAddSheetOpened = { pendingQuickAdd = false }
+                                onRequestNotificationPermission = ::ensureNotificationPermission
                             )
                         }
                     }
@@ -151,15 +150,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        if (intent.getBooleanExtra(EXTRA_QUICK_ADD, false)) pendingQuickAdd = true
-    }
-
     override fun onResume() {
         super.onResume()
-        tasksViewModel.refreshToday()
+        // A diary left open overnight must roll onto the new day rather than
+        // keep offering to write yesterday's page.
+        memoryViewModel.refreshToday()
     }
 
     /**
@@ -206,8 +201,4 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun Boolean?.orFalse(): Boolean = this ?: false
-
-    companion object {
-        const val EXTRA_QUICK_ADD = "memory.extra.quick_add"
-    }
 }

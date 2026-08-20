@@ -2,12 +2,14 @@ package com.studiojavid.memory.data.backup
 
 import android.content.Context
 import android.net.Uri
-import com.studiojavid.memory.data.local.CategoryEntity
+import com.studiojavid.memory.data.local.BirthdayPersonEntity
+import com.studiojavid.memory.data.local.GiftIdeaEntity
+import com.studiojavid.memory.data.local.MemoryEntity
 import com.studiojavid.memory.data.local.NoteEntity
 import com.studiojavid.memory.data.local.NotebookEntity
-import com.studiojavid.memory.data.local.TaskEntity
+import com.studiojavid.memory.data.repo.BirthdayRepository
+import com.studiojavid.memory.data.repo.MemoryRepository
 import com.studiojavid.memory.data.repo.NoteRepository
-import com.studiojavid.memory.data.repo.TaskRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -18,11 +20,21 @@ import org.json.JSONObject
  *
  * The payload is a plain, versioned JSON document — deliberately transport
  * agnostic so a future cloud provider only has to move these bytes around.
+ *
+ * Every repository that owns user data is represented here. Birthdays in
+ * particular are irreplaceable: a date the user typed in once and will never
+ * be reminded of again if it is lost.
+ *
+ * Photos are **not** in the payload. They are binary blobs that would inflate
+ * a text backup by orders of magnitude; a restored page keeps its photo file
+ * name, so restoring onto the same device recovers the image, and onto a new
+ * one the page is intact minus the picture.
  */
 class BackupManager(
     private val context: Context,
-    private val repository: TaskRepository,
-    private val noteRepository: NoteRepository? = null
+    private val repository: MemoryRepository,
+    private val noteRepository: NoteRepository? = null,
+    private val birthdayRepository: BirthdayRepository? = null
 ) {
 
     suspend fun export(uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
@@ -44,50 +56,29 @@ class BackupManager(
     }
 
     suspend fun buildJson(): String {
-        val (tasks, categories) = repository.snapshot()
         val root = JSONObject()
         root.put("format", FORMAT)
         root.put("version", VERSION)
         root.put("exportedAt", System.currentTimeMillis())
 
-        val catArray = JSONArray()
-        categories.forEach { c ->
-            catArray.put(
+        val memoryArray = JSONArray()
+        repository.snapshot().forEach { m ->
+            memoryArray.put(
                 JSONObject()
-                    .put("id", c.id)
-                    .put("name", c.name)
-                    .put("icon", c.icon)
-                    .put("color", c.color)
-                    .put("builtInKey", c.builtInKey)
-                    .put("createdAt", c.createdAt)
+                    .put("id", m.id)
+                    .put("date", m.date)
+                    .put("title", m.title)
+                    .put("body", m.body)
+                    .put("mood", m.mood)
+                    .put("tags", m.tags)
+                    .put("photoUri", m.photoUri)
+                    .put("favorite", m.favorite)
+                    .put("createdAt", m.createdAt)
+                    .put("updatedAt", m.updatedAt)
             )
         }
-        root.put("categories", catArray)
+        root.put("memories", memoryArray)
 
-        val taskArray = JSONArray()
-        tasks.forEach { t ->
-            taskArray.put(
-                JSONObject()
-                    .put("id", t.id)
-                    .put("title", t.title)
-                    .put("description", t.description)
-                    .put("categoryId", t.categoryId ?: JSONObject.NULL)
-                    .put("createdAt", t.createdAt)
-                    .put("dueDate", t.dueDate ?: JSONObject.NULL)
-                    .put("dueTime", t.dueTime ?: JSONObject.NULL)
-                    .put("isCompleted", t.isCompleted)
-                    .put("completedAt", t.completedAt ?: JSONObject.NULL)
-                    .put("priority", t.priority)
-                    .put("reminderEnabled", t.reminderEnabled)
-                    .put("reminderTime", t.reminderTime ?: JSONObject.NULL)
-                    .put("repeatRule", t.repeatRule)
-                    .put("sortOrder", t.sortOrder)
-            )
-        }
-        root.put("tasks", taskArray)
-
-        // Notes are part of the user's data too; omitting them would make a
-        // "backup" quietly lossy.
         noteRepository?.let { notes ->
             val (noteRows, notebookRows) = notes.snapshot()
 
@@ -122,52 +113,73 @@ class BackupManager(
             root.put("notes", noteArray)
         }
 
+        birthdayRepository?.let { birthdays ->
+            val (people, ideas) = birthdays.snapshot()
+
+            val peopleArray = JSONArray()
+            people.forEach { p ->
+                peopleArray.put(
+                    JSONObject()
+                        .put("id", p.id)
+                        .put("name", p.name)
+                        .put("birthMonth", p.birthMonth)
+                        .put("birthDay", p.birthDay)
+                        .put("birthYear", p.birthYear ?: JSONObject.NULL)
+                        .put("relationship", p.relationship)
+                        .put("avatar", p.avatar)
+                        .put("notes", p.notes)
+                        .put("reminderEnabled", p.reminderEnabled)
+                        .put("reminderOffset", p.reminderOffset)
+                        .put("favoriteMessageId", p.favoriteMessageId)
+                        .put("createdAt", p.createdAt)
+                        .put("updatedAt", p.updatedAt)
+                )
+            }
+            root.put("people", peopleArray)
+
+            val ideaArray = JSONArray()
+            ideas.forEach { g ->
+                ideaArray.put(
+                    JSONObject()
+                        .put("id", g.id)
+                        .put("personId", g.personId)
+                        .put("title", g.title)
+                        .put("isCompleted", g.isCompleted)
+                        .put("createdAt", g.createdAt)
+                )
+            }
+            root.put("giftIdeas", ideaArray)
+        }
+
         return root.toString(2)
     }
 
+    /** @return how many diary pages were restored. */
     suspend fun parseAndApply(text: String): Int {
         val root = JSONObject(text)
         require(root.optString("format") == FORMAT) { "Unsupported backup file" }
 
-        val categories = mutableListOf<CategoryEntity>()
-        val catArray = root.optJSONArray("categories") ?: JSONArray()
-        for (i in 0 until catArray.length()) {
-            val o = catArray.getJSONObject(i)
-            categories += CategoryEntity(
+        val memories = mutableListOf<MemoryEntity>()
+        val memoryArray = root.optJSONArray("memories") ?: JSONArray()
+        for (i in 0 until memoryArray.length()) {
+            val o = memoryArray.getJSONObject(i)
+            memories += MemoryEntity(
                 id = o.getLong("id"),
-                name = o.getString("name"),
-                icon = o.optString("icon", "✨"),
-                color = o.optInt("color", 0xFF7C5CFF.toInt()),
-                builtInKey = o.optString("builtInKey", ""),
-                createdAt = o.optLong("createdAt", System.currentTimeMillis())
-            )
-        }
-
-        val tasks = mutableListOf<TaskEntity>()
-        val taskArray = root.optJSONArray("tasks") ?: JSONArray()
-        for (i in 0 until taskArray.length()) {
-            val o = taskArray.getJSONObject(i)
-            tasks += TaskEntity(
-                id = o.getLong("id"),
-                title = o.getString("title"),
-                description = o.optString("description", ""),
-                categoryId = o.optNullableLong("categoryId"),
+                date = o.getLong("date"),
+                title = o.optString("title", ""),
+                body = o.optString("body", ""),
+                mood = o.optInt("mood", 0),
+                tags = o.optString("tags", ""),
+                photoUri = o.optString("photoUri", ""),
+                favorite = o.optBoolean("favorite", false),
                 createdAt = o.optLong("createdAt", System.currentTimeMillis()),
-                dueDate = o.optNullableLong("dueDate"),
-                dueTime = o.optNullableLong("dueTime")?.toInt(),
-                isCompleted = o.optBoolean("isCompleted", false),
-                completedAt = o.optNullableLong("completedAt"),
-                priority = o.optInt("priority", 1),
-                reminderEnabled = o.optBoolean("reminderEnabled", false),
-                reminderTime = o.optNullableLong("reminderTime"),
-                repeatRule = o.optString("repeatRule", ""),
-                sortOrder = o.optInt("sortOrder", 0)
+                updatedAt = o.optLong("updatedAt", System.currentTimeMillis())
             )
         }
+        repository.replaceAll(memories)
 
-        repository.replaceAll(tasks, categories)
-
-        // Older backups have no notes section; leave existing notes untouched.
+        // A section the file does not carry is left alone rather than wiped:
+        // restoring a partial backup must not delete data it says nothing about.
         val notesRepo = noteRepository
         if (notesRepo != null && root.has("notes")) {
             val notebooks = mutableListOf<NotebookEntity>()
@@ -202,7 +214,45 @@ class BackupManager(
             notesRepo.replaceAll(notes, notebooks)
         }
 
-        return tasks.size
+        val birthdaysRepo = birthdayRepository
+        if (birthdaysRepo != null && root.has("people")) {
+            val people = mutableListOf<BirthdayPersonEntity>()
+            val peopleArray = root.optJSONArray("people") ?: JSONArray()
+            for (i in 0 until peopleArray.length()) {
+                val o = peopleArray.getJSONObject(i)
+                people += BirthdayPersonEntity(
+                    id = o.getLong("id"),
+                    name = o.getString("name"),
+                    birthMonth = o.getInt("birthMonth"),
+                    birthDay = o.getInt("birthDay"),
+                    birthYear = o.optNullableLong("birthYear")?.toInt(),
+                    relationship = o.optString("relationship", ""),
+                    avatar = o.optString("avatar", ""),
+                    notes = o.optString("notes", ""),
+                    reminderEnabled = o.optBoolean("reminderEnabled", false),
+                    reminderOffset = o.optInt("reminderOffset", 1),
+                    favoriteMessageId = o.optInt("favoriteMessageId", 0),
+                    createdAt = o.optLong("createdAt", System.currentTimeMillis()),
+                    updatedAt = o.optLong("updatedAt", System.currentTimeMillis())
+                )
+            }
+
+            val ideas = mutableListOf<GiftIdeaEntity>()
+            val ideaArray = root.optJSONArray("giftIdeas") ?: JSONArray()
+            for (i in 0 until ideaArray.length()) {
+                val o = ideaArray.getJSONObject(i)
+                ideas += GiftIdeaEntity(
+                    id = o.getLong("id"),
+                    personId = o.getLong("personId"),
+                    title = o.optString("title", ""),
+                    isCompleted = o.optBoolean("isCompleted", false),
+                    createdAt = o.optLong("createdAt", System.currentTimeMillis())
+                )
+            }
+            birthdaysRepo.replaceAll(people, ideas)
+        }
+
+        return memories.size
     }
 
     private fun JSONObject.optNullableLong(key: String): Long? =
@@ -210,7 +260,7 @@ class BackupManager(
 
     companion object {
         const val FORMAT = "memory-backup"
-        const val VERSION = 3
+        const val VERSION = 1
         const val MIME = "application/json"
 
         fun suggestedFileName(): String {

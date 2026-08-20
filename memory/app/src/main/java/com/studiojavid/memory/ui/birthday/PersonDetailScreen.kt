@@ -94,7 +94,7 @@ fun PersonDetailScreen(
         rememberPersonalized(stringResource(it.textRes), person.name)
     }
 
-    val taskCreated = stringResource(R.string.gift_task_created)
+    val noteCreated = stringResource(R.string.gift_note_created)
 
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
@@ -253,9 +253,14 @@ fun PersonDetailScreen(
                 onToggle = { viewModel.toggleGiftIdea(idea) },
                 onDelete = { viewModel.deleteGiftIdea(idea) },
                 onConvert = {
-                    val title = context.getString(R.string.gift_task_title, idea.title, person.name)
-                    viewModel.giftIdeaToTask(idea, person, title)
-                    Toast.makeText(context, taskCreated, Toast.LENGTH_SHORT).show()
+                    val title = context.getString(R.string.gift_note_title, idea.title, person.name)
+                    val body = context.getString(
+                        R.string.gift_note_body,
+                        person.name,
+                        formatter.jalaliDayMonth(person.birthMonth, person.birthDay)
+                    )
+                    viewModel.giftIdeaToNote(title, body)
+                    Toast.makeText(context, noteCreated, Toast.LENGTH_SHORT).show()
                 }
             )
         }

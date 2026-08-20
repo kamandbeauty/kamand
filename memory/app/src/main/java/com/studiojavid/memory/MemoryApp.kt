@@ -6,7 +6,7 @@ import com.studiojavid.memory.core.CrashReporter
 import com.studiojavid.memory.data.prefs.UserPreferences
 import com.studiojavid.memory.data.repo.BirthdayRepository
 import com.studiojavid.memory.data.repo.NoteRepository
-import com.studiojavid.memory.data.repo.TaskRepository
+import com.studiojavid.memory.data.repo.MemoryRepository
 import com.studiojavid.memory.notifications.Notifications
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -34,7 +34,7 @@ class MemoryApp : Application() {
         CoroutineScope(SupervisorJob() + Dispatchers.Default + startupErrorHandler)
 
     val preferences: UserPreferences by lazy { UserPreferences(this) }
-    val repository: TaskRepository by lazy { TaskRepository(this) }
+    val memoryRepository: MemoryRepository by lazy { MemoryRepository(this) }
     val noteRepository: NoteRepository by lazy { NoteRepository(this) }
     val birthdayRepository: BirthdayRepository by lazy { BirthdayRepository(this) }
 
@@ -47,12 +47,8 @@ class MemoryApp : Application() {
             .onFailure { Log.e(TAG, "Could not create the notification channel", it) }
 
         applicationScope.launch(Dispatchers.IO) {
-            runCatching { repository.ensureSeeded() }
-                .onFailure { Log.e(TAG, "Seeding default categories failed", it) }
             runCatching { noteRepository.ensureSeeded() }
                 .onFailure { Log.e(TAG, "Seeding default notebooks failed", it) }
-            runCatching { repository.rescheduleAllReminders() }
-                .onFailure { Log.e(TAG, "Rescheduling reminders failed", it) }
             runCatching { birthdayRepository.rescheduleAll() }
                 .onFailure { Log.e(TAG, "Rescheduling birthday reminders failed", it) }
         }

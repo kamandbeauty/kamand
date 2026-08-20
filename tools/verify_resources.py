@@ -176,13 +176,43 @@ def check_manifest():
         )
     if 'android:supportsRtl="true"' not in manifest:
         errors.append("supportsRtl must be enabled")
-    for required in (".MainActivity", ".notifications.ReminderReceiver", ".notifications.BootReceiver"):
-        if required not in manifest:
-            errors.append(f"manifest missing component {required}")
-    # The Application subclass is named after the brand (RooziApp, <Prefix>App),
+    if ".MainActivity" not in manifest:
+        errors.append("manifest missing component .MainActivity")
+    # The Application subclass is named after the brand (RooziApp, MemoryApp),
     # so it is matched by shape rather than by an exact name.
     if not re.search(r'android:name="\.\w+App"', manifest):
         errors.append("manifest missing the Application component")
+
+    # Every declared component must exist as a source file, and vice versa.
+    # A manifest entry pointing at a deleted class fails only at runtime, when
+    # the system tries to instantiate it; a receiver that exists but is not
+    # declared is silently never invoked. Both are caught here.
+    # Manifest names are relative to the app package, which is the directory
+    # holding the Application subclass.
+    app_files = [p for p in kotlin_files() if re.search(r"class \w+App\s*:\s*Application\(\)", open(p, encoding="utf-8").read())]
+    pkg_dir = os.path.dirname(app_files[0]) if app_files else None
+
+    declared = set(re.findall(r'android:name="\.([\w.]+)"', manifest))
+    if pkg_dir:
+        for name in sorted(declared):
+            path = os.path.join(pkg_dir, *name.split(".")) + ".kt"
+            if not os.path.exists(path):
+                errors.append(f"manifest declares .{name}, but no such Kotlin file exists")
+
+        # A service is only reachable through the manifest, and a receiver that
+        # is not declared is silently never invoked, so the reverse direction is
+        # checked too. Activities are exempt: Compose apps have exactly one.
+        component_bases = (": BroadcastReceiver()", ": AppWidgetProvider()", ": RemoteViewsService()")
+        for path in kotlin_files():
+            text = open(path, encoding="utf-8").read()
+            if not any(base in text for base in component_bases):
+                continue
+            rel = os.path.relpath(path, pkg_dir)
+            if rel.startswith(".."):
+                continue
+            name = os.path.splitext(rel)[0].replace(os.sep, ".")
+            if name not in declared:
+                errors.append(f"{name} is an Android component but is not declared in the manifest")
 
 
 def check_fonts():

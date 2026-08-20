@@ -8,7 +8,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,14 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -61,33 +60,32 @@ import com.studiojavid.memory.data.prefs.ThemeMode
 import com.studiojavid.memory.data.repo.BirthdayPerson
 import com.studiojavid.memory.data.repo.Note
 import com.studiojavid.memory.data.repo.Notebook
-import com.studiojavid.memory.data.repo.Task
 import com.studiojavid.memory.navigation.Routes
 import com.studiojavid.memory.navigation.TopLevelDestination
-import com.studiojavid.memory.ui.addtask.AddTaskSheet
-import com.studiojavid.memory.ui.components.TaskActionsSheet
-import com.studiojavid.memory.ui.calendar.CalendarScreen
 import com.studiojavid.memory.ui.birthday.BirthdayScreen
 import com.studiojavid.memory.ui.birthday.MessagePickerScreen
 import com.studiojavid.memory.ui.birthday.PersonDetailScreen
 import com.studiojavid.memory.ui.birthday.PersonEditorSheet
+import com.studiojavid.memory.ui.calendar.CalendarScreen
+import com.studiojavid.memory.ui.components.MemoryHeader
+import com.studiojavid.memory.ui.components.liquidGlassSource
+import com.studiojavid.memory.ui.components.rememberLiquidGlassState
+import com.studiojavid.memory.ui.diary.DiaryScreen
+import com.studiojavid.memory.ui.diary.MemoryEditorSheet
 import com.studiojavid.memory.ui.notes.NoteEditorSheet
 import com.studiojavid.memory.ui.notes.NotebookDialog
 import com.studiojavid.memory.ui.notes.NotesScreen
 import com.studiojavid.memory.ui.profile.ProfileScreen
-import com.studiojavid.memory.ui.components.MemoryHeader
-import com.studiojavid.memory.ui.components.liquidGlassSource
-import com.studiojavid.memory.ui.components.rememberLiquidGlassState
 import com.studiojavid.memory.ui.search.SearchScreen
 import com.studiojavid.memory.ui.theme.MemoryTheme
 import com.studiojavid.memory.ui.theme.ThemePalette
-import com.studiojavid.memory.ui.today.TodayScreen
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemoryAppScaffold(
-    tasksViewModel: TasksViewModel,
+    memoryViewModel: MemoryViewModel,
     mainViewModel: MainViewModel,
     backupManager: BackupManager,
     userName: String,
@@ -95,10 +93,7 @@ fun MemoryAppScaffold(
     language: AppLanguage,
     palette: ThemePalette,
     onRequestNotificationPermission: () -> Unit,
-    modifier: Modifier = Modifier,
-    /** Opens the add sheet immediately (launched from the Quick Add widget). */
-    openAddSheet: Boolean = false,
-    onAddSheetOpened: () -> Unit = {}
+    modifier: Modifier = Modifier
 ) {
     val colors = MemoryTheme.colors
     val outlineColor = colors.outline
@@ -107,11 +102,10 @@ fun MemoryAppScaffold(
     val currentRoute = backStackEntry?.destination?.route
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    var sheetVisible by remember { mutableStateOf(false) }
-    var editingTask by remember { mutableStateOf<Task?>(null) }
-    var actionsTask by remember { mutableStateOf<Task?>(null) }
+    // Diary editor
+    val editorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var editorDate by remember { mutableStateOf<LocalDate?>(null) }
 
     // Notes tab state
     val notesViewModel: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
@@ -126,32 +120,32 @@ fun MemoryAppScaffold(
     var personSheetVisible by remember { mutableStateOf(false) }
     var editingPerson by remember { mutableStateOf<BirthdayPerson?>(null) }
     val openPerson by birthdayViewModel.openPerson.collectAsStateWithLifecycle()
+
     val notebooks by notesViewModel.notebooks.collectAsStateWithLifecycle()
     val noteFilter by notesViewModel.filter.collectAsStateWithLifecycle()
     val lastDeletedNote by notesViewModel.lastDeleted.collectAsStateWithLifecycle()
-    val actionsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val categories by tasksViewModel.categories.collectAsStateWithLifecycle()
-    val selectedDate by tasksViewModel.selectedDate.collectAsStateWithLifecycle()
-    val lastDeleted by tasksViewModel.lastDeleted.collectAsStateWithLifecycle()
+    val today by memoryViewModel.today.collectAsStateWithLifecycle()
+    val diary by memoryViewModel.diary.collectAsStateWithLifecycle()
+    val lastDeleted by memoryViewModel.lastDeleted.collectAsStateWithLifecycle()
 
-    val deletedMessage = stringResource(R.string.task_deleted)
+    val deletedMessage = stringResource(R.string.memory_deleted)
     val undoLabel = stringResource(R.string.undo)
 
     LaunchedEffect(lastDeleted) {
-        val task = lastDeleted ?: return@LaunchedEffect
+        lastDeleted ?: return@LaunchedEffect
         val result = snackbarHostState.showSnackbar(
             message = deletedMessage,
             actionLabel = undoLabel,
             duration = SnackbarDuration.Short
         )
-        if (result == SnackbarResult.ActionPerformed) tasksViewModel.undoDelete()
-        else tasksViewModel.clearLastDeleted()
+        if (result == SnackbarResult.ActionPerformed) memoryViewModel.undoDelete()
+        else memoryViewModel.clearLastDeleted()
     }
 
     val noteDeletedMessage = stringResource(R.string.note_deleted)
     LaunchedEffect(lastDeletedNote) {
-        val note = lastDeletedNote ?: return@LaunchedEffect
+        lastDeletedNote ?: return@LaunchedEffect
         val result = snackbarHostState.showSnackbar(
             message = noteDeletedMessage,
             actionLabel = undoLabel,
@@ -162,14 +156,12 @@ fun MemoryAppScaffold(
     }
 
     // Keep "today" fresh when the app returns from the background across midnight.
-    LaunchedEffect(Unit) { tasksViewModel.refreshToday() }
+    LaunchedEffect(Unit) { memoryViewModel.refreshToday() }
 
-    LaunchedEffect(openAddSheet) {
-        if (openAddSheet) {
-            editingTask = null
-            sheetVisible = true
-            onAddSheetOpened()
-        }
+    /** Opening a day both selects it and raises the editor on that day. */
+    fun openPage(date: LocalDate) {
+        memoryViewModel.selectDate(date)
+        editorDate = minOf(date, today)
     }
 
     val showBars = currentRoute !in setOf(
@@ -223,14 +215,17 @@ fun MemoryAppScaffold(
                             onClick = {
                                 if (!selected) {
                                     navController.navigate(destination.route) {
-                                        popUpTo(TopLevelDestination.TODAY.route) { saveState = true }
+                                        popUpTo(TopLevelDestination.DIARY.route) { saveState = true }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
                                 }
                             },
                             icon = {
-                                Icon(destination.icon, contentDescription = stringResource(destination.labelRes))
+                                Icon(
+                                    destination.icon,
+                                    contentDescription = stringResource(destination.labelRes)
+                                )
                             },
                             label = { Text(stringResource(destination.labelRes)) },
                             colors = NavigationBarItemDefaults.colors(
@@ -255,22 +250,26 @@ fun MemoryAppScaffold(
                 exit = scaleOut() + fadeOut()
             ) {
                 val haptics = LocalHapticFeedback.current
-                val onBirthdays = currentRoute == Routes.BIRTHDAYS
+                val onBirthdays = currentRoute == TopLevelDestination.BIRTHDAYS.route
                 val onNotesTab = currentRoute == TopLevelDestination.NOTES.route
                 FloatingActionButton(
                     onClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        if (onBirthdays) {
-                            editingPerson = null
-                            personSheetVisible = true
-                            onRequestNotificationPermission()
-                        } else if (onNotesTab) {
-                            editingNote = null
-                            noteSheetVisible = true
-                        } else {
-                            editingTask = null
-                            sheetVisible = true
-                            onRequestNotificationPermission()
+                        when {
+                            onBirthdays -> {
+                                editingPerson = null
+                                personSheetVisible = true
+                                onRequestNotificationPermission()
+                            }
+                            onNotesTab -> {
+                                editingNote = null
+                                noteSheetVisible = true
+                            }
+                            // On the calendar the button writes the day the user
+                            // is looking at; anywhere else it writes today.
+                            currentRoute == TopLevelDestination.CALENDAR.route ->
+                                openPage(memoryViewModel.selectedDate.value)
+                            else -> openPage(today)
                         }
                     },
                     containerColor = Color.Transparent,
@@ -297,7 +296,7 @@ fun MemoryAppScaffold(
                                 when {
                                     onBirthdays -> R.string.cd_add_birthday
                                     onNotesTab -> R.string.cd_add_note
-                                    else -> R.string.cd_add_task
+                                    else -> R.string.cd_add_memory
                                 }
                             ),
                             modifier = Modifier.size(28.dp)
@@ -309,34 +308,26 @@ fun MemoryAppScaffold(
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = TopLevelDestination.TODAY.route,
+            startDestination = TopLevelDestination.DIARY.route,
             modifier = Modifier
                 .fillMaxSize()
                 .liquidGlassSource(glass),
             enterTransition = { fadeIn(androidx.compose.animation.core.tween(220)) },
             exitTransition = { fadeOut(androidx.compose.animation.core.tween(160)) }
         ) {
-            composable(TopLevelDestination.TODAY.route) {
-                TodayScreen(
-                    viewModel = tasksViewModel,
+            composable(TopLevelDestination.DIARY.route) {
+                DiaryScreen(
+                    viewModel = memoryViewModel,
                     userName = userName,
                     contentPadding = padding,
-                    onOpenTask = { task ->
-                        editingTask = task
-                        sheetVisible = true
-                    },
-                    onTaskActions = { task -> actionsTask = task }
+                    onOpenPage = ::openPage
                 )
             }
             composable(TopLevelDestination.CALENDAR.route) {
                 CalendarScreen(
-                    viewModel = tasksViewModel,
+                    viewModel = memoryViewModel,
                     contentPadding = padding,
-                    onOpenTask = { task ->
-                        editingTask = task
-                        sheetVisible = true
-                    },
-                    onTaskActions = { task -> actionsTask = task }
+                    onOpenPage = ::openPage
                 )
             }
             composable(TopLevelDestination.NOTES.route) {
@@ -347,16 +338,14 @@ fun MemoryAppScaffold(
                         editingNote = note
                         noteSheetVisible = true
                     },
-                    onEditNotebook = { book -> notebookDialog = NotebookDialogRequest(book) },
-                    onOpenBirthdays = { navController.navigate(Routes.BIRTHDAYS) }
+                    onEditNotebook = { book -> notebookDialog = NotebookDialogRequest(book) }
                 )
             }
 
-            composable(Routes.BIRTHDAYS) {
+            composable(TopLevelDestination.BIRTHDAYS.route) {
                 BirthdayScreen(
                     viewModel = birthdayViewModel,
                     contentPadding = padding,
-                    onBack = { navController.popBackStack() },
                     onAddPerson = {
                         editingPerson = null
                         personSheetVisible = true
@@ -403,7 +392,7 @@ fun MemoryAppScaffold(
             }
             composable(TopLevelDestination.PROFILE.route) {
                 ProfileScreen(
-                    tasksViewModel = tasksViewModel,
+                    memoryViewModel = memoryViewModel,
                     mainViewModel = mainViewModel,
                     backupManager = backupManager,
                     userName = userName,
@@ -415,47 +404,53 @@ fun MemoryAppScaffold(
             }
             composable(Routes.SEARCH) {
                 SearchScreen(
-                    viewModel = tasksViewModel,
+                    viewModel = memoryViewModel,
                     onBack = { navController.popBackStack() },
-                    onOpenTask = { task ->
-                        editingTask = task
-                        sheetVisible = true
+                    onOpenPage = { date ->
+                        navController.popBackStack()
+                        openPage(date)
                     }
                 )
             }
         }
     }
 
-    if (sheetVisible) {
+    editorDate?.let { date ->
         val formatter = LocalDateFormatter.current
-        AddTaskSheet(
-            sheetState = sheetState,
+        val existing = diary.page?.takeIf { it.date == date }
+        fun close() {
+            scope.launch {
+                editorSheetState.hide()
+                editorDate = null
+            }
+        }
+        MemoryEditorSheet(
+            sheetState = editorSheetState,
+            date = date,
             formatter = formatter,
-            categories = categories,
-            editing = editingTask,
-            defaultDate = selectedDate,
-            onDismiss = {
-                sheetVisible = false
-                editingTask = null
-            },
-            onReminderEnabled = onRequestNotificationPermission,
-            onSave = { draft ->
-                tasksViewModel.saveTask(
-                    id = draft.id,
-                    title = draft.title,
-                    description = draft.description,
-                    categoryId = draft.categoryId,
-                    dueDate = draft.dueDate,
-                    dueTimeMinutes = draft.dueTimeMinutes,
-                    priority = draft.priority,
-                    reminderEnabled = draft.reminderEnabled,
-                    repeat = draft.repeat
-                )
-                scope.launch {
-                    sheetState.hide()
-                    sheetVisible = false
-                    editingTask = null
+            editing = existing,
+            photoFile = memoryViewModel::photoFile,
+            onPickPhoto = { uri, onStored -> memoryViewModel.importPhoto(uri, onStored) },
+            // A day with no page has nothing to delete, so the button is absent
+            // rather than present and inert.
+            onDelete = if (existing == null) null else {
+                {
+                    memoryViewModel.deletePage(existing)
+                    close()
                 }
+            },
+            onDismiss = { editorDate = null },
+            onSave = { draft ->
+                memoryViewModel.savePage(
+                    date = draft.date,
+                    title = draft.title,
+                    body = draft.body,
+                    mood = draft.mood,
+                    tags = draft.tags,
+                    photo = draft.photo,
+                    favorite = draft.favorite
+                )
+                close()
             }
         )
     }
@@ -546,44 +541,6 @@ fun MemoryAppScaffold(
                     personSheetVisible = false
                     editingPerson = null
                 }
-            }
-        )
-    }
-
-    actionsTask?.let { task ->
-        val formatter = LocalDateFormatter.current
-        fun close() {
-            scope.launch {
-                actionsSheetState.hide()
-                actionsTask = null
-            }
-        }
-        TaskActionsSheet(
-            sheetState = actionsSheetState,
-            task = task,
-            formatter = formatter,
-            onDismiss = { actionsTask = null },
-            onEdit = {
-                actionsTask = null
-                editingTask = task
-                sheetVisible = true
-            },
-            onToggleComplete = {
-                tasksViewModel.toggleTask(task)
-                close()
-            },
-            onMoveTo = { date ->
-                tasksViewModel.moveTask(task, date)
-                close()
-            },
-            onToggleReminder = { enabled ->
-                if (enabled) onRequestNotificationPermission()
-                tasksViewModel.setReminder(task, enabled)
-                close()
-            },
-            onDelete = {
-                tasksViewModel.deleteTask(task)
-                close()
             }
         )
     }
