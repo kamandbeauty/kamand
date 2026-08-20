@@ -23,3 +23,32 @@ plugins {
 
 rootProject.name = "hokm"
 include(":app")
+
+// ---------------------------------------------------------------------------
+// تشخیص CI (این اسکریپت همیشه لود می‌شود، حتی اگر :app شکست بخورد)
+//
+// لاگ خام Actions/artifact از هر محیطی در دسترس نیست، اما annotationهای
+// workflow از طریق REST API خوانا هستند. بازتاب زنجیرهٔ خطا به صورت
+// ::error:: باعث می‌شود هرگونه شکست بیلد بدون نیاز به لاگ قابل‌تشخیص باشد.
+// بیرون از CI (متغیر CI != "true") کاملاً خنثی است.
+// ---------------------------------------------------------------------------
+if (System.getenv("CI") == "true") {
+    gradle.buildFinished {
+        val root = failure
+        if (root != null) {
+            var t: Throwable? = root
+            var index = 0
+            while (t != null && index < 8) {
+                val message = t.javaClass.simpleName + ": " + (t.message ?: "")
+                val clean = message
+                    .replace("\r", " ")
+                    .replace("\n", " ")
+                    .replace("%", "%25")
+                    .take(600)
+                println("::error::[" + index + "] " + clean)
+                t = t.cause
+                index++
+            }
+        }
+    }
+}
