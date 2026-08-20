@@ -15,3 +15,16 @@ String toPersianDigits(Object value) {
   }
   return buffer.toString();
 }
+
+const _faOrdinals = [
+  'اول', 'دوم', 'سوم', 'چهارم', 'پنجم', // ۵
+  'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم', // ۱۰
+  'یازدهم', 'دوازدهم', 'سیزدهم', 'چهاردهم', 'پانزدهم', // ۱۵
+  'شانزدهم', 'هفدهم', 'هجدهم', 'نوزدهم', 'بیستم', // ۲۰
+];
+
+/// ترتیبی فارسی: ۱ → «اول»، ۲ → «دوم»، … (خارج از بازه: «۲۱م»).
+String persianOrdinal(int n) {
+  if (n >= 1 && n <= _faOrdinals.length) return _faOrdinals[n - 1];
+  return '${toPersianDigits(n)}م';
+}

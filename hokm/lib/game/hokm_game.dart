@@ -15,6 +15,7 @@ import '../game_engine/state/game_enums.dart';
 import '../storage/settings_model.dart';
 import 'components/card_component.dart';
 import 'components/table_background.dart';
+import 'components/trick_badge.dart';
 import 'effects/turn_indicator.dart';
 import 'effects/win_glow.dart';
 import 'animations/motion.dart';
@@ -47,6 +48,14 @@ class HokmGame extends FlameGame {
     for (final s in Seat.values) s: <CardComponent>[],
   };
   final Map<Seat, CardComponent> centerZone = {};
+
+  /// پشته‌های دست‌های بردهٔ هر بازیکن (جلوی خودش) — هر دست ۴ کارت.
+  final Map<Seat, List<CardComponent>> trickPiles = {
+    for (final s in Seat.values) s: <CardComponent>[],
+  };
+
+  /// نشان‌های شمارندهٔ دست جلوی هر بازیکن.
+  final Map<Seat, TrickBadge> _trickBadges = {};
 
   /// رویداد لمس کارت انسان (توسط GameController ست می‌شود).
   void Function(PlayingCard card)? onHumanCardTapped;
@@ -249,6 +258,13 @@ class HokmGame extends FlameGame {
     for (final zone in handZones.values) {
       zone.clear();
     }
+    for (final pile in trickPiles.values) {
+      pile.clear();
+    }
+    for (final badge in _trickBadges.values) {
+      badge.removeFromParent();
+    }
+    _trickBadges.clear();
     _turnIndicator.hide();
 
     var i = 0;
@@ -323,6 +339,9 @@ class HokmGame extends FlameGame {
 
   Future<void> animateShuffle() async {
     if (!_sceneBuilt) return;
+    // بسیار مهم: زون‌ها و پشته‌های دست قبل باید پاک شوند؛
+    // وگرنه از دستِ دوم به بعد چیدمان روی بقایای دست قبلی به‌هم می‌ریزد.
+    resetTable();
     // ۱) کارت‌ها از هر سو به مرکز جمع می‌شوند و دکه می‌سازند.
     final all = cardPool.values.toList();
     final futures = <Future<void>>[];
@@ -587,16 +606,20 @@ class HokmGame extends FlameGame {
       maxRadius: layout.cardHeight * 0.8,
     ));
 
-    final target = layout.teamPilePosition(teamIndex);
+    // مقصد: پشتهٔ جلوی خودِ برنده (نه گوشهٔ تیم) — هر دست ۴ کارتِ
+    // کوچک که مورب روی هم می‌نشینند تا ضخامت پشته دیده شود.
+    final pile = trickPiles[winner]!;
+    final trickIndex = pile.length ~/ 4; // شمارهٔ این دست (۰میلادی)
+    final base = layout.seatPilePosition(winner);
     final futures = <Future<void>>[];
     var i = 0;
     for (final comp in centerZone.values) {
       _bringToFront(comp, 600 + i);
       futures.add(comp.animateMotion([
         MotionSegment(
-          to: target + Vector2(i * 0.8 - 1.5, -i * 0.6),
+          to: base + layout.pileCardOffset(trickIndex, i),
           angleTo: 0,
-          scaleTo: 0.18,
+          scaleTo: layout.pileScale,
           duration: Duration(milliseconds: (380 * _speed).round()),
           curve: Curves.easeInOutCubic,
           arc: layout.cardHeight * 0.3,
@@ -605,15 +628,41 @@ class HokmGame extends FlameGame {
       i++;
     }
     await Future.wait(futures);
-    // پارک کارت‌ها در انبار تیم (پنهان در مقیاس کوچک)
+    // پارک کارت‌ها به‌صورت قابل‌مشاهده در پشتهٔ برنده (پشتِ کارت کوچک)
+    i = 0;
     for (final comp in centerZone.values) {
-      comp.faceUp = false;
-      comp.winner = false;
-      comp.scale.setAll(0.0);
-      comp.priority = 4;
+      comp
+        ..faceUp = false
+        ..winner = false
+        ..priority = 40 + trickIndex;
+      pile.add(comp);
+      i++;
     }
     centerZone.clear();
+    // نشان شمارندهٔ برد جلوی برنده تپش می‌زند و عددش زیاد می‌شود.
+    _ensureBadge(winner).bump(trickIndex + 1);
     await Future<void>.delayed(Duration(milliseconds: (120 * _speed).round()));
+  }
+
+  /// جای نشان شمارنده — بالا-راستِ پشتهٔ کوچک جلوی بازیکن.
+  Vector2 _badgePosition(Seat seat) =>
+      layout.seatPilePosition(seat) +
+      Vector2(layout.cardWidth * layout.pileScale * 0.95,
+          -layout.cardHeight * layout.pileScale * 0.85);
+
+  /// نشان شمارندهٔ هر جایگاه را (در صورت نبودن) می‌سازد و برمی‌گرداند.
+  TrickBadge _ensureBadge(Seat seat) {
+    var badge = _trickBadges[seat];
+    if (badge == null) {
+      badge = TrickBadge(accent: palette.accent)
+        ..size = Vector2.all(24)
+        ..anchor = Anchor.center
+        ..priority = 750
+        ..position = _badgePosition(seat);
+      _trickBadges[seat] = badge;
+      add(badge);
+    }
+    return badge;
   }
 
   // ================================================================
@@ -717,7 +766,13 @@ class HokmGame extends FlameGame {
   }) {
     if (!_sceneBuilt) return;
     resetTable();
-    // کارت‌های قبلاً برده‌شده → انبار تیم‌ها (۴ کارت به ازای هر دور).
+    // کارت‌های قبلاً برده‌شده → پشتهٔ هر بازیکن (۴ کارت به ازای هر دست).
+    // state فقط تعداد دست‌های «تیم» را می‌داند؛ برای نمایش، دست‌ها بین
+    // دو یار تقسیم می‌شوند (تیم انسان را جلوی south/north نشان می‌دهیم).
+    const teamSeats = {
+      0: [Seat.south, Seat.north],
+      1: [Seat.west, Seat.east],
+    };
     var parked = 0;
     final limitTeam0 = (tricksWonByTeam[0] ?? 0) * 4;
 
@@ -726,13 +781,27 @@ class HokmGame extends FlameGame {
       final inCenter = centerCards.values.contains(comp.card);
       if (!inHand && !inCenter) {
         final teamIdx = (parked < limitTeam0) ? 0 : 1;
-        final target = layout.teamPilePosition(teamIdx);
-        comp.position = target;
-        comp.faceUp = false;
-        comp.scale.setAll(0.0);
-        comp.priority = 4;
+        final inTeam = teamIdx == 0 ? parked : parked - limitTeam0;
+        final tricks = tricksWonByTeam[teamIdx] ?? 0;
+        final firstTricks = (tricks + 1) ~/ 2; // سهم بازیکن اول تیم
+        final trickIndex = inTeam ~/ 4;
+        final seat = teamSeats[teamIdx]![trickIndex < firstTricks ? 0 : 1];
+        final localTrick =
+            trickIndex < firstTricks ? trickIndex : trickIndex - firstTricks;
+        comp
+          ..position = layout.seatPilePosition(seat) +
+              layout.pileCardOffset(localTrick, inTeam % 4)
+          ..faceUp = false
+          ..scale = Vector2.all(layout.pileScale)
+          ..priority = 40 + localTrick;
+        trickPiles[seat]!.add(comp);
         parked++;
       }
+    }
+    // نشان‌های شمارنده روی پشته‌های بازسازی‌شده
+    for (final seat in Seat.values) {
+      final count = trickPiles[seat]!.length ~/ 4;
+      if (count > 0) _ensureBadge(seat).bump(count);
     }
 
     // دست‌ها
@@ -816,6 +885,16 @@ class HokmGame extends FlameGame {
       final slot = layout.trickSlot(entry.key, idx);
       entry.value..position = slot.position.clone()..angle = slot.angle;
       idx++;
+    }
+    // پشته‌های برده و نشان‌های شمارنده
+    for (final seat in Seat.values) {
+      final pile = trickPiles[seat]!;
+      for (var j = 0; j < pile.length; j++) {
+        pile[j].position =
+            layout.seatPilePosition(seat) + layout.pileCardOffset(j ~/ 4, j % 4);
+      }
+      final badge = _trickBadges[seat];
+      if (badge != null) badge.position = _badgePosition(seat);
     }
     for (final seat in Seat.values) {
       _nameLabels[seat]?.position = layout.namePosition(seat);

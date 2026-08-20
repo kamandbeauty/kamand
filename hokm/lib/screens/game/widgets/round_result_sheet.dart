@@ -6,8 +6,9 @@ import '../../../core/persian_utils.dart';
 import '../../../game/game_controller.dart';
 import '../../../game_engine/scoring/score_manager.dart';
 import 'overlay_scaffold.dart';
+import 'score_table.dart';
 
-/// برگهٔ نتیجهٔ پایان دست.
+/// برگهٔ گزارش پایان دست — جدول امتیازاتِ همهٔ دست‌ها از دید تیم شما.
 class RoundResultSheet extends StatelessWidget {
   const RoundResultSheet({
     super.key,
@@ -34,7 +35,7 @@ class RoundResultSheet extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w800,
               color: weWon ? AppTheme.gold : Colors.white70,
             ),
@@ -61,42 +62,36 @@ class RoundResultSheet extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+          // عنوان جدول
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _resultCell(
-                  AppStrings.yourTeam, result.winnerTeamIndex == 0
-                      ? result.winnerTricks
-                      : result.loserTricks),
-              const SizedBox(width: 18),
-              Text(
-                '×',
-                style:
-                    TextStyle(fontSize: 20, color: Colors.white.withOpacity(0.4)),
+              Icon(Icons.table_chart_rounded,
+                  size: 15, color: AppTheme.gold.withOpacity(0.8)),
+              const SizedBox(width: 6),
+              const Text(
+                AppStrings.scoreTableTitle,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white70,
+                ),
               ),
-              const SizedBox(width: 18),
-              _resultCell(
-                  AppStrings.opponentTeam, result.winnerTeamIndex == 1
-                      ? result.winnerTricks
-                      : result.loserTricks),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+          ScoreTable(records: controller.roundRecords),
+          const SizedBox(height: 10),
           Text(
-            '${AppStrings.score}: '
-            '${toPersianDigits(controller.scoreUs)} — ${toPersianDigits(controller.scoreThem)}',
-            style: const TextStyle(fontSize: 13, color: Colors.white60),
-          ),
-          Text(
-            '+${toPersianDigits(result.pointsAwarded)} '
+            '+${toPersianDigits(result.pointsAwarded)} امتیاز '
             'برای ${result.winnerTeamIndex == 0 ? AppStrings.yourTeam : AppStrings.opponentTeam}',
             style: TextStyle(
               fontSize: 12.5,
               color: weWon ? AppTheme.gold : Colors.white54,
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
@@ -123,24 +118,6 @@ class RoundResultSheet extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _resultCell(String label, int tricks) {
-    return Column(
-      children: [
-        Text(label,
-            style: const TextStyle(fontSize: 11.5, color: Colors.white54)),
-        const SizedBox(height: 2),
-        Text(
-          toPersianDigits(tricks),
-          style: const TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-      ],
     );
   }
 }

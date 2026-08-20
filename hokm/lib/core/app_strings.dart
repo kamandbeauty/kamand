@@ -30,6 +30,15 @@ abstract final class AppStrings {
   static const String hakimKoot = 'حاکم‌کوت!';
   static const String nextRound = 'دست بعدی';
 
+  // جدول امتیازات
+  static const String scoreTableTitle = 'جدول امتیازات';
+  static const String roundColumn = 'دست';
+  static const String tricksColumn = 'امتیاز دست';
+  static const String totalColumn = 'امتیاز کل';
+  static const String ruleColumn = 'قانون';
+  static const String youColumn = 'شما';
+  static const String themColumn = 'حریف';
+
   // نتیجهٔ مسابقه
   static const String matchWon = 'مسابقه را بردید! 🏆';
   static const String matchLost = 'مسابقه را باختید';

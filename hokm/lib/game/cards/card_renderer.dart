@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -14,6 +15,7 @@ import '../../game_engine/models/playing_card.dart';
 import '../../game_engine/models/rank.dart';
 import '../../game_engine/models/suit.dart';
 import '../../storage/settings_model.dart' show CardBackStyle;
+import '../decor/persian_motifs.dart';
 import 'suit_paths.dart';
 
 /// رندر رویه‌ای (procedural) کارت‌ها — بدون هیچ فایل تصویری.
@@ -62,17 +64,39 @@ abstract final class CardRenderer {
       ).createShader(rect);
     canvas.drawRRect(rrect, bodyPaint);
 
-    // قاب باریک داخلی
+    // قاب داخلی دوخطِ زرنگ (هویت تذهیب)
     final innerRect = rect.deflate(w * 0.035);
     canvas.drawRRect(
       RRect.fromRectAndRadius(innerRect, Radius.circular(r * 0.7)),
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = w * 0.008
-        ..color = const Color(0x14000000),
+        ..strokeWidth = w * 0.010
+        ..color = const Color(0x33B98A2F),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          rect.deflate(w * 0.070), Radius.circular(r * 0.55)),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.006
+        ..color = const Color(0x1FB98A2F),
     );
 
     final color = suitColor(card.suit);
+
+    // واترمارک شمسه پشت محتوای کارت — بسیار ظریف
+    canvas.drawPath(
+      PersianMotifs.shamseh(
+        center: rect.center,
+        radius: w * 0.335,
+        points: 8,
+        innerRatio: 0.68,
+        softness: 0.55,
+        rotation: math.pi / 8,
+      ),
+      Paint()..color = color.withOpacity(0.045),
+    );
+
     _paintCornerIndex(canvas, rect, card, color);
 
     if (card.rank == Rank.ace) {
@@ -286,10 +310,15 @@ abstract final class CardRenderer {
       color,
       inverted: false,
     );
-    // حلقهٔ تزئینی
-    canvas.drawCircle(
-      center,
-      w * 0.335,
+    // حلقهٔ تزئینی — شمسهٔ باریک به‌جای دایرهٔ ساده
+    canvas.drawPath(
+      PersianMotifs.shamseh(
+        center: center,
+        radius: w * 0.345,
+        points: 12,
+        innerRatio: 0.90,
+        softness: 0.22,
+      ),
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = w * 0.010
@@ -304,6 +333,16 @@ abstract final class CardRenderer {
     final w = rect.width;
     final center = rect.center;
     final badgeR = w * 0.30;
+
+    // گل‌ریز اسلیمی پشت نشان (بسیار ملایم)
+    PersianMotifs.eslimiRosette(
+      canvas,
+      center,
+      w * 0.46,
+      Paint()..color = color.withOpacity(0.05),
+      arms: 6,
+      rotation: math.pi / 6,
+    );
 
     // نشان مدور مرکزی
     final badgeRect = Rect.fromCircle(center: center, radius: badgeR);
@@ -444,6 +483,9 @@ abstract final class CardRenderer {
         _backDiagonal(canvas, rect, ink);
     }
 
+    // مدالیون مرکزی — نشانِ هویت روی پشت کارت
+    _backMedallion(canvas, rect, style, ink);
+
     // برقِ عبوریِ آرامِ پشت کارت (چرخهٔ ~۴ ثانیه، داخل کلیپ بماند)
     if (shimmer != null) {
       final cycle = (shimmer % 4.2) / 4.2;
@@ -472,14 +514,61 @@ abstract final class CardRenderer {
 
     canvas.restore();
 
-    // قاب داخلی روشن
+    // قاب داخلی روشن (زرنگ)
     canvas.drawRRect(
       RRect.fromRectAndRadius(
           rect.deflate(w * 0.045), Radius.circular(radius(w) * 0.75)),
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = w * 0.020
-        ..color = const Color(0x66FFFFFF),
+        ..color = const Color(0x73E8C46B),
+    );
+  }
+
+  /// مدالیون پشت کارت: شمسه + حلقهٔ مروارید + ترنج (بسته به طرح).
+  static void _backMedallion(
+      Canvas canvas, Rect rect, CardBackStyle style, Paint ink) {
+    final w = rect.width;
+    final center = rect.center;
+    final strong = Paint()
+      ..color = ink.color.withOpacity(0.55);
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.012
+      ..color = ink.color.withOpacity(0.65);
+
+    if (style == CardBackStyle.persianTile) {
+      // ترنج درونِ قابِ شمسه‌ای — حس کاشی ایرانی
+      canvas.drawPath(
+        PersianMotifs.toranj(Rect.fromCenter(
+            center: center, width: w * 0.34, height: w * 0.52)),
+        Paint()..color = ink.color.withOpacity(0.22),
+      );
+      canvas.drawPath(
+        PersianMotifs.toranj(Rect.fromCenter(
+            center: center, width: w * 0.34, height: w * 0.52)),
+        strokePaint,
+      );
+    } else {
+      canvas.drawPath(
+        PersianMotifs.shamseh(
+          center: center,
+          radius: w * 0.26,
+          points: 8,
+          innerRatio: 0.60,
+          softness: 0.5,
+          rotation: math.pi / 8,
+        ),
+        strong,
+      );
+    }
+    PersianMotifs.pearlRing(
+      canvas,
+      center,
+      w * 0.335,
+      ink.color.withOpacity(0.60),
+      count: 16,
+      dotRadius: w * 0.018,
     );
   }
 

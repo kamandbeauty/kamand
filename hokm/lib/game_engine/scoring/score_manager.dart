@@ -39,6 +39,45 @@ class RoundResult {
       );
 }
 
+/// رکورد یک دستِ بازی‌شده در تاریخچهٔ مسابقه — از دید تیم انسان،
+/// برای نمایش در «جدول امتیازات» پایان هر دست.
+class RoundRecord {
+  const RoundRecord({
+    required this.roundNumber,
+    required this.tricksUs,
+    required this.tricksThem,
+    required this.totalUs,
+    required this.totalThem,
+    required this.winnerIsUs,
+    required this.pointsAwarded,
+    required this.isKoot,
+    required this.isHakimKoot,
+  });
+
+  /// شمارهٔ دست (از ۱).
+  final int roundNumber;
+
+  /// دورهای برده‌شده در این دست — هر دو طرف (مجموعاً ۱۳).
+  final int tricksUs;
+  final int tricksThem;
+
+  /// مجموع امتیاز مسابقه پس از این دست.
+  final int totalUs;
+  final int totalThem;
+
+  /// آیا تیم انسان این دست را برد؟
+  final bool winnerIsUs;
+
+  /// امتیاز این دست (۱ / ۲ کوت / ۳ حاکم‌کوت).
+  final int pointsAwarded;
+  final bool isKoot;
+  final bool isHakimKoot;
+
+  /// برچسب قانون ویژهٔ این دست (برای ستون «قانون»).
+  String get ruleLabel =>
+      isHakimKoot ? 'حاکم‌کوت' : (isKoot ? 'کوت' : '—');
+}
+
 /// مدیر امتیاز — منطق امتیازدهی استاندارد حکم:
 ///
 /// * برندهٔ دست = اولین تیمی که ۷ دور را ببرد → ۱ امتیاز.

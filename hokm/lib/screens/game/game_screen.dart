@@ -207,6 +207,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                       winnerTeam: _controller.matchWinnerTeam,
                       scoreUs: _controller.scoreUs,
                       scoreThem: _controller.scoreThem,
+                      records: _controller.roundRecords,
                       onPlayAgain: () {
                         _controller.startNewMatch();
                       },

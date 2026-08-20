@@ -61,6 +61,12 @@ class GameController extends ChangeNotifier implements GameEventListener {
   int matchWinnerTeam = -1;
   bool inputLocked = true; // قفل ورودی در حین انیمیشن
 
+  /// تاریخچهٔ دست‌های این مسابقه (برای جدول امتیازات) — از دید تیم انسان.
+  final List<RoundRecord> roundHistory = [];
+
+  /// نمای فقط‌خواندنی تاریخچهٔ دست‌ها برای UI.
+  List<RoundRecord> get roundRecords => List.unmodifiable(roundHistory);
+
   // ---------- دسترسی به وضعیت موتور برای HUD ----------
 
   bool get hasMatch => _engine.isMatchStarted;
@@ -110,6 +116,7 @@ class GameController extends ChangeNotifier implements GameEventListener {
     _eventQueue.clear();
     _pumping = false;
     _awaitingHuman = false;
+    roundHistory.clear();
     _resetHud();
 
     _engine = HokmEngine(matchTarget: ScoreManager.defaultMatchTarget);
@@ -129,6 +136,7 @@ class GameController extends ChangeNotifier implements GameEventListener {
     _eventQueue.clear();
     _pumping = false;
     _awaitingHuman = false;
+    roundHistory.clear();
     _resetHud();
 
     _engine = HokmEngine(matchTarget: saved.state.matchTarget);
@@ -317,6 +325,24 @@ class GameController extends ChangeNotifier implements GameEventListener {
 
       case RoundEndedEvent():
         roundResult = event.result;
+        // ثبت در جدول امتیازات — امتیاز مسابقه در موتور پیش از انتشار
+        // این رویداد اعمال شده، پس scoreUs/scoreThem به‌روز است.
+        final weWonRound = event.result.winnerTeamIndex == humanSeat.teamIndex;
+        roundHistory.add(RoundRecord(
+          roundNumber: state.roundNumber,
+          tricksUs: weWonRound
+              ? event.result.winnerTricks
+              : event.result.loserTricks,
+          tricksThem: weWonRound
+              ? event.result.loserTricks
+              : event.result.winnerTricks,
+          totalUs: scoreUs,
+          totalThem: scoreThem,
+          winnerIsUs: weWonRound,
+          pointsAwarded: event.result.pointsAwarded,
+          isKoot: event.result.isKoot,
+          isHakimKoot: event.result.isHakimKoot,
+        ));
         // اگر مسابقه هم تمام شده، دیالوگ دست را نشان نده —
         // رویداد MatchEnded همان‌جا در صف است و نتیجهٔ نهایی نمایش داده می‌شود.
         final matchEndsNow = _eventQueue.any((e) => e is MatchEndedEvent);

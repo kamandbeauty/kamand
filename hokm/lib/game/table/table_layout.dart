@@ -56,6 +56,16 @@ class TableLayout {
       0: Vector2(w - 44, h - cardHeight - 66), // تیم انسان — راست پایین
       1: Vector2(44, cardHeight * 0.55 + 70), // تیم حریف — چپ بالا
     };
+
+    // پشتهٔ دست‌های بردهٔ هر بازیکن — کارت کوچک جلوی خودِ هر نفر
+    // (بدون برخورد با دست انسان، ستون‌های کناری و دایرهٔ دور).
+    pileScale = 0.34;
+    pileAnchors = {
+      Seat.south: Vector2(w * 0.800, h * 0.585),
+      Seat.north: Vector2(w * 0.200, h * 0.290),
+      Seat.west: Vector2(w * 0.185, h * 0.560),
+      Seat.east: Vector2(w * 0.815, h * 0.295),
+    };
   }
 
   /// نسبت طول به عرض کارت استاندارد.
@@ -86,6 +96,10 @@ class TableLayout {
 
   late final Map<Seat, Vector2> nameOffsets;
   late final Map<int, Vector2> teamPile;
+
+  /// مقیاس کارت‌های پشتهٔ برده (کارت کوچک جلوی هر نفر).
+  late final double pileScale;
+  late final Map<Seat, Vector2> pileAnchors;
 
   // ---------- نقاط کلیدی ----------
 
@@ -168,4 +182,14 @@ class TableLayout {
 
   /// هدف پرواز دورِ برده‌شده (انبار هر تیم).
   Vector2 teamPilePosition(int teamIndex) => teamPile[teamIndex]!;
+
+  /// مرکز پشتهٔ دست‌های بردهٔ هر بازیکن (جلوی خودش).
+  Vector2 seatPilePosition(Seat seat) => pileAnchors[seat]!;
+
+  /// آفست هر کارت داخل پشته: هر دست کمی مورب بالاتر می‌نشیند تا
+  /// ضخامتِ پشته (و پیشرفت برد) دیده شود.
+  Vector2 pileCardOffset(int trickIndex, int cardIndex) => Vector2(
+        trickIndex * cardWidth * 0.014 + cardIndex * 0.9,
+        -trickIndex * cardHeight * 0.010 - cardIndex * 0.7,
+      );
 }

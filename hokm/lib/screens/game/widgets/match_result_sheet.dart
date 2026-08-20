@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/app_strings.dart';
 import '../../../core/app_theme.dart';
 import '../../../core/persian_utils.dart';
+import '../../../game_engine/scoring/score_manager.dart';
 import 'overlay_scaffold.dart';
+import 'score_table.dart';
 
 /// برگهٔ نتیجهٔ نهایی مسابقه.
 class MatchResultSheet extends StatelessWidget {
@@ -14,6 +16,7 @@ class MatchResultSheet extends StatelessWidget {
     required this.scoreThem,
     required this.onPlayAgain,
     required this.onHome,
+    this.records = const [],
   });
 
   /// ۰ = تیم انسان، ۱ = حریف.
@@ -22,6 +25,9 @@ class MatchResultSheet extends StatelessWidget {
   final int scoreThem;
   final VoidCallback onPlayAgain;
   final VoidCallback onHome;
+
+  /// تاریخچهٔ دست‌ها برای نمایش جدول امتیازات (اختیاری).
+  final List<RoundRecord> records;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +64,10 @@ class MatchResultSheet extends StatelessWidget {
             '${AppStrings.yourTeam} / ${AppStrings.opponentTeam}',
             style: const TextStyle(fontSize: 11.5, color: Colors.white54),
           ),
+          if (records.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            ScoreTable(records: records),
+          ],
           const SizedBox(height: 24),
           Row(
             children: [
