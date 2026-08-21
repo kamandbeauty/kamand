@@ -2687,3 +2687,417 @@ img.hv-menu-thumb {
 	border-radius: 3px;
 	background: linear-gradient(90deg, #7fb4ff, #ffffff);
 }
+/* =========================================================================
+   14. COSMIC NEBULA GRAPHICS  (Ideal Gathering design system, ported 1:1)
+   =========================================================================
+   The `.hv-cosmic` layer is armed by the `cosmic` flag of the active theme
+   (see Havato_Themes: the `nebula` palette). Every colour, gradient, shadow
+   and animation below is the exact Ideal Gathering token —
+
+       https://github.com/idealgathering-collab/ideal-gathering  src/styles.css
+
+   — with OKLCH values converted to sRGB hex and `color-mix` expressions
+   given a plain rgba fallback first, so browsers without color-mix support
+   still get the same picture. The grammar mirrors the reference utilities:
+   nebula-bg (body::before) → .hv-cosmic-bg, glass-card → .hv-card /
+   .hv-list-card / .hv-glass, glow-button → .hv-btn-blue / .hv-chat-send,
+   cosmic-cta → .hv-btn-primary, gradient-hero → .hv-header-bg. */
+
+#havato-app.hv-cosmic {
+	/* Exact Ideal Gathering hard tokens. */
+	--hv-nebula-purple: #7c3aed;
+	--hv-nebula-violet: #6d28d9;
+	--hv-dark-primary: #a78bfa;
+	--hv-dark-secondary: #c4b5fd;
+	--hv-dark-bg: #0f0a1e;
+	--hv-tangerine: #de9400;
+	--hv-sunshine: #fac547;
+	/* Latin copy reads in the same faces as the reference site (Outfit for
+	   display, Figtree for body). Both are a graceful stack: no CDN request
+	   is made — a host with the faces installed gets the exact typography,
+	   everyone else falls back to the system UI stack. Persian keeps the
+	   bundled Vazirmatn, exactly like the reference. */
+	--hv-font-en: "Outfit", "Figtree", system-ui, -apple-system, "Segoe UI",
+		Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---- the backdrop: plate + vignette + nebula glows + star field ------- */
+.hv-cosmic-bg {
+	display: none;
+}
+#havato-app.hv-cosmic .hv-cosmic-bg {
+	display: block;
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	overflow: hidden;
+	background-color: #0a0616;
+	/* nebula-glow-1 / -2 / -3, exact from the reference body::before. */
+	background-image:
+		radial-gradient(ellipse 60% 50% at 80% 20%, rgba(124, 58, 237, 0.35) 0%, transparent 60%),
+		radial-gradient(ellipse 55% 45% at 20% 80%, rgba(109, 40, 217, 0.28) 0%, transparent 60%),
+		radial-gradient(ellipse 50% 40% at 50% 50%, rgba(167, 139, 250, 0.18) 0%, transparent 65%);
+	background-repeat: no-repeat;
+	background-position: 0 0, 0 0, 0 0;
+}
+/* The skyline plate — the same first layer CosmicBackdrop paints. */
+#havato-app.hv-cosmic .hv-cosmic-plate {
+	position: absolute;
+	inset: -4%;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	animation: hv-nebula-drift 42s ease-in-out infinite;
+	will-change: transform;
+}
+/* The vignette CosmicBackdrop layers over the plate, exact stops. */
+#havato-app.hv-cosmic .hv-cosmic-plate::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(ellipse at 50% 30%, rgba(10, 6, 22, 0.35) 0%,
+		rgba(10, 6, 22, 0.82) 60%, rgba(10, 6, 22, 0.96) 100%);
+}
+@keyframes hv-nebula-drift {
+	0%   { transform: scale(1.04) translate3d(0, 0, 0); }
+	33%  { transform: scale(1.08) translate3d(-1.2%, -0.8%, 0); }
+	66%  { transform: scale(1.06) translate3d(1%, 0.6%, 0); }
+	100% { transform: scale(1.04) translate3d(0, 0, 0); }
+}
+/* The star field: the same 70 deterministic stars as the reference
+   CosmicBackdrop (seed = i*9301 + 49297), painted as box-shadows so no
+   script is needed. */
+#havato-app.hv-cosmic .hv-cosmic-stars {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	box-shadow: 97% 79% 0 1px #A78BFA,
+		98% 86% 0 3px #EDE9FE,
+		99% 93% 0 2px #EDE9FE,
+		0% 0% 0 1px #EDE9FE,
+		1% 7% 0 3px #A78BFA,
+		2% 14% 0 2px #EDE9FE,
+		3% 21% 0 1px #EDE9FE,
+		4% 28% 0 3px #EDE9FE,
+		5% 35% 0 2px #A78BFA,
+		6% 42% 0 1px #EDE9FE,
+		7% 49% 0 3px #EDE9FE,
+		8% 56% 0 2px #EDE9FE,
+		9% 63% 0 1px #A78BFA,
+		10% 70% 0 3px #EDE9FE,
+		11% 77% 0 2px #EDE9FE,
+		12% 84% 0 1px #EDE9FE,
+		13% 91% 0 3px #A78BFA,
+		14% 98% 0 2px #EDE9FE,
+		15% 5% 0 1px #EDE9FE,
+		16% 12% 0 3px #EDE9FE,
+		17% 19% 0 2px #A78BFA,
+		18% 26% 0 1px #EDE9FE,
+		19% 33% 0 3px #EDE9FE,
+		20% 40% 0 2px #EDE9FE,
+		21% 47% 0 1px #A78BFA,
+		22% 54% 0 3px #EDE9FE,
+		23% 61% 0 2px #EDE9FE,
+		24% 68% 0 1px #EDE9FE,
+		25% 75% 0 3px #A78BFA,
+		26% 82% 0 2px #EDE9FE,
+		27% 89% 0 1px #EDE9FE,
+		28% 96% 0 3px #EDE9FE,
+		29% 3% 0 2px #A78BFA,
+		30% 10% 0 1px #EDE9FE,
+		31% 17% 0 3px #EDE9FE,
+		32% 24% 0 2px #EDE9FE,
+		33% 31% 0 1px #A78BFA,
+		34% 38% 0 3px #EDE9FE,
+		35% 45% 0 2px #EDE9FE,
+		36% 52% 0 1px #EDE9FE,
+		37% 59% 0 3px #A78BFA,
+		38% 66% 0 2px #EDE9FE,
+		39% 73% 0 1px #EDE9FE,
+		40% 80% 0 3px #EDE9FE,
+		41% 87% 0 2px #A78BFA,
+		42% 94% 0 1px #EDE9FE,
+		43% 1% 0 3px #EDE9FE,
+		44% 8% 0 2px #EDE9FE,
+		45% 15% 0 1px #A78BFA,
+		46% 22% 0 3px #EDE9FE,
+		47% 29% 0 2px #EDE9FE,
+		48% 36% 0 1px #EDE9FE,
+		49% 43% 0 3px #A78BFA,
+		50% 50% 0 2px #EDE9FE,
+		51% 57% 0 1px #EDE9FE,
+		52% 64% 0 3px #EDE9FE,
+		53% 71% 0 2px #A78BFA,
+		54% 78% 0 1px #EDE9FE,
+		55% 85% 0 3px #EDE9FE,
+		56% 92% 0 2px #EDE9FE,
+		57% 99% 0 1px #A78BFA,
+		58% 6% 0 3px #EDE9FE,
+		59% 13% 0 2px #EDE9FE,
+		60% 20% 0 1px #EDE9FE,
+		61% 27% 0 3px #A78BFA,
+		62% 34% 0 2px #EDE9FE,
+		63% 41% 0 1px #EDE9FE,
+		64% 48% 0 3px #EDE9FE,
+		65% 55% 0 2px #A78BFA,
+		66% 62% 0 1px #EDE9FE;
+	animation: hv-starfield-twinkle 7s ease-in-out infinite;
+}
+@keyframes hv-starfield-twinkle {
+	0%, 100% { opacity: 0.45; }
+	50%      { opacity: 1; }
+}
+
+/* ---- glass-card utility, on every card surface ------------------------- */
+#havato-app.hv-cosmic .hv-card,
+#havato-app.hv-cosmic .hv-list-card,
+#havato-app.hv-cosmic .hv-glass,
+#havato-app.hv-cosmic .hv-modal-card {
+	background: rgba(109, 40, 217, 0.12);
+	background: color-mix(in srgb, #6d28d9 12%, transparent);
+	backdrop-filter: blur(20px) saturate(150%);
+	-webkit-backdrop-filter: blur(20px) saturate(150%);
+	border: 1px solid rgba(167, 139, 250, 0.22);
+	border: 1px solid color-mix(in srgb, #a78bfa 22%, transparent);
+	box-shadow: 0 0 40px -10px rgba(167, 139, 250, 0.35);
+	box-shadow: 0 0 40px -10px color-mix(in srgb, #a78bfa 35%, transparent);
+}
+#havato-app.hv-cosmic .hv-modal-card {
+	background: rgba(29, 16, 47, 0.82);
+	background: color-mix(in srgb, #1d102f 82%, transparent);
+}
+
+/* ---- field-surface utility (inputs, selects, textareas) ---------------- */
+#havato-app.hv-cosmic .hv-input,
+#havato-app.hv-cosmic .hv-select,
+#havato-app.hv-cosmic .hv-textarea {
+	background: rgba(49, 37, 77, 0.28);
+	background: color-mix(in srgb, #31254d 28%, transparent);
+	border-color: rgba(49, 37, 77, 0.9);
+	border-color: color-mix(in srgb, #31254d 90%, transparent);
+	color: var(--hv-text);
+}
+#havato-app.hv-cosmic .hv-input:focus,
+#havato-app.hv-cosmic .hv-select:focus,
+#havato-app.hv-cosmic .hv-textarea:focus {
+	border-color: rgba(131, 71, 233, 0.7);
+	border-color: color-mix(in srgb, #8347e9 70%, transparent);
+	box-shadow: 0 0 0 3px rgba(166, 137, 241, 0.25);
+	box-shadow: 0 0 0 3px color-mix(in srgb, #a689f1 25%, transparent);
+}
+
+/* ---- chips: outlined on the nebula, glow when active -------------------- */
+#havato-app.hv-cosmic .hv-chip {
+	border-color: rgba(167, 139, 250, 0.3);
+	background: rgba(167, 139, 250, 0.08);
+	color: var(--hv-dark-secondary);
+}
+#havato-app.hv-cosmic .hv-chip.is-active,
+#havato-app.hv-cosmic .hv-choice.is-active {
+	background-image: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+	border-color: transparent;
+	color: #fff;
+	box-shadow: 0 0 24px -4px rgba(167, 139, 250, 0.55);
+	box-shadow: 0 0 24px -4px color-mix(in srgb, #a78bfa 55%, transparent);
+}
+
+/* ---- glow-button utility (secondary actions) ---------------------------- */
+#havato-app.hv-cosmic .hv-btn-blue,
+#havato-app.hv-cosmic .hv-chat-send {
+	background-image: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+	color: #fff;
+	box-shadow: 0 0 24px -4px rgba(167, 139, 250, 0.55);
+	box-shadow: 0 0 24px -4px color-mix(in srgb, #a78bfa 55%, transparent);
+	transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+#havato-app.hv-cosmic .hv-btn-blue:hover,
+#havato-app.hv-cosmic .hv-chat-send:hover {
+	box-shadow: 0 0 32px -2px rgba(167, 139, 250, 0.7);
+	box-shadow: 0 0 32px -2px color-mix(in srgb, #a78bfa 70%, transparent);
+	transform: translateY(-1px);
+}
+
+/* ---- cosmic-cta: the primary button ------------------------
+   Exact recipe: purple ramp, inset top highlight, a 1px white line across
+   the top edge, a light streak sweeping the face every 5s and the outer
+   glow breathing every 4.5s. */
+#havato-app.hv-cosmic .hv-btn-primary {
+	position: relative;
+	overflow: hidden;
+	background-image: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #6d28d9 100%);
+	border: 1px solid rgba(196, 181, 253, 0.75);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+	animation: hv-cosmic-cta-glow 4.5s ease-in-out infinite;
+	will-change: filter, transform;
+	transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+#havato-app.hv-cosmic .hv-btn-primary::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 18%;
+	right: 18%;
+	height: 1px;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+}
+#havato-app.hv-cosmic .hv-btn-primary::after {
+	content: "";
+	position: absolute;
+	top: -50%;
+	bottom: -50%;
+	width: 40%;
+	left: 0;
+	pointer-events: none;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+	animation: hv-cta-sheen 5s ease-in-out infinite;
+}
+#havato-app.hv-cosmic .hv-btn-primary:hover {
+	box-shadow:
+		0 0 62px 4px rgba(124, 58, 237, 1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.5);
+	transform: translateY(-1px) scale(1.01);
+}
+@keyframes hv-cosmic-cta-glow {
+	0%, 100% { filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.65)); }
+	50%      { filter: drop-shadow(0 0 25px rgba(124, 58, 237, 0.9))
+	                 drop-shadow(0 0 40px rgba(222, 148, 0, 0.28)); }
+}
+@keyframes hv-cta-sheen {
+	0%        { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+	12%       { opacity: 0.85; }
+	45%       { opacity: 0.85; }
+	60%, 100% { transform: translateX(240%) skewX(-18deg); opacity: 0; }
+}
+
+/* ---- header: the exact gradient-hero ramp + nebula glows --------------- */
+#havato-app.hv-cosmic .hv-header-bg {
+	background: linear-gradient(135deg, #0f0a1e 0%, #1e1038 45%, #2a1055 100%);
+	box-shadow: 0 14px 34px rgba(10, 6, 22, 0.55);
+}
+#havato-app.hv-cosmic .hv-header-bg::after {
+	background: radial-gradient(ellipse 60% 50% at 80% 20%,
+		rgba(124, 58, 237, 0.4) 0%, transparent 62%);
+}
+#havato-app.hv-cosmic .hv-header-bg::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(ellipse 55% 45% at 12% 85%, rgba(109, 40, 217, 0.35) 0%, transparent 60%),
+		radial-gradient(ellipse 45% 40% at 90% 8%, rgba(222, 148, 0, 0.1) 0%, transparent 55%);
+}
+#havato-app.hv-cosmic .hv-header-eyebrow { color: rgba(196, 181, 253, 0.85); }
+/* headline-glow: the purple + warm-gold breathing drop-shadow. */
+#havato-app.hv-cosmic .hv-header-title {
+	animation: hv-headline-glow 6s ease-in-out infinite;
+	will-change: filter, opacity;
+}
+@keyframes hv-headline-glow {
+	0%, 100% { filter: drop-shadow(0 0 20px rgba(124, 58, 237, 0.5))
+	                   drop-shadow(0 0 45px rgba(212, 160, 74, 0.16));
+	           opacity: 0.96; }
+	50%      { filter: drop-shadow(0 0 13px rgba(196, 181, 253, 0.55))
+	                   drop-shadow(0 0 35px rgba(124, 58, 237, 0.8))
+	                   drop-shadow(0 0 65px rgba(212, 160, 74, 0.3));
+	           opacity: 1; }
+}
+#havato-app.hv-cosmic .hv-avatar-btn {
+	border-color: rgba(196, 181, 253, 0.55);
+	background: rgba(167, 139, 250, 0.14);
+}
+
+/* ---- bottom nav: keep the purple ramp, amber the active indicator ------ */
+#havato-app.hv-cosmic .hv-bottom-nav::before {
+	border-block-start: 1px solid rgba(196, 181, 253, 0.22);
+}
+#havato-app.hv-cosmic .hv-tab.is-active::after {
+	background: #fac547;
+	box-shadow: 0 0 9px rgba(250, 197, 71, 0.9);
+}
+#havato-app.hv-cosmic .hv-tab.is-active svg {
+	filter: drop-shadow(0 2px 7px rgba(196, 181, 253, 0.75));
+}
+#havato-app.hv-cosmic .hv-tab svg {
+	filter: drop-shadow(0 1px 2px rgba(10, 6, 22, 0.55));
+}
+
+/* ---- auth wall: nebula night, glass card -------------------------------- */
+#havato-app.hv-cosmic .hv-authwall {
+	background: linear-gradient(160deg, #1b1033 0%, #0f0a1e 55%, #0f0a1e 100%);
+}
+#havato-app.hv-cosmic .hv-authwall::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(ellipse 60% 50% at 80% 18%, rgba(124, 58, 237, 0.4) 0%, transparent 60%),
+		radial-gradient(ellipse 55% 45% at 15% 82%, rgba(109, 40, 217, 0.32) 0%, transparent 60%),
+		radial-gradient(ellipse 50% 40% at 50% 50%, rgba(167, 139, 250, 0.16) 0%, transparent 65%);
+}
+#havato-app.hv-cosmic .hv-auth-heading::after {
+	background: linear-gradient(90deg, #de9400, #fac547);
+}
+#havato-app.hv-cosmic .hv-redirect {
+	background: linear-gradient(160deg, rgba(42, 16, 85, 0.96), rgba(15, 10, 30, 0.97));
+}
+
+/* ---- soft accents: badges, dial, seatbar, links, toasts ---------------- */
+#havato-app.hv-cosmic .hv-badge-blue   { background: rgba(167, 139, 250, 0.16); color: #c4b5fd; }
+#havato-app.hv-cosmic .hv-badge-green  { background: rgba(52, 211, 153, 0.14); color: #6ee7b7; }
+#havato-app.hv-cosmic .hv-badge-orange { background: rgba(222, 148, 0, 0.16);  color: #fac547; }
+#havato-app.hv-cosmic .hv-badge-pink   { background: rgba(244, 114, 182, 0.15); color: #f9a8d4; }
+#havato-app.hv-cosmic .hv-badge-gray   { background: rgba(255, 255, 255, 0.08); color: #c7bfd9; }
+#havato-app.hv-cosmic .hv-badge-indigo { background: rgba(124, 58, 237, 0.2);  color: #c4b5fd; }
+#havato-app.hv-cosmic .hv-dial {
+	background: rgba(167, 139, 250, 0.1);
+	border-color: rgba(167, 139, 250, 0.25);
+	color: #c4b5fd;
+}
+#havato-app.hv-cosmic .hv-seatbar { background: rgba(167, 139, 250, 0.15); }
+#havato-app.hv-cosmic .hv-seatbar span {
+	background: linear-gradient(90deg, #a78bfa, #7c3aed);
+}
+#havato-app.hv-cosmic .hv-section-link { color: #c4b5fd; }
+#havato-app.hv-cosmic .hv-toast.is-info { background: linear-gradient(120deg, #8b5cf6, #7c3aed); }
+#havato-app.hv-cosmic .hv-main::-webkit-scrollbar-thumb { background: rgba(167, 139, 250, 0.35); }
+#havato-app.hv-cosmic .hv-spinner {
+	border-color: rgba(196, 181, 253, 0.25);
+	border-top-color: #c4b5fd;
+}
+#havato-app.hv-cosmic .hv-list-thumb {
+	background: linear-gradient(135deg, #a78bfa, #7c3aed);
+}
+
+/* ---- mobile: keep the look, drop the continuous compositing work.
+   (Same trade-off the reference makes in its own mobile block.) ---------- */
+@media (max-width: 767px) {
+	#havato-app.hv-cosmic .hv-btn-primary { animation: none; }
+	#havato-app.hv-cosmic .hv-btn-primary::after { display: none; }
+	#havato-app.hv-cosmic .hv-header-title { animation: none; }
+	#havato-app.hv-cosmic .hv-cosmic-plate { animation: none; transform: scale(1.04) translateZ(0); }
+	#havato-app.hv-cosmic .hv-cosmic-stars { animation: none; opacity: 0.85; }
+	#havato-app.hv-cosmic .hv-card,
+	#havato-app.hv-cosmic .hv-list-card,
+	#havato-app.hv-cosmic .hv-glass {
+		backdrop-filter: blur(10px) saturate(125%);
+		-webkit-backdrop-filter: blur(10px) saturate(125%);
+	}
+}
+
+/* ---- reduced motion: the reference freezes every decorative layer. ----- */
+@media (prefers-reduced-motion: reduce) {
+	#havato-app.hv-cosmic .hv-btn-primary,
+	#havato-app.hv-cosmic .hv-btn-primary::after,
+	#havato-app.hv-cosmic .hv-header-title,
+	#havato-app.hv-cosmic .hv-cosmic-plate,
+	#havato-app.hv-cosmic .hv-cosmic-stars,
+	#havato-app.hv-cosmic .hv-orb {
+		animation: none !important;
+	}
+	#havato-app.hv-cosmic .hv-cosmic-stars { opacity: 0.85; }
+	#havato-app.hv-cosmic .hv-btn-primary::after { display: none !important; }
+}

@@ -4,7 +4,7 @@ Tags: social, matchmaking, cafe, events, community, pwa, rtl, persian
 Requires at least: 5.8
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.38.0
+Stable tag: 1.39.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,22 @@ happens in-page, and the hardware Back button moves between tabs.
 A floating button in the app header, plus the `havato_lang` user meta.
 
 == Changelog ==
+
+= 1.39.0 =
+* New graphics, ported 1:1 from the Ideal Gathering design system
+  (github.com/idealgathering-collab/ideal-gathering): a deep purple cosmic
+  nebula lit by warm amber.
+* New built-in theme "Cosmic Nebula" (سحابی کیهانی) and it is now the
+  default on fresh installs. Existing sites keep their chosen theme; switch
+  under Havato → Design & Themes.
+* The cosmic layer ships the reference look exactly: the three nebula glows,
+  the deterministic 70-star field (the same generator as the reference
+  CosmicBackdrop), glass cards, the glowing cosmic-cta primary button with
+  its light sweep, the gradient-hero header and amber/tangerine accents.
+* All animations are dropped on small screens and under
+  prefers-reduced-motion, the same trade-off the reference makes.
+* The nebula skyline backdrop ships locally in the plugin (no CDN, no
+  blocking third-party request) and Persian keeps the bundled Vazirmatn.
 
 = 1.38.0 =
 * Fixed: an already signed-in user could open the app and see nothing but

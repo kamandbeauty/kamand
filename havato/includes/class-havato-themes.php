@@ -34,8 +34,11 @@ class Havato_Themes {
 
 	/**
 	 * Fallback theme id.
+	 *
+	 * v1.39.0: the default is now the cosmic nebula theme — the new
+	 * Ideal Gathering graphics ported 1:1 from its design system.
 	 */
-	const FALLBACK = 'azure';
+	const FALLBACK = 'nebula';
 
 	/**
 	 * Runtime cache.
@@ -188,6 +191,50 @@ class Havato_Themes {
 				'text'       => '#3a1622',
 				'text_soft'  => '#946b74',
 			),
+			/*
+			 * Cosmic Nebula — the new Ideal Gathering graphics, ported 1:1.
+			 *
+			 * Every value below is the exact Ideal Gathering design token
+			 * (https://github.com/idealgathering-collab/ideal-gathering,
+			 * src/styles.css) converted from OKLCH to sRGB hex:
+			 *
+			 *   #7C3AED  nebula-purple   (primary, CTA gradient 0%)
+			 *   #8B5CF6  CTA gradient 50%
+			 *   #6D28D9  nebula-violet   (CTA gradient 100%)
+			 *   #A78BFA  dark-primary    (secondary actions, glows)
+			 *   #C4B5FD  dark-secondary  (headings, rim light)
+			 *   #DE9400  tangerine       (warm amber accent)
+			 *   #FAC547  sunshine        (warm gold highlight)
+			 *   #11071F  oklch(0.16 0.05 300)  background
+			 *   #1F1332  oklch(0.22 0.06 300)  card
+			 *   #DACCF7  oklch(0.87 0.06 300)  foreground
+			 *   #AA9DC5  oklch(0.72 0.06 300)  muted foreground
+			 *
+			 * `cosmic` arms the nebula backdrop, the star field, the glass
+			 * cards and the glowing buttons that havato-app.css ships under
+			 * `.hv-cosmic` (the same visual grammar as Ideal Gathering's
+			 * cosmic-backdrop / glass-card / cosmic-cta utilities).
+			 */
+			'nebula' => array(
+				'label'      => array( 'fa' => 'سحابی کیهانی', 'en' => 'Cosmic Nebula', 'tr' => 'Kozmik Nebula' ),
+				'note'       => array(
+					'fa' => 'گرافیک جدید ایده‌آل گدرینگ، یک‌به‌یک: سحابی بنفش عمیق با کهربای گرم، کارت‌های شیشه‌ای و دکمه‌های درخشان.',
+					'en' => 'The new Ideal Gathering graphics, ported 1:1 — a deep purple nebula lit by warm amber, glass cards and glowing buttons.',
+					'tr' => 'Ideal Gathering’ın yeni grafikleri, birebir: kehribar ışıltılı derin mor nebula, cam kartlar ve parlayan düğmeler.',
+				),
+				'dark'       => true,
+				'cosmic'     => true,
+				'light'      => '#8b5cf6',
+				'base'       => '#7c3aed',
+				'deep'       => '#6d28d9',
+				'ink'        => '#0f0a1e',
+				'accent'     => '#a78bfa',
+				'accent_2'   => '#de9400',
+				'canvas'     => '#11071f',
+				'card'       => '#1f1332',
+				'text'       => '#daccf7',
+				'text_soft'  => '#aa9dc5',
+			),
 		);
 
 		/**
@@ -288,6 +335,20 @@ class Havato_Themes {
 		return $id;
 	}
 
+	/**
+	 * Extra class for the app shell when the active theme is cosmic.
+	 *
+	 * Returned as '' for every other theme, so templates can print it
+	 * unconditionally and the `.hv-cosmic` graphics layer in havato-app.css
+	 * simply stays dormant.
+	 *
+	 * @return string 'hv-cosmic' or ''.
+	 */
+	public static function current_class() {
+		$t = self::current();
+		return ! empty( $t['cosmic'] ) ? 'hv-cosmic' : '';
+	}
+
 	/* =====================================================================
 	 * Normalising & colour maths
 	 * ================================================================== */
@@ -329,6 +390,11 @@ class Havato_Themes {
 				? (bool) $theme['dark']
 				: ( self::luminance( self::hex( isset( $theme['canvas'] ) ? $theme['canvas'] : '', '#eef1fb' ) ) < 0.4 ),
 			'card'      => isset( $theme['card'] ) ? self::hex( $theme['card'], '' ) : '',
+			// The cosmic flag arms the Ideal Gathering visual layer (nebula
+			// backdrop, star field, glass cards, glowing buttons) handled by
+			// `.hv-cosmic` rules in havato-app.css. Non-cosmic themes never
+			// pay for it.
+			'cosmic'    => ! empty( $theme['cosmic'] ),
 		);
 
 		// Hard guarantee: white body text sits on `base` all over the app

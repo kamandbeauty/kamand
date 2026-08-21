@@ -18,6 +18,35 @@ Smart social-table platform for cafés & restaurants — a production-ready Word
 
 ---
 
+## گرافیک جدید / New graphics (v1.39.0)
+
+گرافیک اپلیکیشن یک‌به‌یک از سیستم طراحی
+[Ideal Gathering](https://github.com/idealgathering-collab/ideal-gathering)
+(`src/styles.css`) برداشته شده است:
+
+- **پالت** — تم پیش‌فرض جدید **«سحابی کیهانی / Cosmic Nebula»** با توکن‌های دقیق مرجع:
+  `#7C3AED` (nebula-purple)، `#6D28D9` (nebula-violet)، `#A78BFA` (dark-primary)،
+  `#C4B5FD` (dark-secondary)، `#DE9400` (tangerine) و `#FAC547` (sunshine).
+- **پس‌زمینه** — سه هالهٔ سحابی (nebula glows) با همان مختصات و شفافیت مرجع،
+  صفحهٔ آسمان (`assets/img/nebula-skyline.jpg`) و فیلد ۷۰ ستارهٔ قطعی که با
+  همان مولد مرجع تولید می‌شود (`seed = i*9301 + 49297`).
+- **سطوح** — کارت‌های شیشه‌ای (glass-card) با `blur(20px) saturate(150%)` و
+  حاشیهٔ بنفش ۲۲٪، دکمهٔ اصلی «cosmic-cta» با گرادیان
+  `#7C3AED → #8B5CF6 → #6D28D9`، خط روشن لبه و برق متحرک، و هدر
+  `gradient-hero` (`#0F0A1E → #1E1038 → #2A1055`).
+- **تایپوگرافی** — فارسی با Vazirmatn داخلی؛ لاتین با استک `Outfit / Figtree`.
+- انیمیشن‌ها روی موبایل و با `prefers-reduced-motion` خاموش می‌شوند (همان مصالحهٔ مرجع).
+
+تصاویر مرجع خام (لوگو، og-image و hero-cafe) که مستقیماً از تاریخچهٔ گیت
+Ideal Gathering استخراج شده‌اند در [`design/ideal-gathering/`](design/ideal-gathering/) نگهداری می‌شوند.
+
+اسکرین‌شات‌های جدید: [`design/screenshots/home-nebula.png`](design/screenshots/home-nebula.png)
+و [`design/screenshots/auth-nebula.png`](design/screenshots/auth-nebula.png)
+(تولید خودکار توسط `tests/render-nebula.js`، با پالتی که مستقیم از رجیستری تم خوانده می‌شود).
+
+---
+
+
 ## ساختار / Structure
 
 ```
@@ -73,6 +102,7 @@ havato/
 | چرخه رزرو صندلی (۱۰ پرداخت هم‌زمان روی میز ۶ نفره) | ✅ بدون فروش اضافی |
 | ریسپانسیو در ۸ اندازه (۳۲۰px تا تبلت + لندسکیپ) | ✅ بدون سرریز افقی |
 | پالت رنگی مطابق موکاپ (بدون بنفش/صورتی نئونی) | ✅ |
+| گرافیک جدید Ideal Gathering یک‌به‌یک (توکن‌ها، سحابی، ستاره‌ها، glass-card، cosmic-cta، AA روی تمام سطوح) | ✅ (`themes.js` + `render-nebula.js`) |
 | امنیت: ABSPATH، prepare، escape، nonce، permission | ✅ ۴۷/۴۷ اندپوینت |
 
 ### باگ‌هایی که در حین تست پیدا و رفع شدند

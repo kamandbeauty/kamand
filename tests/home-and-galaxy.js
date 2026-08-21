@@ -84,7 +84,11 @@ console.log('\n--- 2. the Galaxy palette is readable ---');
   t('…so the intent survives a canvas edit', /'dark'\s*=> true/.test(block));
 })();
 
-t('the default is still the non-violet Azure', /const FALLBACK = 'azure';/.test(themes));
+// v1.39.0: the default is the Ideal Gathering cosmic graphics (nebula).
+// The violet ban of v1.10.0 applied to a default that made the app look
+// like every fintech app; nebula is exempt on purpose — it is the brand
+// identity the client asked to port, and it is the dark cosmic look.
+t('the default is the nebula Ideal Gathering graphics', /const FALLBACK = 'nebula';/.test(themes));
 
 /* =====================================================================
  * 3. Five tabs, no floating button

@@ -43,9 +43,9 @@ while ((m = reTheme.exec(block))) {
 }
 
 console.log('--- 1. every shipped palette is present and complete ---');
-// 'raspberry' joined in 1.15.0; the list is asserted by content, not length,
-// so adding a theme is not a breaking change.
-const want = ['azure', 'emerald', 'espresso', 'midnight', 'coral', 'raspberry', 'galaxy'];
+// 'raspberry' joined in 1.15.0; 'nebula' in 1.39.0. The list is asserted by
+// content, not length — adding a theme means agreeing on it here.
+const want = ['azure', 'emerald', 'espresso', 'midnight', 'coral', 'raspberry', 'galaxy', 'nebula'];
 t('all agreed themes ship', want.every(k => cat[k]));
 t('no unexpected extras', Object.keys(cat).every(k => want.includes(k)));
 
@@ -83,6 +83,68 @@ t('no unexpected extras', Object.keys(cat).every(k => want.includes(k)));
   t('text is corrected against the card, not the canvas',
     /self::contrast\( \$out\['text'\], \$out\['card'\] \) < 4\.5/.test(src));
 })();
+
+// --- 1b. nebula: the Ideal Gathering cosmic graphics (v1.39.0) ------------
+(() => {
+  const src = fs.readFileSync(R + 'includes/class-havato-themes.php', 'utf8');
+  const css = fs.readFileSync(R + 'assets/css/havato-app.css', 'utf8');
+  const app = fs.readFileSync(R + 'templates/app.php', 'utf8');
+
+  // Every colour must be the exact Ideal Gathering design token (OKLCH
+  // converted to hex) — this test IS the porting contract. `card` is not
+  // part of the catalogue parser's key set, so it is checked directly.
+  const ig = { light: '#8b5cf6', base: '#7c3aed', deep: '#6d28d9', ink: '#0f0a1e',
+               accent: '#a78bfa', accent_2: '#de9400', canvas: '#11071f',
+               card: '#1f1332', text: '#daccf7', text_soft: '#aa9dc5' };
+  const igKeys = Object.keys(ig).filter(k => k !== 'card');
+  t('nebula ships the exact Ideal Gathering palette',
+    igKeys.every(k => cat.nebula && cat.nebula[k] === ig[k]) &&
+    /'card'\s*=> '#1f1332'/.test(src));
+  t('nebula declares itself dark', /'dark'\s*=> true/.test(src) &&
+    /'cosmic'\s*=> true/.test(src));
+
+  // It is the new default, so a fresh install opens on the cosmic graphics.
+  t('nebula is the fallback theme', /const FALLBACK = 'nebula'/.test(src));
+
+  const hex = h => { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+  const lum = h => {
+    const [r, g, b] = hex(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const l1 = lum(a), l2 = lum(b);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  };
+  t('nebula body text clears AA on its cards', ratio(ig.text, ig.card) >= 4.5);
+  t('…and on the page itself', ratio(ig.text, ig.canvas) >= 4.5);
+  t('nebula secondary text clears 3:1', ratio(ig.text_soft, ig.card) >= 3);
+  t('white still readable on the nebula primary button', ratio('#ffffff', ig.base) >= 4.5);
+  t('nebula cards are distinguishable from the page', lum(ig.card) > lum(ig.canvas));
+
+  // The cosmic flag must reach the shell: current_class() → app.php class.
+  t('the engine exposes the cosmic flag as a class', /function current_class/.test(src) &&
+    /return ! empty\( \$t\['cosmic'\] \) \? 'hv-cosmic' : ''/.test(src));
+  t('the app shell prints the cosmic class', /Havato_Themes::current_class\(\)/.test(app));
+  t('the shell carries the cosmic backdrop layers', /hv-cosmic-bg/.test(app) &&
+    /hv-cosmic-plate/.test(app) && /hv-cosmic-stars/.test(app) &&
+    /nebula-skyline\.jpg/.test(app));
+
+  // The graphics layer must exist in the stylesheet, keyed off .hv-cosmic,
+  // and its anchors must be the exact reference tokens.
+  t('the cosmic graphics layer is keyed off .hv-cosmic', /#havato-app\.hv-cosmic/.test(css));
+  t('nebula glows use the exact reference colours', css.includes('rgba(124, 58, 237, 0.35)') &&
+    css.includes('rgba(109, 40, 217, 0.28)') && css.includes('rgba(167, 139, 250, 0.18)'));
+  t('glass cards use the exact reference recipe', /color-mix\(in srgb, #6d28d9 12%/.test(css) &&
+    /color-mix\(in srgb, #a78bfa 22%/.test(css) && /blur\(20px\) saturate\(150%\)/.test(css));
+  t('the primary button is the exact cosmic-cta', /linear-gradient\(135deg, #7c3aed 0%, #8b5cf6 50%, #6d28d9 100%\)/.test(css) &&
+    /hv-cosmic-cta-glow/.test(css) && /hv-cta-sheen/.test(css));
+  t('the header uses the exact gradient-hero ramp', /linear-gradient\(135deg, #0f0a1e 0%, #1e1038 45%, #2a1055 100%\)/.test(css));
+  t('the star field replays the reference star generator', css.includes('97% 79% 0 1px #A78BFA') &&
+    css.includes('0% 0% 0 1px #EDE9FE'));
+  t('warm accents stay amber, not blue', css.includes('background: #fac547') && css.includes('#de9400'));
+  t('mobile drops the continuous compositing work', /@media \(max-width: 767px\)[\s\S]{0,400}hv-btn-primary \{ animation: none; \}/.test(css));
+  t('reduced motion freezes every decorative layer', /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,600}animation: none !important/.test(css));
+})();
 for (const id of want) {
   const c = cat[id];
   t(`${id}: every colour parsed`, c && Object.values(c).every(v => /^#[0-9a-f]{6}$/.test(v || '')));
@@ -109,10 +171,11 @@ for (const id of want) {
 console.log('\n--- 3. the purple complaint is genuinely resolved ---');
 // 230..280 is where indigo/violet is perceived; the old #1b1fbf sat at 239.
 // The complaint was about the DEFAULT looking like every other fintech app,
-// so the ban applies to the themes offered as alternatives to it. Galaxy is
-// exempt: it was requested as a violet night theme, and it is opt-in.
+// so the ban applies to the themes offered as alternatives to it. Galaxy and
+// Nebula are exempt: both are deliberate violet night themes — galaxy is
+// opt-in, nebula is the Ideal Gathering cosmic graphics (v1.39.0).
 t('the old violet base is gone from the catalogue', !/#1b1fbf/i.test(block));
-const violetExempt = ['galaxy'];
+const violetExempt = ['galaxy', 'nebula'];
 for (const id of want) {
   if (violetExempt.includes(id)) { continue; }
   const h = hue(cat[id].base);

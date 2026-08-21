@@ -25,7 +25,10 @@ $havato_dir  = Havato_I18N::dir( $havato_lang );
 			padding: 0;
 			height: 100%;
 			overflow: hidden;
-			background: #0f1440;
+			/* Matches the nebula theme's ink (the default since v1.39.0) so
+			   the pre-paint shell flashes the cosmic night instead of the old
+			   indigo. The app repaints this area itself once it mounts. */
+			background: #0f0a1e;
 			overscroll-behavior: none;
 		}
 		html.havato-html body > *:not(#havato-standalone-root) { display: none !important; }

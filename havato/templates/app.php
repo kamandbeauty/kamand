@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
 $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 ?>
 <div id="havato-app"
-	class="hv-app hv-dir-<?php echo esc_attr( $dir ); ?>"
+	class="hv-app hv-dir-<?php echo esc_attr( $dir ); ?> <?php echo esc_attr( Havato_Themes::current_class() ); ?>"
 	data-lang="<?php echo esc_attr( $lang ); ?>"
 	data-view="<?php echo esc_attr( $havato_view ); ?>"
 	dir="<?php echo esc_attr( $dir ); ?>">
@@ -25,6 +25,15 @@ $havato_view = isset( $atts['view'] ) ? $atts['view'] : 'auto';
 	<!-- Ambient indigo / light-blue glow orbs (mockup background) -->
 	<div class="hv-orb hv-orb-1" aria-hidden="true"></div>
 	<div class="hv-orb hv-orb-2" aria-hidden="true"></div>
+
+	<!-- Cosmic nebula backdrop (Ideal Gathering graphics, cosmic themes only):
+	     the skyline plate, the three nebula glows and the star field are all
+	     painted by .hv-cosmic rules in havato-app.css, so the layer costs
+	     nothing on any other theme. -->
+	<div class="hv-cosmic-bg" aria-hidden="true">
+		<div class="hv-cosmic-plate" style="background-image:url(<?php echo esc_url( HAVATO_URL . 'assets/img/nebula-skyline.jpg' ); ?>)"></div>
+		<div class="hv-cosmic-stars"></div>
+	</div>
 
 	<?php include HAVATO_PATH . 'templates/parts/icons.php'; ?>
 
