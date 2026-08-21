@@ -8,9 +8,9 @@ var active_projectiles := 0
 var gates := [{"z":-12.0,"op":"multiply","value":2.0,"text":"×2"},{"z":-22.0,"op":"multiply","value":3.0,"text":"×3"},{"z":-32.0,"op":"add","value":5.0,"text":"+5"},{"z":-42.0,"op":"add","value":10.0,"text":"+10"},{"z":-52.0,"op":"subtract","value":3.0,"text":"-3"},{"z":-62.0,"op":"subtract","value":5.0,"text":"-5"},{"z":-72.0,"op":"divide","value":2.0,"text":"÷2"}]
 func _ready() -> void:
  player = $Player; formation = $Formation
- var enemy_scene := preload("res://scenes/enemy/Enemy.tscn"); EnemyManager.setup(enemy_scene, player)
+ var enemy_scene := preload("res://scenes/enemy/Enemy.tscn"); EnemyManager.setup(enemy_scene, formation)
  for z in [-30.0, -55.0]:
-  for x in [-2.0, 0.0, 2.0]: EnemyManager.spawn_enemy(Vector3(x, 0.8, z), player)
+  for x in [-2.0, 0.0, 2.0]: EnemyManager.spawn_enemy(Vector3(x, 0.8, z), player, formation)
  for i in 30: projectile_pool.append(_new_projectile())
  for g in gates: _make_gate(g)
  PlayerManager.soldiers_changed.connect(_on_soldiers_changed)
