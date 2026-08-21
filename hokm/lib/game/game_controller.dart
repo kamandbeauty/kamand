@@ -229,6 +229,23 @@ class GameController extends ChangeNotifier implements GameEventListener {
     if (_eventQueue.isNotEmpty) _pump();
   }
 
+  /// مهلتِ نگهبان انیمیشن — اگر یک انیمیشن بیش از این دوام آورد،
+  /// جریان بازی بدون منتظرماندنِ ابدی ادامه می‌یابد.
+  static const Duration _animationWatchdog = Duration(seconds: 8);
+
+  /// نگهبان انیمیشن: انیمیشن‌ها تزئینی‌اند و از سلامتِ منطقِ بازی جدا.
+  /// اگر صف حرکتِ کارت‌ها (گرسنگیِ تیک، اشکالِ پلتفرم و …) پیش نرفت،
+  /// حرکت‌ها اجباراً جمع می‌شوند تا مسابقه هرگز روی صفحهٔ خاکستری/فریز
+  /// گیر نکند. در عمل عادی این نگهبان هرگز وارد عمل نمی‌شود.
+  Future<void> _awaitAnim(HokmGame game, Future<void> anim, String label) async {
+    try {
+      await anim.timeout(_animationWatchdog);
+    } on TimeoutException {
+      debugPrint('Hokm: watchdog »انیمیشن $label« — جمع‌کردن اجباری حرکت‌ها');
+      game.cancelAllMotions();
+    }
+  }
+
   /// برمی‌گرداند false اگر جریان باید منتظر ورودی انسان بماند.
   Future<bool> _handleEvent(GameEvent event, int session) async {
     final game = _game;
@@ -238,7 +255,8 @@ class GameController extends ChangeNotifier implements GameEventListener {
         // (مثلِ میز واقعی) و بعد حاکم تعیین می‌شود.
         if (game != null) {
           _sound.shuffle();
-          await game.animateShuffle();
+          await _awaitAnim(
+              game, game.animateShuffle(), 'shuffle-match-start');
         }
         if (session != _session) return false;
         return true;
@@ -250,7 +268,9 @@ class GameController extends ChangeNotifier implements GameEventListener {
             humanSeat: humanSeat,
             hakim: event.hakim,
           );
-          await game.animateHakimDetermination(event.dealtCards);
+          await _awaitAnim(
+              game, game.animateHakimDetermination(event.dealtCards),
+              'hakim-determination');
         }
         if (session != _session) return false;
         _showBanner(
@@ -266,16 +286,19 @@ class GameController extends ChangeNotifier implements GameEventListener {
         game?.setHakimBadge(event.hakim);
         if (game != null) {
           _sound.shuffle();
-          await game.animateShuffle();
+          await _awaitAnim(game, game.animateShuffle(), 'shuffle-round-start');
         }
         return true;
 
       case InitialDealEvent():
         if (game != null) {
           _sound.deal();
-          await game.animateDealBatch(event.steps,
-              faceUpSeats: const {Seat.south});
-          await game.finalizeHands();
+          await _awaitAnim(
+              game,
+              game.animateDealBatch(event.steps,
+                  faceUpSeats: const {Seat.south}),
+              'initial-deal');
+          await _awaitAnim(game, game.finalizeHands(), 'finalize-hands');
         }
         notifyListeners();
         return true;
@@ -295,17 +318,23 @@ class GameController extends ChangeNotifier implements GameEventListener {
       case DealBatchEvent():
         if (game != null) {
           _sound.deal();
-          await game.animateDealBatch(event.steps,
-              faceUpSeats: const {Seat.south});
+          await _awaitAnim(
+              game,
+              game.animateDealBatch(event.steps,
+                  faceUpSeats: const {Seat.south}),
+              'deal-batch');
         }
         _save();
         return true;
 
       case DealCompletedEvent():
         if (game != null) {
-          await game.finalizeHands();
-          await game.syncHumanHandOrder(
-              List.of(state.playerAt(humanSeat).hand));
+          await _awaitAnim(game, game.finalizeHands(), 'finalize-hands');
+          await _awaitAnim(
+              game,
+              game.syncHumanHandOrder(
+                  List.of(state.playerAt(humanSeat).hand)),
+              'sync-hand-order');
         }
         _save();
         return true;
@@ -314,7 +343,10 @@ class GameController extends ChangeNotifier implements GameEventListener {
         return _handleTurnEvent(event, session);
 
       case CardPlayedEvent():
-        if (game != null) await game.animatePlayCard(event.seat, event.card);
+        if (game != null) {
+          await _awaitAnim(
+              game, game.animatePlayCard(event.seat, event.card), 'play-card');
+        }
         _sound.cardPlace();
         notifyListeners();
         return true;
@@ -322,10 +354,14 @@ class GameController extends ChangeNotifier implements GameEventListener {
       case TrickCompletedEvent():
         if (game != null) {
           _sound.trickWin();
-          await game.animateCollectTrick(
-            event.winnerSeat,
-            event.winnerSeat.teamIndex,
-            isWin: event.winnerSeat.teamIndex == humanSeat.teamIndex,
+          await _awaitAnim(
+            game,
+            game.animateCollectTrick(
+              event.winnerSeat,
+              event.winnerSeat.teamIndex,
+              isWin: event.winnerSeat.teamIndex == humanSeat.teamIndex,
+            ),
+            'collect-trick',
           );
         }
         _save();

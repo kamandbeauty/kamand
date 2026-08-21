@@ -243,6 +243,36 @@ class HokmGame extends FlameGame {
 
   bool get isSceneReady => _sceneBuilt;
 
+  // ================================================================
+  // پایش و نگهبان (دیباگ CI + محافظت در برابر گیرکردن انیمیشن)
+  // ================================================================
+
+  /// شمارندهٔ تیک‌های حلقهٔ بازی (برای تست‌ها و عیب‌یابی زنده).
+  int debugUpdateTickCount = 0;
+
+  /// آخرین dt دریافتی از حلقهٔ Flame.
+  double debugLastDt = 0;
+
+  /// تعداد کارت‌هایی که هنوز در صف حرکت‌اند.
+  int get debugMovingCards => cardPool.values.where((c) => c.isMoving).length;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    debugUpdateTickCount++;
+    debugLastDt = dt;
+  }
+
+  /// خاتمهٔ اجباری همهٔ حرکت‌های در جریان — نگهبانِ انیمیشنِ کنترلر
+  /// از این استفاده می‌کند تا حتی اگر صفِ حرکتِ کارتی به هر دلیلی
+  /// تکان نخورد، جریان منطقی مسابقه هرگز برای همیشه قفل نشود.
+  /// انیمیشن‌ها تزئینی‌اند؛ قانون بازی هرگز نباید گروگانِ آن‌ها باشد.
+  void cancelAllMotions({bool jumpToEnd = true}) {
+    for (final comp in cardPool.values) {
+      comp.cancelMotion(jumpToEnd: jumpToEnd);
+    }
+  }
+
   void applySettings(SettingsModel settings) {
     _settings = settings;
     if (!_sceneBuilt) return;

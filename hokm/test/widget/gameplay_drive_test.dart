@@ -68,7 +68,9 @@ void main() {
         print('[dbg] i=$i phase=${s.phase} turn=${s.currentTurn} '
             'tricks=${s.tricksWon} peak=$peakTricks '
             'southHand=${s.playerAt(Seat.south).hand.length} '
-            'humanTurn=${controller.isHumanTurn}');
+            'humanTurn=${controller.isHumanTurn} '
+            'ticks=${game.debugUpdateTickCount} dt=${game.debugLastDt} '
+            'moving=${game.debugMovingCards}');
       }
 
       if (controller.showTrumpPicker) {
