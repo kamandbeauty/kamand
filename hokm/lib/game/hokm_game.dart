@@ -40,7 +40,7 @@ class HokmGame extends FlameGame {
   late TableBackground _background;
   late TurnIndicator _turnIndicator;
   final Map<Seat, TextComponent> _nameLabels = {};
-  final Map<Seat, TextComponent> _hakimBadges = {};
+  final Map<Seat, PositionComponent> _hakimBadges = {};
 
   /// استخر ۵۲ کارت — یک‌بار ساخته و هر دست بازاستفاده می‌شود.
   final Map<String, CardComponent> cardPool = {};

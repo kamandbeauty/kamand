@@ -310,7 +310,7 @@ class GameController extends ChangeNotifier implements GameEventListener {
 
       case TrumpSelectedEvent():
         showTrumpPicker = false;
-        game?.setHakimBadge(event.hakim); // تاجِ حاکم پس از انتخاب حکم
+        game?.setHakimBadge(event.by); // تاجِ حاکم پس از انتخاب حکم (خواستهٔ کاربر)
         _sound.hukumSelected();
         _showBanner(
             '${AppStrings.trumpLabel}: ${event.trump.faName}', holdMs: 1200);
