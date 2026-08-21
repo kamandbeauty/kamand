@@ -29,14 +29,19 @@ Future<void> _pumpGameFrame(
   Duration duration,
 ) async {
   if (game.paused) {
-    // محیط تست ممکن است چرخهٔ عمر را paused تحویل دهد؛ در تست می‌خواهیم
-    // بازی همیشه فعال باشد.
+    // محیط تست ممکن است چرخهٔ عمر را paused/hidden تحویل دهد؛ در تست
+    // می‌خواهیم بازی همیشه فعال باشد.
     game.resumeEngine();
   }
   final ticksBefore = game.debugUpdateTickCount;
   await tester.pump(duration);
   if (game.debugUpdateTickCount == ticksBefore) {
-    game.update(duration.inMicroseconds / Duration.microsecondsPerSecond);
+    // GameLoopِ Flame در این هارنس تیک نمی‌زند — فقط صف‌های حرکتِ کارت‌ها
+    // را جلو می‌بریم. آگاهانه updateTree را صدا نمی‌زنیم: صدازدنِ دستیِ آن
+    // می‌تواند با افزودن/حذف/تغییرِ اولویتِ کامپوننت‌ها در میانهٔ پیمایش
+    // تداخل کند (ConcurrentModificationError در FlameGame.updateTree).
+    game.stepMotionsManually(
+        duration.inMicroseconds / Duration.microsecondsPerSecond);
   }
 }
 

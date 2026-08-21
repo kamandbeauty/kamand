@@ -273,6 +273,16 @@ class HokmGame extends FlameGame {
     }
   }
 
+  /// جلو بردنِ دستیِ فقط صف‌های حرکت کارت‌ها به میزانِ [dtSeconds].
+  /// مخصوص محیط‌های تستی است که حلقهٔ Flame تیک نمی‌زند؛ عمداً
+  /// updateTree صدا زده نمی‌شود تا افزودن/حذف کامپوننت‌ها یا تغییر
+  /// اولویت‌ها در میانهٔ پیمایش تداخلی ایجاد نکند.
+  void stepMotionsManually(double dtSeconds) {
+    for (final comp in cardPool.values) {
+      comp.updateMotion(dtSeconds);
+    }
+  }
+
   void applySettings(SettingsModel settings) {
     _settings = settings;
     if (!_sceneBuilt) return;
