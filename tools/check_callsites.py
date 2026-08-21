@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-file call-site checker for the ROOZI Kotlin sources.
+"""Cross-file call-site checker for the DIARY Kotlin sources.
 
 The Android SDK is unavailable in this environment, so `kotlinc` reports every
 androidx symbol as unresolved and real integration errors drown in the noise.
@@ -11,8 +11,8 @@ and which ones have defaults, then verifies every named-argument call site:
   * passes no unknown parameter names
   * supplies every parameter that has no default
 
-The same checks apply to any app forked out of ROOZI, so the module directory
-is selectable with --module (default: roozi).
+The module directory is selectable with --module; it defaults to the
+repository root, where this app lives.
 """
 import argparse
 import os
@@ -26,7 +26,7 @@ def module_root(module: str) -> str:
     return os.path.join(REPO, module, "app", "src")
 
 
-ROOT = module_root("roozi")
+ROOT = module_root(".")
 
 FUN_RE = re.compile(r"^(?:@\w+(?:\([^)]*\))?\s*)*(?:private |internal |public )?fun\s+(?:<[^>]+>\s*)?(\w+)\s*\(", re.M)
 
@@ -191,7 +191,7 @@ def check_calls(decls):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--module", default="roozi", help="app module directory (default: roozi)")
+    ap.add_argument("--module", default=".", help="app module directory (default: the repository root)")
     args = ap.parse_args()
     global ROOT
     ROOT = module_root(args.module)

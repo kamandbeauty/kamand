@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Room database -->
+    <include domain="database" path="diary.db" />
+    <!-- DataStore preferences (sharedprefs-style .preferences_pb files live here too) -->
+    <include domain="sharedpref" path="." />
+    <include domain="file" path="datastore" />
+    <!-- Photos attached to diary pages. Without this, Android Auto Backup would
+         silently leave every page without its image after a device transfer. -->
+    <include domain="file" path="diary_photos" />
+</full-backup-content>

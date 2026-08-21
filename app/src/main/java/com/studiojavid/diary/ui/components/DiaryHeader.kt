@@ -1,0 +1,196 @@
+package com.studiojavid.diary.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.studiojavid.diary.R
+import com.studiojavid.diary.ui.theme.DiaryTheme
+
+/** Height of the sheen arc that sells the "polished glass" reading. */
+private val GlassSheenHeight = 30.dp
+
+/**
+ * The app's top bar, styled as frosted glass.
+ *
+ * Content scrolls underneath rather than being pushed clear of it, so the bar
+ * is deliberately translucent: the page tints it as it passes. A real gaussian
+ * blur is not used because Modifier.blur needs API 31 and minSdk here is 24 —
+ * the frost is faked instead with a translucent brand wash, a diagonal sheen
+ * across the top and a bright hairline along the bottom edge, which is what
+ * actually reads as glass at this size.
+ */
+@Composable
+fun DiaryHeader(
+    onSearch: () -> Unit,
+    glass: LiquidGlassState,
+    modifier: Modifier = Modifier
+) {
+    val colors = DiaryTheme.colors
+    val dark = colors.isDark
+
+    // Deep enough to read as a solid brand colour, still short of opaque so the
+    // blurred page keeps showing through. Past roughly 0.65 the refraction
+    // disappears and the panel becomes a plain coloured bar, so this is the
+    // upper end of what can be called glass.
+    val hasBlur = glass.supported
+    val tintAlpha = when {
+        !hasBlur -> if (dark) 0.86f else 0.82f // no blur: opacity must do the work
+        dark -> 0.58f
+        else -> 0.54f
+    }
+
+    // Diagonal rather than flat: real glass picks up light unevenly across its
+    // face, and an even wash is what made this read as a faded bar.
+    val wash = Brush.linearGradient(
+        colorStops = arrayOf(
+            0f to colors.coral.copy(alpha = tintAlpha + 0.10f),
+            0.55f to colors.purple.copy(alpha = tintAlpha),
+            1f to colors.purple.copy(alpha = tintAlpha + 0.06f)
+        ),
+        start = Offset.Zero,
+        end = Offset(0f, Float.POSITIVE_INFINITY)
+    )
+
+    // Glass is brightest where light enters and dims below; without this
+    // falloff the panel reads as flat translucent plastic. Lifted alongside the
+    // deeper tint — a stronger wash swallows the highlight, and losing it is
+    // what would make the pane look like paint rather than glass.
+    val sheen = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (dark) 0.34f else 0.54f),
+            Color.White.copy(alpha = if (dark) 0.10f else 0.18f),
+            Color.Transparent
+        )
+    )
+
+    val shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+
+    // Text stays white on both themes: it sits on the brand wash, not on the
+    // page, so it must not follow the page's foreground colour.
+    val onGlass = Color.White
+
+    // The surface draws the refracted backdrop behind everything below it; the
+    // tint, sheen and rim are then painted over that, on top of the glass.
+    LiquidGlassSurface(
+        state = glass,
+        shape = shape,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(wash)
+                // A lit rim around the pane. Glass catches light along its
+                // edges, and this is what gives the panel thickness instead of
+                // looking like a coloured rectangle painted onto the page.
+                .border(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = if (dark) 0.42f else 0.70f),
+                            Color.White.copy(alpha = if (dark) 0.14f else 0.26f)
+                        )
+                    ),
+                    shape = shape
+                )
+        )
+
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(GlassSheenHeight)
+                .background(sheen)
+        )
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(start = 20.dp, end = 12.dp, top = 6.dp, bottom = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // The app's own logo rather than the abstract mascot, so the header
+            // matches the icon the user tapped to get here.
+            // Constrained by height only: the koala is taller than it is wide,
+            // and a square size() would letterbox it into a smaller figure.
+            Image(
+                painter = painterResource(R.drawable.ic_brand_mark),
+                contentDescription = null,
+                modifier = Modifier.height(38.dp)
+            )
+
+            Spacer(Modifier.width(12.dp))
+
+            Text(
+                text = stringResource(R.string.app_name_short),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = onGlass
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            // The circle is the button rather than a backdrop behind one: an
+            // IconButton enforces a 48dp minimum, so nesting it here would
+            // overflow the tint and clip its own ripple.
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = if (dark) 0.16f else 0.26f))
+                    .clickable(
+                        onClick = onSearch,
+                        role = Role.Button,
+                        onClickLabel = stringResource(R.string.search)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Rounded.Search,
+                    contentDescription = stringResource(R.string.search),
+                    tint = onGlass,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+
+        // Lit bottom edge — the cue that separates a pane of glass from a
+        // simple translucent fill.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .align(Alignment.BottomCenter)
+                .background(Color.White.copy(alpha = if (dark) 0.20f else 0.45f))
+        )
+    }
+}

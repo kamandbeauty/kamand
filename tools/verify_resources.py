@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Static checks for the ROOZI Android module.
+"""Static checks for the DIARY Android module.
 
 Runs without the Android SDK so the project can be validated in any
 environment: XML well-formedness, fa/en string parity, R.* reference
 resolution, hardcoded-Persian-string detection and manifest sanity.
 
-Apps forked out of ROOZI reuse the same rules, so the module directory is
-selectable with --module (default: roozi).
+The module directory is selectable with --module; it defaults to the
+repository root, where this app lives.
 """
 import argparse
 import os
@@ -22,7 +22,7 @@ def module_paths(module):
     return root, os.path.join(root, "res"), os.path.join(root, "java")
 
 
-ROOT, RES, JAVA = module_paths("roozi")
+ROOT, RES, JAVA = module_paths(".")
 
 errors = []
 warnings = []
@@ -178,7 +178,7 @@ def check_manifest():
         errors.append("supportsRtl must be enabled")
     if ".MainActivity" not in manifest:
         errors.append("manifest missing component .MainActivity")
-    # The Application subclass is named after the brand (RooziApp, MemoryApp),
+    # The Application subclass is named after the brand (RooziApp, DiaryApp),
     # so it is matched by shape rather than by an exact name.
     if not re.search(r'android:name="\.\w+App"', manifest):
         errors.append("manifest missing the Application component")
@@ -243,7 +243,7 @@ def check_launcher_icons():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--module", default="roozi", help="app module directory (default: roozi)")
+    ap.add_argument("--module", default=".", help="app module directory (default: the repository root)")
     args = ap.parse_args()
     global ROOT, RES, JAVA
     ROOT, RES, JAVA = module_paths(args.module)

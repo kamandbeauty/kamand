@@ -1,24 +1,16 @@
 # Gradle / Android
 .gradle/
 build/
-roozi/.gradle/
-roozi/build/
-roozi/app/build/
-memory/.gradle/
-memory/build/
-memory/app/build/
+app/build/
 local.properties
-roozi/local.properties
-memory/local.properties
 captures/
 *.apk
 *.aab
 *.ap_
 *.dex
 
-# Signing secrets — هرگز commit نشوند
-roozi/keystore.properties
-memory/keystore.properties
+# Signing secrets - never commit
+keystore.properties
 *.jks
 *.keystore
 
