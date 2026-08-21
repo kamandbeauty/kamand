@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LevelData" load_steps=2 format=3]
+[ext_resource path="res://resources/levels/LevelData.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+level_id = 1
+level_name = "Level 1"
+start_position = Vector3(0, 0.8, 5)
+finish_position = Vector3(0, 0, -100)
+gate_groups = [{"z": -15.0, "left_op": "multiply", "left_value": 2.0, "left_text": "×2", "right_op": "subtract", "right_value": 3.0, "right_text": "-3"}, {"z": -38.0, "left_op": "add", "left_value": 10.0, "left_text": "+10", "right_op": "divide", "right_value": 2.0, "right_text": "÷2"}, {"z": -63.0, "left_op": "multiply", "left_value": 3.0, "left_text": "×3", "right_op": "subtract", "right_value": 5.0, "right_text": "-5"}]
+enemy_waves = [{"z": -27.0, "count": 3}, {"z": -50.0, "count": 5}, {"z": -78.0, "count": 8}]

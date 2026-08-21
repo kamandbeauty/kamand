@@ -5,17 +5,33 @@ var projectile_pool: Array[PooledProjectile] = []
 var finished := false
 var debug_mode := true
 var active_projectiles := 0
-var gates := [{"z":-12.0,"op":"multiply","value":2.0,"text":"×2"},{"z":-22.0,"op":"multiply","value":3.0,"text":"×3"},{"z":-32.0,"op":"add","value":5.0,"text":"+5"},{"z":-42.0,"op":"add","value":10.0,"text":"+10"},{"z":-52.0,"op":"subtract","value":3.0,"text":"-3"},{"z":-62.0,"op":"subtract","value":5.0,"text":"-5"},{"z":-72.0,"op":"divide","value":2.0,"text":"÷2"}]
+var level_data = preload("res://resources/levels/Level1.tres")
+var gate_groups: Array[Dictionary] = []
+var waves: Array[Dictionary] = []
+var active_wave := 0
+var wave_spawned: Array[bool] = [false, false, false]
 func _ready() -> void:
  player = $Player; formation = $Formation
  var enemy_scene := preload("res://scenes/enemy/Enemy.tscn"); EnemyManager.setup(enemy_scene, formation)
- for z in [-30.0, -55.0]:
-  for x in [-2.0, 0.0, 2.0]: EnemyManager.spawn_enemy(Vector3(x, 0.8, z), player, formation)
+ player.global_position = level_data.start_position
+ gate_groups = level_data.gate_groups; waves = level_data.enemy_waves
  for i in 30: projectile_pool.append(_new_projectile())
- for g in gates: _make_gate(g)
+ for group in gate_groups: _make_gate_choice(group)
  PlayerManager.soldiers_changed.connect(_on_soldiers_changed)
  _on_soldiers_changed(PlayerManager.get_soldier_count())
  $HUD/Restart.pressed.connect(func(): get_tree().reload_current_scene())
+func _make_gate_choice(data: Dictionary) -> void:
+ var used := [false]
+ for side in [-1, 1]:
+  var gate := Area3D.new(); gate.position = Vector3(side * 3.0, 2, data.z); gate.collision_layer = 2; gate.collision_mask = 1
+  var shape := CollisionShape3D.new(); var box := BoxShape3D.new(); box.size = Vector3(5.5, 4, 1.0); shape.shape = box; gate.add_child(shape)
+  var label := Label3D.new(); var prefix := "left_" if side < 0 else "right_"; label.text = data[prefix + "text"]; label.font_size = 64; label.position.y = 2.5; gate.add_child(label)
+  gate.body_entered.connect(func(body: Node3D):
+   if body == player and not used[0] and not finished:
+    used[0] = true; var before := PlayerManager.get_soldier_count(); GateManager.apply_gate(StringName(data[prefix + "op"]), data[prefix + "value"]); _gate_feedback(before, PlayerManager.get_soldier_count()); gate.queue_free())
+  add_child(gate)
+func _gate_feedback(before: int, after: int) -> void:
+ $HUD/Feedback.text = "%d → %d Soldiers" % [before, after]; $HUD/Feedback.visible = true
 func _make_gate(data: Dictionary) -> void:
  var gate := Area3D.new(); gate.position = Vector3(0, 2, data.z); gate.collision_layer = 2; gate.collision_mask = 1
  var shape := CollisionShape3D.new(); var box := BoxShape3D.new(); box.size = Vector3(12, 4, 0.5); shape.shape = box; gate.add_child(shape)
@@ -41,7 +57,12 @@ func _on_soldiers_changed(value: int) -> void:
  $HUD/Soldiers.text = "Soldiers: %d" % value
 func _process(_delta: float) -> void:
  formation.global_position = player.global_position
- if not finished and player.global_position.z <= -82: _end(PlayerManager.get_soldier_count() > 0)
+ if not finished:
+  for i in waves.size():
+   if not wave_spawned[i] and player.global_position.z <= float(waves[i]["z"]):
+    wave_spawned[i] = true; active_wave = i + 1
+    for x in range(int(waves[i]["count"])): EnemyManager.spawn_enemy(Vector3((x % 5 - 2) * 1.5, 0.8, player.global_position.z - 8.0 - (x / 5) * 2.0), player, formation)
+  if player.global_position.z <= -100: _end(PlayerManager.get_soldier_count() > 0)
 func _end(won: bool) -> void:
  finished = true; player.set_physics_process(false)
  for enemy in EnemyManager.active: enemy.set_physics_process(false)

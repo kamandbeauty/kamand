@@ -1,9 +1,14 @@
 extends SceneTree
 func _init() -> void:
+ var value := 10
+ value = int(floor(value * 2.0)); assert(value == 20)
+ value -= 3; assert(value == 17)
+ value += 10; assert(value == 27)
+ value = int(floor(value / 2.0)); assert(value == 13)
+ value = int(floor(value * 3.0)); assert(value == 39)
+ value -= 5; assert(value == 34)
  assert(maxi(0, 3 - 10) == 0)
- assert(int(floor(10 * 2.0)) == 20 and int(floor(10 * 3.0)) == 30)
- assert(10 + 5 == 15 and 20 + 10 == 30 and 30 / 2 == 15)
- var health := 100
- for damage in [25, 25, 25, 25]: health = maxi(0, health - damage)
- assert(health == 0)
+ var chosen := "left"; assert(chosen == "left")
+ var spawned := false; assert(not spawned); spawned = true; assert(spawned)
+ var restart_count := 10; restart_count = 10; assert(restart_count == 10)
  quit()
