@@ -161,9 +161,14 @@ void main() {
           'roundsContinued=$roundsContinued phase=${controller.phase}',
     );
 
+    // پایانِ تمیز: جریان رویدادها را متوقف می‌کنیم تا پس از فایرشدنِ
+    // تایمرهای باز، هیچ تایمر جدیدی (مثلاً نگهبانِ ۸ثانیه‌ای انیمیشن یا
+    // تأخیر نوبت AI) ساخته نشود؛ سپس تا فراتر از افقِ نگهبان پمپ می‌کنیم
+    // تا همهٔ تایمرهای باز تخلیه شوند.
+    controller.debugAbortMatchFlow();
     controller.dispose();
     await tester.pumpWidget(const SizedBox());
-    await _pumpGameFrame(tester, game, const Duration(seconds: 4));
+    await _pumpGameFrame(tester, game, const Duration(seconds: 9));
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(minutes: 6)));
 

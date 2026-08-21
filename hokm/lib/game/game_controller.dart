@@ -488,6 +488,15 @@ class GameController extends ChangeNotifier implements GameEventListener {
   @visibleForTesting
   void debugPlayHumanCard(PlayingCard card) => _onHumanCardTapped(card);
 
+  /// توقف آرامِ جریان رویدادها — برای پایانِ تمیزِ تست. با پیشبرد شمارهٔ
+  /// جلسه، زنجیره‌های در انتظار پس از فایرشدنِ تایمرشان متوقف می‌شوند و
+  /// تایمر جدیدی ساخته نمی‌شود (در نتیجه پایانِ تست با تایمری باز نمی‌ماند).
+  @visibleForTesting
+  void debugAbortMatchFlow() {
+    _session++;
+    _eventQueue.clear();
+  }
+
   void _onHumanCardTapped(PlayingCard card) {
     if (!_awaitingHuman || inputLocked) {
       debugPrint('HokmTap: رد لمس — awaiting=$_awaitingHuman '
