@@ -95,12 +95,18 @@ void main() {
 
       if (i % 25 == 0) {
         final s = controller.state;
+        final handPos = s.playerAt(Seat.south).hand.take(3).map((c) {
+          final comp = game.cardPool[c.id];
+          return comp == null
+              ? '$c@?'
+              : '$c@(${comp.position.x.round()},${comp.position.y.round()})';
+        }).join(' ');
         print('[dbg] i=$i phase=${s.phase} turn=${s.currentTurn} '
             'tricks=${s.tricksWon} peak=$peakTricks '
             'southHand=${s.playerAt(Seat.south).hand.length} '
             'humanTurn=${controller.isHumanTurn} '
             'ticks=${game.debugUpdateTickCount} dt=${game.debugLastDt} '
-            'moving=${game.debugMovingCards}');
+            'moving=${game.debugMovingCards} hand=$handPos');
       }
 
       if (controller.showTrumpPicker) {

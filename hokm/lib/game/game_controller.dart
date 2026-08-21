@@ -482,8 +482,17 @@ class GameController extends ChangeNotifier implements GameEventListener {
   }
 
   void _onHumanCardTapped(PlayingCard card) {
-    if (!_awaitingHuman || inputLocked) return;
-    if (!_humanLegalPlays.contains(card)) return;
+    if (!_awaitingHuman || inputLocked) {
+      debugPrint('HokmTap: رد لمس — awaiting=$_awaitingHuman '
+          'locked=$inputLocked turn=${state.currentTurn} '
+          'phase=${state.phase}');
+      return;
+    }
+    if (!_humanLegalPlays.contains(card)) {
+      debugPrint('HokmTap: رد لمس — کارت $card '
+          'داخل ${_humanLegalPlays.length} کارت مجاز نیست');
+      return;
+    }
     _awaitingHuman = false;
     inputLocked = true;
     _sound.cardPick();
