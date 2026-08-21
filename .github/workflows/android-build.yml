@@ -1,0 +1,21 @@
+name: Android Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  placeholder:
+    name: Android Build Placeholder
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Android build placeholder
+        run: |
+          echo "TODO: Configure Godot 4.x Android export and automated build in the next phase."
+          echo "Android APK/AAB build is intentionally disabled for now."
