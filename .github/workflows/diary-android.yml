@@ -1,0 +1,226 @@
+name: DIARY Android
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      assembleBuildType:
+        description: "Build type to assemble (debug/release)"
+        required: false
+        default: "release"
+        type: choice
+        options:
+          - release
+          - debug
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diary-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test & build DIARY
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v3
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # Decode the upload keystore from repository secrets. Without them the
+      # build still succeeds and falls back to the debug key, so pull requests
+      # from forks (which cannot read secrets) keep working — but a debug-signed
+      # APK cannot be published to Cafe Bazaar or Myket, hence the loud notice.
+      - name: Restore release keystore
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.DIARY_RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.DIARY_RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.DIARY_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.DIARY_RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No signing secrets present - release will use the debug key."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          for v in KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "::error::DIARY_RELEASE_${v} is empty; all four signing secrets are required."
+              exit 1
+            fi
+          done
+
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > release.keystore
+          if ! keytool -list -keystore release.keystore \
+                 -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Keystore did not open. Check that the base64 is intact and that the password and alias match."
+            exit 1
+          fi
+
+          # storeFile is resolved against the project root by build.gradle.kts.
+          {
+            echo "storeFile=release.keystore"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > keystore.properties
+
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+          echo "Release keystore verified."
+
+      - name: Spotless / resource checks (advisory)
+        continue-on-error: true
+        run: |
+          python3 tools/verify_resources.py
+          python3 tools/check_callsites.py
+
+      - name: Compile debug sources
+        run: |
+          set -o pipefail
+          ./gradlew :app:compileDebugKotlin --stacktrace 2>&1 | tee /tmp/gradle.log
+
+      - name: Compile release sources
+        run: |
+          set -o pipefail
+          ./gradlew :app:compileReleaseKotlin --stacktrace 2>&1 | tee -a /tmp/gradle.log
+
+      - name: Compile unit test sources
+        run: |
+          set -o pipefail
+          ./gradlew :app:compileDebugUnitTestKotlin --stacktrace 2>&1 | tee -a /tmp/gradle.log
+
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee -a /tmp/gradle.log
+
+      - name: Report failure details
+        if: failure()
+        run: |
+          echo "### Build failure" >> "$GITHUB_SUMMARY"
+          echo '```' >> "$GITHUB_SUMMARY"
+          grep -E "^e: |error: |FAILURE:|FAILED|Caused by:|Execution failed|expected:|actual:|AssertionError" /tmp/gradle.log \
+            | grep -v "Deprecated Gradle features" | head -60 | tee -a "$GITHUB_SUMMARY" > /tmp/errs.txt || true
+          echo '```' >> "$GITHUB_SUMMARY"
+          n=0
+          while IFS= read -r line && [ $n -lt 25 ]; do
+            clean=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r/ /g')
+            echo "::error::${clean}"
+            n=$((n+1))
+          done < /tmp/errs.txt
+
+      - name: Android Lint (advisory)
+        continue-on-error: true
+        run: ./gradlew :app:lintRelease --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Build release AAB
+        run: ./gradlew :app:bundleRelease --stacktrace
+
+      - name: Verify APK signature
+        if: steps.keystore.outputs.signed == 'true'
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          BUILD_TOOLS=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* 2>/dev/null || ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          if [ ! -x "$BUILD_TOOLS/apksigner" ]; then
+            BUILD_TOOLS=$(ls -d /usr/local/lib/android/sdk/build-tools/* 2>/dev/null | sort -V | tail -1)
+          fi
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK" | tee /tmp/certs.txt
+          if grep -qi "CN=Android Debug" /tmp/certs.txt; then
+            echo "::error::APK is debug-signed despite the signing secrets being present."
+            exit 1
+          fi
+          echo "APK is signed with the upload certificate."
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: diary-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: diary-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: diary-release-aab
+          path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Upload test & lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diary-reports
+          path: |
+            app/build/reports/**
+            app/build/test-results/**
+          if-no-files-found: ignore
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f release.keystore keystore.properties
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### DIARY build"
+            echo ""
+            if ls app/build/outputs/apk/release/*.apk >/dev/null 2>&1; then
+              apk=$(ls app/build/outputs/apk/release/*.apk | head -1)
+              size=$(du -h "$apk" | cut -f1)
+              echo "- Release APK: built ($size)"
+            else
+              echo "- Release APK: not produced"
+            fi
+            if ls app/build/outputs/bundle/release/*.aab >/dev/null 2>&1; then
+              aab=$(ls app/build/outputs/bundle/release/*.aab | head -1)
+              size=$(du -h "$aab" | cut -f1)
+              echo "- Release AAB: built ($size)"
+            else
+              echo "- Release AAB: not produced"
+            fi
+            echo ""
+            if [ "${{ steps.keystore.outputs.signed }}" = "true" ]; then
+              echo "Signed with the release keystore — ready to publish."
+            else
+              echo "Debug-signed: installable for testing, not publishable. Set DIARY_RELEASE_* secrets for a release signature."
+            fi
+            echo ""
+            echo "Download artifacts from the **Artifacts** section at the bottom of this page."
+          } >> "$GITHUB_SUMMARY"
