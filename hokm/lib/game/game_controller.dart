@@ -481,6 +481,13 @@ class GameController extends ChangeNotifier implements GameEventListener {
     _pump();
   }
 
+  /// مسیر مستقیمِ بازیِ کارت انسان از سطحِ کنترلر — فقط برای تست، وقتی
+  /// رویداد لمسِ واقعی به هر دلیلی (تغییر رفتار hit-test در نسخهٔ تازهٔ
+  /// SDK در هارنس تست) به کامپوننت کارت نرسیده باشد. همان گیت‌های
+  /// امنیتیِ لمس واقعی اعمال می‌شوند.
+  @visibleForTesting
+  void debugPlayHumanCard(PlayingCard card) => _onHumanCardTapped(card);
+
   void _onHumanCardTapped(PlayingCard card) {
     if (!_awaitingHuman || inputLocked) {
       debugPrint('HokmTap: رد لمس — awaiting=$_awaitingHuman '

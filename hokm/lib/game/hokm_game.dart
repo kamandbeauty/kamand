@@ -156,7 +156,10 @@ class HokmGame extends FlameGame {
         final comp = CardComponent(
           card: card,
           cardBackStyle: _settings.cardBack,
-          onTapped: (c) => onHumanCardTapped?.call(c),
+          onTapped: (c) {
+            debugComponentTapCount++;
+            onHumanCardTapped?.call(c);
+          },
         )
           ..size = Vector2(layout.cardWidth, layout.cardHeight)
           ..anchor = Anchor.center
@@ -255,6 +258,9 @@ class HokmGame extends FlameGame {
 
   /// تعداد کارت‌هایی که هنوز در صف حرکت‌اند.
   int get debugMovingCards => cardPool.values.where((c) => c.isMoving).length;
+
+  /// شمارندهٔ لمس‌های رسیده به کامپوننت کارت (دیباگ مسیر hit-test).
+  int debugComponentTapCount = 0;
 
   @override
   void update(double dt) {
