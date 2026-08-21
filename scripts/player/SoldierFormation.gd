@@ -36,5 +36,5 @@ func _process(delta: float) -> void:
   dirty = false
  for s in soldiers: s.position = s.position.lerp(formation_position(soldiers.find(s), soldiers.size()), delta * 8.0)
 func formation_position(index: int, count: int) -> Vector3:
- var columns := mini(6, maxi(1, ceili(sqrt(float(count)))); var row := index / columns; var col := index % columns
+ var columns := mini(6, maxi(1, ceili(sqrt(float(count))))) var row := index / columns; var col := index % columns
  return Vector3((col - (mini(columns, count) - 1) * 0.5) * spacing, 0.55, 1.6 + row * row_spacing)
