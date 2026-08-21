@@ -24,20 +24,20 @@ class GameArt {
 
   /// بک‌گراند فرشِ میز به‌ازای هر تم.
   static const Map<TableTheme, String> tableFiles = {
-    TableTheme.classicGreen: '$_base/table/felt-green.png',
-    TableTheme.midnightBlue: '$_base/table/felt-midnight.png',
-    TableTheme.royalRed: '$_base/table/felt-royal.png',
+    TableTheme.classicGreen: '$_base/table/felt-green.jpg',
+    TableTheme.midnightBlue: '$_base/table/felt-midnight.jpg',
+    TableTheme.royalRed: '$_base/table/felt-royal.jpg',
   };
 
   /// تصویر پشت کارت به‌ازای هر طرح.
   static const Map<CardBackStyle, String> backFiles = {
-    CardBackStyle.classic: '$_base/card/back-classic.png',
-    CardBackStyle.persianTile: '$_base/card/back-persian-tile.png',
-    CardBackStyle.diagonal: '$_base/card/back-diagonal.png',
+    CardBackStyle.classic: '$_base/card/back-classic.jpg',
+    CardBackStyle.persianTile: '$_base/card/back-persian-tile.jpg',
+    CardBackStyle.diagonal: '$_base/card/back-diagonal.jpg',
   };
 
   /// بافت کاغذیِ ملایم روی روی کارت (اختیاری).
-  static const String facePaperFile = '$_base/card/face-paper.png';
+  static const String facePaperFile = '$_base/card/face-paper.jpg';
 
   /// بارگذاری همهٔ تصاویر موجود — فراخوانی نبودِ فایل مجاز است.
   Future<void> load() async {
