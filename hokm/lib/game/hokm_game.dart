@@ -16,6 +16,7 @@ import '../storage/settings_model.dart';
 import 'art/game_art.dart';
 import 'components/card_component.dart';
 import 'components/table_background.dart';
+import 'components/hakim_crown.dart';
 import 'components/trick_badge.dart';
 import 'effects/turn_indicator.dart';
 import 'effects/win_glow.dart';
@@ -213,7 +214,7 @@ class HokmGame extends FlameGame {
     if (hakim != null) setHakimBadge(hakim);
   }
 
-  /// نشان «حاکم» کنار نام.
+  /// نشان «حاکم» کنار نام — تاجِ طلایی بالای نام (پس از انتخاب حکم ظاهر می‌شود).
   void setHakimBadge(Seat? seat) {
     if (!_sceneBuilt) return;
     for (final badge in _hakimBadges.values) {
@@ -222,22 +223,31 @@ class HokmGame extends FlameGame {
     _hakimBadges.clear();
     if (seat == null) return;
     final base = layout.namePosition(seat);
-    final badge = TextComponent(
-      text: '● حاکم',
+    final crownOffset = seat == Seat.south
+        ? Vector2(0, -30)
+        : seat == Seat.north
+            ? Vector2(0, 18)
+            : Vector2(0, -14);
+    final crown = HakimCrown(gold: palette.accent)
+      ..position = base + crownOffset
+      ..priority = 3;
+    final label = TextComponent(
+      text: 'حاکم',
       textRenderer: TextPaint(
         style: TextStyle(
           fontFamily: 'VazirmatnFD',
           fontSize: 9.5,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: palette.accent,
         ),
       ),
     )
       ..anchor = Anchor.center
-      ..position = base + Vector2(0, seat == Seat.south ? -16 : 15)
+      ..position = Vector2(15, 27) // زیر بدنهٔ تاج (مختصات محلی تاج)
       ..priority = 3;
-    _hakimBadges[seat] = badge;
-    add(badge);
+    crown.add(label);
+    _hakimBadges[seat] = crown;
+    add(crown);
   }
 
   // ================================================================

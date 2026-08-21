@@ -145,9 +145,9 @@ class SettingsScreen extends StatelessWidget {
                       icon: Icons.table_restaurant_rounded,
                       title: AppStrings.tableTheme,
                       options: const [
-                        (TableTheme.classicGreen, 'سبز کلاسیک'),
-                        (TableTheme.midnightBlue, 'آبی شب'),
-                        (TableTheme.royalRed, 'قرمز سلطنتی'),
+                        (TableTheme.classicGreen, 'قالی ایرانی'),
+                        (TableTheme.midnightBlue, 'چوب گردویی'),
+                        (TableTheme.royalRed, 'قالی لاکی‌سرخ'),
                       ],
                       current: model.tableTheme,
                       onChanged: settings.setTableTheme,

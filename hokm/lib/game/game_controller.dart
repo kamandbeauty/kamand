@@ -271,6 +271,8 @@ class GameController extends ChangeNotifier implements GameEventListener {
           await _awaitAnim(
               game, game.animateHakimDetermination(event.dealtCards),
               'hakim-determination');
+          // تاج حاکم فقط بعد از «انتخاب حکم» نمایش داده می‌شود (خواستهٔ کاربر).
+          game.setHakimBadge(null);
         }
         if (session != _session) return false;
         _showBanner(
@@ -283,11 +285,10 @@ class GameController extends ChangeNotifier implements GameEventListener {
         return true;
 
       case RoundStartedEvent():
-        game?.setHakimBadge(event.hakim);
-        if (game != null) {
-          _sound.shuffle();
-          await _awaitAnim(game, game.animateShuffle(), 'shuffle-round-start');
-        }
+        // بر زدن فقط در شروع مسابقه انجام می‌شود؛ بین دست‌ها (و حتماً نه
+        // بعد از انتخاب حکم) کارت‌ها بر زده نمی‌شوند — فقط صفحه برای دستِ
+        // تازه پاک می‌شود تا پخشِ بعدی روان باشد.
+        game?.resetTable();
         return true;
 
       case InitialDealEvent():
@@ -309,6 +310,7 @@ class GameController extends ChangeNotifier implements GameEventListener {
 
       case TrumpSelectedEvent():
         showTrumpPicker = false;
+        game?.setHakimBadge(event.hakim); // تاجِ حاکم پس از انتخاب حکم
         _sound.hukumSelected();
         _showBanner(
             '${AppStrings.trumpLabel}: ${event.trump.faName}', holdMs: 1200);

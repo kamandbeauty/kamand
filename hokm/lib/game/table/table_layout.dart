@@ -16,8 +16,9 @@ class TableLayout {
     final w = viewSize.x;
     final h = viewSize.y;
 
-    // کارت: عرض بر اساس عرض صفحه — ۱۳ کارت با هم‌پوشانی در دست انسان جا شوند.
-    cardWidth = (w * 0.17).clamp(46.0, 78.0).toDouble();
+    // کارت: عرض بر اساس عرض صفحه — بزرگ و خوانا (درخواست کاربر)، ولی
+    // ۱۳ کارت با هم‌پوشانی همچنان در دست انسان جا می‌شوند.
+    cardWidth = (w * 0.21).clamp(52.0, 96.0).toDouble();
     cardHeight = cardWidth / cardAspect;
 
     // مرکز دور
@@ -60,11 +61,13 @@ class TableLayout {
     // پشتهٔ دست‌های بردهٔ هر بازیکن — کارت کوچک جلوی خودِ هر نفر
     // (بدون برخورد با دست انسان، ستون‌های کناری و دایرهٔ دور).
     pileScale = 0.34;
+    // جای پشته‌ها دقیقاً «جلوی دستِ هر نفر» (مثل میز واقعی و عکس مرجع):
+    // نزدیک لبهٔ خودِ بازیکن، کنار دستش — با فاصله از حریم دست و دایرهٔ دور.
     pileAnchors = {
-      Seat.south: Vector2(w * 0.800, h * 0.585),
-      Seat.north: Vector2(w * 0.200, h * 0.290),
-      Seat.west: Vector2(w * 0.185, h * 0.560),
-      Seat.east: Vector2(w * 0.815, h * 0.295),
+      Seat.south: Vector2(w * 0.265, h * 0.735),
+      Seat.north: Vector2(w * 0.735, h * 0.105),
+      Seat.west: Vector2(w * 0.155, h * 0.545),
+      Seat.east: Vector2(w * 0.845, h * 0.455),
     };
   }
 
