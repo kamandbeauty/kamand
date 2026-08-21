@@ -15,6 +15,31 @@ import 'package:hokm/storage/save_manager.dart';
 import 'package:hokm/storage/settings_model.dart';
 import 'package:hokm/storage/settings_repository.dart';
 
+/// پمپِ یک فریم + اطمینان از جاری‌بودنِ زمانِ حلقهٔ بازی.
+///
+/// در برخی نسخه‌های تازهٔ Flutter (مثل ۳.۴۷)، در محیطِ تست یا چرخهٔ عمرِ
+/// اپ به‌صورت paused/hidden تحویل داده می‌شود یا GameLoopِ Flame به تیکر
+/// واقعی وصل نمی‌شود؛ نتیجه تیک‌نخوردنِ بازی انجامد و انیمیشن‌ها فریز
+/// می‌شوند. این کمکی بعد از پمپِ واقعیِ ویجت‌ها بررسی می‌کند که تیک رسیده
+/// باشد؛ در غیر این صورت زمان را دستی جلو می‌برد تا رفتار تست روی همهٔ
+/// نسخه‌های SDK یکسان بماند. روی دستگاه واقعی این مسیر هرگز فعال نمی‌شود.
+Future<void> _pumpGameFrame(
+  WidgetTester tester,
+  HokmGame game,
+  Duration duration,
+) async {
+  if (game.paused) {
+    // محیط تست ممکن است چرخهٔ عمر را paused تحویل دهد؛ در تست می‌خواهیم
+    // بازی همیشه فعال باشد.
+    game.resumeEngine();
+  }
+  final ticksBefore = game.debugUpdateTickCount;
+  await tester.pump(duration);
+  if (game.debugUpdateTickCount == ticksBefore) {
+    game.update(duration.inMicroseconds / Duration.microsecondsPerSecond);
+  }
+}
+
 /// تست رانندگی کامل — بخش‌هایی از یک مسابقهٔ واقعی را با فریم‌های واقعی
 /// Flame و با لمس واقعی کارت‌های انسان پیش می‌برد. هر استثنای فریم‌ورک
 /// یا عدم پیشروی مسابقه = شکست تست.
@@ -38,7 +63,7 @@ void main() {
       MaterialApp(home: SizedBox.expand(child: GameWidget(game: game))),
     );
     for (var i = 0; i < 6; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
+      await _pumpGameFrame(tester, game, const Duration(milliseconds: 100));
     }
     expect(tester.takeException(), isNull);
     expect(game.isSceneReady, isTrue);
@@ -51,7 +76,7 @@ void main() {
     var peakTricks = 0;
 
     for (var i = 0; i < 700; i++) {
-      await tester.pump(const Duration(milliseconds: 200));
+      await _pumpGameFrame(tester, game, const Duration(milliseconds: 200));
       final error = tester.takeException();
       if (error != null) {
         fail('Framework error during driven gameplay:\n$error');
@@ -95,7 +120,7 @@ void main() {
       }
     }
 
-    await tester.pump(const Duration(milliseconds: 400));
+    await _pumpGameFrame(tester, game, const Duration(milliseconds: 400));
     expect(tester.takeException(), isNull);
 
     // حداقل یک دور کامل باید در این بازه جمع‌شده باشد (شمارندهٔ
@@ -110,7 +135,7 @@ void main() {
 
     controller.dispose();
     await tester.pumpWidget(const SizedBox());
-    await tester.pump(const Duration(seconds: 4));
+    await _pumpGameFrame(tester, game, const Duration(seconds: 4));
     expect(tester.takeException(), isNull);
   }, timeout: const Timeout(Duration(minutes: 6)));
 
