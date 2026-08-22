@@ -1,0 +1,137 @@
+name: Godot CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: "4.5.1"
+  GODOT_RELEASE: "stable"
+  GODOT_DIR: "${{ runner.temp }}/godot"
+
+jobs:
+  validate:
+    name: Validate Godot Project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/godot
+          key: godot-${{ runner.os }}-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+
+      - name: Download Godot 4.5.1
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$GODOT_DIR"
+
+          DOWNLOAD_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip"
+
+          echo "Downloading Godot ${GODOT_VERSION}-${GODOT_RELEASE}"
+          curl --fail --location --retry 3 "$DOWNLOAD_URL" \
+            --output "$RUNNER_TEMP/godot.zip"
+
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$GODOT_DIR"
+
+          mv "$GODOT_DIR"/Godot_v*-linux.x86_64 "$GODOT_DIR/godot"
+          chmod +x "$GODOT_DIR/godot"
+
+      - name: Check Godot version
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_DIR/godot" --version
+
+      - name: Validate required files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_files=(
+            "project.godot"
+            "scenes/main/Main.tscn"
+            "resources/levels/Level1.tres"
+            "resources/levels/LevelData.gd"
+            "scripts/main.gd"
+            "scripts/player/Player.gd"
+            "scripts/player/SoldierFormation.gd"
+            "scripts/enemy/Enemy.gd"
+            "scripts/enemy/EnemyManager.gd"
+            "scripts/systems/Projectile.gd"
+            "assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf"
+            "assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf"
+          )
+
+          for file in "${required_files[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              echo "::error file=$file::Required file is missing"
+              exit 1
+            fi
+
+            echo "Found: $file"
+          done
+
+      - name: Validate asset references
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          grep -F \
+            'Character_Soldier.gltf' \
+            scripts/player/SoldierFormation.gd
+
+          grep -F \
+            'Character_Enemy.gltf' \
+            scenes/enemy/Enemy.tscn
+
+          echo "Asset references are valid."
+
+      - name: Parse and validate Godot project
+        shell: bash
+        run: |
+          set -o pipefail
+
+          "$GODOT_DIR/godot" \
+            --headless \
+            --path . \
+            --editor \
+            --quit \
+            --verbose \
+            2>&1 | tee "$RUNNER_TEMP/godot-editor.log"
+
+      - name: Run logic tests
+        shell: bash
+        run: |
+          set -o pipefail
+
+          "$GODOT_DIR/godot" \
+            --headless \
+            --path . \
+            --script res://tests/test_game_logic.gd \
+            2>&1 | tee "$RUNNER_TEMP/godot-tests.log"
+
+      - name: Run Main Scene smoke test
+        shell: bash
+        run: |
+          set -o pipefail
+
+          timeout \
+            --signal=TERM \
+            --kill-after=5s \
+            20s \
+            "$GODOT_DIR/godot" \
+              --headless \
+              --path . \
+              --quit-after 5 \
+              2>&1 | tee "$RUNNER_TEMP/godot-runtime.log"
