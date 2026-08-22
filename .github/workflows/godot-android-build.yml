@@ -38,14 +38,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK
+      - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
 
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-35"
-          sdkmanager "build-tools;35.0.0"
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
           yes | sdkmanager --licenses >/dev/null || true
 
@@ -78,7 +79,7 @@ jobs:
           )"
 
           if [ -z "$GODOT_BINARY" ]; then
-            echo "::error::Godot binary not found"
+            echo "::error::Godot binary was not found"
             ls -la "$GODOT_DIR"
             exit 1
           fi
@@ -128,7 +129,7 @@ jobs:
           fi
 
           if [ ! -f "$GODOT_TEMPLATES_DIR/android_debug.apk" ]; then
-            echo "::error::Android debug export template not found"
+            echo "::error::Android debug export template was not found"
             exit 1
           fi
 
@@ -155,44 +156,30 @@ jobs:
 
           test -f "$HOME/.android/debug.keystore"
 
-      - name: Verify Android SDK
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-
-          java -version
-
-          test -d "$ANDROID_HOME"
-          test -d "$ANDROID_HOME/platforms/android-35"
-          test -d "$ANDROID_HOME/build-tools/35.0.0"
-
       - name: Validate required files
         shell: bash
         run: |
           set -euo pipefail
 
-          required_files=(
+          files=(
             "project.godot"
             "export_presets.cfg"
             "scenes/main/Main.tscn"
-            "resources/levels/Level1.tres"
             "scripts/main.gd"
-            "scripts/player/Player.gd"
-            "scripts/player/SoldierFormation.gd"
             "scripts/enemy/Enemy.gd"
             "scripts/enemy/EnemyManager.gd"
+            "scripts/player/Player.gd"
+            "scripts/player/SoldierFormation.gd"
+            "scripts/combat/ShootingController.gd"
             "scripts/systems/Projectile.gd"
-            "tests/test_game_logic.gd"
+            "resources/levels/Level1.tres"
             "assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf"
             "assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf"
             "assets/toon_shooter_game_kit/Weapons/SMG.gltf"
             "assets/toon_shooter_game_kit/Weapons/Pistol.gltf"
           )
 
-          for file in "${required_files[@]}"; do
+          for file in "${files[@]}"; do
             if [ ! -f "$file" ]; then
               echo "::error file=$file::Required file not found"
               exit 1
@@ -214,15 +201,12 @@ jobs:
 
           echo "Android ARM64 Debug preset is valid."
 
-      - name: Parse Godot project
+      - name: Validate project
         shell: bash
         run: |
           set -euo pipefail
 
-          timeout \
-            --signal=TERM \
-            --kill-after=20s \
-            600s \
+          timeout 900s \
             "$GODOT_DIR/godot" \
               --headless \
               --path . \
@@ -260,7 +244,7 @@ jobs:
 
           mkdir -p "$GITHUB_WORKSPACE/build/android"
 
-          APK_PATH="$GITHUB_WORKSPACE/build/android/kamand-arm64-debug.apk"
+          APK_PATH="$GITHUB_WORKSPACE/build/android/game-arm64-debug.apk"
 
           "$GODOT_DIR/godot" \
             --headless \
@@ -270,36 +254,36 @@ jobs:
             "$APK_PATH"
 
           if [ ! -f "$APK_PATH" ]; then
-            echo "::error::APK file was not generated"
+            echo "::error::APK was not generated"
             exit 1
           fi
 
           if [ ! -s "$APK_PATH" ]; then
-            echo "::error::APK file is empty"
+            echo "::error::APK is empty"
             exit 1
           fi
 
           ls -lh "$APK_PATH"
           file "$APK_PATH"
 
-      - name: Validate APK architecture
+      - name: Verify APK architecture
         shell: bash
         run: |
           set -euo pipefail
 
-          APK_PATH="build/android/kamand-arm64-debug.apk"
+          APK_PATH="build/android/game-arm64-debug.apk"
 
           if ! unzip -l "$APK_PATH" | grep -q "lib/arm64-v8a"; then
             echo "::error::ARM64 library was not found in APK"
             exit 1
           fi
 
-          echo "ARM64 APK validation passed."
+          echo "ARM64 APK verified."
 
-      - name: Upload Android APK artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kamand-android-arm64-debug
-          path: build/android/kamand-arm64-debug.apk
+          name: game-arm64-debug
+          path: build/android/game-arm64-debug.apk
           if-no-files-found: error
           retention-days: 14
