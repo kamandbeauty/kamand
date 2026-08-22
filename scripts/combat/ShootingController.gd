@@ -16,16 +16,28 @@ func _soldiers_fire() -> void:
  for soldier in host.get_node("Formation").soldiers:
   if fired >= max_simultaneous_shooters or not soldier.is_alive(): continue
   var target := _nearest(soldier.global_position)
-  if target: _fire(soldier.global_position + Vector3(0, 0.6, -0.5), target.global_position); fired += 1
+  if target:
+   _fire(_muzzle(soldier), target.global_position); fired += 1
 func _enemies_fire() -> void:
  for enemy in EnemyManager.active:
   if enemy.active and is_instance_valid(enemy.target) and enemy.global_position.distance_to(enemy.target.global_position) <= enemy.attack_range:
-   _fire(enemy.global_position + Vector3(0, 0.5, 0), enemy.target.global_position)
-func _fire(pos: Vector3, target: Vector3) -> void:
+   _fire(_muzzle(enemy), enemy.target.global_position)
+func _muzzle(owner: Node) -> Node3D:
+ var found := owner.find_child("MuzzlePoint", true, false)
+ return found if found is Node3D else owner
+func _fire(origin: Node3D, target: Vector3) -> void:
  if host.projectile_pool.is_empty(): return
  var projectile: PooledProjectile = host.projectile_pool.pop_back()
- projectile.fire(pos, target); host.active_projectiles += 1
+ projectile.fire(origin.global_position, target); host.active_projectiles += 1
  projectile.released.connect(host._return_projectile.bind(projectile), CONNECT_ONE_SHOT)
+ _flash(origin)
+func _flash(origin: Node3D) -> void:
+ var flash := origin.get_node_or_null("MuzzleFlash") as MeshInstance3D
+ if not flash:
+  flash = MeshInstance3D.new(); flash.name = "MuzzleFlash"; var mesh := SphereMesh.new(); mesh.radius = 0.08; mesh.height = 0.16; flash.mesh = mesh
+  var mat := StandardMaterial3D.new(); mat.albedo_color = Color(1.0, 0.8, 0.15); mat.emission_enabled = true; mat.emission = Color(1.0, 0.3, 0.0); mat.emission_energy_multiplier = 5.0; flash.material_override = mat; origin.add_child(flash)
+ flash.visible = true
+ get_tree().create_timer(0.07).timeout.connect(flash.hide, CONNECT_ONE_SHOT)
 func _nearest(pos: Vector3) -> PrototypeEnemy:
  var best: PrototypeEnemy; var distance := INF
  for enemy in EnemyManager.active:
