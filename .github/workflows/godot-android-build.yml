@@ -136,12 +136,9 @@ jobs:
               "$GODOT_TEMPLATES_DIR/"
           fi
 
-          if [ ! -f "$GODOT_TEMPLATES_DIR/android_debug.apk" ]; then
-            echo "::error::Android debug template not found"
-            exit 1
-          fi
+          test -f "$GODOT_TEMPLATES_DIR/android_debug.apk"
 
-      - name: Prepare Android debug keystore
+      - name: Install Android debug keystore
         shell: bash
         run: |
           set -euo pipefail
@@ -215,8 +212,7 @@ jobs:
 
           mkdir -p \
             "$CI_PROJECT/assets/toon_shooter_game_kit/Characters" \
-            "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons" \
-            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment"
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons"
 
           rsync -a \
             --exclude=".git" \
@@ -240,7 +236,26 @@ jobs:
 
           echo "Lightweight project created."
 
-      - name: Parse Godot project
+      - name: Install Android build template in project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          "$GODOT_DIR/godot" \
+            --headless \
+            --path "$CI_PROJECT" \
+            --editor \
+            --install-android-build-template
+
+          if [ ! -f "$CI_PROJECT/android/build.gradle" ] && \
+             [ ! -f "$CI_PROJECT/android/build.gradle.kts" ]; then
+            echo "::error::Android build template verification failed"
+            exit 1
+          fi
+
+          echo "Android build template verified."
+
+      - name: Parse lightweight Godot project
         shell: bash
         run: |
           set -euo pipefail
@@ -284,33 +299,34 @@ jobs:
         run: |
           set -euo pipefail
 
-          mkdir -p "$GITHUB_WORKSPACE/build/android"
+          mkdir -p "$GITHUB_WORKSPACE/build"
 
           "$GODOT_DIR/godot" \
             --headless \
             --path "$CI_PROJECT" \
             --export-debug \
             "Android ARM64 Debug" \
-            "$GITHUB_WORKSPACE/build/android/Level1-Visual-Test.apk"
+            "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk"
 
-          if [ ! -f "$GITHUB_WORKSPACE/build/android/Level1-Visual-Test.apk" ]; then
+          if [ ! -f "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk" ]; then
             echo "::error::APK file was not generated"
             exit 1
           fi
 
-          if [ ! -s "$GITHUB_WORKSPACE/build/android/Level1-Visual-Test.apk" ]; then
+          if [ ! -s "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk" ]; then
             echo "::error::APK file is empty"
             exit 1
           fi
 
-          ls -lh "$GITHUB_WORKSPACE/build/android/Level1-Visual-Test.apk"
+          ls -lh "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk"
+          file "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk"
 
       - name: Validate APK architecture
         shell: bash
         run: |
           set -euo pipefail
 
-          unzip -l build/android/Level1-Visual-Test.apk \
+          unzip -l build/Level1-Android-ARM64-debug.apk \
             | grep -q "lib/arm64-v8a"
 
           echo "ARM64 APK validation passed."
@@ -318,7 +334,7 @@ jobs:
       - name: Upload Android APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: level1-android-apk
-          path: build/android/Level1-Visual-Test.apk
+          name: Level1-Android-ARM64-debug
+          path: build/Level1-Android-ARM64-debug.apk
           if-no-files-found: error
           retention-days: 14
