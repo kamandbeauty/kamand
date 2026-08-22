@@ -67,9 +67,6 @@ jobs:
 
           DOWNLOAD_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip"
 
-          echo "Downloading Godot:"
-          echo "$DOWNLOAD_URL"
-
           curl \
             --fail \
             --location \
@@ -81,9 +78,6 @@ jobs:
 
           unzip -q /tmp/godot.zip -d "$GODOT_DIR"
 
-          echo "Extracted files:"
-          ls -la "$GODOT_DIR"
-
           GODOT_BINARY="$(
             find "$GODOT_DIR" \
               -maxdepth 1 \
@@ -94,6 +88,7 @@ jobs:
 
           if [ -z "$GODOT_BINARY" ]; then
             echo "::error::Godot binary was not found"
+            ls -la "$GODOT_DIR"
             exit 1
           fi
 
@@ -114,9 +109,6 @@ jobs:
           mkdir -p "$GODOT_TEMPLATES_DIR"
 
           TEMPLATES_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz"
-
-          echo "Downloading export templates:"
-          echo "$TEMPLATES_URL"
 
           curl \
             --fail \
@@ -144,9 +136,6 @@ jobs:
               "$GODOT_TEMPLATES_DIR/"
           fi
 
-          echo "Installed export templates:"
-          find "$GODOT_TEMPLATES_DIR" -maxdepth 1 -type f -print
-
           if [ ! -f "$GODOT_TEMPLATES_DIR/android_debug.apk" ]; then
             echo "::error::Android debug export template was not found"
             exit 1
@@ -157,14 +146,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Java version:"
           java -version
-
-          echo "ADB version:"
           adb version
-
-          echo "Android SDK packages:"
-          sdkmanager --list_installed
 
           test -d "$ANDROID_HOME"
           test -d "$ANDROID_HOME/platforms/android-35"
@@ -215,7 +198,7 @@ jobs:
 
           echo "Android ARM64 export preset found."
 
-      - name: Parse and validate Godot project
+      - name: Import and parse Godot project
         shell: bash
         run: |
           set -o pipefail
@@ -227,10 +210,9 @@ jobs:
             "$GODOT_DIR/godot" \
               --headless \
               --path . \
-              --editor \
-              --quit \
+              --import \
               --verbose \
-              2>&1 | tee /tmp/godot-parse.log
+              2>&1 | tee /tmp/godot-import.log
 
       - name: Run logic tests
         shell: bash
@@ -260,6 +242,7 @@ jobs:
               --headless \
               --path . \
               --quit-after 5 \
+              --verbose \
               2>&1 | tee /tmp/godot-runtime.log
 
       - name: Export Android ARM64 Debug APK
@@ -288,8 +271,6 @@ jobs:
 
           echo "APK generated successfully:"
           ls -lh build/android/Level1-Visual-Test.apk
-
-          file build/android/Level1-Visual-Test.apk
 
       - name: Validate APK architecture
         shell: bash
