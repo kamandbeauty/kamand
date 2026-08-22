@@ -1,7 +1,12 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=14 format=3]
 [ext_resource path="res://scripts/main.gd" type="Script" id="1"]
 [ext_resource path="res://scripts/player/Player.gd" type="Script" id="2"]
 [ext_resource path="res://scripts/player/SoldierFormation.gd" type="Script" id="3"]
+[ext_resource path="res://assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf" type="PackedScene" id="4"]
+[ext_resource path="res://assets/toon_shooter_game_kit/Environment/Barrier_Fixed.gltf" type="PackedScene" id="5"]
+[ext_resource path="res://assets/toon_shooter_game_kit/Environment/Tree_1.gltf" type="PackedScene" id="6"]
+[ext_resource path="res://assets/toon_shooter_game_kit/Environment/Crate.gltf" type="PackedScene" id="7"]
+[ext_resource path="res://assets/toon_shooter_game_kit/Environment/Container_Long.gltf" type="PackedScene" id="8"]
 [sub_resource type="Environment" id="e"]
 background_mode = 1
 background_color = Color(0.06,0.1,0.18,1)
@@ -26,13 +31,23 @@ position = Vector3(0,-0.1,-30)
 [node name="Player" type="CharacterBody3D" parent="." groups=["player"]]
 script = ExtResource("2")
 position = Vector3(0,0.8,5)
-[node name="Mesh" type="MeshInstance3D" parent="Player"]
-mesh = SubResource("player")
+[node name="Visual" parent="Player" instance=ExtResource("4")]
+scale = Vector3(0.9, 0.9, 0.9)
 [node name="Collision" type="CollisionShape3D" parent="Player"]
 shape = SubResource("ps")
 [node name="Formation" type="Node3D" parent="."]
 script = ExtResource("3")
 position = Vector3(0,0,5)
+[node name="Environment" type="Node3D" parent="."]
+[node name="BarrierLeft" parent="Environment" instance=ExtResource("5")]
+position = Vector3(-6, 0, -20)
+[node name="TreeLeft" parent="Environment" instance=ExtResource("6")]
+position = Vector3(-7, 0, -45)
+[node name="CrateRight" parent="Environment" instance=ExtResource("7")]
+position = Vector3(6, 0, -35)
+[node name="ContainerRight" parent="Environment" instance=ExtResource("8")]
+position = Vector3(8, 0, -70)
+scale = Vector3(1.2, 1.2, 1.2)
 [node name="Camera" type="Camera3D" parent="."]
 position = Vector3(0,6,13)
 rotation_degrees = Vector3(-20,0,0)
