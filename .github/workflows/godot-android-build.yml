@@ -39,13 +39,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK packages
+      - name: Install Android SDK
         shell: bash
         run: |
           set -euo pipefail
+
           sdkmanager "platform-tools"
           sdkmanager "platforms;android-35"
           sdkmanager "build-tools;35.0.0"
+
           yes | sdkmanager --licenses >/dev/null || true
 
       - name: Cache Godot
@@ -86,13 +88,15 @@ jobs:
 
           if [ -z "$binary" ]; then
             echo "::error::Godot binary was not found"
+            ls -la "$GODOT_DIR"
             exit 1
           fi
 
           mv "$binary" "$GODOT_DIR/godot"
           chmod +x "$GODOT_DIR/godot"
 
-      - name: Verify Godot version
+      - name: Verify Godot
+        shell: bash
         run: |
           set -euo pipefail
           "$GODOT_DIR/godot" --version
@@ -160,20 +164,20 @@ jobs:
 
           test -f "$HOME/.android/debug.keystore"
 
-      - name: Configure Godot Android export paths
+      - name: Configure Godot Android paths
         shell: bash
         run: |
           set -euo pipefail
 
           mkdir -p "$HOME/.config/godot"
 
-          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
-[gd_resource format=3]
-
-[resource]
-export/android/android_sdk_path = "$ANDROID_HOME"
-export/android/java_sdk_path = "$JAVA_HOME"
-EOF
+          printf '%s\n' \
+            '[gd_resource format=3]' \
+            '' \
+            '[resource]' \
+            "export/android/android_sdk_path = \"$ANDROID_HOME\"" \
+            "export/android/java_sdk_path = \"$JAVA_HOME\"" \
+            > "$HOME/.config/godot/editor_settings-4.tres"
 
           test -d "$ANDROID_HOME"
           test -d "$JAVA_HOME"
@@ -184,6 +188,7 @@ EOF
           set -euo pipefail
 
           java -version
+
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
 
@@ -230,13 +235,14 @@ EOF
 
           grep -Fq 'name="Android ARM64 Debug"' export_presets.cfg
           grep -Fq 'platform="Android"' export_presets.cfg
+          grep -Fq 'export_filter="all_resources"' export_presets.cfg
           grep -Fq 'architectures/arm64-v8a=true' export_presets.cfg
           grep -Fq 'architectures/armeabi-v7a=false' export_presets.cfg
           grep -Fq 'gradle_build/use_gradle_build=false' export_presets.cfg
 
           echo "Android ARM64 Debug preset is valid."
 
-      - name: Create lightweight build project
+      - name: Create lightweight Android project
         shell: bash
         run: |
           set -euo pipefail
@@ -267,9 +273,12 @@ EOF
           cp assets/toon_shooter_game_kit/Weapons/Pistol.gltf \
             "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons/"
 
-          cp export_presets.cfg "$CI_PROJECT/export_presets.cfg"
+          cp export_presets.cfg \
+            "$CI_PROJECT/export_presets.cfg"
 
-      - name: Parse Godot project
+          echo "Lightweight project created at $CI_PROJECT"
+
+      - name: Parse project
         shell: bash
         run: |
           set -euo pipefail
@@ -322,30 +331,36 @@ EOF
             "Android ARM64 Debug" \
             "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk"
 
-          if [ ! -f "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk" ]; then
+          apk="$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk"
+
+          if [ ! -f "$apk" ]; then
             echo "::error::APK file was not generated"
             exit 1
           fi
 
-          if [ ! -s "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk" ]; then
+          if [ ! -s "$apk" ]; then
             echo "::error::APK file is empty"
             exit 1
           fi
 
-          ls -lh "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk"
-          file "$GITHUB_WORKSPACE/build/Level1-Android-ARM64-debug.apk"
+          ls -lh "$apk"
+          file "$apk"
 
       - name: Validate APK architecture
         shell: bash
         run: |
           set -euo pipefail
 
-          unzip -l build/Level1-Android-ARM64-debug.apk \
-            | grep -q "lib/arm64-v8a"
+          if ! unzip -l \
+            build/Level1-Android-ARM64-debug.apk \
+            | grep -q "lib/arm64-v8a"; then
+            echo "::error::ARM64 library was not found in APK"
+            exit 1
+          fi
 
           echo "ARM64 APK validation passed."
 
-      - name: Upload Android APK artifact
+      - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: Level1-Android-ARM64-debug
