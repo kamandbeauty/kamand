@@ -42,11 +42,10 @@ private val GlassSheenHeight = 30.dp
  * The app's top bar, styled as frosted glass.
  *
  * Content scrolls underneath rather than being pushed clear of it, so the bar
- * is deliberately translucent: the page tints it as it passes. A real gaussian
- * blur is not used because Modifier.blur needs API 31 and minSdk here is 24 —
- * the frost is faked instead with a translucent brand wash, a diagonal sheen
- * across the top and a bright hairline along the bottom edge, which is what
- * actually reads as glass at this size.
+ * stays translucent: the page tints it as it passes. [LiquidGlassSurface]
+ * supplies the real gaussian blur on API 31+; the wash, the diagonal sheen and
+ * the lit edges are painted over it and carry the whole effect on the older
+ * devices where the blur is unavailable.
  */
 @Composable
 fun RooziHeader(
@@ -57,37 +56,46 @@ fun RooziHeader(
     val colors = RooziTheme.colors
     val dark = colors.isDark
 
-    // Deep enough to read as a solid brand colour, still short of opaque so the
-    // blurred page keeps showing through. Past roughly 0.65 the refraction
-    // disappears and the panel becomes a plain coloured bar, so this is the
-    // upper end of what can be called glass.
+    // The wash carries the brand colour; the blur behind it is what still reads
+    // as glass. Weighted towards the colour so the bar looks like a solid
+    // surface rather than a tinted window, while leaving enough transmission
+    // for the blurred page to move underneath and keep it alive.
+    //
+    // The blur is doing more work here than the alpha suggests: what shows
+    // through is already diffused, so the panel stays opaque-looking even
+    // though it is not opaque. Going much past this the movement underneath
+    // stops being visible at all and the header becomes a flat coloured bar.
     val hasBlur = glass.supported
     val tintAlpha = when {
-        !hasBlur -> if (dark) 0.86f else 0.82f // no blur: opacity must do the work
-        dark -> 0.58f
-        else -> 0.54f
+        !hasBlur -> if (dark) 0.90f else 0.88f // no blur: opacity must do the work
+        dark -> 0.80f
+        else -> 0.76f
     }
 
     // Diagonal rather than flat: real glass picks up light unevenly across its
     // face, and an even wash is what made this read as a faded bar.
+    // coerced because the stops add to the base alpha, which is now close
+    // enough to 1 that they would otherwise overflow on the no-blur path.
     val wash = Brush.linearGradient(
         colorStops = arrayOf(
-            0f to colors.coral.copy(alpha = tintAlpha + 0.10f),
+            0f to colors.coral.copy(alpha = (tintAlpha + 0.08f).coerceAtMost(1f)),
             0.55f to colors.purple.copy(alpha = tintAlpha),
-            1f to colors.purple.copy(alpha = tintAlpha + 0.06f)
+            1f to colors.purple.copy(alpha = (tintAlpha + 0.05f).coerceAtMost(1f))
         ),
         start = Offset.Zero,
         end = Offset(0f, Float.POSITIVE_INFINITY)
     )
 
     // Glass is brightest where light enters and dims below; without this
-    // falloff the panel reads as flat translucent plastic. Lifted alongside the
-    // deeper tint — a stronger wash swallows the highlight, and losing it is
-    // what would make the pane look like paint rather than glass.
+    // falloff the panel reads as flat translucent plastic.
+    //
+    // Pulled back as the wash got deeper: over a near-solid colour the same
+    // white no longer reads as a highlight on glass but as haze sitting on
+    // paint, which is the opposite of the intended effect.
     val sheen = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (dark) 0.34f else 0.54f),
-            Color.White.copy(alpha = if (dark) 0.10f else 0.18f),
+            Color.White.copy(alpha = if (dark) 0.22f else 0.34f),
+            Color.White.copy(alpha = if (dark) 0.07f else 0.12f),
             Color.Transparent
         )
     )
@@ -112,12 +120,16 @@ fun RooziHeader(
                 // A lit rim around the pane. Glass catches light along its
                 // edges, and this is what gives the panel thickness instead of
                 // looking like a coloured rectangle painted onto the page.
+                //
+                // Kept bright as the fill got deeper: the rim and the bottom
+                // edge are now the main cues that this is a pane with
+                // thickness, since the fill itself gives away less.
                 .border(
                     width = 1.dp,
                     brush = Brush.verticalGradient(
                         listOf(
-                            Color.White.copy(alpha = if (dark) 0.42f else 0.70f),
-                            Color.White.copy(alpha = if (dark) 0.14f else 0.26f)
+                            Color.White.copy(alpha = if (dark) 0.46f else 0.72f),
+                            Color.White.copy(alpha = if (dark) 0.16f else 0.28f)
                         )
                     ),
                     shape = shape
