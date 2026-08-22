@@ -136,9 +136,12 @@ jobs:
               "$GODOT_TEMPLATES_DIR/"
           fi
 
-          test -f "$GODOT_TEMPLATES_DIR/android_debug.apk"
+          if [ ! -f "$GODOT_TEMPLATES_DIR/android_debug.apk" ]; then
+            echo "::error::Android debug export template was not found"
+            exit 1
+          fi
 
-      - name: Install Android debug keystore
+      - name: Prepare Android debug keystore
         shell: bash
         run: |
           set -euo pipefail
@@ -201,7 +204,22 @@ jobs:
               echo "::error file=$file::Required file not found"
               exit 1
             fi
+
+            echo "Found: $file"
           done
+
+      - name: Validate Android export preset
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          grep -Fq 'name="Android ARM64 Debug"' export_presets.cfg
+          grep -Fq 'platform="Android"' export_presets.cfg
+          grep -Fq 'architectures/arm64-v8a=true' export_presets.cfg
+          grep -Fq 'architectures/armeabi-v7a=false' export_presets.cfg
+          grep -Fq 'gradle_build/use_gradle_build=false' export_presets.cfg
+
+          echo "Android ARM64 export preset is valid."
 
       - name: Create lightweight Android build project
         shell: bash
@@ -212,7 +230,8 @@ jobs:
 
           mkdir -p \
             "$CI_PROJECT/assets/toon_shooter_game_kit/Characters" \
-            "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons"
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons" \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment"
 
           rsync -a \
             --exclude=".git" \
@@ -234,26 +253,19 @@ jobs:
           cp assets/toon_shooter_game_kit/Weapons/Pistol.gltf \
             "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons/"
 
-          echo "Lightweight project created."
+          cp assets/toon_shooter_game_kit/Environment/Barrier_Fixed.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
 
-      - name: Install Android build template in project
-        shell: bash
-        run: |
-          set -euo pipefail
+          cp assets/toon_shooter_game_kit/Environment/Tree_1.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
 
-          "$GODOT_DIR/godot" \
-            --headless \
-            --path "$CI_PROJECT" \
-            --editor \
-            --install-android-build-template
+          cp assets/toon_shooter_game_kit/Environment/Crate.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
 
-          if [ ! -f "$CI_PROJECT/android/build.gradle" ] && \
-             [ ! -f "$CI_PROJECT/android/build.gradle.kts" ]; then
-            echo "::error::Android build template verification failed"
-            exit 1
-          fi
+          cp assets/toon_shooter_game_kit/Environment/Container_Long.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
 
-          echo "Android build template verified."
+          echo "Lightweight project created at $CI_PROJECT"
 
       - name: Parse lightweight Godot project
         shell: bash
