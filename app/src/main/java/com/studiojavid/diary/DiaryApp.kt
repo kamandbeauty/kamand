@@ -45,20 +45,38 @@ class DiaryApp : Application() {
     val appLock: AppLock by lazy { AppLock() }
 
     /**
-     * Whether the app is currently in the foreground (any activity started).
-     * Driven by ActivityLifecycleCallbacks so it survives configuration changes
-     * and correctly ignores transient activity switches (system dialogs,
-     * opening Settings, etc.).
+     * Counts currently started activities across the process. When the count
+     * drops to 0 the whole app has moved to the background. The Activity that
+     * drove the count to 0 is responsible for engaging the lock (it has direct
+     * access to the latest settings snapshot via its ViewModel), so we only
+     * expose the event here.
      */
     private val _inForeground = MutableStateFlow(false)
     val inForeground = _inForeground.asStateFlow()
+
+    @Volatile
+    var startedActivityCount: Int = 0
+        private set
+
+    fun onActivityStarted() {
+        synchronized(this) { startedActivityCount += 1 }
+    }
+
+    fun onActivityStopped(changingConfigurations: Boolean): Boolean {
+        if (changingConfigurations) return false
+        var background = false
+        synchronized(this) {
+            startedActivityCount = (startedActivityCount - 1).coerceAtLeast(0)
+            if (startedActivityCount == 0) background = true
+        }
+        if (background) _inForeground.value = false
+        return background
+    }
 
     override fun onCreate() {
         super.onCreate()
         // Installed first so it can capture failures from anything below.
         CrashReporter.install(this)
-
-        registerActivityLifecycleCallbacks(LifecycleTracker())
 
         runCatching { Notifications.ensureChannel(this) }
             .onFailure { Log.e(TAG, "Could not create the notification channel", it) }
@@ -69,47 +87,6 @@ class DiaryApp : Application() {
             runCatching { birthdayRepository.rescheduleAll() }
                 .onFailure { Log.e(TAG, "Rescheduling birthday reminders failed", it) }
         }
-    }
-
-    /**
-     * Counts started activities to know when the app leaves the foreground.
-     * When the counter hits 0 we engage the lock if the user opted into
-     * immediate relock. Configuration changes are explicitly skipped.
-     */
-    private inner class LifecycleTracker : ActivityLifecycleCallbacks {
-        private var started = 0
-
-        override fun onActivityStarted(activity: Activity) {
-            val first = synchronized(this) {
-                started += 1
-                started == 1
-            }
-            if (first) _inForeground.value = true
-        }
-
-        override fun onActivityStopped(activity: Activity) {
-            if (activity.isChangingConfigurations) return
-            val last = synchronized(this) {
-                started = (started - 1).coerceAtLeast(0)
-                started == 0
-            }
-            if (last) {
-                _inForeground.value = false
-                applicationScope.launch {
-                    val immediate = runCatching { preferences.settings }
-                        .getOrNull()
-                        ?.let { it.lockImmediate && it.lockMode.enabled }
-                        ?: true
-                    if (immediate) appLock.lock()
-                }
-            }
-        }
-
-        override fun onActivityCreated(a: Activity, b: Bundle?) {}
-        override fun onActivityResumed(a: Activity) {}
-        override fun onActivityPaused(a: Activity) {}
-        override fun onActivitySaveInstanceState(a: Activity, b: Bundle) {}
-        override fun onActivityDestroyed(a: Activity) {}
     }
 
     private companion object {

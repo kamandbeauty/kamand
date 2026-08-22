@@ -158,11 +158,31 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        (application as DiaryApp).onActivityStarted()
+    }
+
     override fun onResume() {
         super.onResume()
         // A diary left open overnight must roll onto the new day rather than
         // keep offering to write yesterday's page.
         diaryViewModel.refreshToday()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Only engage the lock when the last activity of the process stops
+        // (the user actually left the app). isChangingConfigurations skips
+        // rotations/screen-size changes; the app-level counter skips transient
+        // activity switches such as opening system Settings / permission
+        // dialogs.
+        val app = application as DiaryApp
+        if (app.onActivityStopped(isChangingConfigurations)) {
+            val immediate = mainViewModel.settings.value?.lockImmediate ?: true
+            val enabled = mainViewModel.settings.value?.lockMode?.enabled == true
+            if (immediate && enabled) app.appLock.lock()
+        }
     }
 
     /**

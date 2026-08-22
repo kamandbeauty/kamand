@@ -252,7 +252,7 @@ class BackupManager(
             birthdaysRepo.replaceAll(people, ideas)
         }
 
-        return memories.size
+        return pages.size
     }
 
     private fun JSONObject.optNullableLong(key: String): Long? =

@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.studiojavid.diary.R
 import com.studiojavid.diary.ui.theme.DiaryTheme
+import com.studiojavid.diary.ui.theme.timeOfDayGradient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

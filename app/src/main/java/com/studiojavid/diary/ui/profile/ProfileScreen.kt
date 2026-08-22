@@ -81,7 +81,6 @@ import com.studiojavid.diary.ui.components.emoji
 import com.studiojavid.diary.ui.components.label
 import com.studiojavid.diary.ui.components.selectableMoods
 import com.studiojavid.diary.ui.components.WeeklyBars
-import com.studiojavid.diary.ui.displayName
 import com.studiojavid.diary.ui.theme.DiaryTheme
 import com.studiojavid.diary.ui.theme.ThemePalette
 import com.studiojavid.diary.ui.theme.diaryColorsOf
