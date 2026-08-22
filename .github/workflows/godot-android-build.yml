@@ -58,7 +58,7 @@ jobs:
           key: godot-${{ runner.os }}-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
 
       - name: Download Godot 4.5.1
-        if: steps.godot-cache.outputs.cache-hit != "true"
+        if: steps.godot-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -212,7 +212,7 @@ jobs:
 
           echo "Android ARM64 export preset found."
 
-      - name: Validate and test Godot project
+      - name: Validate project and run logic tests
         shell: bash
         run: |
           set -euo pipefail
