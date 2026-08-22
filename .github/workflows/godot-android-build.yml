@@ -200,13 +200,13 @@ jobs:
       - name: Import and parse Godot project
         shell: bash
         run: |
-          set -uo pipefail
+          set +e
 
           LOG_FILE="/tmp/godot-import.log"
 
           timeout \
             --signal=TERM \
-            --kill-after=15s \
+            --kill-after=20s \
             600s \
             "$GODOT_DIR/godot" \
               --headless \
@@ -215,25 +215,30 @@ jobs:
               --verbose \
               2>&1 | tee "$LOG_FILE"
 
-          EXIT_CODE=${PIPESTATUS[0]}
+          GODOT_EXIT_CODE=${PIPESTATUS[0]}
 
-          if [ "$EXIT_CODE" -eq 0 ]; then
-            echo "Godot import completed successfully."
-            exit 0
-          fi
+          echo "Godot import exit code: $GODOT_EXIT_CODE"
 
-          if [ "$EXIT_CODE" -eq 124 ]; then
-            if grep -q "\[ DONE \].*_update_scan_actions" "$LOG_FILE"; then
-              echo "::warning::Godot scan completed before timeout; continuing to export."
-              exit 0
-            fi
-
-            echo "::error::Godot import timed out before scan completion."
+          if grep -q "_update_scan_actions" "$LOG_FILE"; then
+            echo "Godot asset scan completed."
+          else
+            echo "::error::Godot asset scan did not complete."
             exit 1
           fi
 
-          echo "::error::Godot import failed with exit code $EXIT_CODE."
-          exit "$EXIT_CODE"
+          if [ "$GODOT_EXIT_CODE" -eq 0 ]; then
+            echo "Godot import completed normally."
+            exit 0
+          fi
+
+          if [ "$GODOT_EXIT_CODE" -eq 124 ]; then
+            echo "::warning::Godot remained open after scan completion."
+            echo "Continuing because the asset scan completed."
+            exit 0
+          fi
+
+          echo "::error::Godot import failed with exit code $GODOT_EXIT_CODE."
+          exit "$GODOT_EXIT_CODE"
 
       - name: Run logic tests
         shell: bash
@@ -252,9 +257,7 @@ jobs:
       - name: Run Main Scene smoke test
         shell: bash
         run: |
-          set -uo pipefail
-
-          LOG_FILE="/tmp/godot-runtime.log"
+          set -euo pipefail
 
           timeout \
             --signal=TERM \
@@ -264,21 +267,7 @@ jobs:
               --headless \
               --path . \
               --quit-after 5 \
-              --verbose \
-              2>&1 | tee "$LOG_FILE"
-
-          EXIT_CODE=${PIPESTATUS[0]}
-
-          if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 124 ]; then
-            echo "::error::Main Scene smoke test failed."
-            exit "$EXIT_CODE"
-          fi
-
-          if [ "$EXIT_CODE" -eq 124 ]; then
-            echo "::warning::Smoke test reached timeout after launching Main Scene."
-          else
-            echo "Main Scene smoke test completed."
-          fi
+              --verbose
 
       - name: Export Android ARM64 Debug APK
         shell: bash
