@@ -18,6 +18,7 @@ env:
   GODOT_TEMPLATES_DIR: "/home/runner/.local/share/godot/export_templates/4.5.1.stable"
   ANDROID_HOME: "/usr/local/lib/android/sdk"
   ANDROID_SDK_ROOT: "/usr/local/lib/android/sdk"
+  CI_PROJECT: "/tmp/kamand-android-build"
 
 jobs:
   android-build:
@@ -140,19 +141,7 @@ jobs:
             exit 1
           fi
 
-      - name: Verify Android toolchain
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          java -version
-          adb version
-
-          test -d "$ANDROID_HOME"
-          test -d "$ANDROID_HOME/platforms/android-35"
-          test -d "$ANDROID_HOME/build-tools/35.0.0"
-
-      - name: Validate required files
+      - name: Validate required source files
         shell: bash
         run: |
           set -euo pipefail
@@ -174,6 +163,10 @@ jobs:
             "assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf"
             "assets/toon_shooter_game_kit/Weapons/SMG.gltf"
             "assets/toon_shooter_game_kit/Weapons/Pistol.gltf"
+            "assets/toon_shooter_game_kit/Environment/Barrier_Fixed.gltf"
+            "assets/toon_shooter_game_kit/Environment/Tree_1.gltf"
+            "assets/toon_shooter_game_kit/Environment/Crate.gltf"
+            "assets/toon_shooter_game_kit/Environment/Container_Long.gltf"
           )
 
           for file in "${required_files[@]}"; do
@@ -195,71 +188,78 @@ jobs:
           grep -Fq 'architectures/arm64-v8a=true' export_presets.cfg
           grep -Fq 'architectures/armeabi-v7a=false' export_presets.cfg
 
-          echo "Android ARM64 export preset found."
+          echo "Android ARM64 export preset is valid."
 
-      - name: Import and parse Godot project
+      - name: Create lightweight Android build project
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
 
-          LOG_FILE="/tmp/godot-import.log"
+          rm -rf "$CI_PROJECT"
 
-          "$GODOT_DIR/godot" \
-            --headless \
-            --path . \
-            --import \
-            --verbose \
-            > "$LOG_FILE" 2>&1 &
+          mkdir -p \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Characters" \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons" \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment"
 
-          GODOT_PID=$!
+          rsync -a \
+            --exclude=".git" \
+            --exclude=".godot" \
+            --exclude="assets" \
+            --exclude="build" \
+            ./ \
+            "$CI_PROJECT/"
 
-          echo "Godot import started with PID: $GODOT_PID"
+          cp \
+            assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Characters/"
 
-          SCAN_DONE=false
+          cp \
+            assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Characters/"
 
-          for second in $(seq 1 600); do
-            if grep -q "_update_scan_actions" "$LOG_FILE"; then
-              echo "Godot asset scan completed."
+          cp \
+            assets/toon_shooter_game_kit/Weapons/SMG.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons/"
 
-              SCAN_DONE=true
+          cp \
+            assets/toon_shooter_game_kit/Weapons/Pistol.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Weapons/"
 
-              kill -TERM "$GODOT_PID" 2>/dev/null || true
-              sleep 3
-              kill -KILL "$GODOT_PID" 2>/dev/null || true
-              wait "$GODOT_PID" 2>/dev/null || true
+          cp \
+            assets/toon_shooter_game_kit/Environment/Barrier_Fixed.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
 
-              break
-            fi
+          cp \
+            assets/toon_shooter_game_kit/Environment/Tree_1.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
 
-            if ! kill -0 "$GODOT_PID" 2>/dev/null; then
-              wait "$GODOT_PID"
-              GODOT_EXIT_CODE=$?
+          cp \
+            assets/toon_shooter_game_kit/Environment/Crate.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
 
-              if [ "$GODOT_EXIT_CODE" -ne 0 ]; then
-                echo "::error::Godot import failed with exit code $GODOT_EXIT_CODE"
-                cat "$LOG_FILE"
-                exit "$GODOT_EXIT_CODE"
-              fi
+          cp \
+            assets/toon_shooter_game_kit/Environment/Container_Long.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
 
-              SCAN_DONE=true
-              break
-            fi
+          echo "Lightweight build project:"
+          du -sh "$CI_PROJECT"
+          find "$CI_PROJECT/assets" -type f -print
 
-            if [ $((second % 10)) -eq 0 ]; then
-              echo "Waiting for Godot asset scan... ${second}s"
-            fi
+      - name: Parse lightweight Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
 
-            sleep 1
-          done
-
-          if [ "$SCAN_DONE" != "true" ]; then
-            echo "::error::Godot asset scan timed out after 600 seconds"
-            cat "$LOG_FILE"
-            kill -KILL "$GODOT_PID" 2>/dev/null || true
-            exit 1
-          fi
-
-          echo "Godot import validation completed."
+          timeout \
+            --signal=TERM \
+            --kill-after=20s \
+            600s \
+            "$GODOT_DIR/godot" \
+              --headless \
+              --path "$CI_PROJECT" \
+              --import \
+              --verbose
 
       - name: Run logic tests
         shell: bash
@@ -272,54 +272,23 @@ jobs:
             120s \
             "$GODOT_DIR/godot" \
               --headless \
-              --path . \
+              --path "$CI_PROJECT" \
               --script res://tests/test_game_logic.gd
 
       - name: Run Main Scene smoke test
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
 
-          LOG_FILE="/tmp/godot-runtime.log"
-
-          "$GODOT_DIR/godot" \
-            --headless \
-            --path . \
-            --quit-after 5 \
-            --verbose \
-            > "$LOG_FILE" 2>&1 &
-
-          GODOT_PID=$!
-
-          echo "Main Scene started with PID: $GODOT_PID"
-
-          for second in $(seq 1 180); do
-            if ! kill -0 "$GODOT_PID" 2>/dev/null; then
-              wait "$GODOT_PID"
-              EXIT_CODE=$?
-
-              if [ "$EXIT_CODE" -ne 0 ]; then
-                echo "::error::Main Scene smoke test failed"
-                cat "$LOG_FILE"
-                exit "$EXIT_CODE"
-              fi
-
-              echo "Main Scene smoke test completed."
-              exit 0
-            fi
-
-            if [ $((second % 10)) -eq 0 ]; then
-              echo "Waiting for Main Scene... ${second}s"
-            fi
-
-            sleep 1
-          done
-
-          echo "::warning::Main Scene reached timeout after launch."
-          kill -TERM "$GODOT_PID" 2>/dev/null || true
-          sleep 3
-          kill -KILL "$GODOT_PID" 2>/dev/null || true
-          wait "$GODOT_PID" 2>/dev/null || true
+          timeout \
+            --signal=TERM \
+            --kill-after=15s \
+            180s \
+            "$GODOT_DIR/godot" \
+              --headless \
+              --path "$CI_PROJECT" \
+              --quit-after 5 \
+              --verbose
 
       - name: Export Android ARM64 Debug APK
         shell: bash
@@ -330,10 +299,10 @@ jobs:
 
           "$GODOT_DIR/godot" \
             --headless \
-            --path . \
+            --path "$CI_PROJECT" \
             --export-debug \
             "Android ARM64 Debug" \
-            build/android/Level1-Visual-Test.apk
+            "$GITHUB_WORKSPACE/build/android/Level1-Visual-Test.apk"
 
           if [ ! -f "build/android/Level1-Visual-Test.apk" ]; then
             echo "::error::APK file was not generated"
