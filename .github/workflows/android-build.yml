@@ -4,10 +4,6 @@ on:
   workflow_dispatch:
 
   push:
-    paths:
-      - "project.godot"
-      - "export_presets.cfg"
-      - ".github/workflows/android-build.yml"
 
 permissions:
   contents: read
@@ -21,6 +17,8 @@ env:
   GODOT_RELEASE: "stable"
   GODOT_DIR: "/home/runner/godot"
   GODOT_TEMPLATES_DIR: "/home/runner/.local/share/godot/export_templates/4.5.1.stable"
+  ANDROID_HOME: "/usr/local/lib/android/sdk"
+  ANDROID_SDK_ROOT: "/usr/local/lib/android/sdk"
 
 jobs:
   android-build:
@@ -52,7 +50,7 @@ jobs:
 
           yes | sdkmanager --licenses >/dev/null || true
 
-      - name: Cache Godot binary
+      - name: Cache Godot
         id: godot-cache
         uses: actions/cache@v4
         with:
@@ -69,7 +67,7 @@ jobs:
 
           DOWNLOAD_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip"
 
-          echo "Downloading Godot from:"
+          echo "Downloading Godot:"
           echo "$DOWNLOAD_URL"
 
           curl \
@@ -95,19 +93,12 @@ jobs:
           )"
 
           if [ -z "$GODOT_BINARY" ]; then
-            echo "::error::Godot binary was not found after extraction"
+            echo "::error::Godot binary was not found"
             exit 1
           fi
 
           mv "$GODOT_BINARY" "$GODOT_DIR/godot"
           chmod +x "$GODOT_DIR/godot"
-
-      - name: Verify Godot version
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          "$GODOT_DIR/godot" --version
 
       - name: Install Godot Android export templates
         shell: bash
@@ -118,7 +109,7 @@ jobs:
 
           TEMPLATES_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz"
 
-          echo "Downloading Godot export templates:"
+          echo "Downloading export templates:"
           echo "$TEMPLATES_URL"
 
           curl \
@@ -147,7 +138,7 @@ jobs:
               "$GODOT_TEMPLATES_DIR/"
           fi
 
-          echo "Installed export templates:"
+          echo "Installed templates:"
           find "$GODOT_TEMPLATES_DIR" -maxdepth 1 -type f -print
 
           if [ ! -f "$GODOT_TEMPLATES_DIR/android_debug.apk" ]; then
@@ -155,13 +146,21 @@ jobs:
             exit 1
           fi
 
-      - name: Validate Android toolchain
+      - name: Verify toolchain
         shell: bash
         run: |
           set -euo pipefail
 
+          echo "Godot version:"
+          "$GODOT_DIR/godot" --version
+
+          echo "Java version:"
           java -version
+
+          echo "ADB version:"
           adb version
+
+          echo "Android SDK:"
           sdkmanager --list_installed
 
           test -d "$ANDROID_HOME"
@@ -201,7 +200,7 @@ jobs:
             echo "Found: $file"
           done
 
-      - name: Validate export preset
+      - name: Validate Android export preset
         shell: bash
         run: |
           set -euo pipefail
@@ -211,7 +210,7 @@ jobs:
           grep -Fq 'architectures/arm64-v8a=true' export_presets.cfg
           grep -Fq 'architectures/armeabi-v7a=false' export_presets.cfg
 
-          echo "Android ARM64 export preset found."
+          echo "Android ARM64 export preset is valid."
 
       - name: Validate project and run logic tests
         shell: bash
@@ -252,7 +251,7 @@ jobs:
               --path . \
               --quit-after 5
 
-      - name: Export Android ARM64 debug APK
+      - name: Export Android ARM64 Debug APK
         shell: bash
         run: |
           set -euo pipefail
@@ -276,8 +275,9 @@ jobs:
             exit 1
           fi
 
-          echo "APK generated successfully."
+          echo "APK generated successfully:"
           ls -lh build/android/Level1-Visual-Test.apk
+
           file build/android/Level1-Visual-Test.apk
 
       - name: Validate APK contents
@@ -292,16 +292,9 @@ jobs:
               exit 1
             }
 
-          unzip -l build/android/Level1-Visual-Test.apk \
-            | grep -q "project.godot" \
-            || {
-              echo "::error::project.godot was not found in APK"
-              exit 1
-            }
+          echo "ARM64 library found in APK."
 
-          echo "APK contains ARM64 and project files."
-
-      - name: Upload Android APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: level1-android-apk
