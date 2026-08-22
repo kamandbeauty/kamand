@@ -16,7 +16,12 @@ func _on_count_changed(count: int) -> void:
 func _acquire() -> FormationSoldier:
  var s: FormationSoldier = pool.pop_back() if not pool.is_empty() else FormationSoldier.new()
  if s.mesh == null:
-  var mesh := CapsuleMesh.new(); mesh.height = 1.0; mesh.radius = 0.28; s.mesh = mesh; s.material_override = material; s.max_health = soldier_max_health
+  var visual := load("res://assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf").instantiate()
+  visual.name = "Visual"; visual.scale = Vector3.ONE * 0.9; s.add_child(visual)
+  var anchor := Node3D.new(); anchor.name = "WeaponAnchor"; anchor.position = Vector3(0.4, 0.7, -0.2); visual.add_child(anchor)
+  var weapon := load("res://assets/toon_shooter_game_kit/Weapons/SMG.gltf").instantiate(); weapon.scale = Vector3.ONE * 0.35; anchor.add_child(weapon)
+  var muzzle := Marker3D.new(); muzzle.name = "MuzzlePoint"; muzzle.position = Vector3(0, 0, -0.8); weapon.add_child(muzzle)
+  s.max_health = soldier_max_health
  if not s.is_inside_tree(): add_child(s)
  s.reset(); return s
 func _release(s: FormationSoldier) -> void:
