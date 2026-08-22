@@ -3,19 +3,308 @@ name: Android Build
 on:
   workflow_dispatch:
 
+  push:
+    paths:
+      - "project.godot"
+      - "export_presets.cfg"
+      - ".github/workflows/android-build.yml"
+
 permissions:
   contents: read
 
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.5.1"
+  GODOT_RELEASE: "stable"
+  GODOT_DIR: "/home/runner/godot"
+  GODOT_TEMPLATES_DIR: "/home/runner/.local/share/godot/export_templates/4.5.1.stable"
+
 jobs:
-  placeholder:
-    name: Android Build Placeholder
+  android-build:
+    name: Build Android ARM64 APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Android build placeholder
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
         run: |
-          echo "TODO: Configure Godot 4.x Android export and automated build in the next phase."
-          echo "Android APK/AAB build is intentionally disabled for now."
+          set -euo pipefail
+
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-35"
+          sdkmanager "build-tools;35.0.0"
+
+          yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Cache Godot binary
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/godot
+          key: godot-${{ runner.os }}-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+
+      - name: Download Godot 4.5.1
+        if: steps.godot-cache.outputs.cache-hit != "true"
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$GODOT_DIR"
+
+          DOWNLOAD_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip"
+
+          echo "Downloading Godot from:"
+          echo "$DOWNLOAD_URL"
+
+          curl \
+            --fail \
+            --location \
+            --retry 3 \
+            --connect-timeout 20 \
+            --max-time 180 \
+            "$DOWNLOAD_URL" \
+            --output /tmp/godot.zip
+
+          unzip -q /tmp/godot.zip -d "$GODOT_DIR"
+
+          echo "Extracted files:"
+          ls -la "$GODOT_DIR"
+
+          GODOT_BINARY="$(
+            find "$GODOT_DIR" \
+              -maxdepth 1 \
+              -type f \
+              -name "Godot_v*_linux.x86_64" \
+              | head -n 1
+          )"
+
+          if [ -z "$GODOT_BINARY" ]; then
+            echo "::error::Godot binary was not found after extraction"
+            exit 1
+          fi
+
+          mv "$GODOT_BINARY" "$GODOT_DIR/godot"
+          chmod +x "$GODOT_DIR/godot"
+
+      - name: Verify Godot version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          "$GODOT_DIR/godot" --version
+
+      - name: Install Godot Android export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$GODOT_TEMPLATES_DIR"
+
+          TEMPLATES_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz"
+
+          echo "Downloading Godot export templates:"
+          echo "$TEMPLATES_URL"
+
+          curl \
+            --fail \
+            --location \
+            --retry 3 \
+            --connect-timeout 20 \
+            --max-time 180 \
+            "$TEMPLATES_URL" \
+            --output /tmp/godot-export-templates.tpz
+
+          rm -rf /tmp/godot-export-templates
+          mkdir -p /tmp/godot-export-templates
+
+          unzip -q \
+            /tmp/godot-export-templates.tpz \
+            -d /tmp/godot-export-templates
+
+          if [ -d "/tmp/godot-export-templates/templates" ]; then
+            cp -R \
+              /tmp/godot-export-templates/templates/. \
+              "$GODOT_TEMPLATES_DIR/"
+          else
+            cp -R \
+              /tmp/godot-export-templates/. \
+              "$GODOT_TEMPLATES_DIR/"
+          fi
+
+          echo "Installed export templates:"
+          find "$GODOT_TEMPLATES_DIR" -maxdepth 1 -type f -print
+
+          if [ ! -f "$GODOT_TEMPLATES_DIR/android_debug.apk" ]; then
+            echo "::error::Android debug export template was not found"
+            exit 1
+          fi
+
+      - name: Validate Android toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          java -version
+          adb version
+          sdkmanager --list_installed
+
+          test -d "$ANDROID_HOME"
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
+
+      - name: Validate required files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_files=(
+            "project.godot"
+            "export_presets.cfg"
+            "scenes/main/Main.tscn"
+            "resources/levels/Level1.tres"
+            "resources/levels/LevelData.gd"
+            "scripts/main.gd"
+            "scripts/player/Player.gd"
+            "scripts/player/SoldierFormation.gd"
+            "scripts/enemy/Enemy.gd"
+            "scripts/enemy/EnemyManager.gd"
+            "scripts/systems/Projectile.gd"
+            "tests/test_game_logic.gd"
+            "assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf"
+            "assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf"
+            "assets/toon_shooter_game_kit/Weapons/SMG.gltf"
+            "assets/toon_shooter_game_kit/Weapons/Pistol.gltf"
+          )
+
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error file=$file::Required file not found"
+              exit 1
+            fi
+
+            echo "Found: $file"
+          done
+
+      - name: Validate export preset
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          grep -Fq 'name="Android ARM64 Debug"' export_presets.cfg
+          grep -Fq 'platform="Android"' export_presets.cfg
+          grep -Fq 'architectures/arm64-v8a=true' export_presets.cfg
+          grep -Fq 'architectures/armeabi-v7a=false' export_presets.cfg
+
+          echo "Android ARM64 export preset found."
+
+      - name: Validate project and run logic tests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          timeout \
+            --signal=TERM \
+            --kill-after=5s \
+            120s \
+            "$GODOT_DIR/godot" \
+              --headless \
+              --path . \
+              --editor \
+              --quit \
+              --verbose
+
+          timeout \
+            --signal=TERM \
+            --kill-after=5s \
+            60s \
+            "$GODOT_DIR/godot" \
+              --headless \
+              --path . \
+              --script res://tests/test_game_logic.gd
+
+      - name: Run Main Scene smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          timeout \
+            --signal=TERM \
+            --kill-after=5s \
+            60s \
+            "$GODOT_DIR/godot" \
+              --headless \
+              --path . \
+              --quit-after 5
+
+      - name: Export Android ARM64 debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p build/android
+
+          "$GODOT_DIR/godot" \
+            --headless \
+            --path . \
+            --export-debug \
+            "Android ARM64 Debug" \
+            build/android/Level1-Visual-Test.apk
+
+          if [ ! -f "build/android/Level1-Visual-Test.apk" ]; then
+            echo "::error::APK file was not generated"
+            exit 1
+          fi
+
+          if [ ! -s "build/android/Level1-Visual-Test.apk" ]; then
+            echo "::error::APK file is empty"
+            exit 1
+          fi
+
+          echo "APK generated successfully."
+          ls -lh build/android/Level1-Visual-Test.apk
+          file build/android/Level1-Visual-Test.apk
+
+      - name: Validate APK contents
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          unzip -l build/android/Level1-Visual-Test.apk \
+            | grep -q "lib/arm64-v8a" \
+            || {
+              echo "::error::ARM64 library was not found in APK"
+              exit 1
+            }
+
+          unzip -l build/android/Level1-Visual-Test.apk \
+            | grep -q "project.godot" \
+            || {
+              echo "::error::project.godot was not found in APK"
+              exit 1
+            }
+
+          echo "APK contains ARM64 and project files."
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: level1-android-apk
+          path: build/android/Level1-Visual-Test.apk
+          if-no-files-found: error
+          retention-days: 14
