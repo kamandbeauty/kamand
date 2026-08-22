@@ -6,11 +6,13 @@ signal released(projectile: PooledProjectile)
 @export var lifetime := 3.0
 var active := false
 var remaining := 0.0
-func fire(pos: Vector3) -> void:
- global_position = pos; remaining = lifetime; active = true; visible = true; monitoring = true
+var direction := Vector3(0, 0, -1)
+func fire(pos: Vector3, target: Vector3 = Vector3.ZERO) -> void:
+ global_position = pos
+ direction = (target - pos).normalized() if target != Vector3.ZERO else Vector3(0, 0, -1); remaining = lifetime; active = true; visible = true; monitoring = true
 func _physics_process(delta: float) -> void:
  if not active: return
- global_position += Vector3(0, 0, -1) * speed * delta; remaining -= delta
+ global_position += direction * speed * delta; remaining -= delta
  if remaining <= 0.0: release()
 func hit(area: Area3D) -> void:
  if active and area is PrototypeEnemy: area.take_damage(damage); release()
