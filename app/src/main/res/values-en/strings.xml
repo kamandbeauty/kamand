@@ -276,7 +276,7 @@
     <string name="diary_count">%1$s memories</string>
     <string name="no_memories_yet">No memories yet</string>
     <string name="no_memories_hint">Start today — a few lines is enough.</string>
-    <string name="today_page_title">Today's diary</string>
+    <string name="today_page_title">Today\'s diary</string>
     <string name="today_page_empty_title">How was your day?</string>
     <string name="today_page_empty_hint">Tap to write…</string>
     <string name="new_diary">New entry</string>
@@ -307,7 +307,7 @@
     <string name="mood_breakdown">My moods</string>
     <string name="mood_breakdown_empty">No mood recorded on any entry yet.</string>
     <string name="blank_day_title">This day is empty</string>
-    <string name="blank_day_hint">Tap to write this day's entry</string>
+    <string name="blank_day_hint">Tap to write this day\'s entry</string>
     <string name="future_day_title">Not yet</string>
     <string name="future_day_hint">Memories can only be written for today and the past</string>
     <string name="filter_favorites">Favorites</string>
