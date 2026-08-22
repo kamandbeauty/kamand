@@ -3,10 +3,24 @@ extends Node3D
 @export var road_width := 12.0
 @export var road_length := 120.0
 
+var animation_controller := preload("res://scripts/character_animation_controller.gd")
+
 func _ready() -> void:
  _make_road_edges()
  _make_gate_arches()
  _make_finish()
+
+func _process(_delta: float) -> void:
+ # Dynamic pooled character visuals are discovered without changing gameplay scripts.
+ for node in get_tree().current_scene.get_children():
+  _attach_animation(node)
+
+func _attach_animation(node: Node) -> void:
+ if node.name == "Visual" and node.get_script() == null:
+  node.set_script(animation_controller)
+  node.call_deferred("_ready")
+ for child in node.get_children():
+  _attach_animation(child)
 
 func _box(parent: Node, size: Vector3, position: Vector3, color: Color) -> void:
  var mesh := MeshInstance3D.new()
