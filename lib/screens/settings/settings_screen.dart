@@ -142,6 +142,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ];
     final selected = await showModalBottomSheet<int>(
       context: context,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -198,6 +199,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!mounted) return;
     final action = await showModalBottomSheet<String>(
       context: context,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -343,6 +345,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -353,7 +356,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             left: 20,
             right: 20,
             top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).viewPadding.bottom + 20,
           ),
           child: StatefulBuilder(
             builder: (ctx, setModal) {
@@ -516,6 +519,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -526,7 +530,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             left: 20,
             right: 20,
             top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).viewPadding.bottom + 20,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -638,6 +642,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -648,7 +653,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             left: 20,
             right: 20,
             top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).viewPadding.bottom + 20,
           ),
           child: StatefulBuilder(
             builder: (ctx, setModal) {

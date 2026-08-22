@@ -18,6 +18,7 @@ class CustomerListScreen extends ConsumerWidget {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -27,7 +28,7 @@ class CustomerListScreen extends ConsumerWidget {
           20,
           18,
           20,
-          MediaQuery.of(ctx).viewInsets.bottom + 20,
+          MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).viewPadding.bottom + 20,
         ),
         child: SingleChildScrollView(
           child: Column(
