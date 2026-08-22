@@ -197,19 +197,22 @@ jobs:
 
       - name: Summary
         if: always()
+        shell: bash {0}
         run: |
           {
             echo "### DIARY build"
             echo ""
-            if ls app/build/outputs/apk/release/*.apk >/dev/null 2>&1; then
-              apk=$(ls app/build/outputs/apk/release/*.apk | head -1)
+            apk_files=(app/build/outputs/apk/release/*.apk)
+            aab_files=(app/build/outputs/bundle/release/*.aab)
+            if [ -e "${apk_files[0]}" ]; then
+              apk="${apk_files[0]}"
               size=$(du -h "$apk" | cut -f1)
               echo "- Release APK: built ($size)"
             else
               echo "- Release APK: not produced"
             fi
-            if ls app/build/outputs/bundle/release/*.aab >/dev/null 2>&1; then
-              aab=$(ls app/build/outputs/bundle/release/*.aab | head -1)
+            if [ -e "${aab_files[0]}" ]; then
+              aab="${aab_files[0]}"
               size=$(du -h "$aab" | cut -f1)
               echo "- Release AAB: built ($size)"
             else
@@ -224,3 +227,4 @@ jobs:
             echo ""
             echo "Download artifacts from the **Artifacts** section at the bottom of this page."
           } >> "$GITHUB_SUMMARY"
+          exit 0
