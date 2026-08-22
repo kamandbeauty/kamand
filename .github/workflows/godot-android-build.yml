@@ -215,6 +215,7 @@ jobs:
 
           grep -Fq 'name="Android ARM64 Debug"' export_presets.cfg
           grep -Fq 'platform="Android"' export_presets.cfg
+          grep -Fq 'export_filter="all_resources"' export_presets.cfg
           grep -Fq 'architectures/arm64-v8a=true' export_presets.cfg
           grep -Fq 'architectures/armeabi-v7a=false' export_presets.cfg
           grep -Fq 'gradle_build/use_gradle_build=false' export_presets.cfg
@@ -264,6 +265,8 @@ jobs:
 
           cp assets/toon_shooter_game_kit/Environment/Container_Long.gltf \
             "$CI_PROJECT/assets/toon_shooter_game_kit/Environment/"
+
+          cp export_presets.cfg "$CI_PROJECT/export_presets.cfg"
 
           echo "Lightweight project created at $CI_PROJECT"
 
