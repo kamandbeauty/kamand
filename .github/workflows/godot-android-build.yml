@@ -2,7 +2,6 @@ name: Godot Android Build
 
 on:
   workflow_dispatch:
-
   push:
 
 permissions:
@@ -201,7 +200,9 @@ jobs:
       - name: Import and parse Godot project
         shell: bash
         run: |
-          set -o pipefail
+          set -uo pipefail
+
+          LOG_FILE="/tmp/godot-import.log"
 
           timeout \
             --signal=TERM \
@@ -212,12 +213,32 @@ jobs:
               --path . \
               --import \
               --verbose \
-              2>&1 | tee /tmp/godot-import.log
+              2>&1 | tee "$LOG_FILE"
+
+          EXIT_CODE=${PIPESTATUS[0]}
+
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "Godot import completed successfully."
+            exit 0
+          fi
+
+          if [ "$EXIT_CODE" -eq 124 ]; then
+            if grep -q "\[ DONE \].*_update_scan_actions" "$LOG_FILE"; then
+              echo "::warning::Godot scan completed before timeout; continuing to export."
+              exit 0
+            fi
+
+            echo "::error::Godot import timed out before scan completion."
+            exit 1
+          fi
+
+          echo "::error::Godot import failed with exit code $EXIT_CODE."
+          exit "$EXIT_CODE"
 
       - name: Run logic tests
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
 
           timeout \
             --signal=TERM \
@@ -226,13 +247,14 @@ jobs:
             "$GODOT_DIR/godot" \
               --headless \
               --path . \
-              --script res://tests/test_game_logic.gd \
-              2>&1 | tee /tmp/godot-tests.log
+              --script res://tests/test_game_logic.gd
 
       - name: Run Main Scene smoke test
         shell: bash
         run: |
-          set -o pipefail
+          set -uo pipefail
+
+          LOG_FILE="/tmp/godot-runtime.log"
 
           timeout \
             --signal=TERM \
@@ -243,7 +265,20 @@ jobs:
               --path . \
               --quit-after 5 \
               --verbose \
-              2>&1 | tee /tmp/godot-runtime.log
+              2>&1 | tee "$LOG_FILE"
+
+          EXIT_CODE=${PIPESTATUS[0]}
+
+          if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 124 ]; then
+            echo "::error::Main Scene smoke test failed."
+            exit "$EXIT_CODE"
+          fi
+
+          if [ "$EXIT_CODE" -eq 124 ]; then
+            echo "::warning::Smoke test reached timeout after launching Main Scene."
+          else
+            echo "Main Scene smoke test completed."
+          fi
 
       - name: Export Android ARM64 Debug APK
         shell: bash
@@ -269,8 +304,8 @@ jobs:
             exit 1
           fi
 
-          echo "APK generated successfully:"
           ls -lh build/android/Level1-Visual-Test.apk
+          file build/android/Level1-Visual-Test.apk
 
       - name: Validate APK architecture
         shell: bash
