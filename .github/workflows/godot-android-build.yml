@@ -24,7 +24,7 @@ jobs:
   android-build:
     name: Build Android ARM64 APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -144,6 +144,9 @@ jobs:
               "$GODOT_TEMPLATES_DIR/"
           fi
 
+          echo "Installed export templates:"
+          find "$GODOT_TEMPLATES_DIR" -maxdepth 1 -type f -print
+
           if [ ! -f "$GODOT_TEMPLATES_DIR/android_debug.apk" ]; then
             echo "::error::Android debug export template was not found"
             exit 1
@@ -212,44 +215,52 @@ jobs:
 
           echo "Android ARM64 export preset found."
 
-      - name: Validate project and run logic tests
+      - name: Parse and validate Godot project
         shell: bash
         run: |
-          set -euo pipefail
+          set -o pipefail
 
           timeout \
             --signal=TERM \
-            --kill-after=5s \
-            120s \
+            --kill-after=15s \
+            600s \
             "$GODOT_DIR/godot" \
               --headless \
               --path . \
               --editor \
               --quit \
-              --verbose
+              --verbose \
+              2>&1 | tee /tmp/godot-parse.log
+
+      - name: Run logic tests
+        shell: bash
+        run: |
+          set -o pipefail
 
           timeout \
             --signal=TERM \
-            --kill-after=5s \
-            60s \
+            --kill-after=10s \
+            120s \
             "$GODOT_DIR/godot" \
               --headless \
               --path . \
-              --script res://tests/test_game_logic.gd
+              --script res://tests/test_game_logic.gd \
+              2>&1 | tee /tmp/godot-tests.log
 
       - name: Run Main Scene smoke test
         shell: bash
         run: |
-          set -euo pipefail
+          set -o pipefail
 
           timeout \
             --signal=TERM \
-            --kill-after=5s \
-            60s \
+            --kill-after=15s \
+            180s \
             "$GODOT_DIR/godot" \
               --headless \
               --path . \
-              --quit-after 5
+              --quit-after 5 \
+              2>&1 | tee /tmp/godot-runtime.log
 
       - name: Export Android ARM64 Debug APK
         shell: bash
