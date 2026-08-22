@@ -31,6 +31,14 @@ func _fire(origin: Node3D, target: Vector3) -> void:
  projectile.fire(origin.global_position, target); host.active_projectiles += 1
  projectile.released.connect(host._return_projectile.bind(projectile), CONNECT_ONE_SHOT)
  _flash(origin)
+ _recoil(origin)
+func _recoil(origin: Node3D) -> void:
+ var weapon := origin.get_parent()
+ if not weapon: return
+ var start := weapon.position
+ var tween := create_tween()
+ tween.tween_property(weapon, "position", start + Vector3(0, 0, 0.06), 0.04)
+ tween.tween_property(weapon, "position", start, 0.06)
 func _flash(origin: Node3D) -> void:
  var flash := origin.get_node_or_null("MuzzleFlash") as MeshInstance3D
  if not flash:

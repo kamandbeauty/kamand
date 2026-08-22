@@ -50,7 +50,9 @@ func shoot() -> void:
 func _new_projectile() -> PooledProjectile:
  var p := PooledProjectile.new(); p.collision_layer = 4; p.collision_mask = 2
  var mesh := MeshInstance3D.new(); var sphere := SphereMesh.new(); sphere.radius = .12; sphere.height = .24; mesh.mesh = sphere
- var material := StandardMaterial3D.new(); material.albedo_color = Color(1.0, 0.85, 0.2); material.emission_enabled = true; material.emission = Color(1.0, 0.45, 0.05); material.emission_energy_multiplier = 3.0; mesh.material_override = material; p.add_child(mesh); var shape := CollisionShape3D.new(); var s := SphereShape3D.new(); s.radius = .12; shape.shape = s; p.add_child(shape); p.area_entered.connect(p.hit); add_child(p); return p
+ var material := StandardMaterial3D.new(); material.albedo_color = Color(1.0, 0.85, 0.2); material.emission_enabled = true; material.emission = Color(1.0, 0.45, 0.05); material.emission_energy_multiplier = 3.0; mesh.material_override = material; p.add_child(mesh)
+ var trail := MeshInstance3D.new(); trail.name = "Trail"; var trail_mesh := BoxMesh.new(); trail_mesh.size = Vector3(0.04, 0.04, 0.35); trail.mesh = trail_mesh; trail.material_override = material; trail.position.z = 0.18; p.add_child(trail)
+ var shape := CollisionShape3D.new(); var s := SphereShape3D.new(); s.radius = .12; shape.shape = s; p.add_child(shape); p.area_entered.connect(p.hit); add_child(p); return p
 func _return_projectile(p: PooledProjectile) -> void:
  if not projectile_pool.has(p): projectile_pool.append(p); active_projectiles = maxi(0, active_projectiles - 1)
 func _on_soldiers_changed(value: int) -> void:

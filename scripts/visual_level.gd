@@ -13,8 +13,15 @@ func _ready() -> void:
  _make_finish()
 
 func _process(delta: float) -> void:
+ var player := get_tree().current_scene.get_node_or_null("Player")
  for i in gate_visuals.size():
-  gate_visuals[i].scale.y = 1.0 + sin(Time.get_ticks_msec() * 0.004 + i) * 0.025
+  var gate := gate_visuals[i]
+  gate.scale.y = 1.0 + sin(Time.get_ticks_msec() * 0.004 + i) * 0.025
+  if player:
+   var distance := absf(player.global_position.z - gate.global_position.z)
+   var approach := clampf(1.0 + (12.0 - distance) * 0.012, 1.0, 1.12)
+   gate.scale.x = approach
+   gate.scale.z = approach
  # Dynamic pooled character visuals are discovered without changing gameplay scripts.
  for node in get_tree().current_scene.get_children():
   _attach_animation(node)
