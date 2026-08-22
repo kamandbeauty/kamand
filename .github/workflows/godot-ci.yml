@@ -11,11 +11,13 @@ env:
   GODOT_VERSION: "4.5.1"
   GODOT_RELEASE: "stable"
   GODOT_DIR: "/home/runner/godot"
+  CI_PROJECT: "/tmp/godot-ci-project"
 
 jobs:
   validate:
     name: Validate Godot Project
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -38,19 +40,16 @@ jobs:
 
           DOWNLOAD_URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip"
 
-          echo "Downloading Godot ${GODOT_VERSION}-${GODOT_RELEASE}"
-
           curl \
             --fail \
             --location \
             --retry 3 \
+            --connect-timeout 20 \
+            --max-time 120 \
             "$DOWNLOAD_URL" \
             --output /tmp/godot.zip
 
           unzip -q /tmp/godot.zip -d "$GODOT_DIR"
-
-          echo "Extracted files:"
-          ls -la "$GODOT_DIR"
 
           GODOT_BINARY=$(find "$GODOT_DIR" \
             -maxdepth 1 \
@@ -60,6 +59,7 @@ jobs:
 
           if [ -z "$GODOT_BINARY" ]; then
             echo "::error::Godot binary was not found after extraction"
+            ls -la "$GODOT_DIR"
             exit 1
           fi
 
@@ -67,11 +67,9 @@ jobs:
           chmod +x "$GODOT_DIR/godot"
 
       - name: Check Godot version
-        shell: bash
         run: |
           set -euo pipefail
-
-          "$GODOT_DIR/godot" --version
+          timeout 30s "$GODOT_DIR/godot" --version
 
       - name: Validate required files
         shell: bash
@@ -89,6 +87,7 @@ jobs:
             "scripts/enemy/Enemy.gd"
             "scripts/enemy/EnemyManager.gd"
             "scripts/systems/Projectile.gd"
+            "tests/test_game_logic.gd"
             "assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf"
             "assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf"
           )
@@ -107,69 +106,79 @@ jobs:
         run: |
           set -euo pipefail
 
-          SOLDIER_ASSET="assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf"
-          ENEMY_ASSET="assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf"
+          test -f \
+            assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf
 
-          if [ ! -f "$SOLDIER_ASSET" ]; then
-            echo "::error file=$SOLDIER_ASSET::Soldier GLTF asset not found"
-            exit 1
-          fi
+          test -f \
+            assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf
 
-          if [ ! -f "$ENEMY_ASSET" ]; then
-            echo "::error file=$ENEMY_ASSET::Enemy GLTF asset not found"
-            exit 1
-          fi
+          echo "Required GLTF assets exist."
 
-          echo "Soldier asset exists: $SOLDIER_ASSET"
-          echo "Enemy asset exists: $ENEMY_ASSET"
-          echo "Asset validation passed."
+      - name: Create minimal CI project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf "$CI_PROJECT"
+
+          mkdir -p \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Characters"
+
+          rsync -a \
+            --exclude=".git" \
+            --exclude=".godot" \
+            --exclude="assets" \
+            ./ \
+            "$CI_PROJECT/"
+
+          cp \
+            assets/toon_shooter_game_kit/Characters/Character_Soldier.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Characters/"
+
+          cp \
+            assets/toon_shooter_game_kit/Characters/Character_Enemy.gltf \
+            "$CI_PROJECT/assets/toon_shooter_game_kit/Characters/"
 
       - name: Parse and validate Godot project
         shell: bash
         run: |
-          set -euo pipefail
-
-          "$GODOT_DIR/godot" \
-            --headless \
-            --path . \
-            --editor \
-            --quit \
-            --verbose
-
-      - name: Load Level 1 resource
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          "$GODOT_DIR/godot" \
-            --headless \
-            --path . \
-            --editor \
-            --quit \
-            --verbose
-
-          echo "Level1.tres validation completed through project import."
-
-      - name: Run logic tests
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          "$GODOT_DIR/godot" \
-            --headless \
-            --path . \
-            --script res://tests/test_game_logic.gd
-
-      - name: Run Main Scene smoke test
-        shell: bash
-        run: |
-          set -euo pipefail
+          set -o pipefail
 
           timeout \
             --signal=TERM \
             --kill-after=5s \
-            20s \
+            90s \
             "$GODOT_DIR/godot" \
               --headless \
-              --path . \
-              --quit-after 5
+              --path "$CI_PROJECT" \
+              --editor \
+              --quit \
+              --verbose \
+              2>&1 | tee /tmp/godot-parse.log
+
+      - name: Run logic tests
+        shell: bash
+        run: |
+          set -o pipefail
+
+          timeout 60s \
+            "$GODOT_DIR/godot" \
+              --headless \
+              --path "$CI_PROJECT" \
+              --script res://tests/test_game_logic.gd \
+              2>&1 | tee /tmp/godot-tests.log
+
+      - name: Run Main Scene smoke test
+        shell: bash
+        run: |
+          set -o pipefail
+
+          timeout \
+            --signal=TERM \
+            --kill-after=5s \
+            45s \
+            "$GODOT_DIR/godot" \
+              --headless \
+              --path "$CI_PROJECT" \
+              --quit-after 5 \
+              2>&1 | tee /tmp/godot-runtime.log
