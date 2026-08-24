@@ -57,10 +57,16 @@ data class OrderReturn(
     val totalLoss: Money get() = returnShippingCost + packagingCostLost
 }
 
-/** Every financial event in the app writes one of these — the source of truth for reports. */
+/**
+ * Every financial event in the app writes one of these — the source of truth
+ * for reports. Phase 3 uses the *_CREATED/*_CANCELLED rows as zero-amount
+ * event markers (spec §25) so Phase 4 can join order lifecycle to money
+ * without re-deriving history.
+ */
 enum class TransactionType {
     SALE, PAYMENT_RECEIVED, EXPENSE, SUPPLIER_PURCHASE, SUPPLIER_PAYMENT,
     COMMISSION, SHIPPING_EXPENSE, PACKAGING_EXPENSE, REFUND, INSTALLMENT_PAYMENT,
+    ORDER_CREATED, ORDER_CANCELLED, RETURN_CREATED,
 }
 
 data class FinancialTransaction(

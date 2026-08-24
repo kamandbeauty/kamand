@@ -35,6 +35,9 @@ class EnumConverters {
     @TypeConverter fun fromReturnReason(v: ReturnReason): String = v.name
     @TypeConverter fun toReturnReason(v: String): ReturnReason = ReturnReason.valueOf(v)
 
+    @TypeConverter fun fromReturnStatus(v: ReturnStatus): String = v.name
+    @TypeConverter fun toReturnStatus(v: String): ReturnStatus = ReturnStatus.valueOf(v)
+
     @TypeConverter fun fromTransactionType(v: TransactionType): String = v.name
     @TypeConverter fun toTransactionType(v: String): TransactionType = TransactionType.valueOf(v)
 

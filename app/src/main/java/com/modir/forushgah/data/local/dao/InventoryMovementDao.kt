@@ -14,6 +14,12 @@ interface InventoryMovementDao {
     @Query("SELECT * FROM inventory_movements WHERE productId = :productId ORDER BY createdAt DESC")
     fun observeForProduct(productId: Long): Flow<List<InventoryMovementEntity>>
 
+    /** Idempotency guard (spec §19/§20): count movements already written for a
+     * given reference (e.g. SALE movements pointing at an order) so the same
+     * order can never deduct inventory twice. */
+    @Query("SELECT COUNT(*) FROM inventory_movements WHERE referenceType = :referenceType AND referenceId = :referenceId AND movementType = :movementType")
+    suspend fun countByReference(referenceType: String, referenceId: Long, movementType: String): Int
+
     @Query("SELECT stockQuantity FROM products WHERE id = :productId")
     suspend fun getCurrentStock(productId: Long): Int?
 

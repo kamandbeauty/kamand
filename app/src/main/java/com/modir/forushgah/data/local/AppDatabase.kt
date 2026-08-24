@@ -28,14 +28,18 @@ import com.modir.forushgah.data.local.entity.*
         PayableEntity::class,
         SupplierPaymentEntity::class,
         OrderReturnEntity::class,
+        OrderReturnItemEntity::class,
+        RefundEntity::class,
+        PaymentMethodEntity::class,
         FinancialTransactionEntity::class,
         SettlementPlanEntity::class,
         InstallmentEntity::class,
         StoreProfileEntity::class,
     ],
-    version = 2, // Phase 2: added Customer/Supplier isActive+updatedAt, Category isActive,
-    // InventoryMovement reference/before-after fields. fallbackToDestructiveMigration is
-    // still in effect pre-release (see DatabaseModule), so no Migration object needed yet.
+    version = 3, // Phase 3: orders createdAt/updatedAt, payment reference+method link,
+    // return status + per-item returns, refunds, payment methods.
+    // fallbackToDestructiveMigration is still in effect pre-release (see
+    // DatabaseModule), so no Migration object needed yet.
     exportSchema = true,
 )
 @TypeConverters(MoneyConverters::class, EnumConverters::class)
@@ -56,6 +60,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun payableDao(): PayableDao
     abstract fun supplierPaymentDao(): SupplierPaymentDao
     abstract fun orderReturnDao(): OrderReturnDao
+    abstract fun refundDao(): RefundDao
+    abstract fun paymentMethodDao(): PaymentMethodDao
     abstract fun financialTransactionDao(): FinancialTransactionDao
     abstract fun settlementPlanDao(): SettlementPlanDao
     abstract fun storeProfileDao(): StoreProfileDao

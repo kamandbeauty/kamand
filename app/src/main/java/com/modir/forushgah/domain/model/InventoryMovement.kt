@@ -6,7 +6,8 @@ enum class InventoryMovementType {
 
 /** What kind of record a movement's [InventoryMovement.referenceId] points to, if any. */
 enum class InventoryReferenceType {
-    ORDER, STOCK_ADJUSTMENT, MANUAL, NONE
+    ORDER, STOCK_ADJUSTMENT, MANUAL, NONE,
+    ORDER_RETURN, // referenceId = the OrderReturn id (restock on return/cancel)
 }
 
 /**

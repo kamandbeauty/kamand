@@ -64,17 +64,50 @@ data class SupplierPaymentEntity(
 @Entity(
     tableName = "order_returns",
     foreignKeys = [ForeignKey(entity = OrderEntity::class, parentColumns = ["id"], childColumns = ["orderId"], onDelete = ForeignKey.CASCADE)],
-    indices = [Index("orderId")],
+    indices = [Index("orderId"), Index("status")],
 )
 data class OrderReturnEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val orderId: Long,
     val reason: ReturnReason,
+    val status: ReturnStatus = ReturnStatus.RECEIVED,
     val returnShippingCost: Money = Money.ZERO,
     val packagingCostLost: Money = Money.ZERO,
     val revenueReversed: Money = Money.ZERO,
     val restockedToInventory: Boolean = true,
     val date: Long,
+    val createdAt: Long = 0,
+)
+
+@Entity(
+    tableName = "order_return_items",
+    foreignKeys = [
+        ForeignKey(entity = OrderReturnEntity::class, parentColumns = ["id"], childColumns = ["returnId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = ProductEntity::class, parentColumns = ["id"], childColumns = ["productId"], onDelete = ForeignKey.RESTRICT),
+    ],
+    indices = [Index("returnId"), Index("productId")],
+)
+data class OrderReturnItemEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val returnId: Long,
+    val productId: Long,
+    val quantity: Int,
+)
+
+/** A refund record (spec §24) — original payments are never deleted. */
+@Entity(
+    tableName = "refunds",
+    foreignKeys = [ForeignKey(entity = OrderEntity::class, parentColumns = ["id"], childColumns = ["orderId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("orderId")],
+)
+data class RefundEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val orderId: Long,
+    val amount: Money,
+    val date: Long,
+    val method: String,
+    val reason: String?,
+    val note: String? = null,
 )
 
 @Entity(

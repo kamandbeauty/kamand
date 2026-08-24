@@ -28,11 +28,13 @@ data class OrderEntity(
     val salesChannelId: Long? = null,
     val status: OrderStatus = OrderStatus.NEW,
     val shippingProviderId: Long? = null,
-    val shippingPaymentType: ShippingPaymentType = ShippingPaymentType.SELLER_PAYS,
+    val shippingPaymentType: ShippingPaymentType = ShippingPaymentType.SELLER_PAID,
     val actualShippingCost: Money = Money.ZERO,
     val packagingCost: Money = Money.ZERO,
     val commission: Money = Money.ZERO,
     val notes: String? = null,
+    val createdAt: Long = 0,
+    val updatedAt: Long = 0,
 )
 
 @Entity(

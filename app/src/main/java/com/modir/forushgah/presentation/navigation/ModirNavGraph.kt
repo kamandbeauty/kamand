@@ -23,6 +23,10 @@ import com.modir.forushgah.presentation.customers.CustomerFormRoute
 import com.modir.forushgah.presentation.customers.CustomerListRoute
 import com.modir.forushgah.presentation.dashboard.DashboardRoute
 import com.modir.forushgah.presentation.more.MoreRoute
+import com.modir.forushgah.presentation.orders.OrderDetailRoute
+import com.modir.forushgah.presentation.orders.OrderFormRoute
+import com.modir.forushgah.presentation.orders.OrderListRoute
+import com.modir.forushgah.presentation.returns.ReturnsListRoute
 import com.modir.forushgah.presentation.products.ProductDetailRoute
 import com.modir.forushgah.presentation.products.ProductFormRoute
 import com.modir.forushgah.presentation.products.ProductListRoute
@@ -44,6 +48,9 @@ object Routes {
     const val SUPPLIER_FORM = "supplier_form/{supplierId?}"
     const val STOCK_ADJUSTMENT = "stock_adjustment"
     const val SETTINGS = "settings"
+    const val ORDER_FORM = "order_form"
+    const val ORDER = "order/{orderId}"
+    const val RETURNS = "returns"
 }
 
 @Composable
@@ -62,7 +69,30 @@ fun ModirNavGraph() {
                 DashboardRoute(onStartFirstOrder = { navController.navigate(BottomNavItem.Orders.route) })
             }
             composable(BottomNavItem.Orders.route) {
-                PhaseUpcomingScreen(title = "سفارش‌ها", note = "ثبت و مدیریت سفارش‌ها در فاز بعدی تکمیل می‌شود")
+                OrderListRoute(
+                    onOrderClick = { id -> navController.navigate("order/$id") },
+                    onAddOrder = { navController.navigate(Routes.ORDER_FORM) },
+                    onReturnsClick = { navController.navigate(Routes.RETURNS) },
+                )
+            }
+            composable(Routes.ORDER_FORM) {
+                OrderFormRoute(
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = Routes.ORDER,
+                arguments = listOf(navArgument("orderId") { type = NavType.LongType }),
+            ) { entry ->
+                val orderId = entry.arguments?.getLong("orderId") ?: return@composable
+                OrderDetailRoute(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.RETURNS) {
+                ReturnsListRoute(
+                    onBack = { navController.popBackStack() },
+                    onOrderClick = { id -> navController.navigate("order/$id") },
+                )
             }
             composable(BottomNavItem.Products.route) {
                 ProductListRoute(
@@ -197,6 +227,7 @@ private fun routeBelongsToTab(route: String, tab: BottomNavItem): Boolean = when
     BottomNavItem.Orders -> route == tab.route
     // "product" prefix matches "products", "product/123" and "product_form…".
     BottomNavItem.Products -> route.startsWith("product") || route == Routes.CATEGORIES
+    BottomNavItem.Orders -> route == tab.route || route.startsWith("order") || route == Routes.RETURNS
     BottomNavItem.Finance -> route == tab.route
     BottomNavItem.More -> route == tab.route ||
         route.startsWith("customer") ||

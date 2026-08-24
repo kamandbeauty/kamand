@@ -54,9 +54,53 @@ interface OrderReturnDao {
     @Insert
     suspend fun insert(orderReturn: OrderReturnEntity): Long
 
+    @Update
+    suspend fun update(orderReturn: OrderReturnEntity)
+
     @Query("SELECT * FROM order_returns ORDER BY date DESC")
     fun observeAll(): Flow<List<OrderReturnEntity>>
+
+    @Query("SELECT * FROM order_returns WHERE id = :id")
+    fun observeById(id: Long): Flow<OrderReturnEntity?>
+
+    @Query("SELECT * FROM order_return_items WHERE returnId = :returnId")
+    suspend fun getItems(returnId: Long): List<OrderReturnItemEntity>
+
+    @Insert
+    suspend fun insertItems(items: List<OrderReturnItemEntity>)
+
+    @Query("SELECT * FROM order_returns WHERE orderId = :orderId ORDER BY date DESC")
+    fun observeForOrder(orderId: Long): Flow<List<OrderReturnEntity>>
+
+    /** Units of [productId] already returned for this order (excluding
+     * rejected returns) — used to cap partial returns (spec §21). */
+    @Query(
+        """
+        SELECT COALESCE(SUM(ri.quantity), 0)
+        FROM order_return_items ri
+        JOIN order_returns r ON r.id = ri.returnId
+        WHERE r.orderId = :orderId AND ri.productId = :productId AND r.status != 'REJECTED'
+        """,
+    )
+    suspend fun sumReturnedQuantity(orderId: Long, productId: Long): Int
+
+    @Query(
+        """
+        SELECT r.*, o.orderNumber AS orderNumber, c.name AS customerName
+        FROM order_returns r
+        JOIN orders o ON o.id = r.orderId
+        LEFT JOIN customers c ON c.id = o.customerId
+        ORDER BY r.date DESC
+        """,
+    )
+    fun observeAllWithOrder(): Flow<List<ReturnWithOrder>>
 }
+
+data class ReturnWithOrder(
+    @Embedded val returnRow: OrderReturnEntity,
+    val orderNumber: String,
+    val customerName: String?,
+)
 
 @Dao
 interface FinancialTransactionDao {

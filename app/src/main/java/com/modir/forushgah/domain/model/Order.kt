@@ -7,9 +7,9 @@ enum class OrderStatus {
 }
 
 enum class ShippingPaymentType {
-    SELLER_PAYS,
-    CUSTOMER_PAYS_IN_ADVANCE,
-    CASH_ON_DELIVERY, // پس‌کرایه
+    SELLER_PAID, // پرداخت توسط فروشنده
+    CUSTOMER_PREPAID, // پرداخت توسط مشتری (پیش‌پرداختی)
+    COD, // پس‌کرایه
 }
 
 data class OrderItem(
@@ -37,11 +37,13 @@ data class Order(
     val salesChannelId: Long? = null,
     val status: OrderStatus = OrderStatus.NEW,
     val shippingProviderId: Long? = null,
-    val shippingPaymentType: ShippingPaymentType = ShippingPaymentType.SELLER_PAYS,
+    val shippingPaymentType: ShippingPaymentType = ShippingPaymentType.SELLER_PAID,
     val actualShippingCost: Money = Money.ZERO,
     val packagingCost: Money = Money.ZERO,
     val commission: Money = Money.ZERO,
     val notes: String? = null,
+    val createdAt: Long,
+    val updatedAt: Long,
 ) {
     val productSubtotal: Money get() = Money.sum(items.map { it.lineSubtotal }) - discount
 
@@ -49,17 +51,17 @@ data class Order(
      * customer pays to the courier directly, not to the seller). */
     val totalCustomerPayment: Money
         get() = productSubtotal + when (shippingPaymentType) {
-            ShippingPaymentType.CUSTOMER_PAYS_IN_ADVANCE -> shippingChargedToCustomer
-            ShippingPaymentType.SELLER_PAYS, ShippingPaymentType.CASH_ON_DELIVERY -> Money.ZERO
+            ShippingPaymentType.CUSTOMER_PREPAID -> shippingChargedToCustomer
+            ShippingPaymentType.SELLER_PAID, ShippingPaymentType.COD -> Money.ZERO
         }
 
     val shippingRevenue: Money
-        get() = if (shippingPaymentType == ShippingPaymentType.CUSTOMER_PAYS_IN_ADVANCE) shippingChargedToCustomer else Money.ZERO
+        get() = if (shippingPaymentType == ShippingPaymentType.CUSTOMER_PREPAID) shippingChargedToCustomer else Money.ZERO
 
     val shippingExpenseForSeller: Money
         get() = when (shippingPaymentType) {
-            ShippingPaymentType.CASH_ON_DELIVERY -> Money.ZERO
-            ShippingPaymentType.SELLER_PAYS, ShippingPaymentType.CUSTOMER_PAYS_IN_ADVANCE -> actualShippingCost
+            ShippingPaymentType.COD -> Money.ZERO
+            ShippingPaymentType.SELLER_PAID, ShippingPaymentType.CUSTOMER_PREPAID -> actualShippingCost
         }
 
     val shippingMargin: Money get() = shippingRevenue - shippingExpenseForSeller
