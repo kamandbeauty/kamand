@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.modir.forushgah.core.common.Money
+import com.modir.forushgah.domain.model.OrderKind
 import com.modir.forushgah.domain.model.OrderStatus
 import com.modir.forushgah.domain.model.ShippingPaymentType
 
@@ -12,15 +13,20 @@ import com.modir.forushgah.domain.model.ShippingPaymentType
     tableName = "orders",
     foreignKeys = [
         ForeignKey(entity = CustomerEntity::class, parentColumns = ["id"], childColumns = ["customerId"], onDelete = ForeignKey.SET_NULL),
+        ForeignKey(entity = SupplierEntity::class, parentColumns = ["id"], childColumns = ["supplierId"], onDelete = ForeignKey.SET_NULL),
         ForeignKey(entity = SalesChannelEntity::class, parentColumns = ["id"], childColumns = ["salesChannelId"], onDelete = ForeignKey.SET_NULL),
         ForeignKey(entity = ShippingProviderEntity::class, parentColumns = ["id"], childColumns = ["shippingProviderId"], onDelete = ForeignKey.SET_NULL),
     ],
-    indices = [Index("customerId"), Index("orderNumber", unique = true), Index("status"), Index("orderDate")],
+    indices = [Index("customerId"), Index("supplierId"), Index("orderNumber", unique = true), Index("status"), Index("orderDate")],
 )
 data class OrderEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val orderNumber: String,
     val customerId: Long?,
+    /** Phase 3.1: supplier link for purchase invoices. */
+    val supplierId: Long? = null,
+    /** Phase 3.1: invoice kind (SALES / PURCHASE), stored via OrderKind converter. */
+    val kind: OrderKind = OrderKind.SALES,
     val orderDate: Long,
     val discount: Money = Money.ZERO,
     val shippingChargedToCustomer: Money = Money.ZERO,
@@ -48,9 +54,13 @@ data class OrderEntity(
 data class OrderItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val orderId: Long,
-    val productId: Long,
+    /** Null for free/manual invoice lines (Rubi free items). */
+    val productId: Long? = null,
     val quantity: Int,
     val unitSellingPrice: Money,
     val unitPurchasePrice: Money,
     val discount: Money = Money.ZERO,
+    /** Display name snapshot (Rubi items are title-based). */
+    val title: String = "",
+    val unit: String = "عدد",
 )

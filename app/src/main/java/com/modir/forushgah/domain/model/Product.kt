@@ -6,6 +6,8 @@ data class Product(
     val id: Long = 0,
     val name: String,
     val sku: String,
+    /** Sales unit shown on invoices (Rubi: «واحد», default «عدد»). Phase 3.1. */
+    val unit: String = "عدد",
     val barcode: String? = null,
     val imageUri: String? = null,
     val categoryId: Long? = null,

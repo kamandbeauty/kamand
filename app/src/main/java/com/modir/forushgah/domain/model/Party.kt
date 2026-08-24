@@ -9,6 +9,9 @@ data class Customer(
     val address: String? = null,
     val city: String? = null,
     val notes: String? = null,
+    /** Outstanding credit-sale balance (Rubi: customer.balance / «بستانکی»).
+     * Grows when a sales invoice is saved as non-cash with a remaining amount. */
+    val balance: Money = Money.ZERO,
     val createdAt: Long,
     val updatedAt: Long,
 )

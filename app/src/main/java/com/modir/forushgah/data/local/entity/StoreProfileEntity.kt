@@ -14,4 +14,10 @@ data class StoreProfileEntity(
     val startingCashBalance: Money = Money.ZERO,
     val onboardingCompleted: Boolean = false,
     val createdAt: Long,
+    /** Phase 3.1 (Rubi business profile): printed in the invoice header/footer.
+     * Empty until a store-settings screen provides them (later phase). */
+    val phone: String = "",
+    val address: String = "",
+    val taxId: String = "",
+    val bankCardNumber: String = "",
 )

@@ -11,6 +11,9 @@ class EnumConverters {
     @TypeConverter fun fromOrderStatus(v: OrderStatus): String = v.name
     @TypeConverter fun toOrderStatus(v: String): OrderStatus = OrderStatus.valueOf(v)
 
+    @TypeConverter fun fromOrderKind(v: OrderKind): String = v.name
+    @TypeConverter fun toOrderKind(v: String): OrderKind = OrderKind.valueOf(v)
+
     @TypeConverter fun fromShippingPaymentType(v: ShippingPaymentType): String = v.name
     @TypeConverter fun toShippingPaymentType(v: String): ShippingPaymentType = ShippingPaymentType.valueOf(v)
 

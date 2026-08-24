@@ -22,10 +22,12 @@ import com.modir.forushgah.presentation.customers.CustomerDetailRoute
 import com.modir.forushgah.presentation.customers.CustomerFormRoute
 import com.modir.forushgah.presentation.customers.CustomerListRoute
 import com.modir.forushgah.presentation.dashboard.DashboardRoute
+import com.modir.forushgah.presentation.invoice.InvoiceCreateRoute
+import com.modir.forushgah.presentation.invoice.InvoiceListRoute
+import com.modir.forushgah.presentation.invoice.InvoicePreviewRoute
 import com.modir.forushgah.presentation.more.MoreRoute
 import com.modir.forushgah.presentation.orders.OrderDetailRoute
 import com.modir.forushgah.presentation.orders.OrderFormRoute
-import com.modir.forushgah.presentation.orders.OrderListRoute
 import com.modir.forushgah.presentation.returns.ReturnsListRoute
 import com.modir.forushgah.presentation.products.ProductDetailRoute
 import com.modir.forushgah.presentation.products.ProductFormRoute
@@ -51,6 +53,9 @@ object Routes {
     const val ORDER_FORM = "order_form"
     const val ORDER = "order/{orderId}"
     const val RETURNS = "returns"
+    // Phase 3.1 (Rubi invoice experience)
+    const val INVOICE_FORM = "invoice_form/{orderId?}"
+    const val INVOICE = "invoice/{orderId}"
 }
 
 @Composable
@@ -69,10 +74,35 @@ fun ModirNavGraph() {
                 DashboardRoute(onStartFirstOrder = { navController.navigate(BottomNavItem.Orders.route) })
             }
             composable(BottomNavItem.Orders.route) {
-                OrderListRoute(
-                    onOrderClick = { id -> navController.navigate("order/$id") },
-                    onAddOrder = { navController.navigate(Routes.ORDER_FORM) },
+                // Phase 3.1: the orders tab IS the Rubi invoice list (spec §12/§15).
+                InvoiceListRoute(
+                    onInvoiceClick = { id -> navController.navigate("invoice/$id") },
+                    onAddInvoice = { navController.navigate(Routes.INVOICE_FORM) },
                     onReturnsClick = { navController.navigate(Routes.RETURNS) },
+                )
+            }
+            composable(
+                route = Routes.INVOICE_FORM,
+                arguments = listOf(navArgument("orderId") { type = NavType.LongType; nullable = true }),
+            ) {
+                InvoiceCreateRoute(
+                    onSaved = { id ->
+                        // Rubi: pushReplacement to the preview after save.
+                        navController.navigate("invoice/$id") {
+                            popUpTo(navController.currentDestination?.id ?: 0L) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = Routes.INVOICE,
+                arguments = listOf(navArgument("orderId") { type = NavType.LongType }),
+            ) {
+                InvoicePreviewRoute(
+                    onBack = { navController.popBackStack() },
+                    onEdit = { id -> navController.navigate("invoice_form/$id") },
                 )
             }
             composable(Routes.ORDER_FORM) {
@@ -227,7 +257,10 @@ private fun routeBelongsToTab(route: String, tab: BottomNavItem): Boolean = when
     BottomNavItem.Orders -> route == tab.route
     // "product" prefix matches "products", "product/123" and "product_form…".
     BottomNavItem.Products -> route.startsWith("product") || route == Routes.CATEGORIES
-    BottomNavItem.Orders -> route == tab.route || route.startsWith("order") || route == Routes.RETURNS
+    BottomNavItem.Orders -> route == tab.route ||
+        route.startsWith("order") ||
+        route.startsWith("invoice") ||
+        route == Routes.RETURNS
     BottomNavItem.Finance -> route == tab.route
     BottomNavItem.More -> route == tab.route ||
         route.startsWith("customer") ||

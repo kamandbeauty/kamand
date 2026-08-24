@@ -36,10 +36,10 @@ import com.modir.forushgah.data.local.entity.*
         InstallmentEntity::class,
         StoreProfileEntity::class,
     ],
-    version = 3, // Phase 3: orders createdAt/updatedAt, payment reference+method link,
-    // return status + per-item returns, refunds, payment methods.
-    // fallbackToDestructiveMigration is still in effect pre-release (see
-    // DatabaseModule), so no Migration object needed yet.
+    version = 4, // Phase 3.1: order kind + supplier link, item title/unit +
+    // nullable product link, product unit, customer balance, store profile
+    // invoice fields. fallbackToDestructiveMigration is still in effect
+    // pre-release (see DatabaseModule), so no Migration object needed yet.
     exportSchema = true,
 )
 @TypeConverters(MoneyConverters::class, EnumConverters::class)

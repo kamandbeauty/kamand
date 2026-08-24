@@ -11,6 +11,7 @@ import com.modir.forushgah.domain.model.Supplier
 import com.modir.forushgah.domain.model.SupplierProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,6 +42,23 @@ class CustomerRepository @Inject constructor(
     suspend fun create(customer: Customer): Long = customerDao.insert(customer.toEntity())
 
     suspend fun update(customer: Customer) = customerDao.update(customer.toEntity())
+
+    /** Rubi behavior: match an existing customer by exact name, create one if
+     * not found — used when saving an invoice with a typed customer name. */
+    suspend fun getOrCreateByName(name: String, mobile: String? = null, now: Long = System.currentTimeMillis()): Customer {
+        val trimmed = name.trim()
+        customerDao.observeAll().firstOrNull { it.name == trimmed }?.let { return it.toDomain() }
+        val id = customerDao.insert(CustomerEntity(name = trimmed, mobile = mobile, createdAt = now, updatedAt = now))
+        return Customer(id = id, name = trimmed, mobile = mobile, createdAt = now, updatedAt = now)
+    }
+
+    /** Rubi `updateBalance`: grows the credit-sale balance (invoice saved as
+     * non-cash leaves a remaining amount). Clamped at zero like the reference. */
+    suspend fun updateBalance(customerId: Long, delta: Money, now: Long = System.currentTimeMillis()) {
+        val current = customerDao.getById(customerId) ?: return
+        val newBalance = (current.balance + delta).let { if (it.amountInToman < 0) Money.ZERO else it }
+        customerDao.update(current.copy(balance = newBalance, updatedAt = now))
+    }
 }
 
 @Singleton
@@ -59,6 +77,14 @@ class SupplierRepository @Inject constructor(
     suspend fun create(supplier: Supplier): Long = supplierDao.insert(supplier.toEntity())
 
     suspend fun update(supplier: Supplier) = supplierDao.update(supplier.toEntity())
+
+    /** Rubi behavior for purchase invoices: match by exact name, create if not found. */
+    suspend fun getOrCreateByName(name: String, phone: String? = null, now: Long = System.currentTimeMillis()): Supplier {
+        val trimmed = name.trim()
+        supplierDao.observeAll().firstOrNull { it.name == trimmed }?.let { return it.toDomain() }
+        val id = supplierDao.insert(SupplierEntity(name = trimmed, phone = phone, createdAt = now, updatedAt = now))
+        return Supplier(id = id, name = trimmed, phone = phone, createdAt = now, updatedAt = now)
+    }
 
     suspend fun archive(supplierId: Long, now: Long = System.currentTimeMillis()) =
         supplierDao.archive(supplierId, now)
@@ -90,12 +116,12 @@ class PartyProfileRepository @Inject constructor(
 
 private fun CustomerEntity.toDomain() = Customer(
     id = id, name = name, mobile = mobile, address = address, city = city,
-    notes = notes, createdAt = createdAt, updatedAt = updatedAt,
+    notes = notes, balance = balance, createdAt = createdAt, updatedAt = updatedAt,
 )
 
 private fun Customer.toEntity() = CustomerEntity(
     id = id, name = name, mobile = mobile, address = address, city = city,
-    notes = notes, createdAt = createdAt, updatedAt = updatedAt,
+    notes = notes, balance = balance, createdAt = createdAt, updatedAt = updatedAt,
 )
 
 private fun SupplierEntity.toDomain() = Supplier(

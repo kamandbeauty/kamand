@@ -64,7 +64,7 @@ class CategoryRepository @Inject constructor(
 }
 
 private fun ProductEntity.toDomain() = Product(
-    id = id, name = name, sku = sku, barcode = barcode, imageUri = imageUri,
+    id = id, name = name, sku = sku, unit = unit, barcode = barcode, imageUri = imageUri,
     categoryId = categoryId, purchasePrice = purchasePrice, sellingPrice = sellingPrice,
     stockQuantity = stockQuantity, minimumStock = minimumStock, supplierId = supplierId,
     packagingCost = packagingCost, notes = notes, isActive = isActive,
@@ -72,7 +72,7 @@ private fun ProductEntity.toDomain() = Product(
 )
 
 private fun Product.toEntity() = ProductEntity(
-    id = id, name = name, sku = sku, barcode = barcode, imageUri = imageUri,
+    id = id, name = name, sku = sku, unit = unit, barcode = barcode, imageUri = imageUri,
     categoryId = categoryId, purchasePrice = purchasePrice, sellingPrice = sellingPrice,
     stockQuantity = stockQuantity, minimumStock = minimumStock, supplierId = supplierId,
     packagingCost = packagingCost, notes = notes, isActive = isActive,

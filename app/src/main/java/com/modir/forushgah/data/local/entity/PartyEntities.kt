@@ -11,6 +11,8 @@ data class CustomerEntity(
     val address: String? = null,
     val city: String? = null,
     val notes: String? = null,
+    /** Credit-sale balance («بستانکی») — Rubi customer.balance. */
+    val balance: Money = Money.ZERO,
     val createdAt: Long,
     val updatedAt: Long,
 )

@@ -26,6 +26,8 @@ data class ProductEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val sku: String,
+    /** Sales unit for invoices (Rubi «واحد», default «عدد»). */
+    val unit: String = "عدد",
     val barcode: String? = null,
     val imageUri: String? = null,
     val categoryId: Long? = null,

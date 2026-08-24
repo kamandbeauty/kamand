@@ -52,6 +52,7 @@ class OrderRepositoryTest {
             paymentDao = db.paymentDao(),
             refundDao = db.refundDao(),
             customerDao = db.customerDao(),
+            supplierDao = db.supplierDao(),
             inventoryMovementDao = db.inventoryMovementDao(),
             financialTransactionDao = db.financialTransactionDao(),
             inventoryRepository = InventoryRepository(db, db.inventoryMovementDao()),

@@ -12,6 +12,7 @@ import com.modir.forushgah.data.local.dao.RefundDao
 import com.modir.forushgah.data.local.dao.OrderReturnDao
 import com.modir.forushgah.data.local.dao.ReturnWithOrder
 import com.modir.forushgah.data.local.dao.OrderItemWithProduct
+import com.modir.forushgah.data.local.dao.SupplierDao
 import com.modir.forushgah.data.local.entity.FinancialTransactionEntity
 import com.modir.forushgah.data.local.entity.OrderEntity
 import com.modir.forushgah.data.local.entity.OrderItemEntity
@@ -22,6 +23,7 @@ import com.modir.forushgah.data.local.entity.RefundEntity
 import com.modir.forushgah.data.local.dao.FinancialTransactionDao
 import com.modir.forushgah.domain.model.InventoryMovementType
 import com.modir.forushgah.domain.model.InventoryReferenceType
+import com.modir.forushgah.domain.model.OrderKind
 import com.modir.forushgah.domain.model.OrderStatus
 import com.modir.forushgah.domain.model.ReturnReason
 import com.modir.forushgah.domain.model.ReturnStatus
@@ -33,19 +35,36 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** One line of a new order (spec §3/§5). Prices are snapshots at order time. */
+/**
+ * One line of a new order (spec §3/§5). Prices are snapshots at order time.
+ * [productId] null = free/manual invoice line (Rubi free item) — never touches
+ * inventory; [title]/[unit] are the display snapshot (Rubi items are title-based).
+ */
 data class NewOrderItem(
-    val productId: Long,
+    val productId: Long? = null,
     val quantity: Int,
     val unitSellingPrice: Money,
     val unitPurchasePrice: Money,
     val discount: Money = Money.ZERO,
+    val title: String = "",
+    val unit: String = "عدد",
 )
 
-/** All inputs for [OrderRepository.createOrder] — validated upstream by
- * `ValidateOrderUseCase` before reaching the repository. */
+/**
+ * All inputs for [OrderRepository.createOrder] — validated upstream by
+ * `ValidateOrderUseCase` before reaching the repository.
+ *
+ * Phase 3.1 (Rubi invoice semantics):
+ * - [kind] SALES → customer + stock OUT (SALE); PURCHASE → supplier + stock IN (PURCHASE)
+ * - [cashPayment] (Rubi paymentType cash/non_cash): cash writes a full Payment row;
+ *   non-cash leaves the remaining as credit (grows the customer balance)
+ * - [orderNumber]: user value (Rubi prefill/edit); null → next sequential number
+ * - [shippingChargedToCustomer] (Rubi shippingFee) is added to the customer total
+ */
 data class NewOrder(
-    val customerId: Long,
+    val customerId: Long? = null,
+    val supplierId: Long? = null,
+    val kind: OrderKind = OrderKind.SALES,
     val items: List<NewOrderItem>,
     val orderDiscount: Money = Money.ZERO,
     val salesChannelId: Long? = null,
@@ -56,7 +75,9 @@ data class NewOrder(
     val shippingChargedToCustomer: Money = Money.ZERO,
     val actualShippingCost: Money = Money.ZERO,
     val packagingCost: Money = Money.ZERO,
+    val cashPayment: Boolean = true,
     val notes: String? = null,
+    val orderNumber: String? = null,
     val orderDate: Long = System.currentTimeMillis(),
 )
 
@@ -68,6 +89,8 @@ data class OrderDetail(
     val items: List<OrderItemWithProduct>,
     val customerName: String?,
     val customerMobile: String?,
+    /** Phase 3.1: supplier name for purchase invoices. */
+    val supplierName: String? = null,
     val payments: List<PaymentEntity>,
     val refunds: List<RefundEntity>,
     val returns: List<OrderReturnEntity>,
@@ -115,12 +138,51 @@ class OrderRepository @Inject constructor(
     private val paymentDao: PaymentDao,
     private val refundDao: RefundDao,
     private val customerDao: CustomerDao,
+    private val supplierDao: SupplierDao,
     private val inventoryMovementDao: InventoryMovementDao,
     private val financialTransactionDao: FinancialTransactionDao,
     private val inventoryRepository: InventoryRepository,
 ) {
 
     // ---------- read side ----------
+
+    /** Rubi create-screen prefill: the next sequential invoice number. */
+    suspend fun nextNumberPreview(): String = orderDao.nextOrderNumber().toString()
+
+    /**
+     * Phase 3.1 (Rubi «ویرایش»): load an invoice back into its create form.
+     */
+    suspend fun loadEditable(orderId: Long): NewOrder? {
+        val order = orderDao.getById(orderId) ?: return null
+        val items = orderDao.getItems(orderId)
+        return NewOrder(
+            customerId = order.customerId,
+            supplierId = order.supplierId,
+            kind = order.kind,
+            items = items.map {
+                NewOrderItem(
+                    productId = it.productId,
+                    quantity = it.quantity,
+                    unitSellingPrice = it.unitSellingPrice,
+                    unitPurchasePrice = it.unitPurchasePrice,
+                    discount = it.discount,
+                    title = it.title,
+                    unit = it.unit,
+                )
+            },
+            orderDiscount = order.discount,
+            salesChannelId = order.salesChannelId,
+            shippingProviderId = order.shippingProviderId,
+            shippingPaymentType = order.shippingPaymentType,
+            shippingChargedToCustomer = order.shippingChargedToCustomer,
+            actualShippingCost = order.actualShippingCost,
+            packagingCost = order.packagingCost,
+            cashPayment = Money(paymentDao.sumPaidForOrder(orderId)) >= orderTotal(orderId),
+            notes = order.notes,
+            orderNumber = order.orderNumber,
+            orderDate = order.orderDate,
+        )
+    }
 
     fun observeOrders(status: OrderStatus? = null, query: String = ""): Flow<List<OrderWithCustomer>> {
         val flow = when {
@@ -145,12 +207,14 @@ class OrderRepository @Inject constructor(
             if (order == null) return@combine null
             val items = orderDao.getItemsWithProduct(orderId)
             val customer = order.customerId?.let { customerDao.getById(it) }
+            val supplier = order.supplierId?.let { supplierDao.getById(it) }
             val returnItems = returns.flatMap { r -> orderReturnDao.getItems(r.id) }
             OrderDetail(
                 order = order,
                 items = items,
                 customerName = customer?.name,
                 customerMobile = customer?.mobile,
+                supplierName = supplier?.name,
                 payments = payments,
                 refunds = refunds,
                 returns = returns,
@@ -161,16 +225,33 @@ class OrderRepository @Inject constructor(
     // ---------- write side ----------
 
     /**
-     * Spec §3/§19/§26: create order + items + one SALE movement per item
-     * atomically. Fails (rolls back everything) if any item would drive stock
-     * negative — selling more than available stock is impossible by
-     * construction, never silent.
+     * Spec §3/§19/§26 + Phase 3.1 (Rubi invoice creation): create order +
+     * items + inventory movements + payment/credit, atomically.
+     *
+     * - SALES: one SALE -qty movement per product line; fails (rolls back
+     *   everything) if any line would drive stock negative — overselling is
+     *   impossible by construction, never silent.
+     * - PURCHASE: one PURCHASE +qty movement per product line (stock in).
+     * - Free lines (productId = null) never touch inventory (Rubi free items).
+     * - Cash payment writes a full Payment row (Rubi paymentType=cash → paid).
+     * - Non-cash sales grow the customer credit balance by the remaining
+     *   amount (Rubi updateBalance), exactly like the reference app.
      */
     suspend fun createOrder(draft: NewOrder): OrderEntity = database.withTransaction {
         val now = draft.orderDate
+        val isPurchase = draft.kind == OrderKind.PURCHASE
+        if (isPurchase) require(draft.supplierId != null) { "تأمین‌کننده فاکتور خرید را مشخص کنید" }
+        else require(draft.customerId != null) { "مشتری فاکتور فروش را مشخص کنید" }
+        require(draft.items.isNotEmpty()) { "حداقل یک قلم کالا اضافه کنید" }
+
+        val orderNumber = draft.orderNumber?.trim()?.takeIf { it.isNotEmpty() }
+            ?: orderDao.nextOrderNumber().toString()
+
         val temp = OrderEntity(
-            orderNumber = "TMP-${System.nanoTime()}",
+            orderNumber = orderNumber,
             customerId = draft.customerId,
+            supplierId = draft.supplierId,
+            kind = draft.kind,
             orderDate = now,
             discount = draft.orderDiscount,
             shippingChargedToCustomer = draft.shippingChargedToCustomer,
@@ -186,32 +267,79 @@ class OrderRepository @Inject constructor(
             updatedAt = now,
         )
         val orderId = orderDao.insertOrder(temp)
-        val orderNumber = "SF-${orderId}" // final number from the unique rowid
-        val order = temp.copy(id = orderId, orderNumber = orderNumber)
-        orderDao.updateOrder(order)
         orderDao.insertItems(draft.items.map { it.toEntity(orderId) })
 
-        // Inventory: SALE -qty per item. Guarded — a second call for the same
-        // order never deducts again (spec §19).
-        if (hasNoMovements(InventoryReferenceType.ORDER, orderId, InventoryMovementType.SALE)) {
-            for (item in draft.items) {
+        // Inventory (spec §19): SALES deduct, PURCHASE adds. Guarded — a second
+        // call for the same order never moves stock again (idempotency).
+        val productLines = draft.items.filter { it.productId != null }
+        if (isPurchase) {
+            if (hasNoMovements(InventoryReferenceType.ORDER, orderId, InventoryMovementType.PURCHASE)) {
+                for (item in productLines) {
+                    inventoryRepository.applyMovement(
+                        productId = item.productId!!,
+                        quantityDelta = item.quantity,
+                        movementType = InventoryMovementType.PURCHASE,
+                        referenceType = InventoryReferenceType.ORDER,
+                        referenceId = orderId,
+                        note = "فاکتور خرید $orderNumber",
+                        now = now,
+                    )
+                }
+            }
+        } else if (hasNoMovements(InventoryReferenceType.ORDER, orderId, InventoryMovementType.SALE)) {
+            for (item in productLines) {
                 inventoryRepository.applyMovement(
-                    productId = item.productId,
+                    productId = item.productId!!,
                     quantityDelta = -item.quantity,
                     movementType = InventoryMovementType.SALE,
                     referenceType = InventoryReferenceType.ORDER,
                     referenceId = orderId,
-                    note = "سفارش $orderNumber",
+                    note = "فاکتور فروش $orderNumber",
                     now = now,
                 )
             }
         }
 
-        writeEvent(TransactionType.ORDER_CREATED, Money.ZERO, now, orderId, "ثبت سفارش $orderNumber")
-        if (draft.packagingCost.isPositive) {
-            writeEvent(TransactionType.PACKAGING_EXPENSE, -draft.packagingCost, now, orderId, "هزینه بسته‌بندی سفارش $orderNumber")
+        // Payment (Rubi): cash → fully paid; non-cash → remaining becomes
+        // customer credit on a sales invoice.
+        val subtotal = Money.sum(draft.items.map {
+            Money(it.unitSellingPrice.amountInToman * it.quantity - it.discount.amountInToman)
+        }) - draft.orderDiscount
+        val total = (subtotal + draft.shippingChargedToCustomer).coerceAtLeastZero()
+        if (draft.cashPayment) {
+            if (total.isPositive) {
+                paymentDao.insert(
+                    PaymentEntity(
+                        orderId = orderId,
+                        amount = total,
+                        method = draft.paymentMethodLabel,
+                        paymentMethodId = draft.paymentMethodId,
+                        paidAt = now,
+                        reference = null,
+                        notes = "پرداخت نقدی هنگام صدور فاکتور",
+                    ),
+                )
+                writeEvent(TransactionType.PAYMENT_RECEIVED, total, now, orderId, "دریافت وجه نقدی")
+            }
+        } else if (!isPurchase && total.isPositive) {
+            draft.customerId?.let { custId ->
+                val customer = customerDao.getById(custId)
+                if (customer != null) {
+                    customerDao.update(
+                        customer.copy(
+                            balance = (customer.balance + total).let { if (it.amountInToman < 0) Money.ZERO else it },
+                            updatedAt = now,
+                        ),
+                    )
+                }
+            }
         }
-        order
+
+        writeEvent(TransactionType.ORDER_CREATED, Money.ZERO, now, orderId, "ثبت ${if (isPurchase) "فاکتور خرید" else "فاکتور فروش"} $orderNumber")
+        if (draft.packagingCost.isPositive) {
+            writeEvent(TransactionType.PACKAGING_EXPENSE, -draft.packagingCost, now, orderId, "هزینه بسته‌بندی فاکتور $orderNumber")
+        }
+        temp.copy(id = orderId)
     }
 
     /**
@@ -251,12 +379,36 @@ class OrderRepository @Inject constructor(
             order.copy(status = OrderStatus.CANCELLED, updatedAt = now)
         }
 
-    /** Idempotent stock restoration for a cancelled order (spec §20). */
+    /**
+     * Idempotent stock reversal for a cancelled/deleted order (spec §20).
+     * SALES orders: SALE is reversed by RETURN. PURCHASE orders: the PURCHASE
+     * is reversed by ADJUSTMENT_OUT (the bought units are no longer here).
+     */
     private suspend fun restoreStockForOrder(order: OrderEntity, now: Long) {
+        if (order.kind == OrderKind.PURCHASE) {
+            val added = !hasNoMovements(InventoryReferenceType.ORDER, order.id, InventoryMovementType.PURCHASE)
+            val reversed = !hasNoMovements(InventoryReferenceType.ORDER, order.id, InventoryMovementType.ADJUSTMENT_OUT)
+            if (added && !reversed) {
+                for (item in orderDao.getItems(order.id)) {
+                    if (item.productId == null) continue
+                    inventoryRepository.applyMovement(
+                        productId = item.productId,
+                        quantityDelta = -item.quantity,
+                        movementType = InventoryMovementType.ADJUSTMENT_OUT,
+                        referenceType = InventoryReferenceType.ORDER,
+                        referenceId = order.id,
+                        note = "لغو فاکتور خرید ${order.orderNumber}",
+                        now = now,
+                    )
+                }
+            }
+            return
+        }
         val deducted = !hasNoMovements(InventoryReferenceType.ORDER, order.id, InventoryMovementType.SALE)
         val restored = !hasNoMovements(InventoryReferenceType.ORDER, order.id, InventoryMovementType.RETURN)
         if (deducted && !restored) {
             for (item in orderDao.getItems(order.id)) {
+                if (item.productId == null) continue
                 inventoryRepository.applyMovement(
                     productId = item.productId,
                     quantityDelta = item.quantity,
@@ -318,7 +470,7 @@ class OrderRepository @Inject constructor(
         for (draft in items) {
             val ordered = orderItems.firstOrNull { it.productId == draft.productId }
                 ?: error("کالای ${draft.productId} در این سفارش نیست")
-            val alreadyReturned = orderReturnDao.sumReturnedQuantity(orderId, draft.productId)
+            val alreadyReturned = orderReturnDao.sumReturnedQuantity(orderId, draft.productId!!)
             require(draft.quantity > 0) { "تعداد مرجوعی باید بیشتر از صفر باشد" }
             require(draft.quantity <= ordered.quantity - alreadyReturned) {
                 "بیشتر از تعداد سفارش‌شده (${ordered.quantity - alreadyReturned} واحد باقی‌مانده) نمی‌توانید مرجوع کنید"
@@ -356,9 +508,10 @@ class OrderRepository @Inject constructor(
             }
         }
 
-        // Full return → the order itself becomes RETURNED.
-        val fullyReturned = orderItems.all { item ->
-            orderReturnDao.sumReturnedQuantity(orderId, item.productId) >= item.quantity
+        // Full return → the order itself becomes RETURNED (free lines ignored).
+        val trackedItems = orderItems.filter { it.productId != null }
+        val fullyReturned = trackedItems.isNotEmpty() && trackedItems.all { item ->
+            orderReturnDao.sumReturnedQuantity(orderId, item.productId!!) >= item.quantity
         }
         if (fullyReturned && order.status != OrderStatus.CANCELLED) {
             orderDao.updateOrder(order.copy(status = OrderStatus.RETURNED, updatedAt = now))
@@ -381,6 +534,76 @@ class OrderRepository @Inject constructor(
         val r = orderReturnDao.observeById(returnId).first() ?: error("Return $returnId not found")
         orderReturnDao.update(r.copy(status = status))
         r.copy(status = status)
+    }
+
+    /**
+     * Phase 3.1 (Rubi list action «کپی فاکتور»): duplicates the invoice under
+     * the next sequential number. A copy is a real new invoice, so inventory
+     * is affected again (a copied sales invoice deducts stock; an oversell
+     * fails the copy with a clear error instead of corrupting stock).
+     */
+    suspend fun copyOrder(sourceOrderId: Long, now: Long = System.currentTimeMillis()): OrderEntity =
+        database.withTransaction {
+            val source = orderDao.getById(sourceOrderId) ?: error("Order $sourceOrderId not found")
+            val items = orderDao.getItems(sourceOrderId).map {
+                NewOrderItem(
+                    productId = it.productId,
+                    quantity = it.quantity,
+                    unitSellingPrice = it.unitSellingPrice,
+                    unitPurchasePrice = it.unitPurchasePrice,
+                    discount = it.discount,
+                    title = it.title,
+                    unit = it.unit,
+                )
+            }
+            val sourceTotal = orderTotal(sourceOrderId)
+            val sourcePaid = Money(paymentDao.sumPaidForOrder(sourceOrderId))
+            createOrder(
+                NewOrder(
+                    customerId = source.customerId,
+                    supplierId = source.supplierId,
+                    kind = source.kind,
+                    items = items,
+                    orderDiscount = source.discount,
+                    salesChannelId = source.salesChannelId,
+                    paymentMethodId = source.paymentMethodId,
+                    shippingProviderId = source.shippingProviderId,
+                    shippingPaymentType = source.shippingPaymentType,
+                    shippingChargedToCustomer = source.shippingChargedToCustomer,
+                    actualShippingCost = source.actualShippingCost,
+                    packagingCost = source.packagingCost,
+                    cashPayment = sourcePaid >= sourceTotal,
+                    notes = source.notes,
+                    orderDate = now,
+                ),
+            )
+        }
+
+    /**
+     * Phase 3.1 (Rubi «ویرایش فاکتور»): re-saves the invoice. Implementation:
+     * reverse the old order's stock impact (idempotently), delete the old row,
+     * create the new one under the SAME number. Payment/return rows of the
+     * edited order are dropped (Rubi's edit replaces the whole record); the
+     * stock engine is never double-charged.
+     */
+    suspend fun replaceOrder(orderId: Long, draft: NewOrder, now: Long = System.currentTimeMillis()): OrderEntity =
+        database.withTransaction {
+            val old = orderDao.getById(orderId) ?: error("Order $orderId not found")
+            restoreStockForOrder(old, now)
+            orderDao.deleteOrder(orderId)
+            createOrder(draft.copy(orderNumber = draft.orderNumber?.trim()?.ifEmpty { old.orderNumber } ?: old.orderNumber))
+        }
+
+    /**
+     * Phase 3.1 (Rubi list action «حذف فاکتور»): reverses the order's stock
+     * impact (idempotently) and hard-deletes the row — items/payments/refunds/
+     * returns cascade via FK.
+     */
+    suspend fun deleteOrder(orderId: Long, now: Long = System.currentTimeMillis()) = database.withTransaction {
+        val order = orderDao.getById(orderId) ?: error("Order $orderId not found")
+        restoreStockForOrder(order, now)
+        writeEvent(TransactionType.ORDER_CANCELLED, Money.ZERO, now, orderId, "حذف فاکتور ${order.orderNumber}")
+        orderDao.deleteOrder(orderId)
     }
 
     /** Spec §24: refund — always a separate record; payments stay intact. */
@@ -432,4 +655,6 @@ private fun NewOrderItem.toEntity(orderId: Long) = OrderItemEntity(
     unitSellingPrice = unitSellingPrice,
     unitPurchasePrice = unitPurchasePrice,
     discount = discount,
+    title = title,
+    unit = unit,
 )
