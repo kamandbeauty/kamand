@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.modir.forushgah.core.common.DateTimeFormatter
 import com.modir.forushgah.core.common.Money
+import com.modir.forushgah.core.common.isNegative
 import com.modir.forushgah.core.common.PersianNumberFormatter
 import com.modir.forushgah.core.designsystem.component.EmptyState
 import com.modir.forushgah.core.designsystem.component.StockBadge

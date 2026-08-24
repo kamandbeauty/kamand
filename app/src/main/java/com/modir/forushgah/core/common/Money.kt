@@ -43,18 +43,18 @@ value class Money(val amountInToman: Long) {
     /** Applies this Money as a percentage against a [base] amount, e.g. commissionPercent.applyTo(gross). */
     fun applyPercentTo(base: Money): Money = base.percentOf(this.amountInToman.toDouble())
 
-    val isPositive: Boolean get() = amountInToman > 0
-    val isNegative: Boolean get() = amountInToman < 0
-    val isZero: Boolean get() = amountInToman == 0L
-
     fun coerceAtLeastZero(): Money = if (amountInToman < 0) ZERO else this
 
-    /** No `: Comparable<Money>` on the class — Kotlin only needs this operator
-     * function for `<`/`>`/`<=`/`>=` to work; declaring the Comparable
-     * interface on a `value class` triggers a known Room/KSP crash
-     * (`getValueClassUnderlyingProperty` throws "List has more than one
-     * element" because the interface adds a second synthetic member Room's
-     * processor doesn't expect). Do not add `: Comparable<Money>` back. */
+    /**
+     * Room/KSP value-class rules — do NOT violate either:
+     * 1. No interfaces on the class (e.g. `: Comparable<Money>`).
+     * 2. The class body must declare EXACTLY ONE property (`amountInToman`).
+     * Room's KSP `getValueClassUnderlyingProperty` calls `properties.single()`,
+     * and KSP counts declared properties even when they have no backing field —
+     * so `isPositive`/`isNegative`/`isZero` live OUTSIDE the class as extension
+     * properties below (same call sites: `money.isPositive`). Violating either
+     * rule crashes KSP with "List has more than one element".
+     */
     operator fun compareTo(other: Money): Int = amountInToman.compareTo(other.amountInToman)
 
     /** Formats using Persian digits and thousands separators, e.g. ۱۲۳٬۴۵۶ تومان. */
@@ -74,3 +74,9 @@ value class Money(val amountInToman: Long) {
 }
 
 fun Iterable<Money>.sum(): Money = Money.sum(this)
+
+// Extension properties — intentionally OUTSIDE the value class body so Room/KSP
+// sees exactly one declared property (see the rule above). Same call syntax.
+val Money.isPositive: Boolean get() = amountInToman > 0
+val Money.isNegative: Boolean get() = amountInToman < 0
+val Money.isZero: Boolean get() = amountInToman == 0L

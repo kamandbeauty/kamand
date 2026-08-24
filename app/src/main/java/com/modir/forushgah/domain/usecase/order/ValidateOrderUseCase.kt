@@ -1,6 +1,7 @@
 package com.modir.forushgah.domain.usecase.order
 
 import com.modir.forushgah.core.common.Money
+import com.modir.forushgah.core.common.isNegative
 import com.modir.forushgah.domain.validation.ValidationResult
 import com.modir.forushgah.domain.validation.validationOf
 import javax.inject.Inject

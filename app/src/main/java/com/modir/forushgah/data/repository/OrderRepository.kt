@@ -2,6 +2,7 @@ package com.modir.forushgah.data.repository
 
 import androidx.room.withTransaction
 import com.modir.forushgah.core.common.Money
+import com.modir.forushgah.core.common.isPositive
 import com.modir.forushgah.data.local.AppDatabase
 import com.modir.forushgah.data.local.dao.CustomerDao
 import com.modir.forushgah.data.local.dao.InventoryMovementDao

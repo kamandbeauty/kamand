@@ -1,6 +1,7 @@
 package com.modir.forushgah.domain.model
 
 import com.modir.forushgah.core.common.Money
+import com.modir.forushgah.core.common.isZero
 
 enum class ActionSeverity { CRITICAL, HIGH, MEDIUM, INFO }
 

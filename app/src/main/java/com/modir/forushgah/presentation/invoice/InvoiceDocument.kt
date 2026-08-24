@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.modir.forushgah.core.common.InvoiceFormatting
 import com.modir.forushgah.core.common.Money
+import com.modir.forushgah.core.common.isNegative
+import com.modir.forushgah.core.common.isPositive
 import com.modir.forushgah.core.common.PersianNumberFormatter
 import com.modir.forushgah.core.date.JalaliDateFormatter
 import com.modir.forushgah.data.repository.OrderDetail
