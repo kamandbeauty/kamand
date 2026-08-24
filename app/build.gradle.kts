@@ -1,6 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    // Compose Compiler plugin (Kotlin 2.0) — must match the Kotlin version.
+    kotlin("plugin.compose")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     kotlin("kapt")
@@ -53,10 +55,6 @@ android {
         buildConfig = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
-
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -84,8 +82,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.52")
-    kapt("com.google.dagger:hilt-android-compiler:2.52")
+    implementation("com.google.dagger:hilt-android:2.53.1")
+    kapt("com.google.dagger:hilt-android-compiler:2.53.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Room

@@ -457,39 +457,41 @@ private fun ProviderPicker(
     onProviderChange: (Long?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Box {
-        OutlinedButton(
-            onClick = { expanded = true },
-            modifier = Modifier.weight(1f),
-            shape = MaterialTheme.shapes.small,
-        ) {
-            Text(
-                selectedName ?: "روش ارسال",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Icon(
-                Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                modifier = Modifier
-                    .width(18.dp)
-                    .height(18.dp),
-            )
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            providers.forEach { provider ->
-                DropdownMenuItem(
-                    text = { Text(provider.name) },
-                    trailingIcon = {
-                        if (provider.id == selectedId) {
-                            Icon(Icons.Filled.Check, contentDescription = null)
-                        }
-                    },
-                    onClick = {
-                        expanded = false
-                        onProviderChange(if (provider.id == selectedId) null else provider.id)
-                    },
+    Row(modifier = Modifier.weight(1f)) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Text(
+                    selectedName ?: "روش ارسال",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .width(18.dp)
+                        .height(18.dp),
+                )
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                providers.forEach { provider ->
+                    DropdownMenuItem(
+                        text = { Text(provider.name) },
+                        trailingIcon = {
+                            if (provider.id == selectedId) {
+                                Icon(Icons.Filled.Check, contentDescription = null)
+                            }
+                        },
+                        onClick = {
+                            expanded = false
+                            onProviderChange(if (provider.id == selectedId) null else provider.id)
+                        },
+                    )
+                }
             }
         }
     }
