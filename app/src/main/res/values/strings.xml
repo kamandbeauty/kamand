@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">مدیر فروشگاه</string>
+
+    <string name="nav_home">خانه</string>
+    <string name="nav_orders">سفارش‌ها</string>
+    <string name="nav_products">محصولات</string>
+    <string name="nav_finance">مالی</string>
+    <string name="nav_more">بیشتر</string>
+
+    <string name="dashboard_today_sales">فروش امروز</string>
+    <string name="dashboard_month_sales">فروش این ماه</string>
+    <string name="dashboard_net_profit">سود خالص</string>
+    <string name="dashboard_today_orders">سفارش‌های امروز</string>
+    <string name="dashboard_pending_orders">سفارش‌های در انتظار</string>
+    <string name="dashboard_receivables">مطالبات</string>
+    <string name="dashboard_payables">بدهی‌ها</string>
+    <string name="dashboard_inventory_value">ارزش موجودی کالا</string>
+    <string name="dashboard_today_actions_title">امروز چه کار کنم؟</string>
+
+    <string name="dashboard_empty_title">هنوز چیزی ثبت نشده</string>
+    <string name="dashboard_empty_subtitle">با ثبت اولین سفارش، آمار فروشگاهت اینجا نمایش داده می‌شود</string>
+    <string name="dashboard_empty_cta">ثبت اولین سفارش</string>
+
+    <string name="onboarding_store_name">نام فروشگاه</string>
+    <string name="onboarding_owner_name">نام صاحب فروشگاه</string>
+    <string name="onboarding_category">دسته‌بندی اصلی کسب‌وکار</string>
+    <string name="onboarding_starting_cash">موجودی نقدی اولیه (اختیاری)</string>
+    <string name="onboarding_next">مرحله بعد</string>
+    <string name="onboarding_finish">شروع کنید</string>
+</resources>
