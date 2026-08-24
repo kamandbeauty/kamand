@@ -70,7 +70,7 @@ fun SupplierListScreen(
         if (state.isEmpty) {
             Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                 EmptyState(
-                    title = "هنوز تأمین‌کننده‌ای ثبت نکرده‌اید",
+                    title = "هنوز تأمین‌کننده‌ای ثبت نشده",
                     subtitle = "تأمین‌کنندگان خود را اضافه کنید تا خرید کالا ثبت شود",
                     ctaLabel = "افزودن تأمین‌کننده",
                     onCtaClick = onAddSupplier,

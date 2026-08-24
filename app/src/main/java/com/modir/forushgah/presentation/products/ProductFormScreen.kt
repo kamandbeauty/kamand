@@ -43,6 +43,7 @@ fun ProductFormRoute(
         onSkuChange = viewModel::onSkuChange,
         onBarcodeChange = viewModel::onBarcodeChange,
         onCategoryChange = viewModel::onCategoryChange,
+        onSupplierChange = viewModel::onSupplierChange,
         onSellingPriceChange = viewModel::onSellingPriceChange,
         onPurchasePriceChange = viewModel::onPurchasePriceChange,
         onPackagingCostChange = viewModel::onPackagingCostChange,
@@ -61,6 +62,7 @@ fun ProductFormScreen(
     onSkuChange: (String) -> Unit,
     onBarcodeChange: (String) -> Unit,
     onCategoryChange: (Long?) -> Unit,
+    onSupplierChange: (Long?) -> Unit,
     onSellingPriceChange: (String) -> Unit,
     onPurchasePriceChange: (String) -> Unit,
     onPackagingCostChange: (String) -> Unit,
@@ -107,6 +109,29 @@ fun ProductFormScreen(
                                 selected = state.categoryId == category.id,
                                 onClick = { onCategoryChange(if (state.categoryId == category.id) null else category.id) },
                                 label = { Text(category.name) },
+                            )
+                        }
+                    }
+                }
+            }
+            if (state.suppliers.isNotEmpty()) {
+                item {
+                    Text("تأمین‌کننده (اختیاری)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            FilterChip(
+                                selected = state.supplierId == null,
+                                onClick = { onSupplierChange(null) },
+                                label = { Text("بدون تأمین‌کننده") },
+                            )
+                        }
+                        items(state.suppliers) { supplier ->
+                            FilterChip(
+                                selected = state.supplierId == supplier.id,
+                                onClick = { onSupplierChange(if (state.supplierId == supplier.id) null else supplier.id) },
+                                label = { Text(supplier.name) },
                             )
                         }
                     }

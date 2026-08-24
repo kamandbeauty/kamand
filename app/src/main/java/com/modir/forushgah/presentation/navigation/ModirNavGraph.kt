@@ -26,6 +26,7 @@ import com.modir.forushgah.presentation.more.MoreRoute
 import com.modir.forushgah.presentation.products.ProductDetailRoute
 import com.modir.forushgah.presentation.products.ProductFormRoute
 import com.modir.forushgah.presentation.products.ProductListRoute
+import com.modir.forushgah.presentation.stock.StockAdjustmentRoute
 import com.modir.forushgah.presentation.suppliers.SupplierDetailRoute
 import com.modir.forushgah.presentation.suppliers.SupplierFormRoute
 import com.modir.forushgah.presentation.suppliers.SupplierListRoute
@@ -41,6 +42,7 @@ object Routes {
     const val SUPPLIERS = "suppliers"
     const val SUPPLIER = "supplier/{supplierId}"
     const val SUPPLIER_FORM = "supplier_form/{supplierId?}"
+    const val STOCK_ADJUSTMENT = "stock_adjustment"
     const val SETTINGS = "settings"
 }
 
@@ -142,10 +144,14 @@ fun ModirNavGraph() {
                     onBack = { navController.popBackStack() },
                 )
             }
+            composable(Routes.STOCK_ADJUSTMENT) {
+                StockAdjustmentRoute(onBack = { navController.popBackStack() })
+            }
             composable(BottomNavItem.More.route) {
                 MoreRoute(
                     onCustomersClick = { navController.navigate(Routes.CUSTOMERS) },
                     onSuppliersClick = { navController.navigate(Routes.SUPPLIERS) },
+                    onStockAdjustmentClick = { navController.navigate(Routes.STOCK_ADJUSTMENT) },
                     onSettingsClick = { navController.navigate(Routes.SETTINGS) },
                 )
             }
@@ -195,5 +201,6 @@ private fun routeBelongsToTab(route: String, tab: BottomNavItem): Boolean = when
     BottomNavItem.More -> route == tab.route ||
         route.startsWith("customer") ||
         route.startsWith("supplier") ||
+        route == Routes.STOCK_ADJUSTMENT ||
         route == Routes.SETTINGS
 }

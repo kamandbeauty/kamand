@@ -124,10 +124,33 @@ fun SupplierDetailScreen(
                         }
                     }
                     Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("آمار", style = MaterialTheme.typography.titleMedium)
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("آمار مالی", style = MaterialTheme.typography.titleMedium)
+                            MoneyRow("خرید کل", profile.totalPurchased)
+                            MoneyRow("پرداختی‌ها", profile.totalPaid)
+                            MoneyRow("بدهی باز", profile.outstandingDebt)
                             Text(
-                                "خرید کل، پرداختی‌ها و بدهی باز در فاز مالی (فاز ۴/۵) نمایش داده می‌شود",
+                                "اعداد با فعال‌شدن موتور مالی (فاز ۴/۵) به‌روز می‌شوند",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("تاریخچه خرید", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "هنوز خریدی ثبت نشده است",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("تاریخچه پرداخت", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "هنوز پرداختی ثبت نشده است",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -162,5 +185,21 @@ private fun DetailRow(label: String, value: String?) {
             modifier = Modifier.weight(1f),
         )
         Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun MoneyRow(label: String, value: com.modir.forushgah.core.common.Money) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            value.toPersianDisplayString(),
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }

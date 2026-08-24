@@ -85,14 +85,17 @@ fun CustomerDetailScreen(
                         }
                     }
                     Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("آمار", style = MaterialTheme.typography.titleMedium)
                             DetailRow(
                                 "تعداد سفارش‌ها",
                                 PersianNumberFormatter.toPersianDigits(profile.totalOrders.toString()),
                             )
+                            MoneyRow("خرید کل", profile.totalPurchases)
+                            MoneyRow("سود کل", profile.totalProfit)
+                            MoneyRow("مطالبات باز", profile.outstandingReceivable)
                             Text(
-                                "خرید کل، سود و مطالبات باز در فاز مالی (فاز ۴) نمایش داده می‌شود",
+                                "مقادیر مالی با فعال‌شدن موتور مالی (فاز ۴) به‌روز می‌شوند",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -115,5 +118,20 @@ private fun DetailRow(label: String, value: String?) {
             modifier = Modifier.weight(1f),
         )
         Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** Money data hooks (spec §8) — wired to the profile model; values refresh
+ * automatically once the Phase 4 financial engine populates them. */
+@Composable
+private fun MoneyRow(label: String, value: com.modir.forushgah.core.common.Money) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(value.toPersianDisplayString(), style = MaterialTheme.typography.bodyMedium)
     }
 }

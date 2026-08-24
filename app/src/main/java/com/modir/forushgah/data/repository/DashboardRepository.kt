@@ -57,7 +57,8 @@ class DashboardRepository @Inject constructor(
                     add(TodayActionItem(ActionSeverity.HIGH, "$pendingOrderCount سفارش آماده پیگیری", pendingOrderCount))
                 }
                 if (lowStockProducts.isNotEmpty()) {
-                    add(TodayActionItem(ActionSeverity.MEDIUM, "موجودی ${lowStockProducts.size} کالا کم است", lowStockProducts.size))
+                    // Spec §5: low-stock surfacing on the dashboard.
+                    add(TodayActionItem(ActionSeverity.MEDIUM, "کالاهای رو به اتمام: ${lowStockProducts.size} کالا", lowStockProducts.size))
                 }
             }
 

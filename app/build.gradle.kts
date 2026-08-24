@@ -42,6 +42,8 @@ android {
 
     buildFeatures {
         compose = true
+        // Needed by BuildConfig.DEBUG (debug-only sample data seeder, spec §17).
+        buildConfig = true
     }
 
     composeOptions {

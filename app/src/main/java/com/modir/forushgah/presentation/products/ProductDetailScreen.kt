@@ -49,6 +49,7 @@ import com.modir.forushgah.core.designsystem.component.StockBadge
 import com.modir.forushgah.core.designsystem.component.stockLevelOf
 import com.modir.forushgah.domain.model.InventoryMovement
 import com.modir.forushgah.domain.model.InventoryMovementType
+import com.modir.forushgah.domain.model.InventoryReferenceType
 import com.modir.forushgah.domain.model.Product
 import kotlin.math.abs
 
@@ -204,7 +205,7 @@ private fun ProductDetailContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 if (state.movements.isEmpty()) {
                     Text(
-                        "هنوز تغییری ثبت نشده است",
+                        "گردش کالایی ثبت نشده",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -330,11 +331,26 @@ private fun MovementCard(movement: InventoryMovement) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            referenceLabelOf(movement)?.let { refLabel ->
+                Text(
+                    "مرجع: $refLabel",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             movement.note?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
+}
+
+/** Spec §6: movements show their reference (order, stock adjustment, manual). */
+private fun referenceLabelOf(movement: InventoryMovement): String? = when (movement.referenceType) {
+    InventoryReferenceType.ORDER -> "سفارش #${PersianNumberFormatter.toPersianDigits((movement.referenceId ?: 0L).toString())}"
+    InventoryReferenceType.STOCK_ADJUSTMENT -> "تنظیم موجودی"
+    InventoryReferenceType.MANUAL -> "ثبت دستی"
+    InventoryReferenceType.NONE -> null
 }
 
 private fun formatDelta(delta: Int): String {

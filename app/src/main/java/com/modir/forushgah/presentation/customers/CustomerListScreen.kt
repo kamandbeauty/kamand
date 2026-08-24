@@ -69,7 +69,7 @@ fun CustomerListScreen(
         if (state.isEmpty) {
             Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                 EmptyState(
-                    title = "هنوز مشتری ثبت نکرده‌اید",
+                    title = "هنوز مشتری‌ای ثبت نشده",
                     subtitle = "مشتریان خود را اضافه کنید تا در ثبت سفارش‌ها در دسترس باشند",
                     ctaLabel = "افزودن مشتری",
                     onCtaClick = onAddCustomer,

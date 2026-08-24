@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.modir.forushgah.core.common.Money
 import com.modir.forushgah.data.repository.CategoryRepository
 import com.modir.forushgah.data.repository.ProductRepository
+import com.modir.forushgah.data.repository.SupplierRepository
 import com.modir.forushgah.domain.model.Category
 import com.modir.forushgah.domain.model.Product
+import com.modir.forushgah.domain.model.Supplier
 import com.modir.forushgah.domain.usecase.product.ProductDraft
 import com.modir.forushgah.domain.usecase.product.ValidateProductUseCase
 import com.modir.forushgah.domain.validation.ValidationResult
@@ -33,6 +35,7 @@ data class ProductFormState(
     val minimumStock: String = "",
     val notes: String = "",
     val categories: List<Category> = emptyList(),
+    val suppliers: List<Supplier> = emptyList(),
     val errors: List<String> = emptyList(),
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
@@ -47,6 +50,7 @@ data class ProductFormState(
 class ProductFormViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val categoryRepository: CategoryRepository,
+    private val supplierRepository: SupplierRepository,
     private val validateProduct: ValidateProductUseCase,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -60,6 +64,11 @@ class ProductFormViewModel @Inject constructor(
                 _state.update { it.copy(categories = categories) }
             }
         }
+        viewModelScope.launch {
+            supplierRepository.observeAll().collect { suppliers ->
+                _state.update { it.copy(suppliers = suppliers) }
+            }
+        }
         _state.value.productId?.let { id ->
             viewModelScope.launch {
                 productRepository.getById(id)?.let { product -> _state.update { it.fromProduct(product) } }
@@ -71,6 +80,7 @@ class ProductFormViewModel @Inject constructor(
     fun onSkuChange(v: String) = _state.update { it.copy(sku = v) }
     fun onBarcodeChange(v: String) = _state.update { it.copy(barcode = v) }
     fun onCategoryChange(v: Long?) = _state.update { it.copy(categoryId = v) }
+    fun onSupplierChange(v: Long?) = _state.update { it.copy(supplierId = v) }
     fun onSellingPriceChange(v: String) = _state.update { it.copy(sellingPrice = v.filter { c -> c.isDigit() }) }
     fun onPurchasePriceChange(v: String) = _state.update { it.copy(purchasePrice = v.filter { c -> c.isDigit() }) }
     fun onPackagingCostChange(v: String) = _state.update { it.copy(packagingCost = v.filter { c -> c.isDigit() }) }
