@@ -217,6 +217,39 @@ class ShipmentTrackingTest {
         assertThat(db.orderDao().getById(e)?.trackingCode).isNull()
     }
 
+    // Tracking data vs order status — the original spec never links them ---
+
+    @Test
+    fun `saving tracking does not change the order status`() = runBlocking {
+        val customer = seedCustomer("جاوید")
+        val orderId = seedOrder("1101", customer, status = OrderStatus.NEW)
+
+        tracking.saveTracking(ShipmentTrackingUpdate(orderId, null, "K1", 123L))
+
+        val order = db.orderDao().getById(orderId)!!
+        assertThat(order.trackingCode).isEqualTo("K1")
+        assertThat(order.shippedAt).isEqualTo(123L)
+        // Tracking info and status are separate concepts (spec decision).
+        assertThat(order.status).isEqualTo(OrderStatus.NEW)
+    }
+
+    @Test
+    fun `bulk save does not change any order status`() = runBlocking {
+        val customer = seedCustomer("محمد")
+        val a = seedOrder("1201", customer, status = OrderStatus.CONFIRMED)
+        val b = seedOrder("1202", customer, status = OrderStatus.PREPARING)
+
+        tracking.bulkSaveTracking(
+            listOf(
+                ShipmentTrackingUpdate(a, null, "A1", 1L),
+                ShipmentTrackingUpdate(b, null, "B2", 2L),
+            ),
+        )
+
+        assertThat(db.orderDao().getById(a)?.status).isEqualTo(OrderStatus.CONFIRMED)
+        assertThat(db.orderDao().getById(b)?.status).isEqualTo(OrderStatus.PREPARING)
+    }
+
     // 22. transaction rollback ------------------------------------------------
 
     @Test

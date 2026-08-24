@@ -51,10 +51,10 @@ interface OrderDao {
     suspend fun deleteOrder(id: Long)
 
     /**
-     * Phase 3.1 shipment tracking: order-level shipping data. When
-     * [markShipped] is true and the order is still in an early status, it
-     * becomes SHIPPED automatically (the invoice keeps the same data — no
-     * second source of truth).
+     * Phase 3.1 shipment tracking: order-level shipping data. The order
+     * STATUS is intentionally NOT touched here — tracking data and order
+     * status are separate concepts (the original spec never defines a
+     * status transition from saving tracking info).
      */
     @Query(
         """
@@ -62,8 +62,6 @@ interface OrderDao {
         SET shippingProviderId = :providerId,
             trackingCode = :trackingCode,
             shippedAt = :shippedAt,
-            status = CASE WHEN :markShipped AND status IN ('NEW', 'CONFIRMED', 'PREPARING')
-                           THEN 'SHIPPED' ELSE status END,
             updatedAt = :updatedAt
         WHERE id = :orderId
         """,
@@ -73,7 +71,6 @@ interface OrderDao {
         providerId: Long?,
         trackingCode: String?,
         shippedAt: Long?,
-        markShipped: Boolean,
         updatedAt: Long,
     ): Int
 

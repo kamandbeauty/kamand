@@ -73,13 +73,11 @@ class ShipmentTrackingRepository @Inject constructor(
 
     private suspend fun saveOne(u: ShipmentTrackingUpdate) {
         val normalizedCode = u.trackingCode?.trim()?.takeIf { it.isNotEmpty() }
-        val willShip = normalizedCode != null || u.shippedAt != null
         val affected = orderDao.updateShipping(
             orderId = u.orderId,
             providerId = u.providerId,
             trackingCode = normalizedCode,
             shippedAt = u.shippedAt,
-            markShipped = willShip,
             updatedAt = System.currentTimeMillis(),
         )
         if (affected == 0) error("سفارش ${u.orderId} یافت نشد")
