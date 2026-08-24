@@ -43,7 +43,7 @@ android {
     testOptions {
         unitTests {
             // Robolectric-based repository tests (in-memory Room, spec §30).
-            includeAndroidResources = true
+            isIncludeAndroidResources = true
         }
     }
 
