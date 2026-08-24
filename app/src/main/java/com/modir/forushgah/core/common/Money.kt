@@ -48,12 +48,16 @@ value class Money(val amountInToman: Long) {
     /**
      * Room/KSP value-class rules — do NOT violate either:
      * 1. No interfaces on the class (e.g. `: Comparable<Money>`).
-     * 2. The class body must declare EXACTLY ONE property (`amountInToman`).
-     * Room's KSP `getValueClassUnderlyingProperty` calls `properties.single()`,
-     * and KSP counts declared properties even when they have no backing field —
-     * so `isPositive`/`isNegative`/`isZero` live OUTSIDE the class as extension
-     * properties below (same call sites: `money.isPositive`). Violating either
-     * rule crashes KSP with "List has more than one element".
+     * 2. The class body declares EXACTLY ONE property (`amountInToman`);
+     *    `isPositive`/`isNegative`/`isZero` live OUTSIDE the class as
+     *    extension properties below (same call sites: `money.isPositive`).
+     * Room's KSP `getValueClassUnderlyingProperty` calls `properties.single()`
+     * on value-class column types. NOTE: the crash that motivated rule 2 was
+     * ultimately a KSP2 value-class/KType bug (Room could not match the
+     * @TypeConverter, so it fell back to the default adapter) — the real fix
+     * is `ksp.useKSP2=false` in gradle.properties. Rules 1-2 are kept anyway
+     * because they are required for any version of Room that inspects
+     * value-class properties directly.
      */
     operator fun compareTo(other: Money): Int = amountInToman.compareTo(other.amountInToman)
 
