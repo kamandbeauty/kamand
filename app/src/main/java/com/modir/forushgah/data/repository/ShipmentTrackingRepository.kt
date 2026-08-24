@@ -87,7 +87,7 @@ class ShipmentTrackingRepository @Inject constructor(
 private fun ShipmentTrackingEntityRow.toRow() = ShipmentTrackingRow(
     orderId = order.id,
     orderNumber = order.orderNumber,
-    customerId = customerId,
+    customerId = order.customerId,
     customerName = partyName,
     customerMobile = partyMobile,
     providerId = order.shippingProviderId,

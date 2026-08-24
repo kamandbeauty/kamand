@@ -83,7 +83,6 @@ interface OrderDao {
     @Query(
         """
         SELECT o.*,
-               c.id AS customerId,
                COALESCE(c.name, s.name, '') AS partyName,
                c.mobile AS partyMobile,
                s2.name AS providerName
@@ -178,10 +177,10 @@ data class OrderItemWithProduct(
 )
 
 /** One row of the «کدهای رهگیری ارسال» screen (spec §17): order + party name
- * + provider name. No address — completely out of scope for this feature. */
+ * + provider name. No address — completely out of scope for this feature.
+ * The customer id comes from the embedded order (sales invoices). */
 data class ShipmentTrackingEntityRow(
     @Embedded val order: OrderEntity,
-    val customerId: Long?,
     val partyName: String,
     val partyMobile: String?,
     val providerName: String?,
