@@ -59,7 +59,7 @@ data class OrderReturn(
 
 /**
  * Every financial event in the app writes one of these — the source of truth
- * for reports. Phase 3 uses the *_CREATED/*_CANCELLED rows as zero-amount
+ * for reports. Phase 3 uses the "*_CREATED" / "*_CANCELLED" rows as zero-amount
  * event markers (spec §25) so Phase 4 can join order lifecycle to money
  * without re-deriving history.
  */
