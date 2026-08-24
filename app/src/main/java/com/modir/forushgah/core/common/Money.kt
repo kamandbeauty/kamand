@@ -14,7 +14,7 @@ import kotlin.math.roundToLong
  * so a developer can never "accidentally" add a price to a quantity.
  */
 @JvmInline
-value class Money(val amountInToman: Long) : Comparable<Money> {
+value class Money(val amountInToman: Long) {
 
     operator fun plus(other: Money): Money = Money(amountInToman + other.amountInToman)
     operator fun minus(other: Money): Money = Money(amountInToman - other.amountInToman)
@@ -49,7 +49,13 @@ value class Money(val amountInToman: Long) : Comparable<Money> {
 
     fun coerceAtLeastZero(): Money = if (amountInToman < 0) ZERO else this
 
-    override fun compareTo(other: Money): Int = amountInToman.compareTo(other.amountInToman)
+    /** No `: Comparable<Money>` on the class — Kotlin only needs this operator
+     * function for `<`/`>`/`<=`/`>=` to work; declaring the Comparable
+     * interface on a `value class` triggers a known Room/KSP crash
+     * (`getValueClassUnderlyingProperty` throws "List has more than one
+     * element" because the interface adds a second synthetic member Room's
+     * processor doesn't expect). Do not add `: Comparable<Money>` back. */
+    operator fun compareTo(other: Money): Int = amountInToman.compareTo(other.amountInToman)
 
     /** Formats using Persian digits and thousands separators, e.g. ۱۲۳٬۴۵۶ تومان. */
     fun toPersianDisplayString(includeCurrencySuffix: Boolean = true): String {
