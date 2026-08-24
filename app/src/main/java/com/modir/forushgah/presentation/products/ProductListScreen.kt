@@ -11,10 +11,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,6 +36,7 @@ import com.modir.forushgah.presentation.common.SearchField
 fun ProductListRoute(
     onProductClick: (Long) -> Unit,
     onAddProduct: () -> Unit,
+    onCategoriesClick: () -> Unit,
     viewModel: ProductListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -43,6 +46,7 @@ fun ProductListRoute(
         onCategorySelected = viewModel::onCategorySelected,
         onProductClick = onProductClick,
         onAddProduct = onAddProduct,
+        onCategoriesClick = onCategoriesClick,
     )
 }
 
@@ -53,9 +57,19 @@ fun ProductListScreen(
     onCategorySelected: (Long?) -> Unit,
     onProductClick: (Long) -> Unit,
     onAddProduct: () -> Unit,
+    onCategoriesClick: () -> Unit,
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("محصولات") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("محصولات") },
+                actions = {
+                    IconButton(onClick = onCategoriesClick) {
+                        Icon(Icons.Filled.Category, contentDescription = "دسته‌بندی‌ها")
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddProduct) {
                 Icon(Icons.Filled.Add, contentDescription = "افزودن محصول")

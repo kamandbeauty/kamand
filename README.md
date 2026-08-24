@@ -1,34 +1,40 @@
-# مدیر فروشگاه — Phase 1 + Phase 2 (ناقص)
+# مدیر فروشگاه — Phase 1 + Phase 2 (کامل)
 
 اپلیکیشن اندروید مدیریت فروشگاه‌های اینستاگرامی/آنلاین.
 
-## ⚠️ وضعیت فاز ۲ در این زیپ
+## وضعیت فاز ۲ — کامل ✅
 
-فاز ۲ **هنوز کامل نیست** — این خروجی در وسط کار گرفته شده. آنچه تا این لحظه ساخته شده:
+فاز ۲ (محصولات/موجودی/مشتریان/تأمین‌کنندگان) کامل شده است. خلاصهٔ آنچه اضافه شد:
 
-**کامل:** مدل‌های دامنه و Room برای Product/Category/Customer/Supplier/InventoryMovement
-(به‌روزرسانی‌شده طبق اسپک فاز ۲)، `InventoryRepository` (تراکنشی، جلوگیری از موجودی منفی)،
-`StockMovementCalculator`، use case های اعتبارسنجی محصول/مشتری/تأمین‌کننده، Repository های
-Product/Category/Customer/Supplier، تست‌های واحد، صفحه‌ی لیست محصولات، فرم افزودن/ویرایش محصول.
+- **`ProductDetailScreen`** (صفحه‌ای که گم شده بود و کامپایل را می‌شکست): کارت موجودی
+  با StockBadge و دکمهٔ تنظیم موجودی، کارت قیمت‌ها (خرید/فروش/بسته‌بندی/سود تخمینی)،
+  مشخصات (SKU، بارکد، دسته‌بندی، وضعیت)، یادداشت و **تاریخچهٔ کامل حرکات موجودی**
+  (نوع حرکت، دلتا، قبل/بعد، تاریخ، دلیل) + بایگانی محصول.
+- **تنظیم دستی موجودی (Stock Adjustment)** — دیالوگ `StockAdjustmentSheet`: ورود موجودی
+  جدیدِ مطلق + دلیل اختیاری، پیش‌نمایش تغییر، ثبت از مسیر رسمی
+  `InventoryRepository.adjustStockTo` (ADJUSTMENT_IN/ADJUSTMENT_OUT).
+- **مدیریت دسته‌بندی‌ها** — `CategoryListScreen`/`ViewModel`: فهرست با شمارندهٔ محصول،
+  افزودن، ویرایش (تغییر نام)، بایگانی؛ ورودی از آیکن نوار بالای صفحهٔ محصولات.
+- **مشتریان** — لیست + جستجو، فرم افزودن/ویرایش (با `ValidateCustomerUseCase`)،
+  صفحهٔ جزئیات/پروفایل (اطلاعات تماس + تعداد سفارش‌ها از OrderDao).
+- **تأمین‌کنندگان** — همان سه‌گانهٔ لیست/فرم/جزئیات + بایگانی تأمین‌کننده.
+- **کامپوننت‌های قابل‌استفاده** — `ProductSelectorDialog` و `CustomerSelectorDialog`
+  (با امکان ساخت مشتری درون‌خطی طبق §۹ اسپک) برای استفاده در فاز ۳ (سفارش).
+- **ناوبری کامل** — همهٔ مسیرها در `ModirNavGraph` تعریف و متصل شدند؛ تب «محصولات»
+  دیگر placeholder نیست و تب «بیشتر» به مشتریان/تأمین‌کنندگان/تنظیمات وصل است.
+  تب پایین در صفحات فرعی هم هایلایت می‌ماند.
+- `DateTimeFormatter` — تاریخ/ساعت نمایشی با اعداد فارسی.
 
-**ناقص/غایب:**
-- `ProductDetailScreen.kt` — **ساخته نشده** (ذخیره‌اش با خطا مواجه شد). `ProductDetailViewModel.kt`
-  هست ولی چون صفحه‌اش نیست، این بخش کامپایل نمی‌شود مگر اضافه شود.
-- صفحه‌ی تنظیم دستی موجودی (Stock Adjustment)
-- صفحه‌ی مدیریت دسته‌بندی‌ها
-- صفحات لیست/جزئیات/فرم مشتریان و تأمین‌کنندگان
-- کامپوننت‌های `ProductSelector` / `CustomerSelector`
-- اتصال این صفحات به Navigation (تب «محصولات» هنوز به `PhaseUpcomingScreen` قدیمی وصل است)
-
-اگر می‌خواهید فاز ۲ کامل شود، فقط بگویید «ادامه بده».
+جزئیات فنی در بخش «چه چیزی در فاز ۲ ساخته شد» پایین‌تر.
 
 ## ⚠️ وضعیت Build (مهم، حتماً بخوانید)
 
 این پروژه در محیطی ساخته شده که به **Maven گوگل (`dl.google.com`)** و سرویس دانلود Gradle
 دسترسی نداشت، بنابراین:
 
-- کد **کامپایل نشده و تست‌ها اجرا نشده‌اند** — همه‌چیز از نظر نحو Kotlin و منطق دستی بازبینی
-  شده، اما تأیید نهایی build باید در Android Studio خودتان انجام شود.
+- کد **کامپایل نشده و تست‌ها اجرا نشده‌اند** — همه‌چیز (شامل کد جدید فاز ۲) از نظر نحو
+  Kotlin و منطق دستی بازبینی شده، اما تأیید نهایی build باید در Android Studio خودتان
+  انجام شود.
 - پوشه‌ی `gradle/wrapper` فقط شامل `gradle-wrapper.properties` است؛ فایل باینری
   `gradle-wrapper.jar` و اسکریپت‌های `gradlew` / `gradlew.bat` وجود ندارند.
   **راه‌حل**: پروژه را در Android Studio باز کنید (خودش Wrapper را می‌سازد)، یا اگر Gradle
@@ -91,21 +97,80 @@ SupplierPayment/OrderReturn/FinancialTransaction, SettlementPlan/Installment (ا
 - Onboarding سه‌مرحله‌ای (نام فروشگاه، صاحب، دسته‌بندی/موجودی نقدی اولیه)
 - `MainActivity` بین Onboarding و اپ اصلی گیت می‌زند (بر اساس `StoreProfileEntity`)
 
+## چه چیزی در فاز ۲ ساخته شد
+
+### ۱. صفحهٔ جزئیات محصول (`ProductDetailScreen`)
+- کارت موجودی: عدد بزرگ، `StockBadge` (همیشه نمایش)، حداقل موجودی هشدار، دکمهٔ «تنظیم موجودی».
+- کارت قیمت‌ها: خرید/فروش/بسته‌بندی + **سود تخمینی هر واحد** (موجب/منفی با رنگ).
+- کارت مشخصات: SKU، بارکد، نام دسته‌بندی (از `CategoryRepository`)، وضعیت.
+- **تاریخچهٔ موجودی**: هر `InventoryMovement` با برچسب فارسی نوع (خرید/فروش/مرجوعی/
+  تنظیم/آسیب‌دیده/سایر)، دلتا با علامت +/−، مقدار قبل→بعد، تاریخ فارسی و دلیل.
+- اکشن‌های نوار بالا: **ویرایش** (رفتن به فرم) و **بایگانی** (با دیالوگ تأیید؛ بعد از
+  بایگانی به صفحهٔ قبل برمی‌گردد). خطای اکشن‌ها با Snackbar گزارش می‌شود.
+- ViewModel موجود (`ProductDetailViewModel`) گسترش یافت: `adjustStock` و `archiveProduct`
+  با رویدادهای یک‌بار مصرف (`ProductDetailEvent`) — الگوی event برای UI بدون side-effect
+  پنهان.
+
+### ۲. تنظیم دستی موجودی (spec §۴)
+`StockAdjustmentSheet` — دیالوگ خالص UI (بدون دسترسی به Repository): ورود موجودی جدیدِ
+مطلق + دلیل اختیاری، پیش‌نمایش «افزایش/کاهش N واحد». ثبت فقط از مسیر رسمی
+`InventoryRepository.adjustStockTo` انجام می‌شود (دلتا محاسبه می‌شود و
+ADJUSTMENT_IN/ADJUSTMENT_OUT ثبت می‌شود) — یعنی قانون «هرگز بدون Movement موجودی را
+تغییر نده» زیر پا نمی‌گذارد.
+
+### ۳. مدیریت دسته‌بندی‌ها
+`CategoryListScreen`/`CategoryListViewModel` (ورودی: آیکن نوار بالای صفحهٔ محصولات):
+فهرست دسته‌ها با شمارندهٔ «N محصول»، افزودن با دیالوگ، تغییر نام (روی لمس سطر)،
+بایگانی (با هشدار دربارهٔ سرنوشت محصولات دسته). رهنمود `parentId` در rename حفظ می‌شود.
+
+### ۴. مشتریان (spec §۸)
+- `CustomerListScreen`/`ViewModel` — لیست + جستجوی زنده (نام/موبایل)، سطر با آواتار
+  حرف اول + موبایل.
+- `CustomerFormScreen`/`ViewModel` — افزودن/ویرایش با اعتبارسنجی
+  `ValidateCustomerUseCase`؛ `createdAt` در ویرایش حفظ می‌شود.
+- `CustomerDetailScreen`/`ViewModel` — پروفایل از `PartyProfileRepository`: اطلاعات
+  تماس + **تعداد سفارش‌ها واقعی** (از OrderDao) + یادداشت که آمار مالی در فاز ۴ می‌آید.
+
+### ۵. تأمین‌کنندگان (spec §۷)
+همان الگو: لیست + جستجو، فرم افزودن/ویرایش (`ValidateSupplierUseCase`)، صفحهٔ جزئیات
++ **بایگانی تأمین‌کننده** (با تأیید و Snackbar). آمار مالی (خرید/پرداخت/بدهی) placeholder
+تا فاز ۴/۵ است — عمدی، طبق اسپک.
+
+### ۶. کامپوننت‌های قابل‌استفاده (برای فاز ۳)
+- `ProductSelectorDialog` — انتخاب محصول در صفحهٔ سفارش؛ stateless: ViewModel میزبان
+  نتایج جستجو را از `ProductRepository.observeSearch` می‌آورد و می‌فرستد.
+- `CustomerSelectorDialog` — انتخاب مشتری + **ساخت مشتری درون‌خطی** (spec §۹) با
+  `onQuickCreate` (قابل اتصال به `CustomerRepository.quickCreate`).
+
+### ۷. ناوبری
+- همهٔ مسیرها در `Routes` و `ModirNavGraph`: `product/{id}`، `product_form/{id?}`،
+  `categories`، `customers`، `customer/{id}`، `customer_form/{id?}`، `suppliers`،
+  `supplier/{id}`، `supplier_form/{id?}`، `settings`.
+- تب «محصولات» به `ProductListRoute` واقعی وصل شد (دیگر placeholder نیست).
+- تب «بیشتر» به `MoreScreen` وصل شد: مشتریان / تأمین‌کنندگان / تنظیمات (placeholder).
+- تب پایین در صفحات فرعی هم هایلایت می‌ماند (نقشهٔ route→tab در
+  `routeBelongsToTab`).
+- `versionName` به `0.2.0-phase2` ارتقا یافت.
+
 ## ساختار پروژه
 
 ```
 app/src/main/java/com/modir/forushgah/
-  core/common/          Money.kt, PersianNumberFormatter.kt
+  core/common/          Money.kt, PersianNumberFormatter.kt, DateTimeFormatter.kt
   core/designsystem/    theme/, component/
   di/                   DatabaseModule.kt
   domain/model/         مدل‌های دامنه (بدون وابستگی به Android/Room)
   data/local/entity/    Room Entities
   data/local/dao/       Room DAOs
   data/local/           AppDatabase.kt, converter/
-  data/repository/      DashboardRepository, StoreProfileRepository
+  data/repository/      Product, Category, Inventory, Party, Dashboard, StoreProfile
   presentation/         dashboard/, onboarding/, navigation/
+                        products/, categories/, customers/, suppliers/,
+                        common/ (ProductRow, SearchField, Selectors), more/
   MainActivity.kt, ModirApplication.kt, RootViewModel.kt
-app/src/test/java/...   MoneyTest.kt, PersianNumberFormatterTest.kt
+app/src/test/java/...   MoneyTest.kt, PersianNumberFormatterTest.kt,
+                        StockMovementCalculatorTest.kt, ValidateProductUseCaseTest.kt,
+                        PartyValidationTest.kt
 ```
 
 ## Entity های دیتابیس
@@ -121,12 +186,12 @@ JVM‌اند و بدون شبیه‌ساز اجرا می‌شوند، اما د�
 مدرن) — لطفاً پس از باز کردن پروژه در Android Studio اجرایشان کنید.
 
 ## چیزی که هنوز ساخته نشده (فازهای بعدی طبق برنامه)
-فاز ۲: صفحات کامل محصولات/موجودی/مشتریان/تأمین‌کنندگان
-فاز ۳: صفحات کامل سفارش/پرداخت/ارسال/مرجوعی
+فاز ۲: ✅ کامل شد (محصولات/موجودی/مشتریان/تأمین‌کنندگان/دسته‌بندی‌ها)
+فاز ۳: صفحات کامل سفارش/پرداخت/ارسال/مرجوعی — انتخابگرهای محصول/مشتری آماده‌اند
 فاز ۴: موتور مالی کامل (سود و زیان واقعی، هزینه‌ها، مطالبات/بدهی‌ها به‌صورت end-to-end)
 فاز ۵: موتور اقساط/تسویه کامل (فعلاً فقط اسکیمای دیتابیس آماده است)
 فاز ۶ تا ۸: گزارش‌ها، جریان نقدی، پولیش UX، تست‌های سناریوی کامل، release build
 
-تب‌های «سفارش‌ها»، «محصولات»، «مالی»، «بیشتر» در ناوبری فعال‌اند اما فعلاً یک پیام
-«در فاز بعدی تکمیل می‌شود» نشان می‌دهند — این تنها بخشی است که placeholder دارد؛ Dashboard و
-Onboarding کاملاً کاربردی‌اند.
+از فاز ۲، تنها تب‌های «سفارش‌ها» و «مالی» placeholder دارند؛ «محصولات» (به‌همراه جزئیات،
+فرم، تنظیم موجودی و دسته‌بندی‌ها) و «بیشتر» (مشتریان/تأمین‌کنندگان/تنظیمات) به‌طور کامل
+کاربردی‌اند. Dashboard و Onboarding هم کاملاً کاربردی‌اند.
