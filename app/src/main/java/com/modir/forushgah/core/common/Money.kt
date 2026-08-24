@@ -12,9 +12,16 @@ import kotlin.math.roundToLong
  *
  * This type is used everywhere in the domain layer instead of raw Long/Int,
  * so a developer can never "accidentally" add a price to a quantity.
+ *
+ * DESIGN NOTE — Money is intentionally a regular `data class`, NOT a
+ * `@JvmInline value class`: Room's KSP processor cannot match the registered
+ * Long type converter against value-class KTypes (KSP value-class KType
+ * bug) and crashes in `getValueClassUnderlyingProperty` with
+ * "List has more than one element" while building the default type adapter.
+ * A regular class with the registered Money<->Long converter is fully
+ * supported by Room. Do NOT convert Money back to a value class.
  */
-@JvmInline
-value class Money(val amountInToman: Long) {
+data class Money(val amountInToman: Long) {
 
     operator fun plus(other: Money): Money = Money(amountInToman + other.amountInToman)
     operator fun minus(other: Money): Money = Money(amountInToman - other.amountInToman)
@@ -45,20 +52,6 @@ value class Money(val amountInToman: Long) {
 
     fun coerceAtLeastZero(): Money = if (amountInToman < 0) ZERO else this
 
-    /**
-     * Room/KSP value-class rules — do NOT violate either:
-     * 1. No interfaces on the class (e.g. `: Comparable<Money>`).
-     * 2. The class body declares EXACTLY ONE property (`amountInToman`);
-     *    `isPositive`/`isNegative`/`isZero` live OUTSIDE the class as
-     *    extension properties below (same call sites: `money.isPositive`).
-     * Room's KSP `getValueClassUnderlyingProperty` calls `properties.single()`
-     * on value-class column types. NOTE: the crash that motivated rule 2 was
-     * ultimately a KSP2 value-class/KType bug (Room could not match the
-     * @TypeConverter, so it fell back to the default adapter) — the real fix
-     * is `ksp.useKSP2=false` in gradle.properties. Rules 1-2 are kept anyway
-     * because they are required for any version of Room that inspects
-     * value-class properties directly.
-     */
     operator fun compareTo(other: Money): Int = amountInToman.compareTo(other.amountInToman)
 
     /** Formats using Persian digits and thousands separators, e.g. ۱۲۳٬۴۵۶ تومان. */
@@ -79,8 +72,8 @@ value class Money(val amountInToman: Long) {
 
 fun Iterable<Money>.sum(): Money = Money.sum(this)
 
-// Extension properties — intentionally OUTSIDE the value class body so Room/KSP
-// sees exactly one declared property (see the rule above). Same call syntax.
+// Extension properties — kept outside the class for API stability (call sites
+// use `money.isPositive` etc. via these imports).
 val Money.isPositive: Boolean get() = amountInToman > 0
 val Money.isNegative: Boolean get() = amountInToman < 0
 val Money.isZero: Boolean get() = amountInToman == 0L
