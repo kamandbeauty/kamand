@@ -29,6 +29,7 @@ import com.modir.forushgah.presentation.more.MoreRoute
 import com.modir.forushgah.presentation.orders.OrderDetailRoute
 import com.modir.forushgah.presentation.orders.OrderFormRoute
 import com.modir.forushgah.presentation.returns.ReturnsListRoute
+import com.modir.forushgah.presentation.shipment.ShipmentTrackingRoute
 import com.modir.forushgah.presentation.products.ProductDetailRoute
 import com.modir.forushgah.presentation.products.ProductFormRoute
 import com.modir.forushgah.presentation.products.ProductListRoute
@@ -56,6 +57,7 @@ object Routes {
     // Phase 3.1 (Rubi invoice experience)
     const val INVOICE_FORM = "invoice_form/{orderId?}"
     const val INVOICE = "invoice/{orderId}"
+    const val SHIPMENTS = "shipments" // «کدهای رهگیری ارسال»
 }
 
 @Composable
@@ -122,6 +124,12 @@ fun ModirNavGraph() {
                 ReturnsListRoute(
                     onBack = { navController.popBackStack() },
                     onOrderClick = { id -> navController.navigate("order/$id") },
+                )
+            }
+            composable(Routes.SHIPMENTS) {
+                ShipmentTrackingRoute(
+                    onBack = { navController.popBackStack() },
+                    onCustomerEdit = { id -> navController.navigate("customer_form/$id") },
                 )
             }
             composable(BottomNavItem.Products.route) {
@@ -212,6 +220,7 @@ fun ModirNavGraph() {
                     onCustomersClick = { navController.navigate(Routes.CUSTOMERS) },
                     onSuppliersClick = { navController.navigate(Routes.SUPPLIERS) },
                     onStockAdjustmentClick = { navController.navigate(Routes.STOCK_ADJUSTMENT) },
+                    onShipmentsClick = { navController.navigate(Routes.SHIPMENTS) },
                     onSettingsClick = { navController.navigate(Routes.SETTINGS) },
                 )
             }

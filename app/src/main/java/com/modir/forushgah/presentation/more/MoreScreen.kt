@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +37,7 @@ fun MoreRoute(
     onCustomersClick: () -> Unit,
     onSuppliersClick: () -> Unit,
     onStockAdjustmentClick: () -> Unit,
+    onShipmentsClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     Scaffold(topBar = { TopAppBar(title = { Text("بیشتر") }) }) { padding ->
@@ -63,6 +65,12 @@ fun MoreRoute(
                 title = "تنظیم موجودی",
                 subtitle = "تغییر دستی موجودی محصول با ثبت خودکار گردش",
                 onClick = onStockAdjustmentClick,
+            )
+            MoreMenuRow(
+                icon = Icons.Filled.TrackChanges,
+                title = "کدهای رهگیری ارسال",
+                subtitle = "ثبت گروهی کد رهگیری + ارسال پیام به مشتری",
+                onClick = onShipmentsClick,
             )
             MoreMenuRow(
                 icon = Icons.Filled.Settings,

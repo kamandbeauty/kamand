@@ -368,6 +368,9 @@ private fun ShippingCard(
             InfoRow("دریافتی از مشتری", order.shippingChargedToCustomer.toPersianDisplayString())
             InfoRow("هزینه واقعی ارسال", order.actualShippingCost.toPersianDisplayString())
             InfoRow("هزینه بسته‌بندی", order.packagingCost.toPersianDisplayString())
+            // Phase 3.1: the tracking data saved from «کدهای رهگیری ارسال»
+            order.trackingCode?.let { InfoRow("کد رهگیری", it) }
+            order.shippedAt?.let { InfoRow("تاریخ ارسال", com.modir.forushgah.core.date.JalaliDateFormatter.formatJalali(it)) }
         }
     }
 }

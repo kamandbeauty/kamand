@@ -39,6 +39,11 @@ data class OrderEntity(
     val packagingCost: Money = Money.ZERO,
     val commission: Money = Money.ZERO,
     val notes: String? = null,
+    /** Phase 3.1 shipment tracking: String — tracking codes may have leading
+     * zeros, letters, prefixes, hyphens. Never numeric (spec §21). */
+    val trackingCode: String? = null,
+    /** Shipping date (epoch millis of the shipped day). */
+    val shippedAt: Long? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
 )

@@ -61,6 +61,9 @@ data class Order(
     val packagingCost: Money = Money.ZERO,
     val commission: Money = Money.ZERO,
     val notes: String? = null,
+    /** Phase 3.1: shipment tracking (String — leading zeros/letters preserved). */
+    val trackingCode: String? = null,
+    val shippedAt: Long? = null,
     val createdAt: Long,
     val updatedAt: Long,
 ) {

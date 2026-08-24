@@ -33,4 +33,30 @@ object JalaliDateFormatter {
         val text = "%04d/%02d/%02d".format(date.year, date.month, date.day)
         return if (persianDigits) PersianNumberFormatter.toPersianDigits(text) else text
     }
+
+    /**
+     * Parses `yyyy/MM/dd` Jalali text (Persian or Latin digits, any slashes)
+     * to the start-of-day epoch millis. Returns null for anything invalid —
+     * callers decide the fallback (invoice creation uses now, the tracking
+     * screen keeps the day unshipped).
+     */
+    fun parseJalaliText(text: String): Long? {
+        val parts = text.trim().split("/")
+        if (parts.size != 3) return null
+        val y = parts[0].trim().let { toEnglish(it).toIntOrNull() } ?: return null
+        val m = parts[1].trim().let { toEnglish(it).toIntOrNull() } ?: return null
+        val d = parts[2].trim().let { toEnglish(it).toIntOrNull() } ?: return null
+        if (y !in 1300..1500 || m !in 1..12 || d !in 1..31) return null
+        return try {
+            val zone = TimeZone.getDefault().toZoneId()
+            JalaliDate(y, m, d).toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun toEnglish(s: String): String {
+        val fa = '۰'..'۹'
+        return s.map { if (it in fa) ('0' + (it - '۰')) else it }.joinToString("")
+    }
 }

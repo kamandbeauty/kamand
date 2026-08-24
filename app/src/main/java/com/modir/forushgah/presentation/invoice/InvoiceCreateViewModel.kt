@@ -30,9 +30,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.ZoneId
-import java.util.TimeZone
 import javax.inject.Inject
 
 /** One editable line of the invoice (Rubi item: title / مقدار / قیمت واحد). */
@@ -362,25 +359,6 @@ class InvoiceCreateViewModel @Inject constructor(
 
     /** Rubi dates are Jalali `yyyy/MM/dd`; parse to epoch millis (day start),
      * falling back to now for anything unparsable. */
-    private fun parseJalaliOrNow(dateText: String): Long {
-        val parts = dateText.split("/")
-        if (parts.size == 3) {
-            val y = parts[0].trim().toIntOrNull() ?: 0
-            val m = parts[1].trim().toIntOrNull() ?: 0
-            val d = parts[2].trim().toIntOrNull() ?: 0
-            if (y in 1300..1500 && m in 1..12 && d in 1..31) {
-                return try {
-                    val zone = TimeZone.getDefault().toZoneId()
-                    com.modir.forushgah.core.date.JalaliDate(y, m, d)
-                        .toLocalDate()
-                        .atStartOfDay(zone)
-                        .toInstant()
-                        .toEpochMilli()
-                } catch (e: Exception) {
-                    System.currentTimeMillis()
-                }
-            }
-        }
-        return System.currentTimeMillis()
-    }
+    private fun parseJalaliOrNow(dateText: String): Long =
+        JalaliDateFormatter.parseJalaliText(dateText) ?: System.currentTimeMillis()
 }

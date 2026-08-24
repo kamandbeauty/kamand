@@ -50,6 +50,58 @@ interface OrderDao {
     @Query("DELETE FROM orders WHERE id = :id")
     suspend fun deleteOrder(id: Long)
 
+    /**
+     * Phase 3.1 shipment tracking: order-level shipping data. When
+     * [markShipped] is true and the order is still in an early status, it
+     * becomes SHIPPED automatically (the invoice keeps the same data — no
+     * second source of truth).
+     */
+    @Query(
+        """
+        UPDATE orders
+        SET shippingProviderId = :providerId,
+            trackingCode = :trackingCode,
+            shippedAt = :shippedAt,
+            status = CASE WHEN :markShipped AND status IN ('NEW', 'CONFIRMED', 'PREPARING')
+                           THEN 'SHIPPED' ELSE status END,
+            updatedAt = :updatedAt
+        WHERE id = :orderId
+        """,
+    )
+    suspend fun updateShipping(
+        orderId: Long,
+        providerId: Long?,
+        trackingCode: String?,
+        shippedAt: Long?,
+        markShipped: Boolean,
+        updatedAt: Long,
+    ): Int
+
+    /**
+     * Phase 3.1 tracking screen: one row per ORDER (never grouped by
+     * customer), with the party name (customer, or supplier for purchases)
+     * and the shipping provider name joined in. Customer-name search is
+     * database-level (spec §24).
+     */
+    @Query(
+        """
+        SELECT o.*,
+               c.id AS customerId,
+               COALESCE(c.name, s.name, '') AS partyName,
+               c.mobile AS partyMobile,
+               s2.name AS providerName
+        FROM orders o
+        LEFT JOIN customers c ON c.id = o.customerId
+        LEFT JOIN suppliers s ON s.id = o.supplierId
+        LEFT JOIN shipping_providers s2 ON s2.id = o.shippingProviderId
+        WHERE '' = :query
+           OR c.name LIKE '%' || :query || '%'
+           OR s.name LIKE '%' || :query || '%'
+        ORDER BY o.orderDate DESC, o.id DESC
+        """,
+    )
+    fun observeForShipmentTracking(query: String): Flow<List<ShipmentTrackingEntityRow>>
+
     /** List rows join the customer and pre-aggregate paid/line totals in SQL
      * (no N+1 in the UI). `paidAmount`/`itemsTotal` are denormalized sums. */
     @Query(
@@ -126,6 +178,16 @@ interface OrderDao {
 data class OrderItemWithProduct(
     @Embedded val item: OrderItemEntity,
     val productName: String,
+)
+
+/** One row of the «کدهای رهگیری ارسال» screen (spec §17): order + party name
+ * + provider name. No address — completely out of scope for this feature. */
+data class ShipmentTrackingEntityRow(
+    @Embedded val order: OrderEntity,
+    val customerId: Long?,
+    val partyName: String,
+    val partyMobile: String?,
+    val providerName: String?,
 )
 
 /** One row of the order list (spec §15): order + customer + live sums. */
