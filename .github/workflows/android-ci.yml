@@ -65,3 +65,18 @@ jobs:
             app/build/reports/tests/testDebugUnitTest/
             app/build/test-results/testDebugUnitTest/
           if-no-files-found: ignore
+          
+      - name: Relay gradle failure to ci-logs
+        if: failure()
+        run: |
+          set +e
+          git config user.name ci-relay; git config user.email ci-relay@users.noreply.github.com
+          git fetch origin ci-logs:refs/remotes/origin/ci-logs 2>/dev/null || true
+          git checkout -f -B ci-logs origin/ci-logs 2>/dev/null || git checkout -f -B ci-logs
+          # re-run the failing command offline-ish is not possible; capture from job log via GITHUB_EVENT_PATH is not
+          # available — so we record run metadata + re-emit last gradle lines from the step's own stdout is not
+          # accessible; instead store a pointer:
+          { echo "run: $GITHUB_RUN_ID"; echo "sha: $GITHUB_SHA"; echo "time: $(date -u)"; } > last-error.log
+          git add last-error.log && git commit -m "CI error $GITHUB_SHA" && git push -f origin ci-logs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
