@@ -203,7 +203,7 @@ class ExpenseRepositoryTest {
                 NewExpense(packagingCategoryId(), Money(7_000_000), 1_700_010_000_000L),
             )
         }.exceptionOrNull()
-        assertThat(error).isInstanceOf(IllegalStateException::class.java)
+        assertThat(error).isInstanceOf(IllegalArgumentException::class.java)
         assertThat(netOf(id)).isEqualTo(0L)
     }
 
