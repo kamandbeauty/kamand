@@ -37,11 +37,14 @@ object ReturnRevenueCalculator {
         returned: List<ReturnedLine>,
     ): Money {
         val orderedGross = orderedLines.sumOf { it.unitSellingPrice.amountInToman * it.quantity }
+        val returnedByProduct = returned
+            .groupBy({ it.productId }, { it.quantity })
+            .mapValues { entry -> entry.value.sum().coerceAtLeast(0) }
         var grossReturned = 0L
         var lineDiscountAllocated = 0L
         for (line in orderedLines) {
             if (line.quantity <= 0) continue
-            val qty = (returned.firstOrNull { it.productId == line.productId }?.quantity ?: 0)
+            val qty = (returnedByProduct[line.productId] ?: 0)
                 .coerceAtMost(line.quantity)
             if (qty <= 0) continue
             grossReturned += line.unitSellingPrice.amountInToman * qty
