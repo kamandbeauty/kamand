@@ -8,6 +8,7 @@ import com.modir.forushgah.core.common.Money
 import com.modir.forushgah.domain.model.PayableStatus
 import com.modir.forushgah.domain.model.ReceivableStatus
 import com.modir.forushgah.domain.model.ReturnReason
+import com.modir.forushgah.domain.model.ReturnStatus
 import com.modir.forushgah.domain.model.TransactionType
 
 @Entity(

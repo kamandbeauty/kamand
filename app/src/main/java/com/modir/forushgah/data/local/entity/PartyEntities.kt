@@ -2,6 +2,7 @@ package com.modir.forushgah.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.modir.forushgah.core.common.Money
 
 @Entity(tableName = "customers")
 data class CustomerEntity(
