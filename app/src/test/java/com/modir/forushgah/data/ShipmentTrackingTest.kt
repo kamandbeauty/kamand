@@ -73,7 +73,10 @@ class ShipmentTrackingTest {
     // 13. search by customer name (database level) ---------------------------
 
     @Test
-    fun `search finds orders by customer name and excludes others`() = runBlocking {
+    // runBlocking<Unit> forces a void return: the final Truth
+    // containsExactly(...) call returns a builder object, and JUnit4 rejects
+    // test methods with a non-void return type (InvalidTestClassError).
+    fun `search finds orders by customer name and excludes others`() = runBlocking<Unit> {
         val javad = seedCustomer("جاوید")
         val javadAhmadi = seedCustomer("جاوید احمدی")
         val sara = seedCustomer("سارا")

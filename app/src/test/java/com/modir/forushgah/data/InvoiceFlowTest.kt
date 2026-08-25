@@ -317,7 +317,7 @@ class InvoiceFlowTest {
     @Test
     fun `payment recorded after creation updates remaining`() = runBlocking {
         val customer = seedCustomer()
-        val product = seedProduct(stock = 10)
+        val product = seedProduct(stock = 100) // order quantity is 100
         val order = orderRepository.createOrder(
             NewOrder(
                 customerId = customer,

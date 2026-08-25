@@ -198,7 +198,7 @@ class OrderRepositoryTest {
     @Test
     fun `partial payment then refund keeps the original payment history`() = runBlocking {
         val customer = seedCustomer()
-        val product = seedProduct(stock = 20)
+        val product = seedProduct(stock = 100)
         val orderId = newOrder(product, customer, quantity = 100) // total = 5,000,000
 
         // Order total: 100 x 50,000 = 5,000,000 (seller-paid shipping => no extra).
