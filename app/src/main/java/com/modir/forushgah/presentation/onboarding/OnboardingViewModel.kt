@@ -41,9 +41,30 @@ class OnboardingViewModel @Inject constructor(
                 storeName = state.storeName,
                 ownerName = state.ownerName,
                 businessCategory = state.businessCategory,
-                startingCashBalance = Money(state.startingCash.toLongOrNull() ?: 0L),
+                // The field is OPTIONAL: empty/whitespace/invalid input is a
+                // zero starting balance — never null, never a crash.
+                startingCashBalance = parseStartingCashToman(state.startingCash),
             )
             onDone()
         }
     }
+}
+
+/**
+ * Parses the onboarding "موجودی نقدی اولیه" input into Toman.
+ *
+ * Business rule: the field is optional —
+ * - empty / whitespace-only / unparsable input → [Money.ZERO],
+ * - Persian digits (۰-۹) are converted to Latin digits first,
+ * - a result can never be negative (clamped to zero).
+ *
+ * Char codes 0x06F0..0x06F9 are the Persian/Arabic-Indic digits, written as
+ * numeric escapes so the source file stays pure ASCII.
+ */
+internal fun parseStartingCashToman(raw: String): Money {
+    val latin = raw.trim()
+        .map { ch -> if (ch.code in 0x06F0..0x06F9) '0' + (ch.code - 0x06F0) else ch }
+        .joinToString("")
+        .filter { it.isDigit() }
+    return Money((latin.toLongOrNull() ?: 0L).coerceAtLeast(0L))
 }
