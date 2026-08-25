@@ -1,6 +1,6 @@
-run: 32909773301
-sha: e9f7b053fe64fd7992972a418d4acc5e1532b7a0
-time: Tue Aug 25 23:16:34 UTC 2026
+run: 32910120351
+sha: 9b6b0efd1017447b63623ff22b834da562734f35
+time: Tue Aug 25 23:21:18 UTC 2026
 ----- gradle log tail -----
 Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:preBuild UP-TO-DATE
@@ -18,6 +18,7 @@ Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
 > Task :app:javaPreCompileDebug
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
@@ -25,7 +26,6 @@ Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:mergeDebugAssets
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 > Task :app:packageDebugUnitTestForUnitTest
 > Task :app:generateDebugUnitTestConfig
@@ -81,7 +81,7 @@ w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
 warning: The following options were not recognized by any processor: '[dagger.fastInit, dagger.hilt.android.internal.disableAndroidSuperclassValidation, dagger.hilt.android.internal.projectType, dagger.hilt.internal.useAggregatingRootProcessor, kapt.kotlin.generated]'
 
 > Task :app:compileDebugUnitTestKotlin FAILED
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/presentation/onboarding/OnboardingViewModelTest.kt:70:51 'return' is prohibited here.
+e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/presentation/onboarding/OnboardingViewModelTest.kt:75:5 Missing return statement.
 
 FAILURE: Build failed with an exception.
 
@@ -350,5 +350,5 @@ Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilat
 	... 2 more
 
 
-BUILD FAILED in 2m 51s
+BUILD FAILED in 2m 58s
 35 actionable tasks: 35 executed
