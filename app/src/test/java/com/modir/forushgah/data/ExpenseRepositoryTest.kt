@@ -66,7 +66,7 @@ class ExpenseRepositoryTest {
             financialTransactionDao = db.financialTransactionDao(),
             inventoryRepository = inventoryRepository,
         )
-        expenseRepository.seedBuiltInCategories()
+        runBlocking { expenseRepository.seedBuiltInCategories() }
     }
 
     @After
