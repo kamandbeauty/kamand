@@ -24,7 +24,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Send
 
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
@@ -125,7 +127,7 @@ fun InvoicePreviewScreen(
         busy = true
         scope.launch {
             try {
-                val bitmap = InvoiceImageExporter.renderInvoice {
+                val bitmap = InvoiceImageExporter.renderInvoice(context) {
                     InvoiceDocument(detail = d, store = store)
                 }
                 val number = d.order.orderNumber
@@ -274,7 +276,7 @@ fun InvoicePreviewScreen(
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, PreviewBorder),
                     ) {
-                        Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("منوی اشتراک‌گذاری فاکتور", fontWeight = FontWeight.W800, fontSize = 12.sp)
                     }

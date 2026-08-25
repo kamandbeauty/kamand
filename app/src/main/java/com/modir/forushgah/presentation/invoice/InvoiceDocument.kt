@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
@@ -94,7 +95,8 @@ fun InvoiceDocument(
                     color = Color(0xFF0F172A),
                 )
                 (store?.phone).orEmpty().takeIf { it.isNotEmpty() }?.let {
-                    Text(it, fontSize = 11.sp, color = DocSlate500, textDirection = TextDirection.Ltr, textAlign = TextAlign.End)
+                    Text(it, fontSize = 11.sp, color = DocSlate500, textAlign = TextAlign.End,
+                        style = TextStyle(textDirection = TextDirection.Ltr))
                 }
                 (store?.address).orEmpty().takeIf { it.isNotEmpty() }?.let {
                     Text(it, fontSize = 11.sp, color = DocSlate500, lineHeight = (11.sp * 1.4f))
@@ -132,7 +134,8 @@ fun InvoiceDocument(
                     modifier = Modifier.weight(1f),
                 )
                 (detail.customerMobile).orEmpty().takeIf { it.isNotEmpty() }?.let {
-                    Text(it, fontSize = 11.sp, color = DocSlate500, textDirection = TextDirection.Ltr)
+                    Text(it, fontSize = 11.sp, color = DocSlate500,
+                        style = TextStyle(textDirection = TextDirection.Ltr))
                 }
             }
         }
@@ -281,9 +284,9 @@ fun InvoiceDocument(
                         fontSize = 16.sp,
                         letterSpacing = 1.1.sp,
                         color = Color(0xFF0F172A),
-                        textDirection = TextDirection.Ltr,
                         textAlign = TextAlign.End,
                         modifier = Modifier.fillMaxWidth(),
+                        style = TextStyle(textDirection = TextDirection.Ltr),
                     )
                     (store?.storeName).orEmpty().takeIf { it.isNotEmpty() }?.let {
                         Spacer(modifier = Modifier.height(6.dp))

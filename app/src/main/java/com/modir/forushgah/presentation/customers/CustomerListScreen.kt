@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Divider
@@ -106,7 +105,7 @@ private fun CustomerRow(customer: Customer, onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .background(color = MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape()),
+                .background(color = MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Text(
