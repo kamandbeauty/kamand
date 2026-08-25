@@ -1,6 +1,6 @@
-run: 32892915364
-sha: 38c0fd0bef5729cd2cd47b5ce44d8ebf30d33090
-time: Tue Aug 25 20:04:30 UTC 2026
+run: 32893568328
+sha: e4600c338442efb9afd7b7a072e49576c24065bb
+time: Tue Aug 25 20:11:56 UTC 2026
 ----- gradle log tail -----
 Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:preBuild UP-TO-DATE
@@ -18,13 +18,13 @@ Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
-> Task :app:processDebugManifestForPackage
 > Task :app:javaPreCompileDebug
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:processDebugManifestForPackage
 > Task :app:javaPreCompileDebugUnitTest
 > Task :app:processDebugResources
 > Task :app:packageDebugUnitTestForUnitTest
@@ -40,13 +40,53 @@ w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
 > Task :app:kaptDebugKotlin
 [WARN] Issue detected with dagger.internal.codegen.ComponentProcessor. Expected 1 originating source file when generating /home/runner/work/kamand/kamand/app/build/tmp/kapt3/classes/debug/META-INF/proguard/com_modir_forushgahRootViewModel_HiltModules_BindsModule_LazyClassKeys.pro, but detected 0: [].
 
-> Task :app:compileDebugKotlin FAILED
-e: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/expenses/ExpenseFormViewModel.kt:49:32 Empty character literal.
+> Task :app:compileDebugKotlin
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/data/repository/DashboardRepository.kt:47:48 Unchecked cast of 'kotlin.Any' to 'kotlin.collections.List<com.modir.forushgah.data.local.entity.ReceivableEntity>'.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/data/repository/DashboardRepository.kt:50:46 Unchecked cast of 'kotlin.Any' to 'kotlin.collections.List<com.modir.forushgah.data.local.entity.ProductEntity>'.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/di/DatabaseModule.kt:25:14 'fun fallbackToDestructiveMigration(): RoomDatabase.Builder<AppDatabase>' is deprecated. Replace by overloaded version with parameter to indicate if all tables should be dropped or not.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/common/CustomerSelector.kt:81:21 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/common/ProductSelector.kt:44:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/customers/CustomerListScreen.kt:88:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/invoice/InvoiceDocument.kt:163:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/invoice/InvoiceDocument.kt:216:9 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/invoice/InvoiceListScreen.kt:164:40 'val Icons.Outlined.ReceiptLong: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ReceiptLong.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/invoice/InvoiceListScreen.kt:292:41 'val Icons.Outlined.ReceiptLong: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.ReceiptLong.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/invoice/InvoicePreviewScreen.kt:243:47 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/invoice/InvoicePreviewScreen.kt:348:36 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/invoice/InvoicePreviewScreen.kt:393:31 'val Icons.Filled.KeyboardArrowLeft: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.KeyboardArrowLeft.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/invoice/ProductSelectionSheet.kt:121:13 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/more/MoreScreen.kt:109:30 'val Icons.Filled.KeyboardArrowLeft: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.KeyboardArrowLeft.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/navigation/ModirNavGraph.kt:288:5 Duplicate branch condition in 'when'.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/orders/OrderDetailScreen.kt:426:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/orders/OrderDetailScreen.kt:486:17 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/products/ProductDetailScreen.kt:258:13 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/products/ProductListScreen.kt:117:29 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/shipment/ShipmentTrackingScreen.kt:438:39 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/stock/StockAdjustmentScreen.kt:141:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/presentation/suppliers/SupplierListScreen.kt:89:25 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:hiltAggregateDepsDebug
+> Task :app:hiltJavaCompileDebug
+> Task :app:processDebugJavaRes
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:transformDebugClassesWithAsm
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:kspDebugUnitTestKotlin
+
+> Task :app:kaptGenerateStubsDebugUnitTestKotlin
+w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
+
+> Task :app:kaptDebugUnitTestKotlin
+warning: The following options were not recognized by any processor: '[dagger.fastInit, dagger.hilt.android.internal.disableAndroidSuperclassValidation, dagger.hilt.android.internal.projectType, dagger.hilt.internal.useAggregatingRootProcessor, kapt.kotlin.generated]'
+
+> Task :app:compileDebugUnitTestKotlin FAILED
+e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/data/ExpenseRepositoryTest.kt:69:27 Suspend function 'suspend fun seedBuiltInCategories(): Unit' should be called only from a coroutine or another suspend function.
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':app:compileDebugKotlin'.
+Execution failed for task ':app:compileDebugUnitTestKotlin'.
 > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
    > Compilation error. See log for more details
 
@@ -56,7 +96,7 @@ Execution failed for task ':app:compileDebugKotlin'.
 > Get more help at https://help.gradle.org.
 
 * Exception is:
-org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugUnitTestKotlin'.
 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:282)
 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
@@ -250,5 +290,5 @@ Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilat
 	... 2 more
 
 
-BUILD FAILED in 2m 34s
-24 actionable tasks: 24 executed
+BUILD FAILED in 3m 10s
+35 actionable tasks: 35 executed
