@@ -238,7 +238,7 @@ fun InvoicePreviewScreen(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.elevatedButtonColors(containerColor = DocOrange),
                         ) {
-                            Icon(Icons.Outlined.Image, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Filled.Send, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("ارسال عکس فاکتور", color = Color.White, fontWeight = FontWeight.W900, fontSize = 12.sp)
                         }
@@ -249,7 +249,7 @@ fun InvoicePreviewScreen(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.elevatedButtonColors(containerColor = AccentBlue),
                         ) {
-                            Icon(Icons.Outlined.PictureAsPdf, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Filled.Save, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("ارسال PDF", color = Color.White, fontWeight = FontWeight.W900, fontSize = 12.sp)
                         }
@@ -343,8 +343,8 @@ private fun ShareSheet(
                 color = PreviewSlate500,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ShareTile(Icons.Outlined.Image, DocOrange, "ارسال عکس فاکتور", "اشتراک تصویر PNG", onShareImage)
-            ShareTile(Icons.Outlined.PictureAsPdf, AccentBlue, "ارسال PDF", "اشتراک فایل فاکتور برای چاپ", onSharePdfLike)
+            ShareTile(Icons.Filled.Send, DocOrange, "ارسال عکس فاکتور", "اشتراک تصویر PNG", onShareImage)
+            ShareTile(Icons.Filled.Save, AccentBlue, "ارسال PDF", "اشتراک فایل فاکتور برای چاپ", onSharePdfLike)
             ShareTile(Icons.Outlined.ChatBubbleOutline, PreviewSlate700, "اشتراک متن فاکتور", "ارسال خلاصه متنی", onShareText)
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("انصراف") }
