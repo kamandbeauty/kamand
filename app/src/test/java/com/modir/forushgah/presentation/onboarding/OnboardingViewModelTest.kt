@@ -67,7 +67,8 @@ class OnboardingViewModelTest {
     private suspend fun awaitProfile(): StoreProfileEntity {
         withTimeout(10_000) {
             while (true) {
-                db.storeProfileDao().get()?.let { return it }
+                val profile = db.storeProfileDao().get()
+                if (profile != null) return@withTimeout profile
                 delay(10)
             }
         }
