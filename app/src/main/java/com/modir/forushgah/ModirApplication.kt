@@ -23,6 +23,9 @@ class ModirApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Robolectric unit tests instantiate this Application without Hilt,
+        // so the @Inject seeders are not initialized there — guard for it.
+        if (!::referenceDataSeeder.isInitialized || !::sampleDataSeeder.isInitialized) return
         // Built-in reference data (channels/providers/payment methods) — real
         // configuration, idempotent, all builds.
         applicationScope.launch { referenceDataSeeder.seedBuiltIns() }
