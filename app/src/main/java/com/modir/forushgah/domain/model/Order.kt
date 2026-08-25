@@ -3,7 +3,11 @@ package com.modir.forushgah.domain.model
 import com.modir.forushgah.core.common.Money
 
 enum class OrderStatus {
-    NEW, CONFIRMED, PREPARING, SHIPPED, DELIVERED, RETURNED, CANCELLED
+    NEW, CONFIRMED, PREPARING, SHIPPED, DELIVERED, RETURNED, CANCELLED,
+    /** Phase 4.1: soft-deleted. The row and all financial history
+     * (payments/refunds/returns) are preserved; the row is hidden from the
+     * regular lists and shown in the Deleted/Cancelled section. */
+    DELETED
 }
 
 /**
@@ -48,6 +52,9 @@ data class Order(
     /** Set for purchase invoices (supplier side); null for sales invoices. */
     val supplierId: Long? = null,
     val kind: OrderKind = OrderKind.SALES,
+    /** Phase 4.1 (Rubi paymentType cash/non_cash): whether the invoice was
+     * settled in cash at creation. Non-cash sales create a customer credit. */
+    val isCashPayment: Boolean = true,
     val orderDate: Long,
     val items: List<OrderItem>,
     val discount: Money = Money.ZERO,

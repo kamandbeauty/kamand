@@ -55,6 +55,9 @@ enum class TransactionType {
     SALE, PAYMENT_RECEIVED, EXPENSE, SUPPLIER_PURCHASE, SUPPLIER_PAYMENT,
     COMMISSION, SHIPPING_EXPENSE, PACKAGING_EXPENSE, REFUND, INSTALLMENT_PAYMENT,
     ORDER_CREATED, ORDER_CANCELLED, RETURN_CREATED,
+    /** Phase 4.1: revenue reversed by a sales return (negative amount).
+     * Pairs with SALE so net sales = SALE + REVENUE_REVERSED. */
+    REVENUE_REVERSED,
 }
 
 data class FinancialTransaction(
@@ -63,5 +66,20 @@ data class FinancialTransaction(
     val amount: Money, // positive = inflow, negative = outflow
     val date: Long,
     val orderId: Long? = null,
+    val customerId: Long? = null,
+    val supplierId: Long? = null,
+    val paymentId: Long? = null,
+    val refundId: Long? = null,
+    val returnId: Long? = null,
+    /** Generic reference escape hatch (e.g. "EXPENSE" / expense id) — kept
+     * nullable and unconstrained so future event types need no schema change. */
+    val referenceType: String? = null,
+    val referenceId: Long? = null,
+    /** Phase 4.1: set when this event is a correction that reverses another
+     * event (cancellation / deletion / edit). Amount = -reversed amount. */
+    val reversalOfId: Long? = null,
     val description: String? = null,
-)
+) {
+    /** True when this event is a correction/reversal of [reversalOfId]. */
+    val isReversal: Boolean get() = reversalOfId != null
+}

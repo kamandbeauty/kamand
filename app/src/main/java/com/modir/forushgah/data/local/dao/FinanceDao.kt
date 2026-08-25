@@ -85,6 +85,11 @@ interface OrderReturnDao {
     )
     suspend fun sumReturnedQuantity(orderId: Long, productId: Long): Int
 
+    /** Phase 4.1: total revenue reversed by ACTIVE (non-rejected) returns of
+     * the order — used for customer credit and correction accounting. */
+    @Query("SELECT COALESCE(SUM(revenueReversed), 0) FROM order_returns WHERE orderId = :orderId AND status != 'REJECTED'")
+    suspend fun sumActiveReversedRevenue(orderId: Long): Long
+
     @Query(
         """
         SELECT r.*, o.orderNumber AS orderNumber, c.name AS customerName
@@ -113,4 +118,32 @@ interface FinancialTransactionDao {
 
     @Query("SELECT COALESCE(SUM(amount), 0) FROM financial_transactions WHERE type = 'SALE' AND date BETWEEN :start AND :end")
     fun observeSalesBetween(start: Long, end: Long): Flow<Long>
+
+    // ---- Phase 4.1: traceability + idempotency guards -----------------------
+
+    @Query("SELECT * FROM financial_transactions WHERE orderId = :orderId ORDER BY date ASC, id ASC")
+    suspend fun getByOrder(orderId: Long): List<FinancialTransactionEntity>
+
+    @Query("SELECT * FROM financial_transactions WHERE returnId = :returnId ORDER BY date ASC, id ASC")
+    suspend fun getByReturn(returnId: Long): List<FinancialTransactionEntity>
+
+    /** Idempotency: at most one event of [typeName] per order. */
+    @Query("SELECT COUNT(*) FROM financial_transactions WHERE orderId = :orderId AND type = :typeName")
+    suspend fun countByOrderAndType(orderId: Long, typeName: String): Int
+
+    /** Idempotency: at most one event of [typeName] per payment row. */
+    @Query("SELECT COUNT(*) FROM financial_transactions WHERE paymentId = :paymentId AND type = :typeName")
+    suspend fun countByPaymentAndType(paymentId: Long, typeName: String): Int
+
+    /** Idempotency: at most one event of [typeName] per refund row. */
+    @Query("SELECT COUNT(*) FROM financial_transactions WHERE refundId = :refundId AND type = :typeName")
+    suspend fun countByRefundAndType(refundId: Long, typeName: String): Int
+
+    /** Idempotency: at most one event of [typeName] per return. */
+    @Query("SELECT COUNT(*) FROM financial_transactions WHERE returnId = :returnId AND type = :typeName")
+    suspend fun countByReturnAndType(returnId: Long, typeName: String): Int
+
+    /** Idempotency: an event is reversed at most once (by any correction). */
+    @Query("SELECT COUNT(*) FROM financial_transactions WHERE reversalOfId = :reversalOfId")
+    suspend fun countReversalsOf(reversalOfId: Long): Int
 }

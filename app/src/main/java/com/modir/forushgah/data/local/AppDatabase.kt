@@ -36,11 +36,13 @@ import com.modir.forushgah.data.local.entity.*
         InstallmentEntity::class,
         StoreProfileEntity::class,
     ],
-    version = 5, // Phase 3.1: shipment tracking on orders (trackingCode String,
-    // shippedAt) on top of the Phase 3.1 invoice schema.
+    version = 6, // Phase 4.1: financial core — financial_transactions gains
+    // traceability references (customerId/supplierId/paymentId/refundId/
+    // returnId/referenceType/referenceId/reversalOfId), orders gain
+    // isCashPayment, orderNumber index becomes non-unique (soft-delete keeps
+    // the number on edited invoices), OrderStatus gains DELETED.
     // fallbackToDestructiveMigration is still in effect pre-release (see
-    // DatabaseModule), so no Migration object needed yet. Existing order data
-    // model is untouched — only columns added.
+    // DatabaseModule), so no Migration object needed yet.
     exportSchema = true,
 )
 @TypeConverters(MoneyConverters::class, EnumConverters::class)

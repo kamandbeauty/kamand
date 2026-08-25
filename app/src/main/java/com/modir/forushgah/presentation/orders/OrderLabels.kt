@@ -14,6 +14,7 @@ fun OrderStatus.persianLabel(): String = when (this) {
     OrderStatus.DELIVERED -> "تحویل شده"
     OrderStatus.RETURNED -> "مرجوع شده"
     OrderStatus.CANCELLED -> "لغو شده"
+    OrderStatus.DELETED -> "حذف شده"
 }
 
 /** Spec §22: Persian labels for return statuses. */

@@ -90,11 +90,12 @@ interface OrderDao {
         LEFT JOIN customers c ON c.id = o.customerId
         LEFT JOIN suppliers s ON s.id = o.supplierId
         LEFT JOIN shipping_providers s2 ON s2.id = o.shippingProviderId
-        WHERE '' = :query
+        WHERE o.status != 'DELETED'
+          AND ('' = :query
            OR c.name LIKE '%' || :query || '%'
-           OR s.name LIKE '%' || :query || '%'
+           OR s.name LIKE '%' || :query || '%')
         ORDER BY o.orderDate DESC, o.id DESC
-        """,
+    """,
     )
     fun observeForShipmentTracking(query: String): Flow<List<ShipmentTrackingEntityRow>>
 
@@ -113,8 +114,9 @@ interface OrderDao {
         LEFT JOIN customers c ON c.id = o.customerId
         LEFT JOIN suppliers s ON s.id = o.supplierId
         LEFT JOIN payment_methods pm ON pm.id = o.paymentMethodId
+        WHERE o.status != 'DELETED'
         ORDER BY o.orderDate DESC
-        """,
+    """,
     )
     fun observeAllWithCustomer(): Flow<List<OrderWithCustomer>>
 
@@ -151,11 +153,12 @@ interface OrderDao {
         LEFT JOIN customers c ON c.id = o.customerId
         LEFT JOIN suppliers s ON s.id = o.supplierId
         LEFT JOIN payment_methods pm ON pm.id = o.paymentMethodId
-        WHERE o.orderNumber LIKE '%' || :query || '%'
+        WHERE o.status != 'DELETED'
+          AND (o.orderNumber LIKE '%' || :query || '%'
            OR c.name LIKE '%' || :query || '%'
-           OR c.mobile LIKE '%' || :query || '%'
+           OR c.mobile LIKE '%' || :query || '%')
         ORDER BY o.orderDate DESC
-        """,
+    """,
     )
     fun observeSearchWithCustomer(query: String): Flow<List<OrderWithCustomer>>
 

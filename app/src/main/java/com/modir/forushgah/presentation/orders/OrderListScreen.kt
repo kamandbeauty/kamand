@@ -192,7 +192,7 @@ internal fun StatusBadge(status: OrderStatus) {
         OrderStatus.SHIPPED, OrderStatus.DELIVERED ->
             Triple(status.persianLabel(), MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)
         OrderStatus.RETURNED -> Triple(status.persianLabel(), MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.errorContainer)
-        OrderStatus.CANCELLED ->
+        OrderStatus.CANCELLED, OrderStatus.DELETED ->
             Triple(status.persianLabel(), MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.surfaceVariant)
     }
     Surface(shape = MaterialTheme.shapes.small, color = container) {

@@ -17,7 +17,9 @@ import com.modir.forushgah.domain.model.ShippingPaymentType
         ForeignKey(entity = SalesChannelEntity::class, parentColumns = ["id"], childColumns = ["salesChannelId"], onDelete = ForeignKey.SET_NULL),
         ForeignKey(entity = ShippingProviderEntity::class, parentColumns = ["id"], childColumns = ["shippingProviderId"], onDelete = ForeignKey.SET_NULL),
     ],
-    indices = [Index("customerId"), Index("supplierId"), Index("orderNumber", unique = true), Index("status"), Index("orderDate")],
+    // orderNumber is NOT unique: Phase 4.1 soft-deletes keep the old row when
+    // an invoice is edited (old DELETED row + replacement share the number).
+    indices = [Index("customerId"), Index("supplierId"), Index("orderNumber"), Index("status"), Index("orderDate")],
 )
 data class OrderEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -27,6 +29,9 @@ data class OrderEntity(
     val supplierId: Long? = null,
     /** Phase 3.1: invoice kind (SALES / PURCHASE), stored via OrderKind converter. */
     val kind: OrderKind = OrderKind.SALES,
+    /** Phase 4.1 (Rubi paymentType): false = credit sale; the order total
+     * becomes customer receivable until paid. */
+    val isCashPayment: Boolean = true,
     val orderDate: Long,
     val discount: Money = Money.ZERO,
     val shippingChargedToCustomer: Money = Money.ZERO,
