@@ -78,12 +78,18 @@ class OrderRepositoryTest {
     private suspend fun stockOf(productId: Long): Int =
         db.productDao().getById(productId)?.stockQuantity ?: -1
 
-    private suspend fun newOrder(productId: Long, customerId: Long, quantity: Int = 1): Long {
+    private suspend fun newOrder(
+        productId: Long,
+        customerId: Long,
+        quantity: Int = 1,
+        cashPayment: Boolean = true,
+    ): Long {
         val order = orderRepository.createOrder(
             NewOrder(
                 customerId = customerId,
                 items = listOf(NewOrderItem(productId, quantity, Money(50_000), Money(10_000))),
                 shippingPaymentType = ShippingPaymentType.SELLER_PAID,
+                cashPayment = cashPayment,
             ),
         )
         return order.id
@@ -199,7 +205,9 @@ class OrderRepositoryTest {
     fun `partial payment then refund keeps the original payment history`() = runBlocking {
         val customer = seedCustomer()
         val product = seedProduct(stock = 100)
-        val orderId = newOrder(product, customer, quantity = 100) // total = 5,000,000
+        // Non-cash: the order starts as credit, so the partial payment below
+        // is possible (a cash order would already be fully paid).
+        val orderId = newOrder(product, customer, quantity = 100, cashPayment = false) // total = 5,000,000
 
         // Order total: 100 x 50,000 = 5,000,000 (seller-paid shipping => no extra).
         orderRepository.recordPayment(orderId, Money(3_000_000), "نقدی")
