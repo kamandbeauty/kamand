@@ -13,15 +13,18 @@ import kotlin.math.roundToLong
  * This type is used everywhere in the domain layer instead of raw Long/Int,
  * so a developer can never "accidentally" add a price to a quantity.
  *
- * DESIGN NOTE — Money is intentionally a regular `data class`, NOT a
- * `@JvmInline value class`: Room's KSP processor cannot match the registered
- * Long type converter against value-class KTypes (KSP value-class KType
- * bug) and crashes in `getValueClassUnderlyingProperty` with
- * "List has more than one element" while building the default type adapter.
- * A regular class with the registered Money<->Long converter is fully
- * supported by Room. Do NOT convert Money back to a value class.
+ * DESIGN NOTE — Money is a `@JvmInline value class` with EXACTLY ONE primary
+ * constructor property (`amountInToman`) and NO implemented interfaces:
+ * Room's KSP processor resolves value-class column types through its
+ * value-class KType path, which expects exactly one underlying property and
+ * no extra interface members. Keeping Money a clean single-property value
+ * class (member operator functions are fine; the isPositive/isNegative/isZero
+ * extensions live at file top level, outside the class) keeps that KType
+ * resolution unambiguous. Do NOT add interfaces or extra constructor
+ * properties to Money.
  */
-data class Money(val amountInToman: Long) {
+@JvmInline
+value class Money(val amountInToman: Long) {
 
     operator fun plus(other: Money): Money = Money(amountInToman + other.amountInToman)
     operator fun minus(other: Money): Money = Money(amountInToman - other.amountInToman)
