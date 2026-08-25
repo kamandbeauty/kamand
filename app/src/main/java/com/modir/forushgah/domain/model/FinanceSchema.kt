@@ -41,21 +41,9 @@ data class SupplierPayment(
     val notes: String? = null,
 )
 
-enum class ReturnReason { CUSTOMER_REFUSED, DEFECTIVE, WRONG_ITEM, OTHER }
-
-/** A returned/refused shipment (spec section 12). Captures the real financial loss. */
-data class OrderReturn(
-    val id: Long = 0,
-    val orderId: Long,
-    val reason: ReturnReason,
-    val returnShippingCost: Money = Money.ZERO,
-    val packagingCostLost: Money = Money.ZERO,
-    val revenueReversed: Money = Money.ZERO,
-    val restockedToInventory: Boolean = true,
-    val date: Long,
-) {
-    val totalLoss: Money get() = returnShippingCost + packagingCostLost
-}
+// NOTE: ReturnReason and OrderReturn (Phase 3 shapes, spec §21–23) live in
+// SalesSupport.kt — the Phase 2 copies declared here were redeclarations
+// (same package com.modir.forushgah.domain.model) and broke compilation.
 
 /**
  * Every financial event in the app writes one of these — the source of truth
