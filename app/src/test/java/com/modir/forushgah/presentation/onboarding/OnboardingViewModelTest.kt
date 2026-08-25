@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -65,12 +64,11 @@ class OnboardingViewModelTest {
 
     /** Waits for the profile row written by the ViewModel coroutine. */
     private suspend fun awaitProfile(): StoreProfileEntity {
-        withTimeout(10_000) {
-            while (true) {
-                val profile = db.storeProfileDao().get()
-                if (profile != null) return@withTimeout profile
-                delay(10)
-            }
+        val deadline = System.currentTimeMillis() + 10_000
+        while (true) {
+            db.storeProfileDao().get()?.let { return it }
+            if (System.currentTimeMillis() > deadline) error("timeout waiting for store profile")
+            delay(10)
         }
     }
 
