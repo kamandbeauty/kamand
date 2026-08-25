@@ -1,6 +1,5 @@
 package com.modir.forushgah.data.repository
 
-import com.modir.forushgah.core.common.Money
 import com.modir.forushgah.data.local.dao.CustomerDao
 import com.modir.forushgah.data.local.dao.OrderDao
 import com.modir.forushgah.data.local.dao.SupplierDao
@@ -42,7 +41,21 @@ class CustomerRepository @Inject constructor(
 
     suspend fun create(customer: Customer): Long = customerDao.insert(customer.toEntity())
 
-    suspend fun update(customer: Customer) = customerDao.update(customer.toEntity())
+    /**
+     * Phase 4.2: [Customer.balance] is a DERIVED financial value —
+     * materialized exactly from the financial state by
+     * `CustomerDao.sumActiveCredit` + `recalcCustomerBalance` (Phase 4.1).
+     * Ordinary profile updates (name, mobile, ...) must never overwrite it
+     * with stale form data, so the stored balance is preserved here.
+     * (The legacy incremental `updateBalance` was removed — it had zero
+     * callers and would drift from the derived value.)
+     */
+    suspend fun update(customer: Customer) {
+        val stored = customerDao.getById(customer.id)
+        customerDao.update(
+            customer.toEntity().copy(balance = stored?.balance ?: customer.balance),
+        )
+    }
 
     /** Rubi behavior: match an existing customer by exact name, create one if
      * not found — used when saving an invoice with a typed customer name. */
@@ -51,14 +64,6 @@ class CustomerRepository @Inject constructor(
         customerDao.observeAll().first().firstOrNull { it.name == trimmed }?.let { return it.toDomain() }
         val id = customerDao.insert(CustomerEntity(name = trimmed, mobile = mobile, createdAt = now, updatedAt = now))
         return Customer(id = id, name = trimmed, mobile = mobile, createdAt = now, updatedAt = now)
-    }
-
-    /** Rubi `updateBalance`: grows the credit-sale balance (invoice saved as
-     * non-cash leaves a remaining amount). Clamped at zero like the reference. */
-    suspend fun updateBalance(customerId: Long, delta: Money, now: Long = System.currentTimeMillis()) {
-        val current = customerDao.getById(customerId) ?: return
-        val newBalance = (current.balance + delta).let { if (it.amountInToman < 0) Money.ZERO else it }
-        customerDao.update(current.copy(balance = newBalance, updatedAt = now))
     }
 }
 

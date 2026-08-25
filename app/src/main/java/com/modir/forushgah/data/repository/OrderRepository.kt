@@ -427,6 +427,13 @@ class OrderRepository @Inject constructor(
                     order.copy(status = OrderStatus.DELETED, updatedAt = now)
                 }
                 else -> {
+                    // Phase 4.2: terminal (closed) orders can never be
+                    // reopened into an active state — the status menu hides
+                    // these targets, and the repository rejects them too, so
+                    // the protection does not rely on the UI.
+                    require(!isClosedForReactivation(order.status)) {
+                        "این فاکتور «${terminalLabel(order.status)}» است و دوباره قابل فعال‌سازی نیست"
+                    }
                     orderDao.updateOrder(order.copy(status = status, updatedAt = now))
                     order.copy(status = status, updatedAt = now)
                 }
@@ -975,8 +982,23 @@ class OrderRepository @Inject constructor(
     private fun isTerminal(status: OrderStatus): Boolean =
         status == OrderStatus.CANCELLED || status == OrderStatus.DELETED
 
-    private fun terminalLabel(status: OrderStatus): String =
-        if (status == OrderStatus.DELETED) "حذف" else "لغو"
+    /**
+     * Phase 4.2: terminal states that must never be reopened into an active
+     * status through the normal status transition. [isTerminal] is the
+     * payment/return/refund guard (Phase 4.1); this one additionally closes
+     * RETURNED for reactivation — a fully returned invoice is done.
+     * (CANCELLED → DELETED remains a valid terminal-to-terminal move.)
+     */
+    private fun isClosedForReactivation(status: OrderStatus): Boolean =
+        status == OrderStatus.CANCELLED ||
+            status == OrderStatus.DELETED ||
+            status == OrderStatus.RETURNED
+
+    private fun terminalLabel(status: OrderStatus): String = when (status) {
+        OrderStatus.DELETED -> "حذف"
+        OrderStatus.RETURNED -> "مرجوع شده"
+        else -> "لغو"
+    }
 
     // ---------- helpers ----------
 
