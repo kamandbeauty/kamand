@@ -46,7 +46,7 @@ sealed interface ExpenseFormEvent {
 
 /** Converts Persian digits to Latin so the amount parses as a Long. */
 internal fun String.toEnglishDigits(): String =
-    map { ch -> if (ch in '۰'..'') '0' + (ch - '۰') else ch }.joinToString("")
+    map { ch -> if (ch in '\u06F0'..'\u06F9') '0' + (ch - '\u06F0') else ch }.joinToString("")
 
 @HiltViewModel
 class ExpenseFormViewModel @Inject constructor(
