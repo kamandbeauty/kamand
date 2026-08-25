@@ -16,7 +16,6 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 
@@ -56,7 +55,7 @@ object InvoiceImageExporter {
                     fun pump() {
                         composeView.post {
                             frames++
-                            if (frames < 2) pump() else if (cont.isActive) cont.resume(Unit)
+                            if (frames < 2) pump() else if (cont.isActive) cont.resumeWith(Result.success(Unit))
                         }
                     }
                     pump()
