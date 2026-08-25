@@ -78,8 +78,8 @@ private fun DashboardContent(snapshot: DashboardSnapshot, modifier: Modifier = M
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        contentPadding = PaddingValues(16.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (snapshot.todayActions.isNotEmpty()) {
