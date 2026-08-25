@@ -115,7 +115,7 @@ class OnboardingViewModelTest {
         assertThat(parseStartingCashToman("5000")).isEqualTo(Money(5_000))
         assertThat(parseStartingCashToman("۵۰۰")).isEqualTo(Money(500))
         completeOnboarding("۵۰۰")
-        assertThat(awaitProfile().startingCashBalance).isEqualTo(Money(5_000))
+        assertThat(awaitProfile().startingCashBalance).isEqualTo(Money(500))
     }
 
     // ---------- 6. invalid negative value ----------
