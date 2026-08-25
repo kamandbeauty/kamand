@@ -166,7 +166,9 @@ class FinancialLifecycleTest {
         // one event per payment, each traceable to its own payment row
         val paymentEvents = eventsOf(order.id, TransactionType.PAYMENT_RECEIVED)
         assertThat(paymentEvents).hasSize(3)
-        assertThat(paymentEvents.map { it.paymentId }).doesNotContainDuplicates()
+        // three distinct, non-null payment row ids
+        assertThat(paymentEvents.map { it.paymentId }.toSet()).hasSize(3)
+        assertThat(paymentEvents.all { it.paymentId != null }).isTrue()
     }
 
     // ---------- E. refund ----------
