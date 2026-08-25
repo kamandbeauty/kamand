@@ -22,7 +22,11 @@ data class ExpenseCategoryEntity(
         ForeignKey(entity = OrderEntity::class, parentColumns = ["id"], childColumns = ["orderId"], onDelete = ForeignKey.SET_NULL),
         ForeignKey(entity = EmployeeEntity::class, parentColumns = ["id"], childColumns = ["employeeId"], onDelete = ForeignKey.SET_NULL),
     ],
-    indices = [Index("categoryId"), Index("orderId"), Index("employeeId"), Index("date")],
+    indices = [
+        Index("categoryId"), Index("orderId"), Index("employeeId"), Index("date"),
+        // Phase 4.2: soft delete — active-list queries filter on deletedAt.
+        Index("deletedAt"),
+    ],
 )
 data class ExpenseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -32,4 +36,7 @@ data class ExpenseEntity(
     val description: String? = null,
     val orderId: Long? = null,
     val employeeId: Long? = null,
+    /** Phase 4.2: soft delete. Null = active. The row is never physically
+     * removed so the financial history stays traceable (like orders). */
+    val deletedAt: Long? = null,
 )

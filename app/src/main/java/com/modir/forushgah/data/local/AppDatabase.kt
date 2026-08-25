@@ -36,11 +36,12 @@ import com.modir.forushgah.data.local.entity.*
         InstallmentEntity::class,
         StoreProfileEntity::class,
     ],
-    version = 6, // Phase 4.1: financial core — financial_transactions gains
-    // traceability references (customerId/supplierId/paymentId/refundId/
-    // returnId/referenceType/referenceId/reversalOfId), orders gain
-    // isCashPayment, orderNumber index becomes non-unique (soft-delete keeps
-    // the number on edited invoices), OrderStatus gains DELETED.
+    version = 7, // Phase 4.2: standalone expense workflow — expenses gains
+    // deletedAt (soft delete: a deleted expense disappears from active lists
+    // but keeps its row and full financial history) and financial_transactions
+    // gains a (referenceType, referenceId) index for standalone-expense events.
+    // The ExpenseGroup enum set also changes (PACKAGING/SHIPPING/PURCHASE/
+    // RENT/SALARY/UTILITIES/OTHER); pre-release destructive migration covers it.
     // fallbackToDestructiveMigration is still in effect pre-release (see
     // DatabaseModule), so no Migration object needed yet.
     exportSchema = true,

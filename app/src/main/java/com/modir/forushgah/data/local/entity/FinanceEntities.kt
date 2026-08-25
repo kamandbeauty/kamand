@@ -127,6 +127,8 @@ data class RefundEntity(
         Index("orderId"), Index("type"), Index("date"),
         Index("customerId"), Index("supplierId"),
         Index("paymentId"), Index("refundId"), Index("returnId"), Index("reversalOfId"),
+        // Phase 4.2: standalone-expense events are looked up by (referenceType, referenceId).
+        Index("referenceType", "referenceId"),
     ],
 )
 data class FinancialTransactionEntity(

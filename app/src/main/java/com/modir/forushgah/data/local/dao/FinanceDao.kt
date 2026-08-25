@@ -85,11 +85,6 @@ interface OrderReturnDao {
     )
     suspend fun sumReturnedQuantity(orderId: Long, productId: Long): Int
 
-    /** Phase 4.1: total revenue reversed by ACTIVE (non-rejected) returns of
-     * the order — used for customer credit and correction accounting. */
-    @Query("SELECT COALESCE(SUM(revenueReversed), 0) FROM order_returns WHERE orderId = :orderId AND status != 'REJECTED'")
-    suspend fun sumActiveReversedRevenue(orderId: Long): Long
-
     @Query(
         """
         SELECT r.*, o.orderNumber AS orderNumber, c.name AS customerName
@@ -146,4 +141,9 @@ interface FinancialTransactionDao {
     /** Idempotency: an event is reversed at most once (by any correction). */
     @Query("SELECT COUNT(*) FROM financial_transactions WHERE reversalOfId = :reversalOfId")
     suspend fun countReversalsOf(reversalOfId: Long): Int
+
+    /** Phase 4.2: the full financial history of one standalone expense
+     * (original event + its corrections), oldest first. */
+    @Query("SELECT * FROM financial_transactions WHERE referenceType = :referenceType AND referenceId = :referenceId ORDER BY id ASC")
+    suspend fun getByReference(referenceType: String, referenceId: Long): List<FinancialTransactionEntity>
 }

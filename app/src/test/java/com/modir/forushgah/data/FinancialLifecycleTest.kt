@@ -471,7 +471,6 @@ class FinancialLifecycleTest {
         // nothing happened: stock untouched, no return row, no reversed revenue
         assertThat(stockOf(product)).isEqualTo(8)
         assertThat(db.orderReturnDao().observeAll().first()).isEmpty()
-        assertThat(db.orderReturnDao().sumActiveReversedRevenue(order.id)).isEqualTo(0L)
         assertThat(eventsOf(order.id, TransactionType.REVENUE_REVERSED)).isEmpty()
     }
 
