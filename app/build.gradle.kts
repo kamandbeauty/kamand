@@ -62,6 +62,13 @@ android {
     }
 }
 
+// AppDatabase declares exportSchema = true — Room's KSP processor requires a
+// schema export location or it fails with "Schema export directory is not
+// provided given exportSchema = true".
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     // Core
     implementation("androidx.core:core-ktx:1.13.1")
