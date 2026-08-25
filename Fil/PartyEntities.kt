@@ -1,0 +1,31 @@
+package com.modir.forushgah.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.modir.forushgah.core.common.Money
+
+@Entity(tableName = "customers")
+data class CustomerEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val mobile: String? = null,
+    val address: String? = null,
+    val city: String? = null,
+    val notes: String? = null,
+    /** Credit-sale balance («بستانکی») — Rubi customer.balance. */
+    val balance: Money = Money.ZERO,
+    val createdAt: Long,
+    val updatedAt: Long,
+)
+
+@Entity(tableName = "suppliers")
+data class SupplierEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val phone: String? = null,
+    val address: String? = null,
+    val notes: String? = null,
+    val isActive: Boolean = true,
+    val createdAt: Long,
+    val updatedAt: Long,
+)
