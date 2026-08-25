@@ -3,7 +3,6 @@ package com.modir.forushgah
 import android.app.Application
 import com.modir.forushgah.data.sample.ReferenceDataSeeder
 import com.modir.forushgah.data.sample.SampleDataSeeder
-import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -12,7 +11,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 @HiltAndroidApp
-@AndroidEntryPoint
 class ModirApplication : Application() {
 
     @Inject
