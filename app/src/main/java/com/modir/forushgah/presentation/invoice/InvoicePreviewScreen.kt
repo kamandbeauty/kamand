@@ -32,7 +32,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -223,7 +222,7 @@ fun InvoicePreviewScreen(
                         Card(
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardElevation(4.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                             border = BorderStroke(1.dp, PreviewBorder),
                         ) {
                             InvoiceDocument(detail = detail, store = store)
@@ -239,7 +238,7 @@ fun InvoicePreviewScreen(
                             enabled = !busy && detail != null,
                             modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = DocOrange),
+                            colors = ButtonDefaults.elevatedButtonColors(containerColor = DocOrange),
                             elevation = ButtonDefaultsNoElevation,
                         ) {
                             Icon(Icons.Outlined.Image, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
@@ -251,7 +250,7 @@ fun InvoicePreviewScreen(
                             enabled = !busy && detail != null,
                             modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                            colors = ButtonDefaults.elevatedButtonColors(containerColor = AccentBlue),
                             elevation = ButtonDefaultsNoElevation,
                         ) {
                             Icon(Icons.Outlined.PictureAsPdf, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))

@@ -69,7 +69,7 @@ class InvoiceFlowTest {
             financialTransactionDao = db.financialTransactionDao(),
             inventoryRepository = inventoryRepository,
         )
-        productRepository = ProductRepository(db.productDao(), db.categoryDao())
+        productRepository = ProductRepository(db.productDao())
         customerRepository = CustomerRepository(db.customerDao())
         supplierRepository = SupplierRepository(db.supplierDao())
     }
@@ -227,6 +227,10 @@ class InvoiceFlowTest {
             OrderValidationDraft(
                 customerId = 1,
                 items = listOf(OrderItemDraft(1, "کالا", quantity = 0, Money(100), Money(50), 10)),
+                orderDiscount = Money.ZERO,
+                shippingChargedToCustomer = Money.ZERO,
+                actualShippingCost = Money.ZERO,
+                packagingCost = Money.ZERO,
             ),
         )
         assertThat(result).isInstanceOf(ValidationResult.Invalid::class.java)
@@ -239,6 +243,10 @@ class InvoiceFlowTest {
             OrderValidationDraft(
                 customerId = 1,
                 items = listOf(OrderItemDraft(1, "کالا", quantity = 11, Money(100), Money(50), 10)),
+                orderDiscount = Money.ZERO,
+                shippingChargedToCustomer = Money.ZERO,
+                actualShippingCost = Money.ZERO,
+                packagingCost = Money.ZERO,
             ),
         )
         assertThat(result).isInstanceOf(ValidationResult.Invalid::class.java)

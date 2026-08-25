@@ -209,7 +209,7 @@ fun ShipmentTrackingScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TrackOrange),
+                    colors = ButtonDefaults.elevatedButtonColors(containerColor = TrackOrange),
                 ) {
                     Text(
                         if (state.isSaving) "در حال ذخیره…"
