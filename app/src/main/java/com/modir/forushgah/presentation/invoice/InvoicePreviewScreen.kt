@@ -28,12 +28,11 @@ import androidx.compose.material.icons.filled.SaveAlt
 
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.ImageOutline
-import androidx.compose.material.icons.outlined.PictureAsPdfOutline
-import androidx.compose.material.icons.outlined.ShareOutline
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +45,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -175,12 +175,11 @@ fun InvoicePreviewScreen(
     }
 
     Scaffold(
-        backgroundColor = PreviewBg,
+        containerColor = PreviewBg,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                backgroundColor = Color.White,
-                elevation = 0.dp,
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.Close, contentDescription = "بستن", tint = PreviewSlate800)
@@ -224,7 +223,7 @@ fun InvoicePreviewScreen(
                         Card(
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = 4.dp,
+                            elevation = CardElevation(4.dp),
                             border = BorderStroke(1.dp, PreviewBorder),
                         ) {
                             InvoiceDocument(detail = detail, store = store)
@@ -240,10 +239,10 @@ fun InvoicePreviewScreen(
                             enabled = !busy && detail != null,
                             modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(14.dp),
-                            containerColor = DocOrange,
+                            colors = ButtonDefaults.buttonColors(containerColor = DocOrange),
                             elevation = ButtonDefaultsNoElevation,
                         ) {
-                            Icon(Icons.Outlined.ImageOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Outlined.Image, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("ارسال عکس فاکتور", color = Color.White, fontWeight = FontWeight.W900, fontSize = 12.sp)
                         }
@@ -252,10 +251,10 @@ fun InvoicePreviewScreen(
                             enabled = !busy && detail != null,
                             modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(14.dp),
-                            containerColor = AccentBlue,
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                             elevation = ButtonDefaultsNoElevation,
                         ) {
-                            Icon(Icons.Outlined.PictureAsPdfOutline, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Outlined.PictureAsPdf, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("ارسال PDF", color = Color.White, fontWeight = FontWeight.W900, fontSize = 12.sp)
                         }
@@ -280,7 +279,7 @@ fun InvoicePreviewScreen(
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, PreviewBorder),
                     ) {
-                        Icon(Icons.Outlined.ShareOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("منوی اشتراک‌گذاری فاکتور", fontWeight = FontWeight.W800, fontSize = 12.sp)
                     }
@@ -313,7 +312,7 @@ fun InvoicePreviewScreen(
     }
 }
 
-private val ButtonDefaultsNoElevation = androidx.compose.material3.ButtonDefaults.elevation(defaultElevation = 0.dp)
+private val ButtonDefaultsNoElevation = androidx.compose.material3.ButtonElevation(0.dp)
 
 /** Rubi share bottom sheet: image / PDF-like / text. */
 @Composable
@@ -351,8 +350,8 @@ private fun ShareSheet(
                 color = PreviewSlate500,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ShareTile(Icons.Outlined.ImageOutline, DocOrange, "ارسال عکس فاکتور", "اشتراک تصویر PNG", onShareImage)
-            ShareTile(Icons.Outlined.PictureAsPdfOutline, AccentBlue, "ارسال PDF", "اشتراک فایل فاکتور برای چاپ", onSharePdfLike)
+            ShareTile(Icons.Outlined.Image, DocOrange, "ارسال عکس فاکتور", "اشتراک تصویر PNG", onShareImage)
+            ShareTile(Icons.Outlined.PictureAsPdf, AccentBlue, "ارسال PDF", "اشتراک فایل فاکتور برای چاپ", onSharePdfLike)
             ShareTile(Icons.Outlined.ChatBubbleOutline, PreviewSlate700, "اشتراک متن فاکتور", "ارسال خلاصه متنی", onShareText)
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("انصراف") }

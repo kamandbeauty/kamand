@@ -85,6 +85,8 @@ class CustomerFormViewModel @Inject constructor(
                 address = draft.address,
                 city = draft.city,
                 notes = draft.notes,
+                createdAt = now,
+                updatedAt = now,
             )
             if (s.isEditMode) {
                 customerRepository.update(

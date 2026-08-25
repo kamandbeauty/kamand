@@ -79,6 +79,8 @@ fun OrderFormRoute(
         state = state,
         showCustomerSelector = showCustomerSelector,
         showProductSelector = showProductSelector,
+        onCustomerSelectorDismiss = { showCustomerSelector = false },
+        onProductSelectorDismiss = { showProductSelector = false },
         discountTarget = discountTarget,
         onBack = onBack,
         onCustomerSelectClick = { showCustomerSelector = true },
@@ -129,6 +131,8 @@ fun OrderFormScreen(
     state: OrderFormUiState,
     showCustomerSelector: Boolean,
     showProductSelector: Boolean,
+    onCustomerSelectorDismiss: () -> Unit,
+    onProductSelectorDismiss: () -> Unit,
     discountTarget: DiscountTarget?,
     onBack: () -> Unit,
     onCustomerSelectClick: () -> Unit,
@@ -252,7 +256,7 @@ fun OrderFormScreen(
             onQueryChange = onCustomerQueryChange,
             onSelected = onCustomerSelected,
             onQuickCreate = onQuickCreateCustomer,
-            onDismiss = { showCustomerSelector = false },
+            onDismiss = onCustomerSelectorDismiss,
         )
     }
     if (showProductSelector) {
@@ -261,7 +265,7 @@ fun OrderFormScreen(
             query = state.productQuery,
             onQueryChange = onProductQueryChange,
             onSelected = onProductSelected,
-            onDismiss = { showProductSelector = false },
+            onDismiss = onProductSelectorDismiss,
         )
     }
     when (val target = discountTarget) {
@@ -578,11 +582,9 @@ fun DiscountDialog(
     var isPercent by remember { mutableStateOf(false) }
     var value by remember { mutableStateOf(if (current.isZero) "" else current.amountInToman.toString()) }
     val parsed = value.toLongOrNull() ?: 0L
-    val preview: Money = if (isPercent) {
-        base.percentOf(parsed.toDouble()).coerceAtMost(base).coerceAtLeastZero()
-    } else {
-        Money(parsed).coerceAtMost(base).coerceAtLeastZero()
-    }
+    val computed = if (isPercent) base.percentOf(parsed.toDouble()) else Money(parsed)
+    // Money is not Comparable (KSP/Room value-class constraint) — clamp manually.
+    val preview: Money = (if (computed > base) base else computed).coerceAtLeastZero()
 
     AlertDialog(
         onDismissRequest = onDismiss,

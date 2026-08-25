@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -36,6 +37,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -115,7 +117,7 @@ fun ShipmentTrackingRoute(
         onMultiShare = {
             val rows = state.shareableSelected
             if (rows.isEmpty()) {
-                snackbarHostState.showSnackbar("برای اشتراک‌گذاری، ابتدا کد رهگیری را ذخیره کنید")
+                scope.launch { snackbarHostState.showSnackbar("برای اشتراک‌گذاری، ابتدا کد رهگیری را ذخیره کنید") }
             } else {
                 multiShare(rows, viewModel, snackbarHostState, scope, context)
             }
@@ -180,11 +182,11 @@ fun ShipmentTrackingScreen(
     onMissingPhoneEdit: (TrackingRowUi?) -> Unit,
 ) {
     Scaffold(
-        backgroundColor = TrackCream,
+        containerColor = TrackCream,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                backgroundColor = TrackCream,
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = TrackCream),
                 title = {
                     Text(
                         "کدهای رهگیری ارسال",
@@ -207,7 +209,7 @@ fun ShipmentTrackingScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    containerColor = TrackOrange,
+                    colors = ButtonDefaults.buttonColors(containerColor = TrackOrange),
                 ) {
                     Text(
                         if (state.isSaving) "در حال ذخیره…"
@@ -425,6 +427,7 @@ private fun TrackingRowCard(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
                 ProviderPicker(
+                    modifier = Modifier.weight(1f),
                     providers = providers,
                     selectedId = row.providerId,
                     selectedName = row.providerName,
@@ -455,9 +458,10 @@ private fun ProviderPicker(
     selectedId: Long?,
     selectedName: String?,
     onProviderChange: (Long?) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Row(modifier = Modifier.weight(1f)) {
+    Row(modifier = modifier) {
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
                 onClick = { expanded = true },

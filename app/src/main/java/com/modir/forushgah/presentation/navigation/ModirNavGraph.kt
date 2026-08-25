@@ -91,7 +91,7 @@ fun ModirNavGraph() {
                     onSaved = { id ->
                         // Rubi: pushReplacement to the preview after save.
                         navController.navigate("invoice/$id") {
-                            popUpTo(navController.currentDestination?.id ?: 0L) { inclusive = true }
+                            popUpTo(navController.currentDestination?.id ?: 0) { inclusive = true }
                             launchSingleTop = true
                         }
                     },

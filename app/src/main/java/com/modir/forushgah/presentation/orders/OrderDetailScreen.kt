@@ -594,9 +594,12 @@ private fun PaymentDialog(
 
 /** Small LazyRow for chips inside dialogs. */
 @Composable
-private fun LazyRowCompact(items: List<Pair<String, Long>>, content: @Composable (Pair<String, Long>) -> Unit) {
+private fun <T : Any> LazyRowCompact(
+    items: List<Pair<T, Long>>,
+    content: @Composable (Pair<T, Long>) -> Unit,
+) {
     androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        androidx.compose.foundation.lazy.items(items, key = { it.second }) { item -> content(item) }
+        items(items, key = { it.second }) { item -> content(item) }
     }
 }
 
@@ -662,8 +665,11 @@ private fun ReturnDialog(
 ) {
     val returnedByProduct = detail.returnedQuantityByProduct
     // editable quantities per line
+    // Only product-linked lines can be returned (spec §21): free/manual lines
+    // have no productId to restock against.
     val returnableLines = detail.items.filter { row ->
-        (row.item.quantity - (returnedByProduct[row.item.productId] ?: 0)) > 0
+        row.item.productId != null &&
+            (row.item.quantity - (returnedByProduct[row.item.productId] ?: 0)) > 0
     }
     var quantities by remember { mutableStateOf<Map<Long, Int>>(emptyMap()) }
     var reason by remember { mutableStateOf(ReturnReason.OTHER) }
@@ -683,7 +689,8 @@ private fun ReturnDialog(
                 }
                 returnableLines.forEach { row ->
                     val line = row.item
-                    val maxQty = line.quantity - (returnedByProduct[line.productId] ?: 0)
+                    val pid = line.productId!!
+                    val maxQty = line.quantity - (returnedByProduct[pid] ?: 0)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "${row.productName} (حداکثر ${PersianNumberFormatter.toPersianDigits(maxQty.toString())})",
@@ -692,10 +699,10 @@ private fun ReturnDialog(
                             maxLines = 1,
                         )
                         OutlinedTextField(
-                            value = quantityOf(line.productId).let { if (it == 0) "" else it.toString() },
+                            value = quantityOf(pid).let { if (it == 0) "" else it.toString() },
                             onValueChange = { v ->
                                 val n = v.filter { c -> c.isDigit() }.toIntOrNull() ?: 0
-                                quantities = quantities + (line.productId to n.coerceIn(0, maxQty))
+                                quantities = quantities + (pid to n.coerceIn(0, maxQty))
                             },
                             label = { Text("تعداد") },
                             singleLine = true,
@@ -729,7 +736,7 @@ private fun ReturnDialog(
         },
         confirmButton = {
             val items = returnableLines
-                .map { ReturnItemDraft(it.item.productId, quantityOf(it.item.productId)) }
+                .map { ReturnItemDraft(it.item.productId!!, quantityOf(it.item.productId!!)) }
                 .filter { it.quantity > 0 }
             Button(
                 onClick = {

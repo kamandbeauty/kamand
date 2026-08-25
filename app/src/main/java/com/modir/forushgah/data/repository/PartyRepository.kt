@@ -48,7 +48,7 @@ class CustomerRepository @Inject constructor(
      * not found — used when saving an invoice with a typed customer name. */
     suspend fun getOrCreateByName(name: String, mobile: String? = null, now: Long = System.currentTimeMillis()): Customer {
         val trimmed = name.trim()
-        customerDao.observeAll().firstOrNull { it.name == trimmed }?.let { return it.toDomain() }
+        customerDao.observeAll().first().firstOrNull { it.name == trimmed }?.let { return it.toDomain() }
         val id = customerDao.insert(CustomerEntity(name = trimmed, mobile = mobile, createdAt = now, updatedAt = now))
         return Customer(id = id, name = trimmed, mobile = mobile, createdAt = now, updatedAt = now)
     }
@@ -82,7 +82,7 @@ class SupplierRepository @Inject constructor(
     /** Rubi behavior for purchase invoices: match by exact name, create if not found. */
     suspend fun getOrCreateByName(name: String, phone: String? = null, now: Long = System.currentTimeMillis()): Supplier {
         val trimmed = name.trim()
-        supplierDao.observeAll().firstOrNull { it.name == trimmed }?.let { return it.toDomain() }
+        supplierDao.observeAll().first().firstOrNull { it.name == trimmed }?.let { return it.toDomain() }
         val id = supplierDao.insert(SupplierEntity(name = trimmed, phone = phone, createdAt = now, updatedAt = now))
         return Supplier(id = id, name = trimmed, phone = phone, createdAt = now, updatedAt = now)
     }

@@ -81,6 +81,8 @@ class SupplierFormViewModel @Inject constructor(
                 phone = draft.phone,
                 address = draft.address,
                 notes = draft.notes,
+                createdAt = now,
+                updatedAt = now,
             )
             if (s.isEditMode) {
                 supplierRepository.update(

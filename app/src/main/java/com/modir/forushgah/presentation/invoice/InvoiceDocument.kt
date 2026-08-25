@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontFeature
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
@@ -284,7 +283,6 @@ fun InvoiceDocument(
                         color = Color(0xFF0F172A),
                         textDirection = TextDirection.Ltr,
                         textAlign = TextAlign.End,
-                        fontFeature = FontFeature.tabularFigures(),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     (store?.storeName).orEmpty().takeIf { it.isNotEmpty() }?.let {

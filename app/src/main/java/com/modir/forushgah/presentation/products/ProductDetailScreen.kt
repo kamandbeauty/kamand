@@ -349,6 +349,7 @@ private fun MovementCard(movement: InventoryMovement) {
 /** Spec §6: movements show their reference (order, stock adjustment, manual). */
 private fun referenceLabelOf(movement: InventoryMovement): String? = when (movement.referenceType) {
     InventoryReferenceType.ORDER -> "سفارش #${PersianNumberFormatter.toPersianDigits((movement.referenceId ?: 0L).toString())}"
+    InventoryReferenceType.ORDER_RETURN -> "مرجوعی"
     InventoryReferenceType.STOCK_ADJUSTMENT -> "تنظیم موجودی"
     InventoryReferenceType.MANUAL -> "ثبت دستی"
     InventoryReferenceType.NONE -> null

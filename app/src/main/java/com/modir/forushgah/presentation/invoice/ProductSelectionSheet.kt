@@ -75,7 +75,6 @@ fun ProductSelectionSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        sheetGesturesEnabled = false, // explicit buttons only — Rubi sheets are button-driven
     )
     var selectedProductId by remember { mutableStateOf<Long?>(null) }
     var quantity by remember { mutableStateOf(1) }

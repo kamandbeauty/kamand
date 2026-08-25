@@ -11,8 +11,8 @@ import java.util.Locale
  */
 object DateTimeFormatter {
 
-    private val datePattern = SimpleDateFormat("yyyy/MM/dd", Locale.PERSIAN)
-    private val dateTimePattern = SimpleDateFormat("yyyy/MM/dd، HH:mm", Locale.PERSIAN)
+    private val datePattern = SimpleDateFormat("yyyy/MM/dd", Locale.forLanguageTag("fa-IR"))
+    private val dateTimePattern = SimpleDateFormat("yyyy/MM/dd، HH:mm", Locale.forLanguageTag("fa-IR"))
 
     fun date(millis: Long): String = synchronized(datePattern) { datePattern.format(Date(millis)) }
 

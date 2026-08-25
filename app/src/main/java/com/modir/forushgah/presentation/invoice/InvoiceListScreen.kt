@@ -36,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -121,12 +122,11 @@ fun InvoiceListScreen(
     onDeleteDismiss: () -> Unit,
 ) {
     Scaffold(
-        backgroundColor = ListCream,
+        containerColor = ListCream,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                backgroundColor = Color.White,
-                elevation = 0.dp,
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
                 title = {
                     Text(
                         "لیست فاکتورها",
