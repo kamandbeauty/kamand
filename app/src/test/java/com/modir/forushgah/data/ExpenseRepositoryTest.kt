@@ -143,7 +143,10 @@ class ExpenseRepositoryTest {
     // ---------- 2. category seeding ----------
 
     @Test
-    fun `built-in categories are seeded exactly once with the final seven groups`() = runBlocking {
+    // runBlocking<Unit> forces a void return: the final Truth
+    // containsExactly(...) call returns a builder object, and JUnit4 rejects
+    // test methods with a non-void return type (InvalidTestClassError).
+    fun `built-in categories are seeded exactly once with the final seven groups`() = runBlocking<Unit> {
         // setup already seeded once — a second start must not duplicate
         expenseRepository.seedBuiltInCategories()
 
