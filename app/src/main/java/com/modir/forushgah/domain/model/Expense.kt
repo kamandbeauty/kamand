@@ -18,7 +18,7 @@ enum class ExpenseGroup {
     RENT, // اجاره
     SALARY, // حقوق
     UTILITIES, // قبوض و خدمات
-    OTHER, // سایر
+    OTHER; // سایر
 
     /** Persian display label — single source of truth for UI and seeding. */
     val persianName: String
