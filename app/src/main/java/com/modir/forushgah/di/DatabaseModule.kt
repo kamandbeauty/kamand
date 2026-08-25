@@ -41,6 +41,8 @@ object DatabaseModule {
     @Provides fun providePayableDao(db: AppDatabase): PayableDao = db.payableDao()
     @Provides fun provideSupplierPaymentDao(db: AppDatabase): SupplierPaymentDao = db.supplierPaymentDao()
     @Provides fun provideOrderReturnDao(db: AppDatabase): OrderReturnDao = db.orderReturnDao()
+    @Provides fun provideRefundDao(db: AppDatabase): RefundDao = db.refundDao()
+    @Provides fun providePaymentMethodDao(db: AppDatabase): PaymentMethodDao = db.paymentMethodDao()
     @Provides fun provideFinancialTransactionDao(db: AppDatabase): FinancialTransactionDao = db.financialTransactionDao()
     @Provides fun provideSettlementPlanDao(db: AppDatabase): SettlementPlanDao = db.settlementPlanDao()
     @Provides fun provideStoreProfileDao(db: AppDatabase): StoreProfileDao = db.storeProfileDao()
