@@ -272,6 +272,24 @@ fun OrderDetailScreen(
     }
 }
 
+/**
+ * Phase 4.2: targets the status menu may offer from [current]. Terminal
+ * (closed) orders — CANCELLED / DELETED / RETURNED — can never be reopened
+ * into an active state; the only remaining move is CANCELLED → DELETED. The
+ * repository enforces the same rule, so the UI is a convenience, not the
+ * guard.
+ */
+private fun allowedStatusTargets(current: OrderStatus): List<OrderStatus> {
+    val closed = setOf(OrderStatus.CANCELLED, OrderStatus.DELETED, OrderStatus.RETURNED)
+    return OrderStatus.entries.filter { target ->
+        when {
+            target == current -> false
+            current in closed -> current == OrderStatus.CANCELLED && target == OrderStatus.DELETED
+            else -> true
+        }
+    }
+}
+
 @Composable
 private fun StatusMenu(current: OrderStatus, onChange: (OrderStatus) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
@@ -280,15 +298,17 @@ private fun StatusMenu(current: OrderStatus, onChange: (OrderStatus) -> Unit) {
             Icon(Icons.Filled.ArrowDropDown, contentDescription = "تغییر وضعیت")
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            OrderStatus.entries.forEach { status ->
-                DropdownMenuItem(
-                    text = { Text(status.persianLabel() + if (status == current) " (فعلی)" else "") },
-                    onClick = {
-                        expanded = false
-                        if (status != current) onChange(status)
-                    },
-                )
-            }
+            OrderStatus.entries
+                .filter { status -> status == current || status in allowedStatusTargets(current) }
+                .forEach { status ->
+                    DropdownMenuItem(
+                        text = { Text(status.persianLabel() + if (status == current) " (فعلی)" else "") },
+                        onClick = {
+                            expanded = false
+                            if (status != current) onChange(status)
+                        },
+                    )
+                }
         }
     }
 }

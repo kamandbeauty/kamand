@@ -22,6 +22,8 @@ import com.modir.forushgah.presentation.customers.CustomerDetailRoute
 import com.modir.forushgah.presentation.customers.CustomerFormRoute
 import com.modir.forushgah.presentation.customers.CustomerListRoute
 import com.modir.forushgah.presentation.dashboard.DashboardRoute
+import com.modir.forushgah.presentation.expenses.ExpenseFormRoute
+import com.modir.forushgah.presentation.expenses.ExpenseListRoute
 import com.modir.forushgah.presentation.invoice.InvoiceCreateRoute
 import com.modir.forushgah.presentation.invoice.InvoiceListRoute
 import com.modir.forushgah.presentation.invoice.InvoicePreviewRoute
@@ -58,6 +60,8 @@ object Routes {
     const val INVOICE_FORM = "invoice_form/{orderId?}"
     const val INVOICE = "invoice/{orderId}"
     const val SHIPMENTS = "shipments" // «کدهای رهگیری ارسال»
+    // Phase 4.2: standalone expense workflow («مالی» tab)
+    const val EXPENSE_FORM = "expense_form/{expenseId?}"
 }
 
 @Composable
@@ -130,6 +134,15 @@ fun ModirNavGraph() {
                 ShipmentTrackingRoute(
                     onBack = { navController.popBackStack() },
                     onCustomerEdit = { id -> navController.navigate("customer_form/$id") },
+                )
+            }
+            composable(
+                route = Routes.EXPENSE_FORM,
+                arguments = listOf(navArgument("expenseId") { type = NavType.LongType; nullable = true }),
+            ) {
+                ExpenseFormRoute(
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(BottomNavItem.Products.route) {
@@ -225,7 +238,13 @@ fun ModirNavGraph() {
                 )
             }
             composable(BottomNavItem.Finance.route) {
-                PhaseUpcomingScreen(title = "مالی", note = "مطالبات، بدهی‌ها و گزارش‌های مالی در فاز بعدی تکمیل می‌شود")
+                // Phase 4.2: the «مالی» tab is the expense workflow (list +
+                // add/edit + delete with confirmation). Receivables/payables
+                // reports remain a later phase.
+                ExpenseListRoute(
+                    onAddClick = { navController.navigate(Routes.EXPENSE_FORM) },
+                    onEditClick = { id -> navController.navigate("expense_form/$id") },
+                )
             }
             composable(Routes.SETTINGS) {
                 PhaseUpcomingScreen(title = "تنظیمات", note = "تنظیمات فروشگاه در فاز بعدی تکمیل می‌شود")
@@ -270,7 +289,7 @@ private fun routeBelongsToTab(route: String, tab: BottomNavItem): Boolean = when
         route.startsWith("order") ||
         route.startsWith("invoice") ||
         route == Routes.RETURNS
-    BottomNavItem.Finance -> route == tab.route
+    BottomNavItem.Finance -> route == tab.route || route.startsWith("expense")
     BottomNavItem.More -> route == tab.route ||
         route.startsWith("customer") ||
         route.startsWith("supplier") ||
