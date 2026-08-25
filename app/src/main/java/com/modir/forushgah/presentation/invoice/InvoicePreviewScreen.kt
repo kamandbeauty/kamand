@@ -44,7 +44,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -178,7 +177,6 @@ fun InvoicePreviewScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.Close, contentDescription = "بستن", tint = PreviewSlate800)
@@ -239,7 +237,6 @@ fun InvoicePreviewScreen(
                             modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.elevatedButtonColors(containerColor = DocOrange),
-                            elevation = ButtonDefaultsNoElevation,
                         ) {
                             Icon(Icons.Outlined.Image, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(6.dp))
@@ -251,7 +248,6 @@ fun InvoicePreviewScreen(
                             modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.elevatedButtonColors(containerColor = AccentBlue),
-                            elevation = ButtonDefaultsNoElevation,
                         ) {
                             Icon(Icons.Outlined.PictureAsPdf, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(6.dp))
@@ -310,8 +306,6 @@ fun InvoicePreviewScreen(
         )
     }
 }
-
-private val ButtonDefaultsNoElevation = androidx.compose.material3.ButtonElevation(0.dp)
 
 /** Rubi share bottom sheet: image / PDF-like / text. */
 @Composable
