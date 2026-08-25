@@ -26,7 +26,7 @@ object InvoiceImageExporter {
     const val OUTPUT_DENSITY = 3f
 
     @OptIn(ExperimentalComposeUiApi::class)
-    fun renderInvoice(@Composable content: @Composable () -> Unit): Bitmap {
+    fun renderInvoice(content: @Composable () -> Unit): Bitmap {
         val renderer = ViewRenderer.createBitmap()
         return renderer.render(widthPx = OUTPUT_WIDTH_PX, density = OUTPUT_DENSITY) {
             content()
