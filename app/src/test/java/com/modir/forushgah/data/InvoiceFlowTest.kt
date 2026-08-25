@@ -20,6 +20,7 @@ import com.modir.forushgah.domain.model.InsufficientStockException
 import com.modir.forushgah.domain.model.InventoryMovementType
 import com.modir.forushgah.domain.model.InventoryReferenceType
 import com.modir.forushgah.domain.model.OrderKind
+import com.modir.forushgah.domain.model.OrderStatus
 import com.modir.forushgah.domain.model.Product
 import com.modir.forushgah.domain.model.ReturnReason
 import com.modir.forushgah.domain.usecase.order.OrderItemDraft
@@ -437,7 +438,9 @@ class InvoiceFlowTest {
         orderRepository.deleteOrder(order.id)
 
         assertThat(stockOf(product)).isEqualTo(20)
-        assertThat(db.orderDao().getById(order.id)).isNull()
+        // Phase 4.1: deletion is a SOFT delete — the row and its financial
+        // history are preserved (never CASCADE-deleted), just hidden.
+        assertThat(db.orderDao().getById(order.id)?.status).isEqualTo(OrderStatus.DELETED)
     }
 
     @Test
@@ -453,10 +456,9 @@ class InvoiceFlowTest {
         assertThat(stockOf(product)).isEqualTo(15)
 
         orderRepository.cancelOrder(order.id)
-        // Cancel restores the 8 sold units (the 3 returned units were already
-        // restored by the return movement; the RETURN-movement guard covers the
-        // original sale reference only, so 15 + 8 = 23… except the return
-        // restock is separate: final = 20 + 3 = 23.
-        assertThat(stockOf(product)).isEqualTo(23)
+        // Phase 4.1: cancellation restores the stock impact EXACTLY ONCE —
+        // only the 5 units that were actually still out (8 sold − 3 already
+        // returned); the return restock is not duplicated: 15 + 5 = 20.
+        assertThat(stockOf(product)).isEqualTo(20)
     }
 }

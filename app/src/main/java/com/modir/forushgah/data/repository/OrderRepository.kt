@@ -3,6 +3,7 @@ package com.modir.forushgah.data.repository
 import androidx.room.withTransaction
 import com.modir.forushgah.core.common.Money
 import com.modir.forushgah.core.common.isPositive
+import com.modir.forushgah.core.common.isZero
 import com.modir.forushgah.data.local.AppDatabase
 import com.modir.forushgah.data.local.dao.CustomerDao
 import com.modir.forushgah.data.local.dao.InventoryMovementDao
@@ -30,6 +31,7 @@ import com.modir.forushgah.domain.model.ReturnReason
 import com.modir.forushgah.domain.model.ReturnStatus
 import com.modir.forushgah.domain.model.ShippingPaymentType
 import com.modir.forushgah.domain.model.TransactionType
+import com.modir.forushgah.domain.usecase.finance.ReturnRevenueCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -122,7 +124,8 @@ data class OrderDetail(
 }
 
 /**
- * Order lifecycle (spec §19–§24) — the operational core Phase 4 builds on.
+ * Order lifecycle (spec §19–§24) — the operational core the financial engine
+ * builds on.
  *
  * Every state change is ONE Room transaction (order + items + inventory
  * movements + financial events commit together or not at all). Inventory is
@@ -130,6 +133,21 @@ data class OrderDetail(
  * (referenceType, referenceId, movementType) and guarded by
  * `countByReference`, so the same order can never deduct or restore stock
  * twice — even if the UI double-fires (spec §19 idempotency).
+ *
+ * Phase 4.1 financial core:
+ * - Every financial effect writes a traceable [FinancialTransactionEntity]
+ *   (SALE / PAYMENT_RECEIVED / REFUND / RETURN_CREATED / REVENUE_REVERSED /
+ *   PACKAGING_EXPENSE + zero-amount lifecycle markers), each guarded by a
+ *   deterministic idempotency check — a repeated operation can never write
+ *   the same financial effect twice.
+ * - Cancellation / deletion / edit are business events: the row and its
+ *   payment/refund/return history are PRESERVED, the financial effect is
+ *   reversed exactly once (correction events with `reversalOfId`), and stock
+ *   is restored exactly once. Deletion is a SOFT delete (status DELETED) so
+ *   CASCADE can never erase financial history.
+ * - Customer credit («بستانکی») is recomputed exactly from the financial
+ *   state ([CustomerDao.sumActiveCredit]) on every money-affecting
+ *   operation — payments and refunds move it, and it never goes negative.
  */
 @Singleton
 class OrderRepository @Inject constructor(
@@ -178,7 +196,7 @@ class OrderRepository @Inject constructor(
             shippingChargedToCustomer = order.shippingChargedToCustomer,
             actualShippingCost = order.actualShippingCost,
             packagingCost = order.packagingCost,
-            cashPayment = Money(paymentDao.sumPaidForOrder(orderId)) >= orderTotal(orderId),
+            cashPayment = order.isCashPayment,
             notes = order.notes,
             orderNumber = order.orderNumber,
             orderDate = order.orderDate,
@@ -227,7 +245,7 @@ class OrderRepository @Inject constructor(
 
     /**
      * Spec §3/§19/§26 + Phase 3.1 (Rubi invoice creation): create order +
-     * items + inventory movements + payment/credit, atomically.
+     * items + inventory movements + payment/credit + financial events, atomically.
      *
      * - SALES: one SALE -qty movement per product line; fails (rolls back
      *   everything) if any line would drive stock negative — overselling is
@@ -235,8 +253,11 @@ class OrderRepository @Inject constructor(
      * - PURCHASE: one PURCHASE +qty movement per product line (stock in).
      * - Free lines (productId = null) never touch inventory (Rubi free items).
      * - Cash payment writes a full Payment row (Rubi paymentType=cash → paid).
-     * - Non-cash sales grow the customer credit balance by the remaining
-     *   amount (Rubi updateBalance), exactly like the reference app.
+     * - Non-cash sales grow the customer credit (recomputed exactly, Phase 4.1).
+     * - Phase 4.1 events: SALE (real revenue, cash or credit),
+     *   PAYMENT_RECEIVED (cash), PACKAGING_EXPENSE (only when the invoice
+     *   actually carries a packaging cost — it stays optional), and the
+     *   zero-amount ORDER_CREATED marker. Every event is idempotency-guarded.
      */
     suspend fun createOrder(draft: NewOrder): OrderEntity = database.withTransaction {
         val now = draft.orderDate
@@ -253,6 +274,7 @@ class OrderRepository @Inject constructor(
             customerId = draft.customerId,
             supplierId = draft.supplierId,
             kind = draft.kind,
+            isCashPayment = draft.cashPayment,
             orderDate = now,
             discount = draft.orderDiscount,
             shippingChargedToCustomer = draft.shippingChargedToCustomer,
@@ -301,15 +323,15 @@ class OrderRepository @Inject constructor(
             }
         }
 
-        // Payment (Rubi): cash → fully paid; non-cash → remaining becomes
-        // customer credit on a sales invoice.
+        // Financial state (Phase 4.1).
         val subtotal = Money.sum(draft.items.map {
             Money(it.unitSellingPrice.amountInToman * it.quantity - it.discount.amountInToman)
         }) - draft.orderDiscount
         val total = (subtotal + draft.shippingChargedToCustomer).coerceAtLeastZero()
+
         if (draft.cashPayment) {
             if (total.isPositive) {
-                paymentDao.insert(
+                val paymentId = paymentDao.insert(
                     PaymentEntity(
                         orderId = orderId,
                         amount = total,
@@ -320,68 +342,165 @@ class OrderRepository @Inject constructor(
                         notes = "پرداخت نقدی هنگام صدور فاکتور",
                     ),
                 )
-                writeEvent(TransactionType.PAYMENT_RECEIVED, total, now, orderId, "دریافت وجه نقدی")
-            }
-        } else if (!isPurchase && total.isPositive) {
-            draft.customerId?.let { custId ->
-                val customer = customerDao.getById(custId)
-                if (customer != null) {
-                    customerDao.update(
-                        customer.copy(
-                            balance = (customer.balance + total).let { if (it.amountInToman < 0) Money.ZERO else it },
-                            updatedAt = now,
-                        ),
-                    )
-                }
+                writeEventIfAbsent(
+                    type = TransactionType.PAYMENT_RECEIVED,
+                    amount = total,
+                    date = now,
+                    orderId = orderId,
+                    customerId = draft.customerId,
+                    supplierId = draft.supplierId,
+                    paymentId = paymentId,
+                    description = "دریافت وجه نقدی",
+                )
             }
         }
 
-        writeEvent(TransactionType.ORDER_CREATED, Money.ZERO, now, orderId, "ثبت ${if (isPurchase) "فاکتور خرید" else "فاکتور فروش"} $orderNumber")
-        if (draft.packagingCost.isPositive) {
-            writeEvent(TransactionType.PACKAGING_EXPENSE, -draft.packagingCost, now, orderId, "هزینه بسته‌بندی فاکتور $orderNumber")
+        // A real sale recognizes revenue at creation — cash or credit.
+        // (A purchase invoice is a buy from a supplier, not store revenue.)
+        if (!isPurchase && total.isPositive) {
+            writeEventIfAbsent(
+                type = TransactionType.SALE,
+                amount = total,
+                date = now,
+                orderId = orderId,
+                customerId = draft.customerId,
+                supplierId = draft.supplierId,
+                description = "ثبت فروش فاکتور $orderNumber",
+            )
         }
+
+        // Packaging cost stays OPTIONAL (business rule): the event is written
+        // only when this invoice actually carries a packaging cost. Bulk
+        // packaging purchases are store EXPENSES (later phase), never an
+        // automatic per-invoice charge.
+        if (draft.packagingCost.isPositive) {
+            writeEventIfAbsent(
+                type = TransactionType.PACKAGING_EXPENSE,
+                amount = -draft.packagingCost,
+                date = now,
+                orderId = orderId,
+                customerId = draft.customerId,
+                supplierId = draft.supplierId,
+                description = "هزینه بسته‌بندی فاکتور $orderNumber",
+            )
+        }
+
+        writeEventIfAbsent(
+            type = TransactionType.ORDER_CREATED,
+            amount = Money.ZERO,
+            date = now,
+            orderId = orderId,
+            customerId = draft.customerId,
+            supplierId = draft.supplierId,
+            description = "ثبت ${if (isPurchase) "فاکتور خرید" else "فاکتور فروش"} $orderNumber",
+        )
+
+        // Customer credit (non-cash sales): recomputed exactly from the
+        // financial state — the new order's total enters the credit sum.
+        draft.customerId?.let { recalcCustomerBalance(it, now) }
+
         temp.copy(id = orderId)
     }
 
     /**
      * Status transition. Cancellation always goes through the cancel logic
-     * (stock restoration) so the status menu and the cancel button can never
-     * diverge; cancelling a terminal order is a no-op.
+     * (stock restoration + financial correction) so the status menu and the
+     * cancel button can never diverge; cancelling a terminal order is a
+     * no-op. DELETED is a system state — routed through the safe delete path
+     * (never a bare status write).
      */
     suspend fun updateStatus(orderId: Long, status: OrderStatus, now: Long = System.currentTimeMillis()): OrderEntity =
         database.withTransaction {
             val order = orderDao.getById(orderId) ?: error("Order $orderId not found")
             if (order.status == status) return@withTransaction order
-            if (status == OrderStatus.CANCELLED) {
-                if (order.status == OrderStatus.CANCELLED || order.status == OrderStatus.RETURNED) {
-                    return@withTransaction order
+            when (status) {
+                OrderStatus.CANCELLED -> {
+                    if (order.status == OrderStatus.CANCELLED || order.status == OrderStatus.DELETED ||
+                        order.status == OrderStatus.RETURNED
+                    ) {
+                        return@withTransaction order
+                    }
+                    applyCancellation(order, now)
                 }
-                orderDao.updateOrder(order.copy(status = OrderStatus.CANCELLED, updatedAt = now))
-                restoreStockForOrder(order, now)
-                writeEvent(TransactionType.ORDER_CANCELLED, Money.ZERO, now, order.id, "لغو سفارش ${order.orderNumber}")
-                return@withTransaction order.copy(status = OrderStatus.CANCELLED, updatedAt = now)
+                OrderStatus.DELETED -> {
+                    if (order.status != OrderStatus.DELETED) applyDelete(order, now)
+                    order.copy(status = OrderStatus.DELETED, updatedAt = now)
+                }
+                else -> {
+                    orderDao.updateOrder(order.copy(status = status, updatedAt = now))
+                    order.copy(status = status, updatedAt = now)
+                }
             }
-            orderDao.updateOrder(order.copy(status = status, updatedAt = now))
-            order.copy(status = status, updatedAt = now)
         }
 
     /**
-     * Spec §20: cancelling an order that already deducted stock restores it —
-     * one RETURN movement per item referencing the order, idempotent.
+     * Spec §20 + Phase 4.1: cancelling an order that already deducted stock
+     * restores it (idempotent), and the order's financial effect is reversed
+     * exactly once (correction events). Payments/refunds/returns are PRESERVED
+     * — cancellation is a business event, never a physical deletion.
      */
     suspend fun cancelOrder(orderId: Long, now: Long = System.currentTimeMillis()): OrderEntity =
         database.withTransaction {
             val order = orderDao.getById(orderId) ?: error("Order $orderId not found")
-            if (order.status == OrderStatus.CANCELLED) return@withTransaction order
-
-            orderDao.updateOrder(order.copy(status = OrderStatus.CANCELLED, updatedAt = now))
-            restoreStockForOrder(order, now)
-            writeEvent(TransactionType.ORDER_CANCELLED, Money.ZERO, now, order.id, "لغو سفارش ${order.orderNumber}")
-            order.copy(status = OrderStatus.CANCELLED, updatedAt = now)
+            if (order.status == OrderStatus.CANCELLED || order.status == OrderStatus.DELETED) {
+                return@withTransaction order
+            }
+            applyCancellation(order, now)
         }
 
+    private suspend fun applyCancellation(order: OrderEntity, now: Long): OrderEntity {
+        orderDao.updateOrder(order.copy(status = OrderStatus.CANCELLED, updatedAt = now))
+        restoreStockForOrder(order, now)
+        reverseOrderFinancialEvents(order, now, "لغو سفارش")
+        order.customerId?.let { recalcCustomerBalance(it, now) }
+        writeEventIfAbsent(
+            type = TransactionType.ORDER_CANCELLED,
+            amount = Money.ZERO,
+            date = now,
+            orderId = order.id,
+            customerId = order.customerId,
+            supplierId = order.supplierId,
+            description = "لغو سفارش ${order.orderNumber}",
+        )
+        return order.copy(status = OrderStatus.CANCELLED, updatedAt = now)
+    }
+
     /**
-     * Idempotent stock reversal for a cancelled/deleted order (spec §20).
+     * Phase 4.1 (Rubi list action «حذف فاکتور»): SOFT delete. The order row
+     * and ALL its financial history (payments/refunds/returns/events) are
+     * preserved — Room CASCADE is never relied on for financial history.
+     * Stock is restored exactly once and the financial effect is reversed
+     * exactly once; repeat calls are no-ops. The row becomes DELETED (hidden
+     * from regular lists, available in the Deleted/Cancelled section).
+     */
+    suspend fun deleteOrder(orderId: Long, now: Long = System.currentTimeMillis()) =
+        database.withTransaction {
+            val order = orderDao.getById(orderId) ?: error("Order $orderId not found")
+            if (order.status == OrderStatus.DELETED) return@withTransaction
+            applyDelete(order, now)
+        }
+
+    private suspend fun applyDelete(order: OrderEntity, now: Long, reason: String = "حذف فاکتور") {
+        orderDao.updateOrder(order.copy(status = OrderStatus.DELETED, updatedAt = now))
+        restoreStockForOrder(order, now)
+        reverseOrderFinancialEvents(order, now, reason)
+        order.customerId?.let { recalcCustomerBalance(it, now) }
+        writeEventIfAbsent(
+            type = TransactionType.ORDER_CANCELLED,
+            amount = Money.ZERO,
+            date = now,
+            orderId = order.id,
+            customerId = order.customerId,
+            supplierId = order.supplierId,
+            description = "$reason ${order.orderNumber}",
+        )
+    }
+
+    /**
+     * Idempotent stock reversal for a cancelled/deleted/replaced order
+     * (spec §20). Restores only the units that were NOT already brought back
+     * by active (non-rejected) returns — those restocks are recorded under
+     * the RETURN id and must not be duplicated ("reversed exactly once").
      * SALES orders: SALE is reversed by RETURN. PURCHASE orders: the PURCHASE
      * is reversed by ADJUSTMENT_OUT (the bought units are no longer here).
      */
@@ -410,15 +529,21 @@ class OrderRepository @Inject constructor(
         if (deducted && !restored) {
             for (item in orderDao.getItems(order.id)) {
                 if (item.productId == null) continue
-                inventoryRepository.applyMovement(
-                    productId = item.productId,
-                    quantityDelta = item.quantity,
-                    movementType = InventoryMovementType.RETURN,
-                    referenceType = InventoryReferenceType.ORDER,
-                    referenceId = order.id,
-                    note = "لغو سفارش ${order.orderNumber}",
-                    now = now,
-                )
+                // Units already brought back by active returns are excluded —
+                // their restock movement exists under the RETURN id.
+                val returnedActive = orderReturnDao.sumReturnedQuantity(order.id, item.productId)
+                val toRestore = (item.quantity - returnedActive).coerceAtLeast(0)
+                if (toRestore > 0) {
+                    inventoryRepository.applyMovement(
+                        productId = item.productId,
+                        quantityDelta = toRestore,
+                        movementType = InventoryMovementType.RETURN,
+                        referenceType = InventoryReferenceType.ORDER,
+                        referenceId = order.id,
+                        note = "لغو/حذف سفارش ${order.orderNumber}",
+                        now = now,
+                    )
+                }
             }
         }
     }
@@ -426,6 +551,8 @@ class OrderRepository @Inject constructor(
     /**
      * Spec §18: full or partial payment. Overpaying beyond the customer total
      * is rejected; original payment rows are never modified or deleted.
+     * Phase 4.1: the event carries the paymentId (traceable, one event per
+     * payment row) and the customer credit is recomputed exactly.
      */
     suspend fun recordPayment(
         orderId: Long,
@@ -436,6 +563,8 @@ class OrderRepository @Inject constructor(
         note: String? = null,
         now: Long = System.currentTimeMillis(),
     ): PaymentEntity = database.withTransaction {
+        val order = orderDao.getById(orderId) ?: error("Order $orderId not found")
+        require(!isTerminal(order.status)) { "این فاکتور ${terminalLabel(order.status)} است" }
         val detailTotal = orderTotal(orderId)
         val remaining = detailTotal - paymentDao.sumPaidForOrder(orderId).let { Money(it) }
         require(amount.isPositive) { "مبلغ پرداخت باید بیشتر از صفر باشد" }
@@ -445,14 +574,34 @@ class OrderRepository @Inject constructor(
         val id = paymentDao.insert(
             PaymentEntity(orderId = orderId, amount = amount, method = method, paymentMethodId = paymentMethodId, paidAt = now, reference = reference, notes = note),
         )
-        writeEvent(TransactionType.PAYMENT_RECEIVED, amount, now, orderId, "دریافت وجه")
+        writeEventIfAbsent(
+            type = TransactionType.PAYMENT_RECEIVED,
+            amount = amount,
+            date = now,
+            orderId = orderId,
+            customerId = order.customerId,
+            supplierId = order.supplierId,
+            paymentId = id,
+            description = "دریافت وجه",
+        )
+        order.customerId?.let { recalcCustomerBalance(it, now) }
         PaymentEntity(orderId = orderId, amount = amount, method = method, paymentMethodId = paymentMethodId, paidAt = now, reference = reference, notes = note).copy(id = id)
     }
 
     /**
-     * Spec §21–§23: full or partial return. Only the returned units restock
-     * (one RETURN movement per line, referencing the RETURN id — idempotent).
-     * When every ordered unit has been returned, the order becomes RETURNED.
+     * Spec §21–§23 + Phase 4.1: full or partial return. Only the returned
+     * units restock (one RETURN movement per line, referencing the RETURN id
+     * — idempotent). When every ordered unit has been returned, the order
+     * becomes RETURNED.
+     *
+     * Phase 4.1:
+     * - a PURCHASE invoice is REJECTED — it must never use the sales-return
+     *   financial flow (purchase returns are a later phase);
+     * - the real reversed revenue is computed from historical line price
+     *   snapshots with pro-rata discount allocation (no longer zero) and
+     *   recorded as a REVENUE_REVERSED event;
+     * - the return cost is a traceable RETURN_CREATED event;
+     * - the customer credit is recomputed exactly.
      */
     suspend fun createReturn(
         orderId: Long,
@@ -465,6 +614,10 @@ class OrderRepository @Inject constructor(
         now: Long = System.currentTimeMillis(),
     ): OrderReturnEntity = database.withTransaction {
         val order = orderDao.getById(orderId) ?: error("Order $orderId not found")
+        require(order.kind != OrderKind.PURCHASE) {
+            "مرجوعی فاکتور خرید در این نسخه پشتیبانی نمی‌شود"
+        }
+        require(!isTerminal(order.status)) { "این فاکتور ${terminalLabel(order.status)} است" }
         val orderItems = orderDao.getItems(orderId)
         require(items.isNotEmpty()) { "حداقل یک کالا برای مرجوعی انتخاب کنید" }
 
@@ -478,6 +631,19 @@ class OrderRepository @Inject constructor(
             }
         }
 
+        val revenueReversed = ReturnRevenueCalculator.reversedRevenue(
+            orderedLines = orderItems.filter { it.productId != null }.map {
+                ReturnRevenueCalculator.OrderedLine(
+                    productId = it.productId!!,
+                    quantity = it.quantity,
+                    unitSellingPrice = it.unitSellingPrice,
+                    discount = it.discount,
+                )
+            },
+            orderDiscount = order.discount,
+            returned = items.map { ReturnRevenueCalculator.ReturnedLine(it.productId, it.quantity) },
+        )
+
         val returnId = orderReturnDao.insert(
             OrderReturnEntity(
                 orderId = orderId,
@@ -485,7 +651,7 @@ class OrderRepository @Inject constructor(
                 status = status,
                 returnShippingCost = returnShippingCost,
                 packagingCostLost = packagingCostLost,
-                revenueReversed = Money.ZERO, // Phase 4 computes the real reversal
+                revenueReversed = revenueReversed,
                 restockedToInventory = restockedToInventory,
                 date = now,
                 createdAt = now,
@@ -519,23 +685,100 @@ class OrderRepository @Inject constructor(
         }
 
         val loss = returnShippingCost + packagingCostLost
-        if (loss.isPositive) {
-            writeEvent(TransactionType.RETURN_CREATED, -loss, now, orderId, "هزینه‌های مرجوعی (ارسال/بسته‌بندی)")
-        } else {
-            writeEvent(TransactionType.RETURN_CREATED, Money.ZERO, now, orderId, "ثبت مرجوعی")
+        writeEventIfAbsent(
+            type = TransactionType.RETURN_CREATED,
+            amount = -loss,
+            date = now,
+            orderId = orderId,
+            customerId = order.customerId,
+            returnId = returnId,
+            description = if (loss.isPositive) "هزینه‌های مرجوعی (ارسال/بسته‌بندی)" else "ثبت مرجوعی",
+        )
+        if (revenueReversed.isPositive) {
+            writeEventIfAbsent(
+                type = TransactionType.REVENUE_REVERSED,
+                amount = -revenueReversed,
+                date = now,
+                orderId = orderId,
+                customerId = order.customerId,
+                returnId = returnId,
+                description = "کاهش فروش به دلیل مرجوعی",
+            )
         }
+
+        order.customerId?.let { recalcCustomerBalance(it, now) }
+
         OrderReturnEntity(
             id = returnId, orderId = orderId, reason = reason, status = status,
             returnShippingCost = returnShippingCost, packagingCostLost = packagingCostLost,
+            revenueReversed = revenueReversed,
             restockedToInventory = restockedToInventory, date = now, createdAt = now,
         )
     }
 
-    suspend fun setReturnStatus(returnId: Long, status: ReturnStatus) = database.withTransaction {
-        val r = orderReturnDao.observeById(returnId).first() ?: error("Return $returnId not found")
-        orderReturnDao.update(r.copy(status = status))
-        r.copy(status = status)
-    }
+    /**
+     * Phase 4.1: return lifecycle.
+     * - non-rejection transitions: plain status update (as before);
+     * - → REJECTED: the return's stock restock is reversed (idempotent
+     *   ADJUSTMENT_OUT movement) and its financial events are reversed
+     *   exactly once; the customer credit is recomputed. REJECTED is
+     *   terminal — re-approving a rejected return is refused (it would
+     *   double the restock). If the restock reversal would drive stock
+     *   negative (the units were resold), the whole transition rolls back
+     *   and the return stays in its previous state.
+     */
+    suspend fun setReturnStatus(returnId: Long, status: ReturnStatus, now: Long = System.currentTimeMillis()) =
+        database.withTransaction {
+            val r = orderReturnDao.observeById(returnId).first() ?: error("Return $returnId not found")
+            if (r.status == status) return@withTransaction r
+            if (r.status == ReturnStatus.REJECTED) return@withTransaction r
+            if (status != ReturnStatus.REJECTED) {
+                orderReturnDao.update(r.copy(status = status))
+                return@withTransaction r.copy(status = status)
+            }
+
+            orderReturnDao.update(r.copy(status = ReturnStatus.REJECTED))
+
+            if (r.restockedToInventory) {
+                val returnItems = orderReturnDao.getItems(r.id)
+                if (returnItems.isNotEmpty() &&
+                    inventoryMovementDao.countByReference(
+                        InventoryReferenceType.ORDER_RETURN.name, r.id, InventoryMovementType.ADJUSTMENT_OUT.name,
+                    ) == 0
+                ) {
+                    for (item in returnItems) {
+                        inventoryRepository.applyMovement(
+                            productId = item.productId,
+                            quantityDelta = -item.quantity,
+                            movementType = InventoryMovementType.ADJUSTMENT_OUT,
+                            referenceType = InventoryReferenceType.ORDER_RETURN,
+                            referenceId = r.id,
+                            note = "رد مرجوعی",
+                            now = now,
+                        )
+                    }
+                }
+            }
+
+            for (event in financialTransactionDao.getByReturn(r.id)) {
+                if (event.amount.isZero) continue
+                if (event.reversalOfId != null) continue
+                writeEventIfAbsent(
+                    type = event.type,
+                    amount = -event.amount,
+                    date = now,
+                    orderId = event.orderId,
+                    customerId = event.customerId,
+                    returnId = event.returnId,
+                    reversalOfId = event.id,
+                    description = "رد مرجوعی — اصلاح مالی",
+                )
+            }
+
+            orderDao.getById(r.orderId)?.customerId?.let { recalcCustomerBalance(it, now) }
+
+            r.copy(status = ReturnStatus.REJECTED)
+        }
 
     /**
      * Phase 3.1 (Rubi list action «کپی فاکتور»): duplicates the invoice under
@@ -581,33 +824,28 @@ class OrderRepository @Inject constructor(
         }
 
     /**
-     * Phase 3.1 (Rubi «ویرایش فاکتور»): re-saves the invoice. Implementation:
-     * reverse the old order's stock impact (idempotently), delete the old row,
-     * create the new one under the SAME number. Payment/return rows of the
-     * edited order are dropped (Rubi's edit replaces the whole record); the
-     * stock engine is never double-charged.
+     * Phase 3.1 (Rubi «ویرایش فاکتور»): re-saves the invoice. Phase 4.1: the
+     * old invoice is NOT hard-deleted — its financial history is preserved
+     * (soft delete) and its financial effect reversed, so reports represent
+     * reality and never double-count old + new state. The replacement is a
+     * new order (new id → fresh idempotency guards, fresh events) under the
+     * SAME number (the orderNumber index is non-unique for this reason).
      */
     suspend fun replaceOrder(orderId: Long, draft: NewOrder, now: Long = System.currentTimeMillis()): OrderEntity =
         database.withTransaction {
             val old = orderDao.getById(orderId) ?: error("Order $orderId not found")
-            restoreStockForOrder(old, now)
-            orderDao.deleteOrder(orderId)
-            createOrder(draft.copy(orderNumber = draft.orderNumber?.trim()?.ifEmpty { old.orderNumber } ?: old.orderNumber))
+            if (old.status != OrderStatus.DELETED) {
+                applyDelete(old, now, reason = "ویرایش فاکتور")
+            }
+            createOrder(
+                draft.copy(orderNumber = draft.orderNumber?.trim()?.ifEmpty { old.orderNumber } ?: old.orderNumber),
+            )
         }
 
-    /**
-     * Phase 3.1 (Rubi list action «حذف فاکتور»): reverses the order's stock
-     * impact (idempotently) and hard-deletes the row — items/payments/refunds/
-     * returns cascade via FK.
+    /** Spec §24: refund — always a separate record; payments stay intact.
+     * Phase 4.1: the event carries the refundId (traceable, one event per
+     * refund row) and the customer credit is recomputed exactly.
      */
-    suspend fun deleteOrder(orderId: Long, now: Long = System.currentTimeMillis()) = database.withTransaction {
-        val order = orderDao.getById(orderId) ?: error("Order $orderId not found")
-        restoreStockForOrder(order, now)
-        writeEvent(TransactionType.ORDER_CANCELLED, Money.ZERO, now, orderId, "حذف فاکتور ${order.orderNumber}")
-        orderDao.deleteOrder(orderId)
-    }
-
-    /** Spec §24: refund — always a separate record; payments stay intact. */
     suspend fun createRefund(
         orderId: Long,
         amount: Money,
@@ -616,6 +854,8 @@ class OrderRepository @Inject constructor(
         note: String? = null,
         now: Long = System.currentTimeMillis(),
     ): RefundEntity = database.withTransaction {
+        val order = orderDao.getById(orderId) ?: error("Order $orderId not found")
+        require(!isTerminal(order.status)) { "این فاکتور ${terminalLabel(order.status)} است" }
         val paid = Money(paymentDao.sumPaidForOrder(orderId))
         val refunded = Money(refundDao.sumRefundedForOrder(orderId))
         require(amount.isPositive) { "مبلغ استرداد باید بیشتر از صفر باشد" }
@@ -623,9 +863,120 @@ class OrderRepository @Inject constructor(
             "مبلغ استرداد نمی‌تواند از پرداختی‌های ثبت‌شده بیشتر باشد"
         }
         val id = refundDao.insert(RefundEntity(orderId = orderId, amount = amount, date = now, method = method, reason = reason, note = note))
-        writeEvent(TransactionType.REFUND, -amount, now, orderId, "استرداد مبلغ به مشتری")
+        writeEventIfAbsent(
+            type = TransactionType.REFUND,
+            amount = -amount,
+            date = now,
+            orderId = orderId,
+            customerId = order.customerId,
+            supplierId = order.supplierId,
+            refundId = id,
+            description = "استرداد مبلغ به مشتری",
+        )
+        order.customerId?.let { recalcCustomerBalance(it, now) }
         RefundEntity(orderId = orderId, amount = amount, date = now, method = method, reason = reason, note = note).copy(id = id)
     }
+
+    // ---------- Phase 4.1 financial helpers ----------
+
+    /**
+     * Appends a financial event with a deterministic idempotency guard, so a
+     * repeated operation can never write the same financial effect twice:
+     * - reversal events: at most one reversal per original event (reversalOfId)
+     * - payment events:  one per payment row (paymentId + type)
+     * - refund events:   one per refund row (refundId + type)
+     * - return events:   one per return + type (returnId + type)
+     * - order events:    one per order + type (orderId + type)
+     */
+    private suspend fun writeEventIfAbsent(
+        type: TransactionType,
+        amount: Money,
+        date: Long,
+        orderId: Long?,
+        customerId: Long? = null,
+        supplierId: Long? = null,
+        paymentId: Long? = null,
+        refundId: Long? = null,
+        returnId: Long? = null,
+        referenceType: String? = null,
+        referenceId: Long? = null,
+        reversalOfId: Long? = null,
+        description: String,
+    ) {
+        val alreadyWritten = when {
+            reversalOfId != null -> financialTransactionDao.countReversalsOf(reversalOfId)
+            paymentId != null -> financialTransactionDao.countByPaymentAndType(paymentId, type.name)
+            refundId != null -> financialTransactionDao.countByRefundAndType(refundId, type.name)
+            returnId != null -> financialTransactionDao.countByReturnAndType(returnId, type.name)
+            else -> financialTransactionDao.countByOrderAndType(orderId ?: 0L, type.name)
+        }
+        if (alreadyWritten > 0) return
+        financialTransactionDao.insert(
+            FinancialTransactionEntity(
+                type = type,
+                amount = amount,
+                date = date,
+                orderId = orderId,
+                customerId = customerId,
+                supplierId = supplierId,
+                paymentId = paymentId,
+                refundId = refundId,
+                returnId = returnId,
+                referenceType = referenceType,
+                referenceId = referenceId,
+                reversalOfId = reversalOfId,
+                description = description,
+            ),
+        )
+    }
+
+    /**
+     * Reverses every ACTIVE financial event of the order, exactly once per
+     * event. Each correction is a NEW event (same type, negated amount,
+     * reversalOfId) — history is never mutated or deleted. Zero-amount
+     * markers and already-reversed events are skipped, so repeat corrections
+     * (cancel → delete, repeated calls) are no-ops.
+     */
+    private suspend fun reverseOrderFinancialEvents(order: OrderEntity, now: Long, reason: String) {
+        for (event in financialTransactionDao.getByOrder(order.id)) {
+            if (event.amount.isZero) continue
+            if (event.reversalOfId != null) continue // never reverse a reversal
+            writeEventIfAbsent(
+                type = event.type,
+                amount = -event.amount,
+                date = now,
+                orderId = event.orderId ?: order.id,
+                customerId = event.customerId,
+                supplierId = event.supplierId,
+                paymentId = event.paymentId,
+                refundId = event.refundId,
+                returnId = event.returnId,
+                referenceType = event.referenceType,
+                referenceId = event.referenceId,
+                reversalOfId = event.id,
+                description = "$reason — اصلاح مالی",
+            )
+        }
+    }
+
+    /**
+     * Recomputes a customer's outstanding credit EXACTLY from the financial
+     * state (never incrementally) — payment totals, receivable, customer
+     * balance and the event log always agree. Never goes negative.
+     */
+    private suspend fun recalcCustomerBalance(customerId: Long, now: Long) {
+        val customer = customerDao.getById(customerId) ?: return
+        val outstanding = Money(customerDao.sumActiveCredit(customerId)).coerceAtLeastZero()
+        if (customer.balance != outstanding) {
+            customerDao.update(customer.copy(balance = outstanding, updatedAt = now))
+        }
+    }
+
+    private fun isTerminal(status: OrderStatus): Boolean =
+        status == OrderStatus.CANCELLED || status == OrderStatus.DELETED
+
+    private fun terminalLabel(status: OrderStatus): String =
+        if (status == OrderStatus.DELETED) "حذف" else "لغو"
 
     // ---------- helpers ----------
 
@@ -640,12 +991,6 @@ class OrderRepository @Inject constructor(
             if (order.shippingPaymentType == ShippingPaymentType.CUSTOMER_PREPAID) order.shippingChargedToCustomer
             else Money.ZERO
         return subtotal + shipping
-    }
-
-    private suspend fun writeEvent(type: TransactionType, amount: Money, date: Long, orderId: Long, description: String) {
-        financialTransactionDao.insert(
-            FinancialTransactionEntity(type = type, amount = amount, date = date, orderId = orderId, description = description),
-        )
     }
 }
 
