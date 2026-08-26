@@ -99,7 +99,7 @@ class _InstallmentCenterScreenState
                     core.installments.payInstallment(
                       installmentId: inst['id'] as String,
                       date: DateTime.now().toIso8601String().substring(0, 10),
-                      accountId: (accountId != null && accountId.isNotEmpty) ? accountId : null,
+                      accountId: (accountId?.isNotEmpty ?? false) ? accountId : null,
                       amount: (v == null || v <= 0) ? remaining : v,
                       paymentRef: ref.text.trim(),
                     );
