@@ -1,6 +1,6 @@
-run: 32949239190
-sha: 3c573fe89fa45407bc49bb37926e0ee497211ea4
-time: Wed Aug 26 08:46:49 UTC 2026
+run: 32949943857
+sha: ff2e3f290d0fbde2a09873b750ce95bb0a536228
+time: Wed Aug 26 08:55:21 UTC 2026
 ----- gradle log tail -----
 Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:preBuild UP-TO-DATE
@@ -18,13 +18,13 @@ Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
 > Task :app:javaPreCompileDebug
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
-> Task :app:processDebugManifestForPackage
 > Task :app:javaPreCompileDebugUnitTest
 > Task :app:processDebugResources
 > Task :app:packageDebugUnitTestForUnitTest
@@ -80,11 +80,7 @@ w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
 > Task :app:kaptDebugUnitTestKotlin
 
 > Task :app:compileDebugUnitTestKotlin FAILED
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:5:33 Unresolved reference 'onAllNodes'.
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:8:33 Unresolved reference 'withText'.
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:89:32 Unresolved reference 'withText'.
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:110:32 Unresolved reference 'withText'.
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/HiltTestApplication.kt:11:2 Illegal annotation class 'HiltTestApplication'.
+e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/HiltTestApplication.kt:15:2 Illegal annotation class 'HiltTestApplication'.
 
 FAILURE: Build failed with an exception.
 
@@ -293,5 +289,5 @@ Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilat
 	... 2 more
 
 
-BUILD FAILED in 2m 38s
+BUILD FAILED in 2m 58s
 35 actionable tasks: 35 executed
