@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../providers/customer_provider.dart';
-import '../../providers/store_providers.dart';
-import '../../store_core.dart';
-import '../store_ui_helpers.dart';
+import '../../core/theme/app_theme.dart';
+import '../../providers/customer_provider.dart';
+import '../providers/store_providers.dart';
+import '../store_core.dart';
+import 'store_ui_helpers.dart';
 
 /// مالی مشتریان (§5، §10، §11): بدهکاران، دریافت، برگشت وجه، سقف اعتبار
 class CustomerFinanceScreen extends ConsumerStatefulWidget {
