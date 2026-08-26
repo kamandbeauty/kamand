@@ -29,6 +29,9 @@ dependencies:
   # Share invoice image / file
   share_plus: ^10.1.4
 
+  # باز کردن پیامک‌رسان اندروید (کد رهگیری)
+  url_launcher: ^6.3.0
+
   # Save image to device gallery
   gal: ^2.3.0
 

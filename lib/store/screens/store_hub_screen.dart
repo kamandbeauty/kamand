@@ -6,6 +6,7 @@ import 'cheques_screen.dart';
 import 'closing_audit_screen.dart';
 import 'customer_finance_screen.dart';
 import 'orders_screen.dart';
+import 'shipment_tracking_screen.dart';
 import 'dashboard/store_dashboard_screen.dart';
 import 'expenses_screen.dart';
 import 'installment/installment_center_screen.dart';
@@ -27,6 +28,8 @@ class StoreHubScreen extends StatelessWidget {
           (c) => const StoreDashboardScreen()),
       _HubItem('سفارشات ارسال‌نشده', 'ثبت، ویرایش و علامت ارسال', Icons.local_shipping_outlined, Colors.orangeAccent,
           (c) => const OrdersScreen()),
+      _HubItem('کدهای رهگیری ارسال', 'ورود گروهی کد رهگیری + پیامک و اشتراک', Icons.qr_code, Colors.deepPurple,
+          (c) => const ShipmentTrackingScreen()),
       _HubItem('مالی مشتریان', 'بدهکاران، دریافت و سقف اعتبار', Icons.group, Colors.amber,
           (c) => const CustomerFinanceScreen()),
       _HubItem('تأمین‌کنندگان', 'فهرست، بدهی و پرداخت', Icons.local_shipping, Colors.blue,

@@ -6,7 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 /// (که در همان لایهٔ قبلی باقی می‌ماند) عمل می‌کند. همهٔ جداول پولی INTEGER
 /// و به تومان هستند. مهاجرت‌ها فقط افزاینده (non-destructive) هستند.
 class StoreDatabase {
-  static const int schemaVersion = 5;
+  static const int schemaVersion = 6;
 
   final Database db;
   StoreDatabase(this.db) {
@@ -62,6 +62,7 @@ class StoreDatabase {
     if (current < 3) _v3();
     if (current < 4) _v4();
     if (current < 5) _v5();
+    if (current < 6) _v6();
     db.execute('PRAGMA user_version = $schemaVersion;');
   }
 
@@ -512,6 +513,23 @@ class StoreDatabase {
       );
     ''');
     db.execute('CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);');
+  }
+
+  /// نسخهٔ ۶ — رهگیری ارسال سفارش‌ها (بدون هیچ فیلد آدرس)
+  void _v6() {
+    // بدون هیچ فیلد آدرس — فقط سفارش/کد رهگیری/روش/تاریخ
+    db.execute('''
+      CREATE TABLE IF NOT EXISTS shipments (
+        id TEXT PRIMARY KEY,
+        order_id TEXT NOT NULL UNIQUE,
+        tracking_code TEXT NOT NULL DEFAULT '',
+        provider TEXT NOT NULL DEFAULT '',
+        shipped_at TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    ''');
+    db.execute('CREATE INDEX IF NOT EXISTS idx_shipments_order ON shipments(order_id);');
   }
 
   void _seedExpenseCategories() {
