@@ -53,6 +53,76 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     await _openForm(core);
   }
 
+  /// ویرایش هزینه: اثر معکوس + ثبت مجدد (تصحیح، نه دست‌کاری تاریخ مالی)
+  Future<void> _openEdit(StoreCore core, ExpenseRecord e) async {
+    final amount = TextEditingController(text: e.amount.toString());
+    final desc = TextEditingController(text: e.description);
+    final categories = core.expenses.categories();
+    var categoryId = e.categoryId;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: EdgeInsets.fromLTRB(
+              20, 18, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('ویرایش هزینه',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<int>(
+                value: categoryId,
+                items: [
+                  for (final c in categories)
+                    DropdownMenuItem(value: c.id, child: Text(c.title)),
+                ],
+                onChanged: (v) => setSheet(() => categoryId = v ?? categoryId),
+                decoration: const InputDecoration(labelText: 'دسته'),
+              ),
+              const SizedBox(height: 12),
+              TomanField(controller: amount, label: 'مبلغ جدید *'),
+              const SizedBox(height: 12),
+              TextField(
+                  controller: desc,
+                  decoration: const InputDecoration(labelText: 'توضیحات')),
+              const SizedBox(height: 14),
+              FilledButton(
+                onPressed: () {
+                  final v = parseToman(amount.text);
+                  if (v == null || v <= 0) {
+                    showStoreSnack(ctx, 'مبلغ نامعتبر', error: true);
+                    return;
+                  }
+                  try {
+                    core.expenses.edit(
+                      e.id,
+                      amount: v,
+                      description: desc.text.trim(),
+                      categoryId: categoryId,
+                    );
+                    Navigator.pop(ctx);
+                    showStoreSnack(ctx, 'هزینه تصحیح شد');
+                  } catch (err) {
+                    showStoreSnack(ctx, '$err', error: true);
+                  }
+                },
+                child: const Text('ثبت تصحیح'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await _reload(core);
+  }
+
   Future<void> _openForm(StoreCore core) async {
     final amount = TextEditingController();
     final desc = TextEditingController();
@@ -256,6 +326,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                               borderRadius: BorderRadius.circular(14)),
                           child: ListTile(
                             dense: true,
+                            onLongPress: () => _openEdit(core, e),
                             leading: CircleAvatar(
                               backgroundColor:
                                   AppTheme.RubyError.withOpacity(0.12),

@@ -54,6 +54,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
     final address = TextEditingController(text: edit?.address ?? '');
     final economicId = TextEditingController(text: edit?.economicId ?? '');
     final notes = TextEditingController(text: edit?.notes ?? '');
+    final activeNotifier = ValueNotifier<bool>(edit?.isActive ?? true);
 
     await showModalBottomSheet(
       context: context,
@@ -86,6 +87,16 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                   decoration: const InputDecoration(labelText: 'شناسه ملی / کد اقتصادی')),
               const SizedBox(height: 10),
               TextField(controller: notes, decoration: const InputDecoration(labelText: 'یادداشت')),
+              ValueListenableBuilder<bool>(
+                valueListenable: activeNotifier,
+                builder: (ctx, v, _) => SwitchListTile(
+                  dense: true,
+                  value: v,
+                  onChanged: (nv) => activeNotifier.value = nv,
+                  title: const Text('تأمین‌کنندهٔ فعال',
+                      style: TextStyle(fontSize: 13)),
+                ),
+              ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () {
@@ -101,6 +112,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                     address: address.text.trim(),
                     economicId: economicId.text.trim(),
                     notes: notes.text.trim(),
+                    isActive: activeNotifier.value,
                   );
                   Navigator.pop(ctx);
                 },

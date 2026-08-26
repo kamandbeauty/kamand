@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../store_core.dart';
 import '../../providers/store_providers.dart';
 import '../store_ui_helpers.dart';
+import '../installment/settlements_screen.dart';
 
 /// داشبورد فروشگاه (§3، §47) — با حالت‌های خالی ایمن
 class StoreDashboardScreen extends ConsumerStatefulWidget {

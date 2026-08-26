@@ -431,6 +431,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   'انتظار تسویه: ${formatToman(r['expected_settlement'] as int)} · تسویه‌شده: ${formatToman(r['settled_total'] as int)}',
                   style: const TextStyle(fontSize: 11, color: Colors.indigo),
                 ),
+                Text(
+                  'طلب تسویه‌نشده: ${formatToman(r['outstanding_settlement'] as int)}',
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.RubyError,
+                      fontWeight: FontWeight.w800),
+                ),
               ],
             ),
           ),
@@ -465,9 +472,52 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               'موجودی: ${(r['current_qty'] as num).toStringAsFixed(1)} · حداقل: ${(r['min_qty'] as num).toStringAsFixed(0)} · خرید: ${(r['purchased_total'] as num).toStringAsFixed(0)} · فروش: ${(r['sold_total'] as num).toStringAsFixed(0)}',
               style: const TextStyle(fontSize: 10.5),
             ),
-            trailing: Text(
-              formatToman(((r['stock_value'] as num?) ?? 0).toInt()),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  formatToman(((r['stock_value'] as num?) ?? 0).toInt()),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.flag_outlined,
+                      size: 18, color: AppTheme.RubyWarning),
+                  tooltip: 'تعیین حداقل موجودی (هشدار کمبود)',
+                  onPressed: () async {
+                    final ctrl = TextEditingController(
+                        text: ((r['min_qty'] as num?) ?? 0).toStringAsFixed(0));
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('حداقل موجودی برای هشدار کمبود',
+                            style: TextStyle(fontSize: 15)),
+                        content: TextField(
+                          controller: ctrl,
+                          keyboardType: TextInputType.number,
+                          decoration:
+                              const InputDecoration(labelText: 'تعداد حداقل'),
+                        ),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('انصراف')),
+                          FilledButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('ذخیره')),
+                        ],
+                      ),
+                    );
+                    if (ok == true) {
+                      final v = double.tryParse(
+                              ctrl.text.replaceAll(RegExp(r'[^0-9.]'), '')) ??
+                          0;
+                      core.inventory.setMinQty(r['product_id'] as String, v);
+                      showStoreSnack(context, 'حداقل موجودی ذخیره شد');
+                      setState(() {});
+                    }
+                  },
+                ),
+              ],
             ),
           ),
         ),

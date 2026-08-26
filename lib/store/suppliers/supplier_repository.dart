@@ -117,6 +117,22 @@ class SupplierRepository {
   }) {
     if (amount <= 0) throw ArgumentError('مبلغ پرداخت باید مثبت باشد');
     final pid = 'spay-${newId()}';
+    store.db.execute(
+      'INSERT OR IGNORE INTO supplier_payments (id, supplier_id, purchase_id, amount, payment_date, account_id, method, reference, notes, created_at) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?)',
+      [
+        pid,
+        supplierId,
+        purchaseId,
+        amount,
+        date,
+        accountId,
+        method,
+        reference,
+        notes,
+        DateTime.now().toIso8601String(),
+      ],
+    );
     ledger.append(LedgerEntryInput(
       eventType: LedgerEventType.supplierPayment,
       date: date,

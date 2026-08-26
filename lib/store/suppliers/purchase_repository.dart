@@ -169,6 +169,21 @@ class PurchaseRepository {
           throw ArgumentError('برای پرداخت، حساب مالی لازم است');
         }
         final paymentId = 'spay-${newId()}';
+        db.execute(
+          'INSERT OR IGNORE INTO supplier_payments (id, supplier_id, purchase_id, amount, payment_date, account_id, method, reference, created_at) '
+          'VALUES (?,?,?,?,?,?,?,?,?)',
+          [
+            paymentId,
+            supplierId,
+            pid,
+            paidAmount,
+            date,
+            accountId,
+            'purchase',
+            number,
+            DateTime.now().toIso8601String(),
+          ],
+        );
         ledger.append(LedgerEntryInput(
           eventType: LedgerEventType.purchasePayment,
           date: date,

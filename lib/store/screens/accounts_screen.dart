@@ -184,6 +184,73 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     await _reload(core);
   }
 
+  Future<void> _accountAction(
+      StoreCore core, String accountId, String name, String action) async {
+    final amount = TextEditingController();
+    final note = TextEditingController();
+    final isDeposit = action == 'deposit';
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(isDeposit ? 'واریز به $name' : 'برداشت از $name',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+            const Text('در سود و زیان حساب نمی‌شود (نه درآمد، نه هزینه)',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 10.5, color: AppTheme.RubyTextSecondary)),
+            const SizedBox(height: 14),
+            TomanField(controller: amount, label: 'مبلغ *'),
+            const SizedBox(height: 10),
+            TextField(
+                controller: note,
+                decoration: const InputDecoration(labelText: 'توضیح')),
+            const SizedBox(height: 14),
+            FilledButton(
+              onPressed: () {
+                final v = parseToman(amount.text);
+                if (v == null || v <= 0) {
+                  showStoreSnack(ctx, 'مبلغ نامعتبر', error: true);
+                  return;
+                }
+                try {
+                  final date = DateTime.now().toIso8601String().substring(0, 10);
+                  if (isDeposit) {
+                    core.accounts.deposit(
+                        accountId: accountId,
+                        amount: v,
+                        date: date,
+                        note: note.text.trim());
+                  } else {
+                    core.accounts.withdraw(
+                        accountId: accountId,
+                        amount: v,
+                        date: date,
+                        note: note.text.trim());
+                  }
+                  Navigator.pop(ctx);
+                  showStoreSnack(ctx, 'ثبت شد');
+                } catch (e) {
+                  showStoreSnack(ctx, '$e', error: true);
+                }
+              },
+              child: Text(isDeposit ? 'ثبت واریز' : 'ثبت برداشت'),
+            ),
+          ],
+        ),
+      ),
+    );
+    await _reload(core);
+  }
+
   @override
   Widget build(BuildContext context) {
     return StoreScaffold(
@@ -257,12 +324,32 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                 subtitle: Text(
                                     '${_accounts[i].typeLabel}${_accounts[i].isActive ? '' : ' · غیرفعال'}',
                                     style: const TextStyle(fontSize: 11)),
-                                trailing: Text(
-                                  formatToman(_balances[i]),
-                                  style: const TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppTheme.RubyTextPrimary),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      formatToman(_balances[i]),
+                                      style: const TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w900,
+                                          color: AppTheme.RubyTextPrimary),
+                                    ),
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(Icons.more_vert,
+                                          size: 20,
+                                          color: AppTheme.RubyTextSecondary),
+                                      onSelected: (v) => _accountAction(
+                                          core, _accounts[i].id, _accounts[i].name, v),
+                                      itemBuilder: (_) => const [
+                                        PopupMenuItem(
+                                            value: 'deposit',
+                                            child: Text('واریز به حساب')),
+                                        PopupMenuItem(
+                                            value: 'withdraw',
+                                            child: Text('برداشت از حساب')),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
