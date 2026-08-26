@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../store_core.dart';
+import '../suppliers/supplier_repository.dart';
 import '../providers/store_providers.dart';
 import 'store_ui_helpers.dart';
 

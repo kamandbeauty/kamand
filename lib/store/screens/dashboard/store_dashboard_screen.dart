@@ -173,7 +173,7 @@ class _StoreDashboardScreenState extends ConsumerState<StoreDashboardScreen> {
               ),
 
               // ── وضعیت مالی ──
-              const SectionHeader('وضعیت مالی');
+              const SectionHeader('وضعیت مالی'),
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,

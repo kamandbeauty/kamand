@@ -43,7 +43,7 @@ class _InstallmentCenterScreenState
     }
   }
 
-  Future<void> _pay(StoreCore core, Map<String, Object> inst) async {
+  Future<void> _pay(StoreCore core, Map<String, Object?> inst) async {
     final amount = TextEditingController();
     final ref = TextEditingController();
     final accounts = core.accounts.list(onlyActive: true);
@@ -99,7 +99,7 @@ class _InstallmentCenterScreenState
                     core.installments.payInstallment(
                       installmentId: inst['id'] as String,
                       date: DateTime.now().toIso8601String().substring(0, 10),
-                      accountId: (accountId == null || accountId.isEmpty) ? null : accountId,
+                      accountId: (accountId != null && accountId.isNotEmpty) ? accountId : null,
                       amount: (v == null || v <= 0) ? remaining : v,
                       paymentRef: ref.text.trim(),
                     );
