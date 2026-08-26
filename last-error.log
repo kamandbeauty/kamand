@@ -1,6 +1,6 @@
-run: 32948807312
-sha: b08110b6c6ebd1f971c3b08374d7a985200a82b4
-time: Wed Aug 26 08:42:07 UTC 2026
+run: 32949239190
+sha: 3c573fe89fa45407bc49bb37926e0ee497211ea4
+time: Wed Aug 26 08:46:49 UTC 2026
 ----- gradle log tail -----
 Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:preBuild UP-TO-DATE
@@ -18,13 +18,13 @@ Starting a Gradle Daemon (subsequent builds will be faster)
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
-> Task :app:processDebugManifestForPackage
 > Task :app:javaPreCompileDebug
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:processDebugManifestForPackage
 > Task :app:javaPreCompileDebugUnitTest
 > Task :app:processDebugResources
 > Task :app:packageDebugUnitTestForUnitTest
@@ -72,18 +72,24 @@ w: file:///home/runner/work/kamand/kamand/app/src/main/java/com/modir/forushgah/
 > Task :app:bundleDebugClassesToCompileJar
 > Task :app:transformDebugClassesWithAsm
 > Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:kspDebugUnitTestKotlin
 
-> Task :app:kspDebugUnitTestKotlin FAILED
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:15:27 Expecting a top level declaration
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:15:28 Expecting a top level declaration
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:15:35 Expecting a top level declaration
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:15:36 Expecting a top level declaration
-e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:15:51 imports are only allowed in the beginning of file
+> Task :app:kaptGenerateStubsDebugUnitTestKotlin
+w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
+
+> Task :app:kaptDebugUnitTestKotlin
+
+> Task :app:compileDebugUnitTestKotlin FAILED
+e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:5:33 Unresolved reference 'onAllNodes'.
+e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:8:33 Unresolved reference 'withText'.
+e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:89:32 Unresolved reference 'withText'.
+e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/AppNavGraphUiTest.kt:110:32 Unresolved reference 'withText'.
+e: file:///home/runner/work/kamand/kamand/app/src/test/java/com/modir/forushgah/HiltTestApplication.kt:11:2 Illegal annotation class 'HiltTestApplication'.
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':app:kspDebugUnitTestKotlin'.
+Execution failed for task ':app:compileDebugUnitTestKotlin'.
 > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
    > Compilation error. See log for more details
 
@@ -93,7 +99,7 @@ Execution failed for task ':app:kspDebugUnitTestKotlin'.
 > Get more help at https://help.gradle.org.
 
 * Exception is:
-org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:kspDebugUnitTestKotlin'.
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugUnitTestKotlin'.
 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:282)
 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
@@ -287,5 +293,5 @@ Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilat
 	... 2 more
 
 
-BUILD FAILED in 2m 54s
-32 actionable tasks: 32 executed
+BUILD FAILED in 2m 38s
+35 actionable tasks: 35 executed
