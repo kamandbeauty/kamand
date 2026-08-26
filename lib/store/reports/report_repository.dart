@@ -603,14 +603,8 @@ class ReportRepository {
       'detail': negativeSuppliers.isEmpty ? '' : '${negativeSuppliers.length} تأمین‌کننده',
     });
 
-    // ۶) موجودی هیچ کالایی منفی نیست
-    final negativeStock = _rows(
-        'SELECT product_id FROM product_stock WHERE current_qty < 0');
-    checks.add({
-      'name': 'موجودی غیرمنفی',
-      'ok': negativeStock.isEmpty,
-      'detail': negativeStock.isEmpty ? '' : '${negativeStock.length} کالا',
-    });
+    // ۶) موجودی منفی مجاز است (مدل کسب‌وکار کاربر: فروش ناموجود) —
+    //    بررسی «موجودی = جمع حرکت‌ها» در ردیف ۷ همان سازگاری را تضمین می‌کند.
 
     // ۷) موجودی مشتق = جمع حرکت‌ها
     final stockMismatch = _rows(

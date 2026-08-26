@@ -134,7 +134,10 @@ class InventoryRepository {
         idempotencyKey: idempotencyKey);
   }
 
-  /// خروج کالا (فروش یا برگشت خرید) — هرگز اجازهٔ موجودی منفی نمی‌دهد (§50)
+  /// خروج کالا (فروش یا برگشت خرید) — مطابق مدل کسب‌وکار کاربر:
+  /// فروش کالای ناموجود مجاز است و موجودی را **منفی** می‌کند (مثلاً ۵ فروش
+  /// از موجودی صفر → −۵) و خرید بعدی آن را جبران می‌کند (۶ خرید → +۱).
+  /// تمام حرکت‌ها همچنان شفاف و ردیابی‌شده ثبت می‌شوند.
   void deduct(
     String productId,
     double qty, {
@@ -146,10 +149,6 @@ class InventoryRepository {
     String? idempotencyKey,
   }) {
     if (qty <= 0) throw ArgumentError('تعداد خروج باید مثبت باشد');
-    final cur = currentQty(productId);
-    if (cur < qty) {
-      throw StateError('موجودی کافی نیست: موجودی $cur، درخواست $qty');
-    }
     _move(productId, -qty,
         movementType: movementType,
         unitCost: 0,
@@ -216,10 +215,8 @@ class InventoryRepository {
       // اگر حرکت تکراری بود (IGNORE شد) چیزی تغییر نکن
       final inserted = db.select('SELECT COUNT(*) AS c FROM stock_movements WHERE id = ?', [mid]).first['c'] as int;
       if (inserted == 0) return;
-      final newQty = before.currentQty + signedQty;
-      if (newQty < 0) {
-        throw StateError('موجودی منفی مجاز نیست: $productId');
-      }
+      var newQty = before.currentQty + signedQty;
+      // موجودی منفی مجاز است (فروش ناموجود) — فقط ثبت شفاف
       var newAvg = before.avgCost;
       if (signedQty > 0 && unitCost > 0) {
         final totalQty = before.currentQty + signedQty;

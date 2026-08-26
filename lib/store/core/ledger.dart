@@ -25,6 +25,12 @@ class LedgerEventType {
   static const withdrawal = 'WITHDRAWAL';
   static const adjustment = 'ADJUSTMENT';
 
+  // چک‌ها (نسخهٔ ۴)
+  static const chequeReceived = 'CHEQUE_RECEIVED';
+  static const chequeIssued = 'CHEQUE_ISSUED';
+  static const chequeCleared = 'CHEQUE_CLEARED';
+  static const chequeBounced = 'CHEQUE_BOUNCED';
+
   /// انواعی که «موجودی حساب» را تغییر می‌دهند ولی نه درآمد و نه هزینه‌اند
   static const nonPl = {
     accountTransfer,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import 'accounts_screen.dart';
+import 'cheques_screen.dart';
 import 'closing_audit_screen.dart';
 import 'customer_finance_screen.dart';
 import 'dashboard/store_dashboard_screen.dart';
@@ -33,6 +34,8 @@ class StoreHubScreen extends StatelessWidget {
           (c) => const ExpensesScreen()),
       _HubItem('صندوق و بانک', 'حساب‌ها، انتقال وجه و تراکنش‌ها', Icons.account_balance, Colors.indigo,
           (c) => const AccountsScreen()),
+      _HubItem('چک‌ها', 'دریافت/پرداخت چک، سررسید و پاس‌شدن', Icons.receipt, Colors.deepPurple,
+          (c) => const ChequesScreen()),
       _HubItem('فروش اقساطی', 'اسنپ‌پی، ترب‌پی، دیجی‌پی، باسلام…', Icons.schedule, Colors.purple,
           (c) => const InstallmentSaleScreen()),
       _HubItem('اقساط و سررسیدها', 'امروز، معوق و آینده', Icons.event_available, Colors.deepOrange,

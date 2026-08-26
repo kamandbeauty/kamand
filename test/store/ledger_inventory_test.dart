@@ -79,17 +79,14 @@ void main() {
       expect(core.inventory.valuation(), 40000);
     });
 
-    test('موجودی منفی مجاز نیست', () {
+    test('موجودی منفی مجاز است (مدل کسب‌وکار: فروش ناموجود)', () {
       core.inventory.receive('p1', 5,
           movementType: StockMovementType.purchase,
           unitCost: 100,
           date: '2026-01-01');
-      expect(
-        () => core.inventory.deduct('p1', 6,
-            movementType: StockMovementType.sale, date: '2026-01-02'),
-        throwsStateError,
-      );
-      expect(core.inventory.currentQty('p1'), 5);
+      core.inventory.deduct('p1', 6,
+          movementType: StockMovementType.sale, date: '2026-01-02');
+      expect(core.inventory.currentQty('p1'), -1);
     });
 
     test('کسر idempotent با کلید تکراری دوبار کم نمی‌کند', () {

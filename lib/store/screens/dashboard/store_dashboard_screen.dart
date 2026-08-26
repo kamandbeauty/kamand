@@ -6,6 +6,7 @@ import '../../store_core.dart';
 import '../../providers/store_providers.dart';
 import '../store_ui_helpers.dart';
 import '../installment/settlements_screen.dart';
+import '../cheques_screen.dart';
 
 /// داشبورد فروشگاه (§3، §47) — با حالت‌های خالی ایمن
 class StoreDashboardScreen extends ConsumerStatefulWidget {
@@ -65,6 +66,8 @@ class _StoreDashboardScreenState extends ConsumerState<StoreDashboardScreen> {
         final pendingConfirm = core.installments
             .pendingSettlementConfirmations(todayIso())
             .length;
+        final dueCheques =
+            core.cheques.dueForConfirmation(todayIso()).length;
         return RefreshIndicator(
           onRefresh: _load,
           child: ListView(
@@ -95,6 +98,34 @@ class _StoreDashboardScreenState extends ConsumerState<StoreDashboardScreen> {
                         context,
                         MaterialPageRoute(
                             builder: (_) => const SettlementsScreen())),
+                  ),
+                ),
+              // ── یادآور چک‌های سررسیدشده ──
+              if (dueCheques > 0)
+                Card(
+                  color: const Color(0xFFF5F3FF),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(
+                          color: Colors.deepPurple.withValues(alpha: 0.4))),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          Colors.deepPurple.withValues(alpha: 0.13),
+                      child: const Icon(Icons.receipt,
+                          color: Colors.deepPurple, size: 22),
+                    ),
+                    title: const Text('چک‌های سررسیدشده را تعیین تکلیف کنید',
+                        style: TextStyle(
+                            fontSize: 13.5, fontWeight: FontWeight.w900)),
+                    subtitle: Text(
+                        '$dueCheques چک در انتظار پرسش «پاس شده؟» — وصول یا برگشت',
+                        style: const TextStyle(fontSize: 11)),
+                    trailing: const Icon(Icons.chevron_left, size: 20),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ChequesScreen())),
                   ),
                 ),
 

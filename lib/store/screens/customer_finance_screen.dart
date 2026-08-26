@@ -176,54 +176,138 @@ class _CustomerFinanceSheetState extends ConsumerState<_CustomerFinanceSheet> {
   Future<void> _receive() async {
     final core = widget.core;
     final amount = TextEditingController();
+    final chqNo = TextEditingController();
+    final sayadi = TextEditingController();
+    final holder = TextEditingController();
+    final bank = TextEditingController();
+    final due = TextEditingController();
     final accounts = core.accounts.list(onlyActive: true);
     String accountId = accounts.isNotEmpty ? accounts.first.id : 'acc-cash';
+    var byCheque = false;
     await showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) => Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('دریافت از ${widget.name}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 14),
-              TomanField(controller: amount, label: 'مبلغ *'),
-              const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                initialValue: accountId,
-                items: [
-                  for (final a in accounts)
-                    DropdownMenuItem(value: a.id, child: Text('${a.name} (${a.typeLabel})')),
-                ],
-                onChanged: (v) => setSheet(() => accountId = v ?? accountId),
-                decoration: const InputDecoration(labelText: 'به حساب'),
-              ),
-              const SizedBox(height: 14),
-              FilledButton(
-                onPressed: () {
-                  final v = parseToman(amount.text);
-                  if (v == null || v <= 0) {
-                    showStoreSnack(ctx, 'مبلغ نامعتبر', error: true);
-                    return;
-                  }
-                  Navigator.pop(ctx);
-                  _action(() async => core.customerFinance.receivePayment(
-                        customerId: widget.customerId,
-                        amount: v,
-                        date: DateTime.now().toIso8601String().substring(0, 10),
-                        accountId: accountId,
-                      ));
-                },
-                child: const Text('ثبت دریافت'),
-              ),
-            ],
+          padding: EdgeInsets.fromLTRB(
+              20, 18, 20, MediaQuery.of(ctx).viewInsets.bottom + 26),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('دریافت از ${widget.name}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('نقدی / کارت‌به‌حساب'),
+                        selected: !byCheque,
+                        onSelected: (_) => setSheet(() => byCheque = false),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('چک'),
+                        selected: byCheque,
+                        onSelected: (_) => setSheet(() => byCheque = true),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                TomanField(
+                    controller: amount,
+                    label: byCheque ? 'مبلغ چک *' : 'مبلغ *'),
+                const SizedBox(height: 10),
+                if (byCheque) ...[
+                  TextField(
+                      controller: chqNo,
+                      decoration:
+                          const InputDecoration(labelText: 'شمارهٔ چک *')),
+                  const SizedBox(height: 10),
+                  TextField(
+                      controller: due,
+                      decoration: const InputDecoration(
+                          labelText: 'تاریخ سررسید (میلادی، مثال: 2026-10-05) *')),
+                  const SizedBox(height: 10),
+                  TextField(
+                      controller: holder,
+                      decoration: const InputDecoration(
+                          labelText: 'نام صاحب حساب چک (اختیاری)')),
+                  const SizedBox(height: 10),
+                  TextField(
+                      controller: bank,
+                      decoration: const InputDecoration(
+                          labelText: 'نام بانک (اختیاری)')),
+                  const SizedBox(height: 10),
+                  TextField(
+                      controller: sayadi,
+                      decoration: const InputDecoration(
+                          labelText: 'شمارهٔ صیادی (اختیاری)')),
+                ] else
+                  DropdownButtonFormField<String>(
+                    initialValue: accountId,
+                    items: [
+                      for (final a in accounts)
+                        DropdownMenuItem(
+                            value: a.id,
+                            child: Text('${a.name} (${a.typeLabel})')),
+                    ],
+                    onChanged: (v) =>
+                        setSheet(() => accountId = v ?? accountId),
+                    decoration: const InputDecoration(labelText: 'به حساب'),
+                  ),
+                const SizedBox(height: 14),
+                FilledButton(
+                  onPressed: () {
+                    final v = parseToman(amount.text);
+                    if (v == null || v <= 0) {
+                      showStoreSnack(ctx, 'مبلغ نامعتبر', error: true);
+                      return;
+                    }
+                    if (byCheque) {
+                      if (chqNo.text.trim().isEmpty ||
+                          due.text.trim().isEmpty) {
+                        showStoreSnack(
+                            ctx, 'شمارهٔ چک و تاریخ سررسید الزامی است',
+                            error: true);
+                        return;
+                      }
+                      Navigator.pop(ctx);
+                      _action(() async => core.cheques.receiveCheque(
+                            customerId: widget.customerId,
+                            customerName: widget.name,
+                            amount: v,
+                            chequeNumber: chqNo.text.trim(),
+                            dueDate: due.text.trim(),
+                            holderName: holder.text.trim(),
+                            bankName: bank.text.trim(),
+                            sayadiNumber: sayadi.text.trim(),
+                          ));
+                      return;
+                    }
+                    Navigator.pop(ctx);
+                    _action(() async => core.customerFinance.receivePayment(
+                          customerId: widget.customerId,
+                          amount: v,
+                          date:
+                              DateTime.now().toIso8601String().substring(0, 10),
+                          accountId: accountId,
+                        ));
+                  },
+                  child: const Text('ثبت دریافت'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

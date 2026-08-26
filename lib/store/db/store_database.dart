@@ -6,7 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 /// (که در همان لایهٔ قبلی باقی می‌ماند) عمل می‌کند. همهٔ جداول پولی INTEGER
 /// و به تومان هستند. مهاجرت‌ها فقط افزاینده (non-destructive) هستند.
 class StoreDatabase {
-  static const int schemaVersion = 2;
+  static const int schemaVersion = 4;
 
   final Database db;
   StoreDatabase(this.db) {
@@ -60,6 +60,7 @@ class StoreDatabase {
     if (current < 1) _v1();
     if (current < 2) _v2();
     if (current < 3) _v3();
+    if (current < 4) _v4();
     db.execute('PRAGMA user_version = $schemaVersion;');
   }
 
@@ -458,6 +459,32 @@ class StoreDatabase {
     // ترب‌پی: پیش‌فرض ۴ قسط تسویه
     db.execute(
         "UPDATE installment_providers SET default_installment_count = 4 WHERE key = 'torob_pay'");
+  }
+
+  /// نسخهٔ ۴ — چک‌ها در دریافت/پرداخت + جدول cheques
+  void _v4() {
+    db.execute('''
+      CREATE TABLE IF NOT EXISTS cheques (
+        id TEXT PRIMARY KEY,
+        direction TEXT NOT NULL,              -- received | issued
+        amount INTEGER NOT NULL,
+        cheque_number TEXT NOT NULL,
+        sayadi_number TEXT DEFAULT '',
+        holder_name TEXT DEFAULT '',
+        bank_name TEXT DEFAULT '',
+        due_date TEXT NOT NULL,
+        counterparty_id TEXT DEFAULT '',
+        counterparty_name TEXT DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'HELD',  -- HELD | CLEARED | BOUNCED | PASSED_ON | CANCELLED
+        cleared_date TEXT,
+        cleared_account_id TEXT,
+        notes TEXT DEFAULT '',
+        ledger_event_id TEXT,
+        created_at TEXT NOT NULL
+      );
+    ''');
+    db.execute('CREATE INDEX IF NOT EXISTS idx_cheques_due ON cheques(due_date);');
+    db.execute('CREATE INDEX IF NOT EXISTS idx_cheques_status ON cheques(status);');
   }
 
   void _seedExpenseCategories() {

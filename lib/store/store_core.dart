@@ -1,4 +1,5 @@
 import 'bridge/sales_ledger_bridge.dart';
+import 'cheques/cheque_repository.dart';
 import 'core/accounts.dart';
 import 'core/audit.dart';
 import 'core/inventory.dart';
@@ -27,6 +28,7 @@ class StoreCore {
   late final PurchaseRepository purchases =
       PurchaseRepository(db, ledger, inventory, audit);
   late final ExpenseRepository expenses = ExpenseRepository(db, ledger, audit);
+  late final ChequeRepository cheques = ChequeRepository(db, ledger, audit);
   late final ReportRepository reports = ReportRepository(db, ledger);
   late final SalesLedgerBridge bridge = SalesLedgerBridge(
     store: db,
