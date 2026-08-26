@@ -92,7 +92,7 @@ class StoreIntegration {
       final s = c.inventory.state(prod.id);
       if (s != null) snapshot[prod.id] = s.currentQty;
     }
-    products.applyDerivedStock(snapshot);
+    ref.read(productListProvider.notifier).applyDerivedStock(snapshot);
   }
 
   /// اعتبارسنجی یکتایی شمارهٔ فاکتور فعال (§42)
