@@ -155,7 +155,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
               TomanField(controller: amount, label: 'مبلغ پرداخت'),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: accountId,
+                initialValue: accountId,
                 items: [
                   for (final a in accounts)
                     DropdownMenuItem(value: a.id, child: Text('${a.name} (${a.typeLabel})')),
@@ -262,7 +262,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                               backgroundColor: (supplier.isActive
                                       ? AppTheme.RubyPrimary
                                       : Colors.grey)
-                                  .withOpacity(0.15),
+                                  .withValues(alpha: 0.15),
                               child: Icon(Icons.local_shipping,
                                   color: supplier.isActive
                                       ? AppTheme.RubyPrimary
@@ -272,8 +272,8 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                                 style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5)),
                             subtitle: Text(
                               [
-                                if ((supplier.company as String).isNotEmpty) supplier.company,
-                                if ((supplier.mobile as String).isNotEmpty) supplier.mobile,
+                                if (supplier.company.isNotEmpty) supplier.company,
+                                if (supplier.mobile.isNotEmpty) supplier.mobile,
                               ].join(' · '),
                               style: const TextStyle(fontSize: 11),
                             ),

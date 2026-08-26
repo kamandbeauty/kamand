@@ -127,7 +127,7 @@ class _HubCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: item.color.withOpacity(0.14),
+              backgroundColor: item.color.withValues(alpha: 0.14),
               child: Icon(item.icon, color: item.color, size: 20),
             ),
             const Spacer(),

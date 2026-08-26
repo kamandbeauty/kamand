@@ -400,7 +400,7 @@ class _PurchaseCreateScreenState extends ConsumerState<_PurchaseCreateScreen> {
         padding: const EdgeInsets.all(14),
         children: [
           DropdownButtonFormField<String>(
-            value: _supplierId.value.isEmpty ? null : _supplierId.value,
+            initialValue: _supplierId.value.isEmpty ? null : _supplierId.value,
             items: [
               for (final s in suppliers) DropdownMenuItem(value: s.id, child: Text(s.name)),
             ],

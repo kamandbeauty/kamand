@@ -77,10 +77,10 @@ class _StoreDashboardScreenState extends ConsumerState<StoreDashboardScreen> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                       side: BorderSide(
-                          color: AppTheme.RubyWarning.withOpacity(0.5))),
+                          color: AppTheme.RubyWarning.withValues(alpha: 0.5))),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppTheme.RubyWarning.withOpacity(0.15),
+                      backgroundColor: AppTheme.RubyWarning.withValues(alpha: 0.15),
                       child: const Icon(Icons.notifications_active,
                           color: AppTheme.RubyWarning, size: 22),
                     ),
@@ -314,8 +314,8 @@ class _RecentInvoiceTile extends StatelessWidget {
         dense: true,
         leading: CircleAvatar(
           backgroundColor: remaining > 0
-              ? AppTheme.RubyWarning.withOpacity(0.15)
-              : AppTheme.RubySuccess.withOpacity(0.15),
+              ? AppTheme.RubyWarning.withValues(alpha: 0.15)
+              : AppTheme.RubySuccess.withValues(alpha: 0.15),
           child: Icon(
             remaining > 0 ? Icons.credit_score : Icons.check_circle,
             color: remaining > 0 ? AppTheme.RubyWarning : AppTheme.RubySuccess,

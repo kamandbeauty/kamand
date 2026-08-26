@@ -131,7 +131,7 @@ class _InstallmentProvidersScreenState
                 const SizedBox(height: 10),
                 if (edit == null)
                   DropdownButtonFormField<String>(
-                    value: type,
+                    initialValue: type,
                     items: const [
                       DropdownMenuItem(value: 'custom', child: Text('سفارشی')),
                       DropdownMenuItem(value: 'store', child: Text('مستقیم فروشگاه (بدون کارمزد)')),
@@ -168,7 +168,7 @@ class _InstallmentProvidersScreenState
                       label: 'سایر کسورات قراردادی (تومان)'),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
-                    value: scheduleType,
+                    initialValue: scheduleType,
                     items: const [
                       DropdownMenuItem(
                           value: ScheduleType.monthlyWindow,
@@ -344,7 +344,7 @@ class _InstallmentProvidersScreenState
                     backgroundColor: (p.isEnabled
                             ? AppTheme.RubyPrimary
                             : Colors.grey)
-                        .withOpacity(0.14),
+                        .withValues(alpha: 0.14),
                     child: Icon(Icons.schedule,
                         color: p.isEnabled ? AppTheme.RubyPrimary : Colors.grey),
                   ),

@@ -108,7 +108,7 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
                     child: ListTile(
                       onTap: () => _openDetail(core, d),
                       leading: CircleAvatar(
-                        backgroundColor: AppTheme.RubyWarning.withOpacity(0.13),
+                        backgroundColor: AppTheme.RubyWarning.withValues(alpha: 0.13),
                         child: const Icon(Icons.person,
                             color: AppTheme.RubyWarning, size: 22),
                       ),
@@ -197,7 +197,7 @@ class _CustomerFinanceSheetState extends ConsumerState<_CustomerFinanceSheet> {
               TomanField(controller: amount, label: 'مبلغ *'),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: accountId,
+                initialValue: accountId,
                 items: [
                   for (final a in accounts)
                     DropdownMenuItem(value: a.id, child: Text('${a.name} (${a.typeLabel})')),
@@ -255,7 +255,7 @@ class _CustomerFinanceSheetState extends ConsumerState<_CustomerFinanceSheet> {
               TomanField(controller: amount, label: 'مبلغ *'),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: accountId,
+                initialValue: accountId,
                 items: [
                   for (final a in accounts)
                     DropdownMenuItem(value: a.id, child: Text('${a.name} (${a.typeLabel})')),

@@ -79,7 +79,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
               const SizedBox(height: 14),
               DropdownButtonFormField<int>(
-                value: categoryId,
+                initialValue: categoryId,
                 items: [
                   for (final c in categories)
                     DropdownMenuItem(value: c.id, child: Text(c.title)),
@@ -158,7 +158,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<int>(
-                  value: categoryId,
+                  initialValue: categoryId,
                   items: [
                     for (final c in categories)
                       DropdownMenuItem(value: c.id, child: Text(c.title)),
@@ -174,7 +174,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     decoration: const InputDecoration(labelText: 'توضیحات')),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: accountId,
+                  initialValue: accountId,
                   items: [
                     const DropdownMenuItem(value: '', child: Text('بدون تخلیه از حساب (نسیه)')),
                     for (final a in accounts)
@@ -185,7 +185,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: supplierId,
+                  initialValue: supplierId,
                   items: [
                     const DropdownMenuItem(value: '', child: Text('—')),
                     for (final s in suppliers)
@@ -253,7 +253,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
               child: DropdownButtonFormField<int?>(
-                value: _filterCategoryId,
+                initialValue: _filterCategoryId,
                 items: [
                   const DropdownMenuItem(value: null, child: Text('همهٔ دسته‌ها')),
                   for (final c in _categories)
@@ -330,7 +330,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                             onLongPress: () => _openEdit(core, e),
                             leading: CircleAvatar(
                               backgroundColor:
-                                  AppTheme.RubyError.withOpacity(0.12),
+                                  AppTheme.RubyError.withValues(alpha: 0.12),
                               child: const Icon(Icons.trending_down,
                                   color: AppTheme.RubyError, size: 20),
                             ),

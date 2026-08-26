@@ -66,7 +66,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                   decoration: const InputDecoration(labelText: 'نام حساب *')),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: type,
+                initialValue: type,
                 items: [
                   for (final e in types.entries)
                     DropdownMenuItem(value: e.key, child: Text(e.value)),
@@ -131,7 +131,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                       fontSize: 10.5, color: AppTheme.RubyTextSecondary)),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: from,
+                initialValue: from,
                 items: [
                   for (final a in accounts) DropdownMenuItem(value: a.id, child: Text(a.name)),
                 ],
@@ -140,7 +140,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: to,
+                initialValue: to,
                 items: [
                   for (final a in accounts) DropdownMenuItem(value: a.id, child: Text(a.name)),
                 ],
@@ -315,7 +315,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                               child: ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: _typeColor(_accounts[i].type)
-                                      .withOpacity(0.14),
+                                      .withValues(alpha: 0.14),
                                   child: Icon(_typeIcon(_accounts[i].type),
                                       color: _typeColor(_accounts[i].type)),
                                 ),

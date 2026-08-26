@@ -45,7 +45,7 @@ class _InstallmentSaleScreenState extends ConsumerState<InstallmentSaleScreen> {
       showStoreSnack(context, 'اول یک سیستم اقساطی فعال کنید', error: true);
       return;
     }
-    final customers = ref.read(customerListProvider.notifier).state;
+    final customers = ref.read(customerListProvider);
     final gross = TextEditingController();
     final down = TextEditingController();
     final count = TextEditingController();
@@ -91,7 +91,7 @@ class _InstallmentSaleScreenState extends ConsumerState<InstallmentSaleScreen> {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
-                    value: providerId,
+                    initialValue: providerId,
                     items: [
                       for (final p in providers)
                         DropdownMenuItem(
@@ -105,7 +105,7 @@ class _InstallmentSaleScreenState extends ConsumerState<InstallmentSaleScreen> {
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
-                    value: customerId,
+                    initialValue: customerId,
                     items: [
                       for (final c in customers)
                         DropdownMenuItem(value: c.id, child: Text(c.name)),
@@ -287,10 +287,10 @@ class _InstallmentSaleScreenState extends ConsumerState<InstallmentSaleScreen> {
               leading: CircleAvatar(
                 radius: 14,
                 backgroundColor: i.remaining == 0
-                    ? AppTheme.RubySuccess.withOpacity(0.15)
+                    ? AppTheme.RubySuccess.withValues(alpha: 0.15)
                     : i.dueDate.compareTo(DateTime.now().toIso8601String().substring(0, 10)) < 0
-                        ? AppTheme.RubyError.withOpacity(0.15)
-                        : AppTheme.RubyPrimary.withOpacity(0.12),
+                        ? AppTheme.RubyError.withValues(alpha: 0.15)
+                        : AppTheme.RubyPrimary.withValues(alpha: 0.12),
                 child: Text(
                   PersianNumberFormatter.toPersian('${i.number}'),
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
@@ -323,8 +323,8 @@ class _InstallmentSaleScreenState extends ConsumerState<InstallmentSaleScreen> {
                       radius: 14,
                       backgroundColor: (r['received_amount'] as int) >=
                               (r['amount'] as int)
-                          ? AppTheme.RubySuccess.withOpacity(0.15)
-                          : AppTheme.RubyPrimary.withOpacity(0.12),
+                          ? AppTheme.RubySuccess.withValues(alpha: 0.15)
+                          : AppTheme.RubyPrimary.withValues(alpha: 0.12),
                       child: Text(
                         PersianNumberFormatter.toPersian('${r['number']}'),
                         style: const TextStyle(
@@ -505,7 +505,7 @@ class _InstallmentSaleScreenState extends ConsumerState<InstallmentSaleScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.14),
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,
@@ -526,7 +526,7 @@ class _BreakdownCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.RubyWarning.withOpacity(0.4)),
+        border: Border.all(color: AppTheme.RubyWarning.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [

@@ -89,7 +89,7 @@ class _SettlementsScreenState extends ConsumerState<SettlementsScreen> {
               TomanField(controller: amount, label: 'مبلغ دریافتی *'),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: accountId,
+                initialValue: accountId,
                 items: [
                   for (final a in accounts)
                     DropdownMenuItem(value: a.id, child: Text(a.name)),
@@ -187,12 +187,12 @@ class _SettlementsScreenState extends ConsumerState<SettlementsScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                           side: BorderSide(
-                              color: AppTheme.RubyWarning.withOpacity(0.5))),
+                              color: AppTheme.RubyWarning.withValues(alpha: 0.5))),
                       child: ListTile(
                         onTap: () => _confirmAndSettle(core, r),
                         leading: CircleAvatar(
                           backgroundColor:
-                              AppTheme.RubyWarning.withOpacity(0.15),
+                              AppTheme.RubyWarning.withValues(alpha: 0.15),
                           child: const Icon(Icons.help_outline,
                               color: AppTheme.RubyWarning, size: 22),
                         ),
@@ -229,7 +229,7 @@ class _SettlementsScreenState extends ConsumerState<SettlementsScreen> {
                         dense: true,
                         leading: CircleAvatar(
                           radius: 16,
-                          backgroundColor: Colors.indigo.withOpacity(0.12),
+                          backgroundColor: Colors.indigo.withValues(alpha: 0.12),
                           child: Text(
                             m['ym'].toString().substring(5),
                             style: const TextStyle(

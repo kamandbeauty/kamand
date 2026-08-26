@@ -75,7 +75,7 @@ class _InstallmentCenterScreenState
               TomanField(controller: amount, label: 'مبلغ (خالی = کل قسط)'),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: accountId,
+                initialValue: accountId,
                 items: [
                   const DropdownMenuItem(value: '', child: Text('بدون ورود به حساب')),
                   for (final a in accounts)
@@ -196,8 +196,8 @@ class _InstallmentCenterScreenState
             onTap: () => _pay(core, r),
             leading: CircleAvatar(
               backgroundColor: _tab == 1
-                  ? AppTheme.RubyError.withOpacity(0.13)
-                  : AppTheme.RubyWarning.withOpacity(0.13),
+                  ? AppTheme.RubyError.withValues(alpha: 0.13)
+                  : AppTheme.RubyWarning.withValues(alpha: 0.13),
               child: Icon(
                 _tab == 1 ? Icons.warning_amber : Icons.event,
                 color: _tab == 1 ? AppTheme.RubyError : AppTheme.RubyWarning,

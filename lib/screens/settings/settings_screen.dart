@@ -445,7 +445,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: usage,
+                      initialValue: usage,
                       decoration: const InputDecoration(
                         labelText: 'نوع فعالیت',
                         border: OutlineInputBorder(),
@@ -691,7 +691,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: template,
+                      initialValue: template,
                       decoration: const InputDecoration(
                         labelText: 'قالب فاکتور',
                         border: OutlineInputBorder(),
