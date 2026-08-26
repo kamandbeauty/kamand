@@ -57,10 +57,12 @@ private val SheetSlate800 = Color(0xFF1E293B)
 private val SheetGray = Color(0xFFE2E8F0)
 
 /**
- * Rubi-style product selection popup (spec §4): search, browse the real
- * database, pick a product, choose the quantity, add to the invoice — without
- * losing any invoice state. «درج محصول جدید» opens the Rubi product form
- * (spec §5); «قلم دستی» keeps Rubi's free manual line.
+ * Product selection popup, opened from a specific invoice line («محصول»):
+ * search, browse the real database, pick a product, choose the quantity and
+ * confirm — the selected line is filled with the product's name/unit/price
+ * and linked to it (real stock). «درج محصول جدید» opens the Rubi product
+ * form (spec §5). Free manual lines are added directly from the create
+ * screen's «افزودن آیتم» (Rubi behavior) — no popup needed for them.
  */
 @Composable
 fun ProductSelectionSheet(
@@ -69,7 +71,6 @@ fun ProductSelectionSheet(
     isPurchase: Boolean,
     onQueryChange: (String) -> Unit,
     onProductSelected: (productId: Long, quantity: Int) -> Unit,
-    onFreeItemAdded: () -> Unit,
     onAddProductClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -114,9 +115,6 @@ fun ProductSelectionSheet(
                 Icon(Icons.Outlined.AddBox, contentDescription = null, tint = SheetOrange)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("درج محصول جدید", color = SheetOrange, fontWeight = FontWeight.W800)
-            }
-            TextButton(onClick = onFreeItemAdded, modifier = Modifier.fillMaxWidth()) {
-                Text("قلم دستی (بدون محصول)", color = SheetSlate500, fontWeight = FontWeight.W700)
             }
             Divider()
             Spacer(modifier = Modifier.height(8.dp))
@@ -176,7 +174,7 @@ fun ProductSelectionSheet(
             ) {
                 Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("افزودن به فاکتور", color = Color.White, fontWeight = FontWeight.W900)
+                Text("تعیین برای این ردیف", color = Color.White, fontWeight = FontWeight.W900)
             }
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {

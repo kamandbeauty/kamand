@@ -67,7 +67,9 @@ fun InvoiceCreateRoute(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showProductSelector by androidx.compose.runtime.mutableStateOf(false)
+    // Opening the product selector is now per-row («محصول» on a line) — the
+    // header «افزودن آیتم» adds a free editable line directly, exactly like Rubi.
+    var linkLineId by androidx.compose.runtime.mutableStateOf<Long?>(null)
     var showProductForm by androidx.compose.runtime.mutableStateOf(false)
 
     LaunchedEffect(state.savedOrderId) {
@@ -79,7 +81,7 @@ fun InvoiceCreateRoute(
 
     InvoiceCreateScreen(
         state = state,
-        showProductSelector = showProductSelector,
+        showProductSelector = linkLineId != null,
         showProductForm = showProductForm,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
@@ -89,27 +91,25 @@ fun InvoiceCreateRoute(
         onDateChange = viewModel::onDateChange,
         onKindChange = viewModel::onKindChange,
         onPaymentTypeChange = viewModel::onPaymentTypeChange,
-        onAddItem = { showProductSelector = true },
+        onAddItem = { viewModel.onFreeItemAdded() },
         onLineTitleChange = viewModel::onLineTitleChange,
         onLineQuantityChange = viewModel::onLineQuantityChange,
         onLinePriceChange = viewModel::onLinePriceChange,
         onLineRemoved = viewModel::onLineRemoved,
+        onLineProductClick = { id -> linkLineId = id },
         onDiscountChange = viewModel::onDiscountChange,
         onShippingFeeChange = viewModel::onShippingFeeChange,
         onNotesChange = viewModel::onNotesChange,
         onSelectorQueryChange = viewModel::onSelectorQueryChange,
         onProductSelected = { id, qty ->
-            viewModel.onProductSelected(id, qty)
-            showProductSelector = false
-        },
-        onFreeItemAdded = {
-            viewModel.onFreeItemAdded()
-            showProductSelector = false
+            val target = linkLineId
+            if (target != null) viewModel.onProductLinked(target, id, qty)
+            linkLineId = null
         },
         onAddProductClick = { showProductForm = true },
         onCloseProductForm = { showProductForm = false },
         onProductCreated = viewModel::createProductFromInvoice,
-        onDismissSelector = { showProductSelector = false },
+        onDismissSelector = { linkLineId = null },
         onSave = viewModel::save,
     )
 }
@@ -137,12 +137,12 @@ fun InvoiceCreateScreen(
     onLineQuantityChange: (Long, String) -> Unit,
     onLinePriceChange: (Long, String) -> Unit,
     onLineRemoved: (Long) -> Unit,
+    onLineProductClick: (Long) -> Unit,
     onDiscountChange: (String) -> Unit,
     onShippingFeeChange: (String) -> Unit,
     onNotesChange: (String) -> Unit,
     onSelectorQueryChange: (String) -> Unit,
     onProductSelected: (Long, Int) -> Unit,
-    onFreeItemAdded: () -> Unit,
     onAddProductClick: () -> Unit,
     onCloseProductForm: () -> Unit,
     onProductCreated: (String, String, String, String, String, String, String) -> String?,
@@ -254,6 +254,7 @@ fun InvoiceCreateScreen(
                     onQuantityChange = { onLineQuantityChange(line.id, it) },
                     onPriceChange = { onLinePriceChange(line.id, it) },
                     onRemove = { onLineRemoved(line.id) },
+                    onProductClick = { onLineProductClick(line.id) },
                 )
             }
 
@@ -332,13 +333,15 @@ fun InvoiceCreateScreen(
     }
 
     if (showProductSelector) {
+        // Product selection now opens from a specific line («محصول» button)
+        // and fills that line — the header «افزودن آیتم» adds free rows
+        // directly, exactly like Rubi.
         ProductSelectionSheet(
             products = state.selectorProducts,
             query = state.selectorQuery,
             isPurchase = state.isPurchase,
             onQueryChange = onSelectorQueryChange,
             onProductSelected = onProductSelected,
-            onFreeItemAdded = onFreeItemAdded,
             onAddProductClick = onAddProductClick,
             onDismiss = onDismissSelector,
         )
@@ -359,6 +362,7 @@ private fun InvoiceLineCard(
     onQuantityChange: (String) -> Unit,
     onPriceChange: (String) -> Unit,
     onRemove: () -> Unit,
+    onProductClick: () -> Unit,
 ) {
     Card {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -370,6 +374,11 @@ private fun InvoiceLineCard(
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
+                // Link this line to a real product (stock/price) — optional;
+                // the line itself stays a plain Rubi row by default.
+                TextButton(onClick = onProductClick) {
+                    Text("محصول", color = RubiOrange, fontWeight = FontWeight.W800, fontSize = 12.sp)
+                }
                 IconButton(onClick = onRemove) {
                     Icon(Icons.Filled.Delete, contentDescription = "حذف قلم", tint = Color(0xFFE11D48))
                 }

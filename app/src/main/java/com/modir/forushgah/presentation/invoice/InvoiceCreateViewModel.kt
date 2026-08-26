@@ -216,10 +216,32 @@ class InvoiceCreateViewModel @Inject constructor(
         }
     }
 
-    /** Rubi «افزودن آیتم» — a free manual line (no product, no inventory). */
+    /** Rubi «افزودن آیتم» — a free manual line (no product, no inventory),
+     * added directly to the invoice (Rubi behavior — no popup). */
     fun onFreeItemAdded() {
         _state.update {
             it.copy(lines = it.lines + InvoiceLineUi(id = System.nanoTime(), title = "آیتم جدید", unitPrice = "100000"))
+        }
+    }
+
+    /** Links [lineId] to a real product from the DB (stock/price/unit),
+     * filling the line exactly like a product row. The line keeps its id. */
+    fun onProductLinked(lineId: Long, productId: Long, quantity: Int) {
+        val s = _state.value
+        val product = s.selectorProducts.firstOrNull { it.id == productId } ?: return
+        onSelectorQueryChange("")
+        _state.update { st ->
+            val qty = if (st.isPurchase) quantity else quantity.coerceAtMost(product.stockQuantity.coerceAtLeast(1))
+            val newLines = st.lines.map { line ->
+                if (line.id != lineId) line else line.copy(
+                    productId = product.id,
+                    title = product.name,
+                    quantity = qty.toString(),
+                    unit = product.unit,
+                    unitPrice = (if (st.isPurchase) product.purchasePrice else product.sellingPrice).amountInToman.toString(),
+                )
+            }
+            st.copy(lines = newLines, errors = emptyList())
         }
     }
 
