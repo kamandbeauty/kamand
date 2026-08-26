@@ -1,4 +1,4 @@
-package com.ruby.factor_ruby
+package com.javid.accounting
 
 import io.flutter.embedding.android.FlutterActivity
 

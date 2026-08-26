@@ -83,7 +83,7 @@ val releaseSigningError = when {
 }
 
 android {
-    namespace = "com.ruby.factor_ruby"
+    namespace = "com.javid.accounting"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -93,7 +93,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ruby.factor_ruby"
+        applicationId = "com.javid.accounting"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

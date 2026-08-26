@@ -4,7 +4,7 @@
 
 ## مشخصات Release فعلی
 
-- `applicationId` و `namespace`: `com.ruby.factor_ruby`
+- `applicationId` و `namespace`: `com.javid.accounting`
 - `versionName`: `1.0.4`
 - `versionCode`: `4`
 - Android Gradle Plugin: `8.11.1`
@@ -183,7 +183,7 @@ apkanalyzer manifest version-name build/app/outputs/flutter-apk/app-arm64-v8a-re
 apkanalyzer manifest version-code build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```
 
-باید applicationId برابر `com.ruby.factor_ruby`، versionName برابر `1.0.4` و versionCode برابر `4` باشد و Release debuggable نباشد.
+باید applicationId برابر `com.javid.accounting`، versionName برابر `1.0.4` و versionCode برابر `4` باشد و Release debuggable نباشد.
 
 ## GitHub Actions
 
@@ -231,3 +231,28 @@ git push origin release-1.0.4
 - **مایکت:** Release APK امضاشده را استفاده کنید، نه Debug APK. applicationId و کلید را ثابت نگه دارید و versionCode را افزایش دهید. Policy فعلی را از Console رسمی Verify کنید.
 
 **Signing ≠ Google Trust:** Signed بودن فقط یعنی امضای دیجیتال معتبر است؛ تضمین نمی‌کند APK خارج از Google Play بدون هشدار «منبع ناشناس» یا هشدارهای Play Protect نصب شود. برای توزیع رسمی Google Play، AAB، Play App Signing و الزامات روز Google Play را رعایت کنید.
+
+---
+
+## امضای «مدیریت سفارشات و حسابداری جاوید» — پکیج جدید `com.javid.accounting`
+
+این اپ از پروژهٔ «فاکتور ساز روبی» جدا شده و **باید با کلید امضای جدید** منتشر شود:
+
+1. **هیچ فایل کلیدی از پروژهٔ قبلی در این مخزن نیست** (بررسی شد: بدون `.jks`/`.keystore`/`key.properties`؛ این‌ها در `.gitignore` هم مسدودند). امضای روبی فقط ممکن است در GitHub Secrets قدیمی (`RELEASE_KEYSTORE_BASE64` و…) باشد.
+
+2. **ساخت keystore جدید** (خارج از مخزن):
+   ```bash
+   mkdir -p "$HOME/.keys/javid-accounting"
+   keytool -genkeypair -v \
+     -keystore "$HOME/.keys/javid-accounting/javid-release.jks" \
+     -alias javid \
+     -keyalg RSA -keysize 4096 -validity 10000
+   ```
+
+3. **جایگزینی مقادیر Secrets در گیت‌هاب** (نام‌ها همان بمانند، فقط مقدارهای جدید بگذارید):
+   `RELEASE_KEYSTORE_BASE64` = خروجی `base64 -w0 javid-release.jks`، و `RELEASE_STORE_PASSWORD`، `RELEASE_KEY_ALIAS=javid`، `RELEASE_KEY_PASSWORD`
+
+4. **یک خط در `.github/workflows/release.yml` باید دستی عوض شود** (فایل workflow است؛ از UI):
+   خط ~۱۷۹: `EXPECTED_APPLICATION_ID: com.ruby.factor_ruby` ← `com.javid.accounting`
+
+5. اولین Release این پکیج، **اپی جدید** در بازارها خواهد بود (نه آپدیت قبلی) — به همین دلیل کلید جدید الزامی است.

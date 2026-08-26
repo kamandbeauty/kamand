@@ -2,7 +2,7 @@
 
 **فاکتور روبی** یک ابزار فارسی و راست‌به‌چپ برای صدور فاکتور، نگه‌داری کاتالوگ کالا و خدمات، مدیریت مشتری و مانده‌حساب، و مشاهدهٔ جریان مالی کسب‌وکارهای کوچک است. این مخزن فقط شامل سورس Flutter اپلیکیشن موبایل اندروید و مستندات انتشار آن است.
 
-> نسخهٔ فعلی: **۱.۰.۴** · شناسهٔ اندروید: `com.ruby.factor_ruby` · زبان رابط: فارسی
+> نسخهٔ فعلی: **۱.۰.۴** · شناسهٔ اندروید: `com.javid.accounting` · زبان رابط: فارسی
 
 ## آنچه در این مخزن وجود دارد
 
@@ -152,8 +152,8 @@ build/app/outputs/bundle/release/app-release.aab
 
 | مورد | مقدار فعلی |
 | --- | --- |
-| `applicationId` | `com.ruby.factor_ruby` |
-| `namespace` | `com.ruby.factor_ruby` |
+| `applicationId` | `com.javid.accounting` |
+| `namespace` | `com.javid.accounting` |
 | `versionName` | `1.0.4` از `pubspec.yaml` |
 | `versionCode` | `4` از `pubspec.yaml` (`1.0.4+4`) |
 | Android Gradle Plugin | `8.11.1` |
@@ -382,7 +382,7 @@ apkanalyzer manifest version-name build/app/outputs/flutter-apk/app-arm64-v8a-re
 apkanalyzer manifest version-code build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```
 
-مقادیر مورد انتظار این نسخه `com.ruby.factor_ruby`، `1.0.4` و `4` هستند و Release نباید `debuggable=true` داشته باشد. `apksigner` امضای APK و `jarsigner` امضای AAB را بررسی می‌کنند؛ این دو را با صرفاً نصب شدن فایل اشتباه نگیرید.
+مقادیر مورد انتظار این نسخه `com.javid.accounting`، `1.0.4` و `4` هستند و Release نباید `debuggable=true` داشته باشد. `apksigner` امضای APK و `jarsigner` امضای AAB را بررسی می‌کنند؛ این دو را با صرفاً نصب شدن فایل اشتباه نگیرید.
 
 ### GitHub Actions و Secrets
 
