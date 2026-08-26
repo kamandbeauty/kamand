@@ -475,7 +475,8 @@ class StoreDatabase {
     for (final e in defaults) {
       db.execute(
         'INSERT OR IGNORE INTO expense_categories (key, title, is_system, sort) VALUES (?, ?, ?, ?)',
-        [e[0], e[1], e[2], e[3]],
+        // e = [key, title, sort] — همهٔ دسته‌های پیش‌فرض سیستمی هستند (is_system=1)
+        [e[0], e[1], 1, e[2]],
       );
     }
   }
