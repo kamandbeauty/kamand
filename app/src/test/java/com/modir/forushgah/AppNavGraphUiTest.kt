@@ -12,7 +12,7 @@ import com.modir.forushgah.data.local.AppDatabase
 import com.modir.forushgah.data.local.entity.OrderEntity
 import com.modir.forushgah.data.local.entity.ProductEntity
 import com.modir.forushgah.presentation.navigation.ModirNavGraph
-import dagger.hilt.android-testing.HiltAndroidTest
+import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
