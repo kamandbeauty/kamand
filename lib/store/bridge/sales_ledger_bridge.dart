@@ -310,6 +310,16 @@ class SalesLedgerBridge {
     if (row['deleted_at'] != null) return;
     final amount = Money.fromDouble(amountAdded);
     if (amount <= 0) return;
+    // جلوگیری از ثبت تکراری (دابل‌تپ): دریافتِ هم‌مبلغِ همان روز برای همان فاکتور
+    // یک‌بار اثر دارد — استاندارد رایج حسابداری (§50: بدون پرداخت تکراری)
+    final today = _todayStr();
+    final dup = store.db.select(
+      "SELECT COUNT(*) AS c FROM ledger_events e "
+      "WHERE e.event_type = 'PAYMENT_RECEIVED' AND e.invoice_id = ? AND e.amount = ? "
+      "AND e.event_date = ? AND e.reversal_of IS NULL AND e.payment_id LIKE 'ipay-%'",
+      [sourceId, amount, today],
+    ).first['c'] as int;
+    if (dup > 0) return;
     final paid = row['paid'] as int;
     final remaining = row['remaining'] as int;
     final newPaid = paid + amount;
@@ -324,7 +334,7 @@ class SalesLedgerBridge {
       }
       ledger.append(LedgerEntryInput(
         eventType: LedgerEventType.paymentReceived,
-        date: _todayStr(),
+        date: today,
         amount: amount,
         direction: 1,
         accountId: defaultCashAccount,
@@ -333,7 +343,7 @@ class SalesLedgerBridge {
         paymentId: 'ipay-$sourceId-$newPaid',
         description: 'تسویه/دریافت فاکتور ${row['number']}',
         customerDelta: delta,
-        idempotencyKey: 'salepay:$sourceId:$newPaid',
+        idempotencyKey: 'salepay:$sourceId:${newId()}',
       ));
       store.db.execute(
         'UPDATE sales_documents SET paid = ?, remaining = ?, updated_at = ? WHERE source_id = ?',
