@@ -23,7 +23,7 @@ class FactorRubyApp extends ConsumerWidget {
 
     final accent = Color(settings.accentColor);
     return MaterialApp(
-      title: 'فاکتور ساز روبی',
+      title: 'مدیریت سفارشات و حسابداری جاوید',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightThemeWith(accent),
       darkTheme: AppTheme.darkThemeWith(accent),

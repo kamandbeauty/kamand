@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
 
     <application
-        android:label="فاکتور ساز روبی"
+        android:label="مدیریت سفارشات و حسابداری جاوید"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher">

@@ -131,7 +131,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Center(
             child: Text(
-              'فاکتور ساز روبی نسخه ۱.۰.۴\nطراحی شده توسط استودیو جاوید',
+              'مدیریت سفارشات و حسابداری جاوید\nناشر: Studio Javid (استودیو جاوید)',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
@@ -266,7 +266,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'application/json', name: name)],
-        subject: 'پشتیبان فاکتور ساز روبی',
+        subject: 'پشتیبان مدیریت سفارشات و حسابداری جاوید',
         text: 'فایل پشتیبان اطلاعات فاکتور ساز روبی',
       );
     } catch (error) {
