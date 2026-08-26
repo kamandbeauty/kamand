@@ -124,4 +124,3 @@ Future<File?> storeDatabaseFile() async {
   }
 }
 
-export '../bridge/sales_ledger_bridge.dart' show SalesLedgerBridge;

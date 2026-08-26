@@ -4,6 +4,7 @@ import '../../models/invoice_model.dart';
 import '../core/accounts.dart';
 import '../core/audit.dart';
 import '../core/inventory.dart';
+import '../core/money.dart';
 import '../db/store_database.dart';
 
 /// پل میان جریان فاکتور موجود و هستهٔ حسابداری جدید.

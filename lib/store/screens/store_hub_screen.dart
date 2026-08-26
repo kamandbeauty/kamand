@@ -29,7 +29,7 @@ class StoreHubScreen extends StatelessWidget {
           (c) => const SuppliersScreen()),
       _HubItem('فاکتور خرید', 'ثبت خرید و افزایش موجودی', Icons.shopping_cart, Colors.teal,
           (c) => const PurchaseScreen()),
-      _HubItem('هزینه‌ها', 'ثبت و دسته‌بندی هزینه‌ها', Icons.receipt_long, Colors.rose,
+      _HubItem('هزینه‌ها', 'ثبت و دسته‌بندی هزینه‌ها', Icons.receipt_long, const Color(0xFFF43F5E),
           (c) => const ExpensesScreen()),
       _HubItem('صندوق و بانک', 'حساب‌ها، انتقال وجه و تراکنش‌ها', Icons.account_balance, Colors.indigo,
           (c) => const AccountsScreen()),
