@@ -19,10 +19,10 @@ class SettlementsScreen extends ConsumerStatefulWidget {
 
 class _SettlementsScreenState extends ConsumerState<SettlementsScreen> {
   bool _loading = true;
-  List<Map<String, Object>> _pending = [];
-  List<Map<String, Object>> _upcoming = [];
-  List<Map<String, Object>> _monthly = [];
-  List<Map<String, Object>> _history = [];
+  List<Map<String, Object?>> _pending = [];
+  List<Map<String, Object?>> _upcoming = [];
+  List<Map<String, Object?>> _monthly = [];
+  List<Map<String, Object?>> _history = [];
   int _totalOutstanding = 0;
 
   Future<void> _reload(StoreCore core) async {

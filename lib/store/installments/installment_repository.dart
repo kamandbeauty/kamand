@@ -967,7 +967,7 @@ class InstallmentRepository {
     );
   }
 
-  List<Map<String, Object>> settlements({String? providerId, String? saleId}) {
+  List<Map<String, Object?>> settlements({String? providerId, String? saleId}) {
     final where = <String>['ps.reversed_at IS NULL'];
     final args = <Object?>[];
     if (providerId != null) {
@@ -988,7 +988,7 @@ class InstallmentRepository {
     );
   }
 
-  List<Map<String, Object>> upcomingSettlements({String? from, String? to}) {
+  List<Map<String, Object?>> upcomingSettlements({String? from, String? to}) {
     final where = <String>[
       "s.status IN ('CREATED','AUTHORIZED','PARTIALLY_SETTLED')",
       "sc.received_amount < sc.amount",
@@ -1080,7 +1080,7 @@ class InstallmentRepository {
   // گزارش هر سیستم اقساطی (§20)
   // ---------------------------------------------------------------------
 
-  List<Map<String, Object>> providerReport({String? from, String? to}) {
+  List<Map<String, Object?>> providerReport({String? from, String? to}) {
     final where = <String>['1=1'];
     final args = <Object?>[];
     if (from != null) {

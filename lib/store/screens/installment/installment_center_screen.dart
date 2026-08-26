@@ -19,9 +19,9 @@ class InstallmentCenterScreen extends ConsumerStatefulWidget {
 class _InstallmentCenterScreenState
     extends ConsumerState<InstallmentCenterScreen> {
   int _tab = 0;
-  List<Map<String, Object>> _dueToday = [];
-  List<Map<String, Object>> _overdue = [];
-  List<Map<String, Object>> _upcoming = [];
+  List<Map<String, Object?>> _dueToday = [];
+  List<Map<String, Object?>> _overdue = [];
+  List<Map<String, Object?>> _upcoming = [];
 
   Future<void> _reload(StoreCore core) async {
     await Future.delayed(Duration.zero);
@@ -172,7 +172,7 @@ class _InstallmentCenterScreenState
     );
   }
 
-  Widget _list(StoreCore core, List<Map<String, Object>> rows) {
+  Widget _list(StoreCore core, List<Map<String, Object?>> rows) {
     if (rows.isEmpty) {
       return ListView(children: const [
         SizedBox(height: 80),
