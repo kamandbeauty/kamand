@@ -277,6 +277,7 @@ class InventoryRepository {
     final row = store.db.select(
       'SELECT COALESCE(SUM(current_qty * avg_cost), 0) AS v FROM product_stock',
     ).first;
-    return row['v'] as int;
+    // ضرب REAL×INTEGER در SQLite خروجی REAL می‌دهد — تبدیل امن
+    return (row['v'] as num).round();
   }
 }

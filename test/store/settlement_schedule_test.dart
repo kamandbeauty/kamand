@@ -237,6 +237,7 @@ void main() {
         name: 'تارا',
         providerType: ProviderType.tara,
         commissionBps: 200,
+        defaultInstallmentCount: 2,
         scheduleType: ScheduleType.fixedInterval,
         intervalDays: 30);
     core.installments.createSale(

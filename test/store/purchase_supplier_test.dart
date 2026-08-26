@@ -29,14 +29,22 @@ void main() {
     expect(core.suppliers.payable(supplierId), 2_050_000);
 
     core.suppliers.pay(
-        supplierId: supplierId, amount: 1_000_000, date: '2026-01-02', accountId: 'acc-cash');
+        supplierId: supplierId,
+        purchaseId: purchase.id,
+        amount: 1_000_000,
+        date: '2026-01-02',
+        accountId: 'acc-cash');
     expect(core.suppliers.payable(supplierId), 1_050_000);
     final updated = core.purchases.byId(purchase.id)!;
     expect(updated.paid, 1_000_000);
     expect(updated.status, 'partial');
 
     core.suppliers.pay(
-        supplierId: supplierId, amount: 1_050_000, date: '2026-01-03', accountId: 'acc-cash');
+        supplierId: supplierId,
+        purchaseId: purchase.id,
+        amount: 1_050_000,
+        date: '2026-01-03',
+        accountId: 'acc-cash');
     expect(core.suppliers.payable(supplierId), 0);
     expect(core.purchases.byId(purchase.id)!.status, 'paid');
   });

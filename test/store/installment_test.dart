@@ -299,7 +299,7 @@ void main() {
     core.installments.createSale(
         providerId: torob, customerId: 'c2', customerName: 'م۲', gross: 5_000_000, date: '2026-01-02');
     final rows = core.installments.providerReport(from: '2026-01-01', to: '2026-01-31');
-    final torobRow = rows.firstWhere((r) => r['id'] == torob, orElse: () => rows.first);
+    final torobRow = rows.firstWhere((r) => r['id'] == torob);
     expect(torobRow['sales_count'], 2);
     expect(torobRow['gross_total'], 15_000_000);
     expect(torobRow['commission_total'], 900_000);

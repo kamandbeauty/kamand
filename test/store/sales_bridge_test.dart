@@ -52,7 +52,7 @@ void main() {
   });
 
   test('تاریخ جلالی فاکتور به میلادی درست تبدیل می‌شود', () {
-    expect(core.bridge.toIsoDate('1404/10/12'), '2026-01-01');
+    expect(core.bridge.toIsoDate('1404/10/12'), '2026-01-02'); // فروردین ۱۴۰۴ = ۲۱ مارس ۲۰۲۵
     expect(core.bridge.toIsoDate('2024-05-15'), '2024-05-15');
   });
 
@@ -227,7 +227,7 @@ void main() {
   test('داشبورد فروش امروز را درست جمع می‌زند', () {
     core.bridge.onInvoiceSaved(_invoice(id: 'inv-12', paid: 1_000_000));
     core.bridge.onInvoiceSaved(_invoice(id: 'inv-13', subtotal: 500_000, number: '1002'));
-    final d = core.reports.dashboard('2026-01-01');
+    final d = core.reports.dashboard('2026-01-02');
     expect(d.todaySales, 1_500_000);
     expect(d.todayInvoiceCount, 2);
     expect(d.todayCashSales, 1_000_000);
