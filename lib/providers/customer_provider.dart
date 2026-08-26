@@ -65,6 +65,16 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
     _persist();
   }
 
+  /// تنظیم مستقیم مانده از مقدار «مشتق» دفتر کل فروشگاه — این روش جایگزین
+  /// انباشت دستی است (§63: تک‌منبع حقیقت مالی = دفتر کل)
+  void setDerivedBalance(String id, double derivedBalance) {
+    state = state.map((item) {
+      if (item.id != id) return item;
+      return _withBalance(item, derivedBalance < 0 ? 0 : derivedBalance);
+    }).toList();
+    _persist();
+  }
+
   CustomerModel _withBalance(CustomerModel item, double balance) => CustomerModel(
         id: item.id,
         name: item.name,

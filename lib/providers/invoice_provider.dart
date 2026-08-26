@@ -3,6 +3,7 @@ import '../models/invoice_model.dart';
 import '../models/invoice_item_model.dart';
 import '../core/utils/prefs_store.dart';
 import '../database/app_database.dart';
+import '../store/bridge/sales_ledger_bridge.dart';
 
 final invoiceListProvider =
     StateNotifierProvider<InvoiceListNotifier, List<InvoiceModel>>((ref) {
@@ -16,8 +17,28 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   final AppDatabase? db;
   late final Future<void> _hydrated;
 
+  // پل مالی فروشگاه — با آماده‌شدن هستهٔ حسابداری متصل می‌شود (اختیاری)
+  SalesLedgerBridge? _storeBridge;
+  void Function(String customerId)? _onCustomerLedgerChanged;
+  void Function()? _onStockChanged;
+
   InvoiceListNotifier([this.db]) : super(const []) {
     _hydrated = _hydrate();
+  }
+
+  void attachStoreBridge(
+    SalesLedgerBridge? bridge, {
+    void Function(String customerId)? onCustomerLedgerChanged,
+    void Function()? onStockChanged,
+  }) {
+    _storeBridge = bridge;
+    _onCustomerLedgerChanged = onCustomerLedgerChanged;
+    _onStockChanged = onStockChanged;
+  }
+
+  void _bridgeNotifyCustomer(String customerId) {
+    if (customerId.isEmpty) return;
+    _onCustomerLedgerChanged?.call(customerId);
   }
 
   Future<void> ensureLoaded() => _hydrated;
@@ -49,12 +70,36 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       invoice.date,
       invoice.totalAmount,
     );
+    // آینهٔ مالی: دفتر کل + موجودی + ماندهٔ مشتق مشتری (در صورت اتصال هسته)
+    try {
+      _storeBridge?.onInvoiceSaved(invoice);
+      if (invoice.type == 'sale') {
+        _bridgeNotifyCustomer(invoice.customerId);
+        _onStockChanged?.call();
+      }
+    } catch (_) {
+      // خطای پل هرگز ذخیرهٔ سند قبلی را متوقف نمی‌کند؛ ردیابی از audit log
+    }
   }
 
   Future<void> deleteInvoice(String id) async {
     await _hydrated;
+    InvoiceModel? removed;
+    for (final i in state) {
+      if (i.id == id) {
+        removed = i;
+        break;
+      }
+    }
     state = state.where((i) => i.id != id).toList();
     await PrefsStore.saveInvoices(state);
+    try {
+      _storeBridge?.onInvoiceDeleted(id);
+      if (removed != null && removed.type == 'sale') {
+        _bridgeNotifyCustomer(removed.customerId);
+        _onStockChanged?.call();
+      }
+    } catch (_) {}
   }
 
   Future<InvoiceModel> copyInvoice(InvoiceModel source) async {
@@ -126,9 +171,10 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   }
 
   void convertProformaToInvoice(String id) {
+    InvoiceModel? converted;
     state = state.map((item) {
       if (item.id != id) return item;
-      return InvoiceModel(
+      final updated = InvoiceModel(
         id: item.id,
         number: item.number,
         customerId: item.customerId,
@@ -154,15 +200,25 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         cardOwner: item.cardOwner,
         createdAt: item.createdAt,
       );
+      converted = updated;
+      return updated;
     }).toList();
     _persist();
+    try {
+      if (converted != null) {
+        _storeBridge?.onInvoiceSaved(converted!);
+        _bridgeNotifyCustomer(converted!.customerId);
+        _onStockChanged?.call();
+      }
+    } catch (_) {}
   }
 
   void recordPayment(String id, double amount) {
+    InvoiceModel? target;
     state = state.map((item) {
       if (item.id != id) return item;
       final remaining = item.totalAmount - (item.paidAmount + amount);
-      return InvoiceModel(
+      final updated = InvoiceModel(
         id: item.id,
         number: item.number,
         customerId: item.customerId,
@@ -188,7 +244,15 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         cardOwner: item.cardOwner,
         createdAt: item.createdAt,
       );
+      target = updated;
+      return updated;
     }).toList();
     _persist();
+    try {
+      _storeBridge?.onInvoicePayment(id, amount);
+      if (target != null) {
+        _bridgeNotifyCustomer(target!.customerId);
+      }
+    } catch (_) {}
   }
 }

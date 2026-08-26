@@ -158,3 +158,38 @@
 - هر مشتری می‌تواند چندین فاکتور داشته باشد (`customers.id = invoices.customer_id`).
 - هر فاکتور می‌تواند چندین آیتم داشته باشد (`invoices.id = invoice_items.invoice_id` با `ON DELETE CASCADE`).
 - با حذف هر فاکتور یا ثبت واریزی، مانده حساب مشتری در جدول `customers.balance` به صورت اتوماتیک به‌روزرسانی می‌شود.
+
+---
+
+## ماژول فروشگاه — دیتابیس `factor_ruby_store.sqlite` (نسخهٔ ۲)
+
+هستهٔ حسابداری جدید در یک فایل SQLite جداگانه با `PRAGMA user_version = 2`
+ذخیره می‌شود. مهاجرت‌ها فقط «افزاینده» هستند (CREATE TABLE IF NOT EXISTS)
+و دادهٔ کاربر هرگز حذف نمی‌شود. همهٔ ستون‌های پولی INTEGER و به تومان‌اند.
+
+| جدول | کاربرد |
+| :--- | :--- |
+| `financial_accounts` | صندوق/بانک/کارت‌خوان + ماندهٔ آغازین |
+| `ledger_events` | دفتر کل یکپارچه (رویدادها + معکوس‌ها + کلید idempotency) |
+| `product_stock`, `stock_movements` | موجودی مشتق و تاریخچهٔ حرکت‌ها (WAC) |
+| `suppliers`, `purchase_invoices`, `purchase_items` | تأمین‌کنندگان و خرید |
+| `purchase_returns`, `purchase_return_items`, `supplier_payments` | برگشت خرید و پرداخت |
+| `expense_categories`, `expenses` | هزینه‌ها (بسته‌بندی/ارسال/اجاره/…) |
+| `installment_providers` | پیکربندی قرارداد سیستم‌های اقساطی (کارمزد/مالیات/تأخیر تسویه) |
+| `installment_sales`, `installments` | فروش اقساطی + برنامهٔ اقساط |
+| `provider_settlements` | تسویهٔ سیستم‌های اقساطی (سقف = خالص مورد انتظار) |
+| `customer_credit_limits` | سقف اعتبار اقساط مستقیم فروشگاه |
+| `sales_documents`, `sale_items` | آینهٔ مالی فاکتورهای فروش موجود (نسخه‌دار) |
+| `daily_closings` | بستن روز صندوق/بانک |
+| `audit_log` | تاریخچهٔ حسابرسی (هرگز حذف نمی‌شود) |
+
+نکته: جدول‌های قدیمی مستندشده در بخش‌های بالا متعلق به لایهٔ اسناد فاکتور
+(SharedPreferences/SQLite قدیمی) هستند و دست‌نخورده باقی مانده‌اند.
+
+### نسخهٔ ۳ — برنامهٔ تسویهٔ درگاه‌ها
+
+- جدول جدید `settlement_schedule`: اقساط تسویهٔ درگاه → فروشگاه (مبلغ، تاریخ انتظار، دریافت‌شده، وضعیت)
+- ستون‌های `schedule_type`/`settlement_day`/`interval_days`/`first_percent_bps`/`subsequent_count` روی `installment_providers`
+- درگاه جدید **تارا** (۲ قسط با فاصلهٔ ۳۰ روزه) و الگوهای: پنجرهٔ روز ماه (ترب‌پی)، فاصلهٔ ثابت (تارا)، درصد-اول (باسلام)
+- منطق: کارمزد ابتدا کسر و «خالص» طبق الگوی درگاه بین اقساط تقسیم می‌شود؛ جمع اقساط دقیقاً = خالص
+- ستون `schedule_id` روی `provider_settlements` برای پیوند تسویه با قسط مربوطه

@@ -12,8 +12,54 @@ final productListProvider =
 class ProductListNotifier extends StateNotifier<List<ProductModel>> {
   final AppDatabase? db;
 
+  // قلاب‌های لایهٔ فروشگاه (اختیاری؛ برای همگام‌سازی موجودی)
+  void Function(String productId)? _onProductAdded;
+
   ProductListNotifier([this.db]) : super(const []) {
     _hydrate();
+  }
+
+  void attachHooks({void Function(String productId)? onProductAdded}) {
+    _onProductAdded = onProductAdded;
+  }
+
+  /// تطبیق قلم فاکتور با کاتالوگ بر اساس نام
+  String? findProductIdByTitle(String title) {
+    final t = title.trim();
+    if (t.isEmpty) return null;
+    for (final p in state) {
+      if (p.name.trim() == t) return p.id;
+    }
+    return null;
+  }
+
+  /// همگام‌سازی فیلد نمایشی موجودی با مقدار مشتق از InventoryRepository
+  void applyDerivedStock(Map<String, double> stockByProductId) {
+    var changed = false;
+    final next = <ProductModel>[
+      for (final item in state)
+        () {
+          final s = stockByProductId[item.id];
+          if (s != null && s != item.stock) {
+            changed = true;
+            return ProductModel(
+              id: item.id,
+              code: item.code,
+              name: item.name,
+              unit: item.unit,
+              buyPrice: item.buyPrice,
+              sellPrice: item.sellPrice,
+              stock: s,
+              notes: item.notes,
+            );
+          }
+          return item;
+        }(),
+    ];
+    if (changed) {
+      state = next;
+      _persist();
+    }
   }
 
   Future<void> _hydrate() async {
@@ -28,6 +74,7 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
     state = [...state, product];
     _persist();
     db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
+    _onProductAdded?.call(product.id);
   }
 
   void updateProduct(ProductModel product) {

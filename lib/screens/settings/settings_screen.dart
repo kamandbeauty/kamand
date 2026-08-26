@@ -15,6 +15,7 @@ import '../../core/utils/prefs_store.dart';
 import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
+import '../../store/screens/installment/installment_providers_screen.dart';
 
 const _orange = AppTheme.RubyPrimary;
 
@@ -74,6 +75,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: const Text('رنگ اصلی برنامه و فاکتور'),
                   trailing: const Icon(Icons.chevron_left),
                   onTap: _showThemePicker,
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.schedule, color: _orange),
+                  title: const Text('تنظیمات درگاه‌های اقساطی'),
+                  subtitle: const Text('تعداد قسط، درصد کارمزد و زمان‌بندی تسویهٔ هر درگاه'),
+                  trailing: const Icon(Icons.chevron_left),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const InstallmentProvidersScreen()),
+                  ),
                 ),
                 const Divider(height: 1),
                 ListTile(

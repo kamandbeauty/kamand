@@ -27,6 +27,8 @@ import '../../core/utils/replace_on_type_field.dart';
 import '../../core/utils/thousand_separator_formatter.dart';
 import '../../core/utils/prefs_store.dart';
 import '../../core/utils/prefs_store.dart';
+import '../../store/providers/store_providers.dart';
+import '../../store/screens/store_hub_screen.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -1492,6 +1494,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final settings = ref.watch(settingsProvider);
     final accent = Color(settings.accentColor);
     final shopName = business.shopName.isNotEmpty ? business.shopName : 'فاکتور ساز روبی';
+
+    // آماده‌سازی زودهنگام هستهٔ مالی فروشگاه (اتصال پل به ذخیرهٔ فاکتورها)
+    ref.watch(storeCoreProvider);
 
     // گوش دادن به درخواست ویرایش از صفحات دیگر
     ref.listen<InvoiceModel?>(invoiceEditRequestProvider, (prev, next) {
@@ -3279,6 +3284,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onTap: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.storefront),
+            title: const Text('مدیریت فروشگاه'),
+            subtitle: const Text('خرید، هزینه‌ها، صندوق، اقساط و گزارش‌ها',
+                style: TextStyle(fontSize: 11)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreHubScreen()));
             },
           ),
           ListTile(

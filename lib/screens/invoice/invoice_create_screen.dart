@@ -8,6 +8,7 @@ import '../../models/invoice_item_model.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/app_providers.dart';
+import '../../store/providers/store_providers.dart';
 import 'invoice_preview_screen.dart';
 
 class InvoiceCreateScreen extends ConsumerStatefulWidget {
@@ -142,8 +143,9 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
     );
 
     ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
+    // ماندهٔ مشتری از دفتر کل فروشگاه مشتق می‌شود (نویسندهٔ افزایشی قدیمی حذف شد)
     if (_type == 'sale' && _paymentType != 'cash' && newInv.remainingAmount > 0) {
-      ref.read(customerListProvider.notifier).updateBalance(custId, newInv.remainingAmount);
+      ref.read(storeIntegrationProvider).afterInvoiceSaved(newInv);
     }
 
     // بعد از ذخیره → صفحه نمایش فاکتور
