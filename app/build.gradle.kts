@@ -117,10 +117,6 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    // Hilt for UI tests that use hiltViewModel() (full navigation graph).
-    testImplementation("com.google.dagger:hilt-android-testing:2.53.1")
-    kaptTest("com.google.dagger:hilt-android-compiler:2.53.1")
-
     // Repository tests: Robolectric + in-memory Room (spec §30)
     testImplementation("org.robolectric:robolectric:4.12.2")
     testImplementation("androidx.test:core:1.5.0")
