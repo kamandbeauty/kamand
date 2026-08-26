@@ -2,10 +2,8 @@ package com.modir.forushgah
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.withText
 import com.modir.forushgah.core.common.Money
 import com.modir.forushgah.core.designsystem.theme.ModirTheme
 import com.modir.forushgah.data.local.AppDatabase
@@ -34,7 +32,7 @@ import javax.inject.Inject
  */
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, qualifiers = "w1080dp-h1920dp")
+@Config(application = TestApplication::class, qualifiers = "w1080dp-h1920dp")
 class AppNavGraphUiTest {
 
     @get:Rule
@@ -86,7 +84,7 @@ class AppNavGraphUiTest {
         // Room flows emit asynchronously on the main looper — wait for the
         // snapshot to arrive before asserting.
         compose.waitUntil(15_000) {
-            compose.onAllNodes(withText("فروش امروز")).fetchSemanticsNodes().isNotEmpty()
+            runCatching { compose.onNodeWithText("فروش امروز").assertExists() }.isSuccess
         }
 
         // Top bar, the (formerly crash-prone) stat grid and the bottom bar.
@@ -107,7 +105,7 @@ class AppNavGraphUiTest {
         // The «مالی» tab is not the start destination — navigate to it.
         compose.onNodeWithText("مالی").performClick()
         compose.waitUntil(15_000) {
-            compose.onAllNodes(withText("هزینه‌ها")).fetchSemanticsNodes().isNotEmpty()
+            runCatching { compose.onNodeWithText("هزینه‌ها").assertExists() }.isSuccess
         }
         compose.onNodeWithText("هزینه‌ها").assertIsDisplayed()
         // The fresh (no-expense) state shows the empty-state CTA.
