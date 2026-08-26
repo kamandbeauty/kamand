@@ -32,7 +32,7 @@ final storeCoreProvider = FutureProvider<StoreCore>((ref) async {
     },
     onStockChanged: () {
       final snapshot = <String, double>{};
-      for (final prod in products.state) {
+      for (final prod in ref.read(productListProvider)) {
         final s = core.inventory.state(prod.id);
         if (s != null) snapshot[prod.id] = s.currentQty;
       }
@@ -87,9 +87,8 @@ class StoreIntegration {
   }
 
   void _resyncProducts(StoreCore c) {
-    final products = ref.read(productListProvider.notifier);
     final snapshot = <String, double>{};
-    for (final prod in products.state) {
+    for (final prod in ref.read(productListProvider)) {
       final s = c.inventory.state(prod.id);
       if (s != null) snapshot[prod.id] = s.currentQty;
     }
