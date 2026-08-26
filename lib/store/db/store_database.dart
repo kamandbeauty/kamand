@@ -6,7 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 /// (که در همان لایهٔ قبلی باقی می‌ماند) عمل می‌کند. همهٔ جداول پولی INTEGER
 /// و به تومان هستند. مهاجرت‌ها فقط افزاینده (non-destructive) هستند.
 class StoreDatabase {
-  static const int schemaVersion = 4;
+  static const int schemaVersion = 5;
 
   final Database db;
   StoreDatabase(this.db) {
@@ -61,6 +61,7 @@ class StoreDatabase {
     if (current < 2) _v2();
     if (current < 3) _v3();
     if (current < 4) _v4();
+    if (current < 5) _v5();
     db.execute('PRAGMA user_version = $schemaVersion;');
   }
 
@@ -485,6 +486,32 @@ class StoreDatabase {
     ''');
     db.execute('CREATE INDEX IF NOT EXISTS idx_cheques_due ON cheques(due_date);');
     db.execute('CREATE INDEX IF NOT EXISTS idx_cheques_status ON cheques(status);');
+  }
+
+  /// نسخهٔ ۵ — سفارشات (ارسال‌نشده / ارسال‌شده)
+  void _v5() {
+    db.execute('''
+      CREATE TABLE IF NOT EXISTS orders (
+        id TEXT PRIMARY KEY,
+        number TEXT DEFAULT '',
+        customer_id TEXT DEFAULT '',
+        customer_name TEXT NOT NULL,
+        customer_phone TEXT DEFAULT '',
+        address TEXT DEFAULT '',
+        order_date TEXT NOT NULL,
+        items_json TEXT NOT NULL DEFAULT '[]',
+        subtotal INTEGER NOT NULL DEFAULT 0,
+        discount INTEGER NOT NULL DEFAULT 0,
+        shipping INTEGER NOT NULL DEFAULT 0,
+        total INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'PENDING',  -- PENDING | SHIPPED | CANCELLED
+        sent_date TEXT,
+        notes TEXT DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    ''');
+    db.execute('CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);');
   }
 
   void _seedExpenseCategories() {

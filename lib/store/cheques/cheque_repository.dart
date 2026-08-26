@@ -284,13 +284,35 @@ class ChequeRepository {
   }
 
   /// چک‌های «در جریان» که سررسیدشان رسیده/گذشته — برای پرسش «پاس شد؟»
+  /// فقط چک‌های «دریافتی» که باید در سررسید از کاربر پرسید «پاس شد؟»
   List<ChequeEntity> dueForConfirmation(String today,
       {int lookaheadDays = 0}) {
     final rows = store.db.select(
-      "SELECT * FROM cheques WHERE status = 'HELD' AND due_date <= date(?, '+$lookaheadDays day') ORDER BY due_date",
+      "SELECT * FROM cheques WHERE direction = 'received' AND status = 'HELD' AND due_date <= date(?, '+$lookaheadDays day') ORDER BY due_date",
       [today],
     );
     return rows.map(_fromRow).toList();
+  }
+
+  /// چک‌های پرداختیِ خود کاربر (صادرکننده = کاربر): یادآوری فقط از
+  /// «۷ روز قبل از سررسید» تا «روز سررسید» — نه قبلش، نه بعدش.
+  /// فقط یادآوری است؛ از کاربر «پاس شد؟» پرسیده نمی‌شود.
+  List<ChequeEntity> upcomingIssued(String today, {int days = 7}) {
+    final rows = store.db.select(
+      "SELECT * FROM cheques WHERE direction = 'issued' AND status = 'HELD' "
+      "AND date(?) BETWEEN date(due_date, '-$days day') AND due_date "
+      "ORDER BY due_date",
+      [today],
+    );
+    return rows.map(_fromRow).toList();
+  }
+
+  /// جمع مبلغ چک‌های پرداختیِ در جریان — جزو «پرداختی‌های» فروشگاه
+  int outstandingIssuedAmount() {
+    final row = store.db.select(
+      "SELECT COALESCE(SUM(amount), 0) AS v FROM cheques WHERE direction = 'issued' AND status = 'HELD'",
+    ).first;
+    return (row['v'] as num).round();
   }
 
   List<ChequeEntity> list(

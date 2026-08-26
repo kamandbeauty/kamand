@@ -85,7 +85,7 @@ class SalesLedgerBridge {
     if (invoice.type != 'sale') return; // پیش‌فاکتور/خرید قدیمی وارد دفتر مالی نمی‌شوند
     final sourceId = invoice.id;
     final isoDate = toIsoDate(invoice.date);
-    final revenue = _clampMoney(invoice.subtotal - invoice.discountAmount + invoice.shippingFee);
+    final revenue = _clampMoney(invoice.subtotal - invoice.discountAmount + invoice.shippingFee + invoice.taxAmount);
     final total = Money.fromDouble(invoice.totalAmount);
     final paid = Money.fromDouble(invoice.paidAmount);
     final remaining = Money.fromDouble(invoice.remainingAmount);

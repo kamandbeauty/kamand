@@ -57,6 +57,8 @@ class _DraftTab {
   String dateLabel;
   List<InvoiceItemModel> items;
   bool hasShipping;
+  bool hasVat;
+  double vatPercent;
   bool hasDiscount;
   bool discountIsPercent;
   bool hasDeposit;
@@ -79,6 +81,8 @@ class _DraftTab {
     this.dateLabel = '',
     List<InvoiceItemModel>? items,
     this.hasShipping = false,
+    this.hasVat = false,
+    this.vatPercent = 10,
     this.hasDiscount = false,
     this.discountIsPercent = false,
     this.hasDeposit = false,
@@ -132,6 +136,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _dateLabel = '';
   List<InvoiceItemModel> _items = [];
   bool _hasShipping = false;
+  bool _hasVat = false;
+  double _vatPercent = 10; // پیش‌فرض ۱۰٪ — کاربر هنگام فعال‌سازی تغییرش می‌دهد
   bool _hasDiscount = false;
   bool _discountIsPercent = false; // false= مبلغ (آبی), true= درصد
   bool _hasDeposit = false;
@@ -333,6 +339,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _discountIsPercent = e.discountPercent > 0;
       _hasShipping = e.shippingFee > 0;
       _shippingFee = e.shippingFee;
+      _hasVat = e.taxPercent > 0;
+      _vatPercent = e.taxPercent > 0 ? e.taxPercent : _vatPercent;
       _hasDeposit = e.deposit > 0;
       _depositAmount = e.deposit;
       _hasPrevDebt = e.previousDebt > 0;
@@ -359,6 +367,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0),
       ];
       _hasShipping = false;
+      _hasVat = false;
       _hasDiscount = false;
       _hasDeposit = false;
       _hasPrevDebt = false;
@@ -389,6 +398,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _customerPhone.trim().isNotEmpty ||
         _notes.trim().isNotEmpty ||
         _hasShipping ||
+        _hasVat != t.hasVat ||
         _hasDiscount ||
         _hasDeposit ||
         _hasPrevDebt;
@@ -1308,12 +1318,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   double get _shippingVal => _hasShipping ? _shippingFee : 0;
+
+  /// مبلغ مالیات بر ارزش افزوده — پایه: اقلام − تخفیف + ارسال
+  double get _vatVal {
+    if (!_hasVat) return 0;
+    final base = _itemsTotal - _resolvedDiscount + _shippingVal;
+    if (base <= 0) return 0;
+    return (base * _vatPercent.clamp(0, 100)) / 100;
+  }
   double get _prevDebtVal => _hasPrevDebt ? _prevDebtAmount : 0;
   double get _depositVal => _hasDeposit ? _depositAmount : 0;
 
   /// جمع قبل از بیعانه = اقلام − تخفیف + ارسال + بدهی قبلی
   double get _grossTotal {
-    final t = _itemsTotal - _resolvedDiscount + _shippingVal + _prevDebtVal;
+    final t =
+        _itemsTotal - _resolvedDiscount + _shippingVal + _vatVal + _prevDebtVal;
     return t < 0 ? 0 : t;
   }
 
@@ -2092,6 +2111,79 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ]),
+                  const SizedBox(height: 8),
+                  // ── مالیات بر ارزش افزوده (تیک + درصد) ──
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setState(() => _hasVat = !_hasVat),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: Checkbox(
+                                  value: _hasVat,
+                                  onChanged: (v) =>
+                                      setState(() => _hasVat = v ?? false),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text('مالیات بر ارزش افزوده:',
+                                    style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: dark ? Colors.white : _slate700,
+                                        fontWeight: FontWeight.w700)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 70,
+                        child: TextFormField(
+                          initialValue: '$_vatPercent',
+                          enabled: _hasVat,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 12.5,
+                              color: dark ? Colors.white : _slate800),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            suffixText: '٪',
+                            enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: _cardGrayBorder)),
+                            border: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: _cardGrayBorder)),
+                          ),
+                          onChanged: (t) => setState(() {
+                            _vatPercent =
+                                double.tryParse(t.replaceAll(',', '.')) ??
+                                    _vatPercent;
+                          }),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _hasVat && _vatVal > 0
+                              ? PersianNumberFormatter.formatCurrency(_vatVal)
+                              : '—',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: _hasVat ? _orange : _slate400,
+                              fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ),
                   if (_hasDiscount)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),

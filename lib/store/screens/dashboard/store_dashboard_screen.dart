@@ -68,6 +68,8 @@ class _StoreDashboardScreenState extends ConsumerState<StoreDashboardScreen> {
             .length;
         final dueCheques =
             core.cheques.dueForConfirmation(todayIso()).length;
+        final myDueCheques =
+            core.cheques.upcomingIssued(todayIso(), days: 7);
         return RefreshIndicator(
           onRefresh: _load,
           child: ListView(
@@ -121,6 +123,39 @@ class _StoreDashboardScreenState extends ConsumerState<StoreDashboardScreen> {
                     subtitle: Text(
                         '$dueCheques چک در انتظار پرسش «پاس شده؟» — وصول یا برگشت',
                         style: const TextStyle(fontSize: 11)),
+                    trailing: const Icon(Icons.chevron_left, size: 20),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ChequesScreen())),
+                  ),
+                ),
+              // ── یادآور چک‌های پرداختیِ خود کاربر (۷ روز قبل تا سررسید) ──
+              if (myDueCheques.isNotEmpty)
+                Card(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(
+                          color: Colors.deepPurple.withValues(alpha: 0.4))),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          Colors.deepPurple.withValues(alpha: 0.13),
+                      child: const Icon(Icons.alarm,
+                          color: Colors.deepPurple, size: 22),
+                    ),
+                    title: Text(
+                        'یادآوری: ${myDueCheques.length} چک پرداختی شما تا ۷ روز آینده سررسید می‌شود',
+                        style: const TextStyle(
+                            fontSize: 12.5, fontWeight: FontWeight.w900)),
+                    subtitle: Text(
+                        myDueCheques
+                            .take(2)
+                            .map((c) =>
+                                'چک ${c.chequeNumber} — ${formatToman(c.amount)} — ${faDate(c.dueDate)}')
+                            .join(' | '),
+                        style: const TextStyle(fontSize: 10.5)),
                     trailing: const Icon(Icons.chevron_left, size: 20),
                     onTap: () => Navigator.push(
                         context,

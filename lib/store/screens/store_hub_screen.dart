@@ -5,6 +5,7 @@ import 'accounts_screen.dart';
 import 'cheques_screen.dart';
 import 'closing_audit_screen.dart';
 import 'customer_finance_screen.dart';
+import 'orders_screen.dart';
 import 'dashboard/store_dashboard_screen.dart';
 import 'expenses_screen.dart';
 import 'installment/installment_center_screen.dart';
@@ -24,6 +25,8 @@ class StoreHubScreen extends StatelessWidget {
     final sections = <_HubItem>[
       _HubItem('داشبورد فروشگاه', 'امروز، اقساط و هشدارها', Icons.dashboard_customize, Colors.orange,
           (c) => const StoreDashboardScreen()),
+      _HubItem('سفارشات ارسال‌نشده', 'ثبت، ویرایش و علامت ارسال', Icons.local_shipping_outlined, Colors.orangeAccent,
+          (c) => const OrdersScreen()),
       _HubItem('مالی مشتریان', 'بدهکاران، دریافت و سقف اعتبار', Icons.group, Colors.amber,
           (c) => const CustomerFinanceScreen()),
       _HubItem('تأمین‌کنندگان', 'فهرست، بدهی و پرداخت', Icons.local_shipping, Colors.blue,

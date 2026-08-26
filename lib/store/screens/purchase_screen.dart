@@ -249,8 +249,9 @@ class _PurchaseCreateScreenState extends ConsumerState<_PurchaseCreateScreen> {
   final _discount = TextEditingController();
   final _shipping = TextEditingController();
   final _other = TextEditingController();
-  final _tax = TextEditingController();
   final _paid = TextEditingController();
+  bool _hasVat = false;
+  double _vatPercent = 10;
 
   final _titles = <TextEditingController>[];
   final _qtys = <TextEditingController>[];
@@ -295,12 +296,21 @@ class _PurchaseCreateScreenState extends ConsumerState<_PurchaseCreateScreen> {
     return sum;
   }
 
-  int get _total =>
-      _subtotal -
+  int get _taxAmount {
+    if (!_hasVat) return 0;
+    final base = _subtotal -
+        (parseToman(_discount.text) ?? 0) +
+        (parseToman(_shipping.text) ?? 0) +
+        (parseToman(_other.text) ?? 0);
+    if (base <= 0) return 0;
+    return ((base * _vatPercent.clamp(0, 100)) / 100).round();
+  }
+
+  int get _total => _subtotal -
       (parseToman(_discount.text) ?? 0) +
       (parseToman(_shipping.text) ?? 0) +
       (parseToman(_other.text) ?? 0) +
-      (parseToman(_tax.text) ?? 0);
+      _taxAmount;
 
   Future<void> _save() async {
     final suppliers = core.suppliers.list();
@@ -345,7 +355,7 @@ class _PurchaseCreateScreenState extends ConsumerState<_PurchaseCreateScreen> {
         discount: parseToman(_discount.text) ?? 0,
         shipping: parseToman(_shipping.text) ?? 0,
         otherCosts: parseToman(_other.text) ?? 0,
-        tax: parseToman(_tax.text) ?? 0,
+        tax: _taxAmount,
         paidAmount: parseToman(_paid.text) ?? 0,
         accountId: 'acc-cash',
         number: _number.text.trim(),
@@ -466,7 +476,50 @@ class _PurchaseCreateScreenState extends ConsumerState<_PurchaseCreateScreen> {
           const SizedBox(height: 8),
           TomanField(controller: _other, label: 'سایر هزینه‌ها'),
           const SizedBox(height: 8),
-          TomanField(controller: _tax, label: 'مالیات (در صورت فعال بودن)'),
+          Row(
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: Checkbox(
+                  value: _hasVat,
+                  onChanged: (v) => setState(() => _hasVat = v ?? false),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('مالیات بر ارزش افزوده:',
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.w700)),
+              ),
+              SizedBox(
+                width: 70,
+                child: TextFormField(
+                  initialValue: '$_vatPercent',
+                  enabled: _hasVat,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(
+                      isDense: true, suffixText: '٪'),
+                  onChanged: (t) => setState(() {
+                    _vatPercent =
+                        double.tryParse(t.replaceAll(',', '.')) ?? _vatPercent;
+                  }),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _hasVat && _taxAmount > 0 ? formatToman(_taxAmount) : '—',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _hasVat ? AppTheme.RubyPrimary : Colors.grey,
+                      fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           TomanField(controller: _paid, label: 'پرداخت نقدی الان (۰ = نسیه)'),
           const SizedBox(height: 6),

@@ -119,7 +119,8 @@ class ReportRepository {
       [today],
     );
     final receivables = _sumPositiveCustomerDeltas();
-    final payables = _sumPositiveSupplierDeltas();
+    final payables = _sumPositiveSupplierDeltas() +
+        _oneInt("SELECT COALESCE(SUM(amount), 0) FROM cheques WHERE direction = 'issued' AND status = 'HELD'");
     final todayExpenses = _oneInt(
         'SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE expense_date = ? AND voided_at IS NULL',
         [today]);
@@ -384,7 +385,9 @@ class ReportRepository {
       "JOIN installment_sales s ON s.id = i.sale_id JOIN installment_providers p ON p.id = s.provider_id "
       "WHERE p.provider_type = 'store' AND s.status NOT IN ('CANCELLED','REFUNDED') AND i.status NOT IN ('CANCELLED','WAIVED') AND i.paid_amount < i.amount",
     );
-    final payables = _sumPositiveSupplierDeltas();
+    final payables =
+        _sumPositiveSupplierDeltas() + _oneInt(
+            "SELECT COALESCE(SUM(amount), 0) FROM cheques WHERE direction = 'issued' AND status = 'HELD'");
     return {
       'expectedIncoming': providerOutstanding + storeOutstanding,
       'expectedOutgoing': payables,

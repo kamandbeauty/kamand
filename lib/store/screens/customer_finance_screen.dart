@@ -181,6 +181,7 @@ class _CustomerFinanceSheetState extends ConsumerState<_CustomerFinanceSheet> {
     final holder = TextEditingController();
     final bank = TextEditingController();
     final due = TextEditingController();
+    final descCtrl = TextEditingController();
     final accounts = core.accounts.list(onlyActive: true);
     String accountId = accounts.isNotEmpty ? accounts.first.id : 'acc-cash';
     var byCheque = false;
@@ -266,6 +267,12 @@ class _CustomerFinanceSheetState extends ConsumerState<_CustomerFinanceSheet> {
                         setSheet(() => accountId = v ?? accountId),
                     decoration: const InputDecoration(labelText: 'به حساب'),
                   ),
+                const SizedBox(height: 10),
+                TextField(
+                    controller: descCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                        labelText: 'توضیحات (اختیاری)')),
                 const SizedBox(height: 14),
                 FilledButton(
                   onPressed: () {
@@ -292,6 +299,7 @@ class _CustomerFinanceSheetState extends ConsumerState<_CustomerFinanceSheet> {
                             holderName: holder.text.trim(),
                             bankName: bank.text.trim(),
                             sayadiNumber: sayadi.text.trim(),
+                            notes: descCtrl.text.trim(),
                           ));
                       return;
                     }
@@ -302,6 +310,7 @@ class _CustomerFinanceSheetState extends ConsumerState<_CustomerFinanceSheet> {
                           date:
                               DateTime.now().toIso8601String().substring(0, 10),
                           accountId: accountId,
+                          notes: descCtrl.text.trim(),
                         ));
                   },
                   child: const Text('ثبت دریافت'),

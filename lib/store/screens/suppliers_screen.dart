@@ -135,6 +135,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
     final holder = TextEditingController();
     final bank = TextEditingController();
     final due = TextEditingController();
+    final descCtrl = TextEditingController();
     final accounts = core.accounts.list(onlyActive: true);
     String accountId = accounts.isNotEmpty ? accounts.first.id : 'acc-cash';
     var byCheque = false;
@@ -224,6 +225,12 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                     onChanged: (v) => setSheet(() => accountId = v ?? accountId),
                     decoration: const InputDecoration(labelText: 'از حساب'),
                   ),
+                const SizedBox(height: 10),
+                TextField(
+                    controller: descCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                        labelText: 'توضیحات (اختیاری)')),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () {
@@ -249,6 +256,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                           holderName: holder.text.trim(),
                           bankName: bank.text.trim(),
                           sayadiNumber: sayadi.text.trim(),
+                          notes: descCtrl.text.trim(),
                         );
                         Navigator.pop(ctx);
                         showStoreSnack(ctx, 'چک پرداختی ثبت شد');
@@ -263,6 +271,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                         amount: v,
                         date: DateTime.now().toIso8601String().substring(0, 10),
                         accountId: accountId,
+                        notes: descCtrl.text.trim(),
                       );
                       Navigator.pop(ctx);
                       showStoreSnack(ctx, 'پرداخت ثبت شد');

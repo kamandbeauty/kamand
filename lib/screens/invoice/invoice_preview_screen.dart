@@ -638,6 +638,10 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             color: const Color(0xFF059669),
                           ),
                         if (inv.shippingFee > 0) _totalRow('هزینه ارسال', inv.shippingFee),
+                        if (inv.taxAmount > 0)
+                          _totalRow(
+                              'مالیات ارزش افزوده (${PersianNumberFormatter.toPersian(inv.taxPercent.toStringAsFixed(0))}٪)',
+                              inv.taxAmount),
                         if (inv.previousDebt > 0)
                           _totalRow('بدهی قبلی', inv.previousDebt, color: const Color(0xFFE11D48)),
                         if (inv.deposit > 0)
