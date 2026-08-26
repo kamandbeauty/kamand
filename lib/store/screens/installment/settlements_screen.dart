@@ -54,7 +54,7 @@ class _SettlementsScreenState extends ConsumerState<SettlementsScreen> {
     }
   }
 
-  Future<void> _confirmAndSettle(StoreCore core, Map<String, Object> row) async {
+  Future<void> _confirmAndSettle(StoreCore core, Map<String, Object?> row) async {
     final amount = TextEditingController()
       ..text = '${row['remaining']}';
     final ref = TextEditingController();
@@ -162,7 +162,7 @@ class _SettlementsScreenState extends ConsumerState<SettlementsScreen> {
           _reload(core);
         }, icon: const Icon(Icons.refresh)),
       ],
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());

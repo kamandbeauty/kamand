@@ -72,7 +72,7 @@ class _PurchaseScreenState extends ConsumerState<PurchaseScreen> {
     final reduce = ValueNotifier<bool>(true);
     await showModalBottomSheet(
       context: context,
-      isScrollControled: true,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -170,7 +170,7 @@ class _PurchaseScreenState extends ConsumerState<PurchaseScreen> {
         icon: const Icon(Icons.add),
         label: const Text('خرید جدید'),
       ),
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());

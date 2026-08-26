@@ -427,7 +427,7 @@ class _InstallmentSaleScreenState extends ConsumerState<InstallmentSaleScreen> {
         icon: const Icon(Icons.add),
         label: const Text('فروش اقساطی جدید'),
       ),
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());

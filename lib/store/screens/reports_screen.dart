@@ -77,7 +77,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
         ),
       ],
-      body: (core) {
+      body: (context, core) {
         return Column(
           children: [
             SizedBox(
@@ -299,7 +299,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(formatToman(gross),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w900,
                         color: gross >= 0 ? AppTheme.RubySuccess : AppTheme.RubyError)),

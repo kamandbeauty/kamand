@@ -325,7 +325,7 @@ class _InstallmentProvidersScreenState
           icon: const Icon(Icons.add),
         ),
       ],
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());

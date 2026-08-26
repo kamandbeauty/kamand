@@ -21,7 +21,7 @@ class _ClosingAuditScreenState extends ConsumerState<ClosingAuditScreen> {
   Widget build(BuildContext context) {
     return StoreScaffold(
       title: 'بستن روز و حسابرسی',
-      body: (core) {
+      body: (context, core) {
         return Column(
           children: [
             Padding(

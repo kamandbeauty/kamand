@@ -243,7 +243,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         icon: const Icon(Icons.add),
         label: const Text('هزینهٔ جدید'),
       ),
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());

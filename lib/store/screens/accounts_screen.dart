@@ -45,7 +45,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     var type = 'bank';
     await showModalBottomSheet(
       context: context,
-      isScrollControled: true,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
@@ -270,7 +270,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
             },
             icon: const Icon(Icons.add)),
       ],
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());

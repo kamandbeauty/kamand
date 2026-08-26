@@ -75,7 +75,7 @@ class _CustomerFinanceScreenState extends ConsumerState<CustomerFinanceScreen> {
   Widget build(BuildContext context) {
     return StoreScaffold(
       title: 'مالی مشتریان',
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());

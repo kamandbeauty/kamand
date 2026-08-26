@@ -123,7 +123,7 @@ class _InstallmentCenterScreenState
   Widget build(BuildContext context) {
     return StoreScaffold(
       title: 'اقساط و سررسیدها',
-      body: (core) {
+      body: (context, core) {
         if (_dueToday.isEmpty && _overdue.isEmpty && _upcoming.isEmpty) {
           _reload(core);
         }

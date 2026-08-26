@@ -54,7 +54,7 @@ class _StoreDashboardScreenState extends ConsumerState<StoreDashboardScreen> {
       actions: [
         IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
       ],
-      body: (core) {
+      body: (context, core) {
         if (_error != null) {
           return _Empty(text: _error!);
         }

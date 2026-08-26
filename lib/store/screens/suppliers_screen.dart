@@ -208,7 +208,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
     return StoreScaffold(
       title: 'تأمین‌کنندگان',
       fab: null,
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());
@@ -250,7 +250,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                       padding: const EdgeInsets.all(12),
                       itemCount: _rows.length,
                       itemBuilder: (_, i) {
-                        final supplier = _rows[i]['supplier'];
+                        final supplier = _rows[i]['supplier'] as Supplier;
                         final payable = _rows[i]['payable'] as int;
                         return Card(
                           color: Colors.white,
