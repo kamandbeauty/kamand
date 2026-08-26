@@ -315,6 +315,6 @@ void main() {
     final checks = core.reports.reconciliationChecks();
     final check = checks.firstWhere(
         (c) => c['name'] == 'جمع برنامهٔ تسویه = خالص پس از کارمزد');
-    expect(check['ok'], isTrue, reason: check['detail']);
+    expect(check['ok'], isTrue, reason: check['detail'] as String?);
   });
 }
