@@ -55,7 +55,7 @@ class ProductFormViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(ProductFormState(productId = savedStateHandle.get<Long>("productId")))
+    private val _state = MutableStateFlow(ProductFormState(productId = savedStateHandle.get<String>("productId")?.toLongOrNull()))
     val state: StateFlow<ProductFormState> = _state.asStateFlow()
 
     init {

@@ -38,7 +38,7 @@ class SupplierFormViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
-        SupplierFormState(supplierId = savedStateHandle.get<Long>("supplierId")),
+        SupplierFormState(supplierId = savedStateHandle.get<String>("supplierId")?.toLongOrNull()),
     )
     val state: StateFlow<SupplierFormState> = _state.asStateFlow()
 

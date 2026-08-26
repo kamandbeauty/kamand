@@ -39,7 +39,7 @@ class CustomerFormViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
-        CustomerFormState(customerId = savedStateHandle.get<Long>("customerId")),
+        CustomerFormState(customerId = savedStateHandle.get<String>("customerId")?.toLongOrNull()),
     )
     val state: StateFlow<CustomerFormState> = _state.asStateFlow()
 

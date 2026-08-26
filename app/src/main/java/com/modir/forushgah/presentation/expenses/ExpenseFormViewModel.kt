@@ -54,7 +54,7 @@ class ExpenseFormViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val expenseId: Long? = savedStateHandle.get<Long>("expenseId")
+    private val expenseId: Long? = savedStateHandle.get<String>("expenseId")?.toLongOrNull()
 
     private val _state = MutableStateFlow(ExpenseFormUiState(expenseId = expenseId))
     val state: StateFlow<ExpenseFormUiState> = _state.asStateFlow()

@@ -89,7 +89,7 @@ fun ModirNavGraph() {
             }
             composable(
                 route = Routes.INVOICE_FORM,
-                arguments = listOf(navArgument("orderId") { type = NavType.LongType; nullable = true }),
+                arguments = listOf(navArgument("orderId") { type = NavType.StringType; nullable = true }),
             ) {
                 InvoiceCreateRoute(
                     onSaved = { id ->
@@ -138,7 +138,7 @@ fun ModirNavGraph() {
             }
             composable(
                 route = Routes.EXPENSE_FORM,
-                arguments = listOf(navArgument("expenseId") { type = NavType.LongType; nullable = true }),
+                arguments = listOf(navArgument("expenseId") { type = NavType.StringType; nullable = true }),
             ) {
                 ExpenseFormRoute(
                     onSaved = { navController.popBackStack() },
@@ -164,7 +164,7 @@ fun ModirNavGraph() {
             }
             composable(
                 route = Routes.PRODUCT_FORM,
-                arguments = listOf(navArgument("productId") { type = NavType.LongType; nullable = true }),
+                arguments = listOf(navArgument("productId") { type = NavType.StringType; nullable = true }),
             ) {
                 ProductFormRoute(
                     onSaved = { navController.popBackStack() },
@@ -192,7 +192,7 @@ fun ModirNavGraph() {
             }
             composable(
                 route = Routes.CUSTOMER_FORM,
-                arguments = listOf(navArgument("customerId") { type = NavType.LongType; nullable = true }),
+                arguments = listOf(navArgument("customerId") { type = NavType.StringType; nullable = true }),
             ) {
                 CustomerFormRoute(
                     onSaved = { navController.popBackStack() },
@@ -218,7 +218,7 @@ fun ModirNavGraph() {
             }
             composable(
                 route = Routes.SUPPLIER_FORM,
-                arguments = listOf(navArgument("supplierId") { type = NavType.LongType; nullable = true }),
+                arguments = listOf(navArgument("supplierId") { type = NavType.StringType; nullable = true }),
             ) {
                 SupplierFormRoute(
                     onSaved = { navController.popBackStack() },

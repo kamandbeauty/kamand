@@ -105,7 +105,7 @@ class InvoiceCreateViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val editingOrderId: Long? = savedStateHandle.get<Long>("orderId")
+    private val editingOrderId: Long? = savedStateHandle.get<String>("orderId")?.toLongOrNull()
 
     private val selectorQuery = MutableStateFlow("")
     private val selectorProducts = selectorQuery.flatMapLatest { q ->
