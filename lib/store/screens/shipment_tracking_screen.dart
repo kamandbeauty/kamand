@@ -182,7 +182,7 @@ class _ShipmentTrackingScreenState
         icon: const Icon(Icons.save),
         label: const Text('ثبت اطلاعات ارسال'),
       ),
-      body: (core) {
+      body: (context, core) {
         if (_loading) {
           _reload(core);
           return const Center(child: CircularProgressIndicator());

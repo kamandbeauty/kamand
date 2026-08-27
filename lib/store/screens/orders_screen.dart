@@ -337,7 +337,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         icon: const Icon(Icons.add),
         label: const Text('سفارش جدید'),
       ),
-      body: (core) {
+      body: (context, core) {
         if (_orders.isEmpty &&
             !_showAll) {
           // بارگذاری اولیه

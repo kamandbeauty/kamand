@@ -149,7 +149,7 @@ class _ChequesScreenState extends ConsumerState<ChequesScreen> {
           icon: const Icon(Icons.refresh),
         ),
       ],
-      body: (core) {
+      body: (context, core) {
         if (_rows.isEmpty && _due.isEmpty) _reload(core);
         return RefreshIndicator(
           onRefresh: () => _reload(core),
