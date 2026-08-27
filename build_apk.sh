@@ -1,37 +1,35 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Build Automation Script for Factor Ruby (فاکتور روبی)
-set -e
+# ساخت خروجی‌های واقعی اندروید فاکتور ساز روبی
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT_DIR"
 
 echo "=========================================="
-echo "  فاکتور روبی - ساخت نسخه Release APK"
+echo "  فاکتور ساز روبی - ساخت خروجی Android"
 echo "=========================================="
 
-echo "[1/4] Checking Flutter installation..."
-if command -v flutter &> /dev/null; then
-    echo "Flutter detected: $(flutter --version | head -n 1)"
-    echo "[2/4] Getting dependencies..."
-    flutter pub get
-    echo "[3/4] Building Release APK..."
-    flutter build apk --release --target-platform android-arm64,android-x86_64
-    echo "[4/4] APK Build Complete: build/app/outputs/flutter-apk/app-release.apk"
-else
-    echo "Notice: Flutter CLI is not directly in system PATH."
-    echo "[2/4] Building Web Preview bundle and standalone release package..."
-    mkdir -p release build/app/outputs/flutter-apk web_preview/public
-    
-    (cd web_preview && npm run build --silent)
-    
-    echo "[3/4] Packaging Factor Ruby v5.8.0 release artifacts..."
-    zip -q -r release/FactorRuby-v5.8.0-release.zip lib android pubspec.yaml DATABASE.md ARCHITECTURE.md ANALYSIS_REPORT.md README.md web_preview/dist -x "*.git*" "*node_modules*"
-    cp release/FactorRuby-v5.8.0-release.zip web_preview/public/FactorRuby-v5.8.0-release.zip
-    
-    echo "[4/4] Release Package Build Complete!"
-    echo "--------------------------------------------------------"
-    echo "  Direct Download Link (Release ZIP Bundle):"
-    echo "  Release ZIP: https://3000-${E2B_SANDBOX_ID:-localhost}.e2b.app/FactorRuby-v5.8.0-release.zip"
-    echo "  To compile binary APK, run 'flutter build apk --release' in an environment with Flutter SDK."
-    echo "--------------------------------------------------------"
+if ! command -v flutter >/dev/null 2>&1; then
+  echo "خطا: Flutter SDK در PATH پیدا نشد."
+  echo "برای ساخت APK/AAB واقعی، Flutter و Android SDK را نصب و دوباره اجرا کنید."
+  exit 1
 fi
 
-echo "Done!"
+flutter --version | head -n 1
+echo "[1/3] دریافت وابستگی‌ها..."
+flutter pub get
+
+echo "[2/3] ساخت APKهای کم‌حجم جداشده بر اساس ABI..."
+flutter build apk --release --split-per-abi
+
+echo "[3/3] ساخت AAB برای Google Play..."
+flutter build appbundle --release
+
+echo ""
+echo "✅ خروجی‌ها آماده شدند:"
+find build/app/outputs/flutter-apk -maxdepth 1 -type f -name '*release.apk' -print | sort
+printf '%s\n' "build/app/outputs/bundle/release/app-release.aab"
+echo ""
+echo "برای انتشار APK، فایل ABI مناسب دستگاه‌ها را انتخاب کنید."
+echo "برای Google Play، AAB را استفاده کنید."

@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = 'فاکتور روبی';
+  static const String appName = 'فاکتور ساز روبی';
   static const String appVersion = '5.8.0';
 
   static const List<String> currencies = [
@@ -24,6 +24,7 @@ class AppConstants {
 
   static const List<Map<String, String>> usageTypes = [
     {'id': 'store', 'title': 'فروشگاه'},
+    {'id': 'online_store', 'title': 'فروشگاه اینترنتی'},
     {'id': 'services', 'title': 'خدمات'},
     {'id': 'wholesale', 'title': 'عمده‌فروشی'},
     {'id': 'freelance', 'title': 'فریلنسر'},

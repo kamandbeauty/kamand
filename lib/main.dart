@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/onboarding/onboarding_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
 import 'providers/app_providers.dart';
+import 'screens/splash/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,22 +19,16 @@ class FactorRubyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(userProvider);
     final settings = ref.watch(settingsProvider);
 
-    ThemeMode currentThemeMode = ThemeMode.light;
-    if (settings.themeMode == 'dark') {
-      currentThemeMode = ThemeMode.dark;
-    } else if (settings.themeMode == 'system') {
-      currentThemeMode = ThemeMode.system;
-    }
-
+    final accent = Color(settings.accentColor);
     return MaterialApp(
-      title: 'فاکتور روبی',
+      title: 'مدیریت سفارشات و حسابداری جاوید',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: currentThemeMode,
+      theme: AppTheme.lightThemeWith(accent),
+      darkTheme: AppTheme.darkThemeWith(accent),
+      // تم تاریک حذف شده؛ فقط تم روشن با رنگ انتخابی کاربر استفاده می‌شود.
+      themeMode: ThemeMode.light,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -51,7 +44,8 @@ class FactorRubyApp extends ConsumerWidget {
           child: child!,
         );
       },
-      home: user.isOnboarded ? const DashboardScreen() : const OnboardingScreen(),
+      // همیشه با اسپلش روبی شروع می‌شود
+      home: const SplashScreen(),
     );
   }
 }

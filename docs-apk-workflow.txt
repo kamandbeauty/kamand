@@ -1,0 +1,12 @@
+# ─── برای قابل‌دانلود شدن APK تست ───
+# در گیت‌هاب فایل .github/workflows/android-build.yml را روی برنچ
+# arena/01a03db6-kamand ویرایش کنید و در انتهای steps (بعد از "Build debug APK") اضافه کنید:
+#
+#       - name: Upload debug APK
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: app-debug-apk
+#           path: build/app/outputs/flutter-apk/app-debug.apk
+#
+# سپس از تب Actions یک اجرای جدید انجام شود (مثلاً Re-run یا push کوچک).
+# APK از بخش Artifacts اجرای «Android Debug CI» قابل دانلود خواهد بود.

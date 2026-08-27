@@ -15,6 +15,7 @@ class InvoiceModel {
   final double discountPercent;
   final double discountAmount;
   final double shippingFee;
+  final double taxPercent; // مالیات بر ارزش افزوده (٪) — صفر = غیرفعال
   final double previousDebt;
   final double deposit;
   final double totalAmount;
@@ -22,6 +23,8 @@ class InvoiceModel {
   final double remainingAmount;
   final String notes;
   final String cardNumber;
+  final String cardBank;
+  final String cardOwner;
   final String createdAt;
 
   InvoiceModel({
@@ -39,6 +42,7 @@ class InvoiceModel {
     required this.discountPercent,
     required this.discountAmount,
     required this.shippingFee,
+    this.taxPercent = 0,
     required this.previousDebt,
     required this.deposit,
     required this.totalAmount,
@@ -46,8 +50,19 @@ class InvoiceModel {
     required this.remainingAmount,
     required this.notes,
     required this.cardNumber,
+    this.cardBank = '',
+    this.cardOwner = '',
     required this.createdAt,
   });
+
+  /// پایهٔ محاسبهٔ مالیات: اقلام − تخفیف + ارسال (بدهی قبلی مشمول نیست)
+  double get taxBase {
+    final b = subtotal - discountAmount + shippingFee;
+    return b < 0 ? 0 : b;
+  }
+
+  /// مبلغ مالیات بر ارزش افزوده
+  double get taxAmount => (taxBase * taxPercent.clamp(0, 100)) / 100;
 
   Map<String, dynamic> toMap() => {
     'id': id,
@@ -64,6 +79,7 @@ class InvoiceModel {
     'discountPercent': discountPercent,
     'discountAmount': discountAmount,
     'shippingFee': shippingFee,
+    'taxPercent': taxPercent,
     'previousDebt': previousDebt,
     'deposit': deposit,
     'totalAmount': totalAmount,
@@ -71,6 +87,8 @@ class InvoiceModel {
     'remainingAmount': remainingAmount,
     'notes': notes,
     'cardNumber': cardNumber,
+    'cardBank': cardBank,
+    'cardOwner': cardOwner,
     'createdAt': createdAt,
   };
 
@@ -91,6 +109,7 @@ class InvoiceModel {
     discountPercent: (map['discountPercent'] ?? 0).toDouble(),
     discountAmount: (map['discountAmount'] ?? 0).toDouble(),
     shippingFee: (map['shippingFee'] ?? 0).toDouble(),
+    taxPercent: (map['taxPercent'] ?? 0).toDouble(),
     previousDebt: (map['previousDebt'] ?? 0).toDouble(),
     deposit: (map['deposit'] ?? 0).toDouble(),
     totalAmount: (map['totalAmount'] ?? 0).toDouble(),
@@ -98,6 +117,8 @@ class InvoiceModel {
     remainingAmount: (map['remainingAmount'] ?? 0).toDouble(),
     notes: map['notes'] ?? '',
     cardNumber: map['cardNumber'] ?? '',
+    cardBank: map['cardBank'] ?? '',
+    cardOwner: map['cardOwner'] ?? '',
     createdAt: map['createdAt'] ?? '',
   );
 }

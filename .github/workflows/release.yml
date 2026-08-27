@@ -1,0 +1,321 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+      - "release-*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and verify signed APK/AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+
+      - name: Validate signing secrets
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "${RELEASE_KEYSTORE_BASE64:-}" ]] || missing+=(RELEASE_KEYSTORE_BASE64)
+          [[ -n "${RELEASE_STORE_PASSWORD:-}" ]] || missing+=(RELEASE_STORE_PASSWORD)
+          [[ -n "${RELEASE_KEY_ALIAS:-}" ]] || missing+=(RELEASE_KEY_ALIAS)
+          [[ -n "${RELEASE_KEY_PASSWORD:-}" ]] || missing+=(RELEASE_KEY_PASSWORD)
+
+          if (( ${#missing[@]} > 0 )); then
+            printf '::error::Missing required GitHub Secret(s): %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Show toolchain versions
+        run: |
+          flutter --version
+          java -version
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(awk '$1 == "version:" { print $2; exit }' pubspec.yaml)"
+
+          if [[ "$version" != *+* ]]; then
+            echo "::error::pubspec.yaml version must use name+code format."
+            exit 1
+          fi
+
+          version_name="${version%%+*}"
+          version_code="${version##*+}"
+
+          echo "name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "Building version $version_name (versionCode $version_code)."
+
+      - name: Restore release keystore
+        id: keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          keystore_path="$RUNNER_TEMP/rubi-release.jks"
+
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" \
+            | base64 --decode > "$keystore_path"
+
+          if [[ ! -s "$keystore_path" ]]; then
+            echo "::error::The decoded release keystore is empty."
+            exit 1
+          fi
+
+          echo "path=$keystore_path" >> "$GITHUB_OUTPUT"
+
+      - name: Check Gradle Wrapper
+        working-directory: android
+        run: ./gradlew --version
+
+      - name: Clean Android build
+        working-directory: android
+        env:
+          RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew clean
+
+      - name: Build signed release APKs (split by ABI)
+        env:
+          RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build signed release AAB
+        env:
+          RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: flutter build appbundle --release
+
+      - name: Collect release artifacts
+        id: artifacts
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          apk_dir="build/app/outputs/flutter-apk"
+          aab="build/app/outputs/bundle/release/app-release.aab"
+
+          mkdir -p release-artifacts
+
+          apk_paths=()
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            source_apk="$apk_dir/app-${abi}-release.apk"
+            named_apk="release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-${abi}-release.apk"
+
+            [[ -f "$source_apk" ]] || {
+              echo "::error::Split release APK was not generated at $source_apk."
+              exit 1
+            }
+
+            cp "$source_apk" "$named_apk"
+            apk_paths+=("$named_apk")
+          done
+
+          [[ -f "$aab" ]] || {
+            echo "::error::Release AAB was not generated at $aab."
+            exit 1
+          }
+
+          named_aab="release-artifacts/RubiFactor-v${VERSION_NAME}-vc${VERSION_CODE}-release.aab"
+          cp "$aab" "$named_aab"
+
+          {
+            echo "apk_paths<<EOF"
+            printf '%s\n' "${apk_paths[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "aab_path=$named_aab" >> "$GITHUB_OUTPUT"
+
+      - name: Verify APK and AAB signatures
+        env:
+          APK_PATHS: ${{ steps.artifacts.outputs.apk_paths }}
+          AAB_PATH: ${{ steps.artifacts.outputs.aab_path }}
+          EXPECTED_APPLICATION_ID: com.ruby.factor_ruby
+          EXPECTED_VERSION_NAME: ${{ steps.version.outputs.name }}
+          EXPECTED_VERSION_CODE: ${{ steps.version.outputs.code }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          apksigner_bin="$(command -v apksigner || true)"
+
+          if [[ -z "$apksigner_bin" && -n "$sdk_root" ]]; then
+            apksigner_bin="$(
+              find "$sdk_root" -type f -name apksigner \
+                -print 2>/dev/null | sort -V | tail -n 1
+            )"
+          fi
+
+          if [[ -z "$apksigner_bin" ]]; then
+            echo "::error::apksigner is not available on the runner."
+            exit 1
+          fi
+
+          while IFS= read -r APK_PATH; do
+            [[ -n "$APK_PATH" ]] || continue
+
+            apk_name="$(basename "$APK_PATH")"
+            apk_verify_log="$RUNNER_TEMP/${apk_name}.apksigner-verify.txt"
+
+            "$apksigner_bin" verify --verbose "$APK_PATH" \
+              > "$apk_verify_log" 2>&1
+
+            cat "$apk_verify_log"
+
+            if ! grep -Eiq 'Verified using v[234] scheme.*: true' "$apk_verify_log"; then
+              echo "::error::APK signature verification failed for $APK_PATH."
+              exit 1
+            fi
+
+            echo "APK signature verification passed: $APK_PATH"
+          done <<< "$APK_PATHS"
+
+          APK_PATH="$(printf '%s\n' "$APK_PATHS" | sed '/^[[:space:]]*$/d' | head -n 1)"
+
+          aab_verify_log="$RUNNER_TEMP/jarsigner-verify.txt"
+
+          jarsigner -verify -verbose -certs "$AAB_PATH" \
+            > "$aab_verify_log" 2>&1
+
+          grep -Eiq 'jar verified' "$aab_verify_log"
+          echo "AAB signature verification passed."
+
+          apkanalyzer_bin="$(command -v apkanalyzer || true)"
+
+          if [[ -n "$apkanalyzer_bin" ]]; then
+            actual_application_id="$(
+              "$apkanalyzer_bin" manifest application-id "$APK_PATH" \
+                2>/dev/null || true
+            )"
+
+            actual_version_name="$(
+              "$apkanalyzer_bin" manifest version-name "$APK_PATH" \
+                2>/dev/null || true
+            )"
+
+            actual_version_code="$(
+              "$apkanalyzer_bin" manifest version-code "$APK_PATH" \
+                2>/dev/null || true
+            )"
+
+            actual_application_id="$(
+              printf '%s' "$actual_application_id" \
+                | tr -d '\r' | xargs
+            )"
+
+            actual_version_name="$(
+              printf '%s' "$actual_version_name" \
+                | tr -d '\r' | xargs
+            )"
+
+            actual_version_code="$(
+              printf '%s' "$actual_version_code" \
+                | tr -d '\r' | xargs
+            )"
+
+            if [[ -z "$actual_application_id" ||
+                  -z "$actual_version_name" ||
+                  -z "$actual_version_code" ]]; then
+              echo "::warning::APK metadata could not be read; signature checks already passed."
+            else
+              echo "APK metadata: applicationId=$actual_application_id versionName=$actual_version_name versionCode=$actual_version_code"
+
+              if [[ "$actual_application_id" != "$EXPECTED_APPLICATION_ID" ]]; then
+                echo "::error::Unexpected applicationId: $actual_application_id"
+                exit 1
+              fi
+
+              if [[ "$actual_version_name" != "$EXPECTED_VERSION_NAME" ]]; then
+                echo "::error::Unexpected versionName: $actual_version_name"
+                exit 1
+              fi
+
+              if [[ "$actual_version_code" != "$EXPECTED_VERSION_CODE" ]]; then
+                echo "::error::Unexpected versionCode: $actual_version_code"
+                exit 1
+              fi
+
+              manifest_dump="$(
+                "$apkanalyzer_bin" manifest print "$APK_PATH" \
+                  2>/dev/null || true
+              )"
+
+              if grep -q 'android:debuggable="true"' <<< "$manifest_dump"; then
+                echo "::error::The release APK is debuggable."
+                exit 1
+              fi
+
+              echo "APK metadata and non-debuggable state verified."
+            fi
+          else
+            echo "::warning::apkanalyzer is not available; metadata checks were skipped."
+          fi
+
+      - name: Upload signed release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: RubiFactor-release-v${{ steps.version.outputs.name }}-vc${{ steps.version.outputs.code }}
+          path: release-artifacts/*
+          if-no-files-found: error
+
+      - name: Create GitHub Release for tag
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-artifacts/*
+
+      - name: Remove temporary keystore
+        if: always()
+        env:
+          KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
+        shell: bash
+        run: |
+          rm -f -- "${KEYSTORE_PATH:-$RUNNER_TEMP/rubi-release.jks}"

@@ -8,9 +8,12 @@ import '../../models/invoice_item_model.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/app_providers.dart';
+import '../../store/providers/store_providers.dart';
+import 'invoice_preview_screen.dart';
 
 class InvoiceCreateScreen extends ConsumerStatefulWidget {
-  const InvoiceCreateScreen({super.key});
+  final InvoiceModel? editInvoice;
+  const InvoiceCreateScreen({super.key, this.editInvoice});
 
   @override
   ConsumerState<InvoiceCreateScreen> createState() => _InvoiceCreateScreenState();
@@ -19,12 +22,39 @@ class InvoiceCreateScreen extends ConsumerStatefulWidget {
 class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  String _number = '1004';
-  String _customerName = 'رضا محمدی';
-  String _customerPhone = '09121112233';
-  String _date = JalaliHelper.getTodayJalali();
-  String _type = 'sale';
-  String _paymentType = 'cash';
+  late String _number;
+  late String _customerName;
+  late String _customerPhone;
+  late String _date;
+  late String _type;
+  late String _paymentType;
+  String? _editId;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.editInvoice;
+    if (e != null) {
+      _editId = e.id;
+      _number = e.number;
+      _customerName = e.customerName;
+      _customerPhone = e.customerPhone;
+      _date = e.date;
+      _type = e.type;
+      _paymentType = e.paymentType;
+      _items = List.from(e.items.isEmpty ? _items : e.items);
+      _discountAmount = e.discountAmount;
+      _shippingFee = e.shippingFee;
+      _notes = e.notes;
+    } else {
+      _number = '1004';
+      _customerName = 'رضا محمدی';
+      _customerPhone = '09121112233';
+      _date = JalaliHelper.getTodayJalali();
+      _type = 'sale';
+      _paymentType = 'cash';
+    }
+  }
 
   List<InvoiceItemModel> _items = [
     InvoiceItemModel(
@@ -60,22 +90,44 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   }
 
   void _saveInvoice() {
-    final existingCust = ref.read(customerListProvider).where((c) => c.name == _customerName).firstOrNull;
-    final custId = existingCust?.id ?? 'c-${DateTime.now().millisecondsSinceEpoch}';
+    final cleanItems = _items
+        .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0)
+        .toList();
+    if (cleanItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('حداقل یک قلم کالا اضافه کنید')),
+      );
+      return;
+    }
+
+    final customers = ref.read(customerListProvider);
+    String? existingId;
+    for (final c in customers) {
+      if (c.name == _customerName) {
+        existingId = c.id;
+        break;
+      }
+    }
+    final custId = widget.editInvoice?.customerId ??
+        existingId ??
+        'c-${DateTime.now().millisecondsSinceEpoch}';
     final business = ref.read(businessProvider);
     final cardNum = business.bankCards.isNotEmpty ? business.bankCards.first : '';
 
+    final isEdit = _editId != null;
     final newInv = InvoiceModel(
-      id: 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      id: isEdit ? _editId! : 'inv-${DateTime.now().millisecondsSinceEpoch}',
       number: _number,
       customerId: custId,
-      customerName: _customerName,
+      customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
       customerPhone: _customerPhone,
       type: _type,
       paymentType: _paymentType,
-      status: _paymentType == 'cash' ? 'paid' : 'unpaid',
+      status: _type == 'proforma'
+          ? 'proforma'
+          : (_paymentType == 'cash' ? 'paid' : 'unpaid'),
       date: _date,
-      items: _items,
+      items: cleanItems,
       subtotal: _subtotal,
       discountPercent: 0,
       discountAmount: _discountAmount,
@@ -91,17 +143,23 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
     );
 
     ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
+    // ماندهٔ مشتری از دفتر کل فروشگاه مشتق می‌شود (نویسندهٔ افزایشی قدیمی حذف شد)
     if (_type == 'sale' && _paymentType != 'cash' && newInv.remainingAmount > 0) {
-      ref.read(customerListProvider.notifier).updateBalance(custId, newInv.remainingAmount);
+      ref.read(storeIntegrationProvider).afterInvoiceSaved(newInv);
     }
-    Navigator.pop(context);
+
+    // بعد از ذخیره → صفحه نمایش فاکتور
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => InvoicePreviewScreen(invoice: newInv)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = _editId != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ایجاد فاکتور جدید'),
+        title: Text(isEdit ? 'ویرایش فاکتور' : 'ایجاد فاکتور جدید'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -253,7 +311,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                           const Text('جمع کل نهایی:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                           Text(
                             PersianNumberFormatter.formatCurrency(_totalAmount),
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.black, fontSize: 18),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
                           ),
                         ],
                       ),
@@ -268,8 +326,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _saveInvoice,
-                  icon: const Icon(Icons.save),
-                  label: const Text('ذخیره فاکتور'),
+                  icon: Icon(isEdit ? Icons.check : Icons.save),
+                  label: Text(isEdit ? 'ذخیره تغییرات' : 'ذخیره فاکتور'),
                 ),
               ),
             ],

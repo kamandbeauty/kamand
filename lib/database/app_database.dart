@@ -61,7 +61,7 @@ class AppDatabase {
     _db!.execute('''
       CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        startingInvoiceNum INTEGER DEFAULT 1004,
+        startingInvoiceNum INTEGER DEFAULT 1,
         templateStyle TEXT DEFAULT 'modern',
         showLogo INTEGER DEFAULT 1,
         showCardNum INTEGER DEFAULT 1,
@@ -193,24 +193,6 @@ class PaymentsTableSchema {
   final String amount = 'amount';
   final String date = 'date';
   final String paymentMethod = 'payment_method';
-  final String notes = 'notes';
-}
-
-class ExpensesTableSchema {
-  final String id = 'id';
-  final String title = 'title';
-  final String category = 'category';
-  final String amount = 'amount';
-  final String date = 'date';
-  final String notes = 'notes';
-}
-
-class IncomeTableSchema {
-  final String id = 'id';
-  final String title = 'title';
-  final String category = 'category';
-  final String amount = 'amount';
-  final String date = 'date';
   final String notes = 'notes';
 }
 
