@@ -48,30 +48,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined_rounded),
+            icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded, color: AppTheme.RubyPrimary),
             label: 'خانه',
           ),
           NavigationDestination(
-            icon: Icon(Icons.local_shipping_outlined_rounded),
+            icon: Icon(Icons.local_shipping_outlined),
             selectedIcon:
                 Icon(Icons.local_shipping_rounded, color: AppTheme.RubyPrimary),
             label: 'سفارش‌ها',
           ),
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined_rounded),
+            icon: Icon(Icons.receipt_long_outlined),
             selectedIcon:
                 Icon(Icons.receipt_long_rounded, color: AppTheme.RubyPrimary),
             label: 'فاکتورها',
           ),
           NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined_rounded),
+            icon: Icon(Icons.account_balance_wallet_outlined),
             selectedIcon: Icon(Icons.account_balance_wallet_rounded,
                 color: AppTheme.RubyPrimary),
             label: 'مالی',
           ),
           NavigationDestination(
-            icon: Icon(Icons.grid_view_outlined_rounded),
+            icon: Icon(Icons.grid_view_outlined),
             selectedIcon:
                 Icon(Icons.grid_view_rounded, color: AppTheme.RubyPrimary),
             label: 'بیشتر',
@@ -88,21 +88,21 @@ class _MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <(_MoreItemData)>[
-      _MoreItemData('مشتریان', 'بانک مشتریان و مانده‌حساب', Icons.people_outline_rounded,
+    final items = <_MoreItemData>[
+      _MoreItemData('مشتریان', 'بانک مشتریان و مانده‌حساب', Icons.people_outline,
           const CustomerListScreen()),
-      _MoreItemData('محصولات', 'کاتالوگ کالا و موجودی', Icons.inventory_2_outlined_rounded,
+      _MoreItemData('محصولات', 'کاتالوگ کالا و موجودی', Icons.inventory_2_outlined,
           const ProductListScreen()),
       _MoreItemData('کدهای رهگیری ارسال', 'ورود گروهی کد رهگیری و اطلاع‌رسانی',
-          Icons.qr_code_rounded, const ShipmentTrackingScreen()),
+          Icons.qr_code, const ShipmentTrackingScreen()),
       _MoreItemData('داشبورد فروشگاه', 'خلاصهٔ امروز و هشدارها',
-          Icons.dashboard_customize_outlined_rounded, const StoreDashboardScreen()),
-      _MoreItemData('چک‌ها', 'سررسید، وصول و برگشت', Icons.receipt_outlined_rounded,
+          Icons.dashboard_customize_outlined, const StoreDashboardScreen()),
+      _MoreItemData('چک‌ها', 'سررسید، وصول و برگشت', Icons.receipt_outlined,
           const ChequesScreen()),
       _MoreItemData('تسویه با درگاه‌ها', 'اقساط اقساطی و یادآور ماهانه',
-          Icons.payments_outlined_rounded, const SettlementsScreen()),
+          Icons.payments_outlined, const SettlementsScreen()),
       _MoreItemData('تنظیمات', 'پروفایل، درگاه‌های اقساطی و پشتیبان',
-          Icons.settings_outlined_rounded, const SettingsScreen()),
+          Icons.settings_outlined, const SettingsScreen()),
     ];
     return Scaffold(
       backgroundColor: AppTheme.bgLight,
@@ -129,7 +129,7 @@ class _MoreScreen extends StatelessWidget {
                 subtitle: Text(it.subtitle,
                     style: const TextStyle(
                         fontSize: 11, color: AppTheme.RubyTextSecondary)),
-                trailing: const Icon(Icons.chevron_left_rounded,
+                trailing: const Icon(Icons.chevron_left,
                     color: AppTheme.RubyTextSecondary),
                 onTap: () => Navigator.push(
                     context, MaterialPageRoute(builder: (_) => it.screen)),
