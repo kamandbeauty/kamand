@@ -398,7 +398,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _customerPhone.trim().isNotEmpty ||
         _notes.trim().isNotEmpty ||
         _hasShipping ||
-        _hasVat != t.hasVat ||
+        _hasVat ||
         _hasDiscount ||
         _hasDeposit ||
         _hasPrevDebt;
@@ -487,6 +487,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ))
         .toList();
     t.hasShipping = _hasShipping;
+    t.hasVat = _hasVat;
+    t.vatPercent = _vatPercent;
     t.hasDiscount = _hasDiscount;
     t.discountIsPercent = _discountIsPercent;
     t.hasDeposit = _hasDeposit;
@@ -523,6 +525,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ];
     }
     _hasShipping = t.hasShipping;
+    _hasVat = t.hasVat;
+    _vatPercent = t.vatPercent > 0 ? t.vatPercent : _vatPercent;
     _hasDiscount = t.hasDiscount;
     _discountIsPercent = t.discountIsPercent;
     _hasDeposit = t.hasDeposit;
