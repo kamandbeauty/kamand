@@ -9,7 +9,7 @@ class AppSettingsModel {
   final bool autoBackup;
   final String pinCode;
   final bool pinEnabled;
-  /// رنگ اصلی اپ/فاکتور به صورت 0xAARRGGBB (مثلاً 0xFFF97316)
+  /// رنگ اصلی اپ/فاکتور به صورت 0xAARRGGBB (مثلاً 0xFF5E9ED9)
   final int accentColor;
 
   AppSettingsModel({
@@ -23,7 +23,7 @@ class AppSettingsModel {
     required this.autoBackup,
     required this.pinCode,
     required this.pinEnabled,
-    this.accentColor = 0xFFF97316,
+    this.accentColor = 0xFF5E9ED9,
   });
 
   AppSettingsModel copyWith({
@@ -81,6 +81,6 @@ class AppSettingsModel {
         pinEnabled: map['pinEnabled'] ?? false,
         accentColor: map['accentColor'] is int
             ? map['accentColor'] as int
-            : int.tryParse('${map['accentColor']}') ?? 0xFFF97316,
+            : int.tryParse('${map['accentColor']}') ?? 0xFF5E9ED9,
       );
 }

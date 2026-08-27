@@ -105,7 +105,7 @@ class InfoCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: const Color(0xFFE3EDF5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

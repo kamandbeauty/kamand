@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../main_shell_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
@@ -52,7 +53,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
     final isOnboarded = savedUser?.isOnboarded ?? ref.read(userProvider).isOnboarded;
     final next = isOnboarded
-        ? const DashboardScreen()
+        ? const MainShellScreen()
         : const OnboardingScreen();
 
     Navigator.of(context).pushReplacement(
@@ -99,7 +100,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xFFFFF9F3), Color(0xFFF97316)],
+                      colors: [Color(0xFFF4F8FC), Color(0xFF5E9ED9)],
                       stops: [0.55, 1.0],
                     ),
                   ),
@@ -114,7 +115,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           errorBuilder: (_, __, ___) => const Icon(
                             Icons.receipt_long,
                             size: 96,
-                            color: Color(0xFFF97316),
+                            color: Color(0xFF5E9ED9),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -123,7 +124,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFFEA580C),
+                            color: Color(0xFF4A8CC9),
                           ),
                         ),
                         const Spacer(),

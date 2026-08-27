@@ -284,7 +284,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: const Color(0xFFE3EDF5)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

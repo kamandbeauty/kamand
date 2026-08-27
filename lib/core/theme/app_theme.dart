@@ -25,22 +25,22 @@ class AppTheme {
   // ─────────────────────────────────────────
   // Ruby Brand — Theme Tokens (Spec §22)
   // ─────────────────────────────────────────
-  static const Color RubyPrimary = Color(0xFFF97316); // Ruby Orange
-  static const Color RubyPrimaryDark = Color(0xFFEA580C);
-  static const Color RubyPrimaryContainer = Color(0xFFFFEDD5); // orange-100
-  static const Color RubyBackground = Color(0xFFF7F8FC); // soft cool background
+  static const Color RubyPrimary = Color(0xFF5E9ED9); // Ruby Orange
+  static const Color RubyPrimaryDark = Color(0xFF4A8CC9);
+  static const Color RubyPrimaryContainer = Color(0xFFE8F1FA); // orange-100
+  static const Color RubyBackground = Color(0xFFF4F8FC); // soft cool background
   static const Color RubySurface = Colors.white;
-  static const Color RubyTextPrimary = Color(0xFF1E293B); // slate-800
-  static const Color RubyTextSecondary = Color(0xFF64748B); // slate-500
+  static const Color RubyTextPrimary = Color(0xFF243B53); // slate-800
+  static const Color RubyTextSecondary = Color(0xFF627D98); // slate-500
   static const Color RubySuccess = Color(0xFF059669); // emerald-600
   static const Color RubyWarning = Color(0xFFD97706); // amber-600
-  static const Color RubyError = Color(0xFFE11D48); // rose-600
+  static const Color RubyError = Color(0xFFE35D6E); // rose-600
 
   // Legacy aliases — keep for backward compat (other screens use them)
   static const Color primaryBlue = RubyPrimary;
   static const Color primaryBlueDark = RubyPrimaryDark;
   static const Color lightBlueBg = RubyPrimaryContainer;
-  static const Color bgLight = Color(0xFFF7F8FC);
+  static const Color bgLight = Color(0xFFF4F8FC);
   static const Color bgDark = Color(0xFF0F172A);
   static const Color cardDark = Color(0xFF1E293B);
 
@@ -83,7 +83,7 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(cardRadius),
-        side: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        side: BorderSide(color: Color(0xFFE3EDF5), width: 1),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -104,7 +104,7 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0xFFF1F5F9),
+      fillColor: const Color(0xFFF7FAFD),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),

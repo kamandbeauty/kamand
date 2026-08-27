@@ -18,7 +18,8 @@ import '../../providers/invoice_provider.dart';
 import '../../providers/bank_card_provider.dart';
 import '../dashboard/dashboard_screen.dart';
 
-const _orange = AppTheme.RubyPrimary;
+// رنگ تأییدشدهٔ هویت فاکتور — عمداً ثابت (بازطراحی UI اپ نباید فاکتور را تغییر دهد)
+const _orange = Color(0xFFF97316);
 const _slate400 = Color(0xFF94A3B8);
 const _slate500 = Color(0xFF64748B);
 const _slate700 = Color(0xFF334155);
