@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">روزی | لیست کارها</string>
+    <!-- Header title. The launcher label carries the full name; the bar has
+         room for one word beside the logo and the search button. -->
+    <string name="app_name_short">روزی</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_today">امروز</string>
+    <string name="nav_calendar">تقویم</string>
+    <string name="nav_profile">پروفایل</string>
+
+    <!-- Greetings -->
+    <string name="greeting_morning">صبح بخیر</string>
+    <string name="greeting_noon">ظهر بخیر</string>
+    <string name="greeting_evening">عصر بخیر</string>
+    <string name="greeting_night">شب بخیر</string>
+    <string name="greeting_morning_emoji">☀️</string>
+    <string name="greeting_noon_emoji">🌤️</string>
+    <string name="greeting_evening_emoji">🌇</string>
+    <string name="greeting_night_emoji">🌙</string>
+    <string name="greeting_no_name">👋</string>
+
+    <!-- Home smart messages -->
+    <string name="home_tasks_count">امروز %1$s کار داری</string>
+    <string name="home_no_tasks">امروز کاری نداری</string>
+    <string name="smart_start">روزت رو شروع کنیم؟ ☀️</string>
+    <string name="smart_going_well">عالی پیش میری! 🔥</string>
+    <string name="smart_almost">تقریباً تمومه! 💪</string>
+    <string name="smart_done">امروز رو عالی ساختی! 🎉</string>
+    <string name="smart_night">وقت استراحته 🌙</string>
+
+    <!-- Progress -->
+    <string name="progress_title">پیشرفت امروز</string>
+    <string name="progress_of">%1$s از %2$s</string>
+    <string name="progress_percent">%1$s٪</string>
+
+    <!-- Task list -->
+    <string name="today_tasks">کارهای امروز</string>
+    <string name="completed_tasks">انجام‌شده‌ها</string>
+    <string name="task_today">امروز</string>
+    <string name="task_tomorrow">فردا</string>
+    <string name="task_yesterday">دیروز</string>
+    <string name="no_date">بدون تاریخ</string>
+
+    <!-- Add task -->
+    <string name="add_task">کار جدید ✨</string>
+    <string name="edit_task">ویرایش کار</string>
+    <string name="task_title">عنوان کار</string>
+    <string name="task_title_hint">چه کاری باید انجام بدی؟</string>
+    <string name="task_description">توضیحات</string>
+    <string name="task_description_hint">توضیح کوتاه (اختیاری)</string>
+    <string name="category">دسته‌بندی</string>
+    <string name="time">ساعت</string>
+    <string name="priority">اولویت</string>
+    <string name="reminder">یادآوری</string>
+    <string name="save_task">ذخیره کار</string>
+    <string name="more_options">گزینه‌های بیشتر</string>
+    <string name="less_options">بستن گزینه‌ها</string>
+
+    <!-- Priority -->
+    <string name="priority_low">کم</string>
+    <string name="priority_medium">متوسط</string>
+    <string name="priority_high">زیاد</string>
+
+    <!-- Categories -->
+    <string name="category_personal">شخصی</string>
+    <string name="category_work">کار</string>
+    <string name="category_shopping">خرید</string>
+    <string name="category_health">سلامتی</string>
+    <string name="category_study">مطالعه</string>
+    <string name="category_other">سایر</string>
+    <string name="new_category">دسته‌بندی جدید</string>
+    <string name="category_name">نام دسته‌بندی</string>
+    <string name="manage_categories">مدیریت دسته‌بندی‌ها</string>
+    <string name="add">افزودن</string>
+    <string name="color">رنگ</string>
+    <string name="icon">آیکون</string>
+
+    <!-- Reminder -->
+    <string name="reminder_at">یادآوری %1$s ساعت %2$s</string>
+    <string name="reminder_off">بدون یادآوری</string>
+    <string name="reminder_needs_time">برای یادآوری، ساعت را انتخاب کن</string>
+    <string name="notification_channel_name">یادآوری کارها</string>
+    <string name="notification_channel_desc">یادآوری کارهای روزانه</string>
+    <string name="notification_title">یادآوری روزی</string>
+    <string name="notification_permission_rationale">برای دریافت یادآوری، اجازه اعلان لازم است</string>
+
+    <!-- Calendar -->
+    <string name="calendar_today">امروز</string>
+    <string name="previous_month">ماه قبل</string>
+    <string name="next_month">ماه بعد</string>
+    <string name="tasks_of_day">کارهای این روز</string>
+    <string name="no_tasks_this_day">برای این روز کاری ثبت نشده</string>
+    <string name="day_task_count">%1$s کار</string>
+
+    <!-- Search & filter -->
+    <string name="search">جستجو</string>
+    <string name="search_hint">جستجو در کارها…</string>
+    <string name="filter_all">همه</string>
+    <string name="filter_today">امروز</string>
+    <string name="filter_undone">انجام نشده</string>
+    <string name="filter_done">انجام شده</string>
+    <string name="filter_important">مهم</string>
+
+    <!-- Swipe / actions -->
+    <string name="action_done">انجام شد</string>
+    <string name="action_delete">حذف</string>
+    <string name="task_deleted">کار حذف شد</string>
+    <string name="undo">برگردان</string>
+    <string name="restore">بازگردانی</string>
+    <string name="delete_all_completed">حذف همه انجام‌شده‌ها</string>
+    <string name="cancel">انصراف</string>
+    <string name="close">بستن</string>
+    <string name="delete">حذف</string>
+
+    <!-- Celebration -->
+    <string name="celebration_title">عالی بود!</string>
+    <string name="celebration_subtitle">امروز تمومش کردی 🎉</string>
+
+    <!-- Empty states -->
+    <string name="empty_today">امروز کاری نداری 🌴</string>
+    <string name="empty_today_sub">اولین کارت رو اضافه کن ✨</string>
+    <string name="empty_completed">هنوز کاری انجام نشده</string>
+
+    <!-- Profile / settings -->
+    <string name="profile">پروفایل</string>
+    <string name="my_stats">آمار من</string>
+    <string name="stats_done">انجام‌شده</string>
+    <string name="stats_undone">انجام‌نشده</string>
+    <string name="stats_rate">درصد موفقیت</string>
+    <string name="streak">روز متوالی</string>
+    <string name="streak_value">🔥 %1$s روز متوالی</string>
+    <string name="weekly_performance">عملکرد هفتگی</string>
+    <string name="settings">تنظیمات</string>
+    <string name="theme">حالت نمایش</string>
+    <string name="theme_system">سیستم</string>
+    <string name="theme_light">روشن</string>
+    <string name="theme_dark">تیره</string>
+    <string name="language">زبان</string>
+    <string name="language_fa">فارسی</string>
+    <string name="language_en">English</string>
+    <string name="your_name">نام شما</string>
+    <string name="edit_name">تغییر نام</string>
+    <string name="save">ذخیره</string>
+
+    <!-- Backup -->
+    <string name="backup">پشتیبان‌گیری</string>
+    <string name="export_backup">خروجی گرفتن</string>
+    <string name="import_backup">بازیابی از فایل</string>
+    <string name="backup_success">پشتیبان با موفقیت ذخیره شد</string>
+    <string name="backup_failed">ذخیره پشتیبان انجام نشد</string>
+    <string name="restore_success">اطلاعات بازیابی شد</string>
+    <string name="restore_failed">بازیابی انجام نشد</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">کارهای روزت، ساده و سبک</string>
+    <string name="onboarding_desc_1">در چند ثانیه کار جدید بساز و روزت را مرتب کن</string>
+    <string name="onboarding_title_2">تقویم شمسی و یادآوری</string>
+    <string name="onboarding_desc_2">برنامه‌ات را روی تقویم ببین و به‌موقع یادآوری بگیر</string>
+    <string name="onboarding_title_3">پیشرفتت را دنبال کن</string>
+    <string name="onboarding_desc_3">درصد موفقیت، آمار و روزهای متوالی‌ات را ببین</string>
+    <string name="onboarding_next">بعدی</string>
+    <string name="onboarding_skip">رد کردن</string>
+    <string name="onboarding_start">بزن بریم 🚀</string>
+    <string name="onboarding_name_question">دوست داری به چه اسمی صدات کنم؟</string>
+    <string name="onboarding_name_hint">اسم تو</string>
+    <string name="onboarding_continue">ادامه</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_add_task">افزودن کار جدید</string>
+    <string name="cd_toggle_task">تغییر وضعیت انجام کار</string>
+    <string name="cd_back">بازگشت</string>
+    <string name="cd_progress_ring">حلقه پیشرفت روزانه</string>
+
+    <!-- Phase 2: planner sections -->
+    <string name="section_plan_today">برنامه امروز</string>
+    <string name="section_anytime">هر وقت امروز</string>
+    <string name="section_no_date">بدون تاریخ</string>
+    <string name="section_no_date_sub">کارهایی که هنوز زمان ندارند</string>
+    <string name="move_to_today">انتقال به امروز</string>
+    <string name="move_to_tomorrow">انتقال به فردا</string>
+    <string name="pick_a_day">انتخاب روز</string>
+    <string name="remove_date">حذف تاریخ</string>
+
+    <!-- Quick add -->
+    <string name="quick_add_hint">یک کار بنویس…</string>
+    <string name="quick_add">افزودن سریع</string>
+    <string name="voice_input">ورود صوتی</string>
+    <string name="voice_prompt">کارت رو بگو…</string>
+    <string name="voice_unavailable">ورود صوتی روی این دستگاه در دسترس نیست</string>
+    <string name="mic_permission_needed">برای ورود صوتی، اجازه میکروفون لازم است</string>
+
+    <!-- Repeat -->
+    <string name="repeat">تکرار</string>
+    <string name="repeat_never">بدون تکرار</string>
+    <string name="repeat_daily">هر روز</string>
+    <string name="repeat_monthly">هر ماه</string>
+    <string name="repeat_weekdays">روزهای خاص</string>
+    <string name="repeat_custom">سفارشی</string>
+    <string name="repeat_every_n_days">هر %1$s روز</string>
+    <string name="repeat_on_days">هر هفته: %1$s</string>
+
+    <!-- Task actions -->
+    <string name="action_edit">ویرایش</string>
+    <string name="action_reminder_on">فعال کردن یادآوری</string>
+    <string name="action_reminder_off">غیرفعال کردن یادآوری</string>
+    <string name="action_uncomplete">برگرداندن به انجام‌نشده</string>
+
+    <!-- Smart greetings -->
+    <string name="smart_half">نصف راه رو رفتی! 👏</string>
+    <string name="smart_last_one">فقط یکی مونده! 💪</string>
+
+    <!-- Empty states -->
+    <string name="empty_future">فعلاً برنامه‌ای نداری ✨</string>
+    <string name="empty_category">هنوز کاری اینجا نیست 🌱</string>
+    <string name="empty_search">چیزی پیدا نکردیم 🔎</string>
+    <string name="empty_no_date">اینجا خالیه — هر وقت کاری بی‌زمان داشتی اینجا می‌آد 🌱</string>
+
+    <!-- Filters -->
+    <string name="filter_no_date">بدون تاریخ</string>
+
+    <!-- Themes -->
+    <string name="theme_palette">پوسته رنگی</string>
+    <string name="theme_rainbow">رنگین‌کمانی</string>
+    <string name="theme_green">سبز</string>
+    <string name="theme_ocean">اقیانوس</string>
+    <string name="theme_pink">صورتی</string>
+    <string name="theme_sunset">غروب</string>
+    <string name="theme_night">شب</string>
+    <string name="theme_premium_soon">پوسته‌های بیشتر به‌زودی</string>
+
+    <!-- Reorder -->
+    <string name="reorder_hint">برای جابه‌جایی نگه دار و بکش</string>
+
+    <!-- Widget -->
+    <string name="widget_today_title">☀️ امروز</string>
+    <string name="widget_quick_add">افزودن کار</string>
+    <string name="widget_empty">امروز کاری نداری 🌴</string>
+    <string name="widget_progress">%1$s از %2$s</string>
+    <string name="widget_today_description">کارهای امروز و پیشرفت روزانه</string>
+    <string name="widget_quick_add_description">افزودن سریع کار جدید</string>
+    <string name="list_separator">، </string>
+    <string name="crash_title">برنامه در اجرای قبلی بسته شد</string>
+    <string name="crash_subtitle">این گزارش را کپی کنید و برای ما بفرستید تا مشکل را برطرف کنیم.</string>
+    <string name="crash_copy">کپی گزارش</string>
+    <string name="crash_continue">ادامه</string>
+    <string name="home_done_and_left">امروز %1$s کار انجام دادی و %2$s کار مونده</string>
+    <string name="home_all_done">هر %1$s کار امروز رو انجام دادی 🎉</string>
+    <string name="notif_diagnostics">بررسی اعلان‌ها</string>
+    <string name="notif_test">ارسال اعلان آزمایشی</string>
+    <string name="notif_test_sent">اعلان آزمایشی ارسال شد</string>
+    <string name="notif_blocked">اعلان‌ها خاموش‌اند — برای روشن کردن بزنید</string>
+    <string name="notif_exact_blocked">اجازه «هشدار دقیق» داده نشده؛ یادآوری ممکن است با تأخیر برسد</string>
+    <string name="notif_ok">اعلان‌ها فعال است ✓</string>
+    <string name="notif_battery_hint">اگر یادآوری نمی‌رسد، در تنظیمات گوشی برای «روزی» اجرای خودکار را روشن و محدودیت باتری را بردارید.</string>
+    <string name="notif_open_settings">تنظیمات اعلان</string>
+    <string name="hero_done_of">%1$s از %2$s کار انجام شده</string>
+
+    <!-- Notes -->
+    <string name="nav_notes">یادداشت</string>
+    <string name="notes_title">یادداشت‌ها</string>
+    <string name="notebooks_title">دفترها</string>
+    <string name="all_notes">همه یادداشت‌ها</string>
+    <string name="loose_notes">بدون دفتر</string>
+    <string name="new_note">یادداشت جدید ✨</string>
+    <string name="edit_note">ویرایش یادداشت</string>
+    <string name="note_title">عنوان</string>
+    <string name="note_title_hint">عنوان یادداشت</string>
+    <string name="note_body">متن</string>
+    <string name="note_body_hint">هرچی توی ذهنته بنویس…</string>
+    <string name="note_save">ذخیره یادداشت</string>
+    <string name="note_notebook">دفتر</string>
+    <string name="note_color">رنگ</string>
+    <string name="note_pin">سنجاق</string>
+    <string name="note_unpin">برداشتن سنجاق</string>
+    <string name="note_deleted">یادداشت حذف شد</string>
+    <string name="note_count">%1$s یادداشت</string>
+    <string name="new_notebook">دفتر جدید</string>
+    <string name="notebook_name">نام دفتر</string>
+    <string name="notebook_cover">جلد</string>
+    <string name="notebook_delete">حذف دفتر</string>
+    <string name="notebook_delete_hint">یادداشت‌ها پاک نمی‌شوند و بدون دفتر می‌مانند.</string>
+    <string name="notebook_personal">شخصی</string>
+    <string name="notebook_ideas">ایده‌ها</string>
+    <string name="notebook_work">کار</string>
+    <string name="empty_notes">هنوز یادداشتی نداری 📝</string>
+    <string name="empty_notes_sub">اولین یادداشتت رو بنویس ✨</string>
+    <string name="empty_notebook">این دفتر خالیه 🌱</string>
+    <string name="search_notes_hint">جستجو در یادداشت‌ها…</string>
+    <string name="cd_add_note">افزودن یادداشت جدید</string>
+    <string name="cd_open_notebook">باز کردن دفتر</string>
+    <string name="notification_now">یادآوری · %1$s</string>
+
+    <!-- Birthday notebook -->
+    <string name="notebook_birthdays">تولدها</string>
+    <string name="birthdays_subtitle">هیچ تولدی رو فراموش نکن ❤️</string>
+    <string name="birthdays_header_sub">وقتشه آدم‌های مهم زندگیت رو فراموش نکنی ❤️</string>
+    <string name="upcoming_birthdays">تولدهای نزدیک</string>
+    <string name="all_people">همه</string>
+    <string name="birthday_calendar">تقویم تولدها</string>
+    <string name="add_birthday">افزودن تولد</string>
+    <string name="edit_birthday">ویرایش تولد</string>
+    <string name="person_name">نام</string>
+    <string name="person_name_hint">مثلاً مامان</string>
+    <string name="birth_date">تاریخ تولد</string>
+    <string name="birth_year">سال تولد</string>
+    <string name="birth_year_optional">سال تولد (اختیاری)</string>
+    <string name="birth_year_hint">مثلاً ۱۳۶۳</string>
+    <string name="relationship">نوع رابطه</string>
+    <string name="relationship_optional">نوع رابطه (اختیاری)</string>
+    <string name="rel_mother">مادر</string>
+    <string name="rel_father">پدر</string>
+    <string name="rel_spouse">همسر</string>
+    <string name="rel_child">فرزند</string>
+    <string name="rel_sister">خواهر</string>
+    <string name="rel_brother">برادر</string>
+    <string name="rel_friend">دوست</string>
+    <string name="rel_colleague">همکار</string>
+    <string name="rel_relative">فامیل</string>
+    <string name="rel_other">سایر</string>
+    <string name="rel_custom_hint">رابطه دلخواه</string>
+    <string name="avatar">آواتار</string>
+    <string name="birthday_today">🎉 امروز!</string>
+    <string name="birthday_tomorrow">💝 فردا</string>
+    <string name="birthday_in_days">%1$s روز دیگر</string>
+    <string name="birthday_today_full">امروز تولدشه! 🎉</string>
+    <string name="turns_age">%1$s ساله می‌شود</string>
+    <string name="current_age">%1$s ساله</string>
+    <string name="save_person">ذخیره</string>
+    <string name="delete_person">حذف</string>
+    <string name="person_deleted">حذف شد</string>
+    <string name="empty_birthdays">هنوز تولدی ثبت نکردی 🎂</string>
+    <string name="empty_birthdays_sub">اولین تولد رو اضافه کن ❤️</string>
+    <string name="no_birthday_on_day">این روز تولدی نداریم</string>
+    <string name="person_notes">یادداشت</string>
+    <string name="person_notes_hint">مثلاً رنگ مورد علاقه، کیک مورد علاقه…</string>
+    <string name="gift_ideas">ایده‌های هدیه</string>
+    <string name="gift_idea_hint">مثلاً عطر</string>
+    <string name="add_gift_idea">افزودن ایده</string>
+    <string name="convert_to_task">تبدیل به کار</string>
+    <string name="gift_task_title">خرید %1$s برای %2$s</string>
+    <string name="gift_task_created">کار ساخته شد ✓</string>
+    <string name="birthday_reminder">یادآوری</string>
+    <string name="reminder_on_day">روز تولد</string>
+    <string name="reminder_days_before">%1$s روز قبل</string>
+    <string name="greeting_messages">تبریک تولد</string>
+    <string name="pick_message">انتخاب متن</string>
+    <string name="copy_message">کپی متن</string>
+    <string name="message_copied">متن کپی شد ✓</string>
+    <string name="use_for_person">استفاده برای این شخص</string>
+    <string name="message_saved">متن ذخیره شد ✓</string>
+    <string name="share_message">اشتراک‌گذاری</string>
+    <string name="favorite_message">متن انتخابی</string>
+    <string name="msg_cat_warm">صمیمی</string>
+    <string name="msg_cat_emotional">احساسی</string>
+    <string name="msg_cat_happy">شاد</string>
+    <string name="msg_cat_funny">بامزه</string>
+    <string name="msg_cat_family">خانوادگی</string>
+    <string name="msg_cat_formal">رسمی</string>
+    <string name="msg_cat_romantic">عاشقانه</string>
+    <string name="msg_cat_short">کوتاه</string>
+    <string name="notif_birthday_soon_title">🎂 تولد %1$s نزدیکه!</string>
+    <string name="notif_birthday_soon_body">%1$s روز دیگه تولدشه ❤️</string>
+    <string name="notif_birthday_tomorrow_body">فردا تولدشه ❤️</string>
+    <string name="notif_birthday_today_title">🎉 امروز تولد %1$s است!</string>
+    <string name="notif_birthday_today_body">وقتشه یه تبریک قشنگ براش بفرستی ❤️</string>
+    <string name="cd_add_birthday">افزودن تولد جدید</string>
+
+    <string name="bmsg_1">[نام] جان، تولدت مبارک ❤️ امیدوارم سال جدید زندگیت پر از اتفاق‌های خوب، دل خوش و لحظه‌های قشنگ باشه.</string>
+    <string name="bmsg_2">تولدت مبارک [نام] عزیز 🎂 امیدوارم همیشه دلت شاد و لبت خندون باشه.</string>
+    <string name="bmsg_3">[نام] جان، یک سال دیگه از قشنگی‌های زندگیت گذشت. تولدت مبارک و امیدوارم بهترین‌ها در انتظارت باشه 🌸</string>
+    <string name="bmsg_4">تولدت مبارک رفیق! امیدوارم امسال بیشتر بخندی، بیشتر خوش بگذرونی و به چیزایی که می‌خوای برسی 🎉</string>
+    <string name="bmsg_5">[نام] عزیز، تولدت مبارک! امیدوارم سال جدید زندگیت پر از خبرهای خوب و آدم‌های خوب باشه ❤️</string>
+    <string name="bmsg_6">امروز روزیه که دنیا با اومدنت قشنگ‌تر شد. تولدت مبارک [نام] جان 🎂</string>
+    <string name="bmsg_7">تولدت مبارک! امیدوارم هر چیزی که آرزوش رو داری، کم‌کم تبدیل به خاطره‌های قشنگ زندگیت بشه ✨</string>
+    <string name="bmsg_8">[نام] جان، تولدت مبارک! همیشه همون‌قدر دوست‌داشتنی و پرانرژی بمون 🌈</string>
+    <string name="bmsg_9">تولدت مبارک [نام] عزیز. امیدوارم هیچ‌وقت لبخند از روی لبت و آرامش از قلبت دور نشه ❤️</string>
+    <string name="bmsg_10">در روز تولدت برات یک دنیا آرامش، عشق و اتفاق‌های خوب آرزو می‌کنم. تولدت مبارک 🌷</string>
+    <string name="bmsg_11">امیدوارم سال جدید زندگیت پر از لحظه‌هایی باشه که ارزش به خاطر سپردن داشته باشن. تولدت مبارک ❤️</string>
+    <string name="bmsg_12">تولدت مبارک [نام]. آرزو می‌کنم مسیر پیش روت همیشه روشن و قلبت همیشه امیدوار باشه ✨</string>
+    <string name="bmsg_13">امیدوارم هر روز این سال جدید، یک دلیل تازه برای لبخند زدن داشته باشی. تولدت مبارک 🎂</string>
+    <string name="bmsg_14">بهترین آرزوها برای تو در سال جدید زندگی‌ات؛ پر از آرامش، عشق و موفقیت. تولدت مبارک 🌸</string>
+    <string name="bmsg_15">امیدوارم زندگی همیشه بیشتر از چیزی که انتظار داری، غافلگیرت کنه. تولدت مبارک ❤️</string>
+    <string name="bmsg_16">تولدت مبارک 🎉 امروز فقط یک قانون داریم: کلی بخند و حسابی خوش بگذرون!</string>
+    <string name="bmsg_17">امروز روز توئه! کیک، هدیه، خنده و کلی اتفاق خوب نوش جونت 😄🎂</string>
+    <string name="bmsg_18">یک سال بزرگ‌تر، یک سال باتجربه‌تر و امیدوارم یک عالمه خوشحال‌تر! تولدت مبارک 🎉</string>
+    <string name="bmsg_19">تولدت مبارک [نام]! امیدوارم امسال از اون سال‌هایی باشه که آخرش بگی: چه سال خفنی بود! 🔥</string>
+    <string name="bmsg_20">کیک آماده‌ست؟ شمع‌ها چی؟ پس فقط مونده بگیم: تولدت مبارک! 🎂🎉</string>
+    <string name="bmsg_21">امروز بهانه خوبیه برای اینکه حسابی خوش بگذرونی. تولدت مبارک 😍</string>
+    <string name="bmsg_22">تولدت مبارک! امیدوارم امسال تعداد خنده‌هات از تعداد شمع‌های کیکت بیشتر باشه 😂🎂</string>
+    <string name="bmsg_23">تولدت مبارک! نگران سن نباش، عددها فقط عددن... البته بعضی عددها کمی ترسناکن 😂🎂</string>
+    <string name="bmsg_24">یک سال دیگه هم گذشت و هنوز جذابی! واقعاً قابل تحسینه 😂 تولدت مبارک!</string>
+    <string name="bmsg_25">تولدت مبارک! امروز اجازه داری هرچقدر کیک خواستی بخوری؛ قانون تولده 😎🎂</string>
+    <string name="bmsg_26">سن مهم نیست؛ مهم اینه که هنوز می‌تونی کیک تولدت رو خودت انتخاب کنی! تولدت مبارک 😂</string>
+    <string name="bmsg_27">تولدت مبارک! امیدوارم امسال دغدغه‌هات کمتر، پولت بیشتر و خوابت عمیق‌تر باشه 😂</string>
+    <string name="bmsg_28">یک شمع دیگه روی کیک اضافه شد؛ ولی نگران نباش، هنوز جا برای چندتای دیگه هست! 😂🎂</string>
+    <string name="bmsg_29">امروز تولدته، پس هرچی گفتی درسته! فردا دوباره بررسی می‌کنیم 😂</string>
+    <string name="bmsg_30">[نام] عزیزم، تولدت مبارک ❤️ وجودت برای خانواده همیشه باعث دلگرمی و شادیه. امیدوارم همیشه سالم و خوشحال باشی.</string>
+    <string name="bmsg_31">تولدت مبارک عزیز دل خانواده. آرزو می‌کنم همیشه سایه آرامش و شادی بالای سرت باشه 🌷</string>
+    <string name="bmsg_32">[نام] جان، بودنت یکی از قشنگ‌ترین نعمت‌های زندگی ماست. تولدت مبارک ❤️</string>
+    <string name="bmsg_33">برای تو در سال جدید زندگی‌ات سلامتی، آرامش، موفقیت و دل خوش آرزو می‌کنم. تولدت مبارک عزیزم 🎂</string>
+    <string name="bmsg_34">تولدت مبارک! امیدوارم همیشه دلت گرم، خونه‌ات پر از خنده و زندگی‌ات پر از خیر و برکت باشه ❤️</string>
+    <string name="bmsg_35">چه خوب که تو رو داریم. تولدت مبارک و امیدوارم همیشه بهترین‌ها سهم قلب مهربونت باشه 🌸</string>
+    <string name="bmsg_36">تولدت مبارک عشق من ❤️ امیدوارم امسال هم کنار هم کلی خاطره قشنگ بسازیم.</string>
+    <string name="bmsg_37">تولدت مبارک به کسی که بودنش زندگی من رو قشنگ‌تر کرده ❤️🎂</string>
+    <string name="bmsg_38">امروز روز تولد توئه؛ همون کسی که لبخندش برای من از هزار تا اتفاق خوب باارزش‌تره. تولدت مبارک ❤️</string>
+    <string name="bmsg_39">آرزو می‌کنم امسال به اندازه تمام لبخندهایی که به من هدیه دادی، خوشحال باشی. تولدت مبارک عشق من 🌹</string>
+    <string name="bmsg_40">تولدت مبارک عزیزترینم. امیدوارم همیشه کنار هم برای قشنگ‌ترین روزهای زندگی جشن بگیریم ❤️</string>
+    <string name="bmsg_41">زادروزتان را صمیمانه تبریک عرض می‌کنم و برای شما سالی سرشار از سلامتی، موفقیت و آرامش آرزومندم.</string>
+    <string name="bmsg_42">تولدتان مبارک. امیدوارم سال جدید زندگی‌تان همراه با موفقیت‌های روزافزون و اتفاقات خوشایند باشد.</string>
+    <string name="bmsg_43">با بهترین آرزوها، زادروز شما را تبریک می‌گویم و برایتان سلامتی و سربلندی آرزو دارم.</string>
+    <string name="bmsg_44">تولدتان را تبریک عرض می‌کنم و امیدوارم در سال پیش رو به تمامی اهداف و آرزوهای خود دست پیدا کنید.</string>
+    <string name="bmsg_45">زادروزتان مبارک. برای شما و خانواده محترمتان سلامتی، شادی و روزهایی سرشار از موفقیت آرزومندم.</string>
+    <string name="bmsg_46">تولدت مبارک [نام] جان 🎂❤️</string>
+    <string name="bmsg_47">زادروزت مبارک و دلت همیشه شاد 🌸</string>
+    <string name="bmsg_48">تولدت مبارک! بهترین‌ها برای تو ✨</string>
+    <string name="bmsg_49">یک دنیا شادی برای تو؛ تولدت مبارک 🎉</string>
+    <string name="bmsg_50">تولدت مبارک عزیز دل ❤️ همیشه بدرخشی ✨</string>
+    <!-- Placeholder inside greetings, replaced with the person's name. -->
+    <string name="name_token">[نام]</string>
+    <!-- Vocative suffixes stripped when a greeting has no name to insert. -->
+    <string name="name_suffix_1">جان،</string>
+    <string name="name_suffix_2">عزیز،</string>
+    <string name="name_suffix_3">جان</string>
+    <string name="name_suffix_4">عزیزم</string>
+    <string name="name_suffix_5">عزیز</string>
+    <!-- Reminder actions -->
+    <string name="alarm_snooze">تعویق</string>
+    <string name="notification_birthday_channel_name">تولدها</string>
+    <string name="notification_birthday_channel_desc">یادآوری تولد نزدیکان</string>
+    <string name="app_version">نسخه %1$s</string>
+    <string name="designed_by">طراحی شده توسط استودیو جاوید</string>
+</resources>

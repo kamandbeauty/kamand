@@ -1,33 +1,30 @@
-# Flutter / Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
+# Gradle / Android
+.gradle/
 build/
+roozi/.gradle/
+roozi/build/
+roozi/app/build/
+local.properties
+roozi/local.properties
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
 
-# Node / Web Preview
-node_modules/
-web_preview/node_modules/
-web_preview/dist/
-.npm/
+# Signing secrets — هرگز commit نشوند
+roozi/keystore.properties
+*.jks
+*.keystore
 
 # IDE / OS
 .idea/
 .vscode/
+*.iml
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
 
-# Android
-.gradle/
-local.properties
-capture*.png
-*.apk
-*.aab
-release/
-web_preview/public/FactorRuby*
-
-!release_package/FactorRuby-v5.8.0.apk
-!release_package/FactorRuby-v5.8.0-release.zip
+# Python tooling
+__pycache__/
