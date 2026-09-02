@@ -153,10 +153,19 @@ fun LiquidGlassSurface(
         onDispose { unregister() }
     }
 
-    // Rebuilt only when the shader is actually usable; constructing a
-    // RuntimeShader below API 33 would throw.
+    // Constructing a RuntimeShader below API 33 would throw, so it is built
+    // only where it is usable.
+    //
+    // The version check is written out here rather than delegated to
+    // state.refracts: lint resolves SDK_INT comparisons syntactically and
+    // cannot see through a property getter, so the indirection made every call
+    // below look unguarded.
     val shader = remember(state.refracts) {
-        if (state.refracts) newRefractionShader() else null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            newRefractionShader()
+        } else {
+            null
+        }
     }
 
     Box(modifier.clip(shape)) {
@@ -167,7 +176,9 @@ fun LiquidGlassSurface(
                     .matchParentSize()
                     .onGloballyPositioned { origin = it.positionInWindow() }
                     .then(
-                        if (shader != null) {
+                        if (shader != null &&
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                        ) {
                             Modifier.graphicsLayer {
                                 // Zero-area layers happen for a frame during
                                 // layout; a shader sized 0×0 divides by zero
