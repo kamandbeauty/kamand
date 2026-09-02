@@ -17,6 +17,9 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.translate
@@ -76,6 +79,13 @@ class LiquidGlassState internal constructor(internal val layer: GraphicsLayer) {
     /** Modifier.blur needs API 31; below that the pane falls back to its tint. */
     val supported: Boolean
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    /**
+     * Whether the pane can also refract. RuntimeShader is API 33, so on 31–32
+     * the backdrop is blurred but not displaced.
+     */
+    val refracts: Boolean
+        get() = refractionSupported
 }
 
 @Composable
@@ -111,10 +121,18 @@ fun Modifier.liquidGlassSource(state: LiquidGlassState): Modifier = this
     }
 
 /**
- * A pane of Liquid Glass: the blurred backdrop, then [content] over it.
+ * A pane of Liquid Glass: the refracted, blurred backdrop, then [content].
  *
- * The blur is `Modifier.blur`, the supported API, rather than a RenderEffect
- * assigned by hand — it owns the offscreen buffer the effect needs.
+ * On API 33+ the backdrop passes through an AGSL shader that displaces it
+ * towards the pane's edges — the effect that makes a surface look like a solid
+ * piece of glass rather than a frosted window. Below that it is blur only,
+ * which is why the header still paints its own tint, sheen and rim: those are
+ * what carry the look where the shader cannot run.
+ *
+ * The offscreen buffer comes from `graphicsLayer`/`Modifier.blur` rather than a
+ * hand-managed one. An earlier attempt set the effect on a GraphicsLayer we
+ * owned; the framework honours a RenderEffect only on its own RenderNode, so
+ * nothing was ever filtered.
  */
 @Composable
 fun LiquidGlassSurface(
@@ -122,6 +140,9 @@ fun LiquidGlassSurface(
     shape: Shape,
     modifier: Modifier = Modifier,
     radius: Dp = 24.dp,
+    refraction: GlassRefraction = GlassRefraction.Default,
+    cornerRadiusTop: Dp = 0.dp,
+    cornerRadiusBottom: Dp = 28.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     var origin by remember { mutableStateOf(Offset.Zero) }
@@ -132,15 +153,43 @@ fun LiquidGlassSurface(
         onDispose { unregister() }
     }
 
+    // Rebuilt only when the shader is actually usable; constructing a
+    // RuntimeShader below API 33 would throw.
+    val shader = remember(state.refracts) {
+        if (state.refracts) newRefractionShader() else null
+    }
+
     Box(modifier.clip(shape)) {
         if (state.supported) {
+            val density = LocalDensity.current
             Box(
                 Modifier
                     .matchParentSize()
                     .onGloballyPositioned { origin = it.positionInWindow() }
-                    // blur precedes drawBehind so its layer wraps it; an effect
-                    // filters what the modifiers after it draw.
-                    .blur(radius, BlurredEdgeTreatment.Unbounded)
+                    .then(
+                        if (shader != null) {
+                            Modifier.graphicsLayer {
+                                // Zero-area layers happen for a frame during
+                                // layout; a shader sized 0×0 divides by zero
+                                // and renders nothing.
+                                if (size.width < 1f || size.height < 1f) {
+                                    return@graphicsLayer
+                                }
+                                renderEffect = shader.asGlassEffect(
+                                    widthPx = size.width,
+                                    heightPx = size.height,
+                                    radiusTopPx = cornerRadiusTop.toPx(),
+                                    radiusBottomPx = cornerRadiusBottom.toPx(),
+                                    blurPx = radius.toPx(),
+                                    refraction = refraction,
+                                    toPx = { with(density) { it.toPx() } }
+                                ).asComposeRenderEffect()
+                            }
+                        } else {
+                            // API 31–32: blur alone, via the supported API.
+                            Modifier.blur(radius, BlurredEdgeTreatment.Unbounded)
+                        }
+                    )
                     .drawBehind {
                         // Read so a page repaint re-runs this block, keeping the
                         // pane in step with whatever scrolls behind it.

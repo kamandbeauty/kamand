@@ -56,18 +56,20 @@ fun RooziHeader(
     val colors = RooziTheme.colors
     val dark = colors.isDark
 
-    // The wash carries the brand colour; the blur behind it is what still reads
-    // as glass. Weighted towards the colour so the bar looks like a solid
-    // surface rather than a tinted window, while leaving enough transmission
-    // for the blurred page to move underneath and keep it alive.
+    // The wash carries the brand colour; what sits behind it is what reads as
+    // glass. How much colour is needed depends on how much the surface itself
+    // can do:
     //
-    // The blur is doing more work here than the alpha suggests: what shows
-    // through is already diffused, so the panel stays opaque-looking even
-    // though it is not opaque. Going much past this the movement underneath
-    // stops being visible at all and the header becomes a flat coloured bar.
+    //  * refraction + blur — the bent, diffused backdrop already looks like a
+    //    thick pane, so the wash steps back to let it show. Painting it as
+    //    heavily as before would bury the effect under flat colour.
+    //  * blur only — no displacement to sell thickness, so the colour carries
+    //    more of the weight.
+    //  * neither — opacity is all that is left.
     val hasBlur = glass.supported
     val tintAlpha = when {
-        !hasBlur -> if (dark) 0.90f else 0.88f // no blur: opacity must do the work
+        !hasBlur -> if (dark) 0.90f else 0.88f
+        glass.refracts -> if (dark) 0.62f else 0.58f
         dark -> 0.80f
         else -> 0.76f
     }
@@ -100,7 +102,11 @@ fun RooziHeader(
         )
     )
 
-    val shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+    // Only the bottom is rounded — the top runs under the status bar. The
+    // shader needs the two radii separately so it does not bevel the square
+    // top edge as if it were curved.
+    val cornerRadius = 28.dp
+    val shape = RoundedCornerShape(bottomStart = cornerRadius, bottomEnd = cornerRadius)
 
     // Text stays white on both themes: it sits on the brand wash, not on the
     // page, so it must not follow the page's foreground colour.
@@ -111,6 +117,18 @@ fun RooziHeader(
     LiquidGlassSurface(
         state = glass,
         shape = shape,
+        cornerRadiusTop = 0.dp,
+        cornerRadiusBottom = cornerRadius,
+        // Displacement is concentrated at the rim. The header is a wide,
+        // shallow bar, so warping its face would bow the content behind it
+        // rather than read as glass; the thickness cue belongs at the edges.
+        refraction = GlassRefraction(
+            rim = 14.dp,
+            edge = 6.dp,
+            face = 0.dp,
+            corner = 4.dp,
+            ripple = 2.dp
+        ),
         modifier = modifier.fillMaxWidth()
     ) {
         Box(
