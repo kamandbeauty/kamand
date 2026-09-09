@@ -1,67 +1,26 @@
-# معماری و راهنمای سیستم «فاکتور روبی» (Architecture Overview)
+# معماری افزونه ساینا ترک‌اوردر
 
-اپلیکیشن «فاکتور روبی» بر پایه اصول **معماری تمیز (Clean Architecture)** و معماری لایه‌ای Flutter/Dart پیاده‌سازی شده است.
+افزونه روی ووکامرس و وردپرس اجرا می‌شود و پیش‌نمایش وب جداگانه‌ای برای دموی رابط دارد.
 
----
-
-## ۱. لایه‌های معماری (Layered Architecture)
+## لایه وردپرس
 
 ```
-lib/
-├── core/                  # هسته برنامه (تم‌ها، ثابت‌ها، تبدیل اعداد فارسی، تاریخ شمسی)
-│   ├── constants/
-│   ├── theme/
-│   └── utils/
-├── database/              # لایه دیتابیس محلی (Drift / SQLite / Migrations)
-├── models/                # لایه مدل‌های داده (Data Models & JSON Mappers)
-├── providers/             # لایه مدیریت وضعیت (Riverpod State Notifiers)
-└── screens/               # لایه رابط کاربری (UI Components & Screens)
-    ├── onboarding/
-    ├── dashboard/
-    ├── invoice/
-    ├── customer/
-    ├── product/
-    ├── financial/
-    └── settings/
+saina-track-order/
+├── saina-track-order.php      # بارگذاری، سازگاری HPOS، هوک فعال‌سازی
+├── includes/
+│   ├── class-saina-plugin.php
+│   ├── class-saina-helpers.php    # تنظیمات، حامل‌ها، تبدیل اعداد، متای سفارش
+│   ├── class-saina-statuses.php   # بسته‌بندی و تحویل‌شده + کرون تبدیل خودکار
+│   ├── class-saina-frontend.php   # شورتکد، نوار پیشرفت، حساب کاربری، ایمیل
+│   ├── class-saina-ajax.php       # جستجوی سفارش و تأیید تحویل
+│   ├── class-saina-admin.php      # متاباکس، تنظیمات، درج گروهی، CSV
+│   └── class-saina-sms.php        # شورتکد پیامک ووکامرس فارسی
+├── public/                    # فرم مشتری
+└── admin/                     # پیشخوان
 ```
 
----
+متای سفارش: `_saina_tracking_code`، `_saina_carrier`، `_saina_ship_date`، `_saina_delivery_date`.
 
-## ۲. تکنولوژی‌های اصلی (Tech Stack)
+## پیش‌نمایش وب
 
-- **فریم‌ورک:** Flutter & Dart
-- **مدیریت وضعیت (State Management):** Flutter Riverpod (`StateNotifierProvider`)
-- **دیتابیس محلی (Offline Database):** SQLite / Drift (`drift`, `sqlite3_flutter_libs`)
-- **تقویم و تاریخ شمسی:** `shamsi_date`, `intl`
-- **تولید PDF و چاپ:** `pdf`, `printing`
-- **اشتراک‌گذاری:** `share_plus` (پشتیبانی از Android Share Sheet)
-- **کیوآرکد (QR Code):** `qr_flutter`
-- **امنیتی:** `local_auth` (بیومتریک / PIN Lock)
-
----
-
-## ۳. ویژگی‌های کلیدی آفلاین (Offline-First Approach)
-
-1. **بدون نیاز به اینترنت:** تمامی محاسبات فاکتور، تخفیف، هزینه ارسال و مانده مشتری به صورت ۱۰۰٪ آفلاین محاسبه و ذخیره می‌شود.
-2. **پشتیبان‌گیری محلی:** خروجی مستقیم JSON برای فایل‌های بکاپ که به راحتی قابل انتقال به گوشی جدید است.
-3. **پشتیبانی کامل RTL:** چیدمان تمامی المان‌ها، فونت استاندارد Vazirmatn و تبدیل اعداد انگلیسی به فارسی.
-
----
-
-## ۴. دستورات ساخت و اجرا (Build & Run Instructions)
-
-### اجرای برنامه در محیط توسعه:
-```bash
-flutter pub get
-flutter run
-```
-
-### ساخت نسخه Release APK برای اندروید:
-```bash
-./build_apk.sh
-# یا با فرمان مستقیم فلاتر:
-flutter build apk --release
-```
-
-فایل خروجی APK در مسیر زیر قرار خواهد گرفت:
-`build/app/outputs/flutter-apk/app-release.apk`
+React 18 + Vite + Tailwind. وضعیت در `localStorage` با کلید `saina_track_order_v1` ذخیره می‌شود.
