@@ -22,3 +22,4 @@ node_modules/
 
 # بستهٔ نصب افزونه (خروجی ساخت)
 *.zip
+!javid-size-guide-1.0.0.zip
