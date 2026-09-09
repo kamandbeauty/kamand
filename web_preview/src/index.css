@@ -3,46 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    min-height: 100%;
+  }
   body {
-    font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Vazirmatn', Tahoma, sans-serif;
   }
 }
 
-/* Custom scrollbar for modern feel */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+
+@keyframes saina-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.45); }
+  70% { box-shadow: 0 0 0 12px rgba(13, 148, 136, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+@keyframes saina-spin-slow {
+  to { transform: rotate(360deg); }
 }
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
+@keyframes saina-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 
-/* Print styles for PDF / Printer */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  #printable-invoice, #printable-invoice * {
-    visibility: visible;
-  }
-  #printable-invoice {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
-    background: white !important;
-    color: black !important;
-  }
-  .no-print {
-    display: none !important;
-  }
+.saina-pulse { animation: saina-pulse 1.8s ease-out infinite; }
+.saina-spin { animation: saina-spin-slow 1.1s linear infinite; }
+.saina-in { animation: saina-in 0.35s ease both; }
+.wp-like { background: #f0f0f1; }
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
