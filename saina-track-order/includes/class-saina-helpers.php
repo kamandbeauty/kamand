@@ -7,20 +7,67 @@ class Saina_TO_Helpers {
 
 	public static function defaults() {
 		return array(
-			'progress_bar'      => 'yes',
-			'icons_column'      => 'yes',
-			'ajax_search'       => 'yes',
-			'confirm_delivery'  => 'yes',
-			'disable_virtual'   => 'yes',
-			'email_embed'       => 'yes',
-			'captcha'           => 'math',
-			'track_mode'        => 'any',
-			'default_carrier'   => 'post',
-			'auto_deliver_days' => 7,
-			'recaptcha_site'    => '',
-			'recaptcha_secret'  => '',
-			'sms_enabled'       => 'yes',
-			'statuses'          => self::default_statuses(),
+			'own_orders'               => 'no',
+			'captcha'                  => 'none',
+			'recaptcha_site'           => '',
+			'recaptcha_secret'         => '',
+			'search_order'             => 'yes',
+			'search_mobile'            => 'yes',
+			'search_email'             => 'yes',
+			'ajax_search'              => 'yes',
+			'post_new_tab'             => 'no',
+			'disable_virtual'          => 'yes',
+			'disable_progress_account' => 'no',
+			'disable_progress_thanks'  => 'no',
+			'disable_icons_column'     => 'no',
+			'dokan_tracking'           => 'no',
+			'skip_required'            => 'no',
+			'form_placeholder'         => 'لطفا شماره موبایل یا شماره سفارش خود را وارد کنید',
+			'step1_status'             => 'processing',
+			'step2_status'             => 'on-hold',
+			'step3_status'             => 'saina-packing',
+			'step4_status'             => 'completed',
+			'step4_to_post'            => 'yes',
+			'step5_status'             => 'saina-delivered',
+			'step5_delivered'          => 'yes',
+			'enable_delivered'         => 'yes',
+			'disable_confirm'          => 'no',
+			'tooltip_completed'        => 'سفارش شماره {order_id} رهگیری {trackingurl} توسط {username} در تاریخ {senddate} ارسال گردیده',
+			'tooltip_delivered'        => 'سفارش شماره {order_id} در تاریخ {deliverydate} تحویل مشتری گردیده',
+			'tooltip_peyk_completed'   => 'سفارش شماره {order_id} توسط {peyk} در تاریخ {senddate} ارسال گردیده',
+			'tooltip_peyk_delivered'   => 'سفارش شماره {order_id} در تاریخ {deliverydate} تحویل مشتری گردیده',
+			'peyk_sms_status'          => 'saina-packing',
+			'peyk_sms_text'            => 'سفارش شماره {order_id} در تاریخ {senddate} که رهگیری {trackingurl} تحویل پست پیشتاز گردید',
+			'peyk_cities'              => '',
+			'peyk_method'              => '',
+			'peyk_nationwide'          => 'no',
+			'show_user'                => 'yes',
+			'show_payment'             => 'yes',
+			'show_destination'         => 'yes',
+			'show_amount'              => 'yes',
+			'show_product_image'       => 'yes',
+			'show_product_name'        => 'yes',
+			'show_state_beside'        => 'yes',
+			'shared_progress_image'    => 'no',
+			'upload_form_image'        => 'no',
+			'logo'                     => '',
+			'icon_size'                => 32,
+			'color_progress'           => '#4caf50',
+			'color_form_btn'           => '#4caf50',
+			'color_table_header'       => '#e0e0e0',
+			'color_table_header_text'  => '#333333',
+			'color_post_btn'           => '#f9a825',
+			'color_post_btn_text'      => '#111111',
+			'progress_style'           => 'digi',
+			'progress_position'        => 'before',
+			'jalali_calendar'          => 'yes',
+			'auto_deliver'             => 'no',
+			'auto_deliver_days'        => 1,
+			'tapin_sync'               => 'no',
+			'email_embed'              => 'yes',
+			'sms_enabled'              => 'yes',
+			'default_carrier'          => 'post',
+			'statuses'                 => self::default_statuses(),
 		);
 	}
 
@@ -28,7 +75,7 @@ class Saina_TO_Helpers {
 		return array(
 			'processing' => array(
 				'label' => 'در حال انجام',
-				'color' => '#0d9488',
+				'color' => '#4caf50',
 			),
 			'on-hold'    => array(
 				'label' => 'در حال بررسی',
@@ -39,7 +86,7 @@ class Saina_TO_Helpers {
 				'color' => '#7c3aed',
 			),
 			'completed'  => array(
-				'label' => 'تکمیل شده / ارسال',
+				'label' => 'تکمیل شده',
 				'color' => '#2563eb',
 			),
 			'delivered'  => array(
@@ -60,39 +107,61 @@ class Saina_TO_Helpers {
 
 	public static function carriers() {
 		return array(
-			'post'         => array(
+			'post'        => array(
 				'name' => 'پست پیشتاز',
 				'url'  => 'https://tracking.post.ir/',
 			),
-			'post-custom'  => array(
+			'post-custom' => array(
 				'name' => 'پست سفارشی',
 				'url'  => 'https://tracking.post.ir/',
 			),
-			'chapar'       => array(
+			'chapar'      => array(
 				'name' => 'چاپار',
 				'url'  => 'https://chapar.ir/',
 			),
-			'tipax'        => array(
+			'tipax'       => array(
 				'name' => 'تیپاکس',
 				'url'  => 'https://tipaxco.com/',
 			),
-			'alopeyk'      => array(
+			'alopeyk'     => array(
 				'name' => 'الوپیک',
 				'url'  => 'https://alopeyk.com/',
 			),
-			'snapp'        => array(
+			'snapp'       => array(
 				'name' => 'اسنپ‌باکس',
 				'url'  => 'https://snapp.ir/',
 			),
-			'peyk'         => array(
+			'peyk'        => array(
 				'name' => 'پیک موتوری فروشگاه',
 				'url'  => '',
 			),
-			'custom'       => array(
+			'custom'      => array(
 				'name' => 'سایر',
 				'url'  => '',
 			),
 		);
+	}
+
+	public static function wc_status_choices() {
+		$choices = array(
+			''                 => '— پیش‌فرض مرحله —',
+			'pending'          => 'در انتظار پرداخت',
+			'processing'       => 'در حال انجام',
+			'on-hold'          => 'در انتظار بررسی',
+			'saina-packing'    => 'بسته‌بندی',
+			'completed'        => 'تکمیل شده',
+			'saina-delivered'  => 'تحویل شده',
+			'cancelled'        => 'لغو شده',
+			'refunded'         => 'مسترد شده',
+			'failed'           => 'ناموفق',
+		);
+		if ( function_exists( 'wc_get_order_statuses' ) ) {
+			foreach ( wc_get_order_statuses() as $key => $label ) {
+				$slug             = str_replace( 'wc-', '', $key );
+				$choices[ $slug ] = $label;
+			}
+		}
+		return $choices;
 	}
 
 	public static function carrier_name( $id ) {
@@ -123,15 +192,21 @@ class Saina_TO_Helpers {
 	}
 
 	public static function status_index( $status ) {
+		$s    = self::get_settings();
+		$steps = array( $s['step1_status'], $s['step2_status'], $s['step3_status'], $s['step4_status'], $s['step5_status'] );
+		$idx   = array_search( $status, $steps, true );
+		if ( false !== $idx ) {
+			return (int) $idx;
+		}
 		$map = array(
-			'pending'          => 0,
-			'processing'       => 0,
-			'on-hold'          => 1,
-			'saina-packing'    => 2,
-			'packing'          => 2,
-			'completed'        => 3,
-			'saina-delivered'  => 4,
-			'delivered'        => 4,
+			'pending'         => 0,
+			'processing'      => 0,
+			'on-hold'         => 1,
+			'saina-packing'   => 2,
+			'packing'         => 2,
+			'completed'       => 3,
+			'saina-delivered' => 4,
+			'delivered'       => 4,
 		);
 		return isset( $map[ $status ] ) ? $map[ $status ] : 0;
 	}
@@ -153,7 +228,6 @@ class Saina_TO_Helpers {
 		$order->update_meta_data( '_saina_carrier', sanitize_text_field( $data['carrier'] ?? '' ) );
 		$order->update_meta_data( '_saina_ship_date', sanitize_text_field( $data['ship_date'] ?? '' ) );
 		$order->update_meta_data( '_saina_delivery_date', sanitize_text_field( $data['delivery_date'] ?? '' ) );
-		$order->update_meta_data( '_saina_status_changed_' . time(), current_time( 'mysql' ) );
 		$order->save();
 	}
 
@@ -165,6 +239,23 @@ class Saina_TO_Helpers {
 			}
 		}
 		return true;
+	}
+
+	public static function replace_tokens( $text, $order ) {
+		$t = self::get_order_tracking( $order );
+		return strtr(
+			$text,
+			array(
+				'{order_id}'      => $order->get_order_number(),
+				'{trackingurl}'   => $t['code'],
+				'{tracking_code}' => $t['code'],
+				'{username}'      => $order->get_formatted_billing_full_name(),
+				'{senddate}'      => $t['ship_date'],
+				'{deliverydate}'  => $t['delivery_date'],
+				'{peyk}'          => self::carrier_name( $t['carrier'] ),
+				'{carrier}'       => self::carrier_name( $t['carrier'] ),
+			)
+		);
 	}
 
 	public static function create_track_page() {

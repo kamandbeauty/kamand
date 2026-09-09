@@ -10,6 +10,7 @@ class Saina_TO_Frontend {
 		add_shortcode( 'saina_progress', array( __CLASS__, 'progress_shortcode' ) );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_action( 'woocommerce_order_details_after_order_table', array( __CLASS__, 'account_progress' ) );
+		add_action( 'woocommerce_thankyou', array( __CLASS__, 'thankyou' ) );
 		add_action( 'woocommerce_my_account_my_orders_column_saina-status', array( __CLASS__, 'account_column' ) );
 		add_filter( 'woocommerce_account_orders_columns', array( __CLASS__, 'add_column' ) );
 		add_action( 'woocommerce_email_after_order_table', array( __CLASS__, 'email_block' ), 20, 4 );
@@ -17,7 +18,12 @@ class Saina_TO_Frontend {
 	}
 
 	public static function assets() {
+		$s = Saina_TO_Helpers::get_settings();
 		wp_enqueue_style( 'saina-to-front', SAINA_TO_URL . 'public/css/frontend.css', array(), SAINA_TO_VERSION );
+		wp_add_inline_style(
+			'saina-to-front',
+			':root{--saina-progress:' . esc_attr( $s['color_progress'] ) . ';--saina-btn:' . esc_attr( $s['color_form_btn'] ) . ';--saina-post:' . esc_attr( $s['color_post_btn'] ) . ';--saina-post-text:' . esc_attr( $s['color_post_btn_text'] ) . ';--saina-th:' . esc_attr( $s['color_table_header'] ) . ';--saina-th-text:' . esc_attr( $s['color_table_header_text'] ) . ';}'
+		);
 		wp_enqueue_script( 'saina-to-front', SAINA_TO_URL . 'public/js/frontend.js', array(), SAINA_TO_VERSION, true );
 		$a = wp_rand( 2, 9 );
 		$b = wp_rand( 1, 8 );
@@ -29,30 +35,37 @@ class Saina_TO_Frontend {
 				'nonce'        => wp_create_nonce( 'saina_to_front' ),
 				'captchaLabel' => Saina_TO_Helpers::to_fa( $a ) . ' + ' . Saina_TO_Helpers::to_fa( $b ) . ' = ؟',
 				'captchaHash'  => wp_hash( ( $a + $b ) . '|' . wp_salt( 'nonce' ) ),
+				'ajaxSearch'   => $s['ajax_search'],
+				'postNewTab'   => $s['post_new_tab'],
 			)
 		);
 	}
 
 	public static function shortcode() {
 		$settings = Saina_TO_Helpers::get_settings();
-		$mode     = $settings['track_mode'];
 		ob_start();
 		?>
-		<div class="saina-track" data-mode="<?php echo esc_attr( $mode ); ?>">
+		<div class="saina-track" data-style="<?php echo esc_attr( $settings['progress_style'] ); ?>">
+			<?php if ( $settings['logo'] ) : ?>
+				<img class="saina-logo" src="<?php echo esc_url( $settings['logo'] ); ?>" alt="" />
+			<?php endif; ?>
+			<p class="saina-placeholder"><?php echo esc_html( $settings['form_placeholder'] ); ?></p>
 			<form class="saina-track-form">
 				<div class="saina-tabs">
-					<button type="button" class="is-active" data-tab="order">شماره سفارش</button>
-					<?php if ( 'order_email' !== $mode ) : ?>
+					<?php if ( 'yes' === $settings['search_order'] ) : ?>
+						<button type="button" class="is-active" data-tab="order">شماره سفارش</button>
+					<?php endif; ?>
+					<?php if ( 'yes' === $settings['search_mobile'] ) : ?>
 						<button type="button" data-tab="mobile">موبایل</button>
 					<?php endif; ?>
-					<?php if ( 'order_mobile' !== $mode ) : ?>
+					<?php if ( 'yes' === $settings['search_email'] ) : ?>
 						<button type="button" data-tab="email">ایمیل</button>
 					<?php endif; ?>
 					<button type="button" data-tab="combo">ترکیبی</button>
 				</div>
 				<label class="saina-field saina-f-order">
 					<span>شماره سفارش</span>
-					<input type="text" name="order_id" placeholder="مثلاً ۱۰۴۲" />
+					<input type="text" name="order_id" placeholder="مثلاً ۱۰۴۲" <?php echo ( 'yes' === $settings['skip_required'] ) ? '' : ''; ?> />
 				</label>
 				<label class="saina-field saina-f-mobile" style="display:none">
 					<span>شماره موبایل</span>
@@ -105,7 +118,7 @@ class Saina_TO_Frontend {
 				<div><?php echo esc_html( wc_get_order_status_name( $order->get_status() ) ); ?></div>
 			</div>
 			<?php
-			if ( 'yes' === $settings['progress_bar'] ) {
+			if ( 'yes' !== $settings['disable_progress_account'] ) {
 				echo self::render_progress( $order, $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 			?>
@@ -121,14 +134,17 @@ class Saina_TO_Frontend {
 					<div>تاریخ ارسال: <?php echo esc_html( Saina_TO_Helpers::to_fa( $t['ship_date'] ) ); ?></div>
 					<div>تاریخ تحویل: <?php echo esc_html( Saina_TO_Helpers::to_fa( $t['delivery_date'] ) ); ?></div>
 					<div class="saina-actions">
-						<?php if ( in_array( $cid, array( 'post', 'post-custom' ), true ) ) : ?>
-							<a class="saina-btn post" target="_blank" rel="noopener" href="<?php echo esc_url( $carrier['post']['url'] ); ?>">پیگیری از پست</a>
+						<?php
+						$target = ( 'yes' === $settings['post_new_tab'] ) ? '_blank' : '_self';
+						if ( in_array( $cid, array( 'post', 'post-custom' ), true ) ) :
+							?>
+							<a class="saina-btn post" target="<?php echo esc_attr( $target ); ?>" rel="noopener" href="<?php echo esc_url( $carrier['post']['url'] ); ?>">پیگیری از پست</a>
 						<?php elseif ( 'chapar' === $cid ) : ?>
-							<a class="saina-btn chapar" target="_blank" rel="noopener" href="<?php echo esc_url( $carrier['chapar']['url'] ); ?>">پیگیری از چاپار</a>
+							<a class="saina-btn chapar" target="<?php echo esc_attr( $target ); ?>" rel="noopener" href="<?php echo esc_url( $carrier['chapar']['url'] ); ?>">پیگیری از چاپار</a>
 						<?php elseif ( 'tipax' === $cid ) : ?>
-							<a class="saina-btn tipax" target="_blank" rel="noopener" href="<?php echo esc_url( $carrier['tipax']['url'] ); ?>">پیگیری از تیپاکس</a>
+							<a class="saina-btn tipax" target="<?php echo esc_attr( $target ); ?>" rel="noopener" href="<?php echo esc_url( $carrier['tipax']['url'] ); ?>">پیگیری از تیپاکس</a>
 						<?php endif; ?>
-						<?php if ( 'yes' === $settings['confirm_delivery'] && 'completed' === $order->get_status() ) : ?>
+						<?php if ( 'yes' !== $settings['disable_confirm'] && 'completed' === $order->get_status() ) : ?>
 							<button type="button" class="saina-confirm" data-order="<?php echo esc_attr( $order->get_id() ); ?>">کالا را تحویل گرفتم</button>
 						<?php endif; ?>
 					</div>

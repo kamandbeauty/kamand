@@ -250,15 +250,20 @@ export function OrderResult({ order, settings, onTrackCarrier, onConfirm }) {
         </div>
       </div>
       <div className="space-y-4 p-5">
-        {settings.progressBarEnabled && <ProgressBar order={order} statuses={settings.statuses} />}
+        {settings.progressBarEnabled && !settings.disableProgressAccount && (
+          settings.progressPosition === 'after' ? null : <ProgressBar order={order} statuses={settings.statuses} />
+        )}
         <div className="grid gap-3 sm:grid-cols-2">
-          <Info label="خریدار" value={order.customer.name} />
-          <Info label="شهر" value={order.customer.city} />
+          {settings.showUser !== false && <Info label="خریدار" value={order.customer.name} />}
+          {settings.showDestination !== false && <Info label="مقصد" value={order.customer.city} />}
           <Info label="موبایل" value={toFa(order.customer.mobile)} />
           <Info label="ایمیل" value={order.customer.email} />
+          {settings.showPayment !== false && <Info label="روش پرداخت" value={order.payment} />}
+          {settings.showAmount !== false && <Info label="مبلغ پرداخت" value={money(order.total)} />}
         </div>
+        {settings.showProductName !== false && (
         <div className="rounded-2xl border border-slate-100">
-          <div className="border-b border-slate-100 px-4 py-2 text-xs font-bold text-slate-500">اقلام سفارش</div>
+          <div className="border-b border-slate-100 px-4 py-2 text-xs font-bold text-slate-500" style={{ background: settings.colorTableHeader, color: settings.colorTableHeaderText }}>اقلام سفارش</div>
           {order.items.map((it, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-2 text-sm">
               <span>{it.name} <span className="text-slate-400">× {toFa(it.qty)}</span></span>
@@ -270,6 +275,10 @@ export function OrderResult({ order, settings, onTrackCarrier, onConfirm }) {
             <span>{money(order.total)}</span>
           </div>
         </div>
+        )}
+        {settings.progressBarEnabled && !settings.disableProgressAccount && settings.progressPosition === 'after' && (
+          <ProgressBar order={order} statuses={settings.statuses} />
+        )}
         <div className="rounded-2xl bg-slate-50 p-4">
           <div className="mb-2 text-xs font-bold text-slate-500">جزئیات ارسال</div>
           {hasCode ? (
@@ -286,7 +295,7 @@ export function OrderResult({ order, settings, onTrackCarrier, onConfirm }) {
         {hasCode && (
           <div className="flex flex-wrap gap-2">
             {(c.id === 'post' || c.id === 'post-custom') && (
-              <button onClick={() => onTrackCarrier(order)} className="rounded-xl bg-[#0f766e] px-3 py-2 text-xs font-bold text-white">پیگیری از پست</button>
+              <button onClick={() => onTrackCarrier(order)} style={{ background: settings.colorPostBtn || '#f9a825', color: settings.colorPostBtnText || '#111' }} className="rounded-xl px-3 py-2 text-xs font-bold">پیگیری از پست</button>
             )}
             {c.id === 'chapar' && (
               <button onClick={() => onTrackCarrier(order)} className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-bold text-white">پیگیری از چاپار</button>
@@ -294,7 +303,7 @@ export function OrderResult({ order, settings, onTrackCarrier, onConfirm }) {
             {c.id === 'tipax' && (
               <button onClick={() => onTrackCarrier(order)} className="rounded-xl bg-blue-700 px-3 py-2 text-xs font-bold text-white">پیگیری از تیپاکس</button>
             )}
-            {settings.confirmDelivery && order.status === 'completed' && (
+            {!settings.disableConfirm && settings.confirmDelivery && order.status === 'completed' && (
               <button onClick={() => onConfirm(order)} className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
                 کالا را تحویل گرفتم
               </button>

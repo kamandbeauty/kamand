@@ -2,13 +2,15 @@
 .saina-track-form{background:#fff;border:1px solid #ccfbf1;border-radius:24px;padding:1.25rem;box-shadow:0 10px 30px rgba(15,118,110,.08)}
 .saina-tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
 .saina-tabs button{border:0;background:#f8fafc;border-radius:12px;padding:.55rem .8rem;font-weight:700;cursor:pointer}
-.saina-tabs button.is-active{background:#0f766e;color:#fff}
+.saina-tabs button.is-active{background:var(--saina-btn,#0f766e);color:#fff}
 .saina-field{display:block;margin-bottom:.75rem}
 .saina-field span{display:block;font-size:12px;font-weight:700;margin-bottom:.35rem}
 .saina-field input{width:100%;height:42px;border:1px solid #e2e8f0;border-radius:12px;padding:0 .75rem;background:#f8fafc}
-.saina-submit{width:100%;height:46px;border:0;border-radius:14px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer}
+.saina-submit{width:100%;height:46px;border:0;border-radius:14px;background:var(--saina-btn,#0f766e);color:#fff;font-weight:800;cursor:pointer}
+.saina-placeholder{font-size:13px;color:#64748b;margin:0 0 12px}
+.saina-logo{max-height:48px;margin-bottom:12px}
 .saina-card{background:#fff;border:1px solid #ccfbf1;border-radius:24px;margin-top:1rem;overflow:hidden}
-.saina-card-head{display:flex;justify-content:space-between;padding:1rem 1.2rem;background:linear-gradient(270deg,#f0fdfa,#fff);border-bottom:1px solid #f1f5f9}
+.saina-card-head{display:flex;justify-content:space-between;padding:1rem 1.2rem;background:var(--saina-th,#f0fdfa);color:var(--saina-th-text,#134e4a);border-bottom:1px solid #f1f5f9}
 .saina-muted{font-size:11px;color:#94a3b8}
 .saina-items{list-style:none;margin:0;padding:0 1.2rem}
 .saina-items li{padding:.4rem 0;border-bottom:1px solid #f8fafc;font-size:14px}

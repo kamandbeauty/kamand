@@ -39,6 +39,10 @@ class Saina_TO_Plugin {
 	}
 
 	public function tapin_sync( $order_id ) {
+		$settings = Saina_TO_Helpers::get_settings();
+		if ( 'yes' !== $settings['tapin_sync'] ) {
+			return;
+		}
 		$order = wc_get_order( $order_id );
 		if ( ! $order ) {
 			return;

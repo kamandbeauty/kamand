@@ -13,7 +13,13 @@ const TABS = [
 
 export default function TrackPage({ onToast, onState }) {
   const settings = getState().settings
-  const [tab, setTab] = useState(settings.trackMode === 'order_mobile' || settings.trackMode === 'order_email' ? 'combo' : 'order')
+  const tabs = TABS.filter((t) => {
+    if (t.id === 'order') return settings.searchOrder !== false
+    if (t.id === 'mobile') return settings.searchMobile !== false
+    if (t.id === 'email') return settings.searchEmail !== false
+    return true
+  })
+  const [tab, setTab] = useState(tabs[0]?.id || 'order')
   const [orderId, setOrderId] = useState('')
   const [mobile, setMobile] = useState('')
   const [email, setEmail] = useState('')
@@ -76,12 +82,12 @@ export default function TrackPage({ onToast, onState }) {
       <div className="mb-6 text-center">
         <div className="text-xs font-bold text-saina-700">{settings.shopName}</div>
         <h1 className="mt-1 text-2xl font-black text-slate-900">پیگیری سفارش</h1>
-        <p className="mt-2 text-sm text-slate-500">وضعیت مرسوله را با شماره سفارش، موبایل یا ایمیل ببینید.</p>
+        <p className="mt-2 text-sm text-slate-500">{settings.formPlaceholder || 'وضعیت مرسوله را با شماره سفارش، موبایل یا ایمیل ببینید.'}</p>
       </div>
 
       <form onSubmit={search} className="rounded-3xl border border-saina-100 bg-white p-4 shadow-card sm:p-6">
         <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
@@ -113,7 +119,8 @@ export default function TrackPage({ onToast, onState }) {
         </div>
         <button
           disabled={loading}
-          className="mt-4 w-full rounded-2xl bg-saina-700 py-3 text-sm font-bold text-white disabled:opacity-60"
+          style={{ background: settings.colorFormBtn || '#0f766e' }}
+          className="mt-4 w-full rounded-2xl py-3 text-sm font-bold text-white disabled:opacity-60"
         >
           {loading ? 'در حال جستجو…' : 'پیگیری سفارش'}
         </button>

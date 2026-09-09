@@ -22,6 +22,7 @@ import {
   upsertTracking,
 } from '../store'
 import { csvParse, downloadText, money, toFa, todayJalali } from '../utils'
+import SettingsPage from './SettingsPage'
 
 const MENUS = [
   { id: 'orders', label: 'سفارشات', icon: ClipboardList },
@@ -359,84 +360,4 @@ function SmsPage({ state, onToast, onState }) {
   )
 }
 
-function SettingsPage({ state, onToast, onState }) {
-  const [s, setS] = useState(state.settings)
-  function set(k, v) { setS((x) => ({ ...x, [k]: v })) }
-  function save() {
-    const next = getState()
-    next.settings = s
-    saveState(next)
-    onState(next)
-    onToast('تنظیمات ساینا ذخیره شد')
-  }
-  return (
-    <div className="p-4 sm:p-0">
-      <h2 className="mb-4 text-lg font-black">تنظیمات افزونه ساینا</h2>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Box title="عمومی">
-          <Toggle label="نمایش نوار پیشرفت" checked={s.progressBarEnabled} onChange={(v) => set('progressBarEnabled', v)} />
-          <Toggle label="ستون آیکن در سفارشات کاربر" checked={s.iconsColumnEnabled} onChange={(v) => set('iconsColumnEnabled', v)} />
-          <Toggle label="جستجوی Ajax" checked={s.ajaxSearch} onChange={(v) => set('ajaxSearch', v)} />
-          <Toggle label="تأیید دریافت توسط مشتری" checked={s.confirmDelivery} onChange={(v) => set('confirmDelivery', v)} />
-          <Toggle label="غیرفعال برای محصولات دانلودی/مجازی" checked={s.disableVirtual} onChange={(v) => set('disableVirtual', v)} />
-          <Toggle label="جاسازی در ایمیل ووکامرس" checked={s.emailEmbed} onChange={(v) => set('emailEmbed', v)} />
-          <label className="mt-2 block text-[11px] font-bold">حالت فرم پیگیری</label>
-          <select value={s.trackMode} onChange={(e) => set('trackMode', e.target.value)} className="h-9 w-full rounded-lg border px-2 text-xs">
-            <option value="any">شماره سفارش یا موبایل یا ایمیل</option>
-            <option value="order_mobile">همزمان سفارش + موبایل</option>
-            <option value="order_email">همزمان سفارش + ایمیل</option>
-          </select>
-        </Box>
-        <Box title="کپچا و حامل پیش‌فرض">
-          <label className="block text-[11px] font-bold">نوع کپچا</label>
-          <select value={s.captcha} onChange={(e) => set('captcha', e.target.value)} className="mb-3 h-9 w-full rounded-lg border px-2 text-xs">
-            <option value="none">بدون کپچا</option>
-            <option value="math">کپچای عددی</option>
-            <option value="recaptcha2">Google reCAPTCHA v2</option>
-            <option value="recaptcha3">Google reCAPTCHA v3</option>
-          </select>
-          <label className="block text-[11px] font-bold">حامل پیش‌فرض</label>
-          <select value={s.defaultCarrier} onChange={(e) => set('defaultCarrier', e.target.value)} className="h-9 w-full rounded-lg border px-2 text-xs">
-            {CARRIERS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <label className="mt-3 block text-[11px] font-bold">تبدیل خودکار تکمیل‌شده به تحویل‌شده (روز)</label>
-          <input type="number" value={s.autoDeliverDays} onChange={(e) => set('autoDeliverDays', Number(e.target.value))} className="h-9 w-full rounded-lg border px-2 text-xs" />
-        </Box>
-      </div>
-      <Box title="شخصی‌سازی ۵ وضعیت نوار پیشرفت">
-        <div className="grid gap-3">
-          {s.statuses.map((st, i) => (
-            <div key={st.key} className="grid grid-cols-[1fr_120px] gap-2">
-              <input value={st.label} onChange={(e) => {
-                const statuses = s.statuses.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x)
-                set('statuses', statuses)
-              }} className="h-9 rounded-lg border px-2 text-xs" />
-              <input type="color" value={st.color} onChange={(e) => {
-                const statuses = s.statuses.map((x, idx) => idx === i ? { ...x, color: e.target.value } : x)
-                set('statuses', statuses)
-              }} className="h-9 w-full rounded-lg border" />
-            </div>
-          ))}
-        </div>
-      </Box>
-      <button onClick={save} className="mt-4 rounded-xl bg-saina-700 px-5 py-2.5 text-sm font-bold text-white">ذخیره تنظیمات</button>
-    </div>
-  )
-}
 
-function Box({ title, children }) {
-  return (
-    <div className="mb-4 rounded-2xl border border-slate-100 p-4">
-      <div className="mb-3 text-sm font-bold">{title}</div>
-      {children}
-    </div>
-  )
-}
-function Toggle({ label, checked, onChange }) {
-  return (
-    <label className="mb-2 flex items-center justify-between gap-3 text-xs">
-      <span>{label}</span>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-    </label>
-  )
-}

@@ -148,102 +148,80 @@ class Saina_TO_Admin {
 		}
 		check_admin_referer( 'saina_to_settings' );
 		$current = Saina_TO_Helpers::get_settings();
-		$fields  = array( 'progress_bar', 'icons_column', 'ajax_search', 'confirm_delivery', 'disable_virtual', 'email_embed', 'sms_enabled' );
-		foreach ( $fields as $f ) {
+		$checks  = array(
+			'own_orders',
+			'search_order',
+			'search_mobile',
+			'search_email',
+			'ajax_search',
+			'post_new_tab',
+			'disable_virtual',
+			'disable_progress_account',
+			'disable_progress_thanks',
+			'disable_icons_column',
+			'dokan_tracking',
+			'skip_required',
+			'step4_to_post',
+			'step5_delivered',
+			'enable_delivered',
+			'disable_confirm',
+			'peyk_nationwide',
+			'show_user',
+			'show_payment',
+			'show_destination',
+			'show_amount',
+			'show_product_image',
+			'show_product_name',
+			'show_state_beside',
+			'shared_progress_image',
+			'upload_form_image',
+			'jalali_calendar',
+			'auto_deliver',
+			'tapin_sync',
+			'email_embed',
+		);
+		foreach ( $checks as $f ) {
 			$current[ $f ] = isset( $_POST[ $f ] ) ? 'yes' : 'no';
 		}
-		$current['captcha']           = sanitize_text_field( wp_unslash( $_POST['captcha'] ?? 'math' ) );
-		$current['track_mode']        = sanitize_text_field( wp_unslash( $_POST['track_mode'] ?? 'any' ) );
-		$current['default_carrier']   = sanitize_text_field( wp_unslash( $_POST['default_carrier'] ?? 'post' ) );
-		$current['auto_deliver_days'] = absint( $_POST['auto_deliver_days'] ?? 7 );
-		$current['recaptcha_site']    = sanitize_text_field( wp_unslash( $_POST['recaptcha_site'] ?? '' ) );
-		$current['recaptcha_secret']  = sanitize_text_field( wp_unslash( $_POST['recaptcha_secret'] ?? '' ) );
-		if ( isset( $_POST['status_label'] ) && is_array( $_POST['status_label'] ) ) {
-			foreach ( $current['statuses'] as $key => $row ) {
-				if ( isset( $_POST['status_label'][ $key ] ) ) {
-					$current['statuses'][ $key ]['label'] = sanitize_text_field( wp_unslash( $_POST['status_label'][ $key ] ) );
-				}
-				if ( isset( $_POST['status_color'][ $key ] ) ) {
-					$current['statuses'][ $key ]['color'] = sanitize_hex_color( wp_unslash( $_POST['status_color'][ $key ] ) );
-				}
-			}
+		$texts = array(
+			'captcha',
+			'recaptcha_site',
+			'recaptcha_secret',
+			'form_placeholder',
+			'step1_status',
+			'step2_status',
+			'step3_status',
+			'step4_status',
+			'step5_status',
+			'tooltip_completed',
+			'tooltip_delivered',
+			'tooltip_peyk_completed',
+			'tooltip_peyk_delivered',
+			'peyk_sms_status',
+			'peyk_cities',
+			'peyk_method',
+			'progress_style',
+			'progress_position',
+			'logo',
+		);
+		foreach ( $texts as $f ) {
+			$current[ $f ] = sanitize_text_field( wp_unslash( $_POST[ $f ] ?? '' ) );
 		}
+		$current['peyk_sms_text']         = sanitize_textarea_field( wp_unslash( $_POST['peyk_sms_text'] ?? '' ) );
+		$current['icon_size']             = min( 150, max( 15, absint( $_POST['icon_size'] ?? 32 ) ) );
+		$current['auto_deliver_days']     = max( 1, absint( $_POST['auto_deliver_days'] ?? 1 ) );
+		$current['color_progress']        = sanitize_hex_color( wp_unslash( $_POST['color_progress'] ?? '#4caf50' ) );
+		$current['color_form_btn']        = sanitize_hex_color( wp_unslash( $_POST['color_form_btn'] ?? '#4caf50' ) );
+		$current['color_table_header']    = sanitize_hex_color( wp_unslash( $_POST['color_table_header'] ?? '#e0e0e0' ) );
+		$current['color_table_header_text'] = sanitize_hex_color( wp_unslash( $_POST['color_table_header_text'] ?? '#333333' ) );
+		$current['color_post_btn']        = sanitize_hex_color( wp_unslash( $_POST['color_post_btn'] ?? '#f9a825' ) );
+		$current['color_post_btn_text']   = sanitize_hex_color( wp_unslash( $_POST['color_post_btn_text'] ?? '#111111' ) );
 		Saina_TO_Helpers::update_settings( $current );
 		add_settings_error( 'saina_to', 'saved', 'تنظیمات ساینا ذخیره شد.', 'updated' );
 	}
 
 	public static function page_settings() {
-		$s = Saina_TO_Helpers::get_settings();
-		settings_errors( 'saina_to' );
-		?>
-		<div class="wrap saina-wrap">
-			<h1>تنظیمات ساینا | پیگیری سفارشات</h1>
-			<p>شورتکد فرم پیگیری: <code>[saina_track_order]</code></p>
-			<form method="post">
-				<?php wp_nonce_field( 'saina_to_settings' ); ?>
-				<table class="form-table">
-					<tr><th>نوار پیشرفت</th><td><label><input type="checkbox" name="progress_bar" <?php checked( $s['progress_bar'], 'yes' ); ?> /> نمایش در فرم و حساب کاربری</label></td></tr>
-					<tr><th>ستون آیکن</th><td><label><input type="checkbox" name="icons_column" <?php checked( $s['icons_column'], 'yes' ); ?> /> ستون ارسال در سفارش‌های من</label></td></tr>
-					<tr><th>جستجوی Ajax</th><td><label><input type="checkbox" name="ajax_search" <?php checked( $s['ajax_search'], 'yes' ); ?> /> فعال</label></td></tr>
-					<tr><th>تأیید دریافت</th><td><label><input type="checkbox" name="confirm_delivery" <?php checked( $s['confirm_delivery'], 'yes' ); ?> /> مشتری بتواند تحویل را تأیید کند</label></td></tr>
-					<tr><th>محصولات مجازی</th><td><label><input type="checkbox" name="disable_virtual" <?php checked( $s['disable_virtual'], 'yes' ); ?> /> غیرفعال برای دانلودی/مجازی</label></td></tr>
-					<tr><th>ایمیل ووکامرس</th><td><label><input type="checkbox" name="email_embed" <?php checked( $s['email_embed'], 'yes' ); ?> /> درج جزئیات ارسال در ایمیل</label></td></tr>
-					<tr>
-						<th>حالت فرم</th>
-						<td>
-							<select name="track_mode">
-								<option value="any" <?php selected( $s['track_mode'], 'any' ); ?>>سفارش یا موبایل یا ایمیل</option>
-								<option value="order_mobile" <?php selected( $s['track_mode'], 'order_mobile' ); ?>>سفارش + موبایل</option>
-								<option value="order_email" <?php selected( $s['track_mode'], 'order_email' ); ?>>سفارش + ایمیل</option>
-							</select>
-						</td>
-					</tr>
-					<tr>
-						<th>کپچا</th>
-						<td>
-							<select name="captcha">
-								<option value="none" <?php selected( $s['captcha'], 'none' ); ?>>بدون کپچا</option>
-								<option value="math" <?php selected( $s['captcha'], 'math' ); ?>>کپچای عددی</option>
-								<option value="recaptcha2" <?php selected( $s['captcha'], 'recaptcha2' ); ?>>reCAPTCHA v2</option>
-								<option value="recaptcha3" <?php selected( $s['captcha'], 'recaptcha3' ); ?>>reCAPTCHA v3</option>
-							</select>
-							<p><input type="text" class="regular-text" name="recaptcha_site" value="<?php echo esc_attr( $s['recaptcha_site'] ); ?>" placeholder="Site key" /></p>
-							<p><input type="text" class="regular-text" name="recaptcha_secret" value="<?php echo esc_attr( $s['recaptcha_secret'] ); ?>" placeholder="Secret key" /></p>
-						</td>
-					</tr>
-					<tr>
-						<th>حامل پیش‌فرض</th>
-						<td>
-							<select name="default_carrier">
-								<?php foreach ( Saina_TO_Helpers::carriers() as $id => $c ) : ?>
-									<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $s['default_carrier'], $id ); ?>><?php echo esc_html( $c['name'] ); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</td>
-					</tr>
-					<tr>
-						<th>تبدیل خودکار به تحویل‌شده</th>
-						<td><input type="number" name="auto_deliver_days" value="<?php echo esc_attr( $s['auto_deliver_days'] ); ?>" /> روز پس از تکمیل</td>
-					</tr>
-				</table>
-				<h2>شخصی‌سازی وضعیت‌ها</h2>
-				<table class="form-table">
-					<?php foreach ( $s['statuses'] as $key => $row ) : ?>
-						<tr>
-							<th><?php echo esc_html( $key ); ?></th>
-							<td>
-								<input type="text" name="status_label[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $row['label'] ); ?>" />
-								<input type="color" name="status_color[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $row['color'] ); ?>" />
-							</td>
-						</tr>
-					<?php endforeach; ?>
-				</table>
-				<p><button class="button button-primary" name="saina_to_save_settings" value="1">ذخیره تنظیمات</button></p>
-			</form>
-			<h2>شورتکد پیامک ووکامرس فارسی</h2>
-			<p><code>{tracking_code}</code> <code>{carrier}</code> <code>{ship_date}</code> <code>{delivery_date}</code> <code>{order_id}</code></p>
-		</div>
-		<?php
+		include SAINA_TO_DIR . 'includes/views/settings.php';
 	}
 
 	public static function page_bulk() {

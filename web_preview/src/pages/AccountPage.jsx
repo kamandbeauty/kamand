@@ -26,7 +26,7 @@ export default function AccountPage({ onToast, onState }) {
             <div key={order.id} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-soft">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
                 <div className="flex items-center gap-3">
-                  {settings.iconsColumnEnabled && (
+                  {!settings.disableIconsColumn && settings.iconsColumnEnabled && (
                     <div className="group relative flex h-10 w-10 items-center justify-center rounded-2xl bg-saina-50 text-saina-700">
                       <Package size={18} />
                       {order.tracking.code && (
@@ -46,7 +46,7 @@ export default function AccountPage({ onToast, onState }) {
                 <StatusBadge status={order.status} statuses={settings.statuses} />
               </div>
               <div className="p-4">
-                {settings.progressBarEnabled && <ProgressBar order={order} statuses={settings.statuses} compact />}
+                {!settings.disableProgressAccount && settings.progressBarEnabled && <ProgressBar order={order} statuses={settings.statuses} compact />}
                 <div className="mt-3 flex flex-wrap gap-2">
                   {order.tracking.code && (c.id === 'post' || c.id === 'post-custom') && (
                     <button onClick={() => setCarrierOrder(order)} className="rounded-lg bg-saina-700 px-3 py-1.5 text-[11px] font-bold text-white">پیگیری از پست</button>
@@ -57,7 +57,7 @@ export default function AccountPage({ onToast, onState }) {
                   {order.tracking.code && c.id === 'tipax' && (
                     <button onClick={() => setCarrierOrder(order)} className="rounded-lg bg-blue-700 px-3 py-1.5 text-[11px] font-bold text-white">پیگیری از تیپاکس</button>
                   )}
-                  {settings.confirmDelivery && order.status === 'completed' && (
+                  {!settings.disableConfirm && settings.confirmDelivery && order.status === 'completed' && (
                     <button
                       onClick={() => {
                         upsertTracking(order.id, order.tracking, { status: 'delivered' })

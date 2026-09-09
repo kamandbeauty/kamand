@@ -80,10 +80,10 @@ class Saina_TO_Statuses {
 
 	public static function auto_deliver() {
 		$settings = Saina_TO_Helpers::get_settings();
-		$days     = max( 0, intval( $settings['auto_deliver_days'] ) );
-		if ( $days < 1 ) {
+		if ( 'yes' !== $settings['auto_deliver'] ) {
 			return;
 		}
+		$days = max( 1, intval( $settings['auto_deliver_days'] ) );
 		$orders = wc_get_orders(
 			array(
 				'status'       => array( 'completed' ),

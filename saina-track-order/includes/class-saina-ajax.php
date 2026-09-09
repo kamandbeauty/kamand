@@ -27,19 +27,31 @@ class Saina_TO_Ajax {
 		$order_id = isset( $_POST['order_id'] ) ? Saina_TO_Helpers::to_en( sanitize_text_field( wp_unslash( $_POST['order_id'] ) ) ) : '';
 		$mobile   = isset( $_POST['mobile'] ) ? Saina_TO_Helpers::normalize_phone( wp_unslash( $_POST['mobile'] ) ) : '';
 		$email    = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
-		$mode     = $settings['track_mode'];
-
-		if ( 'order_mobile' === $mode && ( '' === $order_id || '' === $mobile ) ) {
-			wp_send_json_error( array( 'message' => 'شماره سفارش و موبایل هر دو لازم است.' ) );
+		if ( 'yes' !== $settings['search_order'] ) {
+			$order_id = '';
 		}
-		if ( 'order_email' === $mode && ( '' === $order_id || '' === $email ) ) {
-			wp_send_json_error( array( 'message' => 'شماره سفارش و ایمیل هر دو لازم است.' ) );
+		if ( 'yes' !== $settings['search_mobile'] ) {
+			$mobile = '';
 		}
-		if ( '' === $order_id && '' === $mobile && '' === $email ) {
+		if ( 'yes' !== $settings['search_email'] ) {
+			$email = '';
+		}
+		if ( 'yes' !== $settings['skip_required'] && '' === $order_id && '' === $mobile && '' === $email ) {
 			wp_send_json_error( array( 'message' => 'یکی از فیلدهای پیگیری را وارد کنید.' ) );
 		}
 
-		$orders = self::query_orders( $order_id, $mobile, $email, $mode );
+		$orders = self::query_orders( $order_id, $mobile, $email, 'any' );
+		if ( 'yes' === $settings['own_orders'] && is_user_logged_in() ) {
+			$uid    = get_current_user_id();
+			$orders = array_values(
+				array_filter(
+					$orders,
+					static function ( $o ) use ( $uid ) {
+						return (int) $o->get_user_id() === $uid;
+					}
+				)
+			);
+		}
 		if ( empty( $orders ) ) {
 			wp_send_json_error( array( 'message' => 'سفارشی با این مشخصات یافت نشد.' ) );
 		}
@@ -54,7 +66,7 @@ class Saina_TO_Ajax {
 	public static function confirm() {
 		check_ajax_referer( 'saina_to_front', 'nonce' );
 		$settings = Saina_TO_Helpers::get_settings();
-		if ( 'yes' !== $settings['confirm_delivery'] ) {
+		if ( 'yes' === $settings['disable_confirm'] ) {
 			wp_send_json_error( array( 'message' => 'این قابلیت غیرفعال است.' ) );
 		}
 		$order_id = absint( $_POST['order_id'] ?? 0 );
