@@ -272,6 +272,10 @@ class KSG_Frontend {
 							<span><?php esc_html_e( 'چاپ راهنما', 'kamand-size-guide' ); ?></span>
 						</button>
 					<?php endif; ?>
+
+					<?php if ( $settings['show_credit'] ) : ?>
+						<span class="ksg__credit"><?php esc_html_e( 'از استودیو جاوید', 'kamand-size-guide' ); ?></span>
+					<?php endif; ?>
 				</footer>
 			</div>
 		</div>

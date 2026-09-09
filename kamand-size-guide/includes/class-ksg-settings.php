@@ -66,6 +66,7 @@ class KSG_Settings {
 			'allow_expand'        => 1,
 			'show_tips'           => 1,
 			'show_print'          => 1,
+			'show_credit'         => 1,
 			'persian_digits'      => 1,
 			'highlight_variation' => 1,
 			'auto_category'       => 1,
@@ -137,7 +138,7 @@ class KSG_Settings {
 		$allowed  = array( 'after_add_to_cart', 'after_summary', 'after_tabs' );
 		$clean['display_location'] = in_array( $location, $allowed, true ) ? $location : $defaults['display_location'];
 
-		foreach ( array( 'show_unit_toggle', 'allow_expand', 'show_tips', 'show_print', 'persian_digits', 'highlight_variation', 'auto_category' ) as $flag ) {
+		foreach ( array( 'show_unit_toggle', 'allow_expand', 'show_tips', 'show_print', 'show_credit', 'persian_digits', 'highlight_variation', 'auto_category' ) as $flag ) {
 			$clean[ $flag ] = empty( $input[ $flag ] ) ? 0 : 1;
 		}
 
@@ -172,7 +173,7 @@ class KSG_Settings {
 
 		add_submenu_page(
 			$parent,
-			__( 'راهنمای سایز کمند', 'kamand-size-guide' ),
+			__( 'راهنمای سایز ووکامرس (استودیو جاوید)', 'kamand-size-guide' ),
 			__( 'راهنمای سایز', 'kamand-size-guide' ),
 			'manage_woocommerce',
 			'ksg-settings',
@@ -258,7 +259,8 @@ class KSG_Settings {
 		);
 		?>
 		<div class="wrap ksg-settings">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'تنظیمات راهنمای سایز کمند', 'kamand-size-guide' ); ?></h1>
+			<h1 class="wp-heading-inline"><?php esc_html_e( 'تنظیمات راهنمای سایز ووکامرس', 'kamand-size-guide' ); ?></h1>
+			<span class="ksg-brand"><?php esc_html_e( 'از استودیو جاوید', 'kamand-size-guide' ); ?></span>
 
 			<p class="ksg-intro">
 				<?php esc_html_e( 'این افزونه جدول راهنمای سایز هر محصول را با ظاهری تمیز و واکنش‌گرا دقیقاً زیر دکمهٔ خرید نمایش می‌دهد. راهنماها را از منوی «راهنمای سایز» بسازید و در این صفحه رفتار نمایش را تنظیم کنید.', 'kamand-size-guide' ); ?>
@@ -326,6 +328,7 @@ class KSG_Settings {
 									'allow_expand'        => __( 'دکمهٔ «نمایش بزرگ‌تر» و پنجرهٔ تمام‌صفحه', 'kamand-size-guide' ),
 									'show_tips'           => __( 'نمایش نکته‌های اندازه‌گیری و توضیح راهنما', 'kamand-size-guide' ),
 									'show_print'          => __( 'دکمهٔ چاپ راهنما', 'kamand-size-guide' ),
+									'show_credit'         => __( 'نمایش امضای «از استودیو جاوید» کنار جدول', 'kamand-size-guide' ),
 									'persian_digits'      => __( 'نمایش اعداد با رقم فارسی', 'kamand-size-guide' ),
 									'highlight_variation' => __( 'برجسته‌کردن خودکار ردیفِ سایز انتخاب‌شده در محصولات متغیر', 'kamand-size-guide' ),
 									'auto_category'       => __( 'استفاده از راهنمای پیش‌فرض دسته‌بندی محصول', 'kamand-size-guide' ),

@@ -1,5 +1,5 @@
 /**
- * کمند | راهنمای سایز — استایل پیشخوان
+ * راهنمای سایز ووکامرس — استایل پیشخوان (از استودیو جاوید)
  */
 
 .ksg-admin {
@@ -216,4 +216,14 @@
 .ksg-card h2 {
 	margin-block-start: 0;
 	font-size: 15px;
+}
+
+.ksg-settings .ksg-brand {
+	display: inline-block;
+	margin-inline-start: 10px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: #f0f6fc;
+	color: #2271b1;
+	font-size: 12px;
 }

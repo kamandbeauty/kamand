@@ -1,6 +1,6 @@
 <?php
 /**
- * ساخت صفحهٔ پیش‌نمایش ظاهری افزونه.
+ * ساخت صفحهٔ پیش‌نمایش ظاهری افزونهٔ «راهنمای سایز ووکامرس» از استودیو جاوید.
  *
  * این اسکریپت با همان کلاس‌های واقعی افزونه (KSG_Frontend) خروجی HTML را می‌سازد و
  * آن را در پوشهٔ demo/ می‌نویسد تا بدون وردپرس و ووکامرس بتوان ظاهر جدول را دید.
@@ -180,7 +180,7 @@ $html = <<<HTML
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>پیش‌نمایش افزونهٔ راهنمای سایز کمند</title>
+<title>پیش‌نمایش افزونهٔ راهنمای سایز ووکامرس — استودیو جاوید</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" />
 <link rel="stylesheet" href="assets/frontend.css" />
 <style>
@@ -219,7 +219,7 @@ $html = <<<HTML
 <body>
 <div class="page">
 	<header class="page-head">
-		<h1>پیش‌نمایش افزونهٔ «راهنمای سایز کمند» برای ووکامرس</h1>
+		<h1>پیش‌نمایش افزونهٔ «راهنمای سایز ووکامرس» از استودیو جاوید</h1>
 		<p>این صفحه خروجی واقعی <code>KSG_Frontend::get_html()</code> است؛ همان HTML و CSS و JavaScript که افزونه در صفحهٔ محصول چاپ می‌کند. جدول دقیقاً زیر دکمهٔ خرید قرار می‌گیرد.</p>
 	</header>
 

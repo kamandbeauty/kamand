@@ -57,7 +57,7 @@ class KSG_Products {
 	public function add_meta_boxes() {
 		add_meta_box(
 			'ksg-product-box',
-			__( 'راهنمای سایز (کمند)', 'kamand-size-guide' ),
+			__( 'راهنمای سایز (استودیو جاوید)', 'kamand-size-guide' ),
 			array( $this, 'render_meta_box' ),
 			'product',
 			'normal',

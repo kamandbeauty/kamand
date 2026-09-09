@@ -1,6 +1,6 @@
 <?php
 /**
- * آزمون‌های smoke افزونهٔ راهنمای سایز کمند.
+ * آزمون‌های smoke افزونهٔ راهنمای سایز ووکامرس (استودیو جاوید).
  *
  * اجرا: php tests/run-tests.php
  *
@@ -338,6 +338,21 @@ assert_contains( $html, 'ksg__switch-btn', 'کلید تبدیل سانتی‌م�
 assert_contains( $html, 'img-77.jpg', 'تصویر راهنما نمایش داده شد' );
 assert_contains( $html, 'اندازه‌ها بدون لباس ضخیم گرفته شود.', 'نکتهٔ اندازه‌گیری نمایش داده شد' );
 assert_contains( $html, 'data-ksg-hint', 'راهنمای برجسته‌سازی سایز انتخاب‌شده هست' );
+assert_contains( $html, 'class="ksg__credit">از استودیو جاوید', 'امضای استودیو جاوید زیر جدول چاپ شد' );
+
+// خاموش‌کردن امضا از تنظیمات.
+$GLOBALS['ksg_test']['options']['ksg_settings'] = array( 'show_credit' => 0 );
+$settings_cache = ( new ReflectionClass( 'KSG_Settings' ) )->getProperty( 'cache' );
+$settings_cache->setAccessible( true );
+$settings_cache->setValue( null, null );
+
+$credit_guides  = KSG_Products::resolve_guides( 101 );
+$html_no_credit = KSG_Frontend::get_html( $credit_guides, array( 'product_id' => 101 ) );
+assert_not_contains( $html_no_credit, 'ksg__credit', 'با خاموش‌کردن گزینه، امضا چاپ نمی‌شود' );
+assert_contains( $html_no_credit, '<table class="ksg__table">', 'خود جدول بدون امضا همچنان چاپ می‌شود' );
+
+unset( $GLOBALS['ksg_test']['options']['ksg_settings'] );
+$settings_cache->setValue( null, null );
 assert_not_contains( $html, '<script', 'بدون اسکریپت درون‌خطی در خروجی جدول' );
 
 // پیکربندی JSON بلوک باید سالم باشد.

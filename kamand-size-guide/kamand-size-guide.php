@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name:          کمند | راهنمای سایز محصولات
+ * Plugin Name:          راهنمای سایز ووکامرس
  * Plugin URI:           https://github.com/kamandbeauty/kamand
- * Description:          جدول راهنمای سایز زیبا و واکنش‌گرا دقیقاً زیر دکمهٔ خرید هر محصول ووکامرس؛ با چند راهنما به‌صورت تب، تبدیل سانتی‌متر/اینچ، پنجرهٔ بزرگ‌نمایی و هایلایت خودکار سایز انتخاب‌شده در محصولات متغیر.
+ * Description:          جدول راهنمای سایز زیبا و واکنش‌گرا دقیقاً زیر دکمهٔ خرید هر محصول ووکامرس؛ با چند راهنما به‌صورت تب، تبدیل سانتی‌متر/اینچ، پنجرهٔ بزرگ‌نمایی و برجسته‌سازی خودکار سایز انتخاب‌شده در محصولات متغیر. از استودیو جاوید.
  * Version:              1.0.0
  * Requires at least:    5.9
  * Requires PHP:         7.4
- * Author:               کمند
+ * Author:               استودیو جاوید
  * Author URI:           https://github.com/kamandbeauty/kamand
  * Text Domain:          kamand-size-guide
  * Domain Path:          /languages
