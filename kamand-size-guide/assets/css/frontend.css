@@ -1,0 +1,607 @@
+/**
+ * کمند | راهنمای سایز — استایل بخش فروشگاه
+ * همهٔ فاصله‌ها از ویژگی‌های منطقی (logical properties) استفاده می‌کنند تا در چیدمان راست‌به‌چپ درست باشند.
+ */
+
+.ksg {
+	--ksg-accent: #e0447c;
+	--ksg-accent-strong: #b3245f;
+	--ksg-accent-soft: rgba(224, 68, 124, 0.09);
+	--ksg-accent-line: rgba(224, 68, 124, 0.32);
+	--ksg-radius: 18px;
+	--ksg-ink: #0f172a;
+	--ksg-muted: #64748b;
+	--ksg-line: rgba(15, 23, 42, 0.09);
+
+	position: relative;
+	clear: both;
+	margin-block: 1.6rem;
+	font-size: 14px;
+	line-height: 1.7;
+	color: var(--ksg-ink);
+	direction: inherit;
+}
+
+.ksg *,
+.ksg *::before,
+.ksg *::after {
+	box-sizing: border-box;
+}
+
+.ksg__inner {
+	position: relative;
+	background: #fff;
+	border: 1px solid var(--ksg-line);
+	border-radius: var(--ksg-radius);
+	box-shadow: 0 22px 48px -30px rgba(15, 23, 42, 0.45);
+	overflow: hidden;
+}
+
+/* ---------- سربرگ ---------- */
+
+.ksg__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 18px;
+	background: linear-gradient(135deg, var(--ksg-accent) 0%, var(--ksg-accent-strong) 100%);
+	color: #fff;
+}
+
+.ksg__heading {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+
+.ksg__badge {
+	display: grid;
+	place-items: center;
+	flex: 0 0 auto;
+	inline-size: 34px;
+	block-size: 34px;
+	border-radius: 11px;
+	background: rgba(255, 255, 255, 0.2);
+	backdrop-filter: blur(3px);
+}
+
+.ksg__badge svg {
+	display: block;
+}
+
+.ksg__titles {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.ksg__title {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 700;
+	letter-spacing: 0;
+	color: #fff;
+}
+
+.ksg__subtitle {
+	font-size: 11.5px;
+	opacity: 0.86;
+}
+
+.ksg__tools {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.ksg__switch {
+	display: inline-flex;
+	padding: 3px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.18);
+}
+
+.ksg__switch-btn {
+	appearance: none;
+	border: 0;
+	background: transparent;
+	color: #fff;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 5px 12px;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ksg__switch-btn.is-on {
+	background: #fff;
+	color: var(--ksg-accent);
+	box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+}
+
+.ksg__switch-btn:focus-visible,
+.ksg__expand:focus-visible,
+.ksg__tab:focus-visible,
+.ksg__print:focus-visible,
+.ksg__close:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 2px;
+}
+
+.ksg__expand,
+.ksg__close,
+.ksg__print {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	appearance: none;
+	background: rgba(255, 255, 255, 0.14);
+	border: 1px solid rgba(255, 255, 255, 0.32);
+	color: #fff;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 6px 12px;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.ksg__expand:hover,
+.ksg__close:hover {
+	background: rgba(255, 255, 255, 0.26);
+}
+
+/* ---------- تب‌ها ---------- */
+
+.ksg__tabs {
+	display: flex;
+	gap: 8px;
+	padding: 12px 18px 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.ksg__tabs::-webkit-scrollbar {
+	display: none;
+}
+
+.ksg__tab {
+	appearance: none;
+	flex: 0 0 auto;
+	background: #fff;
+	border: 1px solid var(--ksg-line);
+	color: #475569;
+	font: inherit;
+	font-size: 12.5px;
+	font-weight: 600;
+	padding: 6px 14px;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.ksg__tab:hover {
+	border-color: var(--ksg-accent-line);
+	color: var(--ksg-accent);
+}
+
+.ksg__tab.is-on {
+	background: var(--ksg-accent-soft);
+	border-color: var(--ksg-accent-line);
+	color: var(--ksg-accent);
+}
+
+/* ---------- جدول ---------- */
+
+.ksg__panel[hidden] {
+	display: none;
+}
+
+.ksg__scroller {
+	position: relative;
+	padding: 14px 18px 16px;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: thin;
+}
+
+.ksg__scroller:focus-visible {
+	outline: 2px solid var(--ksg-accent-line);
+	outline-offset: 2px;
+	border-radius: 12px;
+}
+
+.ksg__table {
+	inline-size: 100%;
+	margin: 0;
+	border-collapse: separate;
+	border-spacing: 0;
+	border: 1px solid var(--ksg-line);
+	border-radius: 14px;
+	overflow: hidden;
+	font-size: 13.5px;
+	font-variant-numeric: tabular-nums;
+	background: #fff;
+}
+
+.ksg__th,
+.ksg__cell {
+	padding: 11px 14px;
+	text-align: center;
+	border-block-end: 1px solid var(--ksg-line);
+}
+
+.ksg__th {
+	background: var(--ksg-accent-soft);
+	font-size: 12.5px;
+	font-weight: 700;
+	color: var(--ksg-ink);
+	white-space: nowrap;
+}
+
+.ksg__unit-chip:not(:empty) {
+	display: inline-block;
+	margin-inline-start: 5px;
+	padding: 0 6px;
+	border: 1px solid var(--ksg-accent-line);
+	border-radius: 999px;
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 1.6;
+	color: var(--ksg-accent);
+	vertical-align: middle;
+}
+
+.ksg__tbody .ksg__row:last-child .ksg__cell,
+.ksg__table tbody tr:last-child th,
+.ksg__table tbody tr:last-child td {
+	border-block-end: 0;
+}
+
+.ksg__table tbody tr:nth-child(even) .ksg__cell,
+.ksg__table tbody tr:nth-child(even) .ksg__cell--head {
+	background: rgba(15, 23, 42, 0.022);
+}
+
+.ksg__table tbody tr:hover .ksg__cell,
+.ksg__table tbody tr:hover .ksg__cell--head {
+	background: var(--ksg-accent-soft);
+}
+
+.ksg__cell--head {
+	position: sticky;
+	inset-inline-start: 0;
+	z-index: 1;
+	min-inline-size: 78px;
+	background: #fff;
+	text-align: start;
+	font-weight: 700;
+	color: var(--ksg-ink);
+	border-inline-end: 1px solid var(--ksg-line);
+}
+
+.ksg__cell--measure {
+	font-feature-settings: "tnum" 1;
+}
+
+.ksg__cell--note {
+	color: var(--ksg-muted);
+	font-size: 12.5px;
+}
+
+.ksg__row.is-active .ksg__cell,
+.ksg__row.is-active .ksg__cell--head {
+	background: var(--ksg-accent-soft);
+}
+
+.ksg__row.is-active .ksg__cell--head {
+	color: var(--ksg-accent);
+}
+
+.ksg__row.is-active .ksg__cell--head::after {
+	content: "";
+	position: absolute;
+	inset-inline-start: 0;
+	inset-block: 0;
+	inline-size: 3px;
+	background: var(--ksg-accent);
+}
+
+.ksg__row {
+	cursor: default;
+	transition: background 0.15s ease;
+}
+
+.ksg__row[data-ksg-size] {
+	cursor: pointer;
+}
+
+/* ---------- نکته‌ها و تصویر ---------- */
+
+.ksg__extras {
+	display: grid;
+	grid-template-columns: minmax(0, 190px) minmax(0, 1fr);
+	gap: 18px;
+	align-items: start;
+	padding: 0 18px 18px;
+}
+
+.ksg__extras .ksg__notes:only-child,
+.ksg__extras .ksg__figure:only-child {
+	grid-column: 1 / -1;
+}
+
+.ksg__figure {
+	margin: 0;
+}
+
+.ksg__image {
+	display: block;
+	inline-size: 100%;
+	block-size: auto;
+	border-radius: 12px;
+	border: 1px solid var(--ksg-line);
+	object-fit: cover;
+}
+
+.ksg__figure figcaption {
+	margin-block-start: 6px;
+	font-size: 11px;
+	text-align: center;
+	color: var(--ksg-muted);
+}
+
+.ksg__tips {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.ksg__tips li {
+	position: relative;
+	padding-inline-start: 16px;
+	margin-block-end: 6px;
+	font-size: 12.5px;
+	color: #475569;
+}
+
+.ksg__tips li::before {
+	content: "";
+	position: absolute;
+	inset-inline-start: 2px;
+	inset-block-start: 0.62em;
+	inline-size: 6px;
+	block-size: 6px;
+	border-radius: 2px;
+	background: var(--ksg-accent);
+	opacity: 0.7;
+}
+
+.ksg__note {
+	margin: 8px 0 0;
+	padding-inline-start: 10px;
+	border-inline-start: 2px dashed var(--ksg-accent-line);
+	font-size: 12px;
+	color: var(--ksg-muted);
+}
+
+/* ---------- پانوشت ---------- */
+
+.ksg__foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 0 18px 16px;
+	font-size: 12px;
+	color: var(--ksg-muted);
+}
+
+.ksg__foot:empty {
+	display: none;
+}
+
+.ksg__hint {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.ksg__hint[hidden] {
+	display: none;
+}
+
+.ksg__hint-dot {
+	inline-size: 8px;
+	block-size: 8px;
+	border-radius: 50%;
+	background: var(--ksg-accent);
+	box-shadow: 0 0 0 0 var(--ksg-accent-line);
+	animation: ksg-pulse 2.2s ease-out infinite;
+}
+
+@keyframes ksg-pulse {
+	0% {
+		box-shadow: 0 0 0 0 var(--ksg-accent-line);
+	}
+	70% {
+		box-shadow: 0 0 0 8px rgba(0, 0, 0, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+	}
+}
+
+.ksg__print {
+	background: transparent;
+	border: 0;
+	color: var(--ksg-muted);
+	font: inherit;
+	font-size: 12px;
+	padding: 4px 6px;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.ksg__print:hover {
+	color: var(--ksg-accent);
+}
+
+.ksg__print:focus-visible {
+	outline: 2px solid var(--ksg-accent-line);
+}
+
+/* ---------- پنجرهٔ بزرگ‌نمایی ---------- */
+
+.ksg-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 99998;
+	display: grid;
+	place-items: center;
+	padding: 4vh 4vw;
+	background: rgba(15, 23, 42, 0.55);
+	backdrop-filter: blur(4px);
+	animation: ksg-fade 0.18s ease-out;
+}
+
+.ksg-overlay .ksg {
+	margin: 0;
+	inline-size: min(780px, 100%);
+	max-block-size: 92vh;
+	animation: ksg-rise 0.2s ease-out;
+}
+
+.ksg-overlay .ksg__inner {
+	max-block-size: 92vh;
+	overflow-y: auto;
+	box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.55);
+}
+
+.ksg-overlay .ksg__table {
+	font-size: 14px;
+}
+
+.ksg-overlay .ksg__close {
+	background: rgba(255, 255, 255, 0.16);
+}
+
+@keyframes ksg-fade {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes ksg-rise {
+	from {
+		opacity: 0;
+		transform: translateY(10px) scale(0.985);
+	}
+}
+
+html.ksg-lock,
+html.ksg-lock body {
+	overflow: hidden;
+}
+
+/* ---------- واکنش‌گرایی ---------- */
+
+@media (max-width: 640px) {
+	.ksg {
+		font-size: 13px;
+	}
+
+	.ksg__head {
+		padding: 12px 14px;
+	}
+
+	.ksg__tools {
+		inline-size: 100%;
+		justify-content: space-between;
+	}
+
+	.ksg__scroller,
+	.ksg__extras,
+	.ksg__foot,
+	.ksg__tabs {
+		padding-inline: 14px;
+	}
+
+	.ksg__extras {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.ksg__th,
+	.ksg__cell {
+		padding: 9px 10px;
+	}
+
+	.ksg__cell--head {
+		min-inline-size: 64px;
+	}
+
+	.ksg__table {
+		font-size: 12.5px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ksg *,
+	.ksg *::before,
+	.ksg *::after {
+		animation-duration: 0.001ms !important;
+		transition-duration: 0.001ms !important;
+	}
+}
+
+/* ---------- چاپ ---------- */
+
+@media print {
+	.ksg__tools,
+	.ksg__foot,
+	.ksg__close,
+	.ksg-overlay {
+		display: none !important;
+	}
+
+	.ksg {
+		margin: 0;
+		break-inside: avoid;
+	}
+
+	.ksg__inner {
+		box-shadow: none;
+		border-color: #000;
+	}
+
+	.ksg__head {
+		background: #fff;
+		color: #000;
+		border-block-end: 1px solid #000;
+	}
+
+	.ksg__title,
+	.ksg__subtitle {
+		color: #000;
+	}
+
+	.ksg__scroller {
+		overflow: visible;
+	}
+
+	.ksg__cell--head {
+		position: static;
+	}
+
+	.ksg__table tbody tr:nth-child(even) .ksg__cell {
+		background: #f4f4f5;
+	}
+}
