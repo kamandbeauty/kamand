@@ -1,0 +1,229 @@
+/**
+ * راهنمای سایز ووکامرس — استایل پیشخوان (از استودیو جاوید)
+ */
+
+.ksg-admin {
+	direction: rtl;
+}
+
+.ksg-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+
+.ksg-inline {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-inline-end: 6px;
+}
+
+.ksg-inline-label {
+	font-size: 13px;
+	color: #50575e;
+}
+
+.ksg-select,
+.ksg-input {
+	max-inline-size: 100%;
+	border-radius: 6px;
+}
+
+.ksg-textarea {
+	inline-size: 100%;
+	border-radius: 6px;
+	font-family: inherit;
+	margin-block: 6px;
+	direction: rtl;
+}
+
+.ksg-import {
+	padding: 12px;
+	margin-block-end: 14px;
+	border: 1px dashed #c3c4c7;
+	border-radius: 8px;
+	background: #fcfcfd;
+}
+
+.ksg-import[hidden] {
+	display: none;
+}
+
+.ksg-warning {
+	padding: 8px 12px;
+	margin-block-end: 12px;
+	border-inline-start: 4px solid #dba617;
+	background: #fcf9e8;
+	border-radius: 6px;
+}
+
+.ksg-empty {
+	padding: 18px;
+	text-align: center;
+	border: 1px dashed #c3c4c7;
+	border-radius: 8px;
+	background: #fcfcfd;
+}
+
+.ksg-columns {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+	gap: 10px;
+	margin-block-end: 6px;
+}
+
+.ksg-column {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	padding: 10px;
+	border: 1px solid #e2e4e7;
+	border-radius: 10px;
+	background: #fff;
+}
+
+.ksg-column .ksg-input {
+	flex: 1 1 120px;
+}
+
+.ksg-column .ksg-select {
+	flex: 1 1 100px;
+}
+
+.ksg-actions {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
+.ksg-grid {
+	margin-block-end: 14px;
+}
+
+.ksg-grid th {
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.ksg-cell-input {
+	inline-size: 100%;
+	min-inline-size: 70px;
+	border: 1px solid transparent;
+	background: transparent;
+	box-shadow: none;
+	text-align: center;
+}
+
+.ksg-cell-input:focus {
+	border-color: #2271b1;
+	background: #fff;
+}
+
+.ksg-grid-actions {
+	white-space: nowrap;
+	text-align: center;
+	inline-size: 130px;
+}
+
+.ksg-grid-actions .button {
+	margin-inline: 2px;
+}
+
+.ksg-extras {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 16px;
+	padding-block-start: 14px;
+	margin-block-start: 6px;
+	border-block-start: 1px solid #e2e4e7;
+}
+
+.ksg-extras strong {
+	display: block;
+	margin-block-end: 8px;
+}
+
+.ksg-tip-line {
+	display: flex;
+	gap: 6px;
+	margin-block-end: 6px;
+}
+
+.ksg-image-preview img {
+	display: block;
+	max-inline-size: 180px;
+	block-size: auto;
+	border-radius: 8px;
+	margin-block-end: 8px;
+}
+
+/* متاباکس محصول */
+
+.ksg-radio {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-inline-end: 16px;
+	margin-block-end: 6px;
+}
+
+.ksg-checklist {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 4px;
+	padding: 10px;
+	border: 1px solid #e2e4e7;
+	border-radius: 10px;
+	background: #fff;
+	max-block-size: 220px;
+	overflow-y: auto;
+}
+
+.ksg-sep {
+	margin-block: 16px;
+	border: 0;
+	border-block-start: 1px solid #e2e4e7;
+}
+
+.ksg-mode-panel[hidden] {
+	display: none;
+}
+
+.ksg-field {
+	margin-block-end: 10px;
+}
+
+/* صفحهٔ تنظیمات */
+
+.ksg-settings .ksg-intro {
+	max-inline-size: 720px;
+	color: #50575e;
+}
+
+.ksg-card {
+	max-inline-size: 720px;
+	padding: 16px 20px;
+	margin-block-start: 18px;
+	border: 1px solid #e2e4e7;
+	border-radius: 12px;
+	background: #fff;
+}
+
+.ksg-card h2 {
+	margin-block-start: 0;
+	font-size: 15px;
+}
+
+.ksg-settings .ksg-brand {
+	display: inline-block;
+	margin-inline-start: 10px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: #f0f6fc;
+	color: #2271b1;
+	font-size: 12px;
+}

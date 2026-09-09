@@ -1,16 +1,13 @@
-# Flutter / Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-build/
+# وردپرس / PHP
+vendor/
+composer.lock
+.phpunit.result.cache
+.phpcs-cache
 
-# Node / Web Preview
-node_modules/
-web_preview/node_modules/
-web_preview/dist/
-.npm/
+# خروجی‌های ساخت و پیش‌نمایش
+demo/
+tests/last-run.log
+*.log
 
 # IDE / OS
 .idea/
@@ -20,14 +17,9 @@ web_preview/dist/
 .DS_Store
 Thumbs.db
 
-# Android
-.gradle/
-local.properties
-capture*.png
-*.apk
-*.aab
-release/
-web_preview/public/FactorRuby*
+# Node (ابزارهای کمکی)
+node_modules/
 
-!release_package/FactorRuby-v5.8.0.apk
-!release_package/FactorRuby-v5.8.0-release.zip
+# بستهٔ نصب افزونه (خروجی ساخت)
+*.zip
+!javid-size-guide-1.0.0.zip

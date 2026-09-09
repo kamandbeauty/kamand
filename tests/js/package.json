@@ -1,0 +1,14 @@
+{
+  "name": "kamand-size-guide-frontend-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "آزمون رفتار اسکریپت فروشگاه افزونهٔ راهنمای سایز کمند در محیط jsdom",
+  "type": "module",
+  "scripts": {
+    "test": "node run-tests.mjs"
+  },
+  "license": "GPL-2.0-or-later",
+  "dependencies": {
+    "jsdom": "^25.0.1"
+  }
+}

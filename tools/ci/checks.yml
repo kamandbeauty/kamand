@@ -1,0 +1,67 @@
+# این فایل را در مسیر .github/workflows/checks.yml قرار دهید.
+# (افزودن مستقیم آن از این نشست ممکن نبود: برنامهٔ GitHub اجازهٔ تغییر .github/workflows را ندارد.)
+
+name: Plugin checks
+
+on:
+  push:
+    branches:
+      - "arena/01a085a1-kamand"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  php:
+    name: PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["7.4", "8.2", "8.3"]
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, json
+          coverage: none
+
+      - name: Lint plugin files
+        run: |
+          status=0
+          while IFS= read -r file; do
+            if ! php -l "$file" > /dev/null; then
+              php -l "$file"
+              status=1
+            fi
+          done < <(find kamand-size-guide tests tools -name '*.php' | sort)
+          exit "$status"
+
+      - name: Run smoke tests
+        run: php tests/run-tests.php
+
+  frontend:
+    name: Frontend behaviour (jsdom)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install test dependencies
+        run: npm ci
+        working-directory: tests/js
+
+      - name: Run frontend tests
+        run: node run-tests.mjs
+        working-directory: tests/js
