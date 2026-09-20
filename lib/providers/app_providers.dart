@@ -9,6 +9,8 @@ final userProvider = StateNotifierProvider<UserNotifier, UserModel>((ref) {
 });
 
 class UserNotifier extends StateNotifier<UserModel> {
+  late final Future<void> _hydrated;
+
   UserNotifier()
       : super(UserModel(
           id: 'u1',
@@ -20,8 +22,10 @@ class UserNotifier extends StateNotifier<UserModel> {
           usageType: '',
           isOnboarded: false,
         )) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     final saved = await PrefsStore.loadUser();
@@ -29,6 +33,7 @@ class UserNotifier extends StateNotifier<UserModel> {
   }
 
   Future<void> updateUser(UserModel user) async {
+    await _hydrated;
     state = user;
     await PrefsStore.saveUser(user);
   }
@@ -40,6 +45,8 @@ final businessProvider =
 });
 
 class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
+  late final Future<void> _hydrated;
+
   BusinessNotifier()
       : super(BusinessProfileModel(
           id: 'b1',
@@ -52,8 +59,10 @@ class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
           signaturePath: '',
           bankCards: const [],
         )) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     final saved = await PrefsStore.loadBusiness();
@@ -61,6 +70,7 @@ class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
   }
 
   Future<void> updateBusiness(BusinessProfileModel b) async {
+    await _hydrated;
     state = b;
     await PrefsStore.saveBusiness(b);
   }
@@ -72,6 +82,8 @@ final settingsProvider =
 });
 
 class SettingsNotifier extends StateNotifier<AppSettingsModel> {
+  late final Future<void> _hydrated;
+
   SettingsNotifier()
       : super(AppSettingsModel(
           startingInvoiceNum: 1,
@@ -86,8 +98,10 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
           pinEnabled: false,
           accentColor: 0xFFF97316,
         )) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     final saved = await PrefsStore.loadSettings();
@@ -95,6 +109,7 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
   }
 
   Future<void> updateSettings(AppSettingsModel s) async {
+    await _hydrated;
     state = s;
     await PrefsStore.saveSettings(s);
   }

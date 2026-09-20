@@ -127,7 +127,9 @@ class InvoiceListScreen extends ConsumerWidget {
                         onTap: () => _showDetail(context, ref, inv),
                         contentPadding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                         title: Text(
-                          inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName,
+                          inv.type == 'purchase'
+                              ? (inv.supplierName.isEmpty ? inv.customerName : inv.supplierName)
+                              : (inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName),
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 13,

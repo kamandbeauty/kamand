@@ -16,9 +16,13 @@ final selectedBankCardProvider = StateNotifierProvider<SelectedBankCardNotifier,
 });
 
 class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
+  late final Future<void> _hydrated;
+
   BankCardListNotifier() : super(const []) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     state = await PrefsStore.loadBankCards();
@@ -30,16 +34,30 @@ class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
 
   void addCard(BankCardModel c) {
     state = [...state, c];
+    _hydrated.then((_) {
+      if (!state.any((e) => e.id == c.id)) {
+        state = [...state, c];
+      }
+      _persist();
+    });
     _persist();
   }
 
   void updateCard(BankCardModel c) {
     state = [for (final e in state) if (e.id == c.id) c else e];
+    _hydrated.then((_) {
+      state = [for (final e in state) if (e.id == c.id) c else e];
+      _persist();
+    });
     _persist();
   }
 
   void deleteCard(String id) {
     state = state.where((e) => e.id != id).toList();
+    _hydrated.then((_) {
+      state = state.where((e) => e.id != id).toList();
+      _persist();
+    });
     _persist();
   }
 }
@@ -60,13 +78,17 @@ class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
   void sync(List<BankCardModel> cards) {
     if (cards.isEmpty) {
       state = null;
+      _selectedId = null;
       return;
     }
     final selected = cards.where((c) => c.id == _selectedId).toList();
     if (selected.isNotEmpty) {
       state = selected.first;
-    } else if (state == null) {
-      // اگر انتخاب قبلی وجود نداشت، اولین کارت انتخاب می‌شود.
+      return;
+    }
+    final current = state;
+    final currentExists = current != null && cards.any((c) => c.id == current.id);
+    if (!currentExists) {
       state = cards.first;
       _selectedId = cards.first.id;
       PrefsStore.saveSelectedBankCardId(cards.first.id);
@@ -77,6 +99,12 @@ class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
     _selectedId = card.id;
     state = card;
     PrefsStore.saveSelectedBankCardId(card.id);
+  }
+
+  void clearSelection() {
+    _selectedId = null;
+    state = null;
+    PrefsStore.clearSelectedBankCardId();
   }
 }
 

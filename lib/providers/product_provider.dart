@@ -11,10 +11,13 @@ final productListProvider =
 
 class ProductListNotifier extends StateNotifier<List<ProductModel>> {
   final AppDatabase? db;
+  late final Future<void> _hydrated;
 
   ProductListNotifier([this.db]) : super(const []) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     state = await PrefsStore.loadProducts();
@@ -25,9 +28,15 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
   }
 
   void addProduct(ProductModel product) {
+    // optimistic immediate
     state = [...state, product];
-    _persist();
-    db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
+    _hydrated.then((_) {
+      if (!state.any((p) => p.id == product.id)) {
+        state = [...state, product];
+      }
+      _persist();
+      db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
+    });
   }
 
   void updateProduct(ProductModel product) {
@@ -35,12 +44,21 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
       for (final item in state)
         if (item.id == product.id) product else item,
     ];
-    _persist();
-    db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
+    _hydrated.then((_) {
+      state = [
+        for (final item in state)
+          if (item.id == product.id) product else item,
+      ];
+      _persist();
+      db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
+    });
   }
 
   void deleteProduct(String id) {
     state = state.where((item) => item.id != id).toList();
-    _persist();
+    _hydrated.then((_) {
+      state = state.where((item) => item.id != id).toList();
+      _persist();
+    });
   }
 }

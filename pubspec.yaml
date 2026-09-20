@@ -1,7 +1,7 @@
 name: factor_ruby
 description: "فاکتور ساز روبی - اپلیکیشن اندرویدی صدور فاکتور و مدیریت مالی کسب‌وکار"
 publish_to: 'none'
-version: 1.0.4+4
+version: 1.0.7+9
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -15,9 +15,9 @@ dependencies:
   # State Management
   flutter_riverpod: ^2.5.1
 
-  # Local Database (raw sqlite3, no codegen)
-  sqlite3: ^2.4.0
-  sqlite3_flutter_libs: ^0.5.21
+  # Local Database (raw sqlite3, no codegen) - 16KB page size support for Android 15+
+  sqlite3: ^2.9.0
+  sqlite3_flutter_libs: ^0.5.39
 
   # Files & Paths
   path_provider: ^2.1.2

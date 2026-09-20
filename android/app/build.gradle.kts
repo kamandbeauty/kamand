@@ -84,8 +84,9 @@ val releaseSigningError = when {
 
 android {
     namespace = "com.ruby.factor_ruby"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // برای سازگاری با اندروید 15 و 16 و پشتیبانی از 16KB page size
+    compileSdk = 36
+    ndkVersion = "28.0.13004108"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -94,10 +95,16 @@ android {
 
     defaultConfig {
         applicationId = "com.ruby.factor_ruby"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     signingConfigs {

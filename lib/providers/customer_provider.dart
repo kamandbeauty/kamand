@@ -28,7 +28,6 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
   }
 
   Future<void> addCustomer(CustomerModel customer) async {
-    // تضمین کن اولین ذخیره بعد از hydrate شدن فهرست قبلی انجام شود.
     await _hydrated;
     state = [...state, customer];
     await PrefsStore.saveCustomers(state);
@@ -40,20 +39,39 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
       for (final item in state)
         if (item.id == customer.id) customer else item,
     ];
+    _hydrated.then((_) {
+      state = [
+        for (final item in state)
+          if (item.id == customer.id) customer else item,
+      ];
+      _persist();
+      db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
+    });
     _persist();
-    db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 
   void deleteCustomer(String id) {
     state = state.where((item) => item.id != id).toList();
+    _hydrated.then((_) {
+      state = state.where((item) => item.id != id).toList();
+      _persist();
+    });
     _persist();
   }
 
   void recordPayment(String id, double amount) {
+    if (amount <= 0) return;
     state = state.map((item) {
       if (item.id != id) return item;
       return _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble());
     }).toList();
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        return _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble());
+      }).toList();
+      _persist();
+    });
     _persist();
   }
 
@@ -62,6 +80,13 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
       if (item.id != id) return item;
       return _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble());
     }).toList();
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        return _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble());
+      }).toList();
+      _persist();
+    });
     _persist();
   }
 
