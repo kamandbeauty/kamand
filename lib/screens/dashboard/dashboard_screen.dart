@@ -244,13 +244,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<int> _nextInvoiceNumber() async {
-    final settings = await PrefsStore.loadSettings();
-    final invoices = await PrefsStore.loadInvoices();
-    var next = settings?.startingInvoiceNum ?? 1;
-    if (next < 1) next = 1;
-    for (final invoice in invoices) {
-      final number = int.tryParse(_faToEn(invoice.number).replaceAll(RegExp(r'\D'), ''));
-      if (number != null && number >= next) next = number + 1;
+    // اولویت با provider (تنظیمات به‌روز)، سپس PrefsStore برای سازگاری
+    int baseNext;
+    try {
+      baseNext = ref.read(settingsProvider).startingInvoiceNum;
+    } catch (_) {
+      final settings = await PrefsStore.loadSettings();
+      baseNext = settings?.startingInvoiceNum ?? 1;
+    }
+    if (baseNext < 1) baseNext = 1;
+
+    // فاکتورهای ذخیره‌شده از provider و prefs را با هم چک کن تا شماره تکراری نسازیم
+    final Set<int> usedNumbers = {};
+    try {
+      for (final inv in ref.read(invoiceListProvider)) {
+        final n = int.tryParse(_faToEn(inv.number).replaceAll(RegExp(r'\D'), ''));
+        if (n != null) usedNumbers.add(n);
+      }
+    } catch (_) {}
+    try {
+      final persisted = await PrefsStore.loadInvoices();
+      for (final invoice in persisted) {
+        final n = int.tryParse(_faToEn(invoice.number).replaceAll(RegExp(r'\D'), ''));
+        if (n != null) usedNumbers.add(n);
+      }
+    } catch (_) {}
+
+    var next = baseNext;
+    while (usedNumbers.contains(next)) {
+      next++;
+      if (next > 999999999) break;
     }
     return next;
   }
@@ -827,6 +850,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شماره فاکتور باید یک عدد مثبت باشد')));
       return;
     }
+    if (number > 999999999) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شماره فاکتور خیلی بزرگ است')));
+      return;
+    }
+    // جلوگیری از شماره تکراری
+    final existingNumbers = <int, String>{};
+    for (final inv in ref.read(invoiceListProvider)) {
+      if (_editId != null && inv.id == _editId) continue; // فاکتور فعلی را نادیده بگیر
+      final n = int.tryParse(_faToEn(inv.number).replaceAll(RegExp(r'\D'), ''));
+      if (n != null) existingNumbers[n] = inv.customerName;
+    }
+    if (existingNumbers.containsKey(number)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('شماره $number قبلاً استفاده شده (مشتری: ${existingNumbers[number]})')),
+      );
+      return;
+    }
     setState(() => _invoiceNumber = PersianNumberFormatter.toPersian(number.toString()));
   }
 
@@ -1140,6 +1181,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _removeRow(int idx) {
     setState(() {
       _items.removeAt(idx);
+      _productLinks.remove(idx);
+      // بعد از حذف، لینک‌های بعدی باید shift شوند تا overlay درست کار کند
+      final newLinks = <int, LayerLink>{};
+      _productLinks.forEach((key, link) {
+        if (key > idx) {
+          newLinks[key - 1] = link;
+        } else {
+          newLinks[key] = link;
+        }
+      });
+      _productLinks
+        ..clear()
+        ..addAll(newLinks);
       if (_items.isEmpty) {
         _items.add(InvoiceItemModel(id: '1', title: '', quantity: 1, unit: 'عدد', unitPrice: 0, totalPrice: 0, buyPrice: 0));
       }
@@ -1148,6 +1202,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       } else if (_selectedRow != null && _selectedRow! > idx) {
         _selectedRow = _selectedRow! - 1;
       }
+      _hideSuggestions();
     });
   }
 
@@ -1189,15 +1244,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     String numEn = _faToEn(_invoiceNumber).trim();
     if (numEn.isEmpty) numEn = '1';
+    final parsedNum = int.tryParse(numEn.replaceAll(RegExp(r'\D'), '')) ?? 1;
+    if (parsedNum <= 0 || parsedNum > 999999999) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شماره فاکتور نامعتبر است')));
+      return;
+    }
+
+    // بررسی تکراری بودن شماره (برای حالت ویرایش، فاکتور فعلی نادیده گرفته می‌شود)
+    final allInvoices = ref.read(invoiceListProvider);
+    final usedNumbers = <int>{};
+    for (final inv in allInvoices) {
+      if (_editId != null && inv.id == _editId) continue;
+      final n = int.tryParse(_faToEn(inv.number).replaceAll(RegExp(r'\D'), ''));
+      if (n != null) usedNumbers.add(n);
+    }
+    // همچنین از PrefsStore هم بخوان برای اطمینان
+    try {
+      final persisted = await PrefsStore.loadInvoices();
+      for (final inv in persisted) {
+        if (_editId != null && inv.id == _editId) continue;
+        final n = int.tryParse(_faToEn(inv.number).replaceAll(RegExp(r'\D'), ''));
+        if (n != null) usedNumbers.add(n);
+      }
+    } catch (_) {}
 
     if (!_isEditing) {
-      final persistedInvoices = await PrefsStore.loadInvoices();
-      final usedNumbers = persistedInvoices.map((invoice) => int.tryParse(_faToEn(invoice.number).trim())).whereType<int>().toSet();
-      var candidate = int.tryParse(numEn) ?? 1;
+      var candidate = parsedNum;
       while (usedNumbers.contains(candidate)) {
         candidate++;
+        if (candidate > 999999999) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شماره فاکتور تکراری است و شماره آزاد پیدا نشد')));
+          return;
+        }
       }
       numEn = candidate.toString();
+    } else {
+      // در حالت ویرایش، اگر شماره جدید تکراری باشد، خطا بده
+      if (usedNumbers.contains(parsedNum)) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('شماره $parsedNum قبلاً استفاده شده است')));
+        return;
+      }
+      numEn = parsedNum.toString();
     }
 
     final jalaliEn = JalaliHelper.getTodayJalali();

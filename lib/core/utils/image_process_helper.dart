@@ -135,6 +135,24 @@ class ImageProcessHelper {
       '${kind}_${DateTime.now().millisecondsSinceEpoch}.png',
     );
     await File(outPath).writeAsBytes(img.encodePng(decoded));
+
+    // پاکسازی فایل‌های قدیمی هم‌نوع برای جلوگیری از پر شدن حافظه (نگه‌داری ۵ فایل آخر)
+    try {
+      final files = folder
+          .listSync()
+          .whereType<File>()
+          .where((f) => p.basename(f.path).startsWith('${kind}_') && f.path.endsWith('.png'))
+          .toList()
+        ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+      if (files.length > 5) {
+        for (final old in files.skip(5)) {
+          try {
+            if (old.path != outPath) old.deleteSync();
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+
     return outPath;
   }
 }

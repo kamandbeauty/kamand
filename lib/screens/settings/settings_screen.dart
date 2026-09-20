@@ -630,14 +630,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     taxCtrl.dispose();
   }
 
+  String _faToEn(String s) {
+    const fa = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    const en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    var r = s;
+    for (int i = 0; i < 10; i++) {
+      r = r.replaceAll(fa[i], en[i]);
+    }
+    return r;
+  }
+
   Future<void> _editInvoiceSettings(
     BuildContext context,
     AppSettingsModel settings,
   ) async {
-    final startCtrl = TextEditingController(text: settings.startingInvoiceNum.toString());
-    String template = settings.templateStyle;
+    const allowedTemplates = {'modern', 'classic', 'simple'};
+    final safeTemplate = allowedTemplates.contains(settings.templateStyle)
+        ? settings.templateStyle
+        : 'modern';
+    final startCtrl = TextEditingController(
+      text: settings.startingInvoiceNum.toString(),
+    );
+    String template = safeTemplate;
     bool showLogo = settings.showLogo;
     bool showCard = settings.showCardNum;
+    bool showStamp = settings.showStamp;
+    bool showSignature = settings.showSignature;
 
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -653,7 +671,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             left: 20,
             right: 20,
             top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).viewPadding.bottom + 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom +
+                MediaQuery.of(ctx).viewPadding.bottom +
+                20,
           ),
           child: StatefulBuilder(
             builder: (ctx, setModal) {
@@ -673,12 +693,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'شماره شروع فاکتور بعدی',
+                        hintText: 'مثلاً ۱۰۰۱',
                         border: OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: template,
+                      value: allowedTemplates.contains(template) ? template : 'modern',
                       decoration: const InputDecoration(
                         labelText: 'قالب فاکتور',
                         border: OutlineInputBorder(),
@@ -706,6 +727,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       activeColor: _orange,
                       onChanged: (v) => setModal(() => showCard = v),
                     ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('نمایش مهر روی فاکتور'),
+                      subtitle: const Text('مهر و امضا با یک تصویر نمایش داده می‌شود'),
+                      value: showStamp,
+                      activeColor: _orange,
+                      onChanged: (v) => setModal(() {
+                        showStamp = v;
+                        // برای سازگاری با منطق تک‌تصویری مهر/امضا، هر دو با هم تغییر کنند
+                        showSignature = v;
+                      }),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('نمایش امضا روی فاکتور'),
+                      value: showSignature,
+                      activeColor: _orange,
+                      onChanged: (v) => setModal(() {
+                        showSignature = v;
+                        showStamp = v;
+                      }),
+                    ),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 48,
@@ -731,12 +774,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (saved == true && mounted) {
+      final raw = _faToEn(startCtrl.text.trim()).replaceAll(RegExp(r'[^0-9]'), '');
+      final parsed = int.tryParse(raw);
+      if (parsed == null || parsed <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('شماره شروع باید عدد مثبت باشد')),
+          );
+        }
+        startCtrl.dispose();
+        return;
+      }
+      if (parsed > 999999999) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('شماره شروع خیلی بزرگ است')),
+          );
+        }
+        startCtrl.dispose();
+        return;
+      }
       ref.read(settingsProvider.notifier).updateSettings(
             settings.copyWith(
-              startingInvoiceNum: int.tryParse(startCtrl.text.trim()) ?? settings.startingInvoiceNum,
-              templateStyle: template,
+              startingInvoiceNum: parsed,
+              templateStyle: allowedTemplates.contains(template) ? template : 'modern',
               showLogo: showLogo,
               showCardNum: showCard,
+              showStamp: showStamp,
+              showSignature: showSignature,
             ),
           );
       ScaffoldMessenger.of(context).showSnackBar(

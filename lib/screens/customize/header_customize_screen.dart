@@ -106,14 +106,57 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
     try {
       final biz = ref.read(businessProvider);
       final st = ref.read(settingsProvider);
+
+      // null = بدون تغییر، '' = حذف، مسیر = جدید
+      final String newLogoPath;
+      if (_logoPath == null) {
+        newLogoPath = biz.logoPath;
+      } else {
+        newLogoPath = _logoPath!;
+      }
+      final String newStampPath;
+      if (_stampPath == null) {
+        newStampPath = biz.stampPath;
+      } else {
+        newStampPath = _stampPath!;
+      }
+      final String newSignaturePath;
+      if (_stampPath == null) {
+        newSignaturePath = biz.signaturePath;
+      } else {
+        newSignaturePath = _stampPath!;
+      }
+
+      // حذف فایل قدیمی اگر فایل جدید جایگزین یا حذف شده
+      void tryDeleteOld(String oldPath, String newPath) {
+        if (oldPath.isEmpty) return;
+        if (oldPath == newPath) return;
+        try {
+          final f = File(oldPath);
+          if (f.existsSync()) f.deleteSync();
+        } catch (_) {}
+      }
+
+      // فقط وقتی مسیر واقعا عوض شده یا حذف شده، فایل قدیمی را پاک کن
+      if (_logoPath != null && _logoPath != biz.logoPath) {
+        tryDeleteOld(biz.logoPath, newLogoPath);
+      }
+      if (_stampPath != null && _stampPath != biz.stampPath) {
+        tryDeleteOld(biz.stampPath, newStampPath);
+        // signaturePath قدیمی هم از همان فایل مهر استفاده می‌کرد
+        if (biz.signaturePath.isNotEmpty && biz.signaturePath != biz.stampPath) {
+          tryDeleteOld(biz.signaturePath, newSignaturePath);
+        }
+      }
+
       final updated = biz.copyWith(
         shopName: _nameCtrl.text.trim().isEmpty ? biz.shopName : _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
         address: _descCtrl.text.trim(),
-        logoPath: _logoPath ?? biz.logoPath,
-        stampPath: _stampPath ?? '',
+        logoPath: newLogoPath,
+        stampPath: newStampPath,
         // یک تصویر واحد برای مهر و امضا استفاده می‌شود.
-        signaturePath: _stampPath ?? biz.signaturePath,
+        signaturePath: newSignaturePath,
       );
       await ref.read(businessProvider.notifier).updateBusiness(updated);
       await ref.read(settingsProvider.notifier).updateSettings(
