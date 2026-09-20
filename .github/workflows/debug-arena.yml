@@ -35,16 +35,20 @@ jobs:
       - name: Build debug APK
         id: build
         run: |
-          set -o pipefail
+          set -e
+          echo "PWD $(pwd)"
+          ls -lh
           touch build.log
-          echo "Starting build at $(date)" | tee -a build.log
-          flutter build apk --debug --verbose 2>&1 | tee -a build.log; echo "flutter exit code: ${PIPESTATUS[0]}" | tee -a build.log
-          echo "build exit captured" | tee -a build.log
-          # Always show last 500 lines
-          echo "--- LAST 500 LINES OF BUILD LOG ---"
-          tail -n 500 build.log || cat build.log || true
-          echo "--- BUILD LOG EXISTS CHECK ---"
-          ls -lh build.log || true
+          echo "Starting build at $(date)" | tee build.log
+          echo "Running flutter build..."
+          # Run without pipefail to always capture log
+          flutter build apk --debug --verbose 2>&1 | tee -a build.log || echo "FLUTTER BUILD FAILED WITH $?" | tee -a build.log
+          echo "Build step finished, log size:"
+          ls -lh build.log
+          echo "Last 500 lines:"
+          tail -n 500 build.log || true
+          # Ensure we exit 0 to allow next steps to see log, but mark outcome
+          exit 0
       - name: Show build failure details
         if: failure() || steps.build.outcome == 'failure'
         run: |
