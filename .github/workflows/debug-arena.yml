@@ -62,25 +62,57 @@ jobs:
           name: debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: warn
-      - name: Commit logs to branch for debugging
+      - name: Show logs inline
+        if: always()
+        run: |
+          echo "=== ANALYZE LOG ==="
+          cat analyze.log || true
+          echo ""
+          echo "=== BUILD LOG LAST 1000 LINES ==="
+          tail -n 1000 build.log || true
+          echo ""
+          echo "=== BUILD LOG GREP ERRORS ==="
+          grep -i -A2 -B2 "error\|FAILURE\|Exception" build.log | tail -n 500 || true
+      - name: Save logs to repo for sandbox retrieval
         if: always()
         run: |
           set -x
+          mkdir -p /tmp/logs
+          cp -v analyze.log /tmp/logs/ 2>&1 || true
+          cp -v build.log /tmp/logs/ 2>&1 || true
+          # Create a file with error summary that we can commit
+          echo "# Build Log for run ${{ github.run_id }}" > build_failure.md
+          echo "" >> build_failure.md
+          echo "## Analyze" >> build_failure.md
+          cat analyze.log >> build_failure.md 2>&1 || true
+          echo "" >> build_failure.md
+          echo "## Build last 2000 lines" >> build_failure.md
+          tail -n 2000 build.log >> build_failure.md 2>&1 || true
+          echo "" >> build_failure.md
+          echo "## Errors" >> build_failure.md
+          grep -i -E "error|failure|exception" build.log | tail -n 300 >> build_failure.md 2>&1 || true
+          # Commit to logs branch
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          pwd
-          ls -lh *.log || true
-          mkdir -p /tmp/logs
-          cp -v analyze.log /tmp/logs/ || true
-          cp -v build.log /tmp/logs/ || true
-          ls -lh /tmp/logs/
-          # Checkout a new branch for logs
+          git fetch origin arena/logs-debug || true
           git checkout -B arena/logs-debug
-          cp -v /tmp/logs/analyze.log ./analyze.log || true
-          cp -v /tmp/logs/build.log ./build.log || true
-          ls -lh *.log || true
-          git add -f analyze.log build.log || true
-          git status || true
-          git commit -m "ci: add build logs from failed run ${{ github.run_id }}" || true
-          git push origin arena/logs-debug --force
-          echo "pushed logs branch"
+          cp -v /tmp/logs/analyze.log ./analyze.log 2>&1 || true
+          cp -v /tmp/logs/build.log ./build.log 2>&1 || true
+          cp -v build_failure.md ./build_failure.md 2>&1 || true
+          git add -f analyze.log build.log build_failure.md 2>&1 || true
+          git status 2>&1 || true
+          git commit -m "ci: logs for run ${{ github.run_id }}" 2>&1 || true
+          git push origin arena/logs-debug --force 2>&1 || true
+      - name: Comment PR with failure summary
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find PR for this branch
+          PR_NUM=$(gh pr list --head arena/01a0bed4-kamand --json number --jq '.[0].number' 2>&1 || echo "18")
+          echo "PR is $PR_NUM"
+          if [ -n "$PR_NUM" ] && [ "$PR_NUM" != "null" ]; then
+            tail -n 500 build.log > /tmp/tail.log 2>&1 || true
+            gh pr comment $PR_NUM --body-file /tmp/tail.log 2>&1 || true
+            gh pr comment $PR_NUM --body "Build failed for run ${{ github.run_id }}. See arena/logs-debug branch for full logs." 2>&1 || true
+          fi
