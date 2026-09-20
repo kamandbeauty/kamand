@@ -17,7 +17,6 @@ import '../../providers/invoice_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/supplier_provider.dart';
-import '../../providers/expense_provider.dart';
 import '../customer/customer_list_screen.dart';
 import '../product/product_list_screen.dart';
 import '../settings/settings_screen.dart';

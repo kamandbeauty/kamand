@@ -229,10 +229,16 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                             children: [
                               if (s.mobile.isNotEmpty || s.phone.isNotEmpty)
                                 Text(s.mobile.isNotEmpty ? s.mobile : s.phone, textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 11, color: _slate500)),
-                              if (s.balance > 0)
-                                Text('بدهی: ${PersianNumberFormatter.formatCurrency(s.balance)}', style: const TextStyle(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.w700)),
-                              else
-                                const Text('تسویه شده', style: TextStyle(fontSize: 10, color: Color(0xFF059669), fontWeight: FontWeight.w700)),
+                              Text(
+                                s.balance > 0
+                                    ? 'بدهی: ${PersianNumberFormatter.formatCurrency(s.balance)}'
+                                    : 'تسویه شده',
+                                style: TextStyle(
+                                  fontSize: s.balance > 0 ? 11 : 10,
+                                  color: s.balance > 0 ? Colors.redAccent : const Color(0xFF059669),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ],
                           ),
                           trailing: PopupMenuButton(

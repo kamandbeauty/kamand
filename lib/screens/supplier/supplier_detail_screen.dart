@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
 import '../../models/supplier_model.dart';
-import '../../providers/supplier_provider.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/expense_provider.dart';
 

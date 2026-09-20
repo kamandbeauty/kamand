@@ -105,7 +105,7 @@ class _AccountingSummaryScreenState extends ConsumerState<AccountingSummaryScree
     int purchaseCount = 0;
 
     // برای محاسبه دقیق سود، اگر buyPrice صفر بود از کاتالوگ محصولات استفاده کن
-    final productMap = {for (var p in products) p.id: p, for (var p in products) p.name: p};
+    final Map<String, dynamic> productMap = {for (var p in products) p.id: p, for (var p in products) p.name: p};
 
     for (final inv in filteredInvoices) {
       if (inv.type == 'sale') {
@@ -495,12 +495,12 @@ class _AccountingSummaryScreenState extends ConsumerState<AccountingSummaryScree
     );
   }
 
-  List<dynamic> _filterExpensesByPeriod(List<dynamic> expenses) {
+  List _filterExpensesByPeriod(List expenses) {
     if (_selectedPeriod == 'all') return expenses;
     
     return expenses.where((exp) {
       try {
-        final dateStr = _faToEn(exp.date ?? '');
+        final dateStr = _faToEn((exp.date as String?) ?? '');
         final match = RegExp(r'(\d{4})[/\-](\d{1,2})').firstMatch(dateStr);
         if (match == null) return true;
         
@@ -530,7 +530,7 @@ class _AccountingSummaryScreenState extends ConsumerState<AccountingSummaryScree
     }).toList();
   }
 
-  Map<String, Map<String, double>> _calculateMonthlyData(List<InvoiceModel> invoices, List<dynamic> expenses, Map<String, dynamic> productMap) {
+  Map<String, Map<String, double>> _calculateMonthlyData(List<InvoiceModel> invoices, List expenses, Map<String, dynamic> productMap) {
     final monthly = <String, Map<String, double>>{};
     
     for (final inv in invoices) {
