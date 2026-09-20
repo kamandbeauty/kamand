@@ -57,6 +57,26 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
     if (_busy || _previewBytes == null) return;
     setState(() => _busy = true);
     try {
+      // نمایش دیالوگ لودینگ برای جلوگیری از خاکستری شدن صفحه
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                ),
+                SizedBox(width: 12),
+                Text('در حال پردازش تصویر...'),
+              ],
+            ),
+            duration: Duration(seconds: 30),
+          ),
+        );
+      }
+
       final path = await ImageProcessHelper.processAndSave(
         bytes: _previewBytes!,
         kind: widget.kind,
@@ -65,17 +85,35 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
         right: _right,
         bottom: _bottom,
         removeWhite: widget.kind == 'logo' ? false : _removeWhite,
+      ).timeout(
+        const Duration(seconds: 35),
+        onTimeout: () => throw Exception('پردازش تصویر زمان‌بر شد، لطفاً دوباره تلاش کنید'),
       );
+
       if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       Navigator.pop(context, path);
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطا در پردازش تصویر: $e')),
+          SnackBar(
+            content: Text('خطا در پردازش تصویر: $e'),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+        // اطمینان از حذف اسنک‌بار لودینگ
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          }
+        });
+      }
     }
   }
 
