@@ -34,43 +34,77 @@ jobs:
           cat analyze.log
       - name: Build debug APK
         id: build
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -x
           echo "PWD $(pwd)"
           ls -lh
-          rm -f build.log
+          rm -f build.log build.log.from_build
           touch build.log
           echo "Starting build at $(date)" | tee build.log
           echo "Running flutter build..."
           # Run without pipefail to always capture log
-          flutter build apk --debug --verbose 2>&1 | tee -a build.log || echo "FLUTTER BUILD FAILED WITH $?" | tee -a build.log
+          flutter build apk --debug --verbose 2>&1 | tee -a build.log; echo "flutter exit: $?" | tee -a build.log
           echo "Build step finished, log size:"
           ls -lh build.log || true
-          echo "Last 1000 lines:"
-          tail -n 1000 build.log || true
-          echo "--- Creating issue from this step ---"
-          echo "# Build Log for run ${{ github.run_id }} (from build step)" > /tmp/from_build.md
-          echo "" >> /tmp/from_build.md
-          echo "## LS" >> /tmp/from_build.md
-          ls -lh >> /tmp/from_build.md 2>&1 || true
-          echo "" >> /tmp/from_build.md
-          echo "## Build log tail" >> /tmp/from_build.md
-          tail -n 3000 build.log >> /tmp/from_build.md 2>&1 || true
-          gh issue create --title "Build log for run ${{ github.run_id }} - from build step" --body-file /tmp/from_build.md 2>&1 || true
-          # Also copy to workspace root for next steps
-          cp build.log ./build.log.from_build || true
-          ls -lh build.log* || true
-          # Ensure we exit 0 to allow next steps to see log, but mark outcome via file
-          # Check if apk was built
-          if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
-            echo "APK built successfully"
-          else
-            echo "APK NOT FOUND, build failed"
-            # Still exit 0 to allow diagnostics, but we will fail later
-          fi
-          exit 0
+          echo "Last 2000 lines:"
+          tail -n 2000 build.log || true
+          # Save copy for next steps
+          cp build.log build.log.from_build || true
+          cp build.log /tmp/build.log.copy || true
+          ls -lh build.log* /tmp/build.log.copy || true
+      - name: Create issue from build step
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = "# Build Log for run ${{ github.run_id }} (from build step)\n\n";
+            try {
+              body += "## LS root\n```\n";
+              body += fs.readdirSync('.').join('\n') + "\n```\n\n";
+            } catch(e) { body += "LS failed: " + e + "\n"; }
+            try {
+              const stat = fs.statSync('build.log');
+              body += `## build.log exists: ${stat.size} bytes\n\n`;
+            } catch(e) {
+              body += "## build.log NOT FOUND\n\n";
+              try {
+                const stat2 = fs.statSync('build.log.from_build');
+                body += `## build.log.from_build exists: ${stat2.size} bytes\n\n`;
+              } catch(e2) {
+                body += "## build.log.from_build also NOT FOUND\n\n";
+              }
+              try {
+                const tmp = fs.statSync('/tmp/build.log.copy');
+                body += `## /tmp/build.log.copy exists: ${tmp.size} bytes\n\n`;
+              } catch(e3) {
+                body += "## /tmp/build.log.copy NOT FOUND\n\n";
+              }
+            }
+            let logContent = "";
+            try {
+              logContent = fs.readFileSync('build.log', 'utf8');
+            } catch(e) {
+              try { logContent = fs.readFileSync('build.log.from_build', 'utf8'); } catch(e2) {
+                try { logContent = fs.readFileSync('/tmp/build.log.copy', 'utf8'); } catch(e3) {
+                  logContent = "No build log found in any location";
+                }
+              }
+            }
+            body += "## Build log tail (last 5000 chars)\n```\n" + logContent.slice(-5000) + "\n```\n\n";
+            body += "## Build log head (first 3000 chars)\n```\n" + logContent.slice(0,3000) + "\n```\n";
+            // Also try to read analyze.log
+            try {
+              const analyze = fs.readFileSync('analyze.log', 'utf8');
+              body += "\n## Analyze log\n```\n" + analyze.slice(0,2000) + "\n```\n";
+            } catch(e) {}
+            // Create issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Build log for run ${{ github.run_id }} - from build step (github-script)`,
+              body: body
+            });
       - name: Show build failure details
         if: failure() || steps.build.outcome == 'failure'
         run: |
