@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   debug:
@@ -75,6 +77,8 @@ jobs:
           grep -i -A2 -B2 "error\|FAILURE\|Exception" build.log | tail -n 500 || true
       - name: Save logs to repo for sandbox retrieval
         if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -x
           ls -lh *.log || true
@@ -93,6 +97,11 @@ jobs:
           # Also try to create GitHub issue with logs via API (visible in sandbox via gh issue list)
           echo "Creating issue with logs..."
           gh issue create --title "Build log for run ${{ github.run_id }}" --body-file build_failure.md 2>&1 || true
+          echo "--- trying to comment PR with logs ---"
+          PR_NUM=$(gh pr list --head arena/01a0bed4-kamand --json number --jq '.[0].number' 2>&1 || echo "")
+          if [ -n "$PR_NUM" ] && [ "$PR_NUM" != "null" ] && [ "$PR_NUM" != "" ]; then
+            gh pr comment $PR_NUM --body-file build_failure.md 2>&1 || true
+          fi
       - name: Comment PR with failure summary
         if: failure()
         env:
