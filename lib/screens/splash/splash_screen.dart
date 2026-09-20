@@ -47,13 +47,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _goNext() async {
     if (!mounted) return;
-    // قبل از تصمیم‌گیری، کاربر ذخیره‌شده را بخوان تا آنبوردینگ فقط یک‌بار دیده شود.
+    // کاربر درخواست کرده اسم و شهر در اجرای اول پرسیده نشود
+    // بنابراین همیشه مستقیم به داشبورد می‌رویم و کاربر را onboarded می‌کنیم
     final savedUser = await PrefsStore.loadUser();
     if (!mounted) return;
-    final isOnboarded = savedUser?.isOnboarded ?? ref.read(userProvider).isOnboarded;
-    final next = isOnboarded
-        ? const DashboardScreen()
-        : const OnboardingScreen();
+    
+    // اگر کاربر ذخیره نشده یا onboarded نیست، به صورت خودکار onboarded کن
+    if (savedUser == null || !savedUser.isOnboarded) {
+      final defaultUser = savedUser?.copyWith(isOnboarded: true) ?? 
+        ref.read(userProvider).copyWith(isOnboarded: true);
+      // اگر هنوز ذخیره نشده، با مقادیر پیش‌فرض ذخیره کن
+      if (savedUser == null) {
+        await PrefsStore.saveUser(defaultUser.copyWith(
+          name: 'کاربر',
+          city: '',
+          isOnboarded: true,
+        ));
+      } else {
+        await PrefsStore.saveUser(defaultUser);
+      }
+    }
+    
+    const next = DashboardScreen();
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(

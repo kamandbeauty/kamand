@@ -14,13 +14,13 @@ class UserNotifier extends StateNotifier<UserModel> {
   UserNotifier()
       : super(UserModel(
           id: 'u1',
-          name: '',
+          name: 'کاربر',
           phone: '',
-          country: '',
+          country: 'ایران',
           province: '',
           city: '',
-          usageType: '',
-          isOnboarded: false,
+          usageType: 'store',
+          isOnboarded: true,
         )) {
     _hydrated = _hydrate();
   }
