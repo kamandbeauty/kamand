@@ -418,28 +418,36 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Header
+                        // Header - respects showLogo setting
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              // اطراف لوگوی انتخاب‌شده نباید با رنگ تم پر شود؛
-                              // خود تصویر (ازجمله پس‌زمینهٔ سفیدش) دست‌نخورده می‌ماند.
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              alignment: Alignment.center,
-                              clipBehavior: Clip.antiAlias,
-                              child: biz.logoPath.isNotEmpty && File(biz.logoPath).existsSync()
-                                  ? Image.file(
-                                      File(biz.logoPath),
-                                      width: 64,
-                                      height: 64,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => Text(
+                            if (settingsWatch.showLogo)
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                alignment: Alignment.center,
+                                clipBehavior: Clip.antiAlias,
+                                child: biz.logoPath.isNotEmpty && File(biz.logoPath).existsSync()
+                                    ? Image.file(
+                                        File(biz.logoPath),
+                                        width: 64,
+                                        height: 64,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) => Text(
+                                          'ف',
+                                          style: TextStyle(
+                                            color: accent,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 22,
+                                          ),
+                                        ),
+                                      )
+                                    : Text(
                                         'ف',
                                         style: TextStyle(
                                           color: accent,
@@ -447,16 +455,25 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                                           fontSize: 22,
                                         ),
                                       ),
-                                    )
-                                  : Text(
-                                      'ف',
-                                      style: TextStyle(
-                                        color: accent,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 22,
-                                      ),
-                                    ),
-                            ),
+                              )
+                            else
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: accent.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  'ف',
+                                  style: TextStyle(
+                                    color: accent,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -523,20 +540,27 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             color: _cardGray,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  'خریدار: ${inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName}',
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      inv.type == 'purchase'
+                                          ? 'تامین‌کننده: ${inv.supplierName.isEmpty ? inv.customerName : inv.supplierName}'
+                                          : 'خریدار: ${inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName}',
+                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                                    ),
+                                  ),
+                                  if (inv.customerPhone.isNotEmpty && inv.type != 'purchase')
+                                    Text(
+                                      inv.customerPhone,
+                                      style: const TextStyle(fontSize: 11, color: _slate500),
+                                      textDirection: TextDirection.ltr,
+                                    ),
+                                ],
                               ),
-                              if (inv.customerPhone.isNotEmpty)
-                                Text(
-                                  inv.customerPhone,
-                                  style: const TextStyle(fontSize: 11, color: _slate500),
-                                  textDirection: TextDirection.ltr,
-                                ),
                             ],
                           ),
                         ),
@@ -638,6 +662,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             color: const Color(0xFF059669),
                           ),
                         if (inv.shippingFee > 0) _totalRow('هزینه ارسال', inv.shippingFee),
+                        if (inv.expenseAmount > 0) _totalRow(inv.expenseTitle.isNotEmpty ? inv.expenseTitle : 'هزینه', inv.expenseAmount, color: const Color(0xFFE11D48)),
                         if (inv.previousDebt > 0)
                           _totalRow('بدهی قبلی', inv.previousDebt, color: const Color(0xFFE11D48)),
                         if (inv.deposit > 0)
@@ -677,7 +702,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             style: const TextStyle(fontSize: 11, color: _slate500, height: 1.4),
                           ),
                         ],
-if (inv.cardNumber.isNotEmpty) ...[
+                        if (settingsWatch.showCardNum && inv.cardNumber.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Builder(builder: (_) {
                             final cards = ref.watch(bankCardListProvider);
@@ -842,35 +867,35 @@ if (inv.cardNumber.isNotEmpty) ...[
                           }),
                         ],
                         const SizedBox(height: 20),
-                        // مهر و امضا از یک تصویر واحد در پایین فاکتور نمایش داده می‌شود.
+                        // مهر و امضا از یک تصویر واحد - با رعایت تنظیمات showStamp/showSignature
                         Builder(builder: (_) {
                           final settings = ref.watch(settingsProvider);
                           final markPath = biz.stampPath.isNotEmpty
                               ? biz.stampPath
                               : biz.signaturePath;
-                          final showMark = settings.showStamp && markPath.isNotEmpty;
+                          final showMark = (settings.showStamp || settings.showSignature) &&
+                              markPath.isNotEmpty &&
+                              File(markPath).existsSync();
+                          if (!showMark) return const SizedBox.shrink();
                           return Align(
                             alignment: Alignment.centerLeft,
                             child: SizedBox(
                               width: 160,
                               child: Column(
                                 children: [
-                                  if (showMark)
-                                    Container(
-                                      height: 72,
-                                      width: 150,
-                                      alignment: Alignment.center,
-                                      color: Colors.transparent,
-                                      child: Image.file(
-                                        File(markPath),
-                                        height: 64,
-                                        fit: BoxFit.contain,
-                                        filterQuality: FilterQuality.high,
-                                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                      ),
-                                    )
-                                  else
-                                    const SizedBox(height: 56),
+                                  Container(
+                                    height: 72,
+                                    width: 150,
+                                    alignment: Alignment.center,
+                                    color: Colors.transparent,
+                                    child: Image.file(
+                                      File(markPath),
+                                      height: 64,
+                                      fit: BoxFit.contain,
+                                      filterQuality: FilterQuality.high,
+                                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
                                   const Text(
                                     'مهر و امضا',

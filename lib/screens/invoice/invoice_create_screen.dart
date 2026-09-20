@@ -71,6 +71,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   String _notes = 'با تشکر از خرید شما';
 
   double get _subtotal => _items.fold(0, (sum, i) => sum + i.totalPrice);
+  double get _totalBuy => _items.fold(0, (sum, i) => sum + i.totalBuyPrice);
+  double get _totalProfit => _items.fold(0, (sum, i) => sum + i.totalProfit);
   double get _totalAmount => (_subtotal - _discountAmount + _shippingFee).clamp(0, double.infinity);
 
   void _addItem() {
@@ -83,6 +85,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
           unit: 'عدد',
           unitPrice: 100000,
           totalPrice: 100000,
+          buyPrice: 0,
         ),
       );
     });
@@ -139,6 +142,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
       notes: _notes,
       cardNumber: cardNum,
       createdAt: _date,
+      totalBuyAmount: _totalBuy,
+      profitAmount: _totalProfit,
     );
 
     ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
@@ -239,6 +244,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                                 unit: item.unit,
                                 unitPrice: item.unitPrice,
                                 totalPrice: item.quantity * item.unitPrice,
+                                buyPrice: item.buyPrice,
+                                productId: item.productId,
                               );
                               setState(() {});
                             },
@@ -260,6 +267,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                                       unit: item.unit,
                                       unitPrice: item.unitPrice,
                                       totalPrice: q * item.unitPrice,
+                                      buyPrice: item.buyPrice,
+                                      productId: item.productId,
                                     );
                                     setState(() {});
                                   },
@@ -280,6 +289,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                                       unit: item.unit,
                                       unitPrice: p,
                                       totalPrice: item.quantity * p,
+                                      buyPrice: item.buyPrice,
+                                      productId: item.productId,
                                     );
                                     setState(() {});
                                   },

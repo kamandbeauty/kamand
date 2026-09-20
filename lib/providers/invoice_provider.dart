@@ -31,8 +31,6 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   }
 
   Future<void> saveInvoice(InvoiceModel invoice) async {
-    // اگر کاربر خیلی سریع ذخیره کند، hydrate نباید فهرست تازه را با لیست قدیمی
-    // جایگزین کند و باعث ناپدید شدن فاکتور شود.
     await _hydrated;
     final index = state.indexWhere((i) => i.id == invoice.id);
     state = index >= 0
@@ -60,10 +58,28 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   Future<InvoiceModel> copyInvoice(InvoiceModel source) async {
     await _hydrated;
 
+    // شماره بعدی: max موجود +1، با در نظر گرفتن startingInvoiceNum
     var nextNumber = 1;
+    try {
+      final settings = await PrefsStore.loadSettings();
+      if (settings != null && settings.startingInvoiceNum > nextNumber) {
+        nextNumber = settings.startingInvoiceNum;
+      }
+    } catch (_) {}
+
+    final used = <int>{};
+    for (final invoice in state) {
+      final n = int.tryParse(_toEnglishDigits(invoice.number).trim());
+      if (n != null) used.add(n);
+    }
+    // اگر شماره شروع تکراری بود، افزایش بده
     for (final invoice in state) {
       final number = int.tryParse(_toEnglishDigits(invoice.number).trim());
       if (number != null && number >= nextNumber) nextNumber = number + 1;
+    }
+    while (used.contains(nextNumber)) {
+      nextNumber++;
+      if (nextNumber > 999999999) break;
     }
 
     final copied = InvoiceModel(
@@ -85,6 +101,8 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
               unit: item.unit,
               unitPrice: item.unitPrice,
               totalPrice: item.totalPrice,
+              buyPrice: item.buyPrice,
+              productId: item.productId,
             ),
           )
           .toList(),
@@ -102,6 +120,12 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       cardBank: source.cardBank,
       cardOwner: source.cardOwner,
       createdAt: source.createdAt,
+      supplierId: source.supplierId,
+      supplierName: source.supplierName,
+      totalBuyAmount: source.totalBuyAmount,
+      profitAmount: source.profitAmount,
+      expenseAmount: source.expenseAmount,
+      expenseTitle: source.expenseTitle,
     );
 
     state = [...state, copied];
@@ -126,6 +150,45 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   }
 
   void convertProformaToInvoice(String id) {
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        return InvoiceModel(
+          id: item.id,
+          number: item.number,
+          customerId: item.customerId,
+          customerName: item.customerName,
+          customerPhone: item.customerPhone,
+          type: 'sale',
+          paymentType: item.paymentType,
+          status: item.remainingAmount == 0 ? 'paid' : 'unpaid',
+          date: item.date,
+          items: item.items,
+          subtotal: item.subtotal,
+          discountPercent: item.discountPercent,
+          discountAmount: item.discountAmount,
+          shippingFee: item.shippingFee,
+          previousDebt: item.previousDebt,
+          deposit: item.deposit,
+          totalAmount: item.totalAmount,
+          paidAmount: item.paidAmount,
+          remainingAmount: item.remainingAmount,
+          notes: item.notes,
+          cardNumber: item.cardNumber,
+          cardBank: item.cardBank,
+          cardOwner: item.cardOwner,
+          createdAt: item.createdAt,
+          supplierId: item.supplierId,
+          supplierName: item.supplierName,
+          totalBuyAmount: item.totalBuyAmount,
+          profitAmount: item.profitAmount,
+          expenseAmount: item.expenseAmount,
+          expenseTitle: item.expenseTitle,
+        );
+      }).toList();
+      _persist();
+    });
+    // optimistic
     state = state.map((item) {
       if (item.id != id) return item;
       return InvoiceModel(
@@ -153,15 +216,62 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         cardBank: item.cardBank,
         cardOwner: item.cardOwner,
         createdAt: item.createdAt,
+        supplierId: item.supplierId,
+        supplierName: item.supplierName,
+        totalBuyAmount: item.totalBuyAmount,
+        profitAmount: item.profitAmount,
+        expenseAmount: item.expenseAmount,
+        expenseTitle: item.expenseTitle,
       );
     }).toList();
-    _persist();
   }
 
   void recordPayment(String id, double amount) {
+    if (amount <= 0) return;
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        final safeAmount = amount.clamp(0, item.remainingAmount).toDouble();
+        final remaining = item.totalAmount - (item.paidAmount + safeAmount);
+        return InvoiceModel(
+          id: item.id,
+          number: item.number,
+          customerId: item.customerId,
+          customerName: item.customerName,
+          customerPhone: item.customerPhone,
+          type: item.type,
+          paymentType: item.paymentType,
+          status: remaining <= 0 ? 'paid' : 'partial',
+          date: item.date,
+          items: item.items,
+          subtotal: item.subtotal,
+          discountPercent: item.discountPercent,
+          discountAmount: item.discountAmount,
+          shippingFee: item.shippingFee,
+          previousDebt: item.previousDebt,
+          deposit: item.deposit,
+          totalAmount: item.totalAmount,
+          paidAmount: item.paidAmount + safeAmount,
+          remainingAmount: remaining < 0 ? 0 : remaining,
+          notes: item.notes,
+          cardNumber: item.cardNumber,
+          cardBank: item.cardBank,
+          cardOwner: item.cardOwner,
+          createdAt: item.createdAt,
+          supplierId: item.supplierId,
+          supplierName: item.supplierName,
+          totalBuyAmount: item.totalBuyAmount,
+          profitAmount: item.profitAmount,
+          expenseAmount: item.expenseAmount,
+          expenseTitle: item.expenseTitle,
+        );
+      }).toList();
+      _persist();
+    });
     state = state.map((item) {
       if (item.id != id) return item;
-      final remaining = item.totalAmount - (item.paidAmount + amount);
+      final safeAmount = amount.clamp(0, item.remainingAmount).toDouble();
+      final remaining = item.totalAmount - (item.paidAmount + safeAmount);
       return InvoiceModel(
         id: item.id,
         number: item.number,
@@ -180,15 +290,20 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         previousDebt: item.previousDebt,
         deposit: item.deposit,
         totalAmount: item.totalAmount,
-        paidAmount: item.paidAmount + amount,
+        paidAmount: item.paidAmount + safeAmount,
         remainingAmount: remaining < 0 ? 0 : remaining,
         notes: item.notes,
         cardNumber: item.cardNumber,
         cardBank: item.cardBank,
         cardOwner: item.cardOwner,
         createdAt: item.createdAt,
+        supplierId: item.supplierId,
+        supplierName: item.supplierName,
+        totalBuyAmount: item.totalBuyAmount,
+        profitAmount: item.profitAmount,
+        expenseAmount: item.expenseAmount,
+        expenseTitle: item.expenseTitle,
       );
     }).toList();
-    _persist();
   }
 }

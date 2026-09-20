@@ -26,6 +26,7 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
   String? _logoPath;
   String? _stampPath;
   final _picker = ImagePicker();
+  bool _saving = false;
 
   final List<Color> _paletteRow1 = const [
     Color(0xFF455A64), // dark gray
@@ -103,17 +104,70 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
     try {
       final biz = ref.read(businessProvider);
       final st = ref.read(settingsProvider);
+
+      // null = بدون تغییر، '' = حذف، مسیر = جدید
+      final String newLogoPath;
+      if (_logoPath == null) {
+        newLogoPath = biz.logoPath;
+      } else {
+        newLogoPath = _logoPath!;
+      }
+      final String newStampPath;
+      if (_stampPath == null) {
+        newStampPath = biz.stampPath;
+      } else {
+        newStampPath = _stampPath!;
+      }
+      final String newSignaturePath;
+      if (_stampPath == null) {
+        newSignaturePath = biz.signaturePath;
+      } else {
+        newSignaturePath = _stampPath!;
+      }
+
+      // حذف فایل قدیمی به صورت async و بدون مسدود کردن UI
+      Future<void> tryDeleteOldAsync(String oldPath, String newPath) async {
+        if (oldPath.isEmpty) return;
+        if (oldPath == newPath) return;
+        try {
+          final f = File(oldPath);
+          if (await f.exists()) {
+            await f.delete();
+          }
+        } catch (_) {}
+      }
+
+      // فقط وقتی مسیر واقعا عوض شده یا حذف شده، فایل قدیمی را پاک کن - async
+      final deleteFutures = <Future>[];
+      if (_logoPath != null && _logoPath != biz.logoPath) {
+        deleteFutures.add(tryDeleteOldAsync(biz.logoPath, newLogoPath));
+      }
+      if (_stampPath != null && _stampPath != biz.stampPath) {
+        deleteFutures.add(tryDeleteOldAsync(biz.stampPath, newStampPath));
+        // signaturePath قدیمی هم از همان فایل مهر استفاده می‌کرد
+        if (biz.signaturePath.isNotEmpty && biz.signaturePath != biz.stampPath) {
+          deleteFutures.add(tryDeleteOldAsync(biz.signaturePath, newSignaturePath));
+        }
+      }
+      // حذف فایل‌ها را در background اجرا کن، منتظر نمان
+      if (deleteFutures.isNotEmpty) {
+        // بدون await - تا UI هنگ نکند، ولی خطا را هم نادیده بگیر
+        Future.wait(deleteFutures).catchError((_) {});
+      }
+
       final updated = biz.copyWith(
         shopName: _nameCtrl.text.trim().isEmpty ? biz.shopName : _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
         address: _descCtrl.text.trim(),
-        logoPath: _logoPath ?? biz.logoPath,
-        stampPath: _stampPath ?? '',
+        logoPath: newLogoPath,
+        stampPath: newStampPath,
         // یک تصویر واحد برای مهر و امضا استفاده می‌شود.
-        signaturePath: _stampPath ?? biz.signaturePath,
+        signaturePath: newSignaturePath,
       );
       await ref.read(businessProvider.notifier).updateBusiness(updated);
       await ref.read(settingsProvider.notifier).updateSettings(
@@ -129,6 +183,8 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('ذخیره تنظیمات انجام نشد: $error')),
       );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -385,9 +441,15 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: _save,
+              onPressed: _saving ? null : _save,
               style: ElevatedButton.styleFrom(backgroundColor: _selectedColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-              child: const Text('ذخیره', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('ذخیره', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
             ),
           ),
         ),
