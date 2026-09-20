@@ -36,11 +36,15 @@ jobs:
         id: build
         run: |
           set -o pipefail
-          flutter build apk --debug --verbose 2>&1 | tee build.log
-          echo "build exit ${PIPESTATUS[0]}" | tee -a build.log
+          touch build.log
+          echo "Starting build at $(date)" | tee -a build.log
+          flutter build apk --debug --verbose 2>&1 | tee -a build.log; echo "flutter exit code: ${PIPESTATUS[0]}" | tee -a build.log
+          echo "build exit captured" | tee -a build.log
           # Always show last 500 lines
           echo "--- LAST 500 LINES OF BUILD LOG ---"
-          tail -n 500 build.log
+          tail -n 500 build.log || cat build.log || true
+          echo "--- BUILD LOG EXISTS CHECK ---"
+          ls -lh build.log || true
       - name: Show build failure details
         if: failure() || steps.build.outcome == 'failure'
         run: |
@@ -81,18 +85,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -x
+          echo "=== LS ===" 
+          ls -lh || true
           ls -lh *.log || true
+          echo "=== PWD ==="
+          pwd
           # Create a file with error summary that we can commit
           echo "# Build Log for run ${{ github.run_id }}" > build_failure.md
           echo "" >> build_failure.md
           echo "## Analyze" >> build_failure.md
-          cat analyze.log >> build_failure.md 2>&1 || true
+          cat analyze.log >> build_failure.md 2>&1 || echo "no analyze.log" >> build_failure.md
+          echo "" >> build_failure.md
+          echo "## LS" >> build_failure.md
+          ls -lh >> build_failure.md 2>&1 || true
+          echo "" >> build_failure.md
+          echo "## Build log exists?" >> build_failure.md
+          ls -lh build.log >> build_failure.md 2>&1 || echo "build.log not found" >> build_failure.md
           echo "" >> build_failure.md
           echo "## Build last 2000 lines" >> build_failure.md
-          tail -n 2000 build.log >> build_failure.md 2>&1 || true
+          tail -n 2000 build.log >> build_failure.md 2>&1 || echo "cannot tail build.log" >> build_failure.md
           echo "" >> build_failure.md
           echo "## Errors" >> build_failure.md
-          grep -i -E "error|failure|exception" build.log | tail -n 500 >> build_failure.md 2>&1 || true
+          grep -i -E "error|failure|exception" build.log | tail -n 500 >> build_failure.md 2>&1 || echo "no errors grep" >> build_failure.md
           cat build_failure.md
           # Also try to create GitHub issue with logs via API (visible in sandbox via gh issue list)
           echo "Creating issue with logs..."
