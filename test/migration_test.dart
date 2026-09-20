@@ -41,7 +41,7 @@ void main() {
           'showCardNum': true,
           'themeMode': 'light',
         }),
-        PrefsStore.kProducts: jsonEncode(<String, dynamic>[
+        PrefsStore.kProducts: jsonEncode(<Map<String, dynamic>>[
           <String, dynamic>{
             'id': 'p1',
             'code': '100',
@@ -53,7 +53,7 @@ void main() {
             'notes': '',
           },
         ]),
-        PrefsStore.kCustomers: jsonEncode(<String, dynamic>[
+        PrefsStore.kCustomers: jsonEncode(<Map<String, dynamic>>[
           <String, dynamic>{
             'id': 'c1',
             'name': 'مشتری قدیمی',
@@ -65,7 +65,7 @@ void main() {
             'createdAt': '1403/01/01',
           },
         ]),
-        PrefsStore.kInvoices: jsonEncode(<String, dynamic>[
+        PrefsStore.kInvoices: jsonEncode(<Map<String, dynamic>>[
           // فاکتور فروش قدیمی: قلم‌ها قیمت خرید و شناسه‌ی کالا ندارند.
           <String, dynamic>{
             'id': 'inv-1',
@@ -77,7 +77,7 @@ void main() {
             'paymentType': 'non_cash',
             'status': 'unpaid',
             'date': '1403/01/02',
-            'items': <dynamic>[
+            'items': <Map<String, dynamic>>[
               <String, dynamic>{
                 'id': 'it-1',
                 'title': 'شامپو',
@@ -110,7 +110,7 @@ void main() {
             'paymentType': 'non_cash',
             'status': 'unpaid',
             'date': '1403/01/03',
-            'items': <dynamic>[
+            'items': <Map<String, dynamic>>[
               <String, dynamic>{
                 'id': 'it-2',
                 'title': 'شامپو',
@@ -143,7 +143,7 @@ void main() {
           'paymentType': 'cash',
           'status': 'paid',
           'date': '1403/01/04',
-          'items': <dynamic>[
+          'items': <Map<String, dynamic>>[
             <String, dynamic>{
               'id': 'it-3',
               'title': 'شامپو',
@@ -309,7 +309,7 @@ void main() {
         'customerName': 'مشتری عمومی',
         'customerPhone': '',
         'date': '1403/01/05',
-        'items': <dynamic>[],
+        'items': <Map<String, dynamic>>[],
         'totalAmount': 50000,
         'paidAmount': 0,
         'remainingAmount': 50000,
@@ -331,7 +331,7 @@ void main() {
         'id': 'inv-1',
         'number': '1002',
         'totalAmount': 50000,
-        'items': <dynamic>[],
+        'items': <Map<String, dynamic>>[],
       },
     ]);
     SharedPreferences.setMockInitialValues(prefs);
