@@ -2,7 +2,7 @@ class AppConstants {
   static const String appName = 'فاکتور ساز روبی';
 
   /// نسخه‌ی نمایشی برنامه؛ با `version:` در pubspec.yaml یکسان نگه داشته شود.
-  static const String appVersion = '1.0.8';
+  static const String appVersion = '1.0.9';
 
   /// شناسه‌ی اندروید. **هرگز نباید تغییر کند**؛ تغییر آن یعنی کاربر مجبور
   /// می‌شود برنامه را حذف و دوباره نصب کند و همه‌ی اطلاعاتش می‌رود.
