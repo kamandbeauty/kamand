@@ -1488,11 +1488,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                   ),
                                                 ),
                                               ]),
-                                              if (it.buyPrice > 0)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(top: 2),
-                                                  child: Text('خرید: ${PersianNumberFormatter.formatCurrency(it.buyPrice)} | سود: ${PersianNumberFormatter.formatCurrency(it.totalProfit)}', style: const TextStyle(fontSize: 9, color: Color(0xFF059669), fontWeight: FontWeight.w700), textAlign: TextAlign.right),
-                                                ),
                                             ],
                                           ),
                                         ),
@@ -1557,26 +1552,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Column(
-                children: [
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('جمع آیتم‌ها', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dark ? Colors.white : _slate700)), Text(PersianNumberFormatter.formatCurrency(_itemsTotal), style: TextStyle(fontSize: 16, color: dark ? Colors.white : _orange, fontWeight: FontWeight.w900))]),
-                  const SizedBox(height: 6),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('بهای خرید', style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500)), Text(PersianNumberFormatter.formatCurrency(_totalBuyAmount), style: TextStyle(fontSize: 12, color: _slate500, fontWeight: FontWeight.w700))]),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(10)),
-                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      Row(children: [const Icon(Icons.trending_up, size: 16, color: Color(0xFF059669)), const SizedBox(width: 4), Text('سود این فاکتور', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF059669)))]),
-                      Text(PersianNumberFormatter.formatCurrency(_totalProfit), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
-                    ]),
-                  ),
-                  if (_resolvedDiscount > 0) ...[
-                    const SizedBox(height: 4),
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('سود خالص پس از تخفیف', style: TextStyle(fontSize: 11, color: dark ? _slate400 : _slate500)), Text(PersianNumberFormatter.formatCurrency(_netProfit), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF059669)))]),
-                  ],
-                ],
-              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('جمع آیتم‌ها', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dark ? Colors.white : _slate700)), Text(PersianNumberFormatter.formatCurrency(_itemsTotal), style: TextStyle(fontSize: 16, color: dark ? Colors.white : _orange, fontWeight: FontWeight.w900))]),
             ),
             const SizedBox(height: 12),
 
@@ -1730,7 +1706,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             tileColor: const Color(0xFFF7F8FC),
                             title: Text(product.name, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w800)),
-                            subtitle: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text(PersianNumberFormatter.formatCurrency(product.sellPrice), textAlign: TextAlign.right), if (product.buyPrice > 0) Text('خرید: ${PersianNumberFormatter.formatCurrency(product.buyPrice)} | سود: ${PersianNumberFormatter.formatCurrency(product.sellPrice - product.buyPrice)}', style: const TextStyle(fontSize: 10, color: Color(0xFF059669)))]),
+                            subtitle: Text(PersianNumberFormatter.formatCurrency(product.sellPrice), textAlign: TextAlign.right),
                             trailing: const Icon(Icons.add_circle_outline, color: _orange),
                             onTap: () {
                               Navigator.pop(ctx);

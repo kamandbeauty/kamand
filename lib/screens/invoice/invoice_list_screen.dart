@@ -136,19 +136,9 @@ class InvoiceListScreen extends ConsumerWidget {
                             color: dark ? Colors.white : _slate800,
                           ),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
-                              style: const TextStyle(fontSize: 11, color: _slate500),
-                            ),
-                            if (inv.type == 'sale' && inv.profitAmount > 0)
-                              Text(
-                                'سود: ${PersianNumberFormatter.formatCurrency(inv.profitAmount)}',
-                                style: const TextStyle(fontSize: 10, color: Color(0xFF059669), fontWeight: FontWeight.w700),
-                              ),
-                          ],
+                        subtitle: Text(
+                          'فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
+                          style: const TextStyle(fontSize: 11, color: _slate500),
                         ),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,

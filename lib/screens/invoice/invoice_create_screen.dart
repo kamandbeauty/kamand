@@ -296,35 +296,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  initialValue: item.buyPrice.toString(),
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'قیمت خرید'),
-                                  onChanged: (v) {
-                                    final b = double.tryParse(v) ?? 0;
-                                    _items[idx] = InvoiceItemModel(
-                                      id: item.id,
-                                      title: item.title,
-                                      quantity: item.quantity,
-                                      unit: item.unit,
-                                      unitPrice: item.unitPrice,
-                                      totalPrice: item.quantity * item.unitPrice,
-                                      buyPrice: b,
-                                      productId: item.productId,
-                                    );
-                                    setState(() {});
-                                  },
-                                ),
-                              ),
                             ],
                           ),
-                          if (item.buyPrice > 0)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text('سود: ${PersianNumberFormatter.formatCurrency(item.totalProfit)}', style: const TextStyle(fontSize: 11, color: Color(0xFF059669), fontWeight: FontWeight.w700)),
-                            ),
                         ],
                       ),
                     ),
@@ -349,14 +322,6 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                             PersianNumberFormatter.formatCurrency(_totalAmount),
                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('سود:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                          Text(PersianNumberFormatter.formatCurrency(_totalProfit), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
                         ],
                       ),
                     ],
