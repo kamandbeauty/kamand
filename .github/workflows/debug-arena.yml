@@ -28,202 +28,45 @@ jobs:
       - run: flutter pub get
       - name: Analyze
         run: |
-          set -x
-          flutter analyze --no-pub 2>&1 | tee analyze.log; echo "analyze exit: $?" | tee -a analyze.log
+          flutter analyze --no-pub 2>&1 | tee analyze.log
           cat analyze.log
-          # Always succeed to allow build step to run, even with warnings
-          echo "Analyze finished, checking for errors..."
           if grep -q " error •" analyze.log; then
-            echo "Errors found in analyze, but continuing to build for diagnostics"
+            echo "::error::Flutter analyze found errors"
+            exit 1
           fi
-          exit 0
       - name: Build debug APK
         id: build
-        if: always()
         run: |
-          set -x
-          echo "PWD $(pwd)"
-          ls -lh
-          rm -f build.log build.log.from_build /tmp/build.log.copy /tmp/build2.log
-          echo "=== Touch test ==="
-          touch build.log; echo "touch build.log exit: $?"
-          ls -lh build.log || echo "build.log not found after touch"
-          touch /tmp/build.log.copy; echo "touch /tmp/build.log.copy exit: $?"
-          ls -lh /tmp/build.log.copy || echo "/tmp copy not found after touch"
-          echo "Starting build at $(date)" | tee -a build.log | tee -a /tmp/build.log.copy
-          echo "Running flutter build..."
-          # Run flutter and capture to multiple places
-          flutter build apk --debug --verbose 2>&1 | tee /tmp/build2.log | tee -a build.log | tee -a /tmp/build.log.copy; echo "flutter exit code: ${PIPESTATUS[0]}" | tee -a build.log | tee -a /tmp/build.log.copy | tee -a /tmp/build2.log
-          echo "=== After flutter ==="
-          ls -lh build.log /tmp/build.log.copy /tmp/build2.log || true
-          echo "=== Tail of /tmp/build2.log ==="
-          tail -n 500 /tmp/build2.log || true
-          echo "Build step finished, log sizes:"
-          ls -lh build.log /tmp/build.log.copy /tmp/build2.log || true
-          # Save copy for next steps
-          cp build.log build.log.from_build || true
-          ls -lh build.log* /tmp/*.log || true
-      - name: Capture build step output
-        if: always()
+          flutter build apk --debug --verbose 2>&1 | tee build.log
+          tail -n 100 build.log
+      - name: Upload logs on failure
+        if: failure()
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            let body = "# Build Step Output for run ${{ github.run_id }}\n\n";
-            try {
-              const b2 = fs.readFileSync('/tmp/build2.log', 'utf8');
-              body += "## /tmp/build2.log tail (last 8000 chars)\n```\n" + b2.slice(-8000) + "\n```\n\n";
-              body += "## /tmp/build2.log head (first 4000 chars)\n```\n" + b2.slice(0,4000) + "\n```\n";
-            } catch(e) { body += "No /tmp/build2.log: " + e + "\n"; }
-            try {
-              const bl = fs.readFileSync('build.log', 'utf8');
-              body += "\n## build.log tail\n```\n" + bl.slice(-8000) + "\n```\n";
-            } catch(e) { body += "\nNo build.log: " + e + "\n"; }
-            try {
-              body += "\n## LS /tmp\n```\n" + fs.readdirSync('/tmp').join('\n') + "\n```\n";
-            } catch(e) {}
-            try {
-              body += "\n## LS root\n```\n" + fs.readdirSync('.').join('\n') + "\n```\n";
-            } catch(e) {}
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Build step output for run ${{ github.run_id }}`,
-              body: body
-            });
-      - name: Create issue from build step
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let body = "# Build Log for run ${{ github.run_id }} (from build step)\n\n";
-            try {
-              body += "## LS root\n```\n";
-              body += fs.readdirSync('.').join('\n') + "\n```\n\n";
-            } catch(e) { body += "LS failed: " + e + "\n"; }
-            try {
-              const stat = fs.statSync('build.log');
-              body += `## build.log exists: ${stat.size} bytes\n\n`;
-            } catch(e) {
-              body += "## build.log NOT FOUND\n\n";
-              try {
-                const stat2 = fs.statSync('build.log.from_build');
-                body += `## build.log.from_build exists: ${stat2.size} bytes\n\n`;
-              } catch(e2) {
-                body += "## build.log.from_build also NOT FOUND\n\n";
-              }
-              try {
-                const tmp = fs.statSync('/tmp/build.log.copy');
-                body += `## /tmp/build.log.copy exists: ${tmp.size} bytes\n\n`;
-              } catch(e3) {
-                body += "## /tmp/build.log.copy NOT FOUND\n\n";
-              }
-            }
-            let logContent = "";
-            try {
-              logContent = fs.readFileSync('build.log', 'utf8');
-            } catch(e) {
-              try { logContent = fs.readFileSync('build.log.from_build', 'utf8'); } catch(e2) {
-                try { logContent = fs.readFileSync('/tmp/build.log.copy', 'utf8'); } catch(e3) {
-                  logContent = "No build log found in any location";
-                }
-              }
-            }
-            body += "## Build log tail (last 5000 chars)\n```\n" + logContent.slice(-5000) + "\n```\n\n";
-            body += "## Build log head (first 3000 chars)\n```\n" + logContent.slice(0,3000) + "\n```\n";
-            // Also try to read analyze.log
+            let body = "# Build Failed for run ${{ github.run_id }}\n\n";
             try {
               const analyze = fs.readFileSync('analyze.log', 'utf8');
-              body += "\n## Analyze log\n```\n" + analyze.slice(0,2000) + "\n```\n";
+              body += "## Analyze\n```\n" + analyze.slice(-8000) + "\n```\n\n";
             } catch(e) {}
-            // Create issue
+            try {
+              const build = fs.readFileSync('build.log', 'utf8');
+              body += "## Build log tail\n```\n" + build.slice(-8000) + "\n```\n";
+            } catch(e) { body += "No build.log found: " + e; }
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Build log for run ${{ github.run_id }} - from build step (github-script)`,
+              title: `Build failed for run ${{ github.run_id }}`,
               body: body
             });
-      - name: Show build failure details
-        if: failure() || steps.build.outcome == 'failure'
-        run: |
-          echo "=== BUILD FAILED - FULL LOG TAIL ==="
-          tail -n 1000 build.log || true
-          echo "=== ANALYZE LOG ==="
-          cat analyze.log || true
-          # Try to find Dart errors
-          grep -i -E "error|exception|failed" build.log | tail -n 200 || true
-      - name: Upload logs
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs
+          name: debug-build-logs
           path: |
             analyze.log
             build.log
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+            build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: warn
-      - name: Show logs inline
-        if: always()
-        run: |
-          echo "=== ANALYZE LOG ==="
-          cat analyze.log || true
-          echo ""
-          echo "=== BUILD LOG LAST 1000 LINES ==="
-          tail -n 1000 build.log || true
-          echo ""
-          echo "=== BUILD LOG GREP ERRORS ==="
-          grep -i -A2 -B2 "error\|FAILURE\|Exception" build.log | tail -n 500 || true
-      - name: Save logs to repo for sandbox retrieval
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -x
-          echo "=== LS ===" 
-          ls -lh || true
-          ls -lh *.log || true
-          echo "=== PWD ==="
-          pwd
-          # Create a file with error summary that we can commit
-          echo "# Build Log for run ${{ github.run_id }}" > build_failure.md
-          echo "" >> build_failure.md
-          echo "## Analyze" >> build_failure.md
-          cat analyze.log >> build_failure.md 2>&1 || echo "no analyze.log" >> build_failure.md
-          echo "" >> build_failure.md
-          echo "## LS" >> build_failure.md
-          ls -lh >> build_failure.md 2>&1 || true
-          echo "" >> build_failure.md
-          echo "## Build log exists?" >> build_failure.md
-          ls -lh build.log >> build_failure.md 2>&1 || echo "build.log not found" >> build_failure.md
-          echo "" >> build_failure.md
-          echo "## Build last 2000 lines" >> build_failure.md
-          tail -n 2000 build.log >> build_failure.md 2>&1 || echo "cannot tail build.log" >> build_failure.md
-          echo "" >> build_failure.md
-          echo "## Errors" >> build_failure.md
-          grep -i -E "error|failure|exception" build.log | tail -n 500 >> build_failure.md 2>&1 || echo "no errors grep" >> build_failure.md
-          cat build_failure.md
-          # Also try to create GitHub issue with logs via API (visible in sandbox via gh issue list)
-          echo "Creating issue with logs..."
-          gh issue create --title "Build log for run ${{ github.run_id }}" --body-file build_failure.md 2>&1 || true
-          echo "--- trying to comment PR with logs ---"
-          PR_NUM=$(gh pr list --head arena/01a0bed4-kamand --json number --jq '.[0].number' 2>&1 || echo "")
-          if [ -n "$PR_NUM" ] && [ "$PR_NUM" != "null" ] && [ "$PR_NUM" != "" ]; then
-            gh pr comment $PR_NUM --body-file build_failure.md 2>&1 || true
-          fi
-      - name: Comment PR with failure summary
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_NUM=$(gh pr list --head arena/01a0bed4-kamand --json number --jq '.[0].number' 2>&1 || echo "18")
-          echo "PR is $PR_NUM"
-          if [ -n "$PR_NUM" ] && [ "$PR_NUM" != "null" ]; then
-            echo "Build failed, see issues for logs" > /tmp/comment.txt
-            tail -n 200 build.log >> /tmp/comment.txt 2>&1 || true
-            gh pr comment $PR_NUM --body-file /tmp/comment.txt 2>&1 || true
-          fi
