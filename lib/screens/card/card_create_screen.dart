@@ -10,7 +10,6 @@ const _orange = AppTheme.RubyPrimary;
 const _slate400 = Color(0xFF94A3B8);
 const _slate500 = Color(0xFF64748B);
 const _cardGray = Color(0xFFF1F5F9);
-const _cardBorder = Color(0xFFE2E8F0);
 
 /// حداکثر ارقام شبا بدون IR (استاندارد ایران: IR + ۲۴ رقم)
 const int kShebaDigitsMax = 24;

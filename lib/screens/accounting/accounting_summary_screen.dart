@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
-import '../../core/utils/jalali_helper.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/expense_provider.dart';
 import '../../providers/customer_provider.dart';
@@ -152,15 +151,8 @@ class _AccountingSummaryScreenState extends ConsumerState<AccountingSummaryScree
       }
     }
 
-    // اگر هنوز totalBuy صفر است و خرید داریم، از فاکتورهای خرید به عنوان تخمین استفاده کن
-    // (در صورتی که کاربر کالاها را از طریق فاکتور خرید ثبت کرده)
-    double estimatedBuyFromPurchases = 0;
-    if (totalBuy == 0 && totalPurchases > 0 && saleCount > 0) {
-      // اگر فقط یک فروش و یک خرید داریم، احتمالاً خرید مربوط به همان کالای فروخته شده است
-      // این یک تخمین است برای نمایش بهتر گزارش
-      estimatedBuyFromPurchases = 0; // فعلاً تخمین نزن، فقط اگر دیتا ناقص بود اطلاع بده
-    }
-
+    // اگر بهای تمام شده صفر باشد، تخمینی زده نمی‌شود؛ فقط در گزارش به کاربر
+    // اطلاع داده می‌شود تا قیمت خرید کالاها را در کاتالوگ ثبت کند.
     double totalExpenses = filteredExpenses.fold(0, (s, e) => s + e.amount);
     double customerDebts = customers.fold(0, (s, c) => s + c.balance);
     double supplierDebts = suppliers.fold(0, (s, sup) => s + sup.balance);

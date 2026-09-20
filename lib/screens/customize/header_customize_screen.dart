@@ -157,7 +157,7 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
       // حذف فایل‌ها را در background اجرا کن، منتظر نمان
       if (deleteFutures.isNotEmpty) {
         // بدون await - تا UI هنگ نکند، ولی خطا را هم نادیده بگیر
-        Future.wait(deleteFutures).catchError((_) {});
+        Future.wait(deleteFutures).then<void>((_) {}, onError: (Object _) {});
       }
 
       final updated = biz.copyWith(
