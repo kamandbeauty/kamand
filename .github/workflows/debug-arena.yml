@@ -35,10 +35,11 @@ jobs:
       - name: Build debug APK
         id: build
         run: |
+          exec > /tmp/build_step_output.log 2>&1
           set -x
           echo "PWD $(pwd)"
           ls -lh
-          rm -f build.log build.log.from_build /tmp/build.log.copy /tmp/build2.log
+          rm -f build.log build.log.from_build /tmp/build.log.copy /tmp/build2.log /tmp/build_step_debug.log
           echo "=== Touch test ==="
           touch build.log; echo "touch build.log exit: $?"
           ls -lh build.log || echo "build.log not found after touch"
@@ -50,7 +51,7 @@ jobs:
           flutter build apk --debug --verbose > /tmp/build2.log 2>&1; echo "flutter exit: $?" | tee -a build.log | tee -a /tmp/build.log.copy
           echo "=== After flutter ==="
           ls -lh build.log /tmp/build.log.copy /tmp/build2.log || true
-          cat /tmp/build2.log | tail -n 200
+          cat /tmp/build2.log | tail -n 500 || true
           # Append tmp log to build.log
           cat /tmp/build2.log >> build.log 2>&1 || true
           cat /tmp/build2.log >> /tmp/build.log.copy 2>&1 || true
@@ -62,6 +63,36 @@ jobs:
           cp build.log build.log.from_build || true
           cp /tmp/build.log.copy /tmp/build.log.copy2 || true
           ls -lh build.log* /tmp/*.log || true
+          echo "=== Build step output log ==="
+          cat /tmp/build_step_output.log || true
+      - name: Capture build step output
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = "# Build Step Output for run ${{ github.run_id }}\n\n";
+            try {
+              const out = fs.readFileSync('/tmp/build_step_output.log', 'utf8');
+              body += "## build_step_output.log (last 8000 chars)\n```\n" + out.slice(-8000) + "\n```\n\n";
+              body += "## build_step_output.log head\n```\n" + out.slice(0,4000) + "\n```\n";
+            } catch(e) { body += "No build_step_output.log: " + e + "\n"; }
+            try {
+              const b2 = fs.readFileSync('/tmp/build2.log', 'utf8');
+              body += "\n## /tmp/build2.log tail\n```\n" + b2.slice(-8000) + "\n```\n";
+            } catch(e) { body += "\nNo /tmp/build2.log: " + e + "\n"; }
+            try {
+              body += "\n## LS /tmp\n```\n" + fs.readdirSync('/tmp').join('\n') + "\n```\n";
+            } catch(e) {}
+            try {
+              body += "\n## LS root\n```\n" + fs.readdirSync('.').join('\n') + "\n```\n";
+            } catch(e) {}
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Build step output for run ${{ github.run_id }}`,
+              body: body
+            });
       - name: Create issue from build step
         if: always()
         uses: actions/github-script@v7
