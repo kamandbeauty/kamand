@@ -34,20 +34,42 @@ jobs:
           cat analyze.log
       - name: Build debug APK
         id: build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
+          set -x
           echo "PWD $(pwd)"
           ls -lh
+          rm -f build.log
           touch build.log
           echo "Starting build at $(date)" | tee build.log
           echo "Running flutter build..."
           # Run without pipefail to always capture log
           flutter build apk --debug --verbose 2>&1 | tee -a build.log || echo "FLUTTER BUILD FAILED WITH $?" | tee -a build.log
           echo "Build step finished, log size:"
-          ls -lh build.log
-          echo "Last 500 lines:"
-          tail -n 500 build.log || true
-          # Ensure we exit 0 to allow next steps to see log, but mark outcome
+          ls -lh build.log || true
+          echo "Last 1000 lines:"
+          tail -n 1000 build.log || true
+          echo "--- Creating issue from this step ---"
+          echo "# Build Log for run ${{ github.run_id }} (from build step)" > /tmp/from_build.md
+          echo "" >> /tmp/from_build.md
+          echo "## LS" >> /tmp/from_build.md
+          ls -lh >> /tmp/from_build.md 2>&1 || true
+          echo "" >> /tmp/from_build.md
+          echo "## Build log tail" >> /tmp/from_build.md
+          tail -n 3000 build.log >> /tmp/from_build.md 2>&1 || true
+          gh issue create --title "Build log for run ${{ github.run_id }} - from build step" --body-file /tmp/from_build.md 2>&1 || true
+          # Also copy to workspace root for next steps
+          cp build.log ./build.log.from_build || true
+          ls -lh build.log* || true
+          # Ensure we exit 0 to allow next steps to see log, but mark outcome via file
+          # Check if apk was built
+          if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+            echo "APK built successfully"
+          else
+            echo "APK NOT FOUND, build failed"
+            # Still exit 0 to allow diagnostics, but we will fail later
+          fi
           exit 0
       - name: Show build failure details
         if: failure() || steps.build.outcome == 'failure'
