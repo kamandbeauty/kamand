@@ -26,13 +26,11 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     state = await PrefsStore.loadInvoices();
   }
 
-  void _persist() {
-    PrefsStore.saveInvoices(state);
+  Future<void> _persist() async {
+    await PrefsStore.saveInvoices(state);
   }
 
   Future<void> saveInvoice(InvoiceModel invoice) async {
-    // اگر کاربر خیلی سریع ذخیره کند، hydrate نباید فهرست تازه را با لیست قدیمی
-    // جایگزین کند و باعث ناپدید شدن فاکتور شود.
     await _hydrated;
     final index = state.indexWhere((i) => i.id == invoice.id);
     state = index >= 0
@@ -60,10 +58,28 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   Future<InvoiceModel> copyInvoice(InvoiceModel source) async {
     await _hydrated;
 
+    // شماره بعدی: max موجود +1، با در نظر گرفتن startingInvoiceNum
     var nextNumber = 1;
+    try {
+      final settings = await PrefsStore.loadSettings();
+      if (settings != null && settings.startingInvoiceNum > nextNumber) {
+        nextNumber = settings.startingInvoiceNum;
+      }
+    } catch (_) {}
+
+    final used = <int>{};
+    for (final invoice in state) {
+      final n = int.tryParse(_toEnglishDigits(invoice.number).trim());
+      if (n != null) used.add(n);
+    }
+    // اگر شماره شروع تکراری بود، افزایش بده
     for (final invoice in state) {
       final number = int.tryParse(_toEnglishDigits(invoice.number).trim());
       if (number != null && number >= nextNumber) nextNumber = number + 1;
+    }
+    while (used.contains(nextNumber)) {
+      nextNumber++;
+      if (nextNumber > 999999999) break;
     }
 
     final copied = InvoiceModel(
@@ -133,7 +149,8 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     return result;
   }
 
-  void convertProformaToInvoice(String id) {
+  Future<void> convertProformaToInvoice(String id) async {
+    await _hydrated;
     state = state.map((item) {
       if (item.id != id) return item;
       return InvoiceModel(
@@ -169,13 +186,16 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         expenseTitle: item.expenseTitle,
       );
     }).toList();
-    _persist();
+    await _persist();
   }
 
-  void recordPayment(String id, double amount) {
+  Future<void> recordPayment(String id, double amount) async {
+    await _hydrated;
+    if (amount <= 0) return;
     state = state.map((item) {
       if (item.id != id) return item;
-      final remaining = item.totalAmount - (item.paidAmount + amount);
+      final safeAmount = amount.clamp(0, item.remainingAmount).toDouble();
+      final remaining = item.totalAmount - (item.paidAmount + safeAmount);
       return InvoiceModel(
         id: item.id,
         number: item.number,
@@ -194,7 +214,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         previousDebt: item.previousDebt,
         deposit: item.deposit,
         totalAmount: item.totalAmount,
-        paidAmount: item.paidAmount + amount,
+        paidAmount: item.paidAmount + safeAmount,
         remainingAmount: remaining < 0 ? 0 : remaining,
         notes: item.notes,
         cardNumber: item.cardNumber,
@@ -209,6 +229,6 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         expenseTitle: item.expenseTitle,
       );
     }).toList();
-    _persist();
+    await _persist();
   }
 }

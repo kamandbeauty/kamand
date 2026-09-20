@@ -20,8 +20,8 @@ class ExpenseListNotifier extends StateNotifier<List<ExpenseModel>> {
     state = await PrefsStore.loadExpenses();
   }
 
-  void _persist() {
-    PrefsStore.saveExpenses(state);
+  Future<void> _persist() async {
+    await PrefsStore.saveExpenses(state);
   }
 
   Future<void> addExpense(ExpenseModel expense) async {
@@ -30,17 +30,19 @@ class ExpenseListNotifier extends StateNotifier<List<ExpenseModel>> {
     await PrefsStore.saveExpenses(state);
   }
 
-  void updateExpense(ExpenseModel expense) {
+  Future<void> updateExpense(ExpenseModel expense) async {
+    await _hydrated;
     state = [
       for (final item in state)
         if (item.id == expense.id) expense else item,
     ];
-    _persist();
+    await _persist();
   }
 
-  void deleteExpense(String id) {
+  Future<void> deleteExpense(String id) async {
+    await _hydrated;
     state = state.where((item) => item.id != id).toList();
-    _persist();
+    await _persist();
   }
 
   // خلاصه‌ها

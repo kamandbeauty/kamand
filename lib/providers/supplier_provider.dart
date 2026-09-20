@@ -23,8 +23,8 @@ class SupplierListNotifier extends StateNotifier<List<SupplierModel>> {
     state = await PrefsStore.loadSuppliers();
   }
 
-  void _persist() {
-    PrefsStore.saveSuppliers(state);
+  Future<void> _persist() async {
+    await PrefsStore.saveSuppliers(state);
   }
 
   Future<void> addSupplier(SupplierModel supplier) async {
@@ -33,32 +33,37 @@ class SupplierListNotifier extends StateNotifier<List<SupplierModel>> {
     await PrefsStore.saveSuppliers(state);
   }
 
-  void updateSupplier(SupplierModel supplier) {
+  Future<void> updateSupplier(SupplierModel supplier) async {
+    await _hydrated;
     state = [
       for (final item in state)
         if (item.id == supplier.id) supplier else item,
     ];
-    _persist();
+    await _persist();
   }
 
-  void deleteSupplier(String id) {
+  Future<void> deleteSupplier(String id) async {
+    await _hydrated;
     state = state.where((item) => item.id != id).toList();
-    _persist();
+    await _persist();
   }
 
-  void updateBalance(String id, double delta) {
+  Future<void> updateBalance(String id, double delta) async {
+    await _hydrated;
     state = state.map((item) {
       if (item.id != id) return item;
       return item.copyWith(balance: (item.balance + delta).clamp(0, double.infinity).toDouble());
     }).toList();
-    _persist();
+    await _persist();
   }
 
-  void recordPayment(String id, double amount) {
+  Future<void> recordPayment(String id, double amount) async {
+    await _hydrated;
+    if (amount <= 0) return;
     state = state.map((item) {
       if (item.id != id) return item;
       return item.copyWith(balance: (item.balance - amount).clamp(0, double.infinity).toDouble());
     }).toList();
-    _persist();
+    await _persist();
   }
 }

@@ -98,12 +98,21 @@ class PrefsStore {
 
   static Future<void> saveSelectedBankCardId(String id) async {
     final p = await _p;
-    await p.setString(_kSelectedBankCard, id);
+    if (id.isEmpty) {
+      await p.remove(_kSelectedBankCard);
+    } else {
+      await p.setString(_kSelectedBankCard, id);
+    }
   }
 
   static Future<String?> loadSelectedBankCardId() async {
     final p = await _p;
     return p.getString(_kSelectedBankCard);
+  }
+
+  static Future<void> clearSelectedBankCardId() async {
+    final p = await _p;
+    await p.remove(_kSelectedBankCard);
   }
 
   static Future<void> saveDraft(InvoiceModel draft) async {

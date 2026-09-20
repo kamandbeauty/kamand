@@ -23,46 +23,50 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
     state = await PrefsStore.loadCustomers();
   }
 
-  void _persist() {
-    PrefsStore.saveCustomers(state);
+  Future<void> _persist() async {
+    await PrefsStore.saveCustomers(state);
   }
 
   Future<void> addCustomer(CustomerModel customer) async {
-    // تضمین کن اولین ذخیره بعد از hydrate شدن فهرست قبلی انجام شود.
     await _hydrated;
     state = [...state, customer];
     await PrefsStore.saveCustomers(state);
     db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 
-  void updateCustomer(CustomerModel customer) {
+  Future<void> updateCustomer(CustomerModel customer) async {
+    await _hydrated;
     state = [
       for (final item in state)
         if (item.id == customer.id) customer else item,
     ];
-    _persist();
+    await _persist();
     db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 
-  void deleteCustomer(String id) {
+  Future<void> deleteCustomer(String id) async {
+    await _hydrated;
     state = state.where((item) => item.id != id).toList();
-    _persist();
+    await _persist();
   }
 
-  void recordPayment(String id, double amount) {
+  Future<void> recordPayment(String id, double amount) async {
+    await _hydrated;
+    if (amount <= 0) return;
     state = state.map((item) {
       if (item.id != id) return item;
       return _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble());
     }).toList();
-    _persist();
+    await _persist();
   }
 
-  void updateBalance(String id, double delta) {
+  Future<void> updateBalance(String id, double delta) async {
+    await _hydrated;
     state = state.map((item) {
       if (item.id != id) return item;
       return _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble());
     }).toList();
-    _persist();
+    await _persist();
   }
 
   CustomerModel _withBalance(CustomerModel item, double balance) => CustomerModel(

@@ -345,6 +345,13 @@ class _CropGestureLayerState extends State<_CropGestureLayer> {
               var nt = t + dy;
               var nr = r + dx;
               var nb = b + dy;
+              // حفظ اندازه حداقل
+              final w = r - l;
+              final h = b - t;
+              if (w < minSize || h < minSize) {
+                // اگر خیلی کوچک است، حرکت را نادیده بگیر
+                break;
+              }
               if (nl < 0) {
                 nr -= nl;
                 nl = 0;
@@ -361,10 +368,11 @@ class _CropGestureLayerState extends State<_CropGestureLayer> {
                 nt -= (nb - 1);
                 nb = 1;
               }
-              l = nl.clamp(0.0, 1.0);
-              t = nt.clamp(0.0, 1.0);
-              r = nr.clamp(0.0, 1.0);
-              b = nb.clamp(0.0, 1.0);
+              // اطمینان از اینکه بعد از clamp هنوز minSize رعایت شده
+              l = nl.clamp(0.0, 1.0 - minSize);
+              t = nt.clamp(0.0, 1.0 - minSize);
+              r = nr.clamp(l + minSize, 1.0);
+              b = nb.clamp(t + minSize, 1.0);
               break;
           }
           widget.onChanged(l, t, r, b);

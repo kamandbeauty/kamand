@@ -118,7 +118,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Center(
             child: Text(
-              'فاکتور ساز روبی نسخه ۱.۰.۴\nطراحی شده توسط استودیو جاوید',
+              'فاکتور ساز روبی نسخه ۱.۰.۵\nطراحی شده توسط استودیو جاوید',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
@@ -286,6 +286,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.invalidate(invoiceListProvider);
       ref.invalidate(customerListProvider);
       ref.invalidate(productListProvider);
+      ref.invalidate(bankCardListProvider);
+      ref.invalidate(selectedBankCardProvider);
+      ref.invalidate(supplierListProvider);
+      ref.invalidate(expenseListProvider);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

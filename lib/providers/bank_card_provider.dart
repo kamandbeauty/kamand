@@ -16,41 +16,51 @@ final selectedBankCardProvider = StateNotifierProvider<SelectedBankCardNotifier,
 });
 
 class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
+  late final Future<void> _hydrated;
+
   BankCardListNotifier() : super(const []) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     state = await PrefsStore.loadBankCards();
   }
 
-  void _persist() {
-    PrefsStore.saveBankCards(state);
+  Future<void> _persist() async {
+    await PrefsStore.saveBankCards(state);
   }
 
-  void addCard(BankCardModel c) {
+  Future<void> addCard(BankCardModel c) async {
+    await _hydrated;
     state = [...state, c];
-    _persist();
+    await _persist();
   }
 
-  void updateCard(BankCardModel c) {
+  Future<void> updateCard(BankCardModel c) async {
+    await _hydrated;
     state = [for (final e in state) if (e.id == c.id) c else e];
-    _persist();
+    await _persist();
   }
 
-  void deleteCard(String id) {
+  Future<void> deleteCard(String id) async {
+    await _hydrated;
     state = state.where((e) => e.id != id).toList();
-    _persist();
+    await _persist();
   }
 }
 
 class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
   final Ref ref;
   String? _selectedId;
+  late final Future<void> _hydrated;
 
   SelectedBankCardNotifier(this.ref) : super(null) {
-    _loadSelectedId();
+    _hydrated = _loadSelectedId();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _loadSelectedId() async {
     _selectedId = await PrefsStore.loadSelectedBankCardId();
@@ -60,23 +70,34 @@ class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
   void sync(List<BankCardModel> cards) {
     if (cards.isEmpty) {
       state = null;
+      _selectedId = null;
       return;
     }
     final selected = cards.where((c) => c.id == _selectedId).toList();
     if (selected.isNotEmpty) {
       state = selected.first;
-    } else if (state == null) {
-      // اگر انتخاب قبلی وجود نداشت، اولین کارت انتخاب می‌شود.
+      return;
+    }
+    // اگر کارت انتخاب‌شده حذف شده یا وجود ندارد
+    final currentExists = state != null && cards.any((c) => c.id == state!.id);
+    if (!currentExists) {
       state = cards.first;
       _selectedId = cards.first.id;
       PrefsStore.saveSelectedBankCardId(cards.first.id);
     }
   }
 
-  void select(BankCardModel card) {
+  Future<void> select(BankCardModel card) async {
+    await _hydrated;
     _selectedId = card.id;
     state = card;
-    PrefsStore.saveSelectedBankCardId(card.id);
+    await PrefsStore.saveSelectedBankCardId(card.id);
+  }
+
+  Future<void> clearSelection() async {
+    _selectedId = null;
+    state = null;
+    await PrefsStore.clearSelectedBankCardId();
   }
 }
 
