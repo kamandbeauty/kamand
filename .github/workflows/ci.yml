@@ -42,16 +42,26 @@ jobs:
         shell: bash
         run: |
           set +e
-          flutter analyze --no-pub --no-fatal-infos 2>&1 | tee analyze-output.txt
-          status=${PIPESTATUS[0]}
-          if [ "$status" -ne 0 ]; then
+          flutter analyze --no-pub > analyze-output.txt 2>&1
+          status=$?
+          cat analyze-output.txt
+
+          # خطاها و هشدارها بیلد را متوقف می‌کنند؛ «info»ها (مثل هشدارهای
+          # deprecation مربوط به نسخه‌ی تازه‌ی Flutter) نه.
+          if grep -qE "^[[:space:]]+(error|warning) •" analyze-output.txt; then
             while IFS= read -r line; do
-              if [ -n "$line" ]; then
-                echo "::error title=analyze::${line//$'\r'/}"
-              fi
+              case "$line" in
+                *" error • "*|*" warning • "*) echo "::error title=analyze::${line//$'\r'/}" ;;
+              esac
             done < analyze-output.txt
+            exit 1
           fi
-          exit "$status"
+
+          if [ "$status" -ne 0 ] && ! grep -qE "info •|issues? found|No issues" analyze-output.txt; then
+            echo "::error title=analyze::flutter analyze failed without a diagnostics report"
+            exit 1
+          fi
+          exit 0
 
       # تست‌های مهاجرت داده: تضمین می‌کنند به‌روزرسانی نسخه‌ی نصب‌شده چیزی از
       # اطلاعات کاربر را از دست ندهد و مبلغ‌ها دو بار حساب نشوند.
@@ -59,16 +69,19 @@ jobs:
         shell: bash
         run: |
           set +e
-          flutter test --no-pub 2>&1 | tee test-output.txt
-          status=${PIPESTATUS[0]}
+          flutter test --no-pub > test-output.txt 2>&1
+          status=$?
+          cat test-output.txt
+
           if [ "$status" -ne 0 ]; then
             while IFS= read -r line; do
-              if [ -n "$line" ]; then
-                echo "::error title=test::${line//$'\r'/}"
-              fi
+              case "$line" in
+                *"[E]"*|*"Some tests failed"*|*"failed to load"*|*"Error:"*) echo "::error title=test::${line//$'\r'/}" ;;
+              esac
             done < test-output.txt
+            exit 1
           fi
-          exit "$status"
+          exit 0
 
   debug-apk:
     name: Build debug APK
