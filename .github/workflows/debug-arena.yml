@@ -35,36 +35,28 @@ jobs:
       - name: Build debug APK
         id: build
         run: |
-          exec > /tmp/build_step_output.log 2>&1
           set -x
           echo "PWD $(pwd)"
           ls -lh
-          rm -f build.log build.log.from_build /tmp/build.log.copy /tmp/build2.log /tmp/build_step_debug.log
+          rm -f build.log build.log.from_build /tmp/build.log.copy /tmp/build2.log
           echo "=== Touch test ==="
           touch build.log; echo "touch build.log exit: $?"
           ls -lh build.log || echo "build.log not found after touch"
           touch /tmp/build.log.copy; echo "touch /tmp/build.log.copy exit: $?"
           ls -lh /tmp/build.log.copy || echo "/tmp copy not found after touch"
-          echo "Starting build at $(date)" | tee build.log | tee -a /tmp/build.log.copy
+          echo "Starting build at $(date)" | tee -a build.log | tee -a /tmp/build.log.copy
           echo "Running flutter build..."
           # Run flutter and capture to multiple places
-          flutter build apk --debug --verbose > /tmp/build2.log 2>&1; echo "flutter exit: $?" | tee -a build.log | tee -a /tmp/build.log.copy
+          flutter build apk --debug --verbose 2>&1 | tee /tmp/build2.log | tee -a build.log | tee -a /tmp/build.log.copy; echo "flutter exit code: ${PIPESTATUS[0]}" | tee -a build.log | tee -a /tmp/build.log.copy | tee -a /tmp/build2.log
           echo "=== After flutter ==="
           ls -lh build.log /tmp/build.log.copy /tmp/build2.log || true
-          cat /tmp/build2.log | tail -n 500 || true
-          # Append tmp log to build.log
-          cat /tmp/build2.log >> build.log 2>&1 || true
-          cat /tmp/build2.log >> /tmp/build.log.copy 2>&1 || true
+          echo "=== Tail of /tmp/build2.log ==="
+          tail -n 500 /tmp/build2.log || true
           echo "Build step finished, log sizes:"
           ls -lh build.log /tmp/build.log.copy /tmp/build2.log || true
-          echo "Last 2000 lines of /tmp/build2.log:"
-          tail -n 2000 /tmp/build2.log || true
           # Save copy for next steps
           cp build.log build.log.from_build || true
-          cp /tmp/build.log.copy /tmp/build.log.copy2 || true
           ls -lh build.log* /tmp/*.log || true
-          echo "=== Build step output log ==="
-          cat /tmp/build_step_output.log || true
       - name: Capture build step output
         if: always()
         uses: actions/github-script@v7
@@ -73,14 +65,14 @@ jobs:
             const fs = require('fs');
             let body = "# Build Step Output for run ${{ github.run_id }}\n\n";
             try {
-              const out = fs.readFileSync('/tmp/build_step_output.log', 'utf8');
-              body += "## build_step_output.log (last 8000 chars)\n```\n" + out.slice(-8000) + "\n```\n\n";
-              body += "## build_step_output.log head\n```\n" + out.slice(0,4000) + "\n```\n";
-            } catch(e) { body += "No build_step_output.log: " + e + "\n"; }
-            try {
               const b2 = fs.readFileSync('/tmp/build2.log', 'utf8');
-              body += "\n## /tmp/build2.log tail\n```\n" + b2.slice(-8000) + "\n```\n";
-            } catch(e) { body += "\nNo /tmp/build2.log: " + e + "\n"; }
+              body += "## /tmp/build2.log tail (last 8000 chars)\n```\n" + b2.slice(-8000) + "\n```\n\n";
+              body += "## /tmp/build2.log head (first 4000 chars)\n```\n" + b2.slice(0,4000) + "\n```\n";
+            } catch(e) { body += "No /tmp/build2.log: " + e + "\n"; }
+            try {
+              const bl = fs.readFileSync('build.log', 'utf8');
+              body += "\n## build.log tail\n```\n" + bl.slice(-8000) + "\n```\n";
+            } catch(e) { body += "\nNo build.log: " + e + "\n"; }
             try {
               body += "\n## LS /tmp\n```\n" + fs.readdirSync('/tmp').join('\n') + "\n```\n";
             } catch(e) {}
