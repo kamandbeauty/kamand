@@ -23,8 +23,8 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
     state = await PrefsStore.loadCustomers();
   }
 
-  Future<void> _persist() async {
-    await PrefsStore.saveCustomers(state);
+  void _persist() {
+    PrefsStore.saveCustomers(state);
   }
 
   Future<void> addCustomer(CustomerModel customer) async {
@@ -34,39 +34,60 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
     db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
   }
 
-  Future<void> updateCustomer(CustomerModel customer) async {
-    await _hydrated;
+  void updateCustomer(CustomerModel customer) {
     state = [
       for (final item in state)
         if (item.id == customer.id) customer else item,
     ];
-    await _persist();
-    db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
+    _hydrated.then((_) {
+      state = [
+        for (final item in state)
+          if (item.id == customer.id) customer else item,
+      ];
+      _persist();
+      db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
+    });
+    _persist();
   }
 
-  Future<void> deleteCustomer(String id) async {
-    await _hydrated;
+  void deleteCustomer(String id) {
     state = state.where((item) => item.id != id).toList();
-    await _persist();
+    _hydrated.then((_) {
+      state = state.where((item) => item.id != id).toList();
+      _persist();
+    });
+    _persist();
   }
 
-  Future<void> recordPayment(String id, double amount) async {
-    await _hydrated;
+  void recordPayment(String id, double amount) {
     if (amount <= 0) return;
     state = state.map((item) {
       if (item.id != id) return item;
       return _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble());
     }).toList();
-    await _persist();
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        return _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble());
+      }).toList();
+      _persist();
+    });
+    _persist();
   }
 
-  Future<void> updateBalance(String id, double delta) async {
-    await _hydrated;
+  void updateBalance(String id, double delta) {
     state = state.map((item) {
       if (item.id != id) return item;
       return _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble());
     }).toList();
-    await _persist();
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        return _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble());
+      }).toList();
+      _persist();
+    });
+    _persist();
   }
 
   CustomerModel _withBalance(CustomerModel item, double balance) => CustomerModel(

@@ -28,39 +28,47 @@ class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
     state = await PrefsStore.loadBankCards();
   }
 
-  Future<void> _persist() async {
-    await PrefsStore.saveBankCards(state);
+  void _persist() {
+    PrefsStore.saveBankCards(state);
   }
 
-  Future<void> addCard(BankCardModel c) async {
-    await _hydrated;
+  void addCard(BankCardModel c) {
     state = [...state, c];
-    await _persist();
+    _hydrated.then((_) {
+      if (!state.any((e) => e.id == c.id)) {
+        state = [...state, c];
+      }
+      _persist();
+    });
+    _persist();
   }
 
-  Future<void> updateCard(BankCardModel c) async {
-    await _hydrated;
+  void updateCard(BankCardModel c) {
     state = [for (final e in state) if (e.id == c.id) c else e];
-    await _persist();
+    _hydrated.then((_) {
+      state = [for (final e in state) if (e.id == c.id) c else e];
+      _persist();
+    });
+    _persist();
   }
 
-  Future<void> deleteCard(String id) async {
-    await _hydrated;
+  void deleteCard(String id) {
     state = state.where((e) => e.id != id).toList();
-    await _persist();
+    _hydrated.then((_) {
+      state = state.where((e) => e.id != id).toList();
+      _persist();
+    });
+    _persist();
   }
 }
 
 class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
   final Ref ref;
   String? _selectedId;
-  late final Future<void> _hydrated;
 
   SelectedBankCardNotifier(this.ref) : super(null) {
-    _hydrated = _loadSelectedId();
+    _loadSelectedId();
   }
-
-  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _loadSelectedId() async {
     _selectedId = await PrefsStore.loadSelectedBankCardId();
@@ -78,8 +86,8 @@ class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
       state = selected.first;
       return;
     }
-    // اگر کارت انتخاب‌شده حذف شده یا وجود ندارد
-    final currentExists = state != null && cards.any((c) => c.id == state!.id);
+    final current = state;
+    final currentExists = current != null && cards.any((c) => c.id == current.id);
     if (!currentExists) {
       state = cards.first;
       _selectedId = cards.first.id;
@@ -87,17 +95,16 @@ class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
     }
   }
 
-  Future<void> select(BankCardModel card) async {
-    await _hydrated;
+  void select(BankCardModel card) {
     _selectedId = card.id;
     state = card;
-    await PrefsStore.saveSelectedBankCardId(card.id);
+    PrefsStore.saveSelectedBankCardId(card.id);
   }
 
-  Future<void> clearSelection() async {
+  void clearSelection() {
     _selectedId = null;
     state = null;
-    await PrefsStore.clearSelectedBankCardId();
+    PrefsStore.clearSelectedBankCardId();
   }
 }
 

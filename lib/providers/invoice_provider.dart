@@ -26,8 +26,8 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     state = await PrefsStore.loadInvoices();
   }
 
-  Future<void> _persist() async {
-    await PrefsStore.saveInvoices(state);
+  void _persist() {
+    PrefsStore.saveInvoices(state);
   }
 
   Future<void> saveInvoice(InvoiceModel invoice) async {
@@ -149,8 +149,46 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     return result;
   }
 
-  Future<void> convertProformaToInvoice(String id) async {
-    await _hydrated;
+  void convertProformaToInvoice(String id) {
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        return InvoiceModel(
+          id: item.id,
+          number: item.number,
+          customerId: item.customerId,
+          customerName: item.customerName,
+          customerPhone: item.customerPhone,
+          type: 'sale',
+          paymentType: item.paymentType,
+          status: item.remainingAmount == 0 ? 'paid' : 'unpaid',
+          date: item.date,
+          items: item.items,
+          subtotal: item.subtotal,
+          discountPercent: item.discountPercent,
+          discountAmount: item.discountAmount,
+          shippingFee: item.shippingFee,
+          previousDebt: item.previousDebt,
+          deposit: item.deposit,
+          totalAmount: item.totalAmount,
+          paidAmount: item.paidAmount,
+          remainingAmount: item.remainingAmount,
+          notes: item.notes,
+          cardNumber: item.cardNumber,
+          cardBank: item.cardBank,
+          cardOwner: item.cardOwner,
+          createdAt: item.createdAt,
+          supplierId: item.supplierId,
+          supplierName: item.supplierName,
+          totalBuyAmount: item.totalBuyAmount,
+          profitAmount: item.profitAmount,
+          expenseAmount: item.expenseAmount,
+          expenseTitle: item.expenseTitle,
+        );
+      }).toList();
+      _persist();
+    });
+    // optimistic
     state = state.map((item) {
       if (item.id != id) return item;
       return InvoiceModel(
@@ -186,12 +224,50 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         expenseTitle: item.expenseTitle,
       );
     }).toList();
-    await _persist();
   }
 
-  Future<void> recordPayment(String id, double amount) async {
-    await _hydrated;
+  void recordPayment(String id, double amount) {
     if (amount <= 0) return;
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        final safeAmount = amount.clamp(0, item.remainingAmount).toDouble();
+        final remaining = item.totalAmount - (item.paidAmount + safeAmount);
+        return InvoiceModel(
+          id: item.id,
+          number: item.number,
+          customerId: item.customerId,
+          customerName: item.customerName,
+          customerPhone: item.customerPhone,
+          type: item.type,
+          paymentType: item.paymentType,
+          status: remaining <= 0 ? 'paid' : 'partial',
+          date: item.date,
+          items: item.items,
+          subtotal: item.subtotal,
+          discountPercent: item.discountPercent,
+          discountAmount: item.discountAmount,
+          shippingFee: item.shippingFee,
+          previousDebt: item.previousDebt,
+          deposit: item.deposit,
+          totalAmount: item.totalAmount,
+          paidAmount: item.paidAmount + safeAmount,
+          remainingAmount: remaining < 0 ? 0 : remaining,
+          notes: item.notes,
+          cardNumber: item.cardNumber,
+          cardBank: item.cardBank,
+          cardOwner: item.cardOwner,
+          createdAt: item.createdAt,
+          supplierId: item.supplierId,
+          supplierName: item.supplierName,
+          totalBuyAmount: item.totalBuyAmount,
+          profitAmount: item.profitAmount,
+          expenseAmount: item.expenseAmount,
+          expenseTitle: item.expenseTitle,
+        );
+      }).toList();
+      _persist();
+    });
     state = state.map((item) {
       if (item.id != id) return item;
       final safeAmount = amount.clamp(0, item.remainingAmount).toDouble();
@@ -229,6 +305,5 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         expenseTitle: item.expenseTitle,
       );
     }).toList();
-    await _persist();
   }
 }

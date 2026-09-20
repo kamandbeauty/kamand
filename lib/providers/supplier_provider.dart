@@ -23,8 +23,8 @@ class SupplierListNotifier extends StateNotifier<List<SupplierModel>> {
     state = await PrefsStore.loadSuppliers();
   }
 
-  Future<void> _persist() async {
-    await PrefsStore.saveSuppliers(state);
+  void _persist() {
+    PrefsStore.saveSuppliers(state);
   }
 
   Future<void> addSupplier(SupplierModel supplier) async {
@@ -33,37 +33,58 @@ class SupplierListNotifier extends StateNotifier<List<SupplierModel>> {
     await PrefsStore.saveSuppliers(state);
   }
 
-  Future<void> updateSupplier(SupplierModel supplier) async {
-    await _hydrated;
+  void updateSupplier(SupplierModel supplier) {
     state = [
       for (final item in state)
         if (item.id == supplier.id) supplier else item,
     ];
-    await _persist();
+    _hydrated.then((_) {
+      state = [
+        for (final item in state)
+          if (item.id == supplier.id) supplier else item,
+      ];
+      _persist();
+    });
+    _persist();
   }
 
-  Future<void> deleteSupplier(String id) async {
-    await _hydrated;
+  void deleteSupplier(String id) {
     state = state.where((item) => item.id != id).toList();
-    await _persist();
+    _hydrated.then((_) {
+      state = state.where((item) => item.id != id).toList();
+      _persist();
+    });
+    _persist();
   }
 
-  Future<void> updateBalance(String id, double delta) async {
-    await _hydrated;
+  void updateBalance(String id, double delta) {
     state = state.map((item) {
       if (item.id != id) return item;
       return item.copyWith(balance: (item.balance + delta).clamp(0, double.infinity).toDouble());
     }).toList();
-    await _persist();
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        return item.copyWith(balance: (item.balance + delta).clamp(0, double.infinity).toDouble());
+      }).toList();
+      _persist();
+    });
+    _persist();
   }
 
-  Future<void> recordPayment(String id, double amount) async {
-    await _hydrated;
+  void recordPayment(String id, double amount) {
     if (amount <= 0) return;
     state = state.map((item) {
       if (item.id != id) return item;
       return item.copyWith(balance: (item.balance - amount).clamp(0, double.infinity).toDouble());
     }).toList();
-    await _persist();
+    _hydrated.then((_) {
+      state = state.map((item) {
+        if (item.id != id) return item;
+        return item.copyWith(balance: (item.balance - amount).clamp(0, double.infinity).toDouble());
+      }).toList();
+      _persist();
+    });
+    _persist();
   }
 }
