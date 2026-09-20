@@ -38,20 +38,30 @@ jobs:
           set -x
           echo "PWD $(pwd)"
           ls -lh
-          rm -f build.log build.log.from_build
-          touch build.log
-          echo "Starting build at $(date)" | tee build.log
+          rm -f build.log build.log.from_build /tmp/build.log.copy /tmp/build2.log
+          echo "=== Touch test ==="
+          touch build.log; echo "touch build.log exit: $?"
+          ls -lh build.log || echo "build.log not found after touch"
+          touch /tmp/build.log.copy; echo "touch /tmp/build.log.copy exit: $?"
+          ls -lh /tmp/build.log.copy || echo "/tmp copy not found after touch"
+          echo "Starting build at $(date)" | tee build.log | tee -a /tmp/build.log.copy
           echo "Running flutter build..."
-          # Run without pipefail to always capture log
-          flutter build apk --debug --verbose 2>&1 | tee -a build.log; echo "flutter exit: $?" | tee -a build.log
-          echo "Build step finished, log size:"
-          ls -lh build.log || true
-          echo "Last 2000 lines:"
-          tail -n 2000 build.log || true
+          # Run flutter and capture to multiple places
+          flutter build apk --debug --verbose > /tmp/build2.log 2>&1; echo "flutter exit: $?" | tee -a build.log | tee -a /tmp/build.log.copy
+          echo "=== After flutter ==="
+          ls -lh build.log /tmp/build.log.copy /tmp/build2.log || true
+          cat /tmp/build2.log | tail -n 200
+          # Append tmp log to build.log
+          cat /tmp/build2.log >> build.log 2>&1 || true
+          cat /tmp/build2.log >> /tmp/build.log.copy 2>&1 || true
+          echo "Build step finished, log sizes:"
+          ls -lh build.log /tmp/build.log.copy /tmp/build2.log || true
+          echo "Last 2000 lines of /tmp/build2.log:"
+          tail -n 2000 /tmp/build2.log || true
           # Save copy for next steps
           cp build.log build.log.from_build || true
-          cp build.log /tmp/build.log.copy || true
-          ls -lh build.log* /tmp/build.log.copy || true
+          cp /tmp/build.log.copy /tmp/build.log.copy2 || true
+          ls -lh build.log* /tmp/*.log || true
       - name: Create issue from build step
         if: always()
         uses: actions/github-script@v7
