@@ -6,6 +6,9 @@ on:
       - arena/01a0bed4-kamand
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   debug:
     runs-on: ubuntu-latest
@@ -62,15 +65,22 @@ jobs:
       - name: Commit logs to branch for debugging
         if: always()
         run: |
+          set -x
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          pwd
+          ls -lh *.log || true
           mkdir -p /tmp/logs
-          cp analyze.log /tmp/logs/ || true
-          cp build.log /tmp/logs/ || true
+          cp -v analyze.log /tmp/logs/ || true
+          cp -v build.log /tmp/logs/ || true
+          ls -lh /tmp/logs/
           # Checkout a new branch for logs
           git checkout -B arena/logs-debug
-          cp /tmp/logs/analyze.log ./analyze.log || true
-          cp /tmp/logs/build.log ./build.log || true
-          git add analyze.log build.log || true
+          cp -v /tmp/logs/analyze.log ./analyze.log || true
+          cp -v /tmp/logs/build.log ./build.log || true
+          ls -lh *.log || true
+          git add -f analyze.log build.log || true
+          git status || true
           git commit -m "ci: add build logs from failed run ${{ github.run_id }}" || true
-          git push origin arena/logs-debug --force || true
+          git push origin arena/logs-debug --force
+          echo "pushed logs branch"
