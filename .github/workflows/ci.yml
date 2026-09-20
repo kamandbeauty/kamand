@@ -36,15 +36,39 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
+      # پیام‌های تحلیلگر به‌صورت annotation ثبت می‌شوند تا از API گیت‌هاب
+      # قابل خواندن باشند (لاگ خام در بعضی شبکه‌ها در دسترس نیست).
       - name: Analyze
-        # هشدارها و خطاها بیلد را متوقف می‌کنند؛ «info»ها نه (چون پروژه
-        # analysis_options سفارشی ندارد و رفتار پیش‌فرض تحلیلگر تغییر می‌کند).
-        run: flutter analyze --no-pub --no-fatal-infos
+        shell: bash
+        run: |
+          set +e
+          flutter analyze --no-pub --no-fatal-infos 2>&1 | tee analyze-output.txt
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            while IFS= read -r line; do
+              if [ -n "$line" ]; then
+                echo "::error title=analyze::${line//$'\r'/}"
+              fi
+            done < analyze-output.txt
+          fi
+          exit "$status"
 
       # تست‌های مهاجرت داده: تضمین می‌کنند به‌روزرسانی نسخه‌ی نصب‌شده چیزی از
       # اطلاعات کاربر را از دست ندهد و مبلغ‌ها دو بار حساب نشوند.
       - name: Run tests
-        run: flutter test --no-pub
+        shell: bash
+        run: |
+          set +e
+          flutter test --no-pub 2>&1 | tee test-output.txt
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            while IFS= read -r line; do
+              if [ -n "$line" ]; then
+                echo "::error title=test::${line//$'\r'/}"
+              fi
+            done < test-output.txt
+          fi
+          exit "$status"
 
   debug-apk:
     name: Build debug APK

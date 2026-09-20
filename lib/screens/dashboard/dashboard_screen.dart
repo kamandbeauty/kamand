@@ -1466,9 +1466,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     await ref.read(supplierListProvider.notifier).ensureLoaded();
     await ref.read(customerListProvider.notifier).ensureLoaded();
 
-    final previous = existing;
-    final previousSupplierId = previous?.type == 'purchase' ? previous!.supplierId : '';
-    final previousSupplierAmount = previous?.type == 'purchase' ? previous!.remainingAmount : 0.0;
+    final InvoiceModel? previous = existing;
+    final previousSupplierId =
+        (previous != null && previous.type == 'purchase') ? previous.supplierId : '';
+    final previousSupplierAmount =
+        (previous != null && previous.type == 'purchase') ? previous.remainingAmount : 0.0;
     final newSupplierId = inv.type == 'purchase' ? inv.supplierId : '';
     final newSupplierAmount = inv.type == 'purchase' ? inv.remainingAmount : 0.0;
     _applyBalanceDelta(
@@ -1480,10 +1482,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
 
     final customers = ref.read(customerListProvider);
-    final previousCustomerId = previous?.type == 'sale'
-        ? _resolveCustomerId(customers, previous!.customerId, previous.customerName)
+    final previousCustomerId = (previous != null && previous.type == 'sale')
+        ? _resolveCustomerId(customers, previous.customerId, previous.customerName)
         : '';
-    final previousCustomerAmount = previous?.type == 'sale' ? previous!.remainingAmount : 0.0;
+    final previousCustomerAmount =
+        (previous != null && previous.type == 'sale') ? previous.remainingAmount : 0.0;
     final newCustomerId = inv.type == 'sale' ? _resolveCustomerId(customers, inv.customerId, inv.customerName) : '';
     final newCustomerAmount = inv.type == 'sale' ? inv.remainingAmount : 0.0;
     _applyBalanceDelta(
