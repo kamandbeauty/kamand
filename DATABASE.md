@@ -158,3 +158,29 @@
 - هر مشتری می‌تواند چندین فاکتور داشته باشد (`customers.id = invoices.customer_id`).
 - هر فاکتور می‌تواند چندین آیتم داشته باشد (`invoices.id = invoice_items.invoice_id` با `ON DELETE CASCADE`).
 - با حذف هر فاکتور یا ثبت واریزی، مانده حساب مشتری در جدول `customers.balance` به صورت اتوماتیک به‌روزرسانی می‌شود.
+
+---
+
+## نسخه‌ی ساختار و مهاجرت (`PRAGMA user_version`)
+
+فایل SQLite روی گوشی کاربران از نسخه‌ی ۱.۰.۴ وجود دارد؛ بنابراین ساختار جدول‌ها
+با شماره‌ی نسخه ارتقا داده می‌شود و **هیچ جدول یا ردیفی حذف نمی‌شود**
+(`lib/database/app_database.dart`).
+
+| نسخه | توضیح |
+| --- | --- |
+| ۱ | جدول‌های `invoices`، `customers`، `products`، `settings` (عرضه‌شده در ۱.۰.۴) |
+| ۲ | افزودن جدول‌های `suppliers`، `expenses`، `bank_cards`، `invoice_items`، `app_meta`، `data_migrations` و ستون‌های تازه روی جدول‌های قدیمی |
+
+روش کار:
+
+1. `CREATE TABLE IF NOT EXISTS` برای جدول‌های نسخه‌ی ۱ و ۲ (روی نصب‌های موجود
+   بی‌اثر است).
+2. `ALTER TABLE ... ADD COLUMN` برای ستون‌های تازه‌ی جدول‌های قدیمی
+   (مثل `supplierId`، `profitAmount`، `buyPrice`، `mobile`).
+3. `CREATE INDEX IF NOT EXISTS` برای جست‌وجوهای پرتکرار.
+4. بازنویسی کل ساختار در یک تراکنش؛ در صورت خطا `ROLLBACK` و برنامه بدون
+   پایگاه‌داده هم اجرا می‌شود (منبع اصلی داده `SharedPreferences` است).
+
+پس از ارتقا، داده‌های برنامه در همین جدول‌ها آینه (mirror) می‌شوند تا در صورت
+نیاز، بازیابی اطلاعات از پایگاه‌داده امکان‌پذیر باشد.

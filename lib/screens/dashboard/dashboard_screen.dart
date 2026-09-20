@@ -293,6 +293,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.dispose();
   }
 
+  /// پیدا کردن شناسه‌ی واقعی مشتری از روی شناسه یا نام (فاکتورهای قدیمی
+  /// ممکن است شناسه‌ی مشتری نداشته باشند و فقط نام داشته باشند).
+  String _resolveCustomerId(List<CustomerModel> customers, String customerId, String customerName) {
+    for (final customer in customers) {
+      if (customer.id == customerId && customerId.trim().isNotEmpty) return customer.id;
+    }
+    final name = customerName.trim();
+    if (name.isEmpty) return '';
+    for (final customer in customers) {
+      if (customer.name.trim() == name) return customer.id;
+    }
+    return '';
+  }
+
+  /// اعمال تغییر مانده‌حساب: مبلغ قبلی برگردانده و مقدار تازه اضافه می‌شود،
+  /// پس مجموع هرگز دو بار حساب نمی‌شود.
+  void _applyBalanceDelta({
+    required void Function(String id, double delta) apply,
+    required String previousId,
+    required double previousAmount,
+    required String nextId,
+    required double nextAmount,
+  }) {
+    if (previousId.isNotEmpty && previousId != nextId && previousAmount > 0) {
+      apply(previousId, -previousAmount);
+    }
+    if (nextId.isEmpty) return;
+    final delta = previousId == nextId ? nextAmount - previousAmount : nextAmount;
+    if (delta != 0) apply(nextId, delta);
+  }
+
   String _fmtAmt(double v) {
     if (v <= 0) return '';
     final raw = v == v.roundToDouble() ? v.toInt().toString() : v.toString();
@@ -1427,19 +1458,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     await ref.read(invoiceListProvider.notifier).saveInvoice(inv);
     await PrefsStore.clearDraft();
 
-    // اگر فاکتور خرید است، موجودی تامین کننده را به‌روز کن
-    if (inv.type == 'purchase' && inv.remainingAmount > 0 && inv.supplierId.isNotEmpty) {
-      ref.read(supplierListProvider.notifier).updateBalance(inv.supplierId, inv.remainingAmount);
-    }
-    // اگر فروش غیرنقدی است، بدهی مشتری
-    if (inv.type == 'sale' && inv.remainingAmount > 0) {
-      // سعی کن مشتری را پیدا کنی
-      final customers = ref.read(customerListProvider);
-      final match = customers.where((c) => c.name == inv.customerName).toList();
-      if (match.isNotEmpty) {
-        ref.read(customerListProvider.notifier).updateBalance(match.first.id, inv.remainingAmount);
-      }
-    }
+    // مقدار جدید مانده‌حساب مشتری/تامین‌کننده به‌اندازه‌ی «تغییر» اعمال می‌شود.
+    //
+    // در نسخه‌ی قبل هنگام ویرایش فاکتور، کل مبلغ باقی‌مانده دوباره به بدهی
+    // اضافه می‌شد؛ یعنی هر بار ویرایش، بدهی مشتری (و بدهی ما به تامین‌کننده)
+    // دو برابر می‌شد. اینجا فقط اختلاف با فاکتور قبلی اعمال می‌شود.
+    await ref.read(supplierListProvider.notifier).ensureLoaded();
+    await ref.read(customerListProvider.notifier).ensureLoaded();
+
+    final previous = existing;
+    final previousSupplierId = previous?.type == 'purchase' ? previous!.supplierId : '';
+    final previousSupplierAmount = previous?.type == 'purchase' ? previous!.remainingAmount : 0.0;
+    final newSupplierId = inv.type == 'purchase' ? inv.supplierId : '';
+    final newSupplierAmount = inv.type == 'purchase' ? inv.remainingAmount : 0.0;
+    _applyBalanceDelta(
+      apply: ref.read(supplierListProvider.notifier).updateBalance,
+      previousId: previousSupplierId,
+      previousAmount: previousSupplierAmount,
+      nextId: newSupplierId,
+      nextAmount: newSupplierAmount,
+    );
+
+    final customers = ref.read(customerListProvider);
+    final previousCustomerId = previous?.type == 'sale'
+        ? _resolveCustomerId(customers, previous!.customerId, previous.customerName)
+        : '';
+    final previousCustomerAmount = previous?.type == 'sale' ? previous!.remainingAmount : 0.0;
+    final newCustomerId = inv.type == 'sale' ? _resolveCustomerId(customers, inv.customerId, inv.customerName) : '';
+    final newCustomerAmount = inv.type == 'sale' ? inv.remainingAmount : 0.0;
+    _applyBalanceDelta(
+      apply: ref.read(customerListProvider.notifier).updateBalance,
+      previousId: previousCustomerId,
+      previousAmount: previousCustomerAmount,
+      nextId: newCustomerId,
+      nextAmount: newCustomerAmount,
+    );
 
     final nextNum = (int.tryParse(numEn) ?? 1004) + 1;
     _resetFormForNew(nextNumberFa: PersianNumberFormatter.toPersian(nextNum.toString()));

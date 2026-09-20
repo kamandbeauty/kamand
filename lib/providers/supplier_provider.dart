@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/supplier_model.dart';
+import '../core/utils/persistent_list.dart';
 import '../core/utils/prefs_store.dart';
 import '../database/app_database.dart';
+import '../models/supplier_model.dart';
 
 final supplierListProvider =
     StateNotifierProvider<SupplierListNotifier, List<SupplierModel>>((ref) {
@@ -9,82 +10,65 @@ final supplierListProvider =
   return SupplierListNotifier(db);
 });
 
-class SupplierListNotifier extends StateNotifier<List<SupplierModel>> {
+class SupplierListNotifier extends PersistentListNotifier<SupplierModel> {
+  SupplierListNotifier([this.db]);
+
   final AppDatabase? db;
-  late final Future<void> _hydrated;
 
-  SupplierListNotifier([this.db]) : super(const []) {
-    _hydrated = _hydrate();
+  @override
+  Future<List<SupplierModel>> readFromStorage() => PrefsStore.loadSuppliers();
+
+  @override
+  Future<void> writeToStorage(List<SupplierModel> items) async {
+    await PrefsStore.saveSuppliers(items);
+    await db?.mirrorSuppliers(items);
   }
 
-  Future<void> ensureLoaded() => _hydrated;
-
-  Future<void> _hydrate() async {
-    state = await PrefsStore.loadSuppliers();
-  }
-
-  void _persist() {
-    PrefsStore.saveSuppliers(state);
-  }
-
-  Future<void> addSupplier(SupplierModel supplier) async {
-    await _hydrated;
-    state = [...state, supplier];
-    await PrefsStore.saveSuppliers(state);
-  }
+  Future<void> addSupplier(SupplierModel supplier) => mutateAsync(
+        (suppliers) => suppliers.any((item) => item.id == supplier.id)
+            ? suppliers
+            : [...suppliers, supplier],
+      );
 
   void updateSupplier(SupplierModel supplier) {
-    state = [
-      for (final item in state)
-        if (item.id == supplier.id) supplier else item,
-    ];
-    _hydrated.then((_) {
-      state = [
-        for (final item in state)
+    mutate(
+      (suppliers) => [
+        for (final item in suppliers)
           if (item.id == supplier.id) supplier else item,
-      ];
-      _persist();
-    });
-    _persist();
+      ],
+    );
   }
 
   void deleteSupplier(String id) {
-    state = state.where((item) => item.id != id).toList();
-    _hydrated.then((_) {
-      state = state.where((item) => item.id != id).toList();
-      _persist();
-    });
-    _persist();
+    mutate((suppliers) => suppliers.where((item) => item.id != id).toList());
   }
 
+  /// افزایش بدهی ما به تامین‌کننده (فاکتور خرید غیرنقدی).
+  /// مقدار [delta] فقط یک بار اعمال می‌شود.
   void updateBalance(String id, double delta) {
-    state = state.map((item) {
-      if (item.id != id) return item;
-      return item.copyWith(balance: (item.balance + delta).clamp(0, double.infinity).toDouble());
-    }).toList();
-    _hydrated.then((_) {
-      state = state.map((item) {
-        if (item.id != id) return item;
-        return item.copyWith(balance: (item.balance + delta).clamp(0, double.infinity).toDouble());
-      }).toList();
-      _persist();
-    });
-    _persist();
+    if (delta == 0) return;
+    mutate(
+      (suppliers) => [
+        for (final item in suppliers)
+          if (item.id == id)
+            item.copyWith(balance: (item.balance + delta).clamp(0, double.infinity).toDouble())
+          else
+            item,
+      ],
+    );
   }
 
+  /// پرداخت به تامین‌کننده؛ یک بار و بدون تکرار.
   void recordPayment(String id, double amount) {
     if (amount <= 0) return;
-    state = state.map((item) {
-      if (item.id != id) return item;
-      return item.copyWith(balance: (item.balance - amount).clamp(0, double.infinity).toDouble());
-    }).toList();
-    _hydrated.then((_) {
-      state = state.map((item) {
-        if (item.id != id) return item;
-        return item.copyWith(balance: (item.balance - amount).clamp(0, double.infinity).toDouble());
-      }).toList();
-      _persist();
-    });
-    _persist();
+    mutate(
+      (suppliers) => [
+        for (final item in suppliers)
+          if (item.id == id)
+            item.copyWith(balance: (item.balance - amount).clamp(0, double.infinity).toDouble())
+          else
+            item,
+      ],
+    );
   }
 }

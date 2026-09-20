@@ -91,7 +91,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
     });
   }
 
-  void _saveInvoice() {
+  Future<void> _saveInvoice() async {
     final cleanItems = _items
         .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0)
         .toList();
@@ -146,11 +146,36 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
       profitAmount: _totalProfit,
     );
 
-    ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
-    if (_type == 'sale' && _paymentType != 'cash' && newInv.remainingAmount > 0) {
-      ref.read(customerListProvider.notifier).updateBalance(custId, newInv.remainingAmount);
+    // مانده‌حساب مشتری فقط به‌اندازه‌ی «تغییر» فاکتور جابه‌جا می‌شود.
+    // (در نسخه‌ی قبل هنگام ویرایش فاکتور، بدهی مشتری دوباره اضافه می‌شد.)
+    InvoiceModel? previous;
+    if (isEdit) {
+      for (final item in ref.read(invoiceListProvider)) {
+        if (item.id == _editId) {
+          previous = item;
+          break;
+        }
+      }
+    }
+    final previousAmount = previous?.type == 'sale' ? previous!.remainingAmount : 0.0;
+    final previousCustomerId = previous?.type == 'sale' ? previous!.customerId : '';
+    final nextAmount = _type == 'sale' && _paymentType != 'cash' ? newInv.remainingAmount : 0.0;
+    final nextCustomerId = _type == 'sale' && _paymentType != 'cash' ? custId : '';
+
+    await ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
+    await ref.read(customerListProvider.notifier).ensureLoaded();
+
+    if (previousCustomerId.isNotEmpty && previousCustomerId != nextCustomerId && previousAmount > 0) {
+      ref.read(customerListProvider.notifier).updateBalance(previousCustomerId, -previousAmount);
+    }
+    if (nextCustomerId.isNotEmpty) {
+      final delta = previousCustomerId == nextCustomerId ? nextAmount - previousAmount : nextAmount;
+      if (delta != 0) {
+        ref.read(customerListProvider.notifier).updateBalance(nextCustomerId, delta);
+      }
     }
 
+    if (!mounted) return;
     // بعد از ذخیره → صفحه نمایش فاکتور
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => InvoicePreviewScreen(invoice: newInv)),

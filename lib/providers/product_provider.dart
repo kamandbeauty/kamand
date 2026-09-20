@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/product_model.dart';
+import '../core/utils/persistent_list.dart';
 import '../core/utils/prefs_store.dart';
 import '../database/app_database.dart';
+import '../models/product_model.dart';
 
 final productListProvider =
     StateNotifierProvider<ProductListNotifier, List<ProductModel>>((ref) {
@@ -9,56 +10,38 @@ final productListProvider =
   return ProductListNotifier(db);
 });
 
-class ProductListNotifier extends StateNotifier<List<ProductModel>> {
+class ProductListNotifier extends PersistentListNotifier<ProductModel> {
+  ProductListNotifier([this.db]);
+
   final AppDatabase? db;
-  late final Future<void> _hydrated;
 
-  ProductListNotifier([this.db]) : super(const []) {
-    _hydrated = _hydrate();
-  }
+  @override
+  Future<List<ProductModel>> readFromStorage() => PrefsStore.loadProducts();
 
-  Future<void> ensureLoaded() => _hydrated;
-
-  Future<void> _hydrate() async {
-    state = await PrefsStore.loadProducts();
-  }
-
-  void _persist() {
-    PrefsStore.saveProducts(state);
+  @override
+  Future<void> writeToStorage(List<ProductModel> items) async {
+    await PrefsStore.saveProducts(items);
+    await db?.mirrorProducts(items);
   }
 
   void addProduct(ProductModel product) {
-    // optimistic immediate
-    state = [...state, product];
-    _hydrated.then((_) {
-      if (!state.any((p) => p.id == product.id)) {
-        state = [...state, product];
-      }
-      _persist();
-      db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
-    });
+    mutate(
+      (products) => products.any((item) => item.id == product.id)
+          ? products
+          : [...products, product],
+    );
   }
 
   void updateProduct(ProductModel product) {
-    state = [
-      for (final item in state)
-        if (item.id == product.id) product else item,
-    ];
-    _hydrated.then((_) {
-      state = [
-        for (final item in state)
+    mutate(
+      (products) => [
+        for (final item in products)
           if (item.id == product.id) product else item,
-      ];
-      _persist();
-      db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
-    });
+      ],
+    );
   }
 
   void deleteProduct(String id) {
-    state = state.where((item) => item.id != id).toList();
-    _hydrated.then((_) {
-      state = state.where((item) => item.id != id).toList();
-      _persist();
-    });
+    mutate((products) => products.where((item) => item.id != id).toList());
   }
 }

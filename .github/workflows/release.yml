@@ -298,6 +298,61 @@ jobs:
             echo "::warning::apkanalyzer is not available; metadata checks were skipped."
           fi
 
+      # بررسی «به‌روزرسانی بدون حذف نصب»: همان applicationId، شماره‌ی نسخه‌ی
+      # بزرگ‌تر و امضای دیجیتال یکسان با نسخه‌ی منتشرشده‌ی قبلی. اگر این
+      # بررسی رد شود، کاربران مجبور می‌شوند برنامه را حذف و دوباره نصب کنند و
+      # همه‌ی اطلاعاتشان از بین می‌رود.
+      - name: Verify upgrade safety against the previous release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APK_PATHS: ${{ steps.artifacts.outputs.apk_paths }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          CURRENT_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          chmod +x scripts/verify_upgrade_safety.sh
+
+          apk_path="$(printf '%s\n' "$APK_PATHS" | sed '/^[[:space:]]*$/d' | head -n 1)"
+          echo "Checking $apk_path"
+
+          previous_dir="$RUNNER_TEMP/previous-release"
+          mkdir -p "$previous_dir"
+
+          previous_apk=""
+          while IFS= read -r tag; do
+            [[ -n "$tag" ]] || continue
+            [[ "$tag" != "$CURRENT_TAG" ]] || continue
+            rm -rf "$previous_dir"
+            mkdir -p "$previous_dir"
+            if gh release download "$tag" -p '*arm64-v8a*.apk' -D "$previous_dir" >/dev/null 2>&1; then
+              candidate="$(find "$previous_dir" -type f -name '*.apk' | head -n 1)"
+              if [[ -n "$candidate" ]]; then
+                previous_apk="$candidate"
+                echo "Previous release with APK: $tag"
+                break
+              fi
+            fi
+          done < <(gh release list --limit 30 --json tagName,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[].tagName' 2>/dev/null || true)
+
+          if [[ -z "$previous_apk" ]]; then
+            echo "::warning::نسخه‌ی منتشرشده‌ی قبلی با فایل APK پیدا نشد؛ فقط بررسی‌های پایه انجام می‌شود."
+            EXPECTED_VERSION_NAME="$VERSION_NAME" \
+              EXPECTED_VERSION_CODE="$VERSION_CODE" \
+              REQUIRE_NON_DEBUGGABLE=true \
+              scripts/verify_upgrade_safety.sh "$apk_path"
+            exit 0
+          fi
+
+          EXPECTED_VERSION_NAME="$VERSION_NAME" \
+            EXPECTED_VERSION_CODE="$VERSION_CODE" \
+            REQUIRE_NON_DEBUGGABLE=true \
+            PREVIOUS_APK="$previous_apk" \
+            scripts/verify_upgrade_safety.sh "$apk_path"
+
       - name: Upload signed release artifacts
         uses: actions/upload-artifact@v4
         with:

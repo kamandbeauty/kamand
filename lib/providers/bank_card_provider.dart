@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/utils/persistent_list.dart';
 import '../core/utils/prefs_store.dart';
+import '../database/app_database.dart';
 import '../models/bank_card_model.dart';
 
 final bankCardListProvider = StateNotifierProvider<BankCardListNotifier, List<BankCardModel>>((ref) {
-  return BankCardListNotifier();
+  return BankCardListNotifier(ref.watch(appDatabaseProvider));
 });
 
 final selectedBankCardProvider = StateNotifierProvider<SelectedBankCardNotifier, BankCardModel?>((ref) {
@@ -15,50 +17,30 @@ final selectedBankCardProvider = StateNotifierProvider<SelectedBankCardNotifier,
   return notifier;
 });
 
-class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
-  late final Future<void> _hydrated;
+class BankCardListNotifier extends PersistentListNotifier<BankCardModel> {
+  BankCardListNotifier([this.db]);
 
-  BankCardListNotifier() : super(const []) {
-    _hydrated = _hydrate();
-  }
+  final AppDatabase? db;
 
-  Future<void> ensureLoaded() => _hydrated;
+  @override
+  Future<List<BankCardModel>> readFromStorage() => PrefsStore.loadBankCards();
 
-  Future<void> _hydrate() async {
-    state = await PrefsStore.loadBankCards();
-  }
-
-  void _persist() {
-    PrefsStore.saveBankCards(state);
+  @override
+  Future<void> writeToStorage(List<BankCardModel> items) async {
+    await PrefsStore.saveBankCards(items);
+    await db?.mirrorBankCards(items);
   }
 
   void addCard(BankCardModel c) {
-    state = [...state, c];
-    _hydrated.then((_) {
-      if (!state.any((e) => e.id == c.id)) {
-        state = [...state, c];
-      }
-      _persist();
-    });
-    _persist();
+    mutate((cards) => cards.any((e) => e.id == c.id) ? cards : [...cards, c]);
   }
 
   void updateCard(BankCardModel c) {
-    state = [for (final e in state) if (e.id == c.id) c else e];
-    _hydrated.then((_) {
-      state = [for (final e in state) if (e.id == c.id) c else e];
-      _persist();
-    });
-    _persist();
+    mutate((cards) => [for (final e in cards) if (e.id == c.id) c else e]);
   }
 
   void deleteCard(String id) {
-    state = state.where((e) => e.id != id).toList();
-    _hydrated.then((_) {
-      state = state.where((e) => e.id != id).toList();
-      _persist();
-    });
-    _persist();
+    mutate((cards) => cards.where((e) => e.id != id).toList());
   }
 }
 

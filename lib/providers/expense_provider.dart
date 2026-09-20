@@ -1,57 +1,46 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/expense_model.dart';
+import '../core/utils/persistent_list.dart';
 import '../core/utils/prefs_store.dart';
+import '../database/app_database.dart';
+import '../models/expense_model.dart';
 
 final expenseListProvider =
     StateNotifierProvider<ExpenseListNotifier, List<ExpenseModel>>((ref) {
-  return ExpenseListNotifier();
+  final db = ref.watch(appDatabaseProvider);
+  return ExpenseListNotifier(db);
 });
 
-class ExpenseListNotifier extends StateNotifier<List<ExpenseModel>> {
-  late final Future<void> _hydrated;
+class ExpenseListNotifier extends PersistentListNotifier<ExpenseModel> {
+  ExpenseListNotifier([this.db]);
 
-  ExpenseListNotifier() : super(const []) {
-    _hydrated = _hydrate();
+  final AppDatabase? db;
+
+  @override
+  Future<List<ExpenseModel>> readFromStorage() => PrefsStore.loadExpenses();
+
+  @override
+  Future<void> writeToStorage(List<ExpenseModel> items) async {
+    await PrefsStore.saveExpenses(items);
+    await db?.mirrorExpenses(items);
   }
 
-  Future<void> ensureLoaded() => _hydrated;
-
-  Future<void> _hydrate() async {
-    state = await PrefsStore.loadExpenses();
-  }
-
-  void _persist() {
-    PrefsStore.saveExpenses(state);
-  }
-
-  Future<void> addExpense(ExpenseModel expense) async {
-    await _hydrated;
-    state = [...state, expense];
-    await PrefsStore.saveExpenses(state);
-  }
+  Future<void> addExpense(ExpenseModel expense) => mutateAsync(
+        (expenses) => expenses.any((item) => item.id == expense.id)
+            ? expenses
+            : [...expenses, expense],
+      );
 
   void updateExpense(ExpenseModel expense) {
-    state = [
-      for (final item in state)
-        if (item.id == expense.id) expense else item,
-    ];
-    _hydrated.then((_) {
-      state = [
-        for (final item in state)
+    mutate(
+      (expenses) => [
+        for (final item in expenses)
           if (item.id == expense.id) expense else item,
-      ];
-      _persist();
-    });
-    _persist();
+      ],
+    );
   }
 
   void deleteExpense(String id) {
-    state = state.where((item) => item.id != id).toList();
-    _hydrated.then((_) {
-      state = state.where((item) => item.id != id).toList();
-      _persist();
-    });
-    _persist();
+    mutate((expenses) => expenses.where((item) => item.id != id).toList());
   }
 
   // خلاصه‌ها

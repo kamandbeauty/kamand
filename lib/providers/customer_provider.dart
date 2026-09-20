@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/customer_model.dart';
+import '../core/utils/persistent_list.dart';
 import '../core/utils/prefs_store.dart';
 import '../database/app_database.dart';
+import '../models/customer_model.dart';
 
 final customerListProvider =
     StateNotifierProvider<CustomerListNotifier, List<CustomerModel>>((ref) {
@@ -9,85 +10,66 @@ final customerListProvider =
   return CustomerListNotifier(db);
 });
 
-class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
+class CustomerListNotifier extends PersistentListNotifier<CustomerModel> {
+  CustomerListNotifier([this.db]);
+
   final AppDatabase? db;
-  late final Future<void> _hydrated;
 
-  CustomerListNotifier([this.db]) : super(const []) {
-    _hydrated = _hydrate();
+  @override
+  Future<List<CustomerModel>> readFromStorage() => PrefsStore.loadCustomers();
+
+  @override
+  Future<void> writeToStorage(List<CustomerModel> items) async {
+    await PrefsStore.saveCustomers(items);
+    await db?.mirrorCustomers(items);
   }
 
-  Future<void> ensureLoaded() => _hydrated;
-
-  Future<void> _hydrate() async {
-    state = await PrefsStore.loadCustomers();
-  }
-
-  void _persist() {
-    PrefsStore.saveCustomers(state);
-  }
-
-  Future<void> addCustomer(CustomerModel customer) async {
-    await _hydrated;
-    state = [...state, customer];
-    await PrefsStore.saveCustomers(state);
-    db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
-  }
+  Future<void> addCustomer(CustomerModel customer) => mutateAsync(
+        (customers) => customers.any((item) => item.id == customer.id)
+            ? customers
+            : [...customers, customer],
+      );
 
   void updateCustomer(CustomerModel customer) {
-    state = [
-      for (final item in state)
-        if (item.id == customer.id) customer else item,
-    ];
-    _hydrated.then((_) {
-      state = [
-        for (final item in state)
+    mutate(
+      (customers) => [
+        for (final item in customers)
           if (item.id == customer.id) customer else item,
-      ];
-      _persist();
-      db?.persistCustomerRecord(customer.id, customer.name, customer.balance, customer.createdAt);
-    });
-    _persist();
+      ],
+    );
   }
 
   void deleteCustomer(String id) {
-    state = state.where((item) => item.id != id).toList();
-    _hydrated.then((_) {
-      state = state.where((item) => item.id != id).toList();
-      _persist();
-    });
-    _persist();
+    mutate((customers) => customers.where((item) => item.id != id).toList());
   }
 
+  /// ثبت دریافت از مشتری؛ مانده‌حساب دقیقاً یک بار کم می‌شود.
   void recordPayment(String id, double amount) {
     if (amount <= 0) return;
-    state = state.map((item) {
-      if (item.id != id) return item;
-      return _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble());
-    }).toList();
-    _hydrated.then((_) {
-      state = state.map((item) {
-        if (item.id != id) return item;
-        return _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble());
-      }).toList();
-      _persist();
-    });
-    _persist();
+    mutate(
+      (customers) => [
+        for (final item in customers)
+          if (item.id == id)
+            _withBalance(item, (item.balance - amount).clamp(0, double.infinity).toDouble())
+          else
+            item,
+      ],
+    );
   }
 
+  /// افزایش مانده‌حساب مشتری (مثلاً هنگام ثبت فاکتور غیرنقدی).
+  /// مقدار [delta] فقط یک بار اعمال می‌شود و در به‌روزرسانی نسخه دو برابر نمی‌شود.
   void updateBalance(String id, double delta) {
-    state = state.map((item) {
-      if (item.id != id) return item;
-      return _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble());
-    }).toList();
-    _hydrated.then((_) {
-      state = state.map((item) {
-        if (item.id != id) return item;
-        return _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble());
-      }).toList();
-      _persist();
-    });
-    _persist();
+    if (delta == 0) return;
+    mutate(
+      (customers) => [
+        for (final item in customers)
+          if (item.id == id)
+            _withBalance(item, (item.balance + delta).clamp(0, double.infinity).toDouble())
+          else
+            item,
+      ],
+    );
   }
 
   CustomerModel _withBalance(CustomerModel item, double balance) => CustomerModel(

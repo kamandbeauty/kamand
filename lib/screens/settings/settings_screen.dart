@@ -6,7 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/migration/app_migration.dart';
+import '../../core/migration/migration_models.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/app_messenger.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/invoice_provider.dart';
@@ -15,6 +19,7 @@ import '../../providers/bank_card_provider.dart';
 import '../../providers/supplier_provider.dart';
 import '../../providers/expense_provider.dart';
 import '../../core/utils/prefs_store.dart';
+import '../../database/app_database.dart';
 import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
@@ -90,6 +95,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
 
+          const SizedBox(height: 16),
+
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.system_update_alt, color: _orange),
+              title: const Text('انتقال داده‌ها به نسخه‌ی جدید'),
+              subtitle: Text(ref.watch(migrationReportProvider).summary),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: _showMigrationSheet,
+            ),
+          ),
+
           const SizedBox(height: 24),
 
           // Quick summary
@@ -121,7 +138,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Center(
             child: Text(
-              'فاکتور ساز روبی نسخه ۱.۰.۵\nطراحی شده توسط استودیو جاوید',
+              'فاکتور ساز روبی نسخه ${AppConstants.appVersion}\nطراحی شده توسط استودیو جاوید',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
@@ -283,6 +300,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
 
       await PrefsStore.importAll(Map<String, dynamic>.from(decoded));
+      // پشتیبان نسخه‌های قدیمی ممکن است فیلدهای تازه را نداشته باشد؛
+      // همان گام‌های مهاجرت (که بی‌اثر/idempotent هستند) این‌جا هم اجرا
+      // می‌شوند تا داده‌ی بازگردانی‌شده کامل شود.
+      await AppMigration.instance.reapplyAfterRestore(database: ref.read(appDatabaseProvider));
       ref.invalidate(userProvider);
       ref.invalidate(businessProvider);
       ref.invalidate(settingsProvider);
@@ -304,6 +325,124 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         SnackBar(content: Text('بازگردانی پشتیبان انجام نشد: $error')),
       );
     }
+  }
+
+  Future<void> _showMigrationSheet() async {
+    final report = ref.read(migrationReportProvider);
+    final backup = await AppMigration.instance.lastBackupInfo();
+    if (!mounted) return;
+
+    final backupPath = '${backup?['path'] ?? ''}';
+    final backupDate = '${backup?['createdAt'] ?? ''}';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(4)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text('انتقال داده‌ها به نسخه‌ی جدید', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 10),
+                  _infoRow('نسخه داده‌ها', '${PrefsStore.schemaVersion}'),
+                  _infoRow('وضعیت', report.summary),
+                  if (report.migratedRecords > 0) _infoRow('رکوردهای منتقل‌شده', '${report.migratedRecords}'),
+                  if (report.appliedSteps.isNotEmpty) _infoRow('گام‌های اجراشده', report.appliedSteps.join('، ')),
+                  if (report.finishedAt != null) _infoRow('آخرین اجرا', _formatTimestamp(report.finishedAt!)),
+                  if (backupPath.isNotEmpty) _infoRow('پشتیبان پیش از به‌روزرسانی', backupDate.isEmpty ? backupPath : '${_formatTimestamp(DateTime.tryParse(backupDate) ?? DateTime.now())} • ثبت‌شده'),
+                  if (report.warnings.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text('هشدارها', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    ...report.warnings.map((w) => Text('• $w', style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)))),
+                  ],
+                  if (report.errors.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text('خطاها', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    ...report.errors.map((e) => Text('• $e', style: const TextStyle(fontSize: 12, color: Color(0xFFB91C1C)))),
+                  ],
+                  const SizedBox(height: 12),
+                  const Text(
+                    'هنگام نصب نسخه‌ی جدید، اطلاعات نسخه‌ی قبلی روی گوشی حفظ می‌شود و همین‌جا ساختار آن به‌روز می‌شود؛ نیازی به حذف و نصب دوباره‌ی برنامه نیست.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 14),
+                  if (backupPath.isNotEmpty)
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _restoreUpgradeBackup();
+                      },
+                      icon: const Icon(Icons.restore),
+                      label: const Text('بازیابی داده‌های پیش از به‌روزرسانی'),
+                    ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    child: const Text('بستن'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _restoreUpgradeBackup() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('بازیابی پشتیبان'),
+        content: const Text('اطلاعات فعلی با نسخه‌ی پشتیبان پیش از به‌روزرسانی جایگزین می‌شود. ادامه می‌دهید؟'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('انصراف')),
+          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('بازیابی')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final report = await AppMigration.instance.restoreLastUpgradeBackup(
+        database: ref.read(appDatabaseProvider),
+      );
+      if (!mounted) return;
+      ref.invalidate(userProvider);
+      ref.invalidate(businessProvider);
+      ref.invalidate(settingsProvider);
+      ref.invalidate(invoiceListProvider);
+      ref.invalidate(customerListProvider);
+      ref.invalidate(productListProvider);
+      ref.invalidate(bankCardListProvider);
+      ref.invalidate(selectedBankCardProvider);
+      ref.invalidate(supplierListProvider);
+      ref.invalidate(expenseListProvider);
+      AppMessenger.show(report.summary, isError: report.hasError);
+    } catch (error) {
+      AppMessenger.show('بازیابی پشتیبان انجام نشد: $error', isError: true);
+    }
+  }
+
+  String _formatTimestamp(DateTime time) {
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${time.year}/${two(time.month)}/${two(time.day)} - ${two(time.hour)}:${two(time.minute)}';
   }
 
   Widget _infoRow(String k, String v) {

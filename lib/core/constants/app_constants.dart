@@ -1,6 +1,12 @@
 class AppConstants {
   static const String appName = 'فاکتور ساز روبی';
-  static const String appVersion = '5.8.0';
+
+  /// نسخه‌ی نمایشی برنامه؛ با `version:` در pubspec.yaml یکسان نگه داشته شود.
+  static const String appVersion = '1.0.8';
+
+  /// شناسه‌ی اندروید. **هرگز نباید تغییر کند**؛ تغییر آن یعنی کاربر مجبور
+  /// می‌شود برنامه را حذف و دوباره نصب کند و همه‌ی اطلاعاتش می‌رود.
+  static const String androidApplicationId = 'com.ruby.factor_ruby';
 
   static const List<String> currencies = [
     'تومان',

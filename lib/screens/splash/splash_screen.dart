@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
+import '../../core/migration/app_migration.dart';
+import '../../core/utils/app_messenger.dart';
 import '../../core/utils/prefs_store.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../onboarding/onboarding_screen.dart';
@@ -64,6 +66,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         },
       ),
     );
+
+    // اگر نسخه‌ی تازه روی نصب قبلی اجرا شده باشد، نتیجه‌ی انتقال داده‌ها یک بار
+    // به کاربر نشان داده می‌شود تا خیالش از سالم بودن اطلاعات راحت باشد.
+    final migration = ref.read(migrationReportProvider);
+    if (migration.didRun || migration.hasError) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AppMessenger.show(
+          migration.hasError
+              ? 'به‌روزرسانی داده‌ها کامل نشد؛ اطلاعات شما دست‌نخورده است و در اجرای بعدی ادامه می‌یابد.'
+              : migration.summary,
+          isError: migration.hasError,
+        );
+      });
+    }
   }
 
   @override
