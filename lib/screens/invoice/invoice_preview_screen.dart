@@ -523,20 +523,38 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             color: _cardGray,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  'خریدار: ${inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName}',
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      inv.type == 'purchase'
+                                          ? 'تامین‌کننده: ${inv.supplierName.isEmpty ? inv.customerName : inv.supplierName}'
+                                          : 'خریدار: ${inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName}',
+                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                                    ),
+                                  ),
+                                  if (inv.customerPhone.isNotEmpty && inv.type != 'purchase')
+                                    Text(
+                                      inv.customerPhone,
+                                      style: const TextStyle(fontSize: 11, color: _slate500),
+                                      textDirection: TextDirection.ltr,
+                                    ),
+                                ],
                               ),
-                              if (inv.customerPhone.isNotEmpty)
-                                Text(
-                                  inv.customerPhone,
-                                  style: const TextStyle(fontSize: 11, color: _slate500),
-                                  textDirection: TextDirection.ltr,
+                              if (inv.type == 'sale' && inv.profitAmount > 0) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('سود: ${PersianNumberFormatter.formatCurrency(inv.profitAmount)}', style: const TextStyle(fontSize: 11, color: Color(0xFF059669), fontWeight: FontWeight.w800)),
+                                    if (inv.totalBuyAmount > 0)
+                                      Text('خرید: ${PersianNumberFormatter.formatCurrency(inv.totalBuyAmount)}', style: const TextStyle(fontSize: 10, color: _slate500)),
+                                  ],
                                 ),
+                              ],
                             ],
                           ),
                         ),
@@ -629,6 +647,10 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                         ),
                         const SizedBox(height: 12),
                         _totalRow('جمع اقلام', inv.subtotal),
+                        if (inv.totalBuyAmount > 0 && inv.type == 'sale')
+                          _totalRow('بهای خرید', inv.totalBuyAmount, color: _slate500),
+                        if (inv.profitAmount > 0 && inv.type == 'sale')
+                          _totalRow('سود ناخالص', inv.profitAmount, color: const Color(0xFF059669)),
                         if (inv.discountAmount > 0)
                           _totalRow(
                             inv.discountPercent > 0
@@ -638,6 +660,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             color: const Color(0xFF059669),
                           ),
                         if (inv.shippingFee > 0) _totalRow('هزینه ارسال', inv.shippingFee),
+                        if (inv.expenseAmount > 0) _totalRow(inv.expenseTitle.isNotEmpty ? inv.expenseTitle : 'هزینه', inv.expenseAmount, color: const Color(0xFFE11D48)),
                         if (inv.previousDebt > 0)
                           _totalRow('بدهی قبلی', inv.previousDebt, color: const Color(0xFFE11D48)),
                         if (inv.deposit > 0)
@@ -660,6 +683,11 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             ),
                           ],
                         ),
+                        if (inv.type == 'sale' && inv.profitAmount > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: _totalRow('سود خالص', inv.netProfit, color: const Color(0xFF059669)),
+                          ),
                         if (inv.paidAmount > 0 && inv.paymentType != 'cash')
                           Padding(
                             padding: const EdgeInsets.only(top: 6),

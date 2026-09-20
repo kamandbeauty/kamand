@@ -127,16 +127,28 @@ class InvoiceListScreen extends ConsumerWidget {
                         onTap: () => _showDetail(context, ref, inv),
                         contentPadding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                         title: Text(
-                          inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName,
+                          inv.type == 'purchase'
+                              ? (inv.supplierName.isEmpty ? inv.customerName : inv.supplierName)
+                              : (inv.customerName.isEmpty ? 'مشتری عمومی' : inv.customerName),
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
                             color: dark ? Colors.white : _slate800,
                           ),
                         ),
-                        subtitle: Text(
-                          'فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
-                          style: const TextStyle(fontSize: 11, color: _slate500),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
+                              style: const TextStyle(fontSize: 11, color: _slate500),
+                            ),
+                            if (inv.type == 'sale' && inv.profitAmount > 0)
+                              Text(
+                                'سود: ${PersianNumberFormatter.formatCurrency(inv.profitAmount)}',
+                                style: const TextStyle(fontSize: 10, color: Color(0xFF059669), fontWeight: FontWeight.w700),
+                              ),
+                          ],
                         ),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,

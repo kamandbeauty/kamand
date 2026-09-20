@@ -7,6 +7,8 @@ import '../../models/invoice_model.dart';
 import '../../models/customer_model.dart';
 import '../../models/product_model.dart';
 import '../../models/bank_card_model.dart';
+import '../../models/supplier_model.dart';
+import '../../models/expense_model.dart';
 
 /// ذخیره پایدار اطلاعات کاربر، فاکتورها و تنظیمات روی گوشی.
 class PrefsStore {
@@ -19,6 +21,8 @@ class PrefsStore {
   static const _kDraft = 'ruby_invoice_draft_v1';
   static const _kBankCards = 'ruby_bank_cards_v1';
   static const _kSelectedBankCard = 'ruby_selected_bank_card_v1';
+  static const _kSuppliers = 'ruby_suppliers_v1';
+  static const _kExpenses = 'ruby_expenses_v1';
 
   static Future<SharedPreferences> get _p async => SharedPreferences.getInstance();
 
@@ -112,6 +116,26 @@ class PrefsStore {
     return map == null ? null : InvoiceModel.fromMap(map);
   }
 
+  static Future<void> saveSuppliers(List<SupplierModel> suppliers) async {
+    final p = await _p;
+    await p.setString(_kSuppliers, jsonEncode(suppliers.map((e) => e.toMap()).toList()));
+  }
+
+  static Future<List<SupplierModel>> loadSuppliers() async {
+    final list = await _loadList(_kSuppliers);
+    return list.map(SupplierModel.fromMap).toList();
+  }
+
+  static Future<void> saveExpenses(List<ExpenseModel> expenses) async {
+    final p = await _p;
+    await p.setString(_kExpenses, jsonEncode(expenses.map((e) => e.toMap()).toList()));
+  }
+
+  static Future<List<ExpenseModel>> loadExpenses() async {
+    final list = await _loadList(_kExpenses);
+    return list.map(ExpenseModel.fromMap).toList();
+  }
+
   static Future<void> clearDraft() async {
     final p = await _p;
     await p.remove(_kDraft);
@@ -119,7 +143,7 @@ class PrefsStore {
 
   static Future<Map<String, dynamic>> exportAll() async {
     return {
-      'schemaVersion': 1,
+      'schemaVersion': 2,
       'exportedAt': DateTime.now().toIso8601String(),
       'user': (await loadUser())?.toMap(),
       'business': (await loadBusiness())?.toMap(),
@@ -127,6 +151,8 @@ class PrefsStore {
       'invoices': (await loadInvoices()).map((e) => e.toMap()).toList(),
       'customers': (await loadCustomers()).map((e) => e.toMap()).toList(),
       'products': (await loadProducts()).map((e) => e.toMap()).toList(),
+      'suppliers': (await loadSuppliers()).map((e) => e.toMap()).toList(),
+      'expenses': (await loadExpenses()).map((e) => e.toMap()).toList(),
       'draft': (await loadDraft())?.toMap(),
       'bankCards': (await loadBankCards()).map((e) => e.toMap()).toList(),
       'selectedBankCardId': await loadSelectedBankCardId(),
@@ -150,6 +176,12 @@ class PrefsStore {
     }
     if (data['products'] is List) {
       await saveProducts(_mapList(data['products']).map(ProductModel.fromMap).toList());
+    }
+    if (data['suppliers'] is List) {
+      await saveSuppliers(_mapList(data['suppliers']).map(SupplierModel.fromMap).toList());
+    }
+    if (data['expenses'] is List) {
+      await saveExpenses(_mapList(data['expenses']).map(ExpenseModel.fromMap).toList());
     }
     if (data['bankCards'] is List) {
       await saveBankCards(_mapList(data['bankCards']).map(BankCardModel.fromMap).toList());

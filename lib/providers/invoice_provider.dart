@@ -85,6 +85,8 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
               unit: item.unit,
               unitPrice: item.unitPrice,
               totalPrice: item.totalPrice,
+              buyPrice: item.buyPrice,
+              productId: item.productId,
             ),
           )
           .toList(),
@@ -102,6 +104,12 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       cardBank: source.cardBank,
       cardOwner: source.cardOwner,
       createdAt: source.createdAt,
+      supplierId: source.supplierId,
+      supplierName: source.supplierName,
+      totalBuyAmount: source.totalBuyAmount,
+      profitAmount: source.profitAmount,
+      expenseAmount: source.expenseAmount,
+      expenseTitle: source.expenseTitle,
     );
 
     state = [...state, copied];
@@ -153,6 +161,12 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         cardBank: item.cardBank,
         cardOwner: item.cardOwner,
         createdAt: item.createdAt,
+        supplierId: item.supplierId,
+        supplierName: item.supplierName,
+        totalBuyAmount: item.totalBuyAmount,
+        profitAmount: item.profitAmount,
+        expenseAmount: item.expenseAmount,
+        expenseTitle: item.expenseTitle,
       );
     }).toList();
     _persist();
@@ -187,6 +201,12 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
         cardBank: item.cardBank,
         cardOwner: item.cardOwner,
         createdAt: item.createdAt,
+        supplierId: item.supplierId,
+        supplierName: item.supplierName,
+        totalBuyAmount: item.totalBuyAmount,
+        profitAmount: item.profitAmount,
+        expenseAmount: item.expenseAmount,
+        expenseTitle: item.expenseTitle,
       );
     }).toList();
     _persist();

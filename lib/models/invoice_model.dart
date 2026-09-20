@@ -26,6 +26,16 @@ class InvoiceModel {
   final String cardOwner;
   final String createdAt;
 
+  // جدید: تامین کننده برای فاکتور خرید
+  final String supplierId;
+  final String supplierName;
+  // جدید: محاسبه سود
+  final double totalBuyAmount;
+  final double profitAmount;
+  // جدید: هزینه‌های مرتبط
+  final double expenseAmount;
+  final String expenseTitle;
+
   InvoiceModel({
     required this.id,
     required this.number,
@@ -51,7 +61,25 @@ class InvoiceModel {
     this.cardBank = '',
     this.cardOwner = '',
     required this.createdAt,
+    this.supplierId = '',
+    this.supplierName = '',
+    this.totalBuyAmount = 0,
+    this.profitAmount = 0,
+    this.expenseAmount = 0,
+    this.expenseTitle = '',
   });
+
+  // سود خالص با کسر هزینه و تخفیف
+  double get netProfit {
+    if (type == 'purchase') return 0;
+    // سود = فروش - خرید - تخفیف + (سود شامل هزینه ارسال نمی‌شود مگر اینکه جدا حساب کنیم)
+    return profitAmount - discountAmount;
+  }
+
+  double get profitPercent {
+    if (subtotal <= 0) return 0;
+    return (profitAmount / subtotal) * 100;
+  }
 
   Map<String, dynamic> toMap() => {
     'id': id,
@@ -78,6 +106,12 @@ class InvoiceModel {
     'cardBank': cardBank,
     'cardOwner': cardOwner,
     'createdAt': createdAt,
+    'supplierId': supplierId,
+    'supplierName': supplierName,
+    'totalBuyAmount': totalBuyAmount,
+    'profitAmount': profitAmount,
+    'expenseAmount': expenseAmount,
+    'expenseTitle': expenseTitle,
   };
 
   factory InvoiceModel.fromMap(Map<String, dynamic> map) => InvoiceModel(
@@ -107,5 +141,11 @@ class InvoiceModel {
     cardBank: map['cardBank'] ?? '',
     cardOwner: map['cardOwner'] ?? '',
     createdAt: map['createdAt'] ?? '',
+    supplierId: map['supplierId'] ?? '',
+    supplierName: map['supplierName'] ?? '',
+    totalBuyAmount: (map['totalBuyAmount'] ?? 0).toDouble(),
+    profitAmount: (map['profitAmount'] ?? 0).toDouble(),
+    expenseAmount: (map['expenseAmount'] ?? 0).toDouble(),
+    expenseTitle: map['expenseTitle'] ?? '',
   );
 }

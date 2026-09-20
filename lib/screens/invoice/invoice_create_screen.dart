@@ -71,6 +71,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   String _notes = 'با تشکر از خرید شما';
 
   double get _subtotal => _items.fold(0, (sum, i) => sum + i.totalPrice);
+  double get _totalBuy => _items.fold(0, (sum, i) => sum + i.totalBuyPrice);
+  double get _totalProfit => _items.fold(0, (sum, i) => sum + i.totalProfit);
   double get _totalAmount => (_subtotal - _discountAmount + _shippingFee).clamp(0, double.infinity);
 
   void _addItem() {
@@ -83,6 +85,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
           unit: 'عدد',
           unitPrice: 100000,
           totalPrice: 100000,
+          buyPrice: 0,
         ),
       );
     });
@@ -139,6 +142,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
       notes: _notes,
       cardNumber: cardNum,
       createdAt: _date,
+      totalBuyAmount: _totalBuy,
+      profitAmount: _totalProfit,
     );
 
     ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
@@ -239,6 +244,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                                 unit: item.unit,
                                 unitPrice: item.unitPrice,
                                 totalPrice: item.quantity * item.unitPrice,
+                                buyPrice: item.buyPrice,
+                                productId: item.productId,
                               );
                               setState(() {});
                             },
@@ -260,6 +267,8 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                                       unit: item.unit,
                                       unitPrice: item.unitPrice,
                                       totalPrice: q * item.unitPrice,
+                                      buyPrice: item.buyPrice,
+                                      productId: item.productId,
                                     );
                                     setState(() {});
                                   },
@@ -280,6 +289,30 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                                       unit: item.unit,
                                       unitPrice: p,
                                       totalPrice: item.quantity * p,
+                                      buyPrice: item.buyPrice,
+                                      productId: item.productId,
+                                    );
+                                    setState(() {});
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: item.buyPrice.toString(),
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(labelText: 'قیمت خرید'),
+                                  onChanged: (v) {
+                                    final b = double.tryParse(v) ?? 0;
+                                    _items[idx] = InvoiceItemModel(
+                                      id: item.id,
+                                      title: item.title,
+                                      quantity: item.quantity,
+                                      unit: item.unit,
+                                      unitPrice: item.unitPrice,
+                                      totalPrice: item.quantity * item.unitPrice,
+                                      buyPrice: b,
+                                      productId: item.productId,
                                     );
                                     setState(() {});
                                   },
@@ -287,6 +320,11 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                               ),
                             ],
                           ),
+                          if (item.buyPrice > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text('سود: ${PersianNumberFormatter.formatCurrency(item.totalProfit)}', style: const TextStyle(fontSize: 11, color: Color(0xFF059669), fontWeight: FontWeight.w700)),
+                            ),
                         ],
                       ),
                     ),
@@ -311,6 +349,14 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
                             PersianNumberFormatter.formatCurrency(_totalAmount),
                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('سود:', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          Text(PersianNumberFormatter.formatCurrency(_totalProfit), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
                         ],
                       ),
                     ],
