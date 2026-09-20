@@ -22,12 +22,29 @@ jobs:
           cache: true
       - run: flutter pub get
       - name: Analyze
-        run: flutter analyze --no-pub 2>&1 | tee analyze.log; echo "analyze exit ${PIPESTATUS[0]}" | tee -a analyze.log
+        run: |
+          set -o pipefail
+          flutter analyze --no-pub 2>&1 | tee analyze.log
+          echo "analyze exit ${PIPESTATUS[0]}" | tee -a analyze.log
+          cat analyze.log
       - name: Build debug APK
+        id: build
         run: |
           set -o pipefail
           flutter build apk --debug --verbose 2>&1 | tee build.log
           echo "build exit ${PIPESTATUS[0]}" | tee -a build.log
+          # Always show last 500 lines
+          echo "--- LAST 500 LINES OF BUILD LOG ---"
+          tail -n 500 build.log
+      - name: Show build failure details
+        if: failure() || steps.build.outcome == 'failure'
+        run: |
+          echo "=== BUILD FAILED - FULL LOG TAIL ==="
+          tail -n 1000 build.log || true
+          echo "=== ANALYZE LOG ==="
+          cat analyze.log || true
+          # Try to find Dart errors
+          grep -i -E "error|exception|failed" build.log | tail -n 200 || true
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -42,3 +59,18 @@ jobs:
           name: debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: warn
+      - name: Commit logs to branch for debugging
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p /tmp/logs
+          cp analyze.log /tmp/logs/ || true
+          cp build.log /tmp/logs/ || true
+          # Checkout a new branch for logs
+          git checkout -B arena/logs-debug
+          cp /tmp/logs/analyze.log ./analyze.log || true
+          cp /tmp/logs/build.log ./build.log || true
+          git add analyze.log build.log || true
+          git commit -m "ci: add build logs from failed run ${{ github.run_id }}" || true
+          git push origin arena/logs-debug --force || true
