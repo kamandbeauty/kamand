@@ -72,7 +72,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     }
 
     final copied = InvoiceModel(
-      id: 'inv-${DateTime.now().millisecondsSinceEpoch}-copy',
+      id: 'inv-${DateTime.now().microsecondsSinceEpoch}-copy',
       number: nextNumber.toString(),
       customerId: source.customerId,
       customerName: source.customerName,
@@ -162,10 +162,13 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     final index = state.indexWhere((item) => item.id == id);
     if (index < 0) return;
     final previous = state[index];
-    final paidAmount = (previous.paidAmount + amount)
-        .clamp(0, previous.totalAmount)
-        .toDouble();
-    final remaining = (previous.totalAmount - paidAmount)
+    // `totalAmount` in dashboard invoices is already net of the deposit, while
+    // `paidAmount` also records that deposit. Recomputing remaining as
+    // total-minus-paid would therefore subtract the deposit twice. Payments
+    // must reduce the persisted remaining amount directly.
+    final appliedAmount = amount.clamp(0, previous.remainingAmount).toDouble();
+    final paidAmount = previous.paidAmount + appliedAmount;
+    final remaining = (previous.remainingAmount - appliedAmount)
         .clamp(0, double.infinity)
         .toDouble();
     final updated = InvoiceModel(

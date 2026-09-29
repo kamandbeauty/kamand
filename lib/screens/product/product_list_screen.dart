@@ -189,7 +189,7 @@ class ProductListScreen extends ConsumerWidget {
                   SizedBox(
                     height: 48,
                     child: FilledButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
                         final name = nameCtrl.text.trim();
                         if (name.isEmpty) {
                           ScaffoldMessenger.of(sheetContext).showSnackBar(
@@ -201,7 +201,7 @@ class ProductListScreen extends ConsumerWidget {
                             ? _nextCode(ref.read(productListProvider))
                             : _englishDigits(codeCtrl.text.trim());
                         final item = ProductModel(
-                          id: product?.id ?? 'p-${DateTime.now().millisecondsSinceEpoch}',
+                          id: product?.id ?? 'p-${DateTime.now().microsecondsSinceEpoch}',
                           code: code,
                           name: name,
                           unit: unitCtrl.text.trim().isEmpty ? 'عدد' : unitCtrl.text.trim(),
@@ -210,12 +210,28 @@ class ProductListScreen extends ConsumerWidget {
                           stock: _number(stockCtrl.text).roundToDouble(),
                           notes: notesCtrl.text.trim(),
                         );
-                        if (product == null) {
-                          ref.read(productListProvider.notifier).addProduct(item);
-                        } else {
-                          ref.read(productListProvider.notifier).updateProduct(item);
+                        try {
+                          if (product == null) {
+                            await ref
+                                .read(productListProvider.notifier)
+                                .addProduct(item);
+                          } else {
+                            await ref
+                                .read(productListProvider.notifier)
+                                .updateProduct(item);
+                          }
+                          if (sheetContext.mounted) {
+                            Navigator.pop(sheetContext, true);
+                          }
+                        } catch (error) {
+                          if (sheetContext.mounted) {
+                            ScaffoldMessenger.of(sheetContext).showSnackBar(
+                              SnackBar(
+                                content: Text('ذخیره محصول انجام نشد: $error'),
+                              ),
+                            );
+                          }
                         }
-                        Navigator.pop(sheetContext, true);
                       },
                       icon: Icon(product == null ? Icons.add : Icons.check),
                       label: Text(product == null ? 'درج محصول' : 'ذخیره تغییرات'),
@@ -249,9 +265,13 @@ class ProductListScreen extends ConsumerWidget {
     }
   }
 
-  void _copyProduct(BuildContext context, WidgetRef ref, ProductModel product) {
+  Future<void> _copyProduct(
+    BuildContext context,
+    WidgetRef ref,
+    ProductModel product,
+  ) async {
     final copy = ProductModel(
-      id: 'p-${DateTime.now().millisecondsSinceEpoch}-copy',
+      id: 'p-${DateTime.now().microsecondsSinceEpoch}-copy',
       code: _nextCode(ref.read(productListProvider)),
       name: product.name,
       unit: product.unit,
@@ -260,10 +280,18 @@ class ProductListScreen extends ConsumerWidget {
       stock: product.stock,
       notes: product.notes,
     );
-    ref.read(productListProvider.notifier).addProduct(copy);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('محصول کپی شد')),
-    );
+    try {
+      await ref.read(productListProvider.notifier).addProduct(copy);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('محصول کپی شد')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('کپی محصول انجام نشد: $error')),
+      );
+    }
   }
 
   Future<void> _deleteProduct(BuildContext context, WidgetRef ref, ProductModel product) async {
@@ -286,7 +314,15 @@ class ProductListScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    ref.read(productListProvider.notifier).deleteProduct(product.id);
+    try {
+      await ref.read(productListProvider.notifier).deleteProduct(product.id);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حذف محصول انجام نشد: $error')),
+      );
+      return;
+    }
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('محصول حذف شد')),

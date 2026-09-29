@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
@@ -140,11 +143,13 @@ class PrefsStore {
   }
 
   static Future<Map<String, dynamic>> exportAll() async {
+    final business = await loadBusiness();
     return {
-      'schemaVersion': 2,
+      'schemaVersion': 3,
       'exportedAt': DateTime.now().toIso8601String(),
       'user': (await loadUser())?.toMap(),
-      'business': (await loadBusiness())?.toMap(),
+      'business': business?.toMap(),
+      'brandingImages': await _exportBrandingImages(business),
       'settings': (await loadSettings())?.toMap(),
       'invoices': (await loadInvoices()).map((e) => e.toMap()).toList(),
       'customers': (await loadCustomers()).map((e) => e.toMap()).toList(),
@@ -157,51 +162,178 @@ class PrefsStore {
   }
 
   static Future<void> importAll(Map<String, dynamic> data) async {
-    final user = _mapOrNull(data['user']);
-    final business = _mapOrNull(data['business']);
-    final settings = _mapOrNull(data['settings']);
-    final draft = _mapOrNull(data['draft']);
+    final schemaVersion = data['schemaVersion'];
+    if (schemaVersion is! num || schemaVersion < 1 || schemaVersion > 3) {
+      throw const FormatException('نسخه فایل پشتیبان پشتیبانی نمی‌شود');
+    }
 
-    if (user != null) await saveUser(UserModel.fromMap(user));
-    if (business != null) await saveBusiness(BusinessProfileModel.fromMap(business));
-    if (settings != null) await saveSettings(AppSettingsModel.fromMap(settings));
-    if (data['invoices'] is List) {
-      await saveInvoices(_mapList(data['invoices']).map(InvoiceModel.fromMap).toList());
+    // Parse and validate every section before changing any persisted value.
+    // This prevents a malformed backup from being applied only halfway.
+    final userMap = _mapOrNull(data['user']);
+    final businessMap = _mapOrNull(data['business']);
+    final settingsMap = _mapOrNull(data['settings']);
+    final draftMap = _mapOrNull(data['draft']);
+    final parsedUser = userMap == null ? null : UserModel.fromMap(userMap);
+    var parsedBusiness = businessMap == null
+        ? null
+        : BusinessProfileModel.fromMap(businessMap);
+    final parsedSettings = settingsMap == null
+        ? null
+        : AppSettingsModel.fromMap(settingsMap);
+    final parsedDraft = draftMap == null ? null : InvoiceModel.fromMap(draftMap);
+    final parsedInvoices = _requireMapList(data, 'invoices')
+        .map(InvoiceModel.fromMap)
+        .toList();
+    final parsedCustomers = _requireMapList(data, 'customers')
+        .map(CustomerModel.fromMap)
+        .toList();
+    final parsedProducts = _requireMapList(data, 'products')
+        .map(ProductModel.fromMap)
+        .toList();
+    final parsedCards = _requireMapList(data, 'bankCards')
+        .map(BankCardModel.fromMap)
+        .toList();
+
+    final normalizedLedger = <String, Map<String, dynamic>>{};
+    final ledger = _mapOrNull(data['invoiceBalanceLedger']);
+    if (ledger != null) {
+      for (final entry in ledger.entries) {
+        final value = _mapOrNull(entry.value);
+        if (value == null ||
+            value['customerId'] is! String ||
+            value['impact'] is! num) {
+          throw const FormatException('دفتر مانده حساب در فایل معتبر نیست');
+        }
+        normalizedLedger[entry.key] = {
+          'customerId': value['customerId'],
+          'impact': (value['impact'] as num).toDouble(),
+        };
+      }
     }
-    if (data['customers'] is List) {
-      await saveCustomers(_mapList(data['customers']).map(CustomerModel.fromMap).toList());
+
+    if (parsedBusiness != null) {
+      parsedBusiness = await _restoreBrandingImages(
+        parsedBusiness,
+        _mapOrNull(data['brandingImages']),
+      );
     }
-    if (data['products'] is List) {
-      await saveProducts(_mapList(data['products']).map(ProductModel.fromMap).toList());
-    }
-    if (data['bankCards'] is List) {
-      await saveBankCards(_mapList(data['bankCards']).map(BankCardModel.fromMap).toList());
-    }
-    if (data['selectedBankCardId'] is String &&
-        (data['selectedBankCardId'] as String).isNotEmpty) {
-      await saveSelectedBankCardId(data['selectedBankCardId'] as String);
+
+    if (parsedUser != null) await saveUser(parsedUser);
+    if (parsedBusiness != null) await saveBusiness(parsedBusiness);
+    if (parsedSettings != null) await saveSettings(parsedSettings);
+    await saveInvoices(parsedInvoices);
+    await saveCustomers(parsedCustomers);
+    await saveProducts(parsedProducts);
+    await saveBankCards(parsedCards);
+    await saveInvoiceBalanceLedger(normalizedLedger);
+
+    final selectedCardId = data['selectedBankCardId'];
+    if (selectedCardId is String && selectedCardId.isNotEmpty) {
+      await saveSelectedBankCardId(selectedCardId);
     } else {
       await clearSelectedBankCardId();
     }
-    final ledger = _mapOrNull(data['invoiceBalanceLedger']);
-    if (ledger == null) {
-      // Backups created before schema v2 have no reliable information about
-      // which invoice amounts were already included in customer balances.
-      // An empty ledger makes those records legacy-safe instead of guessing.
-      await saveInvoiceBalanceLedger(<String, Map<String, dynamic>>{});
-    } else {
-      final normalized = <String, Map<String, dynamic>>{};
-      for (final entry in ledger.entries) {
-        final value = _mapOrNull(entry.value);
-        if (value != null) normalized[entry.key] = value;
-      }
-      await saveInvoiceBalanceLedger(normalized);
-    }
-    if (draft != null) {
-      await saveDraft(InvoiceModel.fromMap(draft));
+    if (parsedDraft != null) {
+      await saveDraft(parsedDraft);
     } else {
       await clearDraft();
     }
+  }
+
+  static Future<Map<String, String>> _exportBrandingImages(
+    BusinessProfileModel? business,
+  ) async {
+    if (business == null) return <String, String>{};
+    final result = <String, String>{};
+    final paths = {
+      'logo': business.logoPath,
+      'stamp': business.stampPath,
+      if (business.signaturePath != business.stampPath)
+        'signature': business.signaturePath,
+    };
+    for (final entry in paths.entries) {
+      if (entry.value.isEmpty) continue;
+      try {
+        final file = File(entry.value);
+        if (await file.exists()) {
+          result[entry.key] = base64Encode(await file.readAsBytes());
+        }
+      } catch (_) {
+        // A missing optional branding image must not prevent data backup.
+      }
+    }
+    return result;
+  }
+
+  static Future<BusinessProfileModel> _restoreBrandingImages(
+    BusinessProfileModel business,
+    Map<String, dynamic>? encoded,
+  ) async {
+    final restoredPaths = <String, String>{};
+    if (encoded != null) {
+      // Decode all values first so malformed base64 cannot partially alter the
+      // imported profile.
+      final decoded = <String, List<int>>{};
+      for (final key in const ['logo', 'stamp', 'signature']) {
+        final value = encoded[key];
+        if (value == null) continue;
+        if (value is! String || value.length > 16 * 1024 * 1024) {
+          throw const FormatException('تصاویر فایل پشتیبان معتبر نیستند');
+        }
+        decoded[key] = base64Decode(value);
+      }
+      if (decoded.isNotEmpty) {
+        final documents = await getApplicationDocumentsDirectory();
+        final folder = Directory(p.join(documents.path, 'branding'));
+        if (!await folder.exists()) await folder.create(recursive: true);
+        for (final entry in decoded.entries) {
+          final path = p.join(
+            folder.path,
+            '${entry.key}_restored_${DateTime.now().microsecondsSinceEpoch}.png',
+          );
+          await File(path).writeAsBytes(entry.value, flush: true);
+          restoredPaths[entry.key] = path;
+        }
+      }
+    }
+
+    Future<String> usablePath(String key, String oldPath) async {
+      final restored = restoredPaths[key];
+      if (restored != null) return restored;
+      if (oldPath.isNotEmpty && await File(oldPath).exists()) return oldPath;
+      return '';
+    }
+
+    final logoPath = await usablePath('logo', business.logoPath);
+    final stampPath = await usablePath('stamp', business.stampPath);
+    final signaturePath = business.signaturePath == business.stampPath &&
+            restoredPaths['signature'] == null
+        ? stampPath
+        : await usablePath('signature', business.signaturePath);
+    return business.copyWith(
+      logoPath: logoPath,
+      stampPath: stampPath,
+      signaturePath: signaturePath,
+    );
+  }
+
+  static List<Map<String, dynamic>> _requireMapList(
+    Map<String, dynamic> data,
+    String key,
+  ) {
+    final value = data[key];
+    if (value is! List) {
+      throw FormatException('بخش $key در فایل پشتیبان معتبر نیست');
+    }
+    final result = <Map<String, dynamic>>[];
+    for (final item in value) {
+      final map = _mapOrNull(item);
+      if (map == null) {
+        throw FormatException('یکی از رکوردهای $key معتبر نیست');
+      }
+      result.add(map);
+    }
+    return result;
   }
 
   static Future<Map<String, dynamic>?> _loadMap(String key) async {

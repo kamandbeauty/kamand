@@ -60,6 +60,12 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
+      - name: Analyze Dart code
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        run: flutter test
+
       - name: Read app version
         id: version
         shell: bash

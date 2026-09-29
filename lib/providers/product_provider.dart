@@ -54,5 +54,6 @@ class ProductListNotifier extends StateNotifier<List<ProductModel>> {
     await _hydrated;
     state = state.where((item) => item.id != id).toList();
     await PrefsStore.saveProducts(state);
+    await db?.deleteProductRecord(id);
   }
 }

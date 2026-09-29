@@ -143,6 +143,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _shippingFee = 0;
   double _depositAmount = 0;
   double _prevDebtAmount = 0;
+  bool _savingInvoice = false;
   int? _selectedRow;
   int? _typingRow;
   Timer? _suggestionTimer;
@@ -562,7 +563,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final base = currentNumber + 1;
     final numFa = PersianNumberFormatter.toPersian(base.toString());
     final tab = _DraftTab(
-      id: 'tab-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'tab-${DateTime.now().microsecondsSinceEpoch}',
       title: 'پیش فاکتور ${PersianNumberFormatter.toPersian(_tabSeq.toString())}',
       invoiceNumber: numFa,
       dateLabel: _todayLabel(),
@@ -886,12 +887,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
-  void _addCurrentProductToCatalog(int idx) {
+  Future<void> _addCurrentProductToCatalog(int idx) async {
     final it = _items[idx];
     final name = it.title.trim();
     if (name.isEmpty) return;
-    final products = ref.read(productListProvider);
-    final existingIndex = products.indexWhere((p) => p.name.trim() == name);
+    try {
+      final products = ref.read(productListProvider);
+      final existingIndex = products.indexWhere((p) => p.name.trim() == name);
     if (existingIndex >= 0) {
       final old = products[existingIndex];
       final updated = ProductModel(
@@ -904,7 +906,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         stock: old.stock,
         notes: old.notes,
       );
-      ref.read(productListProvider.notifier).updateProduct(updated);
+      await ref.read(productListProvider.notifier).updateProduct(updated);
+      if (!mounted) return;
       _hideSuggestions();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('قیمت آخر «$name» در کاتالوگ به‌روز شد')),
@@ -912,7 +915,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return;
     }
     final p = ProductModel(
-      id: 'p-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'p-${DateTime.now().microsecondsSinceEpoch}',
       code: '${100 + products.length + 1}',
       name: name,
       unit: it.unit.isEmpty ? 'عدد' : it.unit,
@@ -921,11 +924,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       stock: 0,
       notes: '',
     );
-    ref.read(productListProvider.notifier).addProduct(p);
+    await ref.read(productListProvider.notifier).addProduct(p);
+    if (!mounted) return;
     _hideSuggestions();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('«$name» به کاتالوگ اضافه شد')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('«$name» به کاتالوگ اضافه شد')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ذخیره کاتالوگ انجام نشد: $error')),
+      );
+    }
   }
 
   Future<void> _editInvoiceNumber() async {
@@ -1331,7 +1341,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _addItem() {
     setState(() {
       _items.add(InvoiceItemModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
         title: '',
         quantity: 1,
         unit: 'عدد',
@@ -1373,6 +1383,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _saveInvoice() async {
+    if (_savingInvoice) return;
     final cleanItems = _items
         .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0 || e.totalPrice > 0)
         .toList();
@@ -1389,8 +1400,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return;
     }
 
-    final selectedCard = ref.read(selectedBankCardProvider);
-    final biz = ref.read(businessProvider);
+    setState(() => _savingInvoice = true);
+    try {
+      final selectedCard = ref.read(selectedBankCardProvider);
+      final biz = ref.read(businessProvider);
     final card = selectedCard?.cardNumber ??
         (biz.bankCards.isNotEmpty ? biz.bankCards.first : '');
     final cardBank = selectedCard?.bankName ??
@@ -1441,11 +1454,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final finalPaid = _paymentType == 'cash' ? payable : depositAmt;
 
     final inv = InvoiceModel(
-      id: _editId ?? 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      id: _editId ?? 'inv-${DateTime.now().microsecondsSinceEpoch}',
       number: numEn,
       customerId: _customerId.isNotEmpty
           ? _customerId
-          : 'c-${DateTime.now().millisecondsSinceEpoch}',
+          : 'c-${DateTime.now().microsecondsSinceEpoch}',
       customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
       customerPhone: _customerPhone.trim(),
       type: _invoiceType == 'sale'
@@ -1487,11 +1500,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _snapshotCurrentToActiveTab();
 
     // باز کردن صفحه نمایش فاکتور + اشتراک
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => InvoicePreviewScreen(invoice: inv),
-      ),
-    );
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InvoicePreviewScreen(invoice: inv),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ذخیره فاکتور انجام نشد: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingInvoice = false);
+    }
   }
 
   @override
@@ -1583,9 +1606,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   alignment: Alignment.centerRight,
                   child: _isEditing
                       ? TextButton(
-                          onPressed: _saveInvoice,
+                          onPressed: _savingInvoice ? null : _saveInvoice,
                           child: Text(
-                            'ذخیره',
+                            _savingInvoice ? 'در حال ذخیره…' : 'ذخیره',
                             style: TextStyle(
                               color: accent,
                               fontWeight: FontWeight.w900,
@@ -2239,11 +2262,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       label: 'نمایش مهر و امضا روی فاکتور',
                       value: st.showStamp,
                       dark: dark,
-                      onChanged: (v) {
+                      onChanged: (v) async {
                         final enabled = v ?? false;
-                        ref.read(settingsProvider.notifier).updateSettings(
-                              st.copyWith(showStamp: enabled, showSignature: enabled),
+                        try {
+                          await ref
+                              .read(settingsProvider.notifier)
+                              .updateSettings(
+                                st.copyWith(
+                                  showStamp: enabled,
+                                  showSignature: enabled,
+                                ),
+                              );
+                        } catch (error) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('ذخیره تنظیمات انجام نشد: $error'),
+                              ),
                             );
+                          }
+                        }
                       },
                       trailing: (biz.stampPath.isEmpty && biz.signaturePath.isEmpty)
                           ? TextButton(
@@ -2454,7 +2492,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             // 9) ذخیره و اشتراک‌گذاری / ذخیره تغییرات
             InkWell(
-              onTap: _saveInvoice,
+              onTap: _savingInvoice ? null : _saveInvoice,
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 height: 56,
@@ -2586,7 +2624,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   (e) => e.title.trim().isEmpty && e.unitPrice == 0,
                                 );
                                 final row = InvoiceItemModel(
-                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  id: DateTime.now().microsecondsSinceEpoch.toString(),
                                   title: product.name,
                                   quantity: 1,
                                   unit: product.unit,

@@ -65,6 +65,7 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
     await _hydrated;
     state = state.where((item) => item.id != id).toList();
     await _persist();
+    await db?.deleteCustomerRecord(id);
   }
 
   Future<void> recordPayment(String id, double amount) async {

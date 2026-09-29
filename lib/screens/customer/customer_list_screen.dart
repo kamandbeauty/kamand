@@ -107,18 +107,26 @@ class CustomerListScreen extends ConsumerWidget {
     );
 
     if (saved == true) {
-      await ref.read(customerListProvider.notifier).addCustomer(
-            CustomerModel(
-              id: 'customer-${DateTime.now().millisecondsSinceEpoch}',
-              name: nameCtrl.text.trim(),
-              mobile: mobileCtrl.text.trim(),
-              phone: '',
-              address: addressCtrl.text.trim(),
-              notes: notesCtrl.text.trim(),
-              balance: 0,
-              createdAt: JalaliHelper.getTodayJalali(),
-            ),
+      try {
+        await ref.read(customerListProvider.notifier).addCustomer(
+              CustomerModel(
+                id: 'customer-${DateTime.now().microsecondsSinceEpoch}',
+                name: nameCtrl.text.trim(),
+                mobile: mobileCtrl.text.trim(),
+                phone: '',
+                address: addressCtrl.text.trim(),
+                notes: notesCtrl.text.trim(),
+                balance: 0,
+                createdAt: JalaliHelper.getTodayJalali(),
+              ),
+            );
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('ذخیره مشتری انجام نشد: $error')),
           );
+        }
+      }
     }
 
     nameCtrl.dispose();

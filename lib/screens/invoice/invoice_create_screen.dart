@@ -28,6 +28,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   late String _type;
   late String _paymentType;
   String? _editId;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -77,7 +78,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
     setState(() {
       _items.add(
         InvoiceItemModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
           title: 'آیتم جدید',
           quantity: 1,
           unit: 'عدد',
@@ -89,6 +90,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
   }
 
   Future<void> _saveInvoice() async {
+    if (_saving) return;
     final cleanItems = _items
         .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0)
         .toList();
@@ -109,13 +111,13 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
     }
     final custId = widget.editInvoice?.customerId ??
         existingId ??
-        'c-${DateTime.now().millisecondsSinceEpoch}';
+        'c-${DateTime.now().microsecondsSinceEpoch}';
     final business = ref.read(businessProvider);
     final cardNum = business.bankCards.isNotEmpty ? business.bankCards.first : '';
 
     final isEdit = _editId != null;
     final newInv = InvoiceModel(
-      id: isEdit ? _editId! : 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      id: isEdit ? _editId! : 'inv-${DateTime.now().microsecondsSinceEpoch}',
       number: _number,
       customerId: custId,
       customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
@@ -141,15 +143,25 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
       createdAt: _date,
     );
 
-    // InvoiceListNotifier applies the exact customer-balance delta for create
-    // and edit operations; doing it here as well would double the debt.
-    await ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
-    if (!mounted) return;
+    setState(() => _saving = true);
+    try {
+      // InvoiceListNotifier applies the exact customer-balance delta for create
+      // and edit operations; doing it here as well would double the debt.
+      await ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
+      if (!mounted) return;
+      setState(() => _saving = false);
 
-    // بعد از ذخیره → صفحه نمایش فاکتور
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => InvoicePreviewScreen(invoice: newInv)),
-    );
+      // بعد از ذخیره → صفحه نمایش فاکتور
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => InvoicePreviewScreen(invoice: newInv)),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ذخیره فاکتور انجام نشد: $error')),
+      );
+    }
   }
 
   @override
@@ -323,7 +335,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _saveInvoice,
+                  onPressed: _saving ? null : _saveInvoice,
                   icon: Icon(isEdit ? Icons.check : Icons.save),
                   label: Text(isEdit ? 'ذخیره تغییرات' : 'ذخیره فاکتور'),
                 ),

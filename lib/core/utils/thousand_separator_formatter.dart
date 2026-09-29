@@ -13,17 +13,22 @@ class ThousandSeparatorInputFormatter extends TextInputFormatter {
 
   static String faToEn(String s) {
     const fa = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     const en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    var r = s;
+    var result = s;
     for (var i = 0; i < 10; i++) {
-      r = r.replaceAll(fa[i], en[i]);
+      result = result.replaceAll(fa[i], en[i]).replaceAll(ar[i], en[i]);
     }
-    return r;
+    return result;
   }
 
   /// فقط ارقام (+ نقطه اعشار اختیاری)
   static String digitsOnly(String s, {bool allowDecimal = true}) {
-    var t = faToEn(s).replaceAll(',', '').replaceAll('٬', '').replaceAll(' ', '');
+    var t = faToEn(s)
+        .replaceAll(',', '')
+        .replaceAll('٬', '')
+        .replaceAll('٫', '.')
+        .replaceAll(' ', '');
     if (allowDecimal) {
       t = t.replaceAll(RegExp(r'[^0-9.]'), '');
       final parts = t.split('.');
