@@ -32,11 +32,15 @@ jobs:
     name: Build & Export Android APK
     needs: test
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.3
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Export Android APK
         run: bash scripts/ci/export_android.sh
