@@ -121,7 +121,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          if ! ./gradlew clean --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/gradle-clean.log"; then
+          if ! ./gradlew clean --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$RUNNER_TEMP/gradle-clean.log"; then
             while IFS= read -r line; do
               echo "::error::$line"
             done < <(tail -n 30 "$RUNNER_TEMP/gradle-clean.log")
