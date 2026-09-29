@@ -33,6 +33,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   bool _busy = false;
   Uint8List? _previewBytes;
   Size? _imgSize;
+  String? _loadError;
 
   @override
   void initState() {
@@ -44,20 +45,34 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   }
 
   Future<void> _load() async {
-    final bytes = await File(widget.imagePath).readAsBytes();
-    final decoded = await decodeImageFromList(bytes);
-    if (!mounted) return;
-    setState(() {
-      _previewBytes = bytes;
-      _imgSize = Size(decoded.width.toDouble(), decoded.height.toDouble());
-    });
+    try {
+      final file = File(widget.imagePath);
+      if (!await file.exists()) {
+        throw const FileSystemException('فایل انتخاب‌شده پیدا نشد');
+      }
+      final bytes = await file.readAsBytes();
+      if (bytes.isEmpty) throw const FormatException('فایل تصویر خالی است');
+      final decoded = await decodeImageFromList(bytes);
+      final size = Size(decoded.width.toDouble(), decoded.height.toDouble());
+      decoded.dispose();
+      if (!mounted) return;
+      setState(() {
+        _previewBytes = bytes;
+        _imgSize = size;
+        _loadError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _loadError = 'خواندن تصویر انجام نشد: $error');
+    }
   }
 
   Future<void> _confirm() async {
     if (_busy || _previewBytes == null) return;
     setState(() => _busy = true);
+    String? savedPath;
     try {
-      final path = await ImageProcessHelper.processAndSave(
+      savedPath = await ImageProcessHelper.processAndSave(
         bytes: _previewBytes!,
         kind: widget.kind,
         left: _left,
@@ -66,17 +81,16 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
         bottom: _bottom,
         removeWhite: widget.kind == 'logo' ? false : _removeWhite,
       );
-      if (!mounted) return;
-      Navigator.pop(context, path);
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطا در پردازش تصویر: $e')),
+          SnackBar(content: Text('خطا در پردازش تصویر: $error')),
         );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+    if (savedPath != null && mounted) Navigator.pop(context, savedPath);
   }
 
   @override
@@ -102,9 +116,38 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _previewBytes == null
-                ? const Center(child: CircularProgressIndicator(color: _orange))
-                : LayoutBuilder(
+            child: _loadError != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.broken_image_outlined,
+                              color: Colors.white70, size: 48),
+                          const SizedBox(height: 12),
+                          Text(
+                            _loadError!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton(
+                            onPressed: () {
+                              setState(() => _loadError = null);
+                              _load();
+                            },
+                            child: const Text('تلاش دوباره'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _previewBytes == null
+                    ? const Center(
+                        child: CircularProgressIndicator(color: _orange),
+                      )
+                    : LayoutBuilder(
                     builder: (ctx, box) {
                       return Center(
                         child: AspectRatio(
