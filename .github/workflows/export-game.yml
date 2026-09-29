@@ -45,8 +45,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android Build-Tools & Platform-Tools
+      - name: Accept Android SDK Licenses & Install Build-Tools
         run: |
+          yes | sdkmanager --licenses || true
           sdkmanager --install "build-tools;34.0.0" "platforms;android-34" "platform-tools"
 
       - name: Setup Godot 4.3 Headless & Export Templates
@@ -123,7 +124,6 @@ jobs:
         run: |
           mkdir -p builds/web
           godot --headless --export-release "Web" builds/web/index.html
-          # Include standalone offline backup as well
           cp builds/web/lumi-standalone.html builds/web/standalone.html || true
 
       - name: Upload Web Build Artifact
