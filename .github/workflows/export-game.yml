@@ -1,4 +1,4 @@
-name: Build & Export Lumi Game (Android APK & Web)
+name: Build & Export Lumi Android APK
 
 on:
   push:
@@ -21,15 +21,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Run Core & Phase 3 Verification Tests
+      - name: Run Verification Tests
         run: |
           python3 tests/verify_bubble_core.py
           python3 tests/verify_phase2_suite.py
           python3 tests/verify_phase3_suite.py
           python3 tests/benchmark_stress_test.py
 
-  export-android:
-    name: Export Android APK
+  build-android-apk:
+    name: Build & Export Android APK
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -42,7 +42,7 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Configure Android SDK Path & Licenses
+      - name: Configure Android SDK
         run: |
           SDK_DIR="/usr/local/lib/android/sdk"
           if [ ! -d "$SDK_DIR" ]; then
@@ -51,14 +51,11 @@ jobs:
           echo "ANDROID_HOME=${SDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=${SDK_DIR}" >> $GITHUB_ENV
           
-          # Accept licenses non-interactively
           if [ -f "${SDK_DIR}/cmdline-tools/latest/bin/sdkmanager" ]; then
             yes | "${SDK_DIR}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          elif [ -f "${SDK_DIR}/cmdline-tools/bin/sdkmanager" ]; then
-            yes | "${SDK_DIR}/cmdline-tools/bin/sdkmanager" --licenses || true
           fi
 
-      - name: Setup Godot 4.3 Headless & Export Templates
+      - name: Setup Godot 4.3 Headless & Android Export Templates
         run: |
           GODOT_VERSION="4.3"
           GODOT_RELEASE="stable"
@@ -80,7 +77,6 @@ jobs:
         run: |
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
           
-          # Configure Godot Editor Settings for Android Keystore & SDK
           mkdir -p ~/.config/godot
           cat <<EOF > ~/.config/godot/editor_settings-4.tres
           [gd_resource type="EditorSettings" format=3]
@@ -95,48 +91,11 @@ jobs:
       - name: Export Android APK
         run: |
           mkdir -p builds/android
-          godot --headless --export-debug "Android" builds/android/lumi-bubblewood-debug.apk
+          godot --headless --export-debug "Android" builds/android/lumi-bubblewood.apk
 
-      - name: Upload Android APK Artifact
+      - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: Lumi-Android-APK
-          path: builds/android/lumi-bubblewood-debug.apk
-          if-no-files-found: error
-
-  export-web:
-    name: Export HTML5 Web
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Godot 4.3 Headless & Export Templates
-        run: |
-          GODOT_VERSION="4.3"
-          GODOT_RELEASE="stable"
-          
-          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip
-          unzip -q Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip
-          sudo mv Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64 /usr/local/bin/godot
-          chmod +x /usr/local/bin/godot
-
-          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz
-          unzip -q Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz
-          
-          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}
-          mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}/
-
-      - name: Export Web HTML5 Build
-        run: |
-          mkdir -p builds/web
-          godot --headless --export-release "Web" builds/web/index.html
-          cp builds/web/lumi-standalone.html builds/web/standalone.html || true
-
-      - name: Upload Web Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Lumi-Web-HTML5
-          path: builds/web/
+          path: builds/android/lumi-bubblewood.apk
           if-no-files-found: error
