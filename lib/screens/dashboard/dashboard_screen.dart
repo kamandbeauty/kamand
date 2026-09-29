@@ -26,7 +26,6 @@ import '../../providers/bank_card_provider.dart';
 import '../../core/utils/replace_on_type_field.dart';
 import '../../core/utils/thousand_separator_formatter.dart';
 import '../../core/utils/prefs_store.dart';
-import '../../core/utils/prefs_store.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -49,6 +48,7 @@ class _DraftTab {
   final String id;
   String title;
   String? editId;
+  String customerId;
   String customerName;
   String customerPhone;
   String invoiceNumber;
@@ -71,6 +71,7 @@ class _DraftTab {
     required this.id,
     required this.title,
     this.editId,
+    this.customerId = '',
     this.customerName = '',
     this.customerPhone = '',
     this.invoiceNumber = '۱',
@@ -124,6 +125,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   // Form state — متصل به دیتابیس واقعی (§29)
   String? _editId;
+  String _customerId = '';
   String _customerName = '';
   String _customerPhone = '';
   String _invoiceNumber = '۱';
@@ -306,6 +308,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _loadInvoiceForEdit(InvoiceModel e, {bool asDraft = false}) {
     setState(() {
       _editId = asDraft ? null : e.id;
+      _customerId = e.customerId;
       _customerName = e.customerName == 'مشتری عمومی' ? '' : e.customerName;
       _customerPhone = e.customerPhone;
       _invoiceNumber = PersianNumberFormatter.toPersian(e.number);
@@ -349,6 +352,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _resetFormForNew({String? nextNumberFa}) {
     setState(() {
       _editId = null;
+      _customerId = '';
       _customerName = '';
       _customerPhone = '';
       if (nextNumberFa != null) _invoiceNumber = nextNumberFa;
@@ -400,7 +404,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final draft = InvoiceModel(
       id: 'draft-home',
       number: _faToEn(_invoiceNumber),
-      customerId: '',
+      customerId: _customerId,
       customerName: _customerName,
       customerPhone: _customerPhone,
       type: _invoiceType,
@@ -460,6 +464,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (i < 0) return;
     final t = _draftTabs[i];
     t.editId = _editId;
+    t.customerId = _customerId;
     t.customerName = _customerName;
     t.customerPhone = _customerPhone;
     t.invoiceNumber = _invoiceNumber;
@@ -491,6 +496,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _restoreTab(_DraftTab t) {
     _editId = t.editId;
+    _customerId = t.customerId;
     _customerName = t.customerName;
     _customerPhone = t.customerPhone;
     _invoiceNumber = t.invoiceNumber;
@@ -1095,6 +1101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (selected == null || !mounted) return;
     final phone = selected.mobile.isNotEmpty ? selected.mobile : selected.phone;
     setState(() {
+      _customerId = selected.id;
       _customerName = selected.name;
       _customerPhone = phone;
       _setCtrl(_nameCtrl, selected.name);
@@ -1436,7 +1443,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final inv = InvoiceModel(
       id: _editId ?? 'inv-${DateTime.now().millisecondsSinceEpoch}',
       number: numEn,
-      customerId: existing?.customerId ?? 'c-${DateTime.now().millisecondsSinceEpoch}',
+      customerId: _customerId.isNotEmpty
+          ? _customerId
+          : 'c-${DateTime.now().millisecondsSinceEpoch}',
       customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
       customerPhone: _customerPhone.trim(),
       type: _invoiceType == 'sale'
@@ -1669,6 +1678,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     controller: _nameCtrl,
                     dark: dark,
                     onChanged: (v) {
+                      _customerId = '';
                       _customerName = v;
                       final i = _draftTabs.indexWhere((t) => t.id == _activeTabId);
                       if (i >= 0) {
@@ -1707,7 +1717,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     controller: _phoneCtrl,
                     dark: dark,
                     isPhone: true,
-                    onChanged: (v) => _customerPhone = v,
+                    onChanged: (v) {
+                      _customerId = '';
+                      _customerPhone = v;
+                    },
                   ),
                   const SizedBox(height: 14),
                   Divider(color: dark ? _slate700 : const Color(0xFFE8EBF2), height: 1),

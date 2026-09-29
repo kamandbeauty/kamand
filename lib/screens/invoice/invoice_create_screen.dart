@@ -88,7 +88,7 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
     });
   }
 
-  void _saveInvoice() {
+  Future<void> _saveInvoice() async {
     final cleanItems = _items
         .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0)
         .toList();
@@ -141,10 +141,10 @@ class _InvoiceCreateScreenState extends ConsumerState<InvoiceCreateScreen> {
       createdAt: _date,
     );
 
-    ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
-    if (_type == 'sale' && _paymentType != 'cash' && newInv.remainingAmount > 0) {
-      ref.read(customerListProvider.notifier).updateBalance(custId, newInv.remainingAmount);
-    }
+    // InvoiceListNotifier applies the exact customer-balance delta for create
+    // and edit operations; doing it here as well would double the debt.
+    await ref.read(invoiceListProvider.notifier).saveInvoice(newInv);
+    if (!mounted) return;
 
     // بعد از ذخیره → صفحه نمایش فاکتور
     Navigator.of(context).pushReplacement(

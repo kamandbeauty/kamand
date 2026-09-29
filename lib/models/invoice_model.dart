@@ -26,6 +26,17 @@ class InvoiceModel {
   final String cardOwner;
   final String createdAt;
 
+  /// Amount this invoice contributes to the customer's outstanding balance.
+  ///
+  /// `previousDebt` is displayed on the invoice, but it already belongs to the
+  /// customer's balance and must not be added for a second time.
+  double get customerBalanceImpact {
+    if (type != 'sale' || paymentType == 'cash') return 0;
+    return (remainingAmount - previousDebt)
+        .clamp(0, double.infinity)
+        .toDouble();
+  }
+
   InvoiceModel({
     required this.id,
     required this.number,

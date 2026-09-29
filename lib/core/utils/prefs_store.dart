@@ -19,6 +19,7 @@ class PrefsStore {
   static const _kDraft = 'ruby_invoice_draft_v1';
   static const _kBankCards = 'ruby_bank_cards_v1';
   static const _kSelectedBankCard = 'ruby_selected_bank_card_v1';
+  static const _kInvoiceBalanceLedger = 'ruby_invoice_balance_ledger_v1';
 
   static Future<SharedPreferences> get _p async => SharedPreferences.getInstance();
 
@@ -102,6 +103,27 @@ class PrefsStore {
     return p.getString(_kSelectedBankCard);
   }
 
+  static Future<void> clearSelectedBankCardId() async {
+    final p = await _p;
+    await p.remove(_kSelectedBankCard);
+  }
+
+  static Future<Map<String, Map<String, dynamic>>>
+      loadInvoiceBalanceLedger() async {
+    final map = await _loadMap(_kInvoiceBalanceLedger);
+    if (map == null) return <String, Map<String, dynamic>>{};
+    return map.map((key, value) {
+      return MapEntry(key, _mapOrNull(value) ?? <String, dynamic>{});
+    });
+  }
+
+  static Future<void> saveInvoiceBalanceLedger(
+    Map<String, Map<String, dynamic>> ledger,
+  ) async {
+    final p = await _p;
+    await p.setString(_kInvoiceBalanceLedger, jsonEncode(ledger));
+  }
+
   static Future<void> saveDraft(InvoiceModel draft) async {
     final p = await _p;
     await p.setString(_kDraft, jsonEncode(draft.toMap()));
@@ -119,7 +141,7 @@ class PrefsStore {
 
   static Future<Map<String, dynamic>> exportAll() async {
     return {
-      'schemaVersion': 1,
+      'schemaVersion': 2,
       'exportedAt': DateTime.now().toIso8601String(),
       'user': (await loadUser())?.toMap(),
       'business': (await loadBusiness())?.toMap(),
@@ -130,6 +152,7 @@ class PrefsStore {
       'draft': (await loadDraft())?.toMap(),
       'bankCards': (await loadBankCards()).map((e) => e.toMap()).toList(),
       'selectedBankCardId': await loadSelectedBankCardId(),
+      'invoiceBalanceLedger': await loadInvoiceBalanceLedger(),
     };
   }
 
@@ -154,8 +177,25 @@ class PrefsStore {
     if (data['bankCards'] is List) {
       await saveBankCards(_mapList(data['bankCards']).map(BankCardModel.fromMap).toList());
     }
-    if (data['selectedBankCardId'] is String && (data['selectedBankCardId'] as String).isNotEmpty) {
+    if (data['selectedBankCardId'] is String &&
+        (data['selectedBankCardId'] as String).isNotEmpty) {
       await saveSelectedBankCardId(data['selectedBankCardId'] as String);
+    } else {
+      await clearSelectedBankCardId();
+    }
+    final ledger = _mapOrNull(data['invoiceBalanceLedger']);
+    if (ledger == null) {
+      // Backups created before schema v2 have no reliable information about
+      // which invoice amounts were already included in customer balances.
+      // An empty ledger makes those records legacy-safe instead of guessing.
+      await saveInvoiceBalanceLedger(<String, Map<String, dynamic>>{});
+    } else {
+      final normalized = <String, Map<String, dynamic>>{};
+      for (final entry in ledger.entries) {
+        final value = _mapOrNull(entry.value);
+        if (value != null) normalized[entry.key] = value;
+      }
+      await saveInvoiceBalanceLedger(normalized);
     }
     if (draft != null) {
       await saveDraft(InvoiceModel.fromMap(draft));

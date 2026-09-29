@@ -11,6 +11,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../providers/bank_card_provider.dart';
 import '../../core/utils/prefs_store.dart';
 import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
@@ -286,6 +287,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.invalidate(invoiceListProvider);
       ref.invalidate(customerListProvider);
       ref.invalidate(productListProvider);
+      ref.invalidate(selectedBankCardProvider);
+      ref.invalidate(bankCardListProvider);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

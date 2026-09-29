@@ -3,20 +3,23 @@ import '../models/invoice_model.dart';
 import '../models/invoice_item_model.dart';
 import '../core/utils/prefs_store.dart';
 import '../database/app_database.dart';
+import 'customer_provider.dart';
 
 final invoiceListProvider =
     StateNotifierProvider<InvoiceListNotifier, List<InvoiceModel>>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return InvoiceListNotifier(db);
+  final customers = ref.read(customerListProvider.notifier);
+  return InvoiceListNotifier(db, customers);
 });
 
 final invoiceEditRequestProvider = StateProvider<InvoiceModel?>((ref) => null);
 
 class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
   final AppDatabase? db;
+  final CustomerListNotifier? customers;
   late final Future<void> _hydrated;
 
-  InvoiceListNotifier([this.db]) : super(const []) {
+  InvoiceListNotifier([this.db, this.customers]) : super(const []) {
     _hydrated = _hydrate();
   }
 
@@ -26,23 +29,20 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     state = await PrefsStore.loadInvoices();
   }
 
-  void _persist() {
-    PrefsStore.saveInvoices(state);
-  }
-
   Future<void> saveInvoice(InvoiceModel invoice) async {
-    // اگر کاربر خیلی سریع ذخیره کند، hydrate نباید فهرست تازه را با لیست قدیمی
-    // جایگزین کند و باعث ناپدید شدن فاکتور شود.
     await _hydrated;
-    final index = state.indexWhere((i) => i.id == invoice.id);
+    final index = state.indexWhere((item) => item.id == invoice.id);
+    final previous = index >= 0 ? state[index] : null;
     state = index >= 0
         ? [
-            for (int i = 0; i < state.length; i++)
+            for (var i = 0; i < state.length; i++)
               if (i == index) invoice else state[i],
           ]
         : [...state, invoice];
+
     await PrefsStore.saveInvoices(state);
-    db?.persistInvoiceRecord(
+    await customers?.applyInvoiceChange(previous, invoice);
+    await db?.persistInvoiceRecord(
       invoice.id,
       invoice.number,
       invoice.customerName,
@@ -53,8 +53,13 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
 
   Future<void> deleteInvoice(String id) async {
     await _hydrated;
-    state = state.where((i) => i.id != id).toList();
+    final index = state.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    final removed = state[index];
+    state = state.where((item) => item.id != id).toList();
     await PrefsStore.saveInvoices(state);
+    await customers?.applyInvoiceChange(removed, null);
+    await db?.deleteInvoiceRecord(id);
   }
 
   Future<InvoiceModel> copyInvoice(InvoiceModel source) async {
@@ -104,15 +109,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       createdAt: source.createdAt,
     );
 
-    state = [...state, copied];
-    await PrefsStore.saveInvoices(state);
-    db?.persistInvoiceRecord(
-      copied.id,
-      copied.number,
-      copied.customerName,
-      copied.date,
-      copied.totalAmount,
-    );
+    await saveInvoice(copied);
     return copied;
   }
 
@@ -125,70 +122,78 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     return result;
   }
 
-  void convertProformaToInvoice(String id) {
-    state = state.map((item) {
-      if (item.id != id) return item;
-      return InvoiceModel(
-        id: item.id,
-        number: item.number,
-        customerId: item.customerId,
-        customerName: item.customerName,
-        customerPhone: item.customerPhone,
-        type: 'sale',
-        paymentType: item.paymentType,
-        status: item.remainingAmount == 0 ? 'paid' : 'unpaid',
-        date: item.date,
-        items: item.items,
-        subtotal: item.subtotal,
-        discountPercent: item.discountPercent,
-        discountAmount: item.discountAmount,
-        shippingFee: item.shippingFee,
-        previousDebt: item.previousDebt,
-        deposit: item.deposit,
-        totalAmount: item.totalAmount,
-        paidAmount: item.paidAmount,
-        remainingAmount: item.remainingAmount,
-        notes: item.notes,
-        cardNumber: item.cardNumber,
-        cardBank: item.cardBank,
-        cardOwner: item.cardOwner,
-        createdAt: item.createdAt,
-      );
-    }).toList();
-    _persist();
+  Future<void> convertProformaToInvoice(String id) async {
+    await _hydrated;
+    final index = state.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    final previous = state[index];
+    final updated = InvoiceModel(
+      id: previous.id,
+      number: previous.number,
+      customerId: previous.customerId,
+      customerName: previous.customerName,
+      customerPhone: previous.customerPhone,
+      type: 'sale',
+      paymentType: previous.paymentType,
+      status: previous.remainingAmount == 0 ? 'paid' : 'unpaid',
+      date: previous.date,
+      items: previous.items,
+      subtotal: previous.subtotal,
+      discountPercent: previous.discountPercent,
+      discountAmount: previous.discountAmount,
+      shippingFee: previous.shippingFee,
+      previousDebt: previous.previousDebt,
+      deposit: previous.deposit,
+      totalAmount: previous.totalAmount,
+      paidAmount: previous.paidAmount,
+      remainingAmount: previous.remainingAmount,
+      notes: previous.notes,
+      cardNumber: previous.cardNumber,
+      cardBank: previous.cardBank,
+      cardOwner: previous.cardOwner,
+      createdAt: previous.createdAt,
+    );
+    await saveInvoice(updated);
   }
 
-  void recordPayment(String id, double amount) {
-    state = state.map((item) {
-      if (item.id != id) return item;
-      final remaining = item.totalAmount - (item.paidAmount + amount);
-      return InvoiceModel(
-        id: item.id,
-        number: item.number,
-        customerId: item.customerId,
-        customerName: item.customerName,
-        customerPhone: item.customerPhone,
-        type: item.type,
-        paymentType: item.paymentType,
-        status: remaining <= 0 ? 'paid' : 'partial',
-        date: item.date,
-        items: item.items,
-        subtotal: item.subtotal,
-        discountPercent: item.discountPercent,
-        discountAmount: item.discountAmount,
-        shippingFee: item.shippingFee,
-        previousDebt: item.previousDebt,
-        deposit: item.deposit,
-        totalAmount: item.totalAmount,
-        paidAmount: item.paidAmount + amount,
-        remainingAmount: remaining < 0 ? 0 : remaining,
-        notes: item.notes,
-        cardNumber: item.cardNumber,
-        cardBank: item.cardBank,
-        cardOwner: item.cardOwner,
-        createdAt: item.createdAt,
-      );
-    }).toList();
-    _persist();
+  Future<void> recordPayment(String id, double amount) async {
+    await _hydrated;
+    if (amount <= 0) return;
+    final index = state.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    final previous = state[index];
+    final paidAmount = (previous.paidAmount + amount)
+        .clamp(0, previous.totalAmount)
+        .toDouble();
+    final remaining = (previous.totalAmount - paidAmount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    final updated = InvoiceModel(
+      id: previous.id,
+      number: previous.number,
+      customerId: previous.customerId,
+      customerName: previous.customerName,
+      customerPhone: previous.customerPhone,
+      type: previous.type,
+      paymentType: previous.paymentType,
+      status: remaining <= 0 ? 'paid' : 'partial',
+      date: previous.date,
+      items: previous.items,
+      subtotal: previous.subtotal,
+      discountPercent: previous.discountPercent,
+      discountAmount: previous.discountAmount,
+      shippingFee: previous.shippingFee,
+      previousDebt: previous.previousDebt,
+      deposit: previous.deposit,
+      totalAmount: previous.totalAmount,
+      paidAmount: paidAmount,
+      remainingAmount: remaining,
+      notes: previous.notes,
+      cardNumber: previous.cardNumber,
+      cardBank: previous.cardBank,
+      cardOwner: previous.cardOwner,
+      createdAt: previous.createdAt,
+    );
+    await saveInvoice(updated);
   }
 }

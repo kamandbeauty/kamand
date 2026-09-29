@@ -81,6 +81,13 @@ class AppDatabase {
     } catch (_) {}
   }
 
+  Future<void> deleteInvoiceRecord(String id) async {
+    try {
+      if (!_initialized) await _initDb();
+      _db?.execute('DELETE FROM invoices WHERE id = ?', [id]);
+    } catch (_) {}
+  }
+
   Future<void> persistCustomerRecord(
       String id, String name, double balance, String createdAt) async {
     try {

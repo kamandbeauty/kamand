@@ -16,31 +16,34 @@ final selectedBankCardProvider = StateNotifierProvider<SelectedBankCardNotifier,
 });
 
 class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
+  late final Future<void> _hydrated;
+
   BankCardListNotifier() : super(const []) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     state = await PrefsStore.loadBankCards();
   }
 
-  void _persist() {
-    PrefsStore.saveBankCards(state);
+  Future<void> addCard(BankCardModel card) async {
+    await _hydrated;
+    state = [...state, card];
+    await PrefsStore.saveBankCards(state);
   }
 
-  void addCard(BankCardModel c) {
-    state = [...state, c];
-    _persist();
+  Future<void> updateCard(BankCardModel card) async {
+    await _hydrated;
+    state = [for (final item in state) if (item.id == card.id) card else item];
+    await PrefsStore.saveBankCards(state);
   }
 
-  void updateCard(BankCardModel c) {
-    state = [for (final e in state) if (e.id == c.id) c else e];
-    _persist();
-  }
-
-  void deleteCard(String id) {
-    state = state.where((e) => e.id != id).toList();
-    _persist();
+  Future<void> deleteCard(String id) async {
+    await _hydrated;
+    state = state.where((item) => item.id != id).toList();
+    await PrefsStore.saveBankCards(state);
   }
 }
 
@@ -54,23 +57,29 @@ class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
 
   Future<void> _loadSelectedId() async {
     _selectedId = await PrefsStore.loadSelectedBankCardId();
+    await ref.read(bankCardListProvider.notifier).ensureLoaded();
     sync(ref.read(bankCardListProvider));
   }
 
   void sync(List<BankCardModel> cards) {
     if (cards.isEmpty) {
+      // This state is also emitted briefly while cards are hydrating, so do
+      // not erase the persisted selection here.
       state = null;
       return;
     }
-    final selected = cards.where((c) => c.id == _selectedId).toList();
+
+    final selected = cards.where((card) => card.id == _selectedId).toList();
     if (selected.isNotEmpty) {
       state = selected.first;
-    } else if (state == null) {
-      // اگر انتخاب قبلی وجود نداشت، اولین کارت انتخاب می‌شود.
-      state = cards.first;
-      _selectedId = cards.first.id;
-      PrefsStore.saveSelectedBankCardId(cards.first.id);
+      return;
     }
+
+    // The previous selection may have been deleted or may not exist in an
+    // imported backup. Always fall back to a card that is still in the list.
+    state = cards.first;
+    _selectedId = cards.first.id;
+    PrefsStore.saveSelectedBankCardId(cards.first.id);
   }
 
   void select(BankCardModel card) {

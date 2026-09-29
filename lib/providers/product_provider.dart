@@ -11,36 +11,48 @@ final productListProvider =
 
 class ProductListNotifier extends StateNotifier<List<ProductModel>> {
   final AppDatabase? db;
+  late final Future<void> _hydrated;
 
   ProductListNotifier([this.db]) : super(const []) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     state = await PrefsStore.loadProducts();
   }
 
-  void _persist() {
-    PrefsStore.saveProducts(state);
-  }
-
-  void addProduct(ProductModel product) {
+  Future<void> addProduct(ProductModel product) async {
+    await _hydrated;
     state = [...state, product];
-    _persist();
-    db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
+    await PrefsStore.saveProducts(state);
+    await db?.persistProductRecord(
+      product.id,
+      product.code,
+      product.name,
+      product.sellPrice,
+    );
   }
 
-  void updateProduct(ProductModel product) {
+  Future<void> updateProduct(ProductModel product) async {
+    await _hydrated;
     state = [
       for (final item in state)
         if (item.id == product.id) product else item,
     ];
-    _persist();
-    db?.persistProductRecord(product.id, product.code, product.name, product.sellPrice);
+    await PrefsStore.saveProducts(state);
+    await db?.persistProductRecord(
+      product.id,
+      product.code,
+      product.name,
+      product.sellPrice,
+    );
   }
 
-  void deleteProduct(String id) {
+  Future<void> deleteProduct(String id) async {
+    await _hydrated;
     state = state.where((item) => item.id != id).toList();
-    _persist();
+    await PrefsStore.saveProducts(state);
   }
 }

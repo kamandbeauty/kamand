@@ -133,7 +133,7 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
     return buf.toString();
   }
 
-  void _save() {
+  Future<void> _save() async {
     final card = _onlyDigits(_cardCtrl.text);
     var sheba = _onlyDigits(_shebaCtrl.text);
     // اگر کاربر IR را هم تایپ کرده باشد
@@ -176,10 +176,11 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
       persianName: name,
     );
     if (isEdit) {
-      ref.read(bankCardListProvider.notifier).updateCard(model);
+      await ref.read(bankCardListProvider.notifier).updateCard(model);
     } else {
-      ref.read(bankCardListProvider.notifier).addCard(model);
+      await ref.read(bankCardListProvider.notifier).addCard(model);
     }
+    if (!mounted) return;
     ref.read(selectedBankCardProvider.notifier).select(model);
     if (!mounted) return;
     Navigator.of(context).pop(); // بستن صفحه ایجاد کارت
