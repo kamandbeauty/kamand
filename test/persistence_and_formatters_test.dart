@@ -65,6 +65,29 @@ void main() {
     notifier.dispose();
   });
 
+  test('corrupt primary preferences recover from last known-good copy', () async {
+    SharedPreferences.setMockInitialValues({});
+    CustomerModel customer(String id, double balance) => CustomerModel(
+          id: id,
+          name: id,
+          mobile: '',
+          phone: '',
+          address: '',
+          notes: '',
+          balance: balance,
+          createdAt: '1405/01/01',
+        );
+
+    await PrefsStore.saveCustomers([customer('first', 10)]);
+    await PrefsStore.saveCustomers([customer('second', 20)]);
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('ruby_customers_v1', '{corrupt json');
+
+    final recovered = await PrefsStore.loadCustomers();
+    expect(recovered.single.id, 'second');
+    expect(recovered.single.balance, 20);
+  });
+
   test('malformed backup is rejected before existing data changes', () async {
     SharedPreferences.setMockInitialValues({});
     final existing = CustomerModel(

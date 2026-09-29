@@ -17,6 +17,9 @@ Uint8List _processImageBytes(Map<String, Object> payload) {
   if (decoded == null || decoded.width < 1 || decoded.height < 1) {
     throw const FormatException('تصویر قابل خواندن نیست');
   }
+  // Camera JPEGs often store rotation in EXIF. Bake it before applying the
+  // normalized crop so preview coordinates and output coordinates agree.
+  decoded = img.bakeOrientation(decoded);
 
   decoded = ImageProcessHelper.cropNormalized(
     decoded,

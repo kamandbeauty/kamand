@@ -27,73 +27,59 @@ class PrefsStore {
   static Future<SharedPreferences> get _p async => SharedPreferences.getInstance();
 
   static Future<void> saveUser(UserModel u) async {
-    final p = await _p;
-    await p.setString(_kUser, jsonEncode(u.toMap()));
+    await _saveJson(_kUser, u.toMap());
   }
 
   static Future<UserModel?> loadUser() async {
-    final map = await _loadMap(_kUser);
-    return map == null ? null : UserModel.fromMap(map);
+    return _loadModel(_kUser, UserModel.fromMap);
   }
 
   static Future<void> saveBusiness(BusinessProfileModel b) async {
-    final p = await _p;
-    await p.setString(_kBusiness, jsonEncode(b.toMap()));
+    await _saveJson(_kBusiness, b.toMap());
   }
 
   static Future<BusinessProfileModel?> loadBusiness() async {
-    final map = await _loadMap(_kBusiness);
-    return map == null ? null : BusinessProfileModel.fromMap(map);
+    return _loadModel(_kBusiness, BusinessProfileModel.fromMap);
   }
 
   static Future<void> saveSettings(AppSettingsModel s) async {
-    final p = await _p;
-    await p.setString(_kSettings, jsonEncode(s.toMap()));
+    await _saveJson(_kSettings, s.toMap());
   }
 
   static Future<AppSettingsModel?> loadSettings() async {
-    final map = await _loadMap(_kSettings);
-    return map == null ? null : AppSettingsModel.fromMap(map);
+    return _loadModel(_kSettings, AppSettingsModel.fromMap);
   }
 
   static Future<void> saveInvoices(List<InvoiceModel> invoices) async {
-    final p = await _p;
-    await p.setString(_kInvoices, jsonEncode(invoices.map((e) => e.toMap()).toList()));
+    await _saveJson(_kInvoices, invoices.map((e) => e.toMap()).toList());
   }
 
   static Future<List<InvoiceModel>> loadInvoices() async {
-    final list = await _loadList(_kInvoices);
-    return list.map(InvoiceModel.fromMap).toList();
+    return _loadModels(_kInvoices, InvoiceModel.fromMap);
   }
 
   static Future<void> saveCustomers(List<CustomerModel> customers) async {
-    final p = await _p;
-    await p.setString(_kCustomers, jsonEncode(customers.map((e) => e.toMap()).toList()));
+    await _saveJson(_kCustomers, customers.map((e) => e.toMap()).toList());
   }
 
   static Future<List<CustomerModel>> loadCustomers() async {
-    final list = await _loadList(_kCustomers);
-    return list.map(CustomerModel.fromMap).toList();
+    return _loadModels(_kCustomers, CustomerModel.fromMap);
   }
 
   static Future<void> saveProducts(List<ProductModel> products) async {
-    final p = await _p;
-    await p.setString(_kProducts, jsonEncode(products.map((e) => e.toMap()).toList()));
+    await _saveJson(_kProducts, products.map((e) => e.toMap()).toList());
   }
 
   static Future<List<ProductModel>> loadProducts() async {
-    final list = await _loadList(_kProducts);
-    return list.map(ProductModel.fromMap).toList();
+    return _loadModels(_kProducts, ProductModel.fromMap);
   }
 
   static Future<void> saveBankCards(List<BankCardModel> cards) async {
-    final p = await _p;
-    await p.setString(_kBankCards, jsonEncode(cards.map((e) => e.toMap()).toList()));
+    await _saveJson(_kBankCards, cards.map((e) => e.toMap()).toList());
   }
 
   static Future<List<BankCardModel>> loadBankCards() async {
-    final list = await _loadList(_kBankCards);
-    return list.map(BankCardModel.fromMap).toList();
+    return _loadModels(_kBankCards, BankCardModel.fromMap);
   }
 
   static Future<void> saveSelectedBankCardId(String id) async {
@@ -123,18 +109,15 @@ class PrefsStore {
   static Future<void> saveInvoiceBalanceLedger(
     Map<String, Map<String, dynamic>> ledger,
   ) async {
-    final p = await _p;
-    await p.setString(_kInvoiceBalanceLedger, jsonEncode(ledger));
+    await _saveJson(_kInvoiceBalanceLedger, ledger);
   }
 
   static Future<void> saveDraft(InvoiceModel draft) async {
-    final p = await _p;
-    await p.setString(_kDraft, jsonEncode(draft.toMap()));
+    await _saveJson(_kDraft, draft.toMap());
   }
 
   static Future<InvoiceModel?> loadDraft() async {
-    final map = await _loadMap(_kDraft);
-    return map == null ? null : InvoiceModel.fromMap(map);
+    return _loadModel(_kDraft, InvoiceModel.fromMap);
   }
 
   static Future<void> clearDraft() async {
@@ -336,35 +319,93 @@ class PrefsStore {
     return result;
   }
 
-  static Future<Map<String, dynamic>?> _loadMap(String key) async {
-    final p = await _p;
-    final raw = p.getString(key);
-    if (raw == null || raw.isEmpty) return null;
-    try {
-      return _mapOrNull(jsonDecode(raw));
-    } catch (_) {
-      return null;
+  static String _backupKey(String key) => '${key}_last_good';
+
+  static Future<void> _saveJson(String key, Object? value) async {
+    final preferences = await _p;
+    final encoded = jsonEncode(value);
+    // Write a known-good shadow copy first. If the primary value is ever
+    // truncated or corrupted, loaders can recover the latest complete value.
+    final backupSaved = await preferences.setString(_backupKey(key), encoded);
+    final primarySaved = await preferences.setString(key, encoded);
+    if (!backupSaved || !primarySaved) {
+      throw FileSystemException('ذخیره اطلاعات برنامه انجام نشد');
     }
   }
 
-  static Future<List<Map<String, dynamic>>> _loadList(String key) async {
-    final p = await _p;
-    final raw = p.getString(key);
-    if (raw == null || raw.isEmpty) return <Map<String, dynamic>>[];
+  static Future<dynamic> _loadDecoded(String key) async {
+    final preferences = await _p;
+    final primary = preferences.getString(key);
+    if (primary == null || primary.isEmpty) return null;
     try {
-      return _mapList(jsonDecode(raw));
+      return jsonDecode(primary);
     } catch (_) {
-      return <Map<String, dynamic>>[];
+      final backup = preferences.getString(_backupKey(key));
+      if (backup == null || backup.isEmpty) return null;
+      try {
+        final recovered = jsonDecode(backup);
+        await preferences.setString(key, backup);
+        return recovered;
+      } catch (_) {
+        return null;
+      }
     }
+  }
+
+  static Future<T?> _loadModel<T>(
+    String key,
+    T Function(Map<String, dynamic>) decode,
+  ) async {
+    final preferences = await _p;
+    final primary = preferences.getString(key);
+    final backup = preferences.getString(_backupKey(key));
+    for (final candidate in [primary, backup]) {
+      if (candidate == null || candidate.isEmpty) continue;
+      try {
+        final map = _mapOrNull(jsonDecode(candidate));
+        if (map == null) continue;
+        final model = decode(map);
+        if (candidate == backup) await preferences.setString(key, candidate);
+        return model;
+      } catch (_) {
+        // Try the last known-good copy before giving up.
+      }
+    }
+    return null;
+  }
+
+  static Future<List<T>> _loadModels<T>(
+    String key,
+    T Function(Map<String, dynamic>) decode,
+  ) async {
+    final preferences = await _p;
+    final primary = preferences.getString(key);
+    final backup = preferences.getString(_backupKey(key));
+    for (final candidate in [primary, backup]) {
+      if (candidate == null || candidate.isEmpty) continue;
+      try {
+        final decoded = jsonDecode(candidate);
+        if (decoded is! List) continue;
+        final models = decoded.map((item) {
+          final map = _mapOrNull(item);
+          if (map == null) throw const FormatException('رکورد نامعتبر');
+          return decode(map);
+        }).toList();
+        if (candidate == backup) await preferences.setString(key, candidate);
+        return models;
+      } catch (_) {
+        // Try the last known-good copy before returning an empty collection.
+      }
+    }
+    return <T>[];
+  }
+
+  static Future<Map<String, dynamic>?> _loadMap(String key) async {
+    return _mapOrNull(await _loadDecoded(key));
   }
 
   static Map<String, dynamic>? _mapOrNull(dynamic value) {
     if (value is Map) return Map<String, dynamic>.from(value);
     return null;
-  }
-
-  static List<Map<String, dynamic>> _mapList(dynamic value) {
-    if (value is! List) return <Map<String, dynamic>>[];
-    return value.map(_mapOrNull).whereType<Map<String, dynamic>>().toList();
   }
 }

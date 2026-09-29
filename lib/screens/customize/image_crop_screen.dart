@@ -151,7 +151,10 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                     builder: (ctx, box) {
                       return Center(
                         child: AspectRatio(
-                          aspectRatio: (_imgSize?.aspectRatio ?? 1).clamp(0.4, 2.5),
+                          // Match the source aspect ratio exactly; clamping it
+                          // creates letterboxing and makes the crop handles map
+                          // to a different region than the saved image.
+                          aspectRatio: _imgSize?.aspectRatio ?? 1,
                           child: Stack(
                             fit: StackFit.expand,
                             children: [

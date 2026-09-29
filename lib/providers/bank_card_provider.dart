@@ -50,13 +50,19 @@ class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
 class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
   final Ref ref;
   String? _selectedId;
+  bool _selectionLoaded = false;
 
   SelectedBankCardNotifier(this.ref) : super(null) {
     _loadSelectedId();
   }
 
   Future<void> _loadSelectedId() async {
-    _selectedId = await PrefsStore.loadSelectedBankCardId();
+    final persistedId = await PrefsStore.loadSelectedBankCardId();
+    // A user selection made while the preference was loading must win over
+    // the older persisted value.
+    if (_selectionLoaded) return;
+    _selectedId = persistedId;
+    _selectionLoaded = true;
     await ref.read(bankCardListProvider.notifier).ensureLoaded();
     sync(ref.read(bankCardListProvider));
   }
@@ -68,6 +74,7 @@ class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
       state = null;
       return;
     }
+    if (!_selectionLoaded) return;
 
     final selected = cards.where((card) => card.id == _selectedId).toList();
     if (selected.isNotEmpty) {
@@ -83,6 +90,7 @@ class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
   }
 
   void select(BankCardModel card) {
+    _selectionLoaded = true;
     _selectedId = card.id;
     state = card;
     PrefsStore.saveSelectedBankCardId(card.id);

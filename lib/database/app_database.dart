@@ -45,7 +45,11 @@ class AppDatabase {
       _createTables();
       _initialized = true;
     } catch (_) {
-      // Fallback in-memory state is maintained cleanly by Riverpod
+      _db?.dispose();
+      _db = null;
+      _initialized = false;
+      // The SharedPreferences store remains the source of truth if SQLite is
+      // temporarily unavailable.
     }
   }
 
