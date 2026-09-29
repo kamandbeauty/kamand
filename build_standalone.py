@@ -1,7 +1,7 @@
 import json
 import os
 
-kamand_dir = "/home/user/kamand"
+kamand_dir = os.path.dirname(os.path.abspath(__file__))
 levels = []
 for i in range(1, 31):
     with open(os.path.join(kamand_dir, f"data/levels/level_{i}.json"), "r") as f:

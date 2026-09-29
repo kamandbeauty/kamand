@@ -253,7 +253,7 @@ def main():
     print("=" * 65 + "\n")
 
     res = TestResult()
-    kamand_dir = "/home/user/kamand"
+    kamand_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     # SECTION 1: Required Files Verification
     print("--- 1. File Structure & Scene Completeness ---")
