@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/app_settings_model.dart';
+import '../../models/business_profile_model.dart';
 import '../../providers/app_providers.dart';
 import 'image_crop_screen.dart';
 
@@ -11,6 +13,16 @@ const _slate400 = Color(0xFF94A3B8);
 const _slate500 = Color(0xFF64748B);
 const _slate600 = Color(0xFF475569);
 const _cardBg = Color(0xFFF1F5F9);
+
+class HeaderCustomizeResult {
+  final BusinessProfileModel business;
+  final AppSettingsModel settings;
+
+  const HeaderCustomizeResult({
+    required this.business,
+    required this.settings,
+  });
+}
 
 class HeaderCustomizeScreen extends ConsumerStatefulWidget {
   const HeaderCustomizeScreen({super.key});
@@ -146,12 +158,20 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
         // یک تصویر واحد برای مهر و امضا استفاده می‌شود.
         signaturePath: stampPath,
       );
-      await ref.read(businessProvider.notifier).updateBusiness(updated);
-      await ref.read(settingsProvider.notifier).updateSettings(
-            st.copyWith(accentColor: _selectedColor.value),
-          );
+      final updatedSettings = st.copyWith(
+        accentColor: _selectedColor.value,
+      );
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+
+      // Return the changes first. Updating the root providers while this route
+      // is still active rebuilds MaterialApp's theme during a pop transition
+      // on some Android devices and can leave a grey error surface.
+      Navigator.of(context).pop(
+        HeaderCustomizeResult(
+          business: updated,
+          settings: updatedSettings,
+        ),
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() => _saving = false);

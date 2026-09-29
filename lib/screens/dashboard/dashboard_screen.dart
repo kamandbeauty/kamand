@@ -1517,6 +1517,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
+  Future<void> _openHeaderCustomize() async {
+    final result = await Navigator.of(context).push<HeaderCustomizeResult>(
+      PageRouteBuilder<HeaderCustomizeResult>(
+        pageBuilder: (_, __, ___) => const HeaderCustomizeScreen(),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    try {
+      // The customization route is fully closed before these root-level
+      // providers rebuild MaterialApp and the dashboard.
+      await ref
+          .read(businessProvider.notifier)
+          .updateBusiness(result.business);
+      await ref
+          .read(settingsProvider.notifier)
+          .updateSettings(result.settings);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تنظیمات فاکتور، رنگ و مهر و امضا ذخیره شد'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ذخیره تنظیمات انجام نشد: $error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -1637,10 +1670,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             // 1) نوار نارنجی اصلی دقیقاً با نقش دکمهٔ سریع تصویر مرجع
             InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
-              ),
+              onTap: _openHeaderCustomize,
               borderRadius: BorderRadius.circular(34),
               child: Container(
                 height: 62,
@@ -2285,12 +2315,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       },
                       trailing: (biz.stampPath.isEmpty && biz.signaturePath.isEmpty)
                           ? TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
-                                );
-                              },
+                              onPressed: _openHeaderCustomize,
                               child: const Text('افزودن', style: TextStyle(fontSize: 11, color: _orange)),
                             )
                           : null,
