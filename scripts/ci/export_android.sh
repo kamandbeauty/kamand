@@ -11,6 +11,9 @@ echo "Android SDK path: $SDK_PATH"
 export ANDROID_HOME="$SDK_PATH"
 export ANDROID_SDK_ROOT="$SDK_PATH"
 
+# Accept SDK licenses
+yes | "${SDK_PATH}/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
+
 # 2. Setup Godot 4.3 Linux binary
 if ! command -v godot &> /dev/null; then
     echo "Downloading Godot 4.3 headless binary..."
@@ -21,7 +24,7 @@ if ! command -v godot &> /dev/null; then
 fi
 godot --version
 
-# 3. Setup Export Templates
+# 3. Setup Export Templates & Android Build Source
 echo "Setting up Godot 4.3 export templates..."
 mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
 mkdir -p "$HOME/.local/share/godot/templates/4.3.stable"
@@ -31,6 +34,10 @@ if [ ! -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_source.z
     unzip -q /tmp/templates.tpz -d /tmp/tpz_out
     cp -r /tmp/tpz_out/templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
     cp -r /tmp/tpz_out/templates/* "$HOME/.local/share/godot/templates/4.3.stable/"
+    
+    # Unpack android build source directly to prevent any interactive prompt stalls
+    mkdir -p android/build
+    unzip -q -o /tmp/tpz_out/templates/android_source.zip -d android/build/
 fi
 ls -la "$HOME/.local/share/godot/export_templates/4.3.stable/"
 
@@ -56,16 +63,12 @@ export/android/debug_keystore_pass = "android"
 export/android/force_system_user = false
 EOF
 
-# 6. Install Android Build Template
-echo "Installing Android build templates into project..."
-godot --headless -v --install-android-build-template || true
-
-# 7. Run Godot Export
-echo "Exporting Android APK..."
+# 6. Run Godot Non-Interactive Export
+echo "Exporting Android APK with Gradle..."
 mkdir -p builds/android
-godot -v --headless --export-debug "Android" builds/android/lumi-bubblewood.apk
+godot -v --headless --export-debug "Android" builds/android/lumi-bubblewood.apk </dev/null
 
-# 8. Validate Output
+# 7. Validate Output
 if [ -f "builds/android/lumi-bubblewood.apk" ]; then
     echo "=========================================================="
     echo "🎉 SUCCESS: builds/android/lumi-bubblewood.apk generated!"
