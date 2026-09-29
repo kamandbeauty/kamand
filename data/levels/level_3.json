@@ -1,0 +1,23 @@
+{
+    "level_id": 3,
+    "level_name": "Level 3: Floating Anchor",
+    "description": "Tests floating cluster detection. Popping the top red anchors will drop the blue bubbles.",
+    "max_shots": 20,
+    "danger_row": 12,
+    "target_score": 350,
+    "allowed_colors": [
+        0,
+        1
+    ],
+    "layout_rows": [
+        "RR......",
+        ".R.....",
+        "..BBBB..",
+        "..BB..."
+    ],
+    "world_id": 1,
+    "objective_type": 0,
+    "target_count": 0,
+    "target_color": -1,
+    "special_layout": {}
+}

@@ -1,0 +1,22 @@
+{
+	"level_id": 14,
+	"world_id": 2,
+	"level_name": "Level 14: Stone Obstacles",
+	"description": "Stone bubbles are sturdy obstacles. You cannot match them directly—drop them or blow them up!",
+	"max_shots": 22,
+	"danger_row": 12,
+	"target_score": 650,
+	"objective_type": 0,
+	"objective_target_count": 0,
+	"objective_target_color": -1,
+	"allowed_colors": [0, 2],
+	"layout_rows": [
+		"RR....RR",
+		".G....G.",
+		"..GGGG.."
+	],
+	"special_layout": {
+		"0,3": 4,
+		"0,4": 4
+	}
+}

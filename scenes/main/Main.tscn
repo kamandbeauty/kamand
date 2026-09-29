@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://b0yv2c8x6j3n7"]
+
+[ext_resource type="Script" path="res://scripts/core/Main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://d1x8u5o8y5x2e" path="res://scenes/gameplay/BubbleShooterGame.tscn" id="2_gameplay"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_main")
+gameplay_scene = ExtResource("2_gameplay")

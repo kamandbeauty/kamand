@@ -1,0 +1,24 @@
+{
+	"level_id": 24,
+	"world_id": 3,
+	"level_name": "Level 24: Ancient Locks",
+	"description": "Objective: Shatter 4 locked ice shells to free the canopy.",
+	"max_shots": 20,
+	"danger_row": 12,
+	"target_score": 850,
+	"objective_type": 3,
+	"objective_target_count": 4,
+	"objective_target_color": -1,
+	"allowed_colors": [1, 4, 5],
+	"layout_rows": [
+		"PP....CC",
+		".B...B.",
+		"..CCCC.."
+	],
+	"special_layout": {
+		"0,0": 5,
+		"0,1": 5,
+		"0,6": 5,
+		"0,7": 5
+	}
+}

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://p2x8u5o8y5x2e"]
+
+[ext_resource type="Script" path="res://scripts/visuals/ParticleManager.gd" id="1_part"]
+
+[node name="ParticleManager" type="Node2D"]
+script = ExtResource("1_part")

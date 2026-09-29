@@ -1,0 +1,21 @@
+{
+	"level_id": 27,
+	"world_id": 3,
+	"level_name": "Level 27: Purple Harvest",
+	"description": "Objective: Pop 10 Purple bubbles amidst narrow corridors.",
+	"max_shots": 20,
+	"danger_row": 12,
+	"target_score": 1200,
+	"objective_type": 1,
+	"objective_target_count": 10,
+	"objective_target_color": 4,
+	"allowed_colors": [4, 0, 2],
+	"layout_rows": [
+		"PP....PP",
+		".P...P.",
+		"..PPPP.."
+	],
+	"special_layout": {
+		"0,3": 2
+	}
+}

@@ -1,0 +1,26 @@
+{
+    "level_id": 7,
+    "level_name": "Level 7: Avalanche Drop",
+    "description": "Tests massive floating cluster drop after severing top yellow anchor bubbles.",
+    "max_shots": 20,
+    "danger_row": 12,
+    "target_score": 800,
+    "allowed_colors": [
+        3,
+        0,
+        1,
+        2
+    ],
+    "layout_rows": [
+        "YY......",
+        ".Y.....",
+        "..RRRRRR",
+        "..BBBBB",
+        "..GGGGGG"
+    ],
+    "world_id": 1,
+    "objective_type": 0,
+    "target_count": 0,
+    "target_color": -1,
+    "special_layout": {}
+}

@@ -1,0 +1,21 @@
+{
+	"level_id": 22,
+	"world_id": 3,
+	"level_name": "Level 22: Emerald Bloom",
+	"description": "Objective: Pop 8 Green bubbles before ammo expires!",
+	"max_shots": 22,
+	"danger_row": 12,
+	"target_score": 700,
+	"objective_type": 1,
+	"objective_target_count": 8,
+	"objective_target_color": 2,
+	"allowed_colors": [2, 3, 5],
+	"layout_rows": [
+		"GG....GG",
+		".Y...C.",
+		"..GGGG.."
+	],
+	"special_layout": {
+		"0,3": 3
+	}
+}

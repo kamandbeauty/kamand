@@ -1,0 +1,68 @@
+[gd_scene load_steps=4 format=3 uid="uid://m1x8u5o8y5x2e"]
+
+[ext_resource type="Script" path="res://scripts/ui/MainMenu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/visuals/ForestBackground.gd" id="2_bg"]
+[ext_resource type="Script" path="res://scripts/visuals/CompanionLumi.gd" id="3_lumi"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="ForestBackground" type="Node2D" parent="."]
+script = ExtResource("2_bg")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -240.0
+offset_right = 220.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 22
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 46
+text = "BUBBLEWOOD"
+horizontal_alignment = 1
+
+[node name="SubTitle" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 0.85, 1)
+theme_override_font_sizes/font_size = 18
+text = "Whispering Woods • Featuring Lumi"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="VBox"]
+layout_mode = 2
+
+[node name="PlayBtn" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 65)
+layout_mode = 2
+text = "▶ PLAY NOW"
+
+[node name="MapBtn" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 55)
+layout_mode = 2
+text = "🗺 WORLD SAGA MAP"
+
+[node name="SettingsBtn" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "⚙ SETTINGS"
+
+[node name="CompanionLumi" type="Node2D" parent="."]
+position = Vector2(360, 1050)
+script = ExtResource("3_lumi")

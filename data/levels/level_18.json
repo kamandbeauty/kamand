@@ -1,0 +1,22 @@
+{
+	"level_id": 18,
+	"world_id": 2,
+	"level_name": "Level 18: Stone Guardian",
+	"description": "Stone pillars guard the ceiling. Bank your shots around them to trigger a drop.",
+	"max_shots": 18,
+	"danger_row": 12,
+	"target_score": 900,
+	"objective_type": 0,
+	"objective_target_count": 0,
+	"objective_target_color": -1,
+	"allowed_colors": [0, 3, 4],
+	"layout_rows": [
+		"YY....YY",
+		".P...P.",
+		"..RRRR.."
+	],
+	"special_layout": {
+		"0,2": 4,
+		"0,5": 4
+	}
+}
