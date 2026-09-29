@@ -42,13 +42,21 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android SDK Licenses & Install Build-Tools
+      - name: Configure Android SDK Path & Licenses
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager --install "build-tools;34.0.0" "platforms;android-34" "platform-tools"
+          SDK_DIR="/usr/local/lib/android/sdk"
+          if [ ! -d "$SDK_DIR" ]; then
+            SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          fi
+          echo "ANDROID_HOME=${SDK_DIR}" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=${SDK_DIR}" >> $GITHUB_ENV
+          
+          # Accept licenses non-interactively
+          if [ -f "${SDK_DIR}/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "${SDK_DIR}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          elif [ -f "${SDK_DIR}/cmdline-tools/bin/sdkmanager" ]; then
+            yes | "${SDK_DIR}/cmdline-tools/bin/sdkmanager" --licenses || true
+          fi
 
       - name: Setup Godot 4.3 Headless & Export Templates
         run: |
