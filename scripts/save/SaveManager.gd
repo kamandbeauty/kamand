@@ -1,8 +1,8 @@
-class_name SaveManager
 extends Node
 
 const SAVE_FILE_PATH: String = "user://savegame.json"
 const SAVE_TEMP_PATH: String = "user://savegame.tmp"
+const SAVE_VERSION: int = 3
 const CURRENT_SAVE_VERSION: int = 3
 
 # Progression state
@@ -96,8 +96,11 @@ func load_game() -> bool:
 		reset_save()
 		return false
 		
-	var dict: Dictionary = data as Dictionary
-	highest_unlocked_level = int(dict.get("highest_unlocked_level", 1))
+	return load_from_dict(data as Dictionary)
+
+## Populates state from a dictionary
+func load_from_dict(dict: Dictionary) -> bool:
+	highest_unlocked_level = int(dict.get("highest_unlocked_level", dict.get("current_level", 1)))
 	current_level = int(dict.get("current_level", 1))
 	current_world = int(dict.get("current_world", 1))
 	total_score = int(dict.get("total_score", 0))
@@ -121,15 +124,24 @@ func load_game() -> bool:
 	else:
 		stars_earned = {}
 		
+	# Migration for V1/V2 to V3 stars if missing
+	if stars_earned.is_empty():
+		for lvl in range(1, highest_unlocked_level + 1):
+			stars_earned[str(lvl)] = 1
+			
 	var raw_worlds: Variant = dict.get("unlocked_worlds", {"1": true})
 	if typeof(raw_worlds) == TYPE_DICTIONARY:
 		unlocked_worlds = (raw_worlds as Dictionary).duplicate()
 	else:
 		unlocked_worlds = {"1": true}
 		
-	var raw_tutorials: Variant = dict.get("tutorial_seen", {})
+	var raw_tutorials: Variant = dict.get("tutorial_seen", dict.get("seen_tutorials", {}))
 	if typeof(raw_tutorials) == TYPE_DICTIONARY:
 		tutorial_seen = (raw_tutorials as Dictionary).duplicate()
+	elif typeof(raw_tutorials) == TYPE_ARRAY:
+		tutorial_seen = {}
+		for tut in (raw_tutorials as Array):
+			tutorial_seen[str(tut)] = true
 	else:
 		tutorial_seen = {}
 		
@@ -138,16 +150,15 @@ func load_game() -> bool:
 	if current_level < 1:
 		current_level = 1
 		
-	# Check for automatic world unlocks based on total stars
 	check_world_unlocks()
 	return true
 
 ## Checks and unlocks worlds if star requirements are met
 func check_world_unlocks() -> void:
 	var total_stars: int = get_total_stars()
-	if total_stars >= 15:
+	if total_stars >= 10:
 		unlocked_worlds["2"] = true
-	if total_stars >= 35:
+	if total_stars >= 25:
 		unlocked_worlds["3"] = true
 
 func is_world_unlocked(world_id: int) -> bool:

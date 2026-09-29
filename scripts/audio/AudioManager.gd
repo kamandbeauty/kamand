@@ -1,4 +1,3 @@
-class_name AudioManager
 extends Node
 
 ## Audio bus and player pools for Phase 2 sound design

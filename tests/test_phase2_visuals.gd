@@ -119,9 +119,7 @@ static func test_bubble_visual_runes(results: Dictionary) -> void:
 	b.free()
 
 static func test_audio_manager_voices(results: Dictionary) -> void:
-	var audio: AudioManager = AudioManager.new()
-	_assert(audio.MAX_SFX_VOICES == 8, "Audio manager configured with 8 SFX voice pool", results)
-	audio.free()
+	_assert(AudioManager.MAX_SFX_VOICES == 8, "Audio manager configured with 8 SFX voice pool", results)
 
 static func test_safe_restart_during_effects(results: Dictionary) -> void:
 	var p_mgr: ParticleManager = ParticleManager.new()
