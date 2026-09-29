@@ -4,93 +4,80 @@ echo "=============================================="
 echo "    LUMI ANDROID EXPORT DIAGNOSTIC & BUILD    "
 echo "=============================================="
 
-# 1. Install Android SDK command line tools if not present
-if ! command -v apksigner &> /dev/null || ! command -v zipalign &> /dev/null; then
-    echo "Installing zipalign and apksigner..."
-    apt-get update -qq && apt-get install -y -qq zipalign apksigner aapt android-sdk-build-tools || true
-fi
+# 1. Install prerequisites in Debian/Ubuntu container
+echo "=== Installing toolchain ==="
+apt-get update -qq && apt-get install -y -qq zipalign apksigner aapt openjdk-17-jdk wget unzip || true
 
-# 2. Setup export templates in all expected paths
+# 2. Check and setup export templates
+echo "=== Setting up Export Templates ==="
 mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
-mkdir -p "$HOME/.local/share/godot/templates/4.3.stable"
+mkdir -p "/root/.local/share/godot/export_templates/4.3.stable"
 
-if [ -d "/root/.local/share/godot/export_templates" ]; then
-    cp -r /root/.local/share/godot/export_templates/* "$HOME/.local/share/godot/export_templates/" || true
-    cp -r /root/.local/share/godot/export_templates/* "$HOME/.local/share/godot/templates/" || true
+if [ -f "/root/.local/share/godot/export_templates/4.3.stable/android_debug.apk" ]; then
+    echo "Found existing templates in /root"
+    cp -r /root/.local/share/godot/export_templates/4.3.stable/* "$HOME/.local/share/godot/export_templates/4.3.stable/" || true
+else
+    echo "Downloading Godot 4.3 export templates..."
+    wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz -O /tmp/templates.tpz
+    unzip -q /tmp/templates.tpz -d /tmp/tpz_out
+    cp -r /tmp/tpz_out/templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
+    cp -r /tmp/tpz_out/templates/* "/root/.local/share/godot/export_templates/4.3.stable/"
 fi
 
-echo "Export templates directory contents:"
-ls -la "$HOME/.local/share/godot/export_templates/4.3.stable/" || true
+ls -la "$HOME/.local/share/godot/export_templates/4.3.stable/"
 
-# 3. Setup debug keystore
-mkdir -p /root/.android "$HOME/.android"
-rm -f /root/.android/debug.keystore "$HOME/.android/debug.keystore"
-keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore /root/.android/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
-cp /root/.android/debug.keystore "$HOME/.android/debug.keystore"
-echo "Keystore created at: $HOME/.android/debug.keystore"
+# 3. Setup Android SDK structure
+echo "=== Setting up Android SDK ==="
+SDK_DIR="/opt/android-sdk"
+mkdir -p "$SDK_DIR/platform-tools"
+mkdir -p "$SDK_DIR/build-tools/34.0.0"
 
-# 4. Locate Android SDK
-SDK_PATH="${ANDROID_HOME:-/usr/lib/android-sdk}"
-if [ ! -d "$SDK_PATH" ]; then
-    for p in /usr/lib/android-sdk /opt/android-sdk /root/android-sdk /usr/local/lib/android/sdk; do
-        if [ -d "$p" ]; then
-            SDK_PATH="$p"
-            break
-        fi
-    done
-fi
-echo "Using Android SDK at: $SDK_PATH"
-ls -la "$SDK_PATH" || true
+# Link tools
+ln -sf "$(command -v adb || echo /usr/bin/adb)" "$SDK_DIR/platform-tools/adb"
+ln -sf "$(command -v aapt || echo /usr/bin/aapt)" "$SDK_DIR/build-tools/34.0.0/aapt"
+ln -sf "$(command -v zipalign || echo /usr/bin/zipalign)" "$SDK_DIR/build-tools/34.0.0/zipalign"
+ln -sf "$(command -v apksigner || echo /usr/bin/apksigner)" "$SDK_DIR/build-tools/34.0.0/apksigner"
 
-# Ensure build-tools directory exists in SDK
-if [ ! -d "$SDK_PATH/build-tools/34.0.0" ] && [ -d "$SDK_PATH/build-tools" ]; then
-    mkdir -p "$SDK_PATH/build-tools/34.0.0"
-    for tool in aapt zipalign apksigner; do
-        TOOL_PATH=$(command -v "$tool" || true)
-        if [ -n "$TOOL_PATH" ]; then
-            ln -sf "$TOOL_PATH" "$SDK_PATH/build-tools/34.0.0/$tool" || true
-        fi
-    done
-fi
+echo "SDK Directory contents:"
+ls -la "$SDK_DIR"
+ls -la "$SDK_DIR/build-tools/34.0.0"
 
-# 5. Configure editor_settings-4.tres
+# 4. Generate Debug Keystore
+echo "=== Generating Debug Keystore ==="
+KEYSTORE_PATH="/opt/debug.keystore"
+rm -f "$KEYSTORE_PATH"
+keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore "$KEYSTORE_PATH" -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+ls -la "$KEYSTORE_PATH"
+
+# 5. Write Editor Settings
+echo "=== Writing Editor Settings ==="
 for cfg in "$HOME/.config/godot" "/root/.config/godot"; do
     mkdir -p "$cfg"
     cat > "$cfg/editor_settings-4.tres" <<EOF
 [gd_resource type="EditorSettings" format=3]
 
 [resource]
-export/android/android_sdk_path = "${SDK_PATH}"
-export/android/debug_keystore = "${HOME}/.android/debug.keystore"
+export/android/android_sdk_path = "${SDK_DIR}"
+export/android/debug_keystore = "${KEYSTORE_PATH}"
 export/android/debug_keystore_user = "androiddebugkey"
 export/android/debug_keystore_pass = "android"
 export/android/force_system_user = false
 EOF
-    echo "Saved $cfg/editor_settings-4.tres"
+    cat "$cfg/editor_settings-4.tres"
 done
 
-# 6. Export APK with full stdout/stderr capture
+# 6. Execute Godot Export
+echo "=== Exporting Android APK ==="
 mkdir -p builds/android
-echo "Executing Godot headless export..."
-godot -v --headless --export-debug "Android" builds/android/lumi-bubblewood.apk 2>&1 | tee /tmp/godot_export.log
-EXPORT_EXIT=${PIPESTATUS[0]}
-
-echo "Godot export exit code: $EXPORT_EXIT"
-
-if [ $EXPORT_EXIT -ne 0 ]; then
-    echo "==================== GODOT EXPORT FAILURE LOG ===================="
-    cat /tmp/godot_export.log
-    echo "=================================================================="
-    exit $EXPORT_EXIT
-fi
+godot -v --headless --export-debug "Android" builds/android/lumi-bubblewood.apk
 
 if [ -f "builds/android/lumi-bubblewood.apk" ]; then
-    echo "=============================================="
-    echo "SUCCESS: builds/android/lumi-bubblewood.apk created!"
+    echo "=========================================================="
+    echo "🎉 SUCCESS: builds/android/lumi-bubblewood.apk generated!"
     ls -lh builds/android/lumi-bubblewood.apk
-    echo "=============================================="
+    echo "=========================================================="
     exit 0
 else
-    echo "ERROR: builds/android/lumi-bubblewood.apk was not generated."
+    echo "❌ ERROR: Export failed to generate APK."
     exit 1
 fi
