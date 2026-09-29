@@ -2,8 +2,6 @@ name: Android Release
 
 on:
   push:
-    branches:
-      - arena/01a0ed0e-kamand
     tags:
       - "v*.*.*"
       - "release-*"
