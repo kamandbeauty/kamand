@@ -119,7 +119,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Center(
             child: Text(
-              'فاکتور ساز روبی نسخه ۱.۰.۵\nطراحی شده توسط استودیو جاوید',
+              'فاکتور ساز روبی نسخه ۱.۰.۶\nطراحی شده توسط استودیو جاوید',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
