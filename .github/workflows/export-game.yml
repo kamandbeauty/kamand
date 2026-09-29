@@ -38,28 +38,53 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Keystore & Settings
+      - name: Setup Environment & Export Android APK
         run: |
+          echo "=== 1. Setting up export templates ==="
+          mkdir -p ~/.local/share/godot/export_templates
+          if [ -d "/root/.local/share/godot/export_templates" ]; then
+            cp -r /root/.local/share/godot/export_templates/* ~/.local/share/godot/export_templates/ || true
+          fi
+          ls -la ~/.local/share/godot/export_templates/ || true
+
+          echo "=== 2. Locating Android SDK ==="
+          SDK_PATH="${ANDROID_HOME:-${ANDROID_SDK_ROOT}}"
+          if [ -z "$SDK_PATH" ] || [ ! -d "$SDK_PATH" ]; then
+            for p in /usr/lib/android-sdk /opt/android-sdk /root/android-sdk /usr/local/lib/android/sdk; do
+              if [ -d "$p" ]; then
+                SDK_PATH="$p"
+                break
+              fi
+            done
+          fi
+          echo "Using Android SDK: ${SDK_PATH}"
+          ls -la "${SDK_PATH}" || true
+
+          echo "=== 3. Creating Debug Keystore ==="
           mkdir -p ~/.android
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore ~/.android/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
           cp ~/.android/debug.keystore ./debug.keystore
 
-          mkdir -p ~/.config/godot
-          cat <<EOF > ~/.config/godot/editor_settings-4.tres
+          echo "=== 4. Configuring Editor Settings ==="
+          KEYSTORE_ABS="$(pwd)/debug.keystore"
+          for cfg_dir in "$HOME/.config/godot" "/root/.config/godot"; do
+            mkdir -p "$cfg_dir"
+            cat <<EOF > "$cfg_dir/editor_settings-4.tres"
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
-          export/android/android_sdk_path = "/usr/lib/android-sdk"
-          export/android/debug_keystore = "$(pwd)/debug.keystore"
+          export/android/android_sdk_path = "${SDK_PATH}"
+          export/android/debug_keystore = "${KEYSTORE_ABS}"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           export/android/force_system_user = false
           EOF
+          done
 
-      - name: Export Android APK
-        run: |
+          echo "=== 5. Exporting Android APK ==="
           mkdir -p builds/android
           godot -v --headless --export-debug "Android" builds/android/lumi-bubblewood.apk
+          ls -lh builds/android/
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
