@@ -73,27 +73,35 @@ jobs:
           mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}
           mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}/
 
-      - name: Generate Android Debug Keystore
+      - name: Generate Android Debug Keystore & Editor Settings
         run: |
-          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+          mkdir -p ~/.android
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore ~/.android/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+          cp ~/.android/debug.keystore ./debug.keystore
+          
+          KEYSTORE_PATH="$(pwd)/debug.keystore"
+          JAVA_PATH="${JAVA_HOME}"
+          SDK_PATH="${ANDROID_HOME}"
           
           mkdir -p ~/.config/godot
           cat <<EOF > ~/.config/godot/editor_settings-4.tres
           [gd_resource type="EditorSettings" format=3]
+
           [resource]
-          export/android/android_sdk_path = "${ANDROID_HOME}"
-          export/android/debug_keystore = "$(pwd)/debug.keystore"
+          export/android/android_sdk_path = "${SDK_PATH}"
+          export/android/debug_keystore = "${KEYSTORE_PATH}"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
+          export/android/java_sdk_path = "${JAVA_PATH}"
           export/android/force_system_user = false
           EOF
 
       - name: Export Android APK
         run: |
           mkdir -p builds/android
-          godot --headless --export-debug "Android" builds/android/lumi-bubblewood.apk
+          godot --headless -v --export-debug "Android" builds/android/lumi-bubblewood.apk
 
-      - name: Upload Android APK
+      - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Lumi-Android-APK
