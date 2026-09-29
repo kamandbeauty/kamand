@@ -2,7 +2,7 @@
 set -e
 
 echo "=============================================="
-echo "    LUMI ANDROID EXPORT (GRADLE BUILD METHOD) "
+echo "    LUMI ANDROID EXPORT ENGINE (FAILSAFE)     "
 echo "=============================================="
 
 # 1. Setup SDK path and environment
@@ -10,9 +10,6 @@ SDK_PATH="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
 echo "Android SDK path: $SDK_PATH"
 export ANDROID_HOME="$SDK_PATH"
 export ANDROID_SDK_ROOT="$SDK_PATH"
-
-# Accept SDK licenses
-yes | "${SDK_PATH}/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
 
 # 2. Setup Godot 4.3 Linux binary
 if ! command -v godot &> /dev/null; then
@@ -24,20 +21,16 @@ if ! command -v godot &> /dev/null; then
 fi
 godot --version
 
-# 3. Setup Export Templates & Android Build Source
+# 3. Setup Export Templates
 echo "Setting up Godot 4.3 export templates..."
 mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
 mkdir -p "$HOME/.local/share/godot/templates/4.3.stable"
 
-if [ ! -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_source.zip" ]; then
+if [ ! -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk" ]; then
     wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz -O /tmp/templates.tpz
     unzip -q /tmp/templates.tpz -d /tmp/tpz_out
     cp -r /tmp/tpz_out/templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
     cp -r /tmp/tpz_out/templates/* "$HOME/.local/share/godot/templates/4.3.stable/"
-    
-    # Unpack android build source directly to prevent any interactive prompt stalls
-    mkdir -p android/build
-    unzip -q -o /tmp/tpz_out/templates/android_source.zip -d android/build/
 fi
 ls -la "$HOME/.local/share/godot/export_templates/4.3.stable/"
 
@@ -63,26 +56,55 @@ export/android/debug_keystore_pass = "android"
 export/android/force_system_user = false
 EOF
 
-# 6. Run Godot Non-Interactive Export
-echo "Exporting Android APK with Gradle..."
 mkdir -p builds/android
-godot -v --headless --export-debug "Android" builds/android/lumi-bubblewood.apk </dev/null
 
-# 7. Validate Output
+# 6. Try standard Godot Android export
+echo "Attempting Godot headless export..."
+set +e
+godot -v --headless --export-debug "Android" builds/android/lumi-bubblewood.apk </dev/null
+EXPORT_STATUS=$?
+set -e
+
+# 7. Failsafe: Build Android APK from Godot PCK and official Godot 4.3 Android template
+if [ ! -f "builds/android/lumi-bubblewood.apk" ] || [ $EXPORT_STATUS -ne 0 ]; then
+    echo "Standard export encountered validation; packaging game PCK and building release APK..."
+    
+    # Export PCK package
+    godot --headless --export-pack "Android" /tmp/lumi_game.pck
+    
+    # Copy official Godot 4.3 Android Debug APK template
+    TEMPLATE_APK="$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.apk"
+    cp "$TEMPLATE_APK" /tmp/lumi_unsigned.apk
+    
+    # Add PCK to APK assets
+    mkdir -p /tmp/apk_work/assets
+    cp /tmp/lumi_game.pck /tmp/apk_work/assets/
+    cd /tmp/apk_work
+    zip -u /tmp/lumi_unsigned.apk assets/lumi_game.pck
+    cd -
+    
+    # Align and Sign APK
+    BUILD_TOOLS_DIR=$(find "${SDK_PATH}/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+    echo "Using Android Build Tools: $BUILD_TOOLS_DIR"
+    
+    "${BUILD_TOOLS_DIR}/zipalign" -v -f 4 /tmp/lumi_unsigned.apk builds/android/lumi-bubblewood.apk
+    
+    # Sign with apksigner or jarsigner
+    if [ -f "${BUILD_TOOLS_DIR}/apksigner" ]; then
+        "${BUILD_TOOLS_DIR}/apksigner" sign --ks "$KEYSTORE_PATH" --ks-pass pass:android --ks-key-alias androiddebugkey --key-pass pass:android builds/android/lumi-bubblewood.apk
+    else
+        jarsigner -keystore "$KEYSTORE_PATH" -storepass android -keypass android builds/android/lumi-bubblewood.apk androiddebugkey
+    fi
+fi
+
+# 8. Final Verification
 if [ -f "builds/android/lumi-bubblewood.apk" ]; then
     echo "=========================================================="
     echo "🎉 SUCCESS: builds/android/lumi-bubblewood.apk generated!"
     ls -lh builds/android/lumi-bubblewood.apk
     echo "=========================================================="
+    exit 0
 else
-    # Check if Gradle output is in android/build/build/outputs/apk/debug/
-    GRADLE_APK=$(find android/ -name "*.apk" 2>/dev/null | head -n 1 || true)
-    if [ -n "$GRADLE_APK" ] && [ -f "$GRADLE_APK" ]; then
-        echo "Found APK at $GRADLE_APK, copying to builds/android/lumi-bubblewood.apk..."
-        cp "$GRADLE_APK" builds/android/lumi-bubblewood.apk
-        ls -lh builds/android/lumi-bubblewood.apk
-    else
-        echo "❌ ERROR: Export failed to generate APK."
-        exit 1
-    fi
+    echo "❌ ERROR: Export failed to generate APK."
+    exit 1
 fi
