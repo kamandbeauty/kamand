@@ -40,3 +40,11 @@ jobs:
 
       - name: Build debug APK
         run: flutter build apk --debug
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RubiFactor-v1.0.5-vc5-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
