@@ -111,23 +111,6 @@ jobs:
         working-directory: android
         run: ./gradlew --version
 
-      - name: Clean Android build
-        working-directory: android
-        env:
-          RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
-          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        shell: bash
-        run: |
-          set -o pipefail
-          if ! ./gradlew clean --stacktrace --no-daemon --max-workers=2 2>&1 | tee "$RUNNER_TEMP/gradle-clean.log"; then
-            while IFS= read -r line; do
-              echo "::error::$line"
-            done < <(tail -n 30 "$RUNNER_TEMP/gradle-clean.log")
-            exit 1
-          fi
-
       - name: Build signed release APKs (split by ABI)
         env:
           RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
