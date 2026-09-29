@@ -53,7 +53,16 @@ void main() {
       );
 
   test('previous debt is not counted twice', () {
-    expect(invoice(id: '1', remaining: 150, previousDebt: 50).customerBalanceImpact, 100);
+    expect(
+      invoice(id: '1', remaining: 150, previousDebt: 50)
+          .customerBalanceImpact,
+      100,
+    );
+    expect(
+      invoice(id: 'paid-old-debt', remaining: 30, previousDebt: 50)
+          .customerBalanceImpact,
+      -20,
+    );
     expect(invoice(id: '2', type: 'proforma').customerBalanceImpact, 0);
     expect(invoice(id: '3', paymentType: 'cash').customerBalanceImpact, 0);
   });
@@ -77,6 +86,25 @@ void main() {
     notifier.dispose();
   });
 
+  test('deposit can pay old debt and deletion reverses the exact effect', () async {
+    SharedPreferences.setMockInitialValues({});
+    await PrefsStore.saveCustomers([customer(balance: 50)]);
+    final notifier = CustomerListNotifier();
+    await notifier.ensureLoaded();
+
+    final paidOldDebt = invoice(
+      id: 'deposit-old-debt',
+      remaining: 30,
+      previousDebt: 50,
+    );
+    await notifier.applyInvoiceChange(null, paidOldDebt);
+    expect(notifier.state.single.balance, 30);
+
+    await notifier.applyInvoiceChange(paidOldDebt, null);
+    expect(notifier.state.single.balance, 50);
+    notifier.dispose();
+  });
+
   test('legacy invoice establishes a baseline without changing old balances', () async {
     SharedPreferences.setMockInitialValues({});
     await PrefsStore.saveCustomers([customer(balance: 75)]);
@@ -91,6 +119,9 @@ void main() {
     final secondEdit = invoice(id: 'legacy', remaining: 130);
     await notifier.applyInvoiceChange(firstEdit, secondEdit);
     expect(notifier.state.single.balance, 85);
+
+    await notifier.applyInvoiceChange(secondEdit, null);
+    expect(notifier.state.single.balance, 75);
     notifier.dispose();
   });
 }

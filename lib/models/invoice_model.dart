@@ -31,10 +31,12 @@ class InvoiceModel {
   /// `previousDebt` is displayed on the invoice, but it already belongs to the
   /// customer's balance and must not be added for a second time.
   double get customerBalanceImpact {
-    if (type != 'sale' || paymentType == 'cash') return 0;
-    return (remainingAmount - previousDebt)
-        .clamp(0, double.infinity)
-        .toDouble();
+    if (type != 'sale') return 0;
+    // previousDebt is already present in the customer's balance. A large
+    // deposit (or a cash payment) may pay part of that old debt, so this delta
+    // is intentionally allowed to be negative.
+    final effectiveRemaining = paymentType == 'cash' ? 0.0 : remainingAmount;
+    return effectiveRemaining - previousDebt;
   }
 
   InvoiceModel({

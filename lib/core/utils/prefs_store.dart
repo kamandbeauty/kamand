@@ -190,6 +190,8 @@ class PrefsStore {
         normalizedLedger[entry.key] = {
           'customerId': value['customerId'],
           'impact': (value['impact'] as num).toDouble(),
+          if (value['referenceImpact'] is num)
+            'referenceImpact': (value['referenceImpact'] as num).toDouble(),
         };
       }
     }

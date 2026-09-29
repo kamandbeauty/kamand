@@ -120,26 +120,37 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
 
     final beforeId = ledgerEntry?['customerId'] as String?;
     final beforeImpact = (ledgerEntry?['impact'] as num?)?.toDouble() ?? 0;
+    final beforeReference =
+        (ledgerEntry?['referenceImpact'] as num?)?.toDouble() ?? beforeImpact;
     final afterId = after == null ? null : _resolveCustomerId(after);
     final afterImpact = after?.customerBalanceImpact ?? 0;
     final deltas = <String, double>{};
 
-    if (beforeId != null && beforeId.isNotEmpty) {
-      deltas[beforeId] = (deltas[beforeId] ?? 0) - beforeImpact;
-    }
-    if (afterId != null) {
-      deltas[afterId] = (deltas[afterId] ?? 0) + afterImpact;
+    if (afterId != null && afterId == beforeId) {
+      // Only the difference from the last invoice snapshot is new. The
+      // separately tracked applied impact keeps legacy baseline amounts safe.
+      deltas[afterId] = afterImpact - beforeReference;
+    } else {
+      if (beforeId != null && beforeId.isNotEmpty) {
+        deltas[beforeId] = (deltas[beforeId] ?? 0) - beforeImpact;
+      }
+      if (afterId != null) {
+        deltas[afterId] = (deltas[afterId] ?? 0) + afterImpact;
+      }
     }
 
     final changed = <CustomerModel>[];
+    final actualDeltas = <String, double>{};
     if (deltas.values.any((delta) => delta != 0)) {
       state = state.map((customer) {
         final delta = deltas[customer.id] ?? 0;
         if (delta == 0) return customer;
-        final updated = _withBalance(
-          customer,
-          (customer.balance + delta).clamp(0, double.infinity).toDouble(),
-        );
+        final nextBalance =
+            (customer.balance + delta).clamp(0, double.infinity).toDouble();
+        final actualDelta = nextBalance - customer.balance;
+        actualDeltas[customer.id] = actualDelta;
+        if (actualDelta == 0) return customer;
+        final updated = _withBalance(customer, nextBalance);
         changed.add(updated);
         return updated;
       }).toList();
@@ -149,9 +160,18 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
     if (after == null) {
       _invoiceBalanceLedger.remove(invoiceId);
     } else {
+      var appliedImpact = 0.0;
+      if (afterId != null) {
+        appliedImpact = beforeId == afterId
+            ? beforeImpact + (actualDeltas[afterId] ?? 0)
+            : actualDeltas[afterId] ?? 0;
+      }
       _invoiceBalanceLedger[invoiceId] = {
         'customerId': afterId ?? '',
-        'impact': afterId == null ? 0 : afterImpact,
+        // Store the amount actually applied after the zero-balance clamp so a
+        // future edit/delete can reverse it exactly.
+        'impact': appliedImpact,
+        'referenceImpact': afterImpact,
       };
     }
     await PrefsStore.saveInvoiceBalanceLedger(_invoiceBalanceLedger);
@@ -170,7 +190,10 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
     final customerId = _resolveCustomerId(invoice);
     return {
       'customerId': customerId ?? '',
-      'impact': customerId == null ? 0 : invoice.customerBalanceImpact,
+      // Legacy invoices establish a comparison baseline without assuming that
+      // older app versions did (or did not) add them to the customer balance.
+      'impact': 0,
+      'referenceImpact': invoice.customerBalanceImpact,
     };
   }
 
