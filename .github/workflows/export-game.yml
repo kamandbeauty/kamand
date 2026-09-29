@@ -55,7 +55,7 @@ jobs:
             yes | "${SDK_DIR}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
           fi
 
-      - name: Setup Godot 4.3 Headless & Android Export Templates
+      - name: Setup Godot 4.3 Headless & Export Templates
         run: |
           GODOT_VERSION="4.3"
           GODOT_RELEASE="stable"
@@ -70,10 +70,14 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz
           unzip -q Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz
           
+          # Copy templates to all standard Godot template paths
           mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}
-          mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}/
+          cp -r templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}/
+          
+          mkdir -p ~/.local/share/godot/templates/${GODOT_VERSION}.${GODOT_RELEASE}
+          cp -r templates/* ~/.local/share/godot/templates/${GODOT_VERSION}.${GODOT_RELEASE}/
 
-      - name: Generate Android Debug Keystore & Editor Settings
+      - name: Generate Android Keystore & Editor Settings
         run: |
           mkdir -p ~/.android
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore ~/.android/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
