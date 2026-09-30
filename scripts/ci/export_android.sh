@@ -5,16 +5,12 @@ echo "=============================================="
 echo "    LUMI PRODUCTION CI/CD ANDROID ENGINE      "
 echo "=============================================="
 
-# 1. Install prerequisites (apktool, zipalign, apksigner, aapt)
-echo "=== Installing packaging toolchain ==="
-sudo apt-get update -qq && sudo apt-get install -y -qq apktool zipalign apksigner aapt || true
-
-# 2. Setup SDK path
+# 1. Setup SDK path
 SDK_PATH="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
 export ANDROID_HOME="$SDK_PATH"
 export ANDROID_SDK_ROOT="$SDK_PATH"
 
-# 3. Setup Godot 4.3 Linux binary
+# 2. Setup Godot 4.3 Linux binary
 if ! command -v godot &> /dev/null; then
     echo "Downloading Godot 4.3 binary..."
     wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip -O /tmp/godot.zip
@@ -24,7 +20,7 @@ if ! command -v godot &> /dev/null; then
 fi
 godot --version
 
-# 4. Setup Export Templates
+# 3. Setup Export Templates
 echo "Setting up Godot 4.3 export templates..."
 mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
 mkdir -p "$HOME/.local/share/godot/templates/4.3.stable"
@@ -35,15 +31,16 @@ if [ ! -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_debug.ap
     cp -r /tmp/tpz_out/templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
     cp -r /tmp/tpz_out/templates/* "$HOME/.local/share/godot/templates/4.3.stable/"
 fi
+ls -la "$HOME/.local/share/godot/export_templates/4.3.stable/"
 
-# 5. Generate Debug Keystore
+# 4. Generate Debug Keystore
 echo "Generating debug keystore..."
 mkdir -p "$HOME/.android"
 KEYSTORE_PATH="$HOME/.android/debug.keystore"
 rm -f "$KEYSTORE_PATH"
 keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore "$KEYSTORE_PATH" -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
 
-# 6. Configure Editor Settings
+# 5. Configure Editor Settings
 echo "Configuring Editor Settings..."
 mkdir -p "$HOME/.config/godot"
 cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
@@ -57,10 +54,10 @@ export/android/debug_keystore_pass = "android"
 export/android/force_system_user = false
 EOF
 
-# 7. Execute Production Packaging
+# 6. Run Production Packager
 python3 scripts/ci/build_apk.py
 
-# 8. Final check
+# 7. Final Verification
 if [ -f "builds/android/lumi-bubblewood.apk" ]; then
     echo "=========================================================="
     echo "🎉 VERIFIED PRODUCTION APK: builds/android/lumi-bubblewood.apk"
@@ -68,6 +65,6 @@ if [ -f "builds/android/lumi-bubblewood.apk" ]; then
     echo "=========================================================="
     exit 0
 else
-    echo "❌ ERROR: Export failed."
+    echo "❌ ERROR: Export failed to generate APK."
     exit 1
 fi
