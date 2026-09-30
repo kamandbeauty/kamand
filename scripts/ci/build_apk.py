@@ -36,10 +36,19 @@ def main():
     # 1. Export Godot PCK
     pck_path = f"{work_dir}/main.pck"
     print("--- Step 1: Exporting Game PCK with Godot 4.3 ---")
-    run_cmd(f"godot --headless --export-pack 'Android' '{pck_path}'")
-    if not os.path.exists(pck_path) or os.path.getsize(pck_path) == 0:
-        raise RuntimeError("PCK export failed or resulted in 0 bytes!")
-    print(f"Game PCK exported successfully ({os.path.getsize(pck_path)} bytes)")
+    pck_exported = False
+    for preset_name in ["Pack", "Android"]:
+        try:
+            res = run_cmd(f"godot --headless --export-pack '{preset_name}' '{pck_path}'", check=False)
+            if os.path.exists(pck_path) and os.path.getsize(pck_path) > 0:
+                print(f"Game PCK exported successfully with preset '{preset_name}' ({os.path.getsize(pck_path)} bytes)")
+                pck_exported = True
+                break
+        except Exception as e:
+            print(f"Attempt with '{preset_name}' failed: {e}")
+
+    if not pck_exported:
+        raise RuntimeError("Failed to export PCK with all preset candidates!")
 
     # 2. Package APK using pure zipfile
     print("--- Step 2: Injecting PCK into Godot Android Template ---")
