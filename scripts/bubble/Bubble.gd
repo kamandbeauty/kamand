@@ -1,6 +1,11 @@
 class_name Bubble
 extends Node2D
 
+## ==============================================================================
+## LUMI / BUBBLEWOOD - PREMIUM 3D GLOSS BUBBLE (Section 12-17, 22-24, 51)
+## 8-Layer Composite Glass Shader & Procedural Specular Lighting
+## ==============================================================================
+
 signal pop_completed(bubble: Bubble)
 signal fall_completed(bubble: Bubble)
 signal exploded(bubble: Bubble)
@@ -20,15 +25,15 @@ var grid_coord: Vector2i = Vector2i(-1, -1)
 var state: int = Enums.BubbleState.READY
 var radius: float = Constants.BUBBLE_RADIUS
 
-## Idle shimmer animation variables
+## Animation & Visual FX
 var _idle_time: float = 0.0
 var _idle_phase: float = randf_range(0.0, TAU)
-
-## Falling animation state variables
+var _pop_flash: float = 0.0
 var _is_falling: bool = false
 var _fall_velocity: Vector2 = Vector2.ZERO
-var _fall_gravity: float = 2600.0
+var _fall_gravity: float = 2400.0
 var _fall_angular_velocity: float = 0.0
+var _is_popping: bool = false
 
 func _ready() -> void:
 	queue_redraw()
@@ -48,7 +53,10 @@ func _process(delta: float) -> void:
 		position += _fall_velocity * delta
 		rotation += _fall_angular_velocity * delta
 		
-		# Clean up once fallen off the bottom of the screen
+		# Squash and stretch subtle deformation during fall
+		var speed_factor: float = clampf(abs(_fall_velocity.y) / 1200.0, 0.0, 0.25)
+		scale = Vector2(1.0 - speed_factor * 0.4, 1.0 + speed_factor * 0.6)
+		
 		if position.y > Constants.SCREEN_HEIGHT + radius * 2.0:
 			_is_falling = false
 			state = Enums.BubbleState.REMOVED
@@ -56,12 +64,43 @@ func _process(delta: float) -> void:
 			queue_free()
 	elif state == Enums.BubbleState.ATTACHED and not SaveManager.reduced_effects:
 		_idle_time += delta
-		# Subtle idle shimmer pulse
-		var shimmer: float = sin(_idle_time * 2.0 + _idle_phase) * 0.015
-		scale = Vector2(1.0 + shimmer, 1.0 - shimmer)
 		if special_type != Enums.SpecialType.NONE:
 			queue_redraw()
 
+## Triggers the premium 180ms pop animation sequence (Section 22, 23)
+func play_pop_animation(delay: float = 0.0) -> void:
+	if _is_popping: return
+	_is_popping = true
+	state = Enums.BubbleState.POPPING
+	
+	var tween: Tween = create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+		
+	# 1. Bubble brightens + scale 1.0 -> 1.08
+	tween.tween_property(self, "scale", Vector2(1.12, 1.12), 0.07).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_pop_flash = 1.0
+	queue_redraw()
+	
+	# 2. White flash & burst fade out
+	tween.tween_property(self, "scale", Vector2(0.3, 0.3), 0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.10)
+	
+	tween.finished.connect(func():
+		state = Enums.BubbleState.REMOVED
+		pop_completed.emit(self)
+		queue_free()
+	)
+
+func start_falling(initial_velocity: Vector2 = Vector2.ZERO) -> void:
+	_is_falling = true
+	state = Enums.BubbleState.FALLING
+	_fall_velocity = initial_velocity if initial_velocity != Vector2.ZERO else Vector2(randf_range(-100, 100), randf_range(-250, -80))
+	_fall_angular_velocity = randf_range(-4.0, 4.0)
+
+## ------------------------------------------------------------------------------
+## 8-LAYER COMPOSITE RENDERING PIPELINE (Section 12-17)
+## ------------------------------------------------------------------------------
 func _draw() -> void:
 	match special_type:
 		Enums.SpecialType.BOMB:
@@ -75,207 +114,162 @@ func _draw() -> void:
 		Enums.SpecialType.LOCKED:
 			_draw_locked_bubble()
 		_:
-			_draw_standard_bubble()
+			_draw_standard_glass_bubble()
 
-func _draw_standard_bubble() -> void:
-	var base_color: Color = Constants.get_color_for_type(bubble_color)
-	var shadow_color: Color = base_color.darkened(0.45)
-	var highlight_color: Color = base_color.lightened(0.55)
-	var specular_color: Color = Color(1.0, 1.0, 1.0, 0.85)
+func _draw_standard_glass_bubble() -> void:
+	var palette: Dictionary = GlassDesignSystem.BUBBLE_PALETTES.get(
+		bubble_color,
+		GlassDesignSystem.BUBBLE_PALETTES[Enums.BubbleColor.RED]
+	)
+	var base_col: Color = palette["base"]
+	var light_col: Color = palette["light"]
+	var deep_col: Color = palette["deep"]
+	var glow_col: Color = palette["glow"]
+	var rim_col: Color = palette["rim"]
 	
-	# 1. Outer ambient glow ring
-	draw_arc(Vector2.ZERO, radius + 1.0, 0.0, TAU, 32, Color(base_color.r, base_color.g, base_color.b, 0.25), 2.5, true)
-	# 2. Base dark sphere foundation
-	draw_circle(Vector2.ZERO, radius, shadow_color)
-	# 3. Main vibrant sphere
-	draw_circle(Vector2(0, -radius * 0.05), radius * 0.92, base_color)
-	# 4. Soft curved bottom shadow
-	draw_circle(Vector2(0, radius * 0.22), radius * 0.78, Color(shadow_color.r, shadow_color.g, shadow_color.b, 0.6))
-	# 5. Inner body core
-	draw_circle(Vector2(0, 0), radius * 0.82, base_color)
-	# 6. Top-left soft highlight dome
-	draw_circle(Vector2(-radius * 0.25, -radius * 0.25), radius * 0.52, Color(highlight_color.r, highlight_color.g, highlight_color.b, 0.55))
-	# 7. Sharp crystal specular glint
-	draw_circle(Vector2(-radius * 0.35, -radius * 0.35), radius * 0.18, specular_color)
-	draw_circle(Vector2(-radius * 0.20, -radius * 0.45), radius * 0.08, specular_color)
-	# 8. Subtle outer rim stroke
-	draw_arc(Vector2.ZERO, radius - 0.5, 0.0, TAU, 32, base_color.darkened(0.6), 1.5, true)
+	# Layer 1: Soft Colored Ambient Outer Glow (Section 12.1)
+	draw_arc(Vector2.ZERO, radius + 2.5, 0.0, TAU, 32, glow_col, 3.5, true)
 	
-	# 9. Accessibility Rune / Pattern Glyph
+	# Layer 2: Offset Soft Drop Shadow (Section 17)
+	var shadow_col: Color = Color(0.04, 0.04, 0.12, 0.35)
+	draw_circle(GlassDesignSystem.SHADOW_OFFSET, radius * 0.94, shadow_col)
+	
+	# Layer 3: Outer Rim & Spherical Foundation (Section 13, 16)
+	draw_circle(Vector2.ZERO, radius, deep_col)
+	
+	# Layer 4: Spherical Gradient Body (Upper-Left to Lower-Right 3D Light)
+	var body_offset: Vector2 = GlassDesignSystem.LIGHT_OFFSET_PRIMARY * (radius * 0.22)
+	draw_circle(body_offset, radius * 0.90, base_col)
+	
+	# Layer 5: Inner Refraction Core & Soft Lower Ambient Bounce
+	var bounce_offset: Vector2 = -GlassDesignSystem.LIGHT_OFFSET_PRIMARY * (radius * 0.35)
+	draw_circle(bounce_offset, radius * 0.65, Color(light_col.r, light_col.g, light_col.b, 0.30))
+	
+	# Layer 6: Upper-Left Soft Illumination Dome
+	var dome_offset: Vector2 = GlassDesignSystem.LIGHT_OFFSET_PRIMARY * (radius * 0.42)
+	draw_circle(dome_offset, radius * 0.55, Color(light_col.r, light_col.g, light_col.b, 0.65))
+	
+	# Layer 7: Primary Specular Highlight (Curved Glass Glint - Section 14)
+	var spec_primary: Vector2 = GlassDesignSystem.LIGHT_OFFSET_PRIMARY * (radius * 0.52)
+	draw_circle(spec_primary, radius * 0.22, Color(1.0, 1.0, 1.0, 0.88))
+	
+	# Layer 8: Secondary Specular Reflection & Crisp Rim Light
+	var spec_sec: Vector2 = GlassDesignSystem.LIGHT_OFFSET_SECONDARY * (radius * 0.58)
+	draw_circle(spec_sec, radius * 0.10, Color(1.0, 1.0, 1.0, 0.75))
+	
+	# Translucent Glass Rim Stroke
+	draw_arc(Vector2.ZERO, radius - 0.75, 0.0, TAU, 32, rim_col, 1.5, true)
+	
+	# Accessibility Rune / Symbol (if enabled)
 	if SaveManager.show_accessibility_symbols:
 		_draw_accessibility_glyph()
+		
+	# White pop flash overlay
+	if _pop_flash > 0.0:
+		draw_circle(Vector2.ZERO, radius * 1.05, Color(1.0, 1.0, 1.0, 0.7 * _pop_flash))
 
 func _draw_bomb_bubble() -> void:
-	var dark_obsidian: Color = Color(0.12, 0.12, 0.16)
-	var rim_color: Color = Color(0.3, 0.3, 0.38)
-	var orange_fuse: Color = Color(1.0, 0.55, 0.1)
+	var obsidian_base: Color = Color(0.12, 0.14, 0.20, 1.0)
+	var obsidian_deep: Color = Color(0.04, 0.05, 0.08, 1.0)
+	var glow_pulse: float = sin(_idle_time * 6.0) * 0.25 + 0.75
+	var orange_glow: Color = Color(1.0, 0.45, 0.15, 0.45 * glow_pulse)
 	
-	# Pulsating warning aura
-	var pulse: float = sin(_idle_time * 6.0) * 0.2 + 0.8
-	draw_arc(Vector2.ZERO, radius + 2.0, 0.0, TAU, 32, Color(1.0, 0.3, 0.1, 0.35 * pulse), 3.0, true)
-	
-	draw_circle(Vector2.ZERO, radius, dark_obsidian)
-	draw_circle(Vector2(-radius * 0.2, -radius * 0.2), radius * 0.45, Color(0.35, 0.35, 0.45, 0.5))
-	draw_arc(Vector2.ZERO, radius - 0.5, 0.0, TAU, 32, rim_color, 2.0, true)
-	
-	# Fuse top cap & spark
-	draw_rect(Rect2(-4.0, -radius - 3.0, 8.0, 5.0), Color(0.4, 0.3, 0.2))
-	draw_circle(Vector2(0, -radius - 5.0), 3.5 * pulse, orange_fuse)
-	
-	# Bomb Skull/Cross Icon
-	var r: float = radius * 0.4
-	draw_line(Vector2(-r, -r), Vector2(r, r), Color(1.0, 0.4, 0.2), 3.0)
-	draw_line(Vector2(-r, r), Vector2(r, -r), Color(1.0, 0.4, 0.2), 3.0)
+	# 1. Pulsating Fiery Outer Glow
+	draw_arc(Vector2.ZERO, radius + 3.0, 0.0, TAU, 32, orange_glow, 4.0, true)
+	# 2. Shadow
+	draw_circle(GlassDesignSystem.SHADOW_OFFSET, radius * 0.94, Color(0, 0, 0, 0.45))
+	# 3. Metallic obsidian core
+	draw_circle(Vector2.ZERO, radius, obsidian_deep)
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_PRIMARY * 6.0, radius * 0.88, obsidian_base)
+	# 4. Glass highlight
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_PRIMARY * (radius * 0.48), radius * 0.20, Color(1.0, 1.0, 1.0, 0.80))
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_SECONDARY * (radius * 0.55), radius * 0.09, Color(1.0, 1.0, 1.0, 0.65))
+	# 5. Glowing Bomb Core Rune
+	draw_circle(Vector2.ZERO, radius * 0.42, Color(1.0, 0.35, 0.1, 0.35 * glow_pulse))
+	draw_arc(Vector2.ZERO, radius * 0.42, 0.0, TAU, 24, Color(1.0, 0.6, 0.2, 0.9), 2.0, true)
+	draw_circle(Vector2.ZERO, radius * 0.18, Color(1.0, 0.85, 0.4, 0.95))
 
 func _draw_rainbow_bubble() -> void:
-	var t: float = _idle_time * 2.0
-	var col1: Color = Color.from_hsv(fmod(t, 1.0), 0.85, 0.95)
-	var col2: Color = Color.from_hsv(fmod(t + 0.33, 1.0), 0.85, 0.95)
+	# Prismatic iridescent glass crystal
+	var cycle: float = _idle_time * 2.5
+	var r: float = sin(cycle) * 0.4 + 0.6
+	var g: float = sin(cycle + 2.09) * 0.4 + 0.6
+	var b: float = sin(cycle + 4.18) * 0.4 + 0.6
+	var prism_col: Color = Color(r, g, b, 1.0)
 	
-	draw_circle(Vector2.ZERO, radius, col1)
-	draw_circle(Vector2(0, 0), radius * 0.82, col2)
-	draw_circle(Vector2(-radius * 0.25, -radius * 0.25), radius * 0.5, Color(1, 1, 1, 0.6))
-	draw_circle(Vector2(-radius * 0.35, -radius * 0.35), radius * 0.18, Color.WHITE)
-	
-	# Rainbow Spiral Ring
-	draw_arc(Vector2.ZERO, radius * 0.5, 0.0, TAU, 24, Color(1.0, 1.0, 1.0, 0.8), 2.5, true)
-	draw_circle(Vector2.ZERO, radius * 0.25, Color.WHITE)
+	draw_arc(Vector2.ZERO, radius + 3.0, 0.0, TAU, 32, Color(prism_col.r, prism_col.g, prism_col.b, 0.4), 3.5, true)
+	draw_circle(GlassDesignSystem.SHADOW_OFFSET, radius * 0.94, Color(0.05, 0.05, 0.15, 0.3))
+	draw_circle(Vector2.ZERO, radius, Color(0.15, 0.15, 0.3, 1.0))
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_PRIMARY * 5.0, radius * 0.88, prism_col.darkened(0.2))
+	draw_circle(Vector2.ZERO, radius * 0.70, Color(1.0, 1.0, 1.0, 0.45))
+	# Prismatic concentric glass rings
+	draw_arc(Vector2.ZERO, radius * 0.55, 0.0, TAU, 28, Color(1.0, 0.9, 0.4, 0.8), 2.5, true)
+	draw_arc(Vector2.ZERO, radius * 0.35, 0.0, TAU, 24, Color(0.4, 0.9, 1.0, 0.85), 2.0, true)
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_PRIMARY * (radius * 0.5), radius * 0.22, Color(1.0, 1.0, 1.0, 0.92))
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_SECONDARY * (radius * 0.58), radius * 0.10, Color(1.0, 1.0, 1.0, 0.80))
 
 func _draw_lightning_bubble() -> void:
-	var base: Color = Color(0.18, 0.4, 0.95)
-	draw_circle(Vector2.ZERO, radius, base)
-	draw_circle(Vector2(-radius * 0.2, -radius * 0.2), radius * 0.5, Color(0.5, 0.8, 1.0, 0.7))
-	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, Color(0.8, 0.95, 1.0), 2.0, true)
+	var zap_col: Color = Color(0.3, 0.85, 1.0)
+	var glow_pulse: float = sin(_idle_time * 8.0) * 0.25 + 0.75
 	
-	# Lightning Bolt Glyph
-	var bolt_pts: PackedVector2Array = [
-		Vector2(2, -radius * 0.65),
-		Vector2(-radius * 0.45, 0),
-		Vector2(0, 0),
-		Vector2(-2, radius * 0.65),
-		Vector2(radius * 0.45, -2),
-		Vector2(0, -2)
-	]
-	draw_colored_polygon(bolt_pts, Color(1.0, 0.95, 0.2))
+	draw_arc(Vector2.ZERO, radius + 3.0, 0.0, TAU, 32, Color(zap_col.r, zap_col.g, zap_col.b, 0.45 * glow_pulse), 3.5, true)
+	draw_circle(GlassDesignSystem.SHADOW_OFFSET, radius * 0.94, Color(0.02, 0.08, 0.18, 0.35))
+	draw_circle(Vector2.ZERO, radius, Color(0.08, 0.25, 0.45))
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_PRIMARY * 5.0, radius * 0.88, zap_col.darkened(0.25))
+	# Specular highlights
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_PRIMARY * (radius * 0.5), radius * 0.20, Color(1.0, 1.0, 1.0, 0.9))
+	# Sharp glowing lightning bolt
+	var bolt: PackedVector2Array = PackedVector2Array([
+		Vector2(2, -18), Vector2(-10, 2), Vector2(0, 2),
+		Vector2(-2, 18), Vector2(10, -2), Vector2(0, -2)
+	])
+	draw_colored_polygon(bolt, Color(1.0, 1.0, 1.0, 0.95))
+	draw_polyline(bolt, Color(0.4, 0.95, 1.0, 0.85), 2.0, true)
 
 func _draw_stone_bubble() -> void:
-	var stone_gray: Color = Color(0.42, 0.45, 0.50)
-	var stone_dark: Color = Color(0.24, 0.26, 0.30)
-	draw_circle(Vector2.ZERO, radius, stone_gray)
-	draw_circle(Vector2(0, radius * 0.25), radius * 0.75, stone_dark)
-	draw_circle(Vector2(0, 0), radius * 0.8, stone_gray)
+	# Crystalline quartz stone
+	var stone_base: Color = Color(0.55, 0.58, 0.68)
+	var stone_deep: Color = Color(0.28, 0.30, 0.38)
 	
-	# Craggy cracks
-	draw_line(Vector2(-radius * 0.4, -radius * 0.3), Vector2(0, 0), stone_dark, 2.5)
-	draw_line(Vector2(0, 0), Vector2(radius * 0.3, -radius * 0.4), stone_dark, 2.0)
-	draw_line(Vector2(0, 0), Vector2(-radius * 0.2, radius * 0.5), stone_dark, 2.5)
+	draw_circle(GlassDesignSystem.SHADOW_OFFSET, radius * 0.94, Color(0.05, 0.05, 0.1, 0.4))
+	draw_circle(Vector2.ZERO, radius, stone_deep)
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_PRIMARY * 5.0, radius * 0.88, stone_base)
+	
+	# Geometric crystal facet lines (Section 48)
+	var f1: PackedVector2Array = PackedVector2Array([Vector2(-12, -16), Vector2(14, -14), Vector2(18, 12), Vector2(-8, 16)])
+	draw_colored_polygon(f1, Color(0.68, 0.72, 0.82, 0.65))
+	draw_polyline(f1, Color(0.85, 0.88, 0.95, 0.8), 1.5, true)
+	
+	# Crisp corner specular
+	draw_circle(GlassDesignSystem.LIGHT_OFFSET_PRIMARY * (radius * 0.48), radius * 0.16, Color(1.0, 1.0, 1.0, 0.75))
 
 func _draw_locked_bubble() -> void:
-	_draw_standard_bubble()
-	# Frost / Ice Crystal Outer Shell
-	var ice_color: Color = Color(0.7, 0.92, 1.0, 0.75)
-	draw_arc(Vector2.ZERO, radius + 1.5, 0.0, TAU, 24, ice_color, 3.0, true)
-	draw_line(Vector2(-radius * 0.6, 0), Vector2(radius * 0.6, 0), ice_color, 2.0)
-	draw_line(Vector2(0, -radius * 0.6), Vector2(0, radius * 0.6), ice_color, 2.0)
-	draw_circle(Vector2.ZERO, 5.0, Color.WHITE)
+	# Base bubble underneath ice
+	_draw_standard_glass_bubble()
+	
+	# Frost Ice Crystal Shield (Section 48)
+	var ice_col: Color = Color(0.80, 0.94, 1.0, 0.55)
+	var frost_rim: Color = Color(1.0, 1.0, 1.0, 0.85)
+	draw_circle(Vector2.ZERO, radius * 0.96, ice_col)
+	draw_arc(Vector2.ZERO, radius - 1.0, 0.0, TAU, 32, frost_rim, 2.5, true)
+	
+	# Ice fracture / snowflake lock glyph
+	var lines: Array = [
+		[Vector2(-14, 0), Vector2(14, 0)],
+		[Vector2(0, -14), Vector2(0, 14)],
+		[Vector2(-10, -10), Vector2(10, 10)],
+		[Vector2(-10, 10), Vector2(10, -10)]
+	]
+	for seg in lines:
+		draw_line(seg[0], seg[1], Color(1.0, 1.0, 1.0, 0.9), 2.0, true)
 
 func _draw_accessibility_glyph() -> void:
-	var glyph_color: Color = Color(1.0, 1.0, 1.0, 0.65)
-	var r: float = radius * 0.38
+	var sym: String = Constants.get_symbol_for_type(bubble_color)
+	var font: Font = ThemeDB.fallback_font
+	var font_size: int = 16
+	var text_size: Vector2 = font.get_string_size(sym, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+	var text_pos: Vector2 = Vector2(-text_size.x / 2.0, text_size.y / 3.5)
 	
-	match bubble_color:
-		Enums.BubbleColor.RED: # Flame Rune
-			var pts: PackedVector2Array = [
-				Vector2(0, -r * 0.9),
-				Vector2(r * 0.7, r * 0.6),
-				Vector2(-r * 0.7, r * 0.6)
-			]
-			draw_polyline(pts, glyph_color, 2.0, true)
-			draw_line(pts[2], pts[0], glyph_color, 2.0, true)
-			
-		Enums.BubbleColor.BLUE: # Water Droplet Rune
-			draw_circle(Vector2(0, r * 0.2), r * 0.5, glyph_color)
-			draw_line(Vector2(0, -r * 0.8), Vector2(0, r * 0.2), glyph_color, 2.0)
-			
-		Enums.BubbleColor.GREEN: # Leaf Rune
-			var pts_leaf: PackedVector2Array = [
-				Vector2(0, -r * 0.8),
-				Vector2(r * 0.6, 0),
-				Vector2(0, r * 0.8),
-				Vector2(-r * 0.6, 0)
-			]
-			draw_polyline(pts_leaf, glyph_color, 2.0, true)
-			draw_line(pts_leaf[3], pts_leaf[0], glyph_color, 2.0, true)
-			draw_line(Vector2(0, -r * 0.8), Vector2(0, r * 0.8), glyph_color, 1.5)
-			
-		Enums.BubbleColor.YELLOW: # Sun Rune
-			draw_arc(Vector2.ZERO, r * 0.45, 0.0, TAU, 16, glyph_color, 2.0, true)
-			for ang in [0.0, PI * 0.5, PI, PI * 1.5]:
-				var p1: Vector2 = Vector2.from_angle(ang) * (r * 0.55)
-				var p2: Vector2 = Vector2.from_angle(ang) * (r * 0.9)
-				draw_line(p1, p2, glyph_color, 2.0)
-				
-		Enums.BubbleColor.PURPLE: # Star / Moon Crescent Rune
-			draw_arc(Vector2(r * 0.15, 0), r * 0.6, -PI * 0.45, PI * 0.45, 16, glyph_color, 2.2, true)
-			draw_arc(Vector2(r * 0.35, 0), r * 0.5, -PI * 0.45, PI * 0.45, 16, glyph_color, 1.8, true)
-			
-		Enums.BubbleColor.CYAN: # Crystal Diamond Rune
-			var pts_diamond: PackedVector2Array = [
-				Vector2(0, -r * 0.85),
-				Vector2(r * 0.75, 0),
-				Vector2(0, r * 0.85),
-				Vector2(-r * 0.75, 0)
-			]
-			draw_polyline(pts_diamond, glyph_color, 2.0, true)
-			draw_line(pts_diamond[3], pts_diamond[0], glyph_color, 2.0, true)
-			draw_line(Vector2(-r * 0.75, 0), Vector2(r * 0.75, 0), glyph_color, 1.5)
-
-## Impact squash-and-stretch tween when docking into the grid
-func play_snap_animation(target_pos: Vector2, duration: float = 0.10) -> void:
-	var tween: Tween = create_tween()
-	tween.tween_property(self, "position", target_pos, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(self, "scale", Vector2(1.18, 0.84), duration * 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(0.92, 1.08), duration * 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(self, "scale", Vector2.ONE, duration * 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-
-## Pop animation for 3+ matched bubbles
-func play_pop_animation() -> void:
-	state = Enums.BubbleState.MATCHING
-	var tween: Tween = create_tween()
-	tween.tween_property(self, "scale", Vector2(1.35, 1.35), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(0.0, 0.0), 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.10)
-	tween.tween_callback(func():
-		state = Enums.BubbleState.REMOVED
-		pop_completed.emit(self)
-		queue_free()
-	)
-
-## Explosion animation for Bomb / Lightning
-func play_explode_animation() -> void:
-	state = Enums.BubbleState.EXPLODING
-	var tween: Tween = create_tween()
-	tween.tween_property(self, "scale", Vector2(1.8, 1.8), 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.10)
-	tween.tween_callback(func():
-		state = Enums.BubbleState.REMOVED
-		exploded.emit(self)
-		queue_free()
-	)
-
-## Cracks locked shell converting to standard bubble
-func crack_locked_shell() -> void:
-	lock_hits_remaining -= 1
-	if lock_hits_remaining <= 0:
-		special_type = Enums.SpecialType.NONE
-		var tween: Tween = create_tween()
-		tween.tween_property(self, "scale", Vector2(1.2, 1.2), 0.06)
-		tween.tween_property(self, "scale", Vector2.ONE, 0.06)
-	queue_redraw()
-
-## Drop / Fall animation for disconnected bubbles
-func play_fall_animation(initial_vx: float = 0.0, initial_vy: float = -120.0) -> void:
-	state = Enums.BubbleState.FALLING
-	_is_falling = true
-	_fall_velocity = Vector2(initial_vx, initial_vy)
-	_fall_angular_velocity = randf_range(-3.5, 3.5)
+	# Shadow + Crisp White Glyph
+	draw_string(font, text_pos + Vector2(1, 1), sym, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color(0, 0, 0, 0.6))
+	draw_string(font, text_pos, sym, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color(1.0, 1.0, 1.0, 0.95))
