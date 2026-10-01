@@ -53,9 +53,18 @@ void main() {
     expect(detectBankName('6369491234567890'), 'بانک حکمت ایرانیان');
   });
 
-  test('Tosee Saderat gets its own logo, not Saderat', () {
+  test('bank logo assets include the correct official logos', () {
     expect(bankLogoAsset('بانک توسعه صادرات'), endsWith('toseesaderat.webp'));
     expect(bankLogoAsset('بانک صادرات'), endsWith('/saderat.webp'));
+    expect(bankLogoAsset('بانک رفاه کارگران'), endsWith('/refah.png'));
+    expect(
+      bankLogoAsset('بانک قرض الحسنه مهر'),
+      endsWith('/mehriran.webp'),
+    );
+    expect(
+      bankLogoAsset('بانک قرض‌الحسنه مهر ایران'),
+      endsWith('/mehriran.webp'),
+    );
   });
 
   test('copying an invoice does not inherit recorded payments', () async {
@@ -119,7 +128,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('تبدیل به فاکتور فروش'));
+    final convertButton = find.text('تبدیل به فاکتور فروش');
+    await tester.ensureVisible(convertButton);
+    await tester.tap(convertButton);
     await tester.pumpAndSettle();
     expect(find.text('نوع پرداخت فاکتور فروش'), findsOneWidget);
     expect(find.text('نقدی'), findsOneWidget);
@@ -129,7 +140,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(notifier.state.single.type, 'proforma');
 
-    await tester.tap(find.text('تبدیل به فاکتور فروش'));
+    await tester.ensureVisible(convertButton);
+    await tester.tap(convertButton);
     await tester.pumpAndSettle();
     await tester.tap(find.text('نقدی'));
     await tester.pumpAndSettle();
