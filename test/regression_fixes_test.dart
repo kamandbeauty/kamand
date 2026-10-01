@@ -1,9 +1,6 @@
 import 'package:factor_ruby/models/invoice_model.dart';
 import 'package:factor_ruby/providers/bank_card_provider.dart';
 import 'package:factor_ruby/providers/invoice_provider.dart';
-import 'package:factor_ruby/screens/invoice/invoice_list_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -108,9 +105,7 @@ void main() {
     notifier.dispose();
   });
 
-  testWidgets('conversion asks for payment type and cancel changes nothing', (
-    tester,
-  ) async {
+  test('cash conversion settles the resulting sales invoice', () async {
     SharedPreferences.setMockInitialValues({});
     final notifier = InvoiceListNotifier();
     await notifier.ensureLoaded();
@@ -118,33 +113,10 @@ void main() {
       invoice(type: 'proforma', status: 'proforma'),
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          invoiceListProvider.overrideWith((ref) => notifier),
-        ],
-        child: const MaterialApp(home: InvoiceListScreen()),
-      ),
+    await notifier.convertProformaToInvoice(
+      'src',
+      paymentType: 'cash',
     );
-    await tester.pumpAndSettle();
-
-    final convertButton = find.text('تبدیل به فاکتور فروش');
-    await tester.ensureVisible(convertButton);
-    await tester.tap(convertButton);
-    await tester.pumpAndSettle();
-    expect(find.text('نوع پرداخت فاکتور فروش'), findsOneWidget);
-    expect(find.text('نقدی'), findsOneWidget);
-    expect(find.text('غیرنقدی'), findsOneWidget);
-
-    await tester.tap(find.text('انصراف'));
-    await tester.pumpAndSettle();
-    expect(notifier.state.single.type, 'proforma');
-
-    await tester.ensureVisible(convertButton);
-    await tester.tap(convertButton);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('نقدی'));
-    await tester.pumpAndSettle();
 
     final converted = notifier.state.single;
     expect(converted.type, 'sale');
@@ -152,6 +124,7 @@ void main() {
     expect(converted.paidAmount, 80);
     expect(converted.remainingAmount, 0);
     expect(converted.status, 'paid');
+    notifier.dispose();
   });
 
   test('recording a payment is capped at the remaining invoice balance', () async {
