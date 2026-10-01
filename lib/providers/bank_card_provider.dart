@@ -110,7 +110,7 @@ String detectBankName(String cardNumber){
     '627961': 'بانک صنعت و معدن',
     '603770': 'بانک کشاورزی',
     '628023': 'بانک مسکن',
-    '627760': 'بانک پست بانک',
+    '627760': 'پست بانک',
     '502229': 'بانک پاسارگاد',
     '627412': 'بانک اقتصاد نوین',
     '622106': 'بانک پارسیان',
@@ -122,23 +122,31 @@ String detectBankName(String cardNumber){
     '502908': 'بانک توسعه تعاون',
     '603769': 'بانک صادرات',
     '627353': 'بانک تجارت',
-    '589463': 'بانک رفاه',
+    '589463': 'بانک رفاه کارگران',
     '627381': 'بانک انصار',
     '505785': 'بانک ایران زمین',
     '636214': 'بانک آینده',
-    '636949': 'بانک حکمت',
+    '636949': 'بانک حکمت ایرانیان',
     '505416': 'بانک گردشگری',
     '606373': 'بانک قرض الحسنه مهر',
+    '502938': 'بانک دی',
+    '504706': 'بانک شهر',
+    '585983': 'بانک تجارت',
+    '991975': 'بانک ملت',
+    '639370': 'بانک مهر اقتصاد',
+    '606256': 'موسسه ملل',
   };
   if(map.containsKey(bin)) return map[bin]!;
   final bin4 = digits.substring(0,4);
   const map4 = {'6104':'بانک ملت','6037':'بانک ملی','5892':'بانک سپه'};
-  return map4[bin4] ?? 'بانک ${bin.substring(0,4)}';
+  // BIN ناشناخته: نام ساختگی نساز تا انتخاب دستی کاربر خراب نشود.
+  return map4[bin4] ?? '';
 }
 
 String bankLogoAsset(String bankName){
   if(bankName.contains('ملت')) return 'assets/images/banks/mellat.webp';
   if(bankName.contains('ملی')) return 'assets/images/banks/melli.webp';
+  if(bankName.contains('توسعه صادرات')) return 'assets/images/banks/toseesaderat.webp';
   if(bankName.contains('صادرات')) return 'assets/images/banks/saderat.webp';
   if(bankName.contains('تجارت')) return 'assets/images/banks/tejarat.webp';
   if(bankName.contains('سپه')) return 'assets/images/banks/sepah.webp';
@@ -161,7 +169,6 @@ String bankLogoAsset(String bankName){
   if(bankName.contains('ایران زمین')) return 'assets/images/banks/iranzamin.webp';
   if(bankName.contains('گردشگری')) return 'assets/images/banks/gardeshgari.webp';
   if(bankName.contains('صنعت و معدن')) return 'assets/images/banks/sanatmadan.webp';
-  if(bankName.contains('توسعه صادرات')) return 'assets/images/banks/toseesaderat.webp';
   if(bankName.contains('مهر اقتصاد')) return 'assets/images/banks/mehreEghtesad.webp';
   if(bankName.contains('ایران ونزوئلا') || bankName.contains('ایران و ونزوئلا')) return 'assets/images/banks/iranvenezuela.webp';
   if(bankName.contains('رسالت')) return 'assets/images/banks/resalat.webp';

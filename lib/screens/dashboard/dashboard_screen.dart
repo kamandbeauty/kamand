@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/jalali_helper.dart';
 import '../../core/utils/persian_number_formatter.dart';
@@ -147,7 +148,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int? _selectedRow;
   int? _typingRow;
   Timer? _suggestionTimer;
+  Timer? _draftTimer;
   OverlayEntry? _productPopup;
+  /// کنترلر پایدار عنوان هر ردیف؛ ساختن کنترلر جدید در هر build باعث
+  /// پریدن مکان‌نما و خراب شدن تایپ فارسی (IME) می‌شد.
+  final Map<String, TextEditingController> _titleCtrls = <String, TextEditingController>{};
   final Map<int, LayerLink> _productLinks = <int, LayerLink>{};
   /// با هر بار load ویرایش افزایش می‌یابد تا فیلدهای جدول دوباره ساخته شوند
   int _formGen = 0;
@@ -276,9 +281,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _discountCtrl.dispose();
     _prevDebtCtrl.dispose();
     _suggestionTimer?.cancel();
+    _draftTimer?.cancel();
+    for (final c in _titleCtrls.values) {
+      c.dispose();
+    }
+    _titleCtrls.clear();
     _productPopup?.remove();
     _productPopup = null;
     super.dispose();
+  }
+
+  TextEditingController _titleController(InvoiceItemModel it) {
+    final key = '${it.id}|$_formGen';
+    final c = _titleCtrls.putIfAbsent(
+      key,
+      () => TextEditingController(text: it.title),
+    );
+    // فقط وقتی متن مدل واقعاً فرق دارد (مثلاً حذف ردیف) همگام کن؛ هنگام تایپ
+    // این دو همیشه برابرند و ناحیهٔ composing دست‌نخورده می‌ماند.
+    if (c.text != it.title) {
+      c.value = TextEditingValue(
+        text: it.title,
+        selection: TextSelection.collapsed(offset: it.title.length),
+      );
+    }
+    return c;
+  }
+
+  void _disposeStaleTitleControllers() {
+    final live = _items.map((e) => '${e.id}|$_formGen').toSet();
+    final stale = _titleCtrls.keys.where((k) => !live.contains(k)).toList();
+    for (final key in stale) {
+      _titleCtrls.remove(key)?.dispose();
+    }
   }
 
   String _fmtAmt(double v) {
@@ -1450,8 +1485,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // paidAmount: نقدی = کل؛ غیرنقدی = بیعانه (که از total کم شده)
     final depositAmt = _depositVal;
     final payable = _finalTotal;
-    final finalRemaining = _paymentType == 'cash' ? 0.0 : payable;
-    final finalPaid = _paymentType == 'cash' ? payable : depositAmt;
+    // دریافت‌هایی که بعد از صدور فاکتور ثبت شده‌اند (paidAmount − بیعانهٔ قبلی)
+    // هنگام ویرایش نباید از بین بروند.
+    var laterPayments = 0.0;
+    if (existing != null &&
+        _paymentType != 'cash' &&
+        existing.paymentType != 'cash' &&
+        existing.type != 'proforma') {
+      laterPayments = (existing.paidAmount - existing.deposit)
+          .clamp(0, double.infinity)
+          .toDouble();
+      if (laterPayments > payable) laterPayments = payable;
+    }
+    final finalRemaining = _paymentType == 'cash' ? 0.0 : payable - laterPayments;
+    final finalPaid =
+        _paymentType == 'cash' ? payable : depositAmt + laterPayments;
 
     final inv = InvoiceModel(
       id: _editId ?? 'inv-${DateTime.now().microsecondsSinceEpoch}',
@@ -1568,7 +1616,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // هر تغییر فیلد/ردیف در فریم بعدی به‌عنوان پیش‌نویس ذخیره می‌شود.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _persistDraft();
+      if (!mounted) return;
+      _disposeStaleTitleControllers();
+      _draftTimer?.cancel();
+      _draftTimer = Timer(const Duration(milliseconds: 500), () {
+        if (mounted) _persistDraft();
+      });
     });
 
     return Scaffold(
@@ -1597,13 +1650,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: _isEditing
                       ? IconButton(
                           icon: Icon(Icons.close, color: dark ? Colors.white : _slate700),
-                          onPressed: () {
-                            final st = ref.read(settingsProvider);
+                          onPressed: () async {
+                            final next = await _nextInvoiceNumber();
+                            if (!mounted) return;
                             _resetFormForNew(
                               nextNumberFa: PersianNumberFormatter.toPersian(
-                                st.startingInvoiceNum.toString(),
+                                next.toString(),
                               ),
                             );
+                            _snapshotCurrentToActiveTab();
                           },
                         )
                       : Padding(
@@ -1896,10 +1951,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                     child: CompositedTransformTarget(
                                                       link: _productLink(idx),
                                                       child: TextField(
-                                                        controller: (TextEditingController(text: it.title)
-                                                          ..selection = TextSelection.collapsed(
-                                                            offset: it.title.length,
-                                                          )),
+                                                        controller: _titleController(it),
                                                         onChanged: (v) {
                                                           _updateItem(idx, title: v);
                                                           _markTyping(idx);
@@ -1953,7 +2005,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       context: context,
                                       builder: (c) => SimpleDialog(
                                         title: const Text('انتخاب واحد'),
-                                        children: ['عدد', 'بسته', 'کیلو', 'متر', 'ساعت', 'دستگاه']
+                                        children: AppConstants.productUnits
                                             .map(
                                               (u) => SimpleDialogOption(
                                                 child: Text(u),

@@ -1,25 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static String? get _fontFamily {
-    try {
-      return GoogleFonts.vazirmatn().fontFamily;
-    } catch (_) {
-      return 'Vazirmatn';
-    }
-  }
+  /// فونت وزیرمتن داخل خود اپ بسته‌بندی شده (assets/fonts) تا بدون اینترنت و
+  /// روی شبکه‌های ایران هم همیشه فارسی درست نمایش داده شود.
+  static const String _fontFamily = 'Vazirmatn';
 
   static TextTheme _textTheme(Brightness b) {
     final base = b == Brightness.dark ? ThemeData.dark() : ThemeData.light();
-    try {
-      return GoogleFonts.vazirmatnTextTheme(base.textTheme).apply(
-        bodyColor: b == Brightness.dark ? Colors.white : RubyTextPrimary,
-        displayColor: b == Brightness.dark ? Colors.white : RubyTextPrimary,
-      );
-    } catch (_) {
-      return base.textTheme;
-    }
+    return base.textTheme.apply(
+      fontFamily: _fontFamily,
+      bodyColor: b == Brightness.dark ? Colors.white : RubyTextPrimary,
+      displayColor: b == Brightness.dark ? Colors.white : RubyTextPrimary,
+    );
   }
 
   // ─────────────────────────────────────────

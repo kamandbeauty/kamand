@@ -71,6 +71,17 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       if (number != null && number >= nextNumber) nextNumber = number + 1;
     }
 
+    // پرداخت‌های ثبت‌شده روی فاکتور مبدأ نباید به نسخهٔ کپی منتقل شوند؛
+    // فقط بیعانهٔ خود فاکتور می‌ماند.
+    final isCredit = source.type != 'proforma' && source.paymentType != 'cash';
+    final copyRemaining = isCredit ? source.totalAmount : source.remainingAmount;
+    final copyPaid = isCredit ? source.deposit : source.paidAmount;
+    final copyStatus = !isCredit
+        ? source.status
+        : (copyRemaining <= 0
+            ? 'paid'
+            : (copyPaid > 0 ? 'partial' : 'unpaid'));
+
     final copied = InvoiceModel(
       id: 'inv-${DateTime.now().microsecondsSinceEpoch}-copy',
       number: nextNumber.toString(),
@@ -79,7 +90,7 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       customerPhone: source.customerPhone,
       type: source.type,
       paymentType: source.paymentType,
-      status: source.status,
+      status: copyStatus,
       date: source.date,
       items: source.items
           .map(
@@ -100,8 +111,8 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       previousDebt: source.previousDebt,
       deposit: source.deposit,
       totalAmount: source.totalAmount,
-      paidAmount: source.paidAmount,
-      remainingAmount: source.remainingAmount,
+      paidAmount: copyPaid,
+      remainingAmount: copyRemaining,
       notes: source.notes,
       cardNumber: source.cardNumber,
       cardBank: source.cardBank,
@@ -135,7 +146,9 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       customerPhone: previous.customerPhone,
       type: 'sale',
       paymentType: previous.paymentType,
-      status: previous.remainingAmount == 0 ? 'paid' : 'unpaid',
+      status: previous.remainingAmount <= 0
+          ? 'paid'
+          : (previous.paidAmount > 0 ? 'partial' : 'unpaid'),
       date: previous.date,
       items: previous.items,
       subtotal: previous.subtotal,

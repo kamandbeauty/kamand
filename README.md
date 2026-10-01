@@ -126,6 +126,7 @@ build/app/outputs/bundle/release/app-release.aab
 | اپ موبایل | Flutter و Dart |
 | مدیریت وضعیت موبایل | `flutter_riverpod` |
 | دادهٔ محلی موبایل | Drift، SQLite، `path_provider` |
+| فونت | وزیرمتن (Vazirmatn) به‌صورت محلی در `assets/fonts` بسته‌بندی شده؛ نیازی به اینترنت نیست |
 | تقویم و قالب‌بندی فارسی | `shamsi_date`، `intl` و ابزارهای داخلی پروژه |
 
 ---

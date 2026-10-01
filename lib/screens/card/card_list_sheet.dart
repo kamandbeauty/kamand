@@ -69,9 +69,9 @@ class CardListSheet extends ConsumerWidget {
               height: 48,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  navigator.push(
                     MaterialPageRoute(builder: (_) => const CardCreateScreen()),
                   );
                 },
@@ -116,8 +116,9 @@ class _EmptyState extends StatelessWidget {
               const SizedBox(height: 12),
               InkWell(
                 onTap: (){
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_)=> const CardCreateScreen()));
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  navigator.push(MaterialPageRoute(builder: (_)=> const CardCreateScreen()));
                 },
                 child: const Text('ایجاد کارت جدید', style: TextStyle(color: Color(0xFF2196F3), fontWeight: FontWeight.w700, fontSize: 13)),
               ),
@@ -155,6 +156,7 @@ class _CardItem extends ConsumerWidget {
             Row(
               textDirection: TextDirection.rtl,
               children: [
+                _CardMenu(card: card),
                 _BankLogo(bankName: card.bankName, size: 48),
                 const SizedBox(width: 10),
                 Expanded(
@@ -247,6 +249,66 @@ class _BankLogo extends StatelessWidget {
         letter,
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: size * 0.36),
       ),
+    );
+  }
+}
+
+/// منوی ویرایش / حذف کارت
+class _CardMenu extends ConsumerWidget {
+  final BankCardModel card;
+  const _CardMenu({required this.card});
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف کارت'),
+        content: Text('کارت «${card.bankName}» حذف شود؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(bankCardListProvider.notifier).deleteCard(card.id);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حذف کارت انجام نشد: $error')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      tooltip: 'گزینه‌ها',
+      icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF64748B)),
+      padding: EdgeInsets.zero,
+      onSelected: (value) {
+        if (value == 'edit') {
+          final navigator = Navigator.of(context);
+          navigator.pop();
+          navigator.push(
+            MaterialPageRoute(builder: (_) => CardCreateScreen(editCard: card)),
+          );
+        } else if (value == 'delete') {
+          _delete(context, ref);
+        }
+      },
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: 'edit', child: Text('ویرایش کارت')),
+        PopupMenuItem(value: 'delete', child: Text('حذف کارت')),
+      ],
     );
   }
 }

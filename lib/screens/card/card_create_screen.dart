@@ -61,6 +61,8 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
     'بانک قرض الحسنه رسالت',
     'موسسه ملل',
     'بانک آینده',
+    'بانک رفاه کارگران',
+    'بانک قرض الحسنه مهر',
   ];
 
   @override

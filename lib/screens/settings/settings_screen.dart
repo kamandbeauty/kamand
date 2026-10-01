@@ -13,6 +13,7 @@ import '../../providers/invoice_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/bank_card_provider.dart';
 import '../../core/utils/prefs_store.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
 import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
@@ -190,6 +191,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               themeMode: 'light',
             ),
           );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('رنگ برنامه ذخیره شد')),
       );
@@ -244,7 +246,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _exportBackup() async {
     try {
       final payload = await PrefsStore.exportAll();
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await getTemporaryDirectory();
       final name = 'factor-ruby-backup-${DateTime.now().microsecondsSinceEpoch}.json';
       final file = File('${directory.path}/$name');
       await file.writeAsString(
@@ -439,13 +441,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: usage,
+                      value: const {
+                        'store',
+                        'online_store',
+                        'services',
+                        'wholesale',
+                        'freelance',
+                        'personal',
+                        'simple_acc',
+                        'other',
+                      }.contains(usage)
+                          ? usage
+                          : 'other',
                       decoration: const InputDecoration(
                         labelText: 'نوع فعالیت',
                         border: OutlineInputBorder(),
                       ),
                       items: const [
                         DropdownMenuItem(value: 'store', child: Text('فروشگاه')),
+                        DropdownMenuItem(value: 'online_store', child: Text('فروشگاه اینترنتی')),
                         DropdownMenuItem(value: 'services', child: Text('خدمات')),
                         DropdownMenuItem(value: 'wholesale', child: Text('عمده‌فروشی')),
                         DropdownMenuItem(value: 'freelance', child: Text('فریلنسر')),
@@ -507,11 +521,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
 
-    nameCtrl.dispose();
-    phoneCtrl.dispose();
-    countryCtrl.dispose();
-    provinceCtrl.dispose();
-    cityCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      nameCtrl.dispose();
+      phoneCtrl.dispose();
+      countryCtrl.dispose();
+      provinceCtrl.dispose();
+      cityCtrl.dispose();
+    });
   }
 
   Future<void> _editBusinessProfile(
@@ -631,10 +647,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
 
-    shopCtrl.dispose();
-    phoneCtrl.dispose();
-    addressCtrl.dispose();
-    taxCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      shopCtrl.dispose();
+      phoneCtrl.dispose();
+      addressCtrl.dispose();
+      taxCtrl.dispose();
+    });
   }
 
   Future<void> _editInvoiceSettings(
@@ -740,7 +758,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (saved == true && mounted) {
       await ref.read(settingsProvider.notifier).updateSettings(
             settings.copyWith(
-              startingInvoiceNum: int.tryParse(startCtrl.text.trim()) ?? settings.startingInvoiceNum,
+              startingInvoiceNum: () {
+                final parsed = int.tryParse(
+                  ThousandSeparatorInputFormatter.faToEn(startCtrl.text.trim()),
+                );
+                return (parsed == null || parsed < 1)
+                    ? settings.startingInvoiceNum
+                    : parsed;
+              }(),
               templateStyle: template,
               showLogo: showLogo,
               showCardNum: showCard,
@@ -750,6 +775,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SnackBar(content: Text('تنظیمات فاکتور ذخیره شد')),
       );
     }
-    startCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), startCtrl.dispose);
   }
 }

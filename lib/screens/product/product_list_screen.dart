@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
 import '../../models/product_model.dart';
 import '../../providers/product_provider.dart';
 
@@ -33,6 +34,13 @@ class ProductListScreen extends ConsumerWidget {
     return value.round().toString();
   }
 
+  /// عدد اعشاری بدون صفرهای زائد (۲٫۵ → «2.5» ، ۳ → «3»)
+  String _decimalText(double? value) {
+    if (value == null) return '';
+    if (value == value.roundToDouble()) return value.toInt().toString();
+    return value.toString();
+  }
+
   String _nextCode(List<ProductModel> products) {
     var max = 100;
     for (final product in products) {
@@ -52,7 +60,7 @@ class ProductListScreen extends ConsumerWidget {
     final unitCtrl = TextEditingController(text: product?.unit ?? 'عدد');
     final buyCtrl = TextEditingController(text: _integerText(product?.buyPrice));
     final sellCtrl = TextEditingController(text: _integerText(product?.sellPrice));
-    final stockCtrl = TextEditingController(text: product == null ? '0' : _integerText(product.stock));
+    final stockCtrl = TextEditingController(text: product == null ? '0' : _decimalText(product.stock));
     final notesCtrl = TextEditingController(text: product?.notes ?? '');
 
     final saved = await showModalBottomSheet<bool>(
@@ -165,9 +173,9 @@ class ProductListScreen extends ConsumerWidget {
                   const SizedBox(height: 10),
                   TextField(
                     controller: stockCtrl,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹]')),
+                      ThousandSeparatorInputFormatter(allowDecimal: true),
                     ],
                     textAlign: TextAlign.right,
                     decoration: const InputDecoration(
@@ -207,7 +215,7 @@ class ProductListScreen extends ConsumerWidget {
                           unit: unitCtrl.text.trim().isEmpty ? 'عدد' : unitCtrl.text.trim(),
                           buyPrice: _number(buyCtrl.text).roundToDouble(),
                           sellPrice: _number(sellCtrl.text).roundToDouble(),
-                          stock: _number(stockCtrl.text).roundToDouble(),
+                          stock: _number(stockCtrl.text),
                           notes: notesCtrl.text.trim(),
                         );
                         try {
@@ -250,13 +258,16 @@ class ProductListScreen extends ConsumerWidget {
       ),
     );
 
-    nameCtrl.dispose();
-    codeCtrl.dispose();
-    unitCtrl.dispose();
-    buyCtrl.dispose();
-    sellCtrl.dispose();
-    stockCtrl.dispose();
-    notesCtrl.dispose();
+    // تا پایان انیمیشن بسته‌شدن شیت، فیلدها هنوز روی صفحه‌اند.
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      nameCtrl.dispose();
+      codeCtrl.dispose();
+      unitCtrl.dispose();
+      buyCtrl.dispose();
+      sellCtrl.dispose();
+      stockCtrl.dispose();
+      notesCtrl.dispose();
+    });
 
     if (saved == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

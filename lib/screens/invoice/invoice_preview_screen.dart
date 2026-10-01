@@ -40,7 +40,9 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
   bool _busy = false;
 
   InvoiceModel get inv {
-    final list = ref.watch(invoiceListProvider);
+    // build() در ابتدای خودش invoiceListProvider را watch می‌کند؛ اینجا که از
+    // متدهای غیر-build هم صدا زده می‌شود فقط باید read شود.
+    final list = ref.read(invoiceListProvider);
     for (final e in list) {
       if (e.id == widget.invoice.id) return e;
     }
@@ -361,6 +363,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(invoiceListProvider);
     final dark = Theme.of(context).brightness == Brightness.dark;
     final biz = ref.watch(businessProvider);
     final settingsWatch = ref.watch(settingsProvider);
@@ -442,7 +445,9 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                               ),
                               alignment: Alignment.center,
                               clipBehavior: Clip.antiAlias,
-                              child: biz.logoPath.isNotEmpty && File(biz.logoPath).existsSync()
+                              child: settingsWatch.showLogo &&
+                                      biz.logoPath.isNotEmpty &&
+                                      File(biz.logoPath).existsSync()
                                   ? Image.file(
                                       File(biz.logoPath),
                                       width: 64,
@@ -686,7 +691,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             style: const TextStyle(fontSize: 11, color: _slate500, height: 1.4),
                           ),
                         ],
-if (inv.cardNumber.isNotEmpty) ...[
+if (inv.cardNumber.isNotEmpty && settingsWatch.showCardNum) ...[
                           const SizedBox(height: 12),
                           Builder(builder: (_) {
                             final cards = ref.watch(bankCardListProvider);
