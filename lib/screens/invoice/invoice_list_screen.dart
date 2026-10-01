@@ -126,12 +126,66 @@ class InvoiceListScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _convertProforma(BuildContext context, WidgetRef ref, InvoiceModel inv) async {
-    await ref.read(invoiceListProvider.notifier).convertProformaToInvoice(inv.id);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('پیش‌فاکتور به فاکتور فروش تبدیل شد')),
+  Future<void> _convertProforma(
+    BuildContext context,
+    WidgetRef ref,
+    InvoiceModel inv,
+  ) async {
+    final paymentType = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('نوع پرداخت فاکتور فروش'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('این پیش‌فاکتور به‌صورت نقدی یا غیرنقدی ثبت شود؟'),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.payments_outlined),
+              title: const Text('نقدی'),
+              subtitle: const Text('فاکتور تسویه‌شده ثبت می‌شود'),
+              onTap: () => Navigator.pop(dialogContext, 'cash'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: const Text('غیرنقدی'),
+              subtitle: const Text('مانده فاکتور در حساب مشتری ثبت می‌شود'),
+              onTap: () => Navigator.pop(dialogContext, 'non_cash'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('انصراف'),
+          ),
+        ],
+      ),
     );
+
+    // بستن دیالوگ یا لمس «انصراف» نباید پیش‌فاکتور را تغییر دهد.
+    if (paymentType == null || !context.mounted) return;
+
+    try {
+      await ref.read(invoiceListProvider.notifier).convertProformaToInvoice(
+            inv.id,
+            paymentType: paymentType,
+          );
+      if (!context.mounted) return;
+      final paymentLabel = paymentType == 'cash' ? 'نقدی' : 'غیرنقدی';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'پیش‌فاکتور به فاکتور فروش $paymentLabel تبدیل شد',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تبدیل پیش‌فاکتور انجام نشد: $error')),
+      );
+    }
   }
 
   Future<void> _deleteInvoice(BuildContext context, WidgetRef ref, InvoiceModel inv) async {

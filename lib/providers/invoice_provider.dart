@@ -133,11 +133,29 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
     return result;
   }
 
-  Future<void> convertProformaToInvoice(String id) async {
+  Future<void> convertProformaToInvoice(
+    String id, {
+    required String paymentType,
+  }) async {
     await _hydrated;
+    if (paymentType != 'cash' && paymentType != 'non_cash') {
+      throw ArgumentError.value(paymentType, 'paymentType');
+    }
+
     final index = state.indexWhere((item) => item.id == id);
     if (index < 0) return;
     final previous = state[index];
+
+    // پیش‌فاکتور ممکن است قبلاً با هر نوع پرداختی ذخیره شده باشد. انتخابی که
+    // کاربر هنگام تبدیل انجام می‌دهد مرجع نهایی است و مبالغ باید از نو و بدون
+    // باقی‌ماندن وضعیت پرداخت قبلی محاسبه شوند.
+    final isCash = paymentType == 'cash';
+    final paidAmount = isCash ? previous.totalAmount : previous.deposit;
+    final remainingAmount = isCash ? 0.0 : previous.totalAmount;
+    final status = isCash
+        ? 'paid'
+        : (previous.deposit > 0 ? 'partial' : 'unpaid');
+
     final updated = InvoiceModel(
       id: previous.id,
       number: previous.number,
@@ -145,10 +163,8 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       customerName: previous.customerName,
       customerPhone: previous.customerPhone,
       type: 'sale',
-      paymentType: previous.paymentType,
-      status: previous.remainingAmount <= 0
-          ? 'paid'
-          : (previous.paidAmount > 0 ? 'partial' : 'unpaid'),
+      paymentType: paymentType,
+      status: status,
       date: previous.date,
       items: previous.items,
       subtotal: previous.subtotal,
@@ -158,8 +174,8 @@ class InvoiceListNotifier extends StateNotifier<List<InvoiceModel>> {
       previousDebt: previous.previousDebt,
       deposit: previous.deposit,
       totalAmount: previous.totalAmount,
-      paidAmount: previous.paidAmount,
-      remainingAmount: previous.remainingAmount,
+      paidAmount: paidAmount,
+      remainingAmount: remainingAmount,
       notes: previous.notes,
       cardNumber: previous.cardNumber,
       cardBank: previous.cardBank,

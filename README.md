@@ -155,8 +155,8 @@ build/app/outputs/bundle/release/app-release.aab
 | --- | --- |
 | `applicationId` | `com.ruby.factor_ruby` |
 | `namespace` | `com.ruby.factor_ruby` |
-| `versionName` | `1.0.7` از `pubspec.yaml` |
-| `versionCode` | `7` از `pubspec.yaml` (`1.0.7+7`) |
+| `versionName` | `1.0.8` از `pubspec.yaml` |
+| `versionCode` | `8` از `pubspec.yaml` (`1.0.8+8`) |
 | Android Gradle Plugin | `8.11.1` |
 | Gradle Wrapper | `8.14` |
 | Kotlin | `2.2.20` |
@@ -383,7 +383,7 @@ apkanalyzer manifest version-name build/app/outputs/flutter-apk/app-arm64-v8a-re
 apkanalyzer manifest version-code build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```
 
-مقادیر مورد انتظار این نسخه `com.ruby.factor_ruby`، `1.0.7` و `7` هستند و Release نباید `debuggable=true` داشته باشد. `apksigner` امضای APK و `jarsigner` امضای AAB را بررسی می‌کنند؛ این دو را با صرفاً نصب شدن فایل اشتباه نگیرید.
+مقادیر مورد انتظار این نسخه `com.ruby.factor_ruby`، `1.0.8` و `8` هستند و Release نباید `debuggable=true` داشته باشد. `apksigner` امضای APK و `jarsigner` امضای AAB را بررسی می‌کنند؛ این دو را با صرفاً نصب شدن فایل اشتباه نگیرید.
 
 ### GitHub Actions و Secrets
 
@@ -447,10 +447,10 @@ git push origin v1.0.1
 Workflow برای Tag اجرا می‌شود و خروجی‌های زیر را می‌سازد (نسخه و versionCode از `pubspec.yaml` خوانده می‌شود):
 
 ```text
-RubiFactor-v1.0.7-vc7-arm64-v8a-release.apk
-RubiFactor-v1.0.7-vc7-armeabi-v7a-release.apk
-RubiFactor-v1.0.7-vc7-x86_64-release.apk
-RubiFactor-v1.0.7-vc7-release.aab
+RubiFactor-v1.0.8-vc8-arm64-v8a-release.apk
+RubiFactor-v1.0.8-vc8-armeabi-v7a-release.apk
+RubiFactor-v1.0.8-vc8-x86_64-release.apk
+RubiFactor-v1.0.8-vc8-release.aab
 ```
 
 قبل از Tag نسخهٔ جدید، `versionCode` را افزایش دهید؛ Google Play و بازارها Update را با version code پایین‌تر نمی‌پذیرند.

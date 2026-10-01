@@ -5,8 +5,8 @@
 ## مشخصات Release فعلی
 
 - `applicationId` و `namespace`: `com.ruby.factor_ruby`
-- `versionName`: `1.0.7`
-- `versionCode`: `7`
+- `versionName`: `1.0.8`
+- `versionCode`: `8`
 - Android Gradle Plugin: `8.11.1`
 - Gradle Wrapper: `8.14`
 - Kotlin: `2.2.20`
@@ -183,7 +183,7 @@ apkanalyzer manifest version-name build/app/outputs/flutter-apk/app-arm64-v8a-re
 apkanalyzer manifest version-code build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```
 
-باید applicationId برابر `com.ruby.factor_ruby`، versionName برابر `1.0.7` و versionCode برابر `7` باشد و Release debuggable نباشد.
+باید applicationId برابر `com.ruby.factor_ruby`، versionName برابر `1.0.8` و versionCode برابر `8` باشد و Release debuggable نباشد.
 
 ## GitHub Actions
 
@@ -220,8 +220,8 @@ Windows PowerShell:
 برای اجرای Release با Tag:
 
 ```bash
-git tag -a release-1.0.7 -m "فاکتور ساز روبی 1.0.7"
-git push origin release-1.0.7
+git tag -a release-1.0.8 -m "فاکتور ساز روبی 1.0.8"
+git push origin release-1.0.8
 ```
 
 ## مقصدهای انتشار

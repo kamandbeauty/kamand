@@ -1,6 +1,9 @@
 import 'package:factor_ruby/models/invoice_model.dart';
 import 'package:factor_ruby/providers/bank_card_provider.dart';
 import 'package:factor_ruby/providers/invoice_provider.dart';
+import 'package:factor_ruby/screens/invoice/invoice_list_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -68,19 +71,75 @@ void main() {
     notifier.dispose();
   });
 
-  test('converting a proforma keeps partial status when a deposit exists', () async {
+  test('non-cash conversion restores the invoice balance and deposit', () async {
     SharedPreferences.setMockInitialValues({});
     final notifier = InvoiceListNotifier();
     await notifier.ensureLoaded();
     await notifier.saveInvoice(
-      invoice(type: 'proforma', paid: 20, remaining: 80, status: 'proforma'),
+      invoice(
+        type: 'proforma',
+        paymentType: 'cash',
+        paid: 80,
+        remaining: 0,
+        status: 'proforma',
+      ),
     );
 
-    await notifier.convertProformaToInvoice('src');
+    await notifier.convertProformaToInvoice(
+      'src',
+      paymentType: 'non_cash',
+    );
 
-    expect(notifier.state.single.type, 'sale');
-    expect(notifier.state.single.status, 'partial');
+    final converted = notifier.state.single;
+    expect(converted.type, 'sale');
+    expect(converted.paymentType, 'non_cash');
+    expect(converted.paidAmount, 20);
+    expect(converted.remainingAmount, 80);
+    expect(converted.status, 'partial');
     notifier.dispose();
+  });
+
+  testWidgets('conversion asks for payment type and cancel changes nothing', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final notifier = InvoiceListNotifier();
+    await notifier.ensureLoaded();
+    await notifier.saveInvoice(
+      invoice(type: 'proforma', status: 'proforma'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          invoiceListProvider.overrideWith((ref) => notifier),
+        ],
+        child: const MaterialApp(home: InvoiceListScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('تبدیل به فاکتور فروش'));
+    await tester.pumpAndSettle();
+    expect(find.text('نوع پرداخت فاکتور فروش'), findsOneWidget);
+    expect(find.text('نقدی'), findsOneWidget);
+    expect(find.text('غیرنقدی'), findsOneWidget);
+
+    await tester.tap(find.text('انصراف'));
+    await tester.pumpAndSettle();
+    expect(notifier.state.single.type, 'proforma');
+
+    await tester.tap(find.text('تبدیل به فاکتور فروش'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('نقدی'));
+    await tester.pumpAndSettle();
+
+    final converted = notifier.state.single;
+    expect(converted.type, 'sale');
+    expect(converted.paymentType, 'cash');
+    expect(converted.paidAmount, 80);
+    expect(converted.remainingAmount, 0);
+    expect(converted.status, 'paid');
   });
 
   test('recording a payment is capped at the remaining invoice balance', () async {
