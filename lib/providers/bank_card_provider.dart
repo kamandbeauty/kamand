@@ -171,7 +171,7 @@ String bankLogoAsset(String bankName){
   if(bankName.contains('صنعت و معدن')) return 'assets/images/banks/sanatmadan.webp';
   if(bankName.contains('رفاه')) return 'assets/images/banks/refah.png';
   if(bankName.contains('قرض الحسنه مهر') || bankName.contains('قرض‌الحسنه مهر')) {
-    return 'assets/images/banks/mehriran.webp';
+    return 'assets/images/banks/mehriran.png';
   }
   if(bankName.contains('مهر اقتصاد')) return 'assets/images/banks/mehreEghtesad.webp';
   if(bankName.contains('ایران ونزوئلا') || bankName.contains('ایران و ونزوئلا')) return 'assets/images/banks/iranvenezuela.webp';

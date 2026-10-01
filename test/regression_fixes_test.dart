@@ -56,11 +56,11 @@ void main() {
     expect(bankLogoAsset('بانک رفاه کارگران'), endsWith('/refah.png'));
     expect(
       bankLogoAsset('بانک قرض الحسنه مهر'),
-      endsWith('/mehriran.webp'),
+      endsWith('/mehriran.png'),
     );
     expect(
       bankLogoAsset('بانک قرض‌الحسنه مهر ایران'),
-      endsWith('/mehriran.webp'),
+      endsWith('/mehriran.png'),
     );
   });
 
