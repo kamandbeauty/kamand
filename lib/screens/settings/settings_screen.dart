@@ -11,7 +11,9 @@ import '../../providers/app_providers.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../providers/bank_card_provider.dart';
 import '../../core/utils/prefs_store.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
 import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
@@ -118,7 +120,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Center(
             child: Text(
-              'فاکتور ساز روبی نسخه ۱.۰.۴\nطراحی شده توسط استودیو جاوید',
+              'فاکتور ساز روبی نسخه ۱.۰.۶\nطراحی شده توسط استودیو جاوید',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
@@ -189,6 +191,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               themeMode: 'light',
             ),
           );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('رنگ برنامه ذخیره شد')),
       );
@@ -243,8 +246,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _exportBackup() async {
     try {
       final payload = await PrefsStore.exportAll();
-      final directory = await getApplicationDocumentsDirectory();
-      final name = 'factor-ruby-backup-${DateTime.now().millisecondsSinceEpoch}.json';
+      final directory = await getTemporaryDirectory();
+      final name = 'factor-ruby-backup-${DateTime.now().microsecondsSinceEpoch}.json';
       final file = File('${directory.path}/$name');
       await file.writeAsString(
         JsonEncoder.withIndent('  ').convert(payload),
@@ -274,6 +277,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (result == null || result.files.single.path == null) return;
 
       final file = File(result.files.single.path!);
+      const maxBackupBytes = 20 * 1024 * 1024;
+      if (!await file.exists() || await file.length() > maxBackupBytes) {
+        throw const FormatException('فایل پشتیبان نامعتبر یا بزرگ‌تر از ۲۰ مگابایت است');
+      }
       final decoded = jsonDecode(await file.readAsString());
       if (decoded is! Map) {
         throw const FormatException('ساختار فایل پشتیبان معتبر نیست');
@@ -286,6 +293,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.invalidate(invoiceListProvider);
       ref.invalidate(customerListProvider);
       ref.invalidate(productListProvider);
+      ref.invalidate(selectedBankCardProvider);
+      ref.invalidate(bankCardListProvider);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -432,13 +441,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: usage,
+                      value: const {
+                        'store',
+                        'online_store',
+                        'services',
+                        'wholesale',
+                        'freelance',
+                        'personal',
+                        'simple_acc',
+                        'other',
+                      }.contains(usage)
+                          ? usage
+                          : 'other',
                       decoration: const InputDecoration(
                         labelText: 'نوع فعالیت',
                         border: OutlineInputBorder(),
                       ),
                       items: const [
                         DropdownMenuItem(value: 'store', child: Text('فروشگاه')),
+                        DropdownMenuItem(value: 'online_store', child: Text('فروشگاه اینترنتی')),
                         DropdownMenuItem(value: 'services', child: Text('خدمات')),
                         DropdownMenuItem(value: 'wholesale', child: Text('عمده‌فروشی')),
                         DropdownMenuItem(value: 'freelance', child: Text('فریلنسر')),
@@ -484,7 +505,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (saved == true && mounted) {
-      ref.read(userProvider.notifier).updateUser(
+      await ref.read(userProvider.notifier).updateUser(
             user.copyWith(
               name: nameCtrl.text.trim(),
               phone: phoneCtrl.text.trim(),
@@ -500,11 +521,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
 
-    nameCtrl.dispose();
-    phoneCtrl.dispose();
-    countryCtrl.dispose();
-    provinceCtrl.dispose();
-    cityCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      nameCtrl.dispose();
+      phoneCtrl.dispose();
+      countryCtrl.dispose();
+      provinceCtrl.dispose();
+      cityCtrl.dispose();
+    });
   }
 
   Future<void> _editBusinessProfile(
@@ -611,7 +634,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (saved == true && mounted) {
-      ref.read(businessProvider.notifier).updateBusiness(
+      await ref.read(businessProvider.notifier).updateBusiness(
             business.copyWith(
               shopName: shopCtrl.text.trim().isEmpty ? 'فاکتور ساز روبی' : shopCtrl.text.trim(),
               phone: phoneCtrl.text.trim(),
@@ -624,10 +647,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
 
-    shopCtrl.dispose();
-    phoneCtrl.dispose();
-    addressCtrl.dispose();
-    taxCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      shopCtrl.dispose();
+      phoneCtrl.dispose();
+      addressCtrl.dispose();
+      taxCtrl.dispose();
+    });
   }
 
   Future<void> _editInvoiceSettings(
@@ -731,9 +756,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (saved == true && mounted) {
-      ref.read(settingsProvider.notifier).updateSettings(
+      await ref.read(settingsProvider.notifier).updateSettings(
             settings.copyWith(
-              startingInvoiceNum: int.tryParse(startCtrl.text.trim()) ?? settings.startingInvoiceNum,
+              startingInvoiceNum: () {
+                final parsed = int.tryParse(
+                  ThousandSeparatorInputFormatter.faToEn(startCtrl.text.trim()),
+                );
+                return (parsed == null || parsed < 1)
+                    ? settings.startingInvoiceNum
+                    : parsed;
+              }(),
               templateStyle: template,
               showLogo: showLogo,
               showCardNum: showCard,
@@ -743,6 +775,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SnackBar(content: Text('تنظیمات فاکتور ذخیره شد')),
       );
     }
-    startCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), startCtrl.dispose);
   }
 }

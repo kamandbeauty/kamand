@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
-  return AppDatabase();
+  final database = AppDatabase();
+  ref.onDispose(database.close);
+  return database;
 });
 
 /// Offline-First local database implementation using SQLite.
@@ -13,9 +15,26 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 class AppDatabase {
   Database? _db;
   bool _initialized = false;
+  Future<void>? _initializing;
 
   AppDatabase() {
-    _initDb();
+    _ensureInitialized();
+  }
+
+  Future<void> _ensureInitialized() async {
+    if (_initialized) return;
+    final existing = _initializing;
+    if (existing != null) {
+      await existing;
+      return;
+    }
+    final initialization = _initDb();
+    _initializing = initialization;
+    try {
+      await initialization;
+    } finally {
+      _initializing = null;
+    }
   }
 
   Future<void> _initDb() async {
@@ -26,7 +45,11 @@ class AppDatabase {
       _createTables();
       _initialized = true;
     } catch (_) {
-      // Fallback in-memory state is maintained cleanly by Riverpod
+      _db?.dispose();
+      _db = null;
+      _initialized = false;
+      // The SharedPreferences store remains the source of truth if SQLite is
+      // temporarily unavailable.
     }
   }
 
@@ -73,7 +96,7 @@ class AppDatabase {
   Future<void> persistInvoiceRecord(
       String id, String number, String customerName, String date, double totalAmount) async {
     try {
-      if (!_initialized) await _initDb();
+      await _ensureInitialized();
       _db?.execute(
         'INSERT OR REPLACE INTO invoices (id, number, customerName, date, totalAmount, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
         [id, number, customerName, date, totalAmount, date],
@@ -81,10 +104,17 @@ class AppDatabase {
     } catch (_) {}
   }
 
+  Future<void> deleteInvoiceRecord(String id) async {
+    try {
+      await _ensureInitialized();
+      _db?.execute('DELETE FROM invoices WHERE id = ?', [id]);
+    } catch (_) {}
+  }
+
   Future<void> persistCustomerRecord(
       String id, String name, double balance, String createdAt) async {
     try {
-      if (!_initialized) await _initDb();
+      await _ensureInitialized();
       _db?.execute(
         'INSERT OR REPLACE INTO customers (id, name, balance, createdAt) VALUES (?, ?, ?, ?)',
         [id, name, balance, createdAt],
@@ -92,15 +122,35 @@ class AppDatabase {
     } catch (_) {}
   }
 
+  Future<void> deleteCustomerRecord(String id) async {
+    try {
+      await _ensureInitialized();
+      _db?.execute('DELETE FROM customers WHERE id = ?', [id]);
+    } catch (_) {}
+  }
+
   Future<void> persistProductRecord(
       String id, String code, String name, double sellPrice) async {
     try {
-      if (!_initialized) await _initDb();
+      await _ensureInitialized();
       _db?.execute(
         'INSERT OR REPLACE INTO products (id, code, name, sellPrice) VALUES (?, ?, ?, ?)',
         [id, code, name, sellPrice],
       );
     } catch (_) {}
+  }
+
+  Future<void> deleteProductRecord(String id) async {
+    try {
+      await _ensureInitialized();
+      _db?.execute('DELETE FROM products WHERE id = ?', [id]);
+    } catch (_) {}
+  }
+
+  void close() {
+    _db?.dispose();
+    _db = null;
+    _initialized = false;
   }
 }
 

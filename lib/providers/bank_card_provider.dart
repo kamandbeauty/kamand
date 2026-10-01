@@ -16,64 +16,81 @@ final selectedBankCardProvider = StateNotifierProvider<SelectedBankCardNotifier,
 });
 
 class BankCardListNotifier extends StateNotifier<List<BankCardModel>> {
+  late final Future<void> _hydrated;
+
   BankCardListNotifier() : super(const []) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
+
+  Future<void> ensureLoaded() => _hydrated;
 
   Future<void> _hydrate() async {
     state = await PrefsStore.loadBankCards();
   }
 
-  void _persist() {
-    PrefsStore.saveBankCards(state);
+  Future<void> addCard(BankCardModel card) async {
+    await _hydrated;
+    state = [...state, card];
+    await PrefsStore.saveBankCards(state);
   }
 
-  void addCard(BankCardModel c) {
-    state = [...state, c];
-    _persist();
+  Future<void> updateCard(BankCardModel card) async {
+    await _hydrated;
+    state = [for (final item in state) if (item.id == card.id) card else item];
+    await PrefsStore.saveBankCards(state);
   }
 
-  void updateCard(BankCardModel c) {
-    state = [for (final e in state) if (e.id == c.id) c else e];
-    _persist();
-  }
-
-  void deleteCard(String id) {
-    state = state.where((e) => e.id != id).toList();
-    _persist();
+  Future<void> deleteCard(String id) async {
+    await _hydrated;
+    state = state.where((item) => item.id != id).toList();
+    await PrefsStore.saveBankCards(state);
   }
 }
 
 class SelectedBankCardNotifier extends StateNotifier<BankCardModel?> {
   final Ref ref;
   String? _selectedId;
+  bool _selectionLoaded = false;
 
   SelectedBankCardNotifier(this.ref) : super(null) {
     _loadSelectedId();
   }
 
   Future<void> _loadSelectedId() async {
-    _selectedId = await PrefsStore.loadSelectedBankCardId();
+    final persistedId = await PrefsStore.loadSelectedBankCardId();
+    // A user selection made while the preference was loading must win over
+    // the older persisted value.
+    if (_selectionLoaded) return;
+    _selectedId = persistedId;
+    _selectionLoaded = true;
+    await ref.read(bankCardListProvider.notifier).ensureLoaded();
     sync(ref.read(bankCardListProvider));
   }
 
   void sync(List<BankCardModel> cards) {
     if (cards.isEmpty) {
+      // This state is also emitted briefly while cards are hydrating, so do
+      // not erase the persisted selection here.
       state = null;
       return;
     }
-    final selected = cards.where((c) => c.id == _selectedId).toList();
+    if (!_selectionLoaded) return;
+
+    final selected = cards.where((card) => card.id == _selectedId).toList();
     if (selected.isNotEmpty) {
       state = selected.first;
-    } else if (state == null) {
-      // اگر انتخاب قبلی وجود نداشت، اولین کارت انتخاب می‌شود.
-      state = cards.first;
-      _selectedId = cards.first.id;
-      PrefsStore.saveSelectedBankCardId(cards.first.id);
+      return;
     }
+
+    // The previous selection may have been deleted or may not exist in an
+    // imported backup. Always fall back to a card that is still in the list.
+    state = cards.first;
+    _selectedId = cards.first.id;
+    PrefsStore.saveSelectedBankCardId(cards.first.id);
   }
 
   void select(BankCardModel card) {
+    _selectionLoaded = true;
     _selectedId = card.id;
     state = card;
     PrefsStore.saveSelectedBankCardId(card.id);
@@ -93,7 +110,7 @@ String detectBankName(String cardNumber){
     '627961': 'بانک صنعت و معدن',
     '603770': 'بانک کشاورزی',
     '628023': 'بانک مسکن',
-    '627760': 'بانک پست بانک',
+    '627760': 'پست بانک',
     '502229': 'بانک پاسارگاد',
     '627412': 'بانک اقتصاد نوین',
     '622106': 'بانک پارسیان',
@@ -105,23 +122,31 @@ String detectBankName(String cardNumber){
     '502908': 'بانک توسعه تعاون',
     '603769': 'بانک صادرات',
     '627353': 'بانک تجارت',
-    '589463': 'بانک رفاه',
+    '589463': 'بانک رفاه کارگران',
     '627381': 'بانک انصار',
     '505785': 'بانک ایران زمین',
     '636214': 'بانک آینده',
-    '636949': 'بانک حکمت',
+    '636949': 'بانک حکمت ایرانیان',
     '505416': 'بانک گردشگری',
     '606373': 'بانک قرض الحسنه مهر',
+    '502938': 'بانک دی',
+    '504706': 'بانک شهر',
+    '585983': 'بانک تجارت',
+    '991975': 'بانک ملت',
+    '639370': 'بانک مهر اقتصاد',
+    '606256': 'موسسه ملل',
   };
   if(map.containsKey(bin)) return map[bin]!;
   final bin4 = digits.substring(0,4);
   const map4 = {'6104':'بانک ملت','6037':'بانک ملی','5892':'بانک سپه'};
-  return map4[bin4] ?? 'بانک ${bin.substring(0,4)}';
+  // BIN ناشناخته: نام ساختگی نساز تا انتخاب دستی کاربر خراب نشود.
+  return map4[bin4] ?? '';
 }
 
 String bankLogoAsset(String bankName){
   if(bankName.contains('ملت')) return 'assets/images/banks/mellat.webp';
   if(bankName.contains('ملی')) return 'assets/images/banks/melli.webp';
+  if(bankName.contains('توسعه صادرات')) return 'assets/images/banks/toseesaderat.webp';
   if(bankName.contains('صادرات')) return 'assets/images/banks/saderat.webp';
   if(bankName.contains('تجارت')) return 'assets/images/banks/tejarat.webp';
   if(bankName.contains('سپه')) return 'assets/images/banks/sepah.webp';
@@ -144,7 +169,10 @@ String bankLogoAsset(String bankName){
   if(bankName.contains('ایران زمین')) return 'assets/images/banks/iranzamin.webp';
   if(bankName.contains('گردشگری')) return 'assets/images/banks/gardeshgari.webp';
   if(bankName.contains('صنعت و معدن')) return 'assets/images/banks/sanatmadan.webp';
-  if(bankName.contains('توسعه صادرات')) return 'assets/images/banks/toseesaderat.webp';
+  if(bankName.contains('رفاه')) return 'assets/images/banks/refah.png';
+  if(bankName.contains('قرض الحسنه مهر') || bankName.contains('قرض‌الحسنه مهر')) {
+    return 'assets/images/banks/mehriran.png';
+  }
   if(bankName.contains('مهر اقتصاد')) return 'assets/images/banks/mehreEghtesad.webp';
   if(bankName.contains('ایران ونزوئلا') || bankName.contains('ایران و ونزوئلا')) return 'assets/images/banks/iranvenezuela.webp';
   if(bankName.contains('رسالت')) return 'assets/images/banks/resalat.webp';

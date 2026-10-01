@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'فاکتور ساز روبی';
-  static const String appVersion = '5.8.0';
+  static const String appVersion = '1.0.8';
 
   static const List<String> currencies = [
     'تومان',

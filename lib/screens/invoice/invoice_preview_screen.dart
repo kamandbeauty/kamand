@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -39,7 +40,9 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
   bool _busy = false;
 
   InvoiceModel get inv {
-    final list = ref.watch(invoiceListProvider);
+    // build() در ابتدای خودش invoiceListProvider را watch می‌کند؛ اینجا که از
+    // متدهای غیر-build هم صدا زده می‌شود فقط باید read شود.
+    final list = ref.read(invoiceListProvider);
     for (final e in list) {
       if (e.id == widget.invoice.id) return e;
     }
@@ -76,10 +79,18 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
     try {
       final boundary =
           _repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) return null;
-      final image = await boundary.toImage(pixelRatio: 3);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      return byteData?.buffer.asUint8List();
+      if (boundary == null || boundary.size.isEmpty) return null;
+      // Keep the longest output edge around 4096 px to avoid GPU/OOM errors
+      // for invoices containing many rows while retaining print quality.
+      final longestEdge = math.max(boundary.size.width, boundary.size.height);
+      final pixelRatio = (4096 / longestEdge).clamp(0.25, 3.0).toDouble();
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
+      try {
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        return byteData?.buffer.asUint8List();
+      } finally {
+        image.dispose();
+      }
     } catch (e) {
       debugPrint('capture error: $e');
       return null;
@@ -101,7 +112,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
       }
       final dir = await getTemporaryDirectory();
       final file = File(
-        '${dir.path}/factor_${inv.number}_${DateTime.now().millisecondsSinceEpoch}.png',
+        '${dir.path}/factor_${inv.number}_${DateTime.now().microsecondsSinceEpoch}.png',
       );
       await file.writeAsBytes(bytes);
       await Share.shareXFiles(
@@ -150,7 +161,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
       }
       await Gal.putImageBytes(
         bytes,
-        name: 'factor_${inv.number}_${DateTime.now().millisecondsSinceEpoch}',
+        name: 'factor_${inv.number}_${DateTime.now().microsecondsSinceEpoch}',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -352,6 +363,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(invoiceListProvider);
     final dark = Theme.of(context).brightness == Brightness.dark;
     final biz = ref.watch(businessProvider);
     final settingsWatch = ref.watch(settingsProvider);
@@ -433,7 +445,9 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                               ),
                               alignment: Alignment.center,
                               clipBehavior: Clip.antiAlias,
-                              child: biz.logoPath.isNotEmpty && File(biz.logoPath).existsSync()
+                              child: settingsWatch.showLogo &&
+                                      biz.logoPath.isNotEmpty &&
+                                      File(biz.logoPath).existsSync()
                                   ? Image.file(
                                       File(biz.logoPath),
                                       width: 64,
@@ -677,7 +691,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             style: const TextStyle(fontSize: 11, color: _slate500, height: 1.4),
                           ),
                         ],
-if (inv.cardNumber.isNotEmpty) ...[
+if (inv.cardNumber.isNotEmpty && settingsWatch.showCardNum) ...[
                           const SizedBox(height: 12),
                           Builder(builder: (_) {
                             final cards = ref.watch(bankCardListProvider);

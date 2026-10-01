@@ -28,6 +28,7 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
   late TextEditingController _shebaCtrl;
   late TextEditingController _nameCtrl;
   String _bankName = '';
+  bool _saving = false;
 
   final List<String> _banks = const [
     'بانک ملت',
@@ -60,6 +61,8 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
     'بانک قرض الحسنه رسالت',
     'موسسه ملل',
     'بانک آینده',
+    'بانک رفاه کارگران',
+    'بانک قرض الحسنه مهر',
   ];
 
   @override
@@ -77,7 +80,7 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
   }
 
   void _autoDetectBank(String v) {
-    final digits = v.replaceAll(RegExp(r'\D'), '');
+    final digits = _onlyDigits(v);
     if (digits.length >= 4) {
       final detected = detectBankName(digits);
       if (detected.isNotEmpty && detected != _bankName && _banks.contains(detected)) {
@@ -109,6 +112,30 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
 
   String _onlyDigits(String s) => _faToEn(s).replaceAll(RegExp(r'\D'), '');
 
+  bool _isValidCardNumber(String digits) {
+    var sum = 0;
+    for (var i = 0; i < digits.length; i++) {
+      var value = int.parse(digits[digits.length - 1 - i]);
+      if (i.isOdd) {
+        value *= 2;
+        if (value > 9) value -= 9;
+      }
+      sum += value;
+    }
+    return sum > 0 && sum % 10 == 0;
+  }
+
+  bool _isValidIranianSheba(String digits) {
+    if (digits.length != kShebaDigitsMax) return false;
+    // ISO 13616: move IR + check digits to the end, then I=18 and R=27.
+    final rearranged = '${digits.substring(2)}1827${digits.substring(0, 2)}';
+    var remainder = 0;
+    for (final codeUnit in rearranged.codeUnits) {
+      remainder = (remainder * 10 + codeUnit - 48) % 97;
+    }
+    return remainder == 1;
+  }
+
   /// گروه‌بندی ۴تایی شماره کارت — ترتیب LTR حفظ می‌شود
   String _formatCardGroups(String digits) {
     if (digits.isEmpty) return '';
@@ -133,7 +160,8 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
     return buf.toString();
   }
 
-  void _save() {
+  Future<void> _save() async {
+    if (_saving) return;
     final card = _onlyDigits(_cardCtrl.text);
     var sheba = _onlyDigits(_shebaCtrl.text);
     // اگر کاربر IR را هم تایپ کرده باشد
@@ -148,9 +176,21 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
       );
       return;
     }
+    if (!_isValidCardNumber(card)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('شماره کارت معتبر نیست')),
+      );
+      return;
+    }
     if (sheba.isNotEmpty && sheba.length != kShebaDigitsMax) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('شماره شبا باید دقیقاً ۲۴ رقم باشد (بدون IR)')),
+      );
+      return;
+    }
+    if (sheba.isNotEmpty && !_isValidIranianSheba(sheba)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('شماره شبا معتبر نیست')),
       );
       return;
     }
@@ -169,23 +209,29 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
 
     final isEdit = widget.editCard != null;
     final model = BankCardModel(
-      id: isEdit ? widget.editCard!.id : 'card-${DateTime.now().millisecondsSinceEpoch}',
+      id: isEdit ? widget.editCard!.id : 'card-${DateTime.now().microsecondsSinceEpoch}',
       cardNumber: card,
       sheba: sheba,
       bankName: _bankName,
       persianName: name,
     );
-    if (isEdit) {
-      ref.read(bankCardListProvider.notifier).updateCard(model);
-    } else {
-      ref.read(bankCardListProvider.notifier).addCard(model);
+    setState(() => _saving = true);
+    try {
+      if (isEdit) {
+        await ref.read(bankCardListProvider.notifier).updateCard(model);
+      } else {
+        await ref.read(bankCardListProvider.notifier).addCard(model);
+      }
+      if (!mounted) return;
+      ref.read(selectedBankCardProvider.notifier).select(model);
+      Navigator.of(context).pop(); // بستن صفحه ایجاد کارت
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ذخیره کارت انجام نشد: $error')),
+      );
     }
-    ref.read(selectedBankCardProvider.notifier).select(model);
-    if (!mounted) return;
-    Navigator.of(context).pop(); // بستن صفحه ایجاد کارت
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('کارت ذخیره شد')),
-    );
   }
 
   @override
@@ -473,7 +519,7 @@ class _CardCreateScreenState extends ConsumerState<CardCreateScreen> {
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: _save,
+              onPressed: _saving ? null : _save,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2196F3),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

@@ -60,6 +60,12 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
+      - name: Analyze Dart code
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        run: flutter test
+
       - name: Read app version
         id: version
         shell: bash
@@ -102,15 +108,6 @@ jobs:
       - name: Check Gradle Wrapper
         working-directory: android
         run: ./gradlew --version
-
-      - name: Clean Android build
-        working-directory: android
-        env:
-          RELEASE_STORE_FILE: ${{ steps.keystore.outputs.path }}
-          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew clean
 
       - name: Build signed release APKs (split by ABI)
         env:
