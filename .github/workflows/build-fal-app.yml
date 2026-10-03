@@ -156,3 +156,37 @@ jobs:
           name: divan-hafez-web
           path: falamo_begir/build/web
           retention-days: 90
+
+  release:
+    name: Publish GitHub Release (APK + Web)
+    needs: [build-apk, build-web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: divan-hafez-apk
+          path: apk
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: divan-hafez-web
+          path: web
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG="v1.3.1"
+          APK_NAME="divan-fal-hafez-${TAG}.apk"
+          cp apk/app-release.apk "$APK_NAME"
+          (cd web && zip -qr "../divan-fal-hafez-web-${TAG}.zip" .)
+          NOTES="نسخهٔ ۱.۳.۱ — ساخت خودکار CI: فایل نصبی اندروید (APK) و نسخهٔ وب. ساخته‌شده از شاخه ${GITHUB_REF_NAME}, کامیت ${GITHUB_SHA}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK_NAME" "divan-fal-hafez-web-${TAG}.zip" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$APK_NAME" "divan-fal-hafez-web-${TAG}.zip" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "دیوان و فال حافظ ۱.۳.۱" --notes "$NOTES"
+          fi
