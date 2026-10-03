@@ -19,6 +19,9 @@ class HafezFal {
 
   /// تعبیر فال
   final String meaning;
+
+  /// مصرع اول غزل - عنوان مرسوم هر غزل در دیوان
+  String get firstMesra => verses.split('\n').first.trim();
 }
 
 /// مخزن آفلاین فال‌ها.

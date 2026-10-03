@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:fale_hafez/about.dart';
+import 'package:fale_hafez/divan_screen.dart';
 import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:flutter/cupertino.dart';
@@ -44,6 +45,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// رفتن به صفحهٔ فال - فال‌ها آفلاین و داخل برنامه‌اند
   /// و دیگر به اینترنت نیازی نیست.
   void _onFalButtonPressed() => Get.to(const FalScreen());
+
+  /// رفتن به دیوان حافظ - فهرست کامل ۴۹۵ غزل با جستجو
+  void _onDivanButtonPressed() => Get.to(const DivanScreen());
 
   Future<void> _pauseAudio() async {
     try {
@@ -134,35 +138,68 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
 
-            // دکمهٔ گرفتن فال
+            // دکمه‌های دیوان حافظ و گرفتن فال
             Positioned(
               bottom: bottomPadding + 16,
               right: 5,
               left: 5,
-              child: Center(
-                child: ElevatedButton(
-                  onPressed: _onFalButtonPressed,
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.yellow,
-                    backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
-                    shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-                    elevation: 5,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+              child: Column(
+                children: [
+                  // دکمهٔ دیوان حافظ
+                  ElevatedButton.icon(
+                    onPressed: _onDivanButtonPressed,
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.yellow,
+                      backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
+                      shadowColor: const Color.fromRGBO(183, 116, 50, 1),
+                      elevation: 5,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Text(
-                      'نیت کردم ، فالمو بگیر',
-                      style: vazirText(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 30,
-                        color: const Color.fromRGBO(107, 38, 15, 1),
+                    icon: const Icon(
+                      CupertinoIcons.book,
+                      color: Color.fromRGBO(107, 38, 15, 1),
+                    ),
+                    label: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        'دیوان حافظ',
+                        style: vazirText(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          color: const Color.fromRGBO(107, 38, 15, 1),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+
+                  // دکمهٔ گرفتن فال
+                  ElevatedButton(
+                    onPressed: _onFalButtonPressed,
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.yellow,
+                      backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
+                      shadowColor: const Color.fromRGBO(183, 116, 50, 1),
+                      elevation: 5,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(15),
+                      child: Text(
+                        'نیت کردم ، فالمو بگیر',
+                        style: vazirText(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 30,
+                          color: const Color.fromRGBO(107, 38, 15, 1),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

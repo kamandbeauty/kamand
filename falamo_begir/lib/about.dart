@@ -1,35 +1,10 @@
 import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/fonts.dart';
-import 'package:fale_hafez/gen/assets.gen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// صفحهٔ دربارهٔ ما
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
-
-  /// باز کردن لینک در مرورگر/اپلیکیشن خارجی
-  Future<void> _launchLink(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {
-      // در صورت عدم امکان باز کردن لینک، خطا نادیده گرفته می‌شود
-    }
-  }
-
-  Widget _socialButton({required String assetPath, required String url}) {
-    return IconButton(
-      onPressed: () => _launchLink(url),
-      icon: SvgPicture.asset(
-        assetPath,
-        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,36 +77,23 @@ class AboutScreen extends StatelessWidget {
                     ),
                     SizedBox(height: height / 80),
                     Text(
-                      'امیررضا جلوس حقی',
-                      textAlign: TextAlign.justify,
+                      'استودیو جاوید',
+                      textAlign: TextAlign.center,
+                      locale: const Locale('fa'),
+                      textDirection: TextDirection.rtl,
                       style: vazirText(
                         color: Colors.white,
                         fontSize: 30,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: height / 50),
-                    SizedBox(
-                      width: width / 1.5,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _socialButton(
-                            assetPath: Assets.instagram,
-                            url: 'https://instagram.com/amirrezahaqi',
-                          ),
-                          _socialButton(
-                            assetPath: Assets.linkedin,
-                            url: 'https://www.linkedin.com/in/amirreza-haqi/',
-                          ),
-                          _socialButton(
-                            assetPath: Assets.twitter,
-                            url: 'https://twitter.com/amirrezahaqi',
-                          ),
-                          _socialButton(
-                            assetPath: Assets.github,
-                            url: 'https://github.com/amirrezahaqi',
-                          ),
-                        ],
+                    const SizedBox(height: 4),
+                    Text(
+                      'Studio Javid',
+                      textAlign: TextAlign.center,
+                      style: vazirText(
+                        color: Colors.white70,
+                        fontSize: 16,
                       ),
                     ),
                   ],
