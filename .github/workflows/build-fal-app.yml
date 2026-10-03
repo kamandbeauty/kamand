@@ -29,9 +29,9 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
-      - name: Pub get
+      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
         working-directory: falamo_begir
-        run: flutter pub get
+        run: flutter pub upgrade
 
       - name: Analyze
         working-directory: falamo_begir
@@ -91,9 +91,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Pub get
+      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
         working-directory: falamo_begir
-        run: flutter pub get
+        run: flutter pub upgrade
 
       - name: Build release APK
         working-directory: falamo_begir
@@ -118,9 +118,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Pub get
+      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
         working-directory: falamo_begir
-        run: flutter pub get
+        run: flutter pub upgrade
 
       - name: Build web bundle
         working-directory: falamo_begir
