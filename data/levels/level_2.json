@@ -1,0 +1,23 @@
+{
+    "level_id": 2,
+    "level_name": "Level 2: Wall Bounce",
+    "description": "Tests wall bounce navigation. Clear center blockers or bank off the walls.",
+    "max_shots": 25,
+    "danger_row": 12,
+    "target_score": 400,
+    "allowed_colors": [
+        0,
+        2
+    ],
+    "layout_rows": [
+        "GG....GG",
+        ".G....G",
+        "..RRRR..",
+        "..RR..."
+    ],
+    "world_id": 1,
+    "objective_type": 0,
+    "target_count": 0,
+    "target_color": -1,
+    "special_layout": {}
+}

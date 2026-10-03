@@ -1,0 +1,24 @@
+{
+	"level_id": 29,
+	"world_id": 3,
+	"level_name": "Level 29: Precision Labyrinth",
+	"description": "Navigate tight geometric corridors with precision bank shots to trigger line clears.",
+	"max_shots": 20,
+	"danger_row": 12,
+	"target_score": 1400,
+	"objective_type": 0,
+	"objective_target_count": 0,
+	"objective_target_color": -1,
+	"allowed_colors": [1, 2, 4, 5],
+	"layout_rows": [
+		"GG....CC",
+		".B...P.",
+		"..PPPP.."
+	],
+	"special_layout": {
+		"0,2": 3,
+		"0,5": 3,
+		"1,0": 5,
+		"1,6": 5
+	}
+}

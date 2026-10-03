@@ -1,0 +1,22 @@
+{
+	"level_id": 19,
+	"world_id": 2,
+	"level_name": "Level 19: Geode Chamber",
+	"description": "Multi-colored geode layers waiting for a well-placed rainbow wild.",
+	"max_shots": 20,
+	"danger_row": 12,
+	"target_score": 950,
+	"objective_type": 0,
+	"objective_target_count": 0,
+	"objective_target_color": -1,
+	"allowed_colors": [0, 1, 2, 3],
+	"layout_rows": [
+		"RR..BB..",
+		".G...Y.",
+		"..RRGGBB"
+	],
+	"special_layout": {
+		"0,3": 2,
+		"1,3": 1
+	}
+}

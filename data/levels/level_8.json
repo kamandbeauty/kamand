@@ -1,0 +1,22 @@
+{
+    "level_id": 8,
+    "level_name": "Level 8: Tight Ammo",
+    "description": "Tests low shot count limit requiring efficient matching in 6 shots.",
+    "max_shots": 15,
+    "danger_row": 12,
+    "target_score": 300,
+    "allowed_colors": [
+        0,
+        1
+    ],
+    "layout_rows": [
+        "RR..BB..",
+        ".R...B.",
+        "..R...B."
+    ],
+    "world_id": 1,
+    "objective_type": 0,
+    "target_count": 0,
+    "target_color": -1,
+    "special_layout": {}
+}

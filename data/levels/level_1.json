@@ -1,0 +1,22 @@
+{
+    "level_id": 1,
+    "level_name": "Level 1: Basic Matching",
+    "description": "Tests standard 3-bubble matching. Match 3 same-colored bubbles to pop them.",
+    "max_shots": 30,
+    "danger_row": 12,
+    "target_score": 300,
+    "allowed_colors": [
+        0,
+        1
+    ],
+    "layout_rows": [
+        "RR..BB..",
+        ".R...B.",
+        "..R...B."
+    ],
+    "world_id": 1,
+    "objective_type": 0,
+    "target_count": 0,
+    "target_color": -1,
+    "special_layout": {}
+}

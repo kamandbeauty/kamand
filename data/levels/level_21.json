@@ -1,0 +1,21 @@
+{
+	"level_id": 21,
+	"world_id": 3,
+	"level_name": "Level 21: Sunken Canopy",
+	"description": "Objective: Pop 6 Red bubbles to complete the woodland trial!",
+	"max_shots": 20,
+	"danger_row": 12,
+	"target_score": 600,
+	"objective_type": 1,
+	"objective_target_count": 6,
+	"objective_target_color": 0,
+	"allowed_colors": [0, 1, 2],
+	"layout_rows": [
+		"RR..RR..",
+		".B...B.",
+		"..GGGG.."
+	],
+	"special_layout": {
+		"1,3": 2
+	}
+}

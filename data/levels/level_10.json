@@ -1,0 +1,31 @@
+{
+    "level_id": 10,
+    "level_name": "Level 10: Danger Threat",
+    "description": "Tests lose condition when shot count is depleted on an uncleared board.",
+    "max_shots": 15,
+    "danger_row": 12,
+    "target_score": 1000,
+    "allowed_colors": [
+        4,
+        5,
+        0,
+        1
+    ],
+    "layout_rows": [
+        "RRRRRRRR",
+        "BBBBBBB",
+        "GGGGGGGG",
+        "YYYYYYY",
+        "PPPPPPPP",
+        "CCCCCCC",
+        "RRRRRRRR",
+        "BBBBBBB",
+        "GGGGGGGG",
+        "YYYYYYY"
+    ],
+    "world_id": 1,
+    "objective_type": 0,
+    "target_count": 0,
+    "target_color": -1,
+    "special_layout": {}
+}

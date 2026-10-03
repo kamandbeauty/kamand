@@ -1,0 +1,291 @@
+[gd_scene load_steps=11 format=3 uid="uid://d1x8u5o8y5x2e"]
+
+[ext_resource type="Script" path="res://scripts/gameplay/BubbleShooterGame.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/visuals/ForestBackground.gd" id="2_bg"]
+[ext_resource type="Script" path="res://scripts/grid/BubbleGrid.gd" id="3_grid"]
+[ext_resource type="Script" path="res://scripts/gameplay/AimGuide.gd" id="4_aim"]
+[ext_resource type="Script" path="res://scripts/gameplay/Shooter.gd" id="5_shooter"]
+[ext_resource type="Script" path="res://scripts/visuals/ParticleManager.gd" id="6_part"]
+[ext_resource type="Script" path="res://scripts/visuals/ScreenFeedback.gd" id="7_feed"]
+[ext_resource type="Script" path="res://scripts/visuals/CompanionLumi.gd" id="8_lumi"]
+[ext_resource type="Script" path="res://scripts/ui/UIManager.gd" id="9_ui"]
+[ext_resource type="Script" path="res://scripts/ui/DebugOverlay.gd" id="10_debug"]
+
+[node name="BubbleShooterGame" type="Node2D"]
+script = ExtResource("1_game")
+
+[node name="ForestBackground" type="Node2D" parent="."]
+script = ExtResource("2_bg")
+
+[node name="BubbleGrid" type="Node2D" parent="."]
+script = ExtResource("3_grid")
+
+[node name="AimGuide" type="Node2D" parent="."]
+script = ExtResource("4_aim")
+
+[node name="Shooter" type="Node2D" parent="."]
+script = ExtResource("5_shooter")
+
+[node name="ParticleManager" type="Node2D" parent="."]
+script = ExtResource("6_part")
+
+[node name="ScreenFeedback" type="Node2D" parent="."]
+script = ExtResource("7_feed")
+
+[node name="CompanionLumi" type="Node2D" parent="."]
+script = ExtResource("8_lumi")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="UIManager" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_ui")
+
+[node name="HeaderPanel" type="Panel" parent="CanvasLayer/UIManager"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 140.0
+grow_horizontal = 2
+
+[node name="HBox" type="HBoxContainer" parent="CanvasLayer/UIManager/HeaderPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="LevelLabel" type="Label" parent="CanvasLayer/UIManager/HeaderPanel/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "LVL 1: Basic Matching"
+vertical_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="CanvasLayer/UIManager/HeaderPanel/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SCORE: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StarsLabel" type="Label" parent="CanvasLayer/UIManager/HeaderPanel/HBox"]
+layout_mode = 2
+text = "☆ ☆ ☆"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ShotsLabel" type="Label" parent="CanvasLayer/UIManager/HeaderPanel/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SHOTS: 30"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ComboLabel" type="Label" parent="CanvasLayer/UIManager/HeaderPanel/HBox"]
+visible = false
+layout_mode = 2
+text = "COMBO x2!"
+
+[node name="PauseBtn" type="Button" parent="CanvasLayer/UIManager/HeaderPanel/HBox"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = "⏸"
+
+[node name="WinOverlay" type="Panel" parent="CanvasLayer/UIManager"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -240.0
+offset_right = 260.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/UIManager/WinOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 30.0
+offset_right = -30.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="WinTitle" type="Label" parent="CanvasLayer/UIManager/WinOverlay/VBox"]
+layout_mode = 2
+text = "★ LEVEL COMPLETE! ★"
+horizontal_alignment = 1
+
+[node name="StarsContainer" type="HBoxContainer" parent="CanvasLayer/UIManager/WinOverlay/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="StarsLabel" type="Label" parent="CanvasLayer/UIManager/WinOverlay/VBox/StarsContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "★ ★ ★"
+horizontal_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="CanvasLayer/UIManager/WinOverlay/VBox"]
+layout_mode = 2
+text = "Final Score: 450"
+horizontal_alignment = 1
+
+[node name="NextBtn" type="Button" parent="CanvasLayer/UIManager/WinOverlay/VBox"]
+custom_minimum_size = Vector2(0, 55)
+layout_mode = 2
+text = "NEXT LEVEL →"
+
+[node name="RestartBtn" type="Button" parent="CanvasLayer/UIManager/WinOverlay/VBox"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "PLAY AGAIN"
+
+[node name="LoseOverlay" type="Panel" parent="CanvasLayer/UIManager"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -200.0
+offset_right = 260.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/UIManager/LoseOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 30.0
+offset_right = -30.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="LoseTitle" type="Label" parent="CanvasLayer/UIManager/LoseOverlay/VBox"]
+layout_mode = 2
+text = "LEVEL FAILED"
+horizontal_alignment = 1
+
+[node name="ReasonLabel" type="Label" parent="CanvasLayer/UIManager/LoseOverlay/VBox"]
+layout_mode = 2
+text = "Out of shots!"
+horizontal_alignment = 1
+
+[node name="RestartBtn" type="Button" parent="CanvasLayer/UIManager/LoseOverlay/VBox"]
+custom_minimum_size = Vector2(0, 55)
+layout_mode = 2
+text = "TRY AGAIN"
+
+[node name="PauseOverlay" type="Panel" parent="CanvasLayer/UIManager"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -270.0
+offset_top = -260.0
+offset_right = 270.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/UIManager/PauseOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 25.0
+offset_right = -30.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="PauseTitle" type="Label" parent="CanvasLayer/UIManager/PauseOverlay/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="ResumeBtn" type="Button" parent="CanvasLayer/UIManager/PauseOverlay/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "RESUME"
+
+[node name="RestartBtn" type="Button" parent="CanvasLayer/UIManager/PauseOverlay/VBox"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "RESTART LEVEL"
+
+[node name="SoundToggle" type="CheckButton" parent="CanvasLayer/UIManager/PauseOverlay/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Sound Effects"
+
+[node name="EffectsToggle" type="CheckButton" parent="CanvasLayer/UIManager/PauseOverlay/VBox"]
+layout_mode = 2
+text = "Reduced Effects Mode"
+
+[node name="AccessibilityToggle" type="CheckButton" parent="CanvasLayer/UIManager/PauseOverlay/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "Rune Symbols (Accessibility)"
+
+[node name="DebugOverlay" type="CanvasLayer" parent="CanvasLayer"]
+layer = 10
+script = ExtResource("10_debug")
+
+[node name="Container" type="PanelContainer" parent="CanvasLayer/DebugOverlay"]
+visible = false
+offset_left = 20.0
+offset_top = 160.0
+offset_right = 420.0
+offset_bottom = 440.0
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/DebugOverlay/Container"]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="CanvasLayer/DebugOverlay/Container/VBox"]
+layout_mode = 2
+text = "=== DEBUG MODE ==="
+
+[node name="ToggleBtn" type="Button" parent="CanvasLayer/DebugOverlay"]
+offset_left = 20.0
+offset_top = 1220.0
+offset_right = 110.0
+offset_bottom = 1260.0
+text = "DEBUG"

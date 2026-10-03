@@ -1,0 +1,53 @@
+name: Build & Export Lumi Android APK
+
+on:
+  push:
+    branches:
+      - "main"
+      - "arena/*"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Verification Tests
+        run: |
+          python3 tests/verify_bubble_core.py
+          python3 tests/verify_phase2_suite.py
+          python3 tests/verify_phase3_suite.py
+          python3 tests/benchmark_stress_test.py
+
+  build-android-apk:
+    name: Build & Export Android APK
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Export Android APK
+        run: bash scripts/ci/export_android.sh
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lumi-Android-APK
+          path: builds/android/lumi-bubblewood.apk
+          if-no-files-found: error

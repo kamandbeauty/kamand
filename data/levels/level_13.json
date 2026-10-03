@@ -1,0 +1,21 @@
+{
+	"level_id": 13,
+	"world_id": 2,
+	"level_name": "Level 13: Lightning Beam",
+	"description": "Lightning bubbles discharge an electric surge that clears an entire horizontal row.",
+	"max_shots": 20,
+	"danger_row": 12,
+	"target_score": 700,
+	"objective_type": 0,
+	"objective_target_count": 0,
+	"objective_target_color": -1,
+	"allowed_colors": [1, 4, 5],
+	"layout_rows": [
+		"PPPPPPPP",
+		".B...B.",
+		"..CCCC.."
+	],
+	"special_layout": {
+		"0,3": 3
+	}
+}

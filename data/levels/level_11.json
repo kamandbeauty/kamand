@@ -1,0 +1,21 @@
+{
+	"level_id": 11,
+	"world_id": 2,
+	"level_name": "Level 11: Bomb Introduction",
+	"description": "Meet the Bomb bubble! Hitting or matching near a bomb detonates all surrounding bubbles in a fiery blast.",
+	"max_shots": 25,
+	"danger_row": 12,
+	"target_score": 500,
+	"objective_type": 0,
+	"objective_target_count": 0,
+	"objective_target_color": -1,
+	"allowed_colors": [0, 1, 2],
+	"layout_rows": [
+		"RR..BB..",
+		".G...G.",
+		"..GG...."
+	],
+	"special_layout": {
+		"1,3": 1
+	}
+}

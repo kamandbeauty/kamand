@@ -1,0 +1,21 @@
+{
+    "level_id": 9,
+    "level_name": "Level 9: One Shot Win",
+    "description": "Tests immediate win condition. Popping the top red anchors clears the whole board.",
+    "max_shots": 10,
+    "danger_row": 12,
+    "target_score": 200,
+    "allowed_colors": [
+        0
+    ],
+    "layout_rows": [
+        "RR......",
+        ".B.....",
+        "..BB...."
+    ],
+    "world_id": 1,
+    "objective_type": 0,
+    "target_count": 0,
+    "target_color": -1,
+    "special_layout": {}
+}

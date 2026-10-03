@@ -1,0 +1,23 @@
+{
+    "level_id": 4,
+    "level_name": "Level 4: Large Match",
+    "description": "Tests large multi-bubble match detection with 4+ connected same-color bubbles.",
+    "max_shots": 20,
+    "danger_row": 12,
+    "target_score": 500,
+    "allowed_colors": [
+        2,
+        3
+    ],
+    "layout_rows": [
+        "GGGG....",
+        "GGGG...",
+        ".YYYY...",
+        "..YY..."
+    ],
+    "world_id": 1,
+    "objective_type": 0,
+    "target_count": 0,
+    "target_color": -1,
+    "special_layout": {}
+}

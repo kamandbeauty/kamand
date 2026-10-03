@@ -1,0 +1,26 @@
+{
+	"level_id": 20,
+	"world_id": 2,
+	"level_name": "Level 20: Crystal Heart",
+	"description": "Boss stage of World 2: Clear the central crystal cluster protected by stone and ice rings.",
+	"max_shots": 25,
+	"danger_row": 12,
+	"target_score": 1200,
+	"objective_type": 0,
+	"objective_target_count": 0,
+	"objective_target_color": -1,
+	"allowed_colors": [4, 5, 0, 1],
+	"layout_rows": [
+		"PP....CC",
+		".R...B.",
+		"..PPPP.."
+	],
+	"special_layout": {
+		"0,3": 1,
+		"0,4": 1,
+		"1,1": 5,
+		"1,5": 5,
+		"2,2": 4,
+		"2,5": 4
+	}
+}

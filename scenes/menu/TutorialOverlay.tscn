@@ -1,0 +1,73 @@
+[gd_scene load_steps=3 format=3 uid="uid://t1x8u5o8y5x2e"]
+
+[ext_resource type="Script" path="res://scripts/ui/TutorialOverlay.gd" id="1_tut"]
+[ext_resource type="Script" path="res://scripts/visuals/CompanionLumi.gd" id="2_lumi"]
+
+[node name="TutorialOverlay" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_tut")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -270.0
+offset_top = -180.0
+offset_right = 270.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 25.0
+offset_top = 25.0
+offset_right = -25.0
+offset_bottom = -25.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.25, 1)
+theme_override_font_sizes/font_size = 22
+text = "TUTORIAL"
+horizontal_alignment = 1
+
+[node name="MessageLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Aim and shoot bubbles to match 3 or more!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="OkBtn" type="Button" parent="Panel/VBox/HBox"]
+custom_minimum_size = Vector2(160, 50)
+layout_mode = 2
+text = "GOT IT! 👍"
+
+[node name="SkipBtn" type="Button" parent="Panel/VBox/HBox"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 2
+text = "SKIP"
+
+[node name="CompanionLumi" type="Node2D" parent="."]
+position = Vector2(580, 750)
+script = ExtResource("2_lumi")
