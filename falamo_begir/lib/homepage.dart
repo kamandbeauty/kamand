@@ -1,12 +1,10 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:fale_hafez/about.dart';
-import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 
 /// صفحهٔ اصلی برنامه
 class HomeScreen extends StatefulWidget {
@@ -20,7 +18,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   bool _isPlaying = false;
-  bool _isCheckingConnection = false;
 
   /// آیا هنگام بازگشت از پس‌زمینه، موسیقی باید ادامه پیدا کند؟
   bool _resumeMusicOnForeground = false;
@@ -44,104 +41,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// بررسی اتصال اینترنت با یک درخواست سبک به سرور سرویس فال
-  Future<bool> _hasInternetConnection() async {
-    try {
-      final response = await http
-          .get(ApiConfig.pingEndpoint)
-          .timeout(const Duration(seconds: 5));
-      return response.statusCode < 500;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// با زدن دکمهٔ فال: ابتدا اتصال اینترنت بررسی می‌شود؛
-  /// در صورت اتصال وارد صفحهٔ فال و در غیر این صورت هشدار نمایش داده می‌شود.
-  Future<void> _onFalButtonPressed() async {
-    if (_isCheckingConnection) return;
-
-    setState(() => _isCheckingConnection = true);
-    final hasInternet = await _hasInternetConnection();
-    if (!mounted) return;
-    setState(() => _isCheckingConnection = false);
-
-    if (hasInternet) {
-      Get.to(const FalScreen());
-    } else {
-      _showNoInternetDialog();
-    }
-  }
-
-  void _showNoInternetDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(32.0)),
-          ),
-          backgroundColor: const Color.fromARGB(255, 0, 0, 0),
-          title: Center(child: Image.asset('assets/wifi.png')),
-          actions: [
-            Center(
-              child: Text(
-                'لطفا از اتصال اینترنت خود مطمئن شوید',
-                textAlign: TextAlign.center,
-                locale: const Locale('fa'),
-                textDirection: TextDirection.rtl,
-                style: vazirText(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 17,
-                  color: const Color.fromARGB(255, 255, 255, 255),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            Center(
-              child: Text(
-                'همچنین در صورت روشن بودن فیلتر شکن آن را خاموش نمایید',
-                textAlign: TextAlign.center,
-                locale: const Locale('fa'),
-                textDirection: TextDirection.rtl,
-                style: vazirText(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                  color: const Color.fromARGB(255, 255, 255, 255),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.yellow,
-                  backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
-                  shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-                  elevation: 5,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Text(
-                    'بستن  پنجره',
-                    style: vazirText(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: const Color.fromRGBO(107, 38, 15, 1),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  /// رفتن به صفحهٔ فال - فال‌ها آفلاین و داخل برنامه‌اند
+  /// و دیگر به اینترنت نیازی نیست.
+  void _onFalButtonPressed() => Get.to(const FalScreen());
 
   Future<void> _pauseAudio() async {
     try {
@@ -251,23 +153,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(15),
-                    child: _isCheckingConnection
-                        ? const SizedBox(
-                            width: 30,
-                            height: 30,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 3,
-                              color: Color.fromRGBO(107, 38, 15, 1),
-                            ),
-                          )
-                        : Text(
-                            'نیت کردم ، فالمو بگیر',
-                            style: vazirText(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 30,
-                              color: const Color.fromRGBO(107, 38, 15, 1),
-                            ),
-                          ),
+                    child: Text(
+                      'نیت کردم ، فالمو بگیر',
+                      style: vazirText(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 30,
+                        color: const Color.fromRGBO(107, 38, 15, 1),
+                      ),
+                    ),
                   ),
                 ),
               ),

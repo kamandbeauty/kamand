@@ -17,7 +17,6 @@ dependencies:
   url_launcher: ^6.2.1
   get: ^4.6.6
   audioplayers: ^5.2.1
-  http: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -38,6 +37,7 @@ flutter:
     - assets/
     - assets/background/
     - assets/fonts/
+    - assets/data/
 
   # فونت داخلی وزیرمتن (بدون نیاز به اینترنت)
   fonts:

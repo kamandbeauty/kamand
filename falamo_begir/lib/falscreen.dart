@@ -1,14 +1,15 @@
-import 'dart:convert';
 import 'package:fale_hafez/about.dart';
-import 'package:fale_hafez/config.dart';
+import 'package:fale_hafez/data/fal_repository.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 
-/// صفحهٔ نمایش فال حافظ
+/// صفحهٔ نمایش فال حافظ.
+///
+/// فال‌ها از دیتاست آفلاین داخل برنامه (کل دیوان حافظ - ۴۹۵ غزل)
+/// خوانده می‌شوند؛ بدون نیاز به اینترنت.
 class FalScreen extends StatefulWidget {
   const FalScreen({super.key});
 
@@ -17,40 +18,25 @@ class FalScreen extends StatefulWidget {
 }
 
 class _FalScreenState extends State<FalScreen> {
-  String _rhyme = '';
-  String _meaning = '';
-  String _shomare = '';
+  HafezFal? _fal;
 
   bool _isLoading = true;
   bool _hasError = false;
 
-  /// دریافت یک فال تصادفی از سرویس فال حافظ
-  Future<void> _fetchFal() async {
+  /// انتخاب تصادفی یک فال از میان ۴۹۵ فال ذخیره‌شده در برنامه
+  Future<void> _pickFal() async {
     setState(() {
       _isLoading = true;
       _hasError = false;
     });
 
     try {
-      final response = await http
-          .get(ApiConfig.hafezEndpoint)
-          .timeout(const Duration(seconds: 10));
-
+      final fal = await FalRepository.random();
       if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final result =
-            (data['result'] ?? <String, dynamic>{}) as Map<String, dynamic>;
-        setState(() {
-          _rhyme = result['RHYME']?.toString() ?? '';
-          _meaning = result['MEANING']?.toString() ?? '';
-          _shomare = result['SHOMARE']?.toString() ?? '';
-          _isLoading = false;
-        });
-      } else {
-        _showError();
-      }
+      setState(() {
+        _fal = fal;
+        _isLoading = false;
+      });
     } catch (_) {
       _showError();
     }
@@ -67,7 +53,7 @@ class _FalScreenState extends State<FalScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchFal();
+    _pickFal();
   }
 
   @override
@@ -178,18 +164,19 @@ class _FalScreenState extends State<FalScreen> {
       );
     }
 
-    // وضعیت خطا (قطع اینترنت یا خطای سرور) + دکمهٔ تلاش مجدد
-    if (_hasError) {
+    // وضعیت خطا (مشکل در خواندن دیتای داخل برنامه) + دکمهٔ تلاش مجدد
+    if (_hasError || _fal == null) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            'assets/wifi.png',
-            height: height / 6,
+          const Icon(
+            Icons.error_outline,
+            color: Colors.white,
+            size: 60,
           ),
           const SizedBox(height: 20),
           Text(
-            'لطفا اتصال اینترنت خود را بررسی نمایید',
+            'خطا در بارگذاری فال‌ها ؛ لطفا دوباره تلاش کنید',
             textAlign: TextAlign.center,
             locale: const Locale('fa'),
             textDirection: TextDirection.rtl,
@@ -201,7 +188,7 @@ class _FalScreenState extends State<FalScreen> {
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: _fetchFal,
+            onPressed: _pickFal,
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.yellow,
               backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
@@ -228,13 +215,14 @@ class _FalScreenState extends State<FalScreen> {
       );
     }
 
-    // نمایش فال دریافت‌شده
+    // نمایش فال انتخاب‌شده
+    final fal = _fal!;
     return SingleChildScrollView(
       child: Column(
         children: [
           SizedBox(height: height / 7),
           Text(
-            'شماره صفحه فال شما : $_shomare',
+            'شماره صفحه فال شما : ${fal.number}',
             textAlign: TextAlign.center,
             locale: const Locale('fa'),
             textDirection: TextDirection.rtl,
@@ -245,15 +233,19 @@ class _FalScreenState extends State<FalScreen> {
             ),
           ),
           SizedBox(height: height / 20),
-          Text(
-            _rhyme,
-            textAlign: TextAlign.center,
-            locale: const Locale('fa'),
-            textDirection: TextDirection.rtl,
-            style: vazirText(
-              fontSize: 20,
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: width / 15),
+            child: Text(
+              fal.verses,
+              textAlign: TextAlign.center,
+              locale: const Locale('fa'),
+              textDirection: TextDirection.rtl,
+              style: vazirText(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                height: 2,
+              ),
             ),
           ),
           SizedBox(height: height / 20),
@@ -274,11 +266,11 @@ class _FalScreenState extends State<FalScreen> {
           SizedBox(
             width: width / 1.2,
             child: Text(
-              _meaning,
+              fal.meaning,
               textAlign: TextAlign.center,
               locale: const Locale('fa'),
               textDirection: TextDirection.rtl,
-              style: vazirText(fontSize: 16, color: Colors.white),
+              style: vazirText(fontSize: 16, color: Colors.white, height: 1.8),
             ),
           ),
           SizedBox(height: height / 20),
