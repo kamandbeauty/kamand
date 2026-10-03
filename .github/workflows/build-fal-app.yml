@@ -97,7 +97,31 @@ jobs:
 
       - name: Build release APK
         working-directory: falamo_begir
-        run: flutter build apk --release
+        shell: bash
+        run: |
+          set +e
+          flutter build apk --release > apk-build-report.txt 2>&1
+          code=$?
+          echo "EXIT_CODE=$code" >> apk-build-report.txt
+          exit $code
+
+      - name: Post APK build failure report to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: falamo_begir
+        shell: bash
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          if [ -n "$PR" ] && [ "$PR" != "null" ]; then
+            {
+              echo "### ❌ گزارش خطای ساخت APK (run #${GITHUB_RUN_NUMBER})"
+              echo '```text'
+              grep -v "═\|─" apk-build-report.txt | tail -c 9000
+              echo '```'
+            } > /tmp/comment-apk.md
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment-apk.md
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
