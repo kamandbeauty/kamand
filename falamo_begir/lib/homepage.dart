@@ -2,7 +2,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:fale_hafez/about.dart';
 import 'package:fale_hafez/divan_screen.dart';
 import 'package:fale_hafez/falscreen.dart';
+import 'package:fale_hafez/favorites_screen.dart';
 import 'package:fale_hafez/fonts.dart';
+import 'package:fale_hafez/settings_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -46,8 +48,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// و دیگر به اینترنت نیازی نیست.
   void _onFalButtonPressed() => Get.to(const FalScreen());
 
-  /// رفتن به دیوان حافظ - فهرست کامل ۴۹۵ غزل با جستجو
+  /// رفتن به دیوان حافظ - فهرست کامل آثار با جستجو
   void _onDivanButtonPressed() => Get.to(const DivanScreen());
+
+  /// رفتن به اشعار دلخواه و تنظیمات
+  void _onFavoritesButtonPressed() => Get.to(const FavoritesScreen());
+
+  void _onSettingsButtonPressed() => Get.to(const SettingsScreen());
 
   Future<void> _pauseAudio() async {
     try {
@@ -199,10 +206,60 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+
+                  // دکمه‌های اشعار دلخواه و تنظیمات
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _smallButton(
+                        onPressed: _onFavoritesButtonPressed,
+                        icon: CupertinoIcons.heart_fill,
+                        label: 'اشعار دلخواه',
+                      ),
+                      const SizedBox(width: 12),
+                      _smallButton(
+                        onPressed: _onSettingsButtonPressed,
+                        icon: CupertinoIcons.gear_alt_fill,
+                        label: 'تنظیمات',
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _smallButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.yellow,
+        backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
+        shadowColor: const Color.fromRGBO(183, 116, 50, 1),
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+      icon: Icon(icon, color: const Color.fromRGBO(107, 38, 15, 1), size: 18),
+      label: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          label,
+          style: vazirText(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+            color: const Color.fromRGBO(107, 38, 15, 1),
+          ),
         ),
       ),
     );

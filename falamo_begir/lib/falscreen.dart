@@ -1,5 +1,6 @@
 import 'package:fale_hafez/about.dart';
-import 'package:fale_hafez/data/fal_repository.dart';
+import 'package:fale_hafez/data/divan_repository.dart';
+import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +19,7 @@ class FalScreen extends StatefulWidget {
 }
 
 class _FalScreenState extends State<FalScreen> {
-  HafezFal? _fal;
+  Poem? _fal;
 
   bool _isLoading = true;
   bool _hasError = false;
@@ -31,7 +32,7 @@ class _FalScreenState extends State<FalScreen> {
     });
 
     try {
-      final fal = await FalRepository.random();
+      final fal = await DivanRepository.randomGhazal();
       if (!mounted) return;
       setState(() {
         _fal = fal;
@@ -266,7 +267,7 @@ class _FalScreenState extends State<FalScreen> {
           SizedBox(
             width: width / 1.2,
             child: Text(
-              fal.meaning,
+              fal.meaning ?? '',
               textAlign: TextAlign.center,
               locale: const Locale('fa'),
               textDirection: TextDirection.rtl,
