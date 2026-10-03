@@ -1,0 +1,25 @@
+{
+  "name": "hokm",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 4000",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4000",
+    "test": "node test/rules.test.mjs && node test/ui-smoke.test.mjs",
+    "test:rules": "node test/rules.test.mjs",
+    "test:ui": "node test/ui-smoke.test.mjs",
+    "test:ai": "node test/ai-strength.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "esbuild": "^0.24.2",
+    "jsdom": "^25.0.1",
+    "vite": "^6.2.1"
+  }
+}
