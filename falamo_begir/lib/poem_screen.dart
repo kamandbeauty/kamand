@@ -1,0 +1,521 @@
+import 'package:fale_hafez/data/divan_repository.dart';
+import 'package:fale_hafez/data/poem.dart';
+import 'package:fale_hafez/data/settings_service.dart';
+import 'package:fale_hafez/fonts.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
+
+/// صفحهٔ خواندن یک شعر از دیوان حافظ
+///
+/// امکانات: نمایش تعبیر فال (برای غزلیات)، اشتراک‌گذاری، کپی،
+/// افزودن به «اشعار دلخواه»، بزرگنمایی متن با دو انگشت،
+/// و پیمایش شعر قبلی/بعدی در همان فهرست.
+class PoemScreen extends StatefulWidget {
+  const PoemScreen({
+    super.key,
+    required this.poemId,
+    this.category,
+    this.scopeIds,
+  });
+
+  /// شناسهٔ شعری که باید نمایش داده شود
+  final String poemId;
+
+  /// بخشی که پیمایش قبلی/بعدی در آن انجام می‌شود
+  /// (null یعنی کل دیوان)
+  final PoemCategory? category;
+
+  /// فهرست سفارشی شناسه‌ها برای پیمایش (مثلاً نتیجهٔ جستجو یا علاقه‌مندی‌ها)
+  final List<String>? scopeIds;
+
+  @override
+  State<PoemScreen> createState() => _PoemScreenState();
+}
+
+class _PoemScreenState extends State<PoemScreen> {
+  static const Color _accent = Color.fromRGBO(234, 158, 77, 1);
+  static const Color _dark = Color.fromRGBO(107, 38, 15, 1);
+
+  SettingsService get _settings => Get.find<SettingsService>();
+
+  final Map<String, Poem> _byId = {};
+  List<String> _ids = const [];
+  int _index = 0;
+
+  bool _isLoading = true;
+  bool _hasError = false;
+  bool _showMeaning = false;
+
+  /// بزرگنمایی موقت هنگام ژست دو انگشتی
+  double? _transientScale;
+  double _gestureBase = SettingsService.defaultScale;
+
+  Poem? get _poem => _ids.isEmpty ? null : _byId[_ids[_index]];
+
+  double get _fontScale =>
+      (_transientScale ?? _settings.poemScale)
+          .clamp(SettingsService.minScale, SettingsService.maxScale)
+          .toDouble();
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      final all = await DivanRepository.all();
+      if (!mounted) return;
+
+      for (final poem in all) {
+        _byId[poem.id] = poem;
+      }
+
+      final scope = widget.scopeIds;
+      if (scope != null && scope.isNotEmpty) {
+        _ids = scope.where(_byId.containsKey).toList(growable: false);
+      } else if (widget.category != null) {
+        _ids = all
+            .where((p) => p.category == widget.category)
+            .map((p) => p.id)
+            .toList(growable: false);
+      } else {
+        _ids = all.map((p) => p.id).toList(growable: false);
+      }
+
+      var index = _ids.indexOf(widget.poemId);
+      if (index < 0) index = 0;
+
+      setState(() {
+        _index = index;
+        _isLoading = false;
+        _hasError = _ids.isEmpty;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  /// رفتن به شعر قبلی یا بعدی در فهرست
+  void _goTo(int delta) {
+    final next = _index + delta;
+    if (next < 0 || next >= _ids.length) return;
+    setState(() {
+      _index = next;
+      _showMeaning = false;
+      _transientScale = null;
+    });
+  }
+
+  // ---- اشتراک‌گذاری و کپی ----
+
+  String _shareText(Poem poem, {bool includeMeaning = false}) {
+    final buffer = StringBuffer('${poem.displayTitle}\n\n${poem.verses}');
+    if (includeMeaning && poem.meaning != null) {
+      buffer.write('\n\nتعبیر فال: ${poem.meaning}');
+    }
+    buffer.write('\n\n— اپلیکیشن «دیوان و فال حافظ»');
+    return buffer.toString();
+  }
+
+  Future<void> _sharePoem(Poem poem) =>
+      Share.share(_shareText(poem, includeMeaning: _showMeaning));
+
+  Future<void> _copyPoem(Poem poem) async {
+    await Clipboard.setData(
+        ClipboardData(text: _shareText(poem, includeMeaning: _showMeaning)));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: _dark,
+        content: Text(
+          'شعر در حافظه کپی شد',
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.rtl,
+          style: vazirText(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ---- بزرگنمایی با دو انگشت ----
+
+  void _onScaleStart(ScaleStartDetails details) {
+    _gestureBase = _settings.poemScale;
+  }
+
+  void _onScaleUpdate(ScaleUpdateDetails details) {
+    if (details.pointerCount < 2) return;
+    setState(() {
+      _transientScale = (_gestureBase * details.scale)
+          .clamp(SettingsService.minScale, SettingsService.maxScale)
+          .toDouble();
+    });
+  }
+
+  void _onScaleEnd(ScaleEndDetails details) {
+    final scale = _transientScale;
+    // ابتدا حالت موقت پاک و سپس مقدار نهایی در تنظیمات ذخیره می‌شود
+    setState(() => _transientScale = null);
+    if (scale != null) {
+      // بزرگنمایی دو انگشتی به‌عنوان اندازهٔ قلم ذخیره می‌شود
+      _settings.setPoemScale(scale);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double width = MediaQuery.sizeOf(context).width;
+    final double topPadding = MediaQuery.viewPaddingOf(context).top;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/background/falscreen.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: Column(
+            children: [
+              // نوار بالایی: لوگو + بازگشت
+              Padding(
+                padding: EdgeInsets.only(
+                  top: topPadding + 10,
+                  right: 14,
+                  left: 14,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Image.asset('assets/logotext.png', width: width / 2.6),
+                    _headerButton(
+                      icon: CupertinoIcons.back,
+                      onPressed: Get.back,
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(child: _buildBody(width)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _headerButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.yellow,
+          backgroundColor: _accent,
+          shadowColor: const Color.fromRGBO(183, 116, 50, 1),
+          elevation: 5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        child: Icon(icon, color: _dark),
+      ),
+    );
+  }
+
+  Widget _buildBody(double width) {
+    if (_isLoading) {
+      return const Center(
+        child: SpinKitFadingFour(color: Colors.white, size: 50),
+      );
+    }
+
+    if (_hasError || _poem == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 50),
+            const SizedBox(height: 16),
+            Text(
+              'خطا در باز کردن دیوان',
+              textDirection: TextDirection.rtl,
+              style: vazirText(
+                fontSize: 16,
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _load,
+              style: ElevatedButton.styleFrom(backgroundColor: _accent),
+              child: Text(
+                'تلاش مجدد',
+                style: vazirText(color: _dark, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final poem = _poem!;
+    final fontScale = _fontScale;
+
+    return AnimatedBuilder(
+      animation: _settings,
+      builder: (context, _) {
+        final isFav = _settings.isFavorite(poem.id);
+        return Column(
+          children: [
+            Text(
+              poem.displayTitle,
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+              style: vazirText(
+                fontSize: 22,
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+
+            // متن شعر + بزرگنمایی دو انگشتی
+            Expanded(
+              child: GestureDetector(
+                onScaleStart: _onScaleStart,
+                onScaleUpdate: _onScaleUpdate,
+                onScaleEnd: _onScaleEnd,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 12),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              poem.verses,
+                              textAlign: TextAlign.center,
+                              textDirection: TextDirection.rtl,
+                              style: vazirText(
+                                fontSize: 17 * fontScale,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                height: 2.2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // دکمهٔ تعبیر فال (فقط غزلیات)
+                          if (poem.meaning != null)
+                            ElevatedButton.icon(
+                              onPressed: () => setState(
+                                  () => _showMeaning = !_showMeaning),
+                              style: ElevatedButton.styleFrom(
+                                foregroundColor: Colors.yellow,
+                                backgroundColor: _accent,
+                                shadowColor:
+                                    const Color.fromRGBO(183, 116, 50, 1),
+                                elevation: 5,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: Icon(
+                                _showMeaning
+                                    ? CupertinoIcons.eye_slash
+                                    : CupertinoIcons.book,
+                                color: _dark,
+                              ),
+                              label: Text(
+                                _showMeaning
+                                    ? 'بستن تعبیر فال'
+                                    : 'مشاهدهٔ تعبیر فال',
+                                style: vazirText(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  color: _dark,
+                                ),
+                              ),
+                            ),
+
+                          // تعبیر فال
+                          if (_showMeaning && poem.meaning != null)
+                            Container(
+                              width: width / 1.12,
+                              margin: const EdgeInsets.only(top: 14),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.92),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text(
+                                poem.meaning!,
+                                textAlign: TextAlign.center,
+                                textDirection: TextDirection.rtl,
+                                style: vazirText(
+                                  fontSize: 15 * fontScale,
+                                  color: _dark,
+                                  height: 1.9,
+                                ),
+                              ),
+                            ),
+
+                          const SizedBox(height: 16),
+
+                          // دکمه‌های اشتراک، کپی و دلخواه
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _actionButton(
+                                icon: CupertinoIcons.share,
+                                label: 'اشتراک‌گذاری',
+                                onPressed: () => _sharePoem(poem),
+                              ),
+                              const SizedBox(width: 10),
+                              _actionButton(
+                                icon: CupertinoIcons.doc_on_clipboard,
+                                label: 'کپی',
+                                onPressed: () => _copyPoem(poem),
+                              ),
+                              const SizedBox(width: 10),
+                              _actionButton(
+                                icon: isFav
+                                    ? CupertinoIcons.heart_fill
+                                    : CupertinoIcons.heart,
+                                label: isFav ? 'حذف دلخواه' : 'دلخواه',
+                                color: isFav
+                                    ? const Color.fromRGBO(255, 120, 120, 1)
+                                    : null,
+                                onPressed: () =>
+                                    _settings.toggleFavorite(poem.id),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // پیمایش شعر قبلی/بعدی
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _navButton(
+                      label: 'بعدی',
+                      icon: CupertinoIcons.chevron_right,
+                      enabled: _index < _ids.length - 1,
+                      onPressed: () => _goTo(1),
+                    ),
+                    const SizedBox(width: 14),
+                    _navButton(
+                      label: 'قبلی',
+                      icon: CupertinoIcons.chevron_left,
+                      enabled: _index > 0,
+                      onPressed: () => _goTo(-1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    Color? color,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.yellow,
+        backgroundColor: _accent,
+        shadowColor: const Color.fromRGBO(183, 116, 50, 1),
+        elevation: 5,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      icon: Icon(icon, color: color ?? _dark, size: 18),
+      label: Text(
+        label,
+        style: vazirText(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+          color: color ?? _dark,
+        ),
+      ),
+    );
+  }
+
+  Widget _navButton({
+    required String label,
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: enabled ? onPressed : null,
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.yellow,
+        backgroundColor: _accent,
+        disabledBackgroundColor: Colors.white38,
+        shadowColor: const Color.fromRGBO(183, 116, 50, 1),
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      icon: Icon(icon, color: _dark, size: 18),
+      label: Text(
+        label,
+        style: vazirText(
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
+          color: _dark,
+        ),
+      ),
+    );
+  }
+}

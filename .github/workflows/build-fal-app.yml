@@ -1,0 +1,192 @@
+# ساخت خودکار اپلیکیشن «دیوان و فال حافظ» روی GitHub Actions
+name: Build Divan & Fal Hafez App
+
+on:
+  push:
+    branches: [arena/01a10170-kamand, main]
+    paths:
+      - 'falamo_begir/**'
+      - '.github/workflows/build-fal-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
+        working-directory: falamo_begir
+        run: flutter pub upgrade
+
+      - name: Analyze
+        working-directory: falamo_begir
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        working-directory: falamo_begir
+        shell: bash
+        run: |
+          set +e
+          flutter test --reporter expanded > test-report.txt 2>&1
+          code=$?
+          echo "EXIT_CODE=$code" >> test-report.txt
+          exit $code
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: falamo_begir/test-report.txt
+          retention-days: 30
+
+      - name: Post failure report to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: falamo_begir
+        shell: bash
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          echo "PR=$PR"
+          if [ -n "$PR" ] && [ "$PR" != "null" ]; then
+            {
+              echo "### ❌ گزارش خطای تست (run #${GITHUB_RUN_NUMBER})"
+              echo '```text'
+              grep -v "═\|─" test-report.txt | tail -c 9000
+              echo '```'
+            } > /tmp/comment.md
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+          fi
+
+  build-apk:
+    name: Build APK (release)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
+        working-directory: falamo_begir
+        run: flutter pub upgrade
+
+      - name: Build release APK
+        working-directory: falamo_begir
+        shell: bash
+        run: |
+          set +e
+          flutter build apk --release > apk-build-report.txt 2>&1
+          code=$?
+          echo "EXIT_CODE=$code" >> apk-build-report.txt
+          exit $code
+
+      - name: Post APK build failure report to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: falamo_begir
+        shell: bash
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          if [ -n "$PR" ] && [ "$PR" != "null" ]; then
+            {
+              echo "### ❌ گزارش خطای ساخت APK (run #${GITHUB_RUN_NUMBER})"
+              echo '```text'
+              grep -v "═\|─" apk-build-report.txt | tail -c 9000
+              echo '```'
+            } > /tmp/comment-apk.md
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment-apk.md
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: divan-hafez-apk
+          path: falamo_begir/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 90
+
+  build-web:
+    name: Build Web
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
+        working-directory: falamo_begir
+        run: flutter pub upgrade
+
+      - name: Build web bundle
+        working-directory: falamo_begir
+        run: flutter build web --release
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: divan-hafez-web
+          path: falamo_begir/build/web
+          retention-days: 90
+
+  release:
+    name: Publish GitHub Release (APK + Web)
+    needs: [build-apk, build-web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: divan-hafez-apk
+          path: apk
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: divan-hafez-web
+          path: web
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG="v1.3.1"
+          APK_NAME="divan-fal-hafez-${TAG}.apk"
+          cp apk/app-release.apk "$APK_NAME"
+          (cd web && zip -qr "../divan-fal-hafez-web-${TAG}.zip" .)
+          NOTES="نسخهٔ ۱.۳.۱ — ساخت خودکار CI: فایل نصبی اندروید (APK) و نسخهٔ وب. ساخته‌شده از شاخه ${GITHUB_REF_NAME}, کامیت ${GITHUB_SHA}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK_NAME" "divan-fal-hafez-web-${TAG}.zip" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$APK_NAME" "divan-fal-hafez-web-${TAG}.zip" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "دیوان و فال حافظ ۱.۳.۱" --notes "$NOTES"
+          fi
