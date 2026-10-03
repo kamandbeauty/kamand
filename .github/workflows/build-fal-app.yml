@@ -9,6 +9,11 @@ on:
       - '.github/workflows/build-fal-app.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
 jobs:
   test:
     name: Analyze & Test
@@ -49,6 +54,25 @@ jobs:
           name: test-report
           path: falamo_begir/test-report.txt
           retention-days: 30
+
+      - name: Post failure report to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: falamo_begir
+        shell: bash
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          echo "PR=$PR"
+          if [ -n "$PR" ] && [ "$PR" != "null" ]; then
+            {
+              echo "### ❌ گزارش خطای تست (run #${GITHUB_RUN_NUMBER})"
+              echo '```text'
+              grep -v "═\|─" test-report.txt | tail -c 9000
+              echo '```'
+            } > /tmp/comment.md
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+          fi
 
   build-apk:
     name: Build APK (release)
