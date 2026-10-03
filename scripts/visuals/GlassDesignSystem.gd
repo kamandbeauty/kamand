@@ -3,8 +3,14 @@ extends Node
 
 ## ==============================================================================
 ## LUMI / BUBBLEWOOD - VISUAL DESIGN SYSTEM & GLASSMORPHISM LIBRARY
+## Developed by Studio Javid (استودیو جاوید)
 ## Premium Glassmorphism + Glossy Bubble Art Direction (64-Rule Compliance)
 ## ==============================================================================
+
+## --- DEVELOPER CREDITS & BRANDING ---
+const DEVELOPER_NAME: String     = "Studio Javid"
+const DEVELOPER_NAME_FA: String  = "استودیو جاوید"
+const GAME_TITLE: String         = "Lumi: Bubblewood Chronicle"
 
 ## --- COLOR PHILOSOPHY (Section 3) ---
 const COLOR_GLASS_WHITE: Color   = Color(1.0, 1.0, 1.0, 1.0)       # #FFFFFF - Highlights & UI

@@ -1,13 +1,20 @@
 /**
- * LUMI: BUBBLEWOOD CHRONICLE — PREMIUM PRODUCTION ENGINE
- * Complete Visual Design Sheet Compliance: Glassmorphism + Glossy 3D-Look Bubbles + Lumi Character
+ * ============================================================================
+ * LUMI: BUBBLEWOOD CHRONICLE — ULTRA-PREMIUM PRODUCTION ENGINE
+ * Developed by Studio Javid (استودیو جاوید)
+ * Complete Visual Design Sheet Compliance:
+ * - Ultra-Glossy 3D Glass Bubbles & Multi-Pass Specular Reflections
+ * - Extreme Graphical Shatter Physics, Shockwaves & Explosions
+ * - Complete Glassmorphism UI Component Library
+ * - Portrait Mobile Safe-Area Layout (720x1280)
+ * ============================================================================
  */
 
 (() => {
     'use strict';
 
     // =========================================================================
-    // 1. VISUAL DESIGN SYSTEM CONSTANTS & COLOR PHILOSOPHY (Section 3, 15, 41)
+    // 1. CONSTANTS, COLOR PHILOSOPHY & PALETTES
     // =========================================================================
     const V_WIDTH = 720;
     const V_HEIGHT = 1280;
@@ -20,9 +27,8 @@
     const DANGER_ROW = 10;
     const SHOOTER_Y = 1140;
     const SHOOTER_X = 360;
-    const PROJECTILE_SPEED = 1850; // px/sec
+    const PROJECTILE_SPEED = 1900; // px/sec
 
-    // Enums
     const BubbleColor = {
         NONE: 0,
         RED: 1,
@@ -49,7 +55,7 @@
         CLEAR_SPECIAL: 3
     };
 
-    // Palette Colors matching Section 3 & 15
+    // Studio Javid Master Palette
     const PALETTE = {
         GLASS_WHITE: '#FFFFFF',
         CRYSTAL_BLUE: '#69D9FF',
@@ -60,60 +66,61 @@
         PINK: '#FF7BC8',
         CORAL: '#FF7E8B',
         SUNSHINE: '#FFD75A',
+        GOLD: '#FFB800',
         DEEP_PURPLE: '#392C66',
-        DEEP_NAVY: '#171A3A',
-        BG_BLUE: '#20265C'
+        DEEP_NAVY: '#10132e',
+        BG_DARK: '#070a1a'
     };
 
-    // 8-Layer Bubble Glass Color Palettes [base, light, deep, glow, rim]
+    // 8-Layer Multi-Pass Bubble Glass Color Palettes
     const BUBBLE_THEMES = {
         [BubbleColor.RED]: {
-            base: '#ff4d6a',
-            light: '#ffa8b8',
-            deep: '#8f0e24',
-            glow: 'rgba(255, 77, 106, 0.40)',
-            rim: 'rgba(255, 210, 220, 0.70)',
-            name: 'Red'
+            base: '#ff3d62',
+            light: '#ffaec0',
+            deep: '#820a20',
+            glow: 'rgba(255, 61, 98, 0.45)',
+            rim: 'rgba(255, 215, 225, 0.85)',
+            name: 'Ruby'
         },
         [BubbleColor.BLUE]: {
-            base: '#3ba3ff',
-            light: '#a6d8ff',
-            deep: '#0d3b8f',
-            glow: 'rgba(59, 163, 255, 0.40)',
-            rim: 'rgba(210, 235, 255, 0.70)',
-            name: 'Blue'
+            base: '#2b9fff',
+            light: '#b0dcff',
+            deep: '#0a3485',
+            glow: 'rgba(43, 159, 255, 0.45)',
+            rim: 'rgba(215, 240, 255, 0.85)',
+            name: 'Sapphire'
         },
         [BubbleColor.GREEN]: {
-            base: '#38e085',
-            light: '#a8fcd0',
-            deep: '#086e38',
-            glow: 'rgba(56, 224, 133, 0.40)',
-            rim: 'rgba(210, 255, 230, 0.70)',
-            name: 'Green'
+            base: '#2de07f',
+            light: '#b2fce0',
+            deep: '#056330',
+            glow: 'rgba(45, 224, 127, 0.45)',
+            rim: 'rgba(215, 255, 235, 0.85)',
+            name: 'Emerald'
         },
         [BubbleColor.YELLOW]: {
-            base: '#ffd438',
-            light: '#fff2a8',
-            deep: '#9c6f05',
-            glow: 'rgba(255, 212, 56, 0.40)',
-            rim: 'rgba(255, 250, 210, 0.70)',
-            name: 'Yellow'
+            base: '#ffcf26',
+            light: '#fff4b3',
+            deep: '#8a5e00',
+            glow: 'rgba(255, 207, 38, 0.45)',
+            rim: 'rgba(255, 252, 215, 0.85)',
+            name: 'Topaz'
         },
         [BubbleColor.PURPLE]: {
-            base: '#b866ff',
-            light: '#e4b8ff',
-            deep: '#54158c',
-            glow: 'rgba(184, 102, 255, 0.40)',
-            rim: 'rgba(240, 220, 255, 0.70)',
-            name: 'Purple'
+            base: '#b85eff',
+            light: '#e7bfff',
+            deep: '#4f0e8a',
+            glow: 'rgba(184, 94, 255, 0.45)',
+            rim: 'rgba(245, 225, 255, 0.85)',
+            name: 'Amethyst'
         },
         [BubbleColor.CYAN]: {
-            base: '#2de2e6',
-            light: '#aef9fb',
-            deep: '#0a646e',
-            glow: 'rgba(45, 226, 230, 0.40)',
-            rim: 'rgba(220, 255, 255, 0.70)',
-            name: 'Cyan'
+            base: '#22e2eb',
+            light: '#b5fbff',
+            deep: '#065761',
+            glow: 'rgba(34, 226, 235, 0.45)',
+            rim: 'rgba(225, 255, 255, 0.85)',
+            name: 'Diamond'
         }
     };
 
@@ -121,46 +128,46 @@
         {
             id: 1,
             name: 'Whispering Woods',
-            desc: 'Crystal Garden & Ancient Trees',
-            bgTop: '#0d1a2d',
-            bgMid: '#16383b',
-            bgBottom: '#0a1322',
+            desc: 'Crystal Garden & Ancient Enchanted Trees',
+            bgTop: '#0d1d2e',
+            bgMid: '#143c44',
+            bgBottom: '#08121e',
             accent: PALETTE.AQUA,
-            glow: 'rgba(72, 229, 212, 0.30)',
+            glow: 'rgba(72, 229, 212, 0.35)',
             starReq: 0
         },
         {
             id: 2,
             name: 'Crystal Caverns',
             desc: 'Deep Amethyst Grotto & Shimmering Veins',
-            bgTop: '#251642',
-            bgMid: '#3c2269',
-            bgBottom: '#120c24',
+            bgTop: '#241445',
+            bgMid: '#3f1f72',
+            bgBottom: '#100a24',
             accent: PALETTE.LAVENDER,
-            glow: 'rgba(169, 139, 255, 0.30)',
+            glow: 'rgba(169, 139, 255, 0.35)',
             starReq: 18
         },
         {
             id: 3,
             name: 'Sunken Grove',
             desc: 'Abyssal Ocean Glass & Luminescent Reefs',
-            bgTop: '#082035',
-            bgMid: '#12485e',
-            bgBottom: '#04101e',
+            bgTop: '#07243b',
+            bgMid: '#0f4f6e',
+            bgBottom: '#031120',
             accent: PALETTE.CRYSTAL_BLUE,
-            glow: 'rgba(105, 217, 255, 0.30)',
+            glow: 'rgba(105, 217, 255, 0.35)',
             starReq: 45
         }
     ];
 
     // =========================================================================
-    // 2. AUDIO SYNTHESIZER (Web Audio API)
+    // 2. AUDIO SYNTHESIZER ENGINE (Web Audio API)
     // =========================================================================
     class SoundEngine {
         constructor() {
             this.ctx = null;
             this.enabled = true;
-            this.sfxVolume = 0.8;
+            this.sfxVolume = 0.85;
             this.musicVolume = 0.5;
         }
 
@@ -180,14 +187,14 @@
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(520, now);
-            osc.frequency.exponentialRampToValueAtTime(200, now + 0.09);
-            gain.gain.setValueAtTime(0.28 * this.sfxVolume, now);
-            gain.gain.linearRampToValueAtTime(0.01, now + 0.09);
+            osc.frequency.setValueAtTime(560, now);
+            osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+            gain.gain.setValueAtTime(0.3 * this.sfxVolume, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start(now);
-            osc.stop(now + 0.09);
+            osc.stop(now + 0.08);
         }
 
         playBounce() {
@@ -196,7 +203,7 @@
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(680, now);
+            osc.frequency.setValueAtTime(740, now);
             gain.gain.setValueAtTime(0.22 * this.sfxVolume, now);
             gain.gain.linearRampToValueAtTime(0.01, now + 0.06);
             osc.connect(gain);
@@ -208,20 +215,20 @@
         playMatch(combo = 1) {
             if (!this.enabled || !this.ctx) return;
             const now = this.ctx.currentTime;
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
             const baseFreq = notes[Math.min(combo - 1, notes.length - 1)];
 
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(baseFreq, now);
-            osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.16);
-            gain.gain.setValueAtTime(0.35 * this.sfxVolume, now);
-            gain.gain.linearRampToValueAtTime(0.01, now + 0.16);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.6, now + 0.18);
+            gain.gain.setValueAtTime(0.38 * this.sfxVolume, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start(now);
-            osc.stop(now + 0.16);
+            osc.stop(now + 0.18);
         }
 
         playBomb() {
@@ -230,14 +237,14 @@
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(140, now);
-            osc.frequency.exponentialRampToValueAtTime(35, now + 0.35);
-            gain.gain.setValueAtTime(0.45 * this.sfxVolume, now);
-            gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+            osc.frequency.setValueAtTime(160, now);
+            osc.frequency.exponentialRampToValueAtTime(30, now + 0.45);
+            gain.gain.setValueAtTime(0.55 * this.sfxVolume, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.45);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start(now);
-            osc.stop(now + 0.35);
+            osc.stop(now + 0.45);
         }
 
         playLightning() {
@@ -246,49 +253,49 @@
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(920, now);
-            osc.frequency.linearRampToValueAtTime(240, now + 0.22);
-            gain.gain.setValueAtTime(0.35 * this.sfxVolume, now);
-            gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+            osc.frequency.setValueAtTime(1100, now);
+            osc.frequency.linearRampToValueAtTime(200, now + 0.25);
+            gain.gain.setValueAtTime(0.4 * this.sfxVolume, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start(now);
-            osc.stop(now + 0.22);
+            osc.stop(now + 0.25);
         }
 
         playVictory() {
             if (!this.enabled || !this.ctx) return;
             const now = this.ctx.currentTime;
-            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
             notes.forEach((freq, i) => {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, now + i * 0.1);
-                gain.gain.setValueAtTime(0.25 * this.sfxVolume, now + i * 0.1);
-                gain.gain.linearRampToValueAtTime(0.01, now + i * 0.1 + 0.25);
+                osc.frequency.setValueAtTime(freq, now + i * 0.09);
+                gain.gain.setValueAtTime(0.28 * this.sfxVolume, now + i * 0.09);
+                gain.gain.linearRampToValueAtTime(0.01, now + i * 0.09 + 0.25);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
-                osc.start(now + i * 0.1);
-                osc.stop(now + i * 0.1 + 0.25);
+                osc.start(now + i * 0.09);
+                osc.stop(now + i * 0.09 + 0.25);
             });
         }
 
         playDefeat() {
             if (!this.enabled || !this.ctx) return;
             const now = this.ctx.currentTime;
-            const notes = [440, 392, 349.23, 293.66];
+            const notes = [440, 392, 349.23, 293.66, 220];
             notes.forEach((freq, i) => {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, now + i * 0.14);
-                gain.gain.setValueAtTime(0.25 * this.sfxVolume, now + i * 0.14);
-                gain.gain.linearRampToValueAtTime(0.01, now + i * 0.14 + 0.22);
+                osc.frequency.setValueAtTime(freq, now + i * 0.12);
+                gain.gain.setValueAtTime(0.25 * this.sfxVolume, now + i * 0.12);
+                gain.gain.linearRampToValueAtTime(0.01, now + i * 0.12 + 0.22);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
-                osc.start(now + i * 0.14);
-                osc.stop(now + i * 0.14 + 0.22);
+                osc.start(now + i * 0.12);
+                osc.stop(now + i * 0.12 + 0.22);
             });
         }
 
@@ -298,9 +305,9 @@
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, now);
-            osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
-            gain.gain.setValueAtTime(0.18 * this.sfxVolume, now);
+            osc.frequency.setValueAtTime(900, now);
+            osc.frequency.exponentialRampToValueAtTime(450, now + 0.04);
+            gain.gain.setValueAtTime(0.2 * this.sfxVolume, now);
             gain.gain.linearRampToValueAtTime(0.01, now + 0.04);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
@@ -312,57 +319,157 @@
     const sound = new SoundEngine();
 
     // =========================================================================
-    // 3. PARTICLE & VISUAL EFFECTS SYSTEM (Section 39, 22, 25, 26)
+    // 3. ULTRA-GRAPHICAL PARTICLE & SHATTER PHYSICS SYSTEM
     // =========================================================================
     class ParticleSystem {
         constructor() {
             this.particles = [];
+            this.shockwaves = [];
             this.scorePopups = [];
             this.comboPopups = [];
+            this.screenShake = 0;
         }
 
-        spawnGlassShards(x, y, colorHex, count = 16) {
-            for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
-                const speed = 160 + Math.random() * 240;
+        // Spawns 3D faceted glass crystal shards + sparkles + expanding shockwave
+        spawnGlassPop(x, y, colorHex, isLarge = false) {
+            const shardCount = isLarge ? 28 : 16;
+            const baseSpeed = isLarge ? 320 : 220;
+
+            // 1. Expanding Glass Shockwave Ring
+            this.shockwaves.push({
+                x, y,
+                radius: 10,
+                maxRadius: isLarge ? 110 : 70,
+                color: colorHex,
+                alpha: 0.9,
+                growth: isLarge ? 380 : 260
+            });
+
+            // 2. Geometric Faceted Glass Shards
+            for (let i = 0; i < shardCount; i++) {
+                const angle = (Math.PI * 2 * i) / shardCount + (Math.random() - 0.5) * 0.5;
+                const speed = baseSpeed * (0.6 + Math.random() * 0.8);
                 this.particles.push({
                     x, y,
                     vx: Math.cos(angle) * speed,
                     vy: Math.sin(angle) * speed - 60,
-                    size: 3 + Math.random() * 4.5,
+                    size: 3.5 + Math.random() * 5.0,
                     color: colorHex,
                     alpha: 1.0,
-                    life: 0.35 + Math.random() * 0.25,
-                    maxLife: 0.55,
-                    rot: Math.random() * Math.PI,
-                    rotSpeed: (Math.random() - 0.5) * 12,
-                    isShard: true
+                    life: 0.4 + Math.random() * 0.3,
+                    maxLife: 0.7,
+                    rot: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 16,
+                    isShard: true,
+                    shimmer: Math.random()
                 });
             }
-            // Add central specular sparkle
-            for (let i = 0; i < 6; i++) {
+
+            // 3. Specular Stardust Sparkles
+            for (let i = 0; i < 8; i++) {
                 const angle = Math.random() * Math.PI * 2;
-                const speed = 80 + Math.random() * 120;
+                const speed = 100 + Math.random() * 140;
                 this.particles.push({
                     x, y,
                     vx: Math.cos(angle) * speed,
                     vy: Math.sin(angle) * speed,
-                    size: 2 + Math.random() * 3,
+                    size: 2.0 + Math.random() * 2.5,
                     color: '#ffffff',
                     alpha: 1.0,
-                    life: 0.25 + Math.random() * 0.15,
-                    maxLife: 0.4,
+                    life: 0.25 + Math.random() * 0.2,
+                    maxLife: 0.45,
                     rot: 0,
                     rotSpeed: 0,
-                    isShard: false
+                    isShard: false,
+                    shimmer: 0
                 });
             }
         }
 
-        spawnSpark(x, y, color = '#ffffff') {
-            for (let i = 0; i < 8; i++) {
+        // High-Intensity Multi-Stage Bomb Explosion
+        spawnBombExplosion(x, y) {
+            this.screenShake = 16.0;
+
+            // Intense Fire Shockwave
+            this.shockwaves.push({
+                x, y,
+                radius: 15,
+                maxRadius: 180,
+                color: '#ff5500',
+                alpha: 1.0,
+                growth: 450
+            });
+            this.shockwaves.push({
+                x, y,
+                radius: 5,
+                maxRadius: 120,
+                color: '#ffcc00',
+                alpha: 0.9,
+                growth: 320
+            });
+
+            // 40+ Fiery Embers & Obsidian Shrapnel
+            for (let i = 0; i < 42; i++) {
                 const angle = Math.random() * Math.PI * 2;
-                const speed = 60 + Math.random() * 120;
+                const speed = 180 + Math.random() * 420;
+                const isEmber = Math.random() > 0.4;
+                this.particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 100,
+                    size: 4.0 + Math.random() * 7.0,
+                    color: isEmber ? (Math.random() > 0.5 ? '#ff3300' : '#ffaa00') : '#202430',
+                    alpha: 1.0,
+                    life: 0.5 + Math.random() * 0.4,
+                    maxLife: 0.9,
+                    rot: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 20,
+                    isShard: true,
+                    shimmer: Math.random()
+                });
+            }
+        }
+
+        // Screen-wide Lightning Arc & Plasma Sparks
+        spawnLightningShockwave(rowY) {
+            this.screenShake = 10.0;
+            this.shockwaves.push({
+                x: SHOOTER_X,
+                y: rowY,
+                radius: 10,
+                maxRadius: 260,
+                color: PALETTE.AQUA,
+                alpha: 1.0,
+                growth: 600
+            });
+
+            for (let x = 80; x <= 640; x += 30) {
+                for (let k = 0; k < 4; k++) {
+                    const angle = (Math.random() - 0.5) * Math.PI;
+                    const speed = 120 + Math.random() * 260;
+                    this.particles.push({
+                        x: x + (Math.random() - 0.5) * 20,
+                        y: rowY,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        size: 3.0 + Math.random() * 4.0,
+                        color: PALETTE.CRYSTAL_BLUE,
+                        alpha: 1.0,
+                        life: 0.3 + Math.random() * 0.25,
+                        maxLife: 0.55,
+                        rot: 0,
+                        rotSpeed: 0,
+                        isShard: true,
+                        shimmer: 1.0
+                    });
+                }
+            }
+        }
+
+        spawnSpark(x, y, color = '#ffffff') {
+            for (let i = 0; i < 10; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 80 + Math.random() * 160;
                 this.particles.push({
                     x, y,
                     vx: Math.cos(angle) * speed,
@@ -370,11 +477,12 @@
                     size: 2.5,
                     color,
                     alpha: 1.0,
-                    life: 0.2,
-                    maxLife: 0.2,
+                    life: 0.22,
+                    maxLife: 0.22,
                     rot: 0,
                     rotSpeed: 0,
-                    isShard: false
+                    isShard: false,
+                    shimmer: 0
                 });
             }
         }
@@ -385,70 +493,115 @@
                 text,
                 color,
                 alpha: 1.0,
-                vy: -75,
-                scale: 0.5,
-                life: 0.65
+                vy: -80,
+                scale: 0.4,
+                life: 0.7
             });
         }
 
         spawnCombo(x, y, comboCount) {
             this.comboPopups.push({
-                x, y: y - 30,
+                x, y: y - 35,
                 text: `COMBO ×${comboCount}!`,
                 alpha: 1.0,
-                scale: 0.6,
-                targetScale: 1.15,
-                vy: -50,
-                life: 0.85
+                scale: 0.5,
+                targetScale: 1.2,
+                vy: -55,
+                life: 0.95
             });
         }
 
         update(dt) {
+            if (this.screenShake > 0) {
+                this.screenShake = Math.max(0, this.screenShake - dt * 35.0);
+            }
+
+            // Update expanding shockwaves
+            for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+                const sw = this.shockwaves[i];
+                sw.radius += sw.growth * dt;
+                sw.alpha = Math.max(0, 1.0 - (sw.radius / sw.maxRadius));
+                if (sw.radius >= sw.maxRadius) {
+                    this.shockwaves.splice(i, 1);
+                }
+            }
+
+            // Update particles
             for (let i = this.particles.length - 1; i >= 0; i--) {
                 const p = this.particles[i];
                 p.x += p.vx * dt;
                 p.y += p.vy * dt;
-                p.vy += 450 * dt; // Gravity
+                p.vy += 500 * dt; // Gravity
                 p.rot += p.rotSpeed * dt;
                 p.life -= dt;
                 p.alpha = Math.max(0, p.life / p.maxLife);
                 if (p.life <= 0) this.particles.splice(i, 1);
             }
 
+            // Update score texts
             for (let i = this.scorePopups.length - 1; i >= 0; i--) {
                 const s = this.scorePopups[i];
                 s.y += s.vy * dt;
                 s.life -= dt;
-                s.scale = Math.min(1.0, s.scale + dt * 4.0);
-                s.alpha = Math.max(0, s.life / 0.65);
+                s.scale = Math.min(1.0, s.scale + dt * 4.5);
+                s.alpha = Math.max(0, s.life / 0.7);
                 if (s.life <= 0) this.scorePopups.splice(i, 1);
             }
 
+            // Update combo banners
             for (let i = this.comboPopups.length - 1; i >= 0; i--) {
                 const c = this.comboPopups[i];
                 c.y += c.vy * dt;
                 c.life -= dt;
-                if (c.scale < c.targetScale) c.scale += dt * 3.5;
-                c.alpha = Math.max(0, c.life / 0.85);
+                if (c.scale < c.targetScale) c.scale += dt * 4.0;
+                c.alpha = Math.max(0, c.life / 0.95);
                 if (c.life <= 0) this.comboPopups.splice(i, 1);
             }
         }
 
         draw(ctx) {
-            // Draw particles
+            // 1. Draw Shockwave Ripples (Expanding Glass Refraction Rings)
+            for (const sw of this.shockwaves) {
+                ctx.save();
+                ctx.globalAlpha = sw.alpha * 0.75;
+                ctx.strokeStyle = sw.color;
+                ctx.lineWidth = 4.5;
+                ctx.shadowColor = sw.color;
+                ctx.shadowBlur = 14;
+                ctx.beginPath();
+                ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Inner bright white rim
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(sw.x, sw.y, Math.max(1, sw.radius - 2), 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 2. Draw 3D Shards & Particles
             for (const p of this.particles) {
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.globalAlpha = p.alpha;
                 ctx.fillStyle = p.color;
+
                 if (p.isShard) {
                     ctx.rotate(p.rot);
+                    // Faceted Glass Polygon
                     ctx.beginPath();
                     ctx.moveTo(-p.size, -p.size);
-                    ctx.lineTo(p.size * 1.2, -p.size * 0.4);
-                    ctx.lineTo(p.size * 0.4, p.size);
+                    ctx.lineTo(p.size * 1.3, -p.size * 0.3);
+                    ctx.lineTo(p.size * 0.4, p.size * 1.1);
                     ctx.closePath();
                     ctx.fill();
+
+                    // Specular Highlight Edge
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
                 } else {
                     ctx.beginPath();
                     ctx.arc(0, 0, p.size, 0, Math.PI * 2);
@@ -457,56 +610,57 @@
                 ctx.restore();
             }
 
-            // Draw Score Popups (Section 26: White glass text + soft colored glow)
+            // 3. Draw Floating Glass Score Popups
             for (const s of this.scorePopups) {
                 ctx.save();
                 ctx.translate(s.x, s.y);
                 ctx.scale(s.scale, s.scale);
                 ctx.globalAlpha = s.alpha;
-                ctx.font = 'bold 28px "Segoe UI", Roboto, sans-serif';
+                ctx.font = 'bold 30px "Outfit", "Segoe UI", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                // Glow
+                // Glow & Stroke
                 ctx.shadowColor = s.color;
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 12;
+                ctx.strokeStyle = 'rgba(10, 16, 35, 0.85)';
+                ctx.lineWidth = 4;
+                ctx.strokeText(s.text, 0, 0);
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(s.text, 0, 0);
                 ctx.restore();
             }
 
-            // Draw Combo Popups (Section 25: Glass Capsule + Rainbow Gradient)
+            // 4. Draw Combo Glass Capsules
             for (const c of this.comboPopups) {
                 ctx.save();
                 ctx.translate(c.x, c.y);
                 ctx.scale(c.scale, c.scale);
                 ctx.globalAlpha = c.alpha;
 
-                // Glass Capsule
-                const capW = 200;
-                const capH = 46;
-                const capR = 23;
-                ctx.shadowColor = PALETTE.AQUA;
-                ctx.shadowBlur = 14;
+                const capW = 220;
+                const capH = 50;
+                const capR = 25;
 
-                ctx.fillStyle = 'rgba(16, 28, 55, 0.75)';
+                ctx.shadowColor = PALETTE.AQUA;
+                ctx.shadowBlur = 18;
+                ctx.fillStyle = 'rgba(12, 22, 48, 0.85)';
                 ctx.beginPath();
                 ctx.roundRect(-capW / 2, -capH / 2, capW, capH, capR);
                 ctx.fill();
 
                 ctx.strokeStyle = PALETTE.AQUA;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 2.5;
                 ctx.stroke();
 
-                // Top highlight line
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-                ctx.lineWidth = 2;
+                // Top Specular Highlight Line
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.lineWidth = 2.5;
                 ctx.beginPath();
-                ctx.roundRect(-capW / 2 + 10, -capH / 2 + 3, capW - 20, 2, 1);
+                ctx.roundRect(-capW / 2 + 12, -capH / 2 + 3, capW - 24, 2, 1);
                 ctx.stroke();
 
-                // Text
                 ctx.shadowBlur = 0;
-                ctx.font = 'bold 22px "Segoe UI", Roboto, sans-serif';
+                ctx.font = 'bold 24px "Outfit", "Segoe UI", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#ffffff';
@@ -518,7 +672,7 @@
     }
 
     // =========================================================================
-    // 4. SAVE SYSTEM V3 (Section 6, 7, 34)
+    // 4. PERSISTENCE SYSTEM (Save V3)
     // =========================================================================
     class SaveSystem {
         constructor() {
@@ -545,7 +699,7 @@
                 const parsed = JSON.parse(raw);
                 return { ...defaultData, ...parsed };
             } catch (e) {
-                console.warn('Save corrupted or unavailable, resetting to defaults.', e);
+                console.warn('Save reset to defaults.', e);
                 return defaultData;
             }
         }
@@ -554,7 +708,7 @@
             try {
                 localStorage.setItem(this.storageKey, JSON.stringify(this.data));
             } catch (e) {
-                console.error('LocalStorage write failed:', e);
+                console.error('Save failed:', e);
             }
         }
 
@@ -565,14 +719,12 @@
             if (score > prevScore) this.data.highScores[levelId] = score;
             if (stars > prevStars) this.data.starRatings[levelId] = stars;
 
-            // Recalculate total stars
             let total = 0;
             for (const lvl in this.data.starRatings) {
                 total += this.data.starRatings[lvl] || 0;
             }
             this.data.totalStars = total;
 
-            // Unlock next level & world
             if (levelId >= this.data.unlockedLevel && stars > 0) {
                 this.data.unlockedLevel = Math.min(30, levelId + 1);
             }
@@ -693,13 +845,13 @@
             const darkFur = '#382014';
             const crystalGem = PALETTE.AQUA;
 
-            // Ground shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            // Ground Ambient Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
             ctx.beginPath();
             ctx.ellipse(0, 36, 24, 8, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // 1. Bushy Fluffy Tail with White Tip
+            // 1. Bushy Fluffy Tail with White Tip & Specular Light
             ctx.save();
             ctx.translate(24, 12);
             ctx.rotate(this.tailAngle);
@@ -782,7 +934,7 @@
             ctx.fill();
             ctx.restore();
 
-            // 5. Glossy Eyes with Upper-Left Specular Reflections (Section 36, 41)
+            // 5. Glossy Anime-Style Eyes with Upper-Left Specular Highlights
             let lookX = 0;
             let lookY = 0;
             if (this.state === 'AIM') {
@@ -802,7 +954,7 @@
                 ctx.arc(rightEyeX, eyeY, 5.5 * this.blink, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Upper-Left Primary Specular Highlights
+                // Upper-Left Primary Specular Glints
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                 ctx.beginPath();
                 ctx.arc(leftEyeX - 2.0, eyeY - 2.0, 2.2 * this.blink, 0, Math.PI * 2);
@@ -824,7 +976,7 @@
                 ctx.stroke();
             }
 
-            // 6. Cute Nose & Mouth
+            // 6. Nose & Mouth
             ctx.fillStyle = darkFur;
             ctx.beginPath();
             ctx.arc(0, headY + 4, 2.5, 0, Math.PI * 2);
@@ -848,14 +1000,14 @@
             // 7. Radiant Crystal Heart Pendant
             const glowPulse = Math.sin(this.time * 4.0) * 0.25 + 0.75;
             ctx.shadowColor = crystalGem;
-            ctx.shadowBlur = 8 * glowPulse;
+            ctx.shadowBlur = 10 * glowPulse;
             ctx.fillStyle = crystalGem;
             ctx.beginPath();
-            ctx.arc(0, 14, 5.0, 0, Math.PI * 2);
+            ctx.arc(0, 14, 5.5, 0, Math.PI * 2);
             ctx.fill();
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(-1.5, 12.5, 1.8, 0, Math.PI * 2);
+            ctx.arc(-1.5, 12.5, 2.0, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
 
@@ -864,7 +1016,7 @@
     }
 
     // =========================================================================
-    // 7. GAME ENGINE & CONTROLLER
+    // 7. GAME ENGINE & MASTER CONTROLLER
     // =========================================================================
     class GameEngine {
         constructor() {
@@ -899,7 +1051,6 @@
 
             this.initGrid();
             this.setupInput();
-            this.bindEvents();
 
             requestAnimationFrame(this.loop.bind(this));
         }
@@ -939,7 +1090,6 @@
 
             this.initGrid();
 
-            // Populate grid layout
             const rows = levelData.grid_layout || [];
             for (let r = 0; r < rows.length; r++) {
                 const rowStr = rows[r];
@@ -1052,7 +1202,7 @@
             p.x += p.vx * dt;
             p.y += p.vy * dt;
 
-            // Wall bounces with spark
+            // Wall bounces with specular spark
             if (p.x <= 72 + BUBBLE_RADIUS) {
                 p.x = 72 + BUBBLE_RADIUS;
                 p.vx = Math.abs(p.vx);
@@ -1194,7 +1344,8 @@
                 const pos = getGridPosition(m.r, m.c);
                 const theme = BUBBLE_THEMES[cell.color] || BUBBLE_THEMES[BubbleColor.RED];
 
-                this.particles.spawnGlassShards(pos.x, pos.y, theme.base, 14);
+                // Extreme Graphical Glass Shatter
+                this.particles.spawnGlassPop(pos.x, pos.y, theme.base, matches.length >= 5);
                 this.grid[m.r][m.c] = null;
                 totalGain += scorePerBubble;
 
@@ -1217,7 +1368,7 @@
         executeBomb(centerR, centerC) {
             sound.playBomb();
             const pos = getGridPosition(centerR, centerC);
-            this.particles.spawnGlassShards(pos.x, pos.y, '#ff4400', 30);
+            this.particles.spawnBombExplosion(pos.x, pos.y);
 
             const cellsToPop = [{ r: centerR, c: centerC }, ...getNeighbors(centerR, centerC)];
             let gain = 0;
@@ -1225,9 +1376,9 @@
             for (const cell of cellsToPop) {
                 if (this.grid[cell.r][cell.c]) {
                     const cPos = getGridPosition(cell.r, cell.c);
-                    this.particles.spawnGlassShards(cPos.x, cPos.y, '#ff8800', 10);
+                    this.particles.spawnGlassPop(cPos.x, cPos.y, '#ff6600', true);
                     this.grid[cell.r][cell.c] = null;
-                    gain += 30;
+                    gain += 35;
                 }
             }
             this.score += gain;
@@ -1237,19 +1388,22 @@
 
         executeLightning(row) {
             sound.playLightning();
+            const rowY = 160 + row * ROW_HEIGHT;
+            this.particles.spawnLightningShockwave(rowY);
+
             const cols = row % 2 === 0 ? GRID_COLS_EVEN : GRID_COLS_ODD;
             let gain = 0;
 
             for (let c = 0; c < cols; c++) {
                 if (this.grid[row][c]) {
                     const pos = getGridPosition(row, c);
-                    this.particles.spawnGlassShards(pos.x, pos.y, PALETTE.AQUA, 12);
+                    this.particles.spawnGlassPop(pos.x, pos.y, PALETTE.AQUA, true);
                     this.grid[row][c] = null;
-                    gain += 25;
+                    gain += 30;
                 }
             }
             this.score += gain;
-            this.particles.spawnScore(SHOOTER_X, 160 + row * ROW_HEIGHT, `+${gain}`, PALETTE.AQUA);
+            this.particles.spawnScore(SHOOTER_X, rowY, `+${gain}`, PALETTE.AQUA);
             this.lumi.state = 'CHEER';
         }
 
@@ -1257,7 +1411,6 @@
             const visited = new Set();
             const queue = [];
 
-            // Anchor is row 0
             for (let c = 0; c < GRID_COLS_EVEN; c++) {
                 if (this.grid[0][c]) {
                     visited.add(`0,${c}`);
@@ -1296,10 +1449,10 @@
                 this.droppingBubbles.push({
                     x: pos.x,
                     y: pos.y,
-                    vx: (Math.random() - 0.5) * 120,
-                    vy: -100 - Math.random() * 150,
+                    vx: (Math.random() - 0.5) * 140,
+                    vy: -120 - Math.random() * 160,
                     rot: 0,
-                    rotSpeed: (Math.random() - 0.5) * 6,
+                    rotSpeed: (Math.random() - 0.5) * 8,
                     color: cell.color,
                     special: cell.special
                 });
@@ -1307,7 +1460,7 @@
                 dropGain += 20;
             }
             this.score += dropGain;
-            this.particles.spawnScore(SHOOTER_X, 500, `DROP +${dropGain}!`, PALETTE.MINT);
+            this.particles.spawnScore(SHOOTER_X, 520, `DROP +${dropGain}!`, PALETTE.MINT);
         }
 
         unlockAdjacentLocked(hitR, hitC) {
@@ -1350,7 +1503,7 @@
                 return;
             }
 
-            // Check Danger Line Breach (Bubble in row >= 10)
+            // Check Danger Line Breach
             for (let r = DANGER_ROW; r < MAX_ROWS; r++) {
                 const cols = r % 2 === 0 ? GRID_COLS_EVEN : GRID_COLS_ODD;
                 for (let c = 0; c < cols; c++) {
@@ -1385,9 +1538,9 @@
             this.loseReason = reason;
         }
 
-        // =====================================================================
-        // 8. INPUT SYSTEM
-        // =====================================================================
+        // =========================================================================
+        // 8. INPUT HANDLING & RESPONSIVE TOUCH
+        // =========================================================================
         setupInput() {
             const getCanvasCoords = (e) => {
                 const rect = this.canvas.getBoundingClientRect();
@@ -1413,7 +1566,6 @@
                     const dx = pos.x - SHOOTER_X;
                     const dy = pos.y - SHOOTER_Y;
                     let angle = Math.atan2(dy, dx);
-                    // Constrain aim arc (15 deg to 165 deg upwards)
                     angle = Math.max(-Math.PI + 0.25, Math.min(-0.25, angle));
                     this.aimAngle = angle;
                     this.isAiming = true;
@@ -1445,7 +1597,7 @@
             }
 
             if (this.state === 'MENU') {
-                // Play Button (Section 9: Large primary capsule)
+                // Play Button
                 if (x >= 200 && x <= 520 && y >= 640 && y <= 725) {
                     sound.playClick();
                     this.state = 'MAP';
@@ -1464,14 +1616,14 @@
             }
 
             if (this.state === 'MAP') {
-                // Back to Menu Button
+                // Back Button
                 if (x >= 40 && x <= 140 && y >= 40 && y <= 90) {
                     sound.playClick();
                     this.state = 'MENU';
                     return;
                 }
 
-                // World switch tabs
+                // World Tabs
                 for (let w = 1; w <= 3; w++) {
                     const tabX = 140 + (w - 1) * 150;
                     if (x >= tabX - 65 && x <= tabX + 65 && y >= 110 && y <= 160) {
@@ -1484,7 +1636,7 @@
                     }
                 }
 
-                // Level Nodes Click Detection
+                // Level Nodes
                 const startLvl = (this.currentWorldId - 1) * 10 + 1;
                 for (let i = 0; i < 10; i++) {
                     const lvl = startLvl + i;
@@ -1502,14 +1654,14 @@
             }
 
             if (this.state === 'GAMEPLAY') {
-                // Pause Icon Button (Top Right)
+                // Pause Icon
                 if (x >= 630 && x <= 690 && y >= 30 && y <= 90) {
                     sound.playClick();
                     this.state = 'PAUSE';
                     return;
                 }
 
-                // Swap Ammo Button (Click on Next Ammo preview)
+                // Swap Ammo
                 if (x >= SHOOTER_X - 150 && x <= SHOOTER_X - 70 && y >= SHOOTER_Y - 40 && y <= SHOOTER_Y + 40) {
                     this.swapBubbles();
                     return;
@@ -1518,17 +1670,14 @@
             }
 
             if (this.state === 'PAUSE') {
-                // Resume
                 if (x >= 220 && x <= 500 && y >= 520 && y <= 590) {
                     sound.playClick();
                     this.state = 'GAMEPLAY';
                 }
-                // Restart
                 if (x >= 220 && x <= 500 && y >= 610 && y <= 680) {
                     sound.playClick();
                     this.loadLevel(this.currentLevelId);
                 }
-                // World Map
                 if (x >= 220 && x <= 500 && y >= 700 && y <= 770) {
                     sound.playClick();
                     this.state = 'MAP';
@@ -1537,7 +1686,6 @@
             }
 
             if (this.state === 'WIN') {
-                // Next Level
                 if (x >= 220 && x <= 500 && y >= 720 && y <= 795) {
                     sound.playClick();
                     if (this.currentLevelId < 30) {
@@ -1546,7 +1694,6 @@
                         this.state = 'MAP';
                     }
                 }
-                // Map
                 if (x >= 220 && x <= 500 && y >= 815 && y <= 885) {
                     sound.playClick();
                     this.state = 'MAP';
@@ -1555,12 +1702,10 @@
             }
 
             if (this.state === 'LOSE') {
-                // Retry
                 if (x >= 220 && x <= 500 && y >= 700 && y <= 775) {
                     sound.playClick();
                     this.loadLevel(this.currentLevelId);
                 }
-                // Map
                 if (x >= 220 && x <= 500 && y >= 795 && y <= 865) {
                     sound.playClick();
                     this.state = 'MAP';
@@ -1569,20 +1714,17 @@
             }
 
             if (this.state === 'SETTINGS') {
-                // Toggle Sound
                 if (x >= 460 && x <= 540 && y >= 450 && y <= 500) {
                     sound.playClick();
                     sound.enabled = !sound.enabled;
                     saveSystem.data.soundEnabled = sound.enabled;
                     saveSystem.save();
                 }
-                // Toggle Accessibility
                 if (x >= 460 && x <= 540 && y >= 530 && y <= 580) {
                     sound.playClick();
                     saveSystem.data.accessibilityGlyphs = !saveSystem.data.accessibilityGlyphs;
                     saveSystem.save();
                 }
-                // Back
                 if (x >= 250 && x <= 470 && y >= 660 && y <= 730) {
                     sound.playClick();
                     this.state = 'MENU';
@@ -1591,7 +1733,6 @@
             }
 
             if (this.state === 'TUTORIAL') {
-                // Back to Menu
                 if (x >= 250 && x <= 470 && y >= 960 && y <= 1030) {
                     sound.playClick();
                     this.state = 'MENU';
@@ -1601,7 +1742,6 @@
         }
 
         getLevelNodePosition(index) {
-            // S-curve winding path from bottom to top of world map
             const startY = 1050;
             const yStep = 90;
             const y = startY - index * yStep;
@@ -1610,15 +1750,9 @@
             return { x, y };
         }
 
-        bindEvents() {
-            window.addEventListener('resize', () => {
-                // Canvas scales responsively via CSS
-            });
-        }
-
-        // =====================================================================
-        // 9. RENDER PIPELINE & VISUAL DESIGN ENGINE
-        // =====================================================================
+        // =========================================================================
+        // 9. MASTER RENDER PIPELINE
+        // =========================================================================
         loop(timestamp) {
             const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
             this.lastTime = timestamp;
@@ -1637,7 +1771,6 @@
             if (this.state === 'GAMEPLAY') {
                 this.updateProjectile(dt);
 
-                // Update falling bubbles
                 for (let i = this.droppingBubbles.length - 1; i >= 0; i--) {
                     const b = this.droppingBubbles[i];
                     b.vy += 1200 * dt;
@@ -1653,8 +1786,16 @@
 
         render() {
             const ctx = this.ctx;
-            ctx.clearRect(0, 0, V_WIDTH, V_HEIGHT);
+            ctx.save();
 
+            // Screen Shake Offset
+            if (this.particles.screenShake > 0) {
+                const shakeX = (Math.random() - 0.5) * this.particles.screenShake;
+                const shakeY = (Math.random() - 0.5) * this.particles.screenShake;
+                ctx.translate(shakeX, shakeY);
+            }
+
+            ctx.clearRect(0, 0, V_WIDTH, V_HEIGHT);
             this.drawBackground();
 
             switch (this.state) {
@@ -1691,10 +1832,11 @@
             }
 
             this.particles.draw(ctx);
+            ctx.restore();
         }
 
         // ---------------------------------------------------------------------
-        // 8-LAYER COMPOSITE GLASS BUBBLE RENDERING (Section 12-17)
+        // 8-LAYER ULTRA-GLOSSY GLASS BUBBLE RENDERING
         // ---------------------------------------------------------------------
         drawBubble(x, y, color, special = SpecialType.NONE, locked = false, scale = 1.0) {
             const ctx = this.ctx;
@@ -1704,23 +1846,23 @@
 
             const theme = BUBBLE_THEMES[color] || BUBBLE_THEMES[BubbleColor.RED];
 
-            // Layer 1: Soft Colored Ambient Outer Glow (Section 12.1)
+            // Layer 1: Soft Ambient Colored Outer Halo Glow
             ctx.shadowColor = theme.glow;
-            ctx.shadowBlur = 12;
+            ctx.shadowBlur = 14;
 
-            // Layer 2: Offset Soft Drop Shadow (Section 17: +3.5px X, +4.5px Y)
-            ctx.fillStyle = 'rgba(6, 10, 26, 0.38)';
+            // Layer 2: Offset Soft Drop Shadow (+3.5px X, +4.5px Y)
+            ctx.fillStyle = 'rgba(6, 10, 26, 0.42)';
             ctx.beginPath();
             ctx.arc(3.5, 4.5, BUBBLE_RADIUS * 0.94, 0, Math.PI * 2);
             ctx.fill();
 
-            // Layer 3: Spherical Foundation & Deep Dark Base
+            // Layer 3: Dark Spherical Foundation Base
             ctx.fillStyle = theme.deep;
             ctx.beginPath();
             ctx.arc(0, 0, BUBBLE_RADIUS, 0, Math.PI * 2);
             ctx.fill();
 
-            // Layer 4: Spherical 3D Light Gradient (Upper-Left to Lower-Right - Section 13)
+            // Layer 4: Spherical 3D Light Gradient (Upper-Left to Lower-Right)
             const bodyGrad = ctx.createRadialGradient(-10, -10, 3, -4, -4, BUBBLE_RADIUS * 0.95);
             bodyGrad.addColorStop(0, theme.light);
             bodyGrad.addColorStop(0.35, theme.base);
@@ -1731,7 +1873,7 @@
             ctx.arc(-2, -2, BUBBLE_RADIUS * 0.92, 0, Math.PI * 2);
             ctx.fill();
 
-            // Layer 5: Inner Refraction Core & Soft Lower Ambient Bounce
+            // Layer 5: Inner Bottom-Right Ambient Bounce Light
             const bounceGrad = ctx.createRadialGradient(8, 10, 2, 8, 10, BUBBLE_RADIUS * 0.75);
             bounceGrad.addColorStop(0, theme.light);
             bounceGrad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -1741,51 +1883,100 @@
             ctx.fill();
 
             // Layer 6: Upper-Left Soft Illumination Dome
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.40)';
             ctx.beginPath();
             ctx.ellipse(-12, -12, 14, 8, -Math.PI / 4, 0, Math.PI * 2);
             ctx.fill();
 
-            // Layer 7: Primary Specular Highlight (Crisp White Glass Glint - Section 14)
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+            // Layer 7: Primary Specular Highlight (Crisp White Glass Glint)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
             ctx.beginPath();
             ctx.ellipse(-14, -14, 7, 3.5, -Math.PI / 4, 0, Math.PI * 2);
             ctx.fill();
 
             // Layer 8: Secondary Specular Glint
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.80)';
             ctx.beginPath();
             ctx.arc(-6, -20, 2.5, 0, Math.PI * 2);
             ctx.fill();
 
-            // Translucent Glass Rim Stroke (Section 16)
+            // Translucent Glass Rim Stroke
             ctx.strokeStyle = theme.rim;
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.arc(0, 0, BUBBLE_RADIUS - 0.75, 0, Math.PI * 2);
             ctx.stroke();
 
-            ctx.shadowBlur = 0; // Reset shadow
+            ctx.shadowBlur = 0;
 
-            // Special Bubble Crystal Overlays (Section 12, 48)
+            // Special Overlays
             if (special === SpecialType.BOMB) {
-                this.drawBombOverlay();
+                const pulse = Math.sin(this.totalTime * 6.0) * 0.25 + 0.75;
+                ctx.fillStyle = `rgba(255, 100, 20, ${0.45 * pulse})`;
+                ctx.beginPath();
+                ctx.arc(0, 0, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.font = 'bold 26px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('💣', 0, 2);
             } else if (special === SpecialType.RAINBOW) {
-                this.drawRainbowOverlay();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, 18, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🌈', 0, 2);
             } else if (special === SpecialType.LIGHTNING) {
-                this.drawLightningOverlay();
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = PALETTE.AQUA;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(3, -16);
+                ctx.lineTo(-9, 2);
+                ctx.lineTo(0, 2);
+                ctx.lineTo(-3, 16);
+                ctx.lineTo(9, -2);
+                ctx.lineTo(0, -2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowBlur = 0;
             } else if (special === SpecialType.STONE) {
-                this.drawStoneOverlay();
+                ctx.fillStyle = '#4c5263';
+                ctx.beginPath();
+                ctx.arc(0, 0, BUBBLE_RADIUS - 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-14, -14);
+                ctx.lineTo(14, -12);
+                ctx.lineTo(18, 14);
+                ctx.lineTo(-8, 16);
+                ctx.closePath();
+                ctx.stroke();
             }
 
-            // Locked Frost Ice Crystal Shield (Section 48)
             if (locked) {
-                this.drawLockedIceShield();
+                ctx.fillStyle = 'rgba(180, 240, 255, 0.5)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.roundRect(-BUBBLE_RADIUS + 3, -BUBBLE_RADIUS + 3, BUBBLE_DIAMETER - 6, BUBBLE_DIAMETER - 6, 8);
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(-16, -16);
+                ctx.lineTo(0, 4);
+                ctx.lineTo(16, -8);
+                ctx.stroke();
             }
 
-            // Optional Accessibility Glyph
             if (saveSystem.data.accessibilityGlyphs && special === SpecialType.NONE) {
-                ctx.font = 'bold 18px "Segoe UI", sans-serif';
+                ctx.font = 'bold 18px "Outfit", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -1797,117 +1988,30 @@
             ctx.restore();
         }
 
-        drawBombOverlay() {
-            const ctx = this.ctx;
-            const pulse = Math.sin(this.totalTime * 6.0) * 0.25 + 0.75;
-            ctx.fillStyle = `rgba(255, 100, 20, ${0.4 * pulse})`;
-            ctx.beginPath();
-            ctx.arc(0, 0, 16, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.font = 'bold 26px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('💣', 0, 2);
-        }
-
-        drawRainbowOverlay() {
-            const ctx = this.ctx;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.arc(0, 0, 18, 0, Math.PI * 2);
-            ctx.stroke();
-
-            ctx.font = 'bold 24px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('🌈', 0, 2);
-        }
-
-        drawLightningOverlay() {
-            const ctx = this.ctx;
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = PALETTE.AQUA;
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.moveTo(3, -16);
-            ctx.lineTo(-9, 2);
-            ctx.lineTo(0, 2);
-            ctx.lineTo(-3, 16);
-            ctx.lineTo(9, -2);
-            ctx.lineTo(0, -2);
-            ctx.closePath();
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-
-        drawStoneOverlay() {
-            const ctx = this.ctx;
-            ctx.fillStyle = '#4c5263';
-            ctx.beginPath();
-            ctx.arc(0, 0, BUBBLE_RADIUS - 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Geometric quartz facets
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(-14, -14);
-            ctx.lineTo(14, -12);
-            ctx.lineTo(18, 14);
-            ctx.lineTo(-8, 16);
-            ctx.closePath();
-            ctx.stroke();
-        }
-
-        drawLockedIceShield() {
-            const ctx = this.ctx;
-            ctx.fillStyle = 'rgba(180, 240, 255, 0.45)';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.lineWidth = 2.5;
-
-            ctx.beginPath();
-            ctx.roundRect(-BUBBLE_RADIUS + 3, -BUBBLE_RADIUS + 3, BUBBLE_DIAMETER - 6, BUBBLE_DIAMETER - 6, 8);
-            ctx.fill();
-            ctx.stroke();
-
-            // Frost crack line
-            ctx.beginPath();
-            ctx.moveTo(-16, -16);
-            ctx.lineTo(0, 4);
-            ctx.lineTo(16, -8);
-            ctx.stroke();
-        }
-
         // ---------------------------------------------------------------------
-        // GLASS UI COMPONENT LIBRARY (Section 6, 7, 8, 50)
+        // GLASS UI COMPONENT PRIMITIVES
         // ---------------------------------------------------------------------
-        drawGlassPanel(x, y, w, h, radius = 24, alpha = 0.35, borderGlint = true) {
+        drawGlassPanel(x, y, w, h, radius = 24, alpha = 0.38, borderGlint = true) {
             const ctx = this.ctx;
             ctx.save();
 
-            // Outer drop shadow
-            ctx.shadowColor = 'rgba(0, 0, 15, 0.45)';
-            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'rgba(0, 0, 20, 0.5)';
+            ctx.shadowBlur = 14;
             ctx.shadowOffsetY = 6;
 
-            // Semi-transparent glass body
-            ctx.fillStyle = `rgba(16, 24, 52, ${alpha})`;
+            ctx.fillStyle = `rgba(14, 22, 48, ${alpha})`;
             ctx.beginPath();
             ctx.roundRect(x, y, w, h, radius);
             ctx.fill();
             ctx.shadowBlur = 0;
             ctx.shadowOffsetY = 0;
 
-            // Subtle border
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.38)';
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            // Top specular highlight edge (Section 6)
             if (borderGlint) {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
                 ctx.lineWidth = 2.5;
                 ctx.beginPath();
                 ctx.roundRect(x + 12, y + 2, w - 24, 2, 1);
@@ -1922,25 +2026,23 @@
             ctx.save();
 
             if (isPrimary) {
-                // Primary Capsule: Aqua -> Blue Gradient (Section 9)
                 ctx.shadowColor = PALETTE.AQUA;
-                ctx.shadowBlur = 16;
+                ctx.shadowBlur = 18;
                 ctx.shadowOffsetY = 4;
 
                 const grad = ctx.createLinearGradient(x, y, x, y + h);
-                grad.addColorStop(0, '#3ddbd9');
-                grad.addColorStop(1, '#257ae2');
+                grad.addColorStop(0, '#3ae0dc');
+                grad.addColorStop(1, '#2278e3');
 
                 ctx.fillStyle = grad;
                 ctx.beginPath();
                 ctx.roundRect(x, y, w, h, radius);
                 ctx.fill();
 
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
                 ctx.lineWidth = 2.5;
                 ctx.stroke();
 
-                // Top highlight glint
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
@@ -1948,16 +2050,15 @@
                 ctx.stroke();
 
                 ctx.shadowBlur = 0;
-                ctx.font = 'bold 26px "Segoe UI", Roboto, sans-serif';
+                ctx.font = 'bold 26px "Outfit", "Segoe UI", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(text, x + w / 2, y + h / 2 + 1);
             } else {
-                // Secondary Glass Button (Section 10)
-                this.drawGlassPanel(x, y, w, h, radius, 0.25, true);
+                this.drawGlassPanel(x, y, w, h, radius, 0.28, true);
 
-                ctx.font = 'bold 22px "Segoe UI", Roboto, sans-serif';
+                ctx.font = 'bold 22px "Outfit", "Segoe UI", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#ffffff';
@@ -1974,13 +2075,12 @@
 
             if (filled) {
                 ctx.shadowColor = PALETTE.SUNSHINE;
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 12;
                 ctx.fillStyle = PALETTE.SUNSHINE;
             } else {
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
             }
 
-            // 5-Point Crystal Star
             ctx.beginPath();
             for (let i = 0; i < 5; i++) {
                 ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * size, -Math.sin((18 + i * 72) * Math.PI / 180) * size);
@@ -1990,7 +2090,6 @@
             ctx.fill();
 
             if (filled) {
-                // Top-Left Glint
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(-size * 0.25, -size * 0.25, size * 0.2, 0, Math.PI * 2);
@@ -2001,13 +2100,13 @@
         }
 
         // ---------------------------------------------------------------------
-        // MULTI-WORLD FANTASY BACKGROUND (Section 4, 5, 49)
+        // BACKGROUND RENDERING
         // ---------------------------------------------------------------------
         drawBackground() {
             const ctx = this.ctx;
             const wData = WORLD_DATA[this.currentWorldId - 1] || WORLD_DATA[0];
 
-            // Layer 1: Dark Fantasy Gradient
+            // Multi-Stage Fantasy Sky Gradient
             const grad = ctx.createLinearGradient(0, 0, 0, V_HEIGHT);
             grad.addColorStop(0, wData.bgTop);
             grad.addColorStop(0.55, wData.bgMid);
@@ -2015,33 +2114,33 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
 
-            // Layer 2: Soft Atmospheric Glow Orbs
+            // Ambient Glow Orb
             ctx.fillStyle = wData.glow;
             ctx.beginPath();
             ctx.arc(360, 200, 320, 0, Math.PI * 2);
             ctx.fill();
 
-            // Layer 3: Floating Fireflies / Dust
+            // Floating Dust Fireflies
             const time = this.totalTime;
-            for (let i = 0; i < 16; i++) {
-                const phase = time * 0.8 + i * 1.3;
-                const fx = (i * 47 + Math.sin(phase) * 35) % V_WIDTH;
-                const fy = (1280 - (time * 25 + i * 80) % 1280);
-                const alpha = (Math.sin(phase) * 0.4 + 0.6) * 0.55;
+            for (let i = 0; i < 18; i++) {
+                const phase = time * 0.9 + i * 1.4;
+                const fx = (i * 45 + Math.sin(phase) * 35) % V_WIDTH;
+                const fy = (1280 - (time * 28 + i * 75) % 1280);
+                const alpha = (Math.sin(phase) * 0.4 + 0.6) * 0.6;
 
                 ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                 ctx.beginPath();
-                ctx.arc(fx, fy, 2.0, 0, Math.PI * 2);
+                ctx.arc(fx, fy, 2.2, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            // Layer 4: Playfield Glass Backing
+            // Playfield Glass Backing
             if (this.state === 'GAMEPLAY' || this.state === 'PAUSE' || this.state === 'WIN' || this.state === 'LOSE') {
-                ctx.fillStyle = 'rgba(8, 14, 30, 0.68)';
+                ctx.fillStyle = 'rgba(8, 14, 30, 0.72)';
                 ctx.fillRect(72, 160, 576, 1120);
 
                 // Side Crystal Pillars
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(72, 160);
@@ -2063,32 +2162,45 @@
         }
 
         // ---------------------------------------------------------------------
-        // VIEW RENDERERS
+        // VIEW RENDERERS & STUDIO JAVID BRANDING
         // ---------------------------------------------------------------------
         drawSplashView() {
             const ctx = this.ctx;
 
-            // Glass Title Banner
-            this.drawGlassPanel(110, 360, 500, 240, 28, 0.45, true);
+            // Studio Javid Logo Badge
+            this.drawGlassPanel(180, 240, 360, 60, 30, 0.35, true);
+            ctx.font = 'bold 18px "Outfit", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = PALETTE.AQUA;
+            ctx.fillText('STUDIO JAVID PRESENTS', 360, 276);
+
+            // Glass Title Card
+            this.drawGlassPanel(100, 360, 520, 240, 30, 0.50, true);
 
             ctx.shadowColor = PALETTE.AQUA;
-            ctx.shadowBlur = 18;
-            ctx.font = 'bold 58px "Segoe UI", Roboto, sans-serif';
+            ctx.shadowBlur = 22;
+            ctx.font = '900 62px "Outfit", "Segoe UI", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#ffffff';
             ctx.fillText('LUMI', 360, 440);
 
             ctx.shadowBlur = 0;
-            ctx.font = '600 24px "Segoe UI", Roboto, sans-serif';
+            ctx.font = '700 24px "Outfit", sans-serif';
             ctx.fillStyle = PALETTE.CRYSTAL_BLUE;
             ctx.fillText('BUBBLEWOOD CHRONICLE', 360, 500);
 
-            // Pulsing Tap to Start Glass Capsule
+            // Pulsing Tap to Start
             const pulse = Math.sin(this.totalTime * 4.0) * 0.2 + 0.8;
             ctx.globalAlpha = pulse;
-            this.drawGlassButton(200, 780, 320, 68, 'TAP TO START', true, 34);
+            this.drawGlassButton(200, 780, 320, 72, 'TAP TO START', true, 36);
             ctx.globalAlpha = 1.0;
+
+            // Footer Branding
+            ctx.font = '600 15px "Outfit", "Vazirmatn", sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+            ctx.textAlign = 'center';
+            ctx.fillText('Developed with Premium Glassmorphism by Studio Javid', 360, 1220);
 
             this.lumi.draw(ctx);
         }
@@ -2096,30 +2208,37 @@
         drawMenuView() {
             const ctx = this.ctx;
 
-            // Title Header
+            // Header Banner
             ctx.shadowColor = PALETTE.AQUA;
-            ctx.shadowBlur = 14;
-            ctx.font = 'bold 46px "Segoe UI", Roboto, sans-serif';
+            ctx.shadowBlur = 16;
+            ctx.font = '900 50px "Outfit", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText('LUMI', 360, 320);
-            ctx.font = '600 20px "Segoe UI", Roboto, sans-serif';
+            ctx.fillText('LUMI', 360, 310);
+            ctx.font = '600 20px "Outfit", sans-serif';
             ctx.fillStyle = PALETTE.AQUA;
-            ctx.fillText('Crystal Glass Bubblewood', 360, 365);
+            ctx.fillText('Crystal Glass Bubblewood', 360, 355);
             ctx.shadowBlur = 0;
 
             // Total Stars Badge
-            this.drawGlassPanel(270, 420, 180, 50, 25, 0.4, true);
-            this.drawCrystalStar(305, 445, 14, true);
-            ctx.font = 'bold 22px "Segoe UI", Roboto, sans-serif';
+            this.drawGlassPanel(270, 410, 180, 50, 25, 0.45, true);
+            this.drawCrystalStar(305, 435, 14, true);
+            ctx.font = 'bold 22px "Outfit", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(`${saveSystem.data.totalStars} / 90`, 375, 446);
+            ctx.fillText(`${saveSystem.data.totalStars} / 90`, 375, 436);
 
-            // Menu Buttons
+            // Action Buttons
             this.drawGlassButton(200, 640, 320, 75, 'PLAY GAME', true, 26);
             this.drawGlassButton(200, 750, 320, 68, 'SETTINGS', false, 24);
             this.drawGlassButton(200, 850, 320, 68, 'HOW TO PLAY', false, 24);
+
+            // Studio Javid Branding Pill
+            this.drawGlassPanel(220, 1180, 280, 44, 22, 0.25, true);
+            ctx.font = '600 14px "Outfit", "Vazirmatn", sans-serif';
+            ctx.fillStyle = PALETTE.AQUA;
+            ctx.textAlign = 'center';
+            ctx.fillText('Studio Javid (استودیو جاوید)', 360, 1206);
 
             this.lumi.draw(ctx);
         }
@@ -2127,24 +2246,24 @@
         drawWorldMapView() {
             const ctx = this.ctx;
 
-            // Top Header Panel
-            this.drawGlassPanel(30, 25, 660, 75, 22, 0.45, true);
+            // Header
+            this.drawGlassPanel(30, 25, 660, 75, 22, 0.48, true);
             this.drawGlassButton(45, 38, 95, 48, '← BACK', false, 16);
 
-            ctx.font = 'bold 26px "Segoe UI", Roboto, sans-serif';
+            ctx.font = 'bold 26px "Outfit", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#ffffff';
             ctx.fillText('WORLD MAP', 360, 62);
 
-            // Star Counter (Top Right)
+            // Star Counter
             this.drawCrystalStar(575, 62, 14, true);
-            ctx.font = 'bold 20px "Segoe UI", Roboto, sans-serif';
+            ctx.font = 'bold 20px "Outfit", sans-serif';
             ctx.textAlign = 'left';
             ctx.fillStyle = '#ffffff';
             ctx.fillText(`${saveSystem.data.totalStars}`, 598, 63);
 
-            // World Switch Tabs (Section 5, 34)
+            // World Tabs
             for (let w = 1; w <= 3; w++) {
                 const tabX = 140 + (w - 1) * 150;
                 const isSelected = this.currentWorldId === w;
@@ -2153,14 +2272,14 @@
 
                 this.drawGlassPanel(tabX - 65, 115, 130, 45, 14, isSelected ? 0.75 : 0.25, isSelected);
 
-                ctx.font = 'bold 16px "Segoe UI", Roboto, sans-serif';
+                ctx.font = 'bold 16px "Outfit", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = isSelected ? PALETTE.AQUA : (isLocked ? 'rgba(255,255,255,0.4)' : '#ffffff');
                 ctx.fillText(isLocked ? `🔒 ${reqStars}★` : `WORLD ${w}`, tabX, 138);
             }
 
-            // Glowing Crystal Path connecting level nodes (Section 34)
+            // Glowing Crystal Path
             ctx.save();
             ctx.strokeStyle = 'rgba(72, 229, 212, 0.45)';
             ctx.lineWidth = 6;
@@ -2172,7 +2291,6 @@
             }
             ctx.stroke();
 
-            // Animated light flow dash along path
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2.5;
             ctx.setLineDash([12, 18]);
@@ -2180,7 +2298,7 @@
             ctx.stroke();
             ctx.restore();
 
-            // Draw Level Nodes (Section 34, 35)
+            // Level Nodes
             const startLvl = (this.currentWorldId - 1) * 10 + 1;
             for (let i = 0; i < 10; i++) {
                 const lvl = startLvl + i;
@@ -2193,13 +2311,11 @@
                 ctx.translate(p.x, p.y);
 
                 if (isCurrent) {
-                    // Pulsing Outer Cyan Glow
                     const pulse = Math.sin(this.totalTime * 5.0) * 0.25 + 0.75;
                     ctx.shadowColor = PALETTE.AQUA;
                     ctx.shadowBlur = 18 * pulse;
                 }
 
-                // Node Base Crystal Sphere
                 ctx.fillStyle = isUnlocked ? (isCurrent ? '#258ae8' : '#14385a') : 'rgba(20, 25, 45, 0.75)';
                 ctx.beginPath();
                 ctx.arc(0, 0, 32, 0, Math.PI * 2);
@@ -2209,7 +2325,6 @@
                 ctx.lineWidth = 2.5;
                 ctx.stroke();
 
-                // Specular Glint
                 if (isUnlocked) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
                     ctx.beginPath();
@@ -2218,13 +2333,12 @@
                 }
 
                 ctx.shadowBlur = 0;
-                ctx.font = 'bold 22px "Segoe UI", Roboto, sans-serif';
+                ctx.font = 'bold 22px "Outfit", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = isUnlocked ? '#ffffff' : 'rgba(255,255,255,0.4)';
                 ctx.fillText(isUnlocked ? `${lvl}` : '🔒', 0, 1);
 
-                // Stars rating underneath node
                 if (isUnlocked && stars > 0) {
                     for (let s = 0; s < 3; s++) {
                         const starX = (s - 1) * 16;
@@ -2239,16 +2353,16 @@
         drawGameplayView() {
             const ctx = this.ctx;
 
-            // 1. Top HUD Header (Section 27)
-            this.drawGlassPanel(20, 20, 680, 80, 20, 0.40, true);
+            // 1. HUD Header Panel
+            this.drawGlassPanel(20, 20, 680, 80, 20, 0.45, true);
 
-            // Objective (Left)
-            ctx.font = '600 15px "Segoe UI", Roboto, sans-serif';
+            // Objective
+            ctx.font = '600 15px "Outfit", sans-serif';
             ctx.textAlign = 'left';
             ctx.fillStyle = PALETTE.AQUA;
             ctx.fillText(`LVL ${this.currentLevelId}`, 40, 48);
 
-            ctx.font = 'bold 18px "Segoe UI", Roboto, sans-serif';
+            ctx.font = 'bold 18px "Outfit", sans-serif';
             ctx.fillStyle = '#ffffff';
             if (this.objective.type === ObjectiveType.CLEAR_COLOR) {
                 ctx.fillText(`Target: ${this.objective.current}/${this.objective.target}`, 40, 74);
@@ -2256,28 +2370,28 @@
                 ctx.fillText(`Clear Grid`, 40, 74);
             }
 
-            // Score & Stars (Center)
+            // Score
             ctx.textAlign = 'center';
-            ctx.font = '600 14px "Segoe UI", Roboto, sans-serif';
+            ctx.font = '600 14px "Outfit", sans-serif';
             ctx.fillStyle = PALETTE.SUNSHINE;
             ctx.fillText('SCORE', 360, 45);
 
-            ctx.font = 'bold 24px "Segoe UI", Roboto, sans-serif';
+            ctx.font = 'bold 24px "Outfit", sans-serif';
             ctx.fillStyle = '#ffffff';
             ctx.fillText(`${this.score}`, 360, 74);
 
-            // Shots Ammo Counter (Right)
+            // Ammo
             ctx.textAlign = 'right';
-            ctx.font = '600 14px "Segoe UI", Roboto, sans-serif';
+            ctx.font = '600 14px "Outfit", sans-serif';
             ctx.fillStyle = this.shotsLeft <= 4 ? PALETTE.CORAL : PALETTE.CRYSTAL_BLUE;
             ctx.fillText('AMMO', 615, 45);
 
-            ctx.font = 'bold 24px "Segoe UI", Roboto, sans-serif';
+            ctx.font = 'bold 24px "Outfit", sans-serif';
             ctx.fillStyle = '#ffffff';
             ctx.fillText(`${this.shotsLeft}`, 615, 74);
 
-            // Pause Icon Button
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            // Pause Button
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(645, 48);
@@ -2286,7 +2400,7 @@
             ctx.lineTo(655, 70);
             ctx.stroke();
 
-            // 2. Authoritative Grid Bubbles
+            // 2. Bubbles in Grid
             for (let r = 0; r < MAX_ROWS; r++) {
                 const cols = r % 2 === 0 ? GRID_COLS_EVEN : GRID_COLS_ODD;
                 for (let c = 0; c < cols; c++) {
@@ -2298,12 +2412,12 @@
                 }
             }
 
-            // 3. Falling / Dropped Bubbles (Section 24)
+            // 3. Falling Dropped Bubbles
             for (const d of this.droppingBubbles) {
                 this.drawBubble(d.x, d.y, d.color, d.special, false);
             }
 
-            // 4. Trajectory Aim Guide with Wall Bounces (Section 19, 20)
+            // 4. Trajectory Guide
             if (this.isAiming && this.canShoot) {
                 this.drawTrajectory();
             }
@@ -2313,7 +2427,7 @@
                 this.drawBubble(this.projectile.x, this.projectile.y, this.projectile.color, this.projectile.special);
             }
 
-            // 6. Shooter Launcher & Next Bubble Swap Pedestal (Section 18)
+            // 6. Shooter Cannon Pedestal
             this.drawShooterLauncher();
 
             // 7. Companion Lumi
@@ -2323,26 +2437,25 @@
         drawShooterLauncher() {
             const ctx = this.ctx;
 
-            // Shooter Base Glass Pedestal
             ctx.save();
             ctx.translate(SHOOTER_X, SHOOTER_Y);
 
-            // Outer Crystal Ring
+            // Rotating Crystal Pedestal Ring
             ctx.shadowColor = PALETTE.AQUA;
-            ctx.shadowBlur = 12;
+            ctx.shadowBlur = 14;
             ctx.strokeStyle = PALETTE.AQUA;
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.arc(0, 0, 48, 0, Math.PI * 2);
             ctx.stroke();
 
-            ctx.fillStyle = 'rgba(12, 20, 42, 0.85)';
+            ctx.fillStyle = 'rgba(12, 20, 42, 0.88)';
             ctx.beginPath();
             ctx.arc(0, 0, 46, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
 
-            // Aim Direction Pointer Notch
+            // Pointer Notch
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 3;
             ctx.beginPath();
@@ -2352,17 +2465,17 @@
 
             ctx.restore();
 
-            // Current Loaded Bubble
+            // Current Bubble
             if (this.currentBubble) {
                 this.drawBubble(SHOOTER_X, SHOOTER_Y, this.currentBubble.color, this.currentBubble.special);
             }
 
-            // Next Bubble Swap Orb (Left side of shooter)
+            // Next Bubble Swap Orb
             const nextX = SHOOTER_X - 110;
             const nextY = SHOOTER_Y;
-            this.drawGlassPanel(nextX - 35, nextY - 35, 70, 70, 35, 0.35, true);
+            this.drawGlassPanel(nextX - 35, nextY - 35, 70, 70, 35, 0.38, true);
 
-            ctx.font = '600 11px "Segoe UI", sans-serif';
+            ctx.font = '600 11px "Outfit", sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.textAlign = 'center';
             ctx.fillText('SWAP', nextX, nextY + 46);
@@ -2388,11 +2501,9 @@
                 curY += dirY * step;
                 remainingLen -= step;
 
-                // Wall reflections (Section 19, 20)
                 if (curX <= 72 + BUBBLE_RADIUS) {
                     curX = 72 + BUBBLE_RADIUS;
                     dirX = -dirX;
-                    // Wall bounce spark ring
                     ctx.fillStyle = PALETTE.AQUA;
                     ctx.beginPath();
                     ctx.arc(curX, curY, 7, 0, Math.PI * 2);
@@ -2408,8 +2519,7 @@
 
                 if (curY <= 160 + BUBBLE_RADIUS) break;
 
-                // Soft glowing dotted trajectory (Section 19)
-                const alpha = Math.max(0.15, remainingLen / 1400.0) * 0.85;
+                const alpha = Math.max(0.18, remainingLen / 1400.0) * 0.9;
                 ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                 ctx.beginPath();
                 ctx.arc(curX, curY, 3.5, 0, Math.PI * 2);
@@ -2419,16 +2529,16 @@
         }
 
         // ---------------------------------------------------------------------
-        // MODALS (Pause, Win, Lose, Settings, Tutorial)
+        // MODALS
         // ---------------------------------------------------------------------
         drawPauseModal() {
             const ctx = this.ctx;
-            ctx.fillStyle = 'rgba(4, 8, 20, 0.78)';
+            ctx.fillStyle = 'rgba(4, 8, 20, 0.80)';
             ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
 
-            this.drawGlassPanel(160, 420, 400, 420, 28, 0.45, true);
+            this.drawGlassPanel(160, 420, 400, 420, 28, 0.50, true);
 
-            ctx.font = 'bold 36px "Segoe UI", Roboto, sans-serif';
+            ctx.font = 'bold 36px "Outfit", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
             ctx.fillText('PAUSED', 360, 480);
@@ -2440,20 +2550,19 @@
 
         drawWinModal() {
             const ctx = this.ctx;
-            ctx.fillStyle = 'rgba(4, 8, 20, 0.82)';
+            ctx.fillStyle = 'rgba(4, 8, 20, 0.84)';
             ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
 
-            this.drawGlassPanel(140, 360, 440, 560, 28, 0.50, true);
+            this.drawGlassPanel(140, 360, 440, 560, 28, 0.55, true);
 
             ctx.shadowColor = PALETTE.AQUA;
-            ctx.shadowBlur = 18;
-            ctx.font = 'bold 42px "Segoe UI", Roboto, sans-serif';
+            ctx.shadowBlur = 20;
+            ctx.font = 'bold 42px "Outfit", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
             ctx.fillText('STAGE CLEAR!', 360, 440);
             ctx.shadowBlur = 0;
 
-            // Star Rating (Section 31, 32)
             let stars = 1;
             if (this.score >= this.targetScore) stars = 2;
             if (this.score >= this.targetScore * 1.4) stars = 3;
@@ -2463,40 +2572,38 @@
                 this.drawCrystalStar(starX, 510, 22, s < stars);
             }
 
-            // Score Display
-            ctx.font = '600 20px "Segoe UI", Roboto, sans-serif';
+            ctx.font = '600 20px "Outfit", sans-serif';
             ctx.fillStyle = PALETTE.SUNSHINE;
             ctx.fillText(`FINAL SCORE: ${this.score}`, 360, 590);
 
-            ctx.font = '16px "Segoe UI", Roboto, sans-serif';
+            ctx.font = '16px "Outfit", sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.fillText(`High Score: ${Math.max(this.score, saveSystem.data.highScores[this.currentLevelId] || 0)}`, 360, 630);
 
-            // Action Buttons
             this.drawGlassButton(220, 720, 280, 72, 'NEXT LEVEL', true, 26);
             this.drawGlassButton(220, 815, 280, 65, 'WORLD MAP', false, 24);
         }
 
         drawLoseModal() {
             const ctx = this.ctx;
-            ctx.fillStyle = 'rgba(4, 8, 20, 0.82)';
+            ctx.fillStyle = 'rgba(4, 8, 20, 0.84)';
             ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
 
-            this.drawGlassPanel(140, 380, 440, 520, 28, 0.50, true);
+            this.drawGlassPanel(140, 380, 440, 520, 28, 0.55, true);
 
             ctx.shadowColor = PALETTE.CORAL;
-            ctx.shadowBlur = 16;
-            ctx.font = 'bold 38px "Segoe UI", Roboto, sans-serif';
+            ctx.shadowBlur = 18;
+            ctx.font = 'bold 38px "Outfit", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
             ctx.fillText('STAGE FAILED', 360, 460);
             ctx.shadowBlur = 0;
 
-            ctx.font = '600 20px "Segoe UI", Roboto, sans-serif';
+            ctx.font = '600 20px "Outfit", sans-serif';
             ctx.fillStyle = PALETTE.CORAL;
             ctx.fillText(this.loseReason || 'Try Again!', 360, 520);
 
-            ctx.font = '18px "Segoe UI", Roboto, sans-serif';
+            ctx.font = '18px "Outfit", sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             ctx.fillText(`Score: ${this.score}`, 360, 580);
 
@@ -2506,32 +2613,36 @@
 
         drawSettingsModal() {
             const ctx = this.ctx;
-            this.drawGlassPanel(120, 320, 480, 460, 28, 0.50, true);
+            this.drawGlassPanel(120, 300, 480, 500, 28, 0.55, true);
 
-            ctx.font = 'bold 36px "Segoe UI", Roboto, sans-serif';
+            ctx.font = 'bold 36px "Outfit", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText('SETTINGS', 360, 390);
+            ctx.fillText('SETTINGS', 360, 365);
 
-            // Sound Toggle
-            ctx.font = 'bold 22px "Segoe UI", Roboto, sans-serif';
+            // Toggles
+            ctx.font = 'bold 22px "Outfit", sans-serif';
             ctx.textAlign = 'left';
-            ctx.fillText('Sound Effects', 180, 480);
-            this.drawGlassButton(460, 455, 90, 45, sound.enabled ? 'ON' : 'OFF', sound.enabled, 16);
+            ctx.fillText('Sound Effects', 180, 450);
+            this.drawGlassButton(460, 425, 90, 45, sound.enabled ? 'ON' : 'OFF', sound.enabled, 16);
 
-            // Accessibility Glyph Toggle
-            ctx.fillText('Color Glyphs', 180, 560);
-            this.drawGlassButton(460, 535, 90, 45, saveSystem.data.accessibilityGlyphs ? 'ON' : 'OFF', saveSystem.data.accessibilityGlyphs, 16);
+            ctx.fillText('Color Glyphs', 180, 530);
+            this.drawGlassButton(460, 505, 90, 45, saveSystem.data.accessibilityGlyphs ? 'ON' : 'OFF', saveSystem.data.accessibilityGlyphs, 16);
 
-            // Back Button
+            // Studio Javid Credits
+            ctx.font = '600 15px "Outfit", "Vazirmatn", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = PALETTE.AQUA;
+            ctx.fillText('Developer: Studio Javid (استودیو جاوید)', 360, 600);
+
             this.drawGlassButton(250, 660, 220, 65, 'BACK', true, 24);
         }
 
         drawTutorialModal() {
             const ctx = this.ctx;
-            this.drawGlassPanel(80, 200, 560, 880, 28, 0.55, true);
+            this.drawGlassPanel(80, 200, 560, 880, 28, 0.58, true);
 
-            ctx.font = 'bold 34px "Segoe UI", Roboto, sans-serif';
+            ctx.font = 'bold 34px "Outfit", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
             ctx.fillText('HOW TO PLAY', 360, 270);
@@ -2545,17 +2656,17 @@
 
             tips.forEach((t, i) => {
                 const cardY = 320 + i * 150;
-                this.drawGlassPanel(110, cardY, 500, 130, 18, 0.28, true);
+                this.drawGlassPanel(110, cardY, 500, 130, 18, 0.32, true);
 
                 ctx.font = '32px sans-serif';
                 ctx.fillText(t.icon, 155, cardY + 65);
 
-                ctx.font = 'bold 20px "Segoe UI", sans-serif';
+                ctx.font = 'bold 20px "Outfit", sans-serif';
                 ctx.textAlign = 'left';
                 ctx.fillStyle = PALETTE.AQUA;
                 ctx.fillText(t.title, 200, cardY + 45);
 
-                ctx.font = '15px "Segoe UI", sans-serif';
+                ctx.font = '15px "Outfit", sans-serif';
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(t.desc, 200, cardY + 75, 290);
             });
@@ -2565,7 +2676,7 @@
     }
 
     // =========================================================================
-    // 10. BOOTSTRAP ENGINE
+    // 10. INITIALIZATION
     // =========================================================================
     window.addEventListener('load', () => {
         new GameEngine();
