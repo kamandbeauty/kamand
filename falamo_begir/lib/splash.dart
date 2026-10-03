@@ -1,3 +1,4 @@
+import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -13,7 +14,9 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
-    Future.delayed(const Duration(seconds: 3)).then((value) async {
+    Future.delayed(const Duration(seconds: 3)).then((value) {
+      // اگر کاربر قبل از پایان اسپلش از صفحه خارج شده باشد، ناوبری انجام نمی‌شود
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()));
     });
@@ -65,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
               left: 5,
               child: Center(
                 child: Text(
-                  "نسخه برنامه 1.1",
+                  "نسخه برنامه ${AppInfo.version}",
                   style: GoogleFonts.vazirmatn(color: Colors.white),
                 ),
               ),

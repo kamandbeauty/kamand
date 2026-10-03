@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET"/> 
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- برای url_launcher و بررسی لینک‌های https روی Android 11 به بالا
+         (جایگزین QUERY_ALL_PACKAGES که موجب رد شدن برنامه در گوگل‌پلی می‌شود) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
     <application
         android:label="فالمو بگیر"
         android:name="${applicationName}"
