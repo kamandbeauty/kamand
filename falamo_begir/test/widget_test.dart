@@ -1,17 +1,25 @@
 // تست دود (smoke test) برنامهٔ «دیوان و فال حافظ»
 
+import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<MyApp> _buildApp() async {
+Future<MyApp> _buildApp(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({});
   final settings = SettingsService();
   await settings.load();
   await Get.deleteAll(force: true);
   Get.put<SettingsService>(settings, permanent: true);
+
+  // پیش‌گرم کردن کش دیوان: خواندن JSON دیوان از assets یک I/O واقعی
+  // است که در محیط fake-async تست ویجت فقط با runAsync کامل می‌شود.
+  // اگر کش گرم نشود، اسپینر نامتناهی صفحهٔ دیوان pumpAndSettle را
+  // با خطای timeout متوقف می‌کند.
+  await tester.runAsync(() => DivanRepository.all());
+
   return MyApp(settings: settings);
 }
 
@@ -20,7 +28,7 @@ void main() {
 
   testWidgets('اپ اجرا می‌شود؛ اسپلش و سپس صفحهٔ اصلی نمایش داده می‌شود',
       (WidgetTester tester) async {
-    final app = await _buildApp();
+    final app = await _buildApp(tester);
     await tester.pumpWidget(app);
 
     // در ابتدا صفحهٔ اسپلش با نسخهٔ برنامه دیده می‌شود
@@ -38,7 +46,7 @@ void main() {
 
   testWidgets('دیوان: چیپ‌های بخش‌ها، فهرست و صفحهٔ خواندن شعر',
       (WidgetTester tester) async {
-    final app = await _buildApp();
+    final app = await _buildApp(tester);
     await tester.pumpWidget(app);
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
