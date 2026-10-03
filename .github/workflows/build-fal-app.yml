@@ -1,0 +1,96 @@
+# ساخت خودکار اپلیکیشن «دیوان و فال حافظ» روی GitHub Actions
+name: Build Divan & Fal Hafez App
+
+on:
+  push:
+    branches: [arena/01a10170-kamand, main]
+    paths:
+      - 'falamo_begir/**'
+      - '.github/workflows/build-fal-app.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Pub get
+        working-directory: falamo_begir
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: falamo_begir
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        working-directory: falamo_begir
+        run: flutter test
+
+  build-apk:
+    name: Build APK (release)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Pub get
+        working-directory: falamo_begir
+        run: flutter pub get
+
+      - name: Build release APK
+        working-directory: falamo_begir
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: divan-hafez-apk
+          path: falamo_begir/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 90
+
+  build-web:
+    name: Build Web
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Pub get
+        working-directory: falamo_begir
+        run: flutter pub get
+
+      - name: Build web bundle
+        working-directory: falamo_begir
+        run: flutter build web --release
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: divan-hafez-web
+          path: falamo_begir/build/web
+          retention-days: 90
