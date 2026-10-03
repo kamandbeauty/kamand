@@ -41,6 +41,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- بدون این کلید، canLaunchUrl در url_launcher روی iOS همیشه false برمی‌گرداند
+	     و دکمه‌های شبکه‌های اجتماعی صفحهٔ «دربارهٔ ما» کار نمی‌کنند -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

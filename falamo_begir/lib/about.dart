@@ -1,8 +1,8 @@
 import 'package:fale_hafez/config.dart';
+import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/gen/assets.gen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// صفحهٔ دربارهٔ ما
@@ -70,7 +70,7 @@ class AboutScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                         locale: const Locale('fa'),
                         textDirection: TextDirection.rtl,
-                        style: GoogleFonts.vazirmatn(
+                        style: vazirText(
                           fontSize: 17,
                           color: Colors.white,
                         ),
@@ -85,7 +85,7 @@ class AboutScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                         locale: const Locale('fa'),
                         textDirection: TextDirection.rtl,
-                        style: GoogleFonts.vazirmatn(
+                        style: vazirText(
                           fontSize: 17,
                           color: Colors.white,
                         ),
@@ -95,7 +95,7 @@ class AboutScreen extends StatelessWidget {
                     Text(
                       ':طراح و توسعه دهنده',
                       textAlign: TextAlign.justify,
-                      style: GoogleFonts.vazirmatn(
+                      style: vazirText(
                         color: Colors.white,
                         fontSize: 20,
                       ),
@@ -104,7 +104,7 @@ class AboutScreen extends StatelessWidget {
                     Text(
                       'امیررضا جلوس حقی',
                       textAlign: TextAlign.justify,
-                      style: GoogleFonts.vazirmatn(
+                      style: vazirText(
                         color: Colors.white,
                         fontSize: 30,
                       ),
@@ -144,7 +144,7 @@ class AboutScreen extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'نسخه برنامه ${AppInfo.version}',
-                    style: GoogleFonts.vazirmatn(color: Colors.white),
+                    style: vazirText(color: Colors.white),
                   ),
                 ),
               ),

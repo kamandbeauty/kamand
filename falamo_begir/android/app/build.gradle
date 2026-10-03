@@ -64,9 +64,12 @@ android {
    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.release
+            // اگر فایل key.properties (که در گیت نیست) موجود بود با کلید
+            // اصلی امضا می‌شود؛ در غیر این صورت با کلید دیباگ تا بیلدِ
+            // ریلیز روی هر دستگاهی بدون خطا انجام شود.
+            signingConfig keystorePropertiesFile.exists()
+                    ? signingConfigs.release
+                    : signingConfigs.debug
         }
     }
 }

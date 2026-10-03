@@ -2,10 +2,10 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:fale_hafez/about.dart';
 import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/falscreen.dart';
+import 'package:fale_hafez/fonts.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
 /// صفحهٔ اصلی برنامه
@@ -16,11 +16,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   bool _isPlaying = false;
   bool _isCheckingConnection = false;
+
+  /// آیا هنگام بازگشت از پس‌زمینه، موسیقی باید ادامه پیدا کند؟
+  bool _resumeMusicOnForeground = false;
 
   /// پخش آفلاین آهنگ حافظ از فایل داخل برنامه (بدون نیاز به اینترنت)
   Future<void> _playAudio() async {
@@ -87,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 textAlign: TextAlign.center,
                 locale: const Locale('fa'),
                 textDirection: TextDirection.rtl,
-                style: GoogleFonts.vazirmatn(
+                style: vazirText(
                   fontWeight: FontWeight.w700,
                   fontSize: 17,
                   color: const Color.fromARGB(255, 255, 255, 255),
@@ -101,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 textAlign: TextAlign.center,
                 locale: const Locale('fa'),
                 textDirection: TextDirection.rtl,
-                style: GoogleFonts.vazirmatn(
+                style: vazirText(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                   color: const Color.fromARGB(255, 255, 255, 255),
@@ -125,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(10),
                   child: Text(
                     'بستن  پنجره',
-                    style: GoogleFonts.vazirmatn(
+                    style: vazirText(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                       color: const Color.fromRGBO(107, 38, 15, 1),
@@ -140,14 +143,44 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _pauseAudio() async {
+    try {
+      await _audioPlayer.pause();
+    } catch (_) {}
+  }
+
+  Future<void> _resumeAudio() async {
+    try {
+      await _audioPlayer.resume();
+    } catch (_) {}
+  }
+
+  /// با رفتن برنامه به پس‌زمینه موسیقی متوقف و
+  /// با بازگشت کاربر (اگر خودش قطعش نکرده باشد) ادامه پیدا می‌کند.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _resumeMusicOnForeground = _isPlaying;
+      if (_isPlaying) _pauseAudio();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_resumeMusicOnForeground) {
+        _resumeMusicOnForeground = false;
+        _resumeAudio();
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _playAudio();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -155,6 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.sizeOf(context).width;
+    final double topPadding = MediaQuery.viewPaddingOf(context).top;
+    final double bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
 
     return Scaffold(
       body: Center(
@@ -171,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // نوار بالایی: دکمهٔ موسیقی، لوگو و دربارهٔ ما
             Positioned(
-              top: 20,
+              top: topPadding + 12,
               right: 15,
               left: 15,
               child: Row(
@@ -199,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // دکمهٔ گرفتن فال
             Positioned(
-              bottom: 20,
+              bottom: bottomPadding + 16,
               right: 5,
               left: 5,
               child: Center(
@@ -227,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           )
                         : Text(
                             'نیت کردم ، فالمو بگیر',
-                            style: GoogleFonts.vazirmatn(
+                            style: vazirText(
                               fontWeight: FontWeight.w700,
                               fontSize: 30,
                               color: const Color.fromRGBO(107, 38, 15, 1),

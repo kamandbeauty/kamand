@@ -2,14 +2,8 @@
 
 import 'package:fale_hafez/main.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 void main() {
-  setUpAll(() {
-    // جلوگیری از دانلود فونت هنگام اجرای تست
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
-
   testWidgets('اپ اجرا می‌شود؛ اسپلش و سپس صفحهٔ اصلی نمایش داده می‌شود',
       (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());

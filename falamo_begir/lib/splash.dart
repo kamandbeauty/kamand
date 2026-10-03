@@ -1,8 +1,8 @@
 import 'package:fale_hafez/config.dart';
+import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -69,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Center(
                 child: Text(
                   "نسخه برنامه ${AppInfo.version}",
-                  style: GoogleFonts.vazirmatn(color: Colors.white),
+                  style: vazirText(color: Colors.white),
                 ),
               ),
             )

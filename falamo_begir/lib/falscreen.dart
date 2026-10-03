@@ -1,12 +1,11 @@
 import 'dart:convert';
-
 import 'package:fale_hafez/about.dart';
 import 'package:fale_hafez/config.dart';
+import 'package:fale_hafez/fonts.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
 /// صفحهٔ نمایش فال حافظ
@@ -75,6 +74,7 @@ class _FalScreenState extends State<FalScreen> {
   Widget build(BuildContext context) {
     final double width = MediaQuery.sizeOf(context).width;
     final double height = MediaQuery.sizeOf(context).height;
+    final double topPadding = MediaQuery.viewPaddingOf(context).top;
 
     return Scaffold(
       body: Center(
@@ -95,7 +95,7 @@ class _FalScreenState extends State<FalScreen> {
 
             // نوار بالایی: دکمهٔ بازگشت، لوگو و دربارهٔ ما
             Positioned(
-              top: 20,
+              top: topPadding + 12,
               right: 10,
               left: 10,
               child: Row(
@@ -168,7 +168,7 @@ class _FalScreenState extends State<FalScreen> {
             textAlign: TextAlign.center,
             locale: const Locale('fa'),
             textDirection: TextDirection.rtl,
-            style: GoogleFonts.vazirmatn(
+            style: vazirText(
               fontSize: 18,
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -193,7 +193,7 @@ class _FalScreenState extends State<FalScreen> {
             textAlign: TextAlign.center,
             locale: const Locale('fa'),
             textDirection: TextDirection.rtl,
-            style: GoogleFonts.vazirmatn(
+            style: vazirText(
               fontSize: 18,
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -217,7 +217,7 @@ class _FalScreenState extends State<FalScreen> {
             ),
             label: Text(
               'تلاش مجدد',
-              style: GoogleFonts.vazirmatn(
+              style: vazirText(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
                 color: const Color.fromRGBO(107, 38, 15, 1),
@@ -238,7 +238,7 @@ class _FalScreenState extends State<FalScreen> {
             textAlign: TextAlign.center,
             locale: const Locale('fa'),
             textDirection: TextDirection.rtl,
-            style: GoogleFonts.vazirmatn(
+            style: vazirText(
               fontSize: 20,
               color: Colors.white,
               fontWeight: FontWeight.w900,
@@ -250,7 +250,7 @@ class _FalScreenState extends State<FalScreen> {
             textAlign: TextAlign.center,
             locale: const Locale('fa'),
             textDirection: TextDirection.rtl,
-            style: GoogleFonts.vazirmatn(
+            style: vazirText(
               fontSize: 20,
               color: Colors.white,
               fontWeight: FontWeight.w900,
@@ -264,7 +264,7 @@ class _FalScreenState extends State<FalScreen> {
             textAlign: TextAlign.center,
             locale: const Locale('fa'),
             textDirection: TextDirection.rtl,
-            style: GoogleFonts.vazirmatn(
+            style: vazirText(
               fontSize: 20,
               color: Colors.white,
               fontWeight: FontWeight.w900,
@@ -278,7 +278,7 @@ class _FalScreenState extends State<FalScreen> {
               textAlign: TextAlign.center,
               locale: const Locale('fa'),
               textDirection: TextDirection.rtl,
-              style: GoogleFonts.vazirmatn(fontSize: 16, color: Colors.white),
+              style: vazirText(fontSize: 16, color: Colors.white),
             ),
           ),
           SizedBox(height: height / 20),
