@@ -59,15 +59,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _onSettingsButtonPressed() => Get.to(const SettingsScreen());
 
+  /// موقعیت پخش هنگام رفتن به پس‌زمینه ذخیره می‌شود تا
+  /// با بازگشت کاربر از همان‌جا ادامه پیدا کند.
+  Duration? _savedPosition;
+
+  /// توقف کامل در پس‌زمینه (نه pause!):
+  /// چون پلاگین بعد از pause فوکوس صوتی را نگه می‌دارد و هنگام بازگشت
+  /// فوکوس (مثلاً بعد از پخش صدای اپ‌های دیگر) پخش را خودکار از سر می‌گیرد
+  /// — همان باگی که باعث می‌شد موسیقی در حالت مینیمایز نواخته شود.
   Future<void> _pauseAudio() async {
     try {
-      await _audioPlayer.pause();
+      _savedPosition = await _audioPlayer.getCurrentPosition();
+      await _audioPlayer.stop(); // رهاسازی کامل فوکوس و مدیا‌سیشن
     } catch (_) {}
   }
 
+  /// ادامهٔ پخش از موقعیت ذخیره‌شده بعد از بازگشت به اپ
   Future<void> _resumeAudio() async {
     try {
-      await _audioPlayer.resume();
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      await _audioPlayer.play(AssetSource('background/hafez.mp3'));
+      final pos = _savedPosition;
+      _savedPosition = null;
+      if (pos != null && pos > Duration.zero) {
+        await _audioPlayer.seek(pos);
+      }
     } catch (_) {}
   }
 
