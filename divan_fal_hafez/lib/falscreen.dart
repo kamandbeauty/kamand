@@ -6,7 +6,6 @@ import 'package:fale_hafez/fal_history_screen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
-import 'package:fale_hafez/widgets/night_overlay.dart';
 import 'package:fale_hafez/widgets/page_share.dart';
 import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
@@ -101,8 +100,6 @@ class _FalScreenState extends State<FalScreen> {
               ),
             ),
 
-            // لایهٔ حالت مطالعهٔ شبانه (در صورت فعال‌بودن در تنظیمات)
-            const NightOverlay(),
 
             // نوار بالایی: دکمهٔ بازگشت، لوگو و دربارهٔ ما
             Positioned(

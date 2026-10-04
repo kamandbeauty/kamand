@@ -1,13 +1,10 @@
-import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/data/settings_service.dart';
-import 'package:fale_hafez/error_reporter.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// صفحهٔ تنظیمات: انتخاب قلم و اندازهٔ قلم اشعار.
 /// تغییرات بلافاصله در کل برنامه اعمال و ذخیره می‌شوند.
@@ -153,31 +150,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 14),
-
-                          // حالت مطالعهٔ شبانه
-                          _sectionCard(
-                            title: 'حالت مطالعهٔ شبانه',
-                            icon: CupertinoIcons.moon_stars,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'کم‌رنگ شدن صفحه‌ها برای خواندن در تاریکی',
-                                    style: vazirText(
-                                        fontSize: 13.5, color: _dark),
-                                  ),
-                                ),
-                                Switch(
-                                  value: _settings.nightMode,
-                                  activeColor: _accent,
-                                  onChanged: _settings.setNightMode,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
                           // پشتیبان‌گیری و انتقال داده‌ها
                           _sectionCard(
                             title: 'پشتیبان‌گیری و انتقال',
@@ -229,42 +201,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 14),
-
-                          // گزارش مشکل به توسعه‌دهنده
-                          _sectionCard(
-                            title: 'گزارش مشکل',
-                            icon: CupertinoIcons.exclamationmark_bubble,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  ErrorReporter.pendingCount == 0
-                                      ? 'خطایی ثبت نشده است. اگر به مشکلی برخوردید، گزارش آن را برای توسعه‌دهنده بفرستید تا در به‌روزرسانی بعدی برطرف شود.'
-                                      : '${ErrorReporter.pendingCount} خطای ثبت‌شده آمادهٔ ارسال گزارش است',
-                                  style: vazirText(
-                                      fontSize: 12.5,
-                                      color: Colors.black54,
-                                      height: 1.8),
-                                ),
-                                const SizedBox(height: 10),
-                                ElevatedButton(
-                                  style: AppThemeButton.style(),
-                                  onPressed: _errorReportDialog,
-                                  child: Text(
-                                    'مشاهده و ارسال گزارش خطا',
-                                    style: vazirText(
-                                      fontSize: 12.5,
-                                      color: AppThemeButton.gold,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
                           Text(
                             'تغییرات بلافاصله اعمال و روی دستگاه ذخیره می‌شوند',
                             textAlign: TextAlign.center,
@@ -468,65 +404,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     ).then((_) => controller.dispose());
-  }
-
-  // ---- گزارش مشکل ----
-
-  /// نمایش گزارش خطاهای ثبت‌شده + امکان ارسال به توسعه‌دهنده
-  void _errorReportDialog() {
-    final report = ErrorReporter.buildReport(appVersion: AppInfo.version);
-    Get.dialog(
-      Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFFF7EDD9),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Text(
-            'گزارش خطاها',
-            style: vazirText(
-                fontWeight: FontWeight.w900, color: _dark, fontSize: 16),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: SelectableText(
-                report,
-                textAlign: TextAlign.left,
-                style: vazirText(
-                    color: _dark, fontSize: 11.5, height: 1.8),
-              ),
-            ),
-          ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actions: [
-            TextButton(
-              onPressed: () async {
-                await ErrorReporter.clear();
-                Get.back();
-                if (mounted) {
-                  setState(() {});
-                  _snack('گزارش‌ها پاک شد');
-                }
-              },
-              child: Text('پاک کردن',
-                  style: vazirText(color: _dark.withOpacity(0.6))),
-            ),
-            ElevatedButton(
-              style: AppThemeButton.style(),
-              onPressed: () async {
-                Get.back();
-                await Share.share(report);
-              },
-              child: Text(
-                'ارسال گزارش',
-                style: vazirText(
-                    color: AppThemeButton.gold, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

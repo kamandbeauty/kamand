@@ -25,6 +25,7 @@ const Map<String, String> poemFontFamilies = {
   'vazirmatn': 'Vazirmatn',
   'sahel': 'Sahel',
   'shabnam': 'Shabnam',
+  'tahriri': 'Tahriri',
 };
 
 /// نام فارسی قلم‌ها برای نمایش در تنظیمات
@@ -32,6 +33,7 @@ const Map<String, String> poemFontLabels = {
   'vazirmatn': 'وزیرمتن',
   'sahel': 'ساحل',
   'shabnam': 'شبنم',
+  'tahriri': 'تحریری',
 };
 
 const String defaultPoemFontKey = 'vazirmatn';

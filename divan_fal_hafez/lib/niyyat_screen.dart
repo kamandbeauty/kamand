@@ -155,17 +155,51 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                                             progress: _hold.value),
                                       ),
                                     ),
-                                    // اثر انگشتِ واقعی: خطوط قوسیِ
-                                    // تو‌در‌تو که هنگام اسکن طلایی می‌شود
+                                    // اثر انگشتِ واقعی (صورتِ مرجعِ صاحب‌اثر:
+                                    // همان thumb.jpg) که هنگام نگه‌داشتن
+                                    // انگشت به‌تدریج طلایی می‌شود
                                     Transform.scale(
                                       scale: 1.0 + _hold.value * 0.08,
                                       child: SizedBox(
                                         width: scanner * 0.66,
                                         height: scanner * 0.66,
-                                        child: CustomPaint(
-                                          key: const Key('fingerprint_print'),
-                                          painter: _FingerprintPainter(
-                                              progress: _hold.value),
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            ColorFiltered(
+                                              key: const Key(
+                                                  'fingerprint_print'),
+                                              colorFilter:
+                                                  const ColorFilter.matrix(
+                                                      <double>[
+                                                    1, 0, 0, 0, 0, //
+                                                    0, 1, 0, 0, 0, //
+                                                    0, 0, 1, 0, 0, //
+                                                    -1, -1, -1, 0, 765, //
+                                                  ]),
+                                              child: Image.asset(
+                                                'assets/fingerprint.jpg',
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ),
+                                            Opacity(
+                                              opacity: _hold.value,
+                                              child: ColorFiltered(
+                                                colorFilter:
+                                                    const ColorFilter.matrix(
+                                                        <double>[
+                                                      0, 0, 0, 0, 227, //
+                                                      0, 0, 0, 0, 172, //
+                                                      0, 0, 0, 0, 69, //
+                                                      -1, -1, -1, 0, 765, //
+                                                    ]),
+                                                child: Image.asset(
+                                                  'assets/fingerprint.jpg',
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -388,77 +422,4 @@ class _InkBloomPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_InkBloomPainter old) => old.progress != progress;
-}
-
-/// اثر انگشت به الگوی «قوسی» (Arch) مطابق مرجعِ بصریِ صاحب‌اثر:
-/// ردیف‌های Uشکلِ تو‌در‌تو با دهانهٔ پایین؛ در حالت عادی به جوهرِ
-/// مشکی است و هنگام نگه‌داشتن انگشت — هم‌زمان با پخش‌شدن جوهر —
-/// به‌تدریج به طلایی بدل می‌شود.
-class _FingerprintPainter extends CustomPainter {
-  const _FingerprintPainter({required this.progress});
-
-  static const _inkBlack = Color(0xFF1B1713);
-  static const _gold = Color(0xFFE3AC45);
-
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = size.width * 0.030;
-    final ridgePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-
-    // همهٔ خطوط هم‌گام با پیشرفت از مشکیِ جوهری به طلایی بدل می‌شوند
-    final goldness = progress.clamp(0.0, 1.0);
-
-    const ridges = 11;
-    final cx = size.width / 2;
-    final cy = size.height * 0.42;
-
-    for (var i = 0; i < ridges; i++) {
-      final t = i / (ridges - 1); // 0 بیرونی‌ترین → 1 درونی‌ترین
-      final w = size.width * (0.94 - 0.80 * t); // 0.94W → 0.14W
-      // قوس‌های داخلی کشیده‌تر (حسِ U باریکِ میانیِ اثر انگشت)
-      final h = w * (1.18 + 0.32 * t);
-      final rect =
-          Rect.fromCenter(center: Offset(cx, cy), width: w, height: h);
-
-      // دهانهٔ پایینِ قوس‌ها (مطابق تصویر مرجع)
-      final startDeg = 168 - 18 * t; // بیرونی ۱۶۸° → درونی ۱۵۰°
-      final sweepDeg = 372 + 18 * t - startDeg;
-      final start = startDeg * math.pi / 180;
-      final sweep = sweepDeg * math.pi / 180;
-
-      // ناهمسانیِ طبیعیِ جوهر (قطعی و تکرارپذیر برای ثباتِ ظاهر)
-      final jitter = 0.78 + 0.22 * (math.sin(i * 2.39 + 1.7)).abs();
-      final col = Color.lerp(_inkBlack.withOpacity(0.90), _gold, goldness)!;
-      ridgePaint.color = col.withAlpha((col.alpha * jitter).round());
-
-      // گسستِ کوچکِ جوهر در بعضی ردیف‌ها (حسِ دستی بودن)
-      if (i % 4 == 1) {
-        final frac = 0.42 + 0.2 * ((math.sin(i * 5.13) + 1) / 2);
-        const mid = 0.05;
-        canvas.drawArc(
-            rect, start, sweep * (frac - mid / 2), false, ridgePaint);
-        canvas.drawArc(rect, start + sweep * (frac + mid / 2),
-            sweep * (1 - frac - mid / 2), false, ridgePaint);
-      } else {
-        canvas.drawArc(rect, start, sweep, false, ridgePaint);
-      }
-    }
-
-    // قلبِ هستهٔ مرکزی
-    final coreCol =
-        Color.lerp(_inkBlack.withOpacity(0.90), _gold, goldness)!;
-    canvas.drawCircle(
-      Offset(cx, cy + size.width * 0.14 * 1.5 / 2 - stroke),
-      stroke * 0.55,
-      Paint()..color = coreCol,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_FingerprintPainter old) => old.progress != progress;
 }

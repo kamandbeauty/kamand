@@ -39,7 +39,6 @@ class SettingsService extends ChangeNotifier {
   static const String _kNotes = 'poem_notes';
   static const String _kFalHistory = 'fal_history';
   static const String _kLastPoemId = 'last_poem_id';
-  static const String _kNightMode = 'night_mode';
 
   /// کمترین و بیشترین ضریب بزرگنمایی قلم اشعار
   static const double minScale = 0.7;
@@ -57,14 +56,12 @@ class SettingsService extends ChangeNotifier {
   Map<String, String> _notes = {};
   List<FalEntry> _falHistory = [];
   String? _lastPoemId;
-  bool _nightMode = false;
 
   String get fontKey => _fontKey;
   double get poemScale => _poemScale;
   Set<String> get favorites => Set.unmodifiable(_favorites);
   List<FalEntry> get falHistory => List.unmodifiable(_falHistory);
   String? get lastPoemId => _lastPoemId;
-  bool get nightMode => _nightMode;
 
   /// خواندن تنظیمات ذخیره‌شده از حافظهٔ دستگاه
   Future<void> load() async {
@@ -76,7 +73,6 @@ class SettingsService extends ChangeNotifier {
     _notes = _decodeNoteList(_prefs!.getStringList(_kNotes));
     _falHistory = _decodeFalHistory(_prefs!.getStringList(_kFalHistory));
     _lastPoemId = _prefs!.getString(_kLastPoemId);
-    _nightMode = _prefs!.getBool(_kNightMode) ?? false;
     notifyListeners();
   }
 
@@ -165,13 +161,8 @@ class SettingsService extends ChangeNotifier {
     _persist((prefs) => prefs.setString(_kLastPoemId, poemId));
   }
 
-  /// روشن/خاموش کردن حالت مطالعهٔ شبانه
-  Future<void> setNightMode(bool value) async {
-    if (_nightMode == value) return;
-    _nightMode = value;
-    notifyListeners();
-    _persist((prefs) => prefs.setBool(_kNightMode, value));
-  }
+  
+
 
   /// ساخت متن کامل نسخهٔ پشتیبان (دلخواه‌ها + یادداشت‌ها + دفترچهٔ فال)
   String exportBackup() {

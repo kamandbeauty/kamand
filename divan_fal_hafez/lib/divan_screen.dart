@@ -4,7 +4,6 @@ import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/poem_screen.dart';
 import 'package:fale_hafez/util/persian_text.dart';
-import 'package:fale_hafez/widgets/night_overlay.dart';
 import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -197,8 +196,6 @@ class _DivanScreenState extends State<DivanScreen> {
               Expanded(child: _buildList(bottomPadding)),
                 ],
               ),
-              // لایهٔ حالت مطالعهٔ شبانه
-              const NightOverlay(),
             ],
           ),
         ),
