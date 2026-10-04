@@ -89,146 +89,155 @@ class _NiyyatScreenState extends State<NiyyatScreen>
               fit: BoxFit.cover,
             ),
           ),
-          child: Column(
-            children: [
-              // نوار بالایی: دکمهٔ بازگشت و لوگو (سبک صفحهٔ فال)
-              Padding(
-                padding: EdgeInsets.only(
-                  top: topPadding + 12,
-                  right: 10,
-                  left: 10,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _headerButton(
-                      width: width,
-                      icon: CupertinoIcons.back,
-                      onPressed: Get.back,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // اندازهٔ اسکنر متناسب با ارتفاع صفحه تا روی صفحه‌های کوتاه
+              // (یا لندسکیپ) سرریز رخ ندهد
+              final double scanner =
+                  (constraints.maxHeight * 0.27).clamp(120.0, 210.0);
+
+              return Column(
+                children: [
+                  // نوار بالایی: دکمهٔ بازگشت و لوگو (سبک صفحهٔ فال)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: topPadding + 12,
+                      right: 10,
+                      left: 10,
                     ),
-                    Image.asset('assets/logotext.png', width: width / 2),
-                    SizedBox(width: width / 10),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // متن آیین نیّت
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.92),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _dark.withOpacity(0.25),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _headerButton(
+                          width: width,
+                          icon: CupertinoIcons.back,
+                          onPressed: Get.back,
+                        ),
+                        Image.asset('assets/logotext.png', width: width / 2),
+                        SizedBox(width: width / 10),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      for (final verse in _niyyatVerses)
-                        Text(
-                          verse,
-                          textDirection: TextDirection.rtl,
-                          textAlign: TextAlign.center,
-                          style: vazirText(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                            color: _dark,
-                            height: 2.0,
+
+                  const SizedBox(height: 14),
+
+                  // متن آیین نیّت
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.92),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _dark.withOpacity(0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          for (final verse in _niyyatVerses)
+                            Text(
+                              verse,
+                              textDirection: TextDirection.rtl,
+                              textAlign: TextAlign.center,
+                              style: vazirText(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w700,
+                                color: _dark,
+                                height: 1.9,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  // قاب اسکنر و اثر انگشت - نگه‌داشتن انگشت برای گرفتن فال
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: _startHold,
+                    onTapUp: _cancelHold,
+                    onTapCancel: () => _cancelHold(),
+                    child: SizedBox(
+                      width: scanner,
+                      height: scanner,
+                      child: CustomPaint(
+                        painter: _CornerBracketsPainter(color: _bracket),
+                        child: Center(
+                          child: AnimatedBuilder(
+                            animation: _hold,
+                            builder: (context, child) {
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // حلقهٔ پیشرفت نگه‌داشتن انگشت
+                                  SizedBox(
+                                    width: scanner * 0.8,
+                                    height: scanner * 0.8,
+                                    child: CircularProgressIndicator(
+                                      value: _hold.value,
+                                      strokeWidth: 6,
+                                      backgroundColor:
+                                          Colors.white.withOpacity(0.35),
+                                      color: _accent,
+                                    ),
+                                  ),
+                                  Transform.scale(
+                                    scale: 1.0 + _hold.value * 0.08,
+                                    child: Icon(
+                                      Icons.fingerprint,
+                                      size: scanner * 0.55,
+                                      color: Color.lerp(
+                                        _printRed.withOpacity(0.7),
+                                        _printRed,
+                                        _hold.value,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const Spacer(),
-
-              // قاب اسکنر و اثر انگشت - نگه‌داشتن انگشت برای گرفتن فال
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapDown: _startHold,
-                onTapUp: _cancelHold,
-                onTapCancel: () => _cancelHold(),
-                child: SizedBox(
-                  width: 210,
-                  height: 210,
-                  child: CustomPaint(
-                    painter: _CornerBracketsPainter(color: _bracket),
-                    child: Center(
-                      child: AnimatedBuilder(
-                        animation: _hold,
-                        builder: (context, child) {
-                          return Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // حلقهٔ پیشرفت نگه‌داشتن انگشت
-                              SizedBox(
-                                width: 170,
-                                height: 170,
-                                child: CircularProgressIndicator(
-                                  value: _hold.value,
-                                  strokeWidth: 6,
-                                  backgroundColor:
-                                      Colors.white.withOpacity(0.35),
-                                  color: _accent,
-                                ),
-                              ),
-                              Transform.scale(
-                                scale: 1.0 + _hold.value * 0.08,
-                                child: Icon(
-                                  Icons.fingerprint,
-                                  size: 120,
-                                  color: Color.lerp(
-                                    _printRed.withOpacity(0.7),
-                                    _printRed,
-                                    _hold.value,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
                       ),
                     ),
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 20),
+                  const SizedBox(height: 14),
 
-              // راهنمای کاربر
-              Text(
-                'نیّت کنید و اشاره‌ای بفرمایید',
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.center,
-                style: vazirText(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'انگشت خود را روی اثر انگشت نگه دارید',
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.center,
-                style: vazirText(
-                  fontSize: 14,
-                  color: Colors.white.withOpacity(0.85),
-                ),
-              ),
+                  // راهنمای کاربر
+                  Text(
+                    'نیّت کنید و اشاره‌ای بفرمایید',
+                    textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.center,
+                    style: vazirText(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'انگشت خود را روی اثر انگشت نگه دارید',
+                    textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.center,
+                    style: vazirText(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.85),
+                    ),
+                  ),
 
-              const Spacer(),
-            ],
+                  const Spacer(),
+                ],
+              );
+            },
           ),
         ),
       ),
