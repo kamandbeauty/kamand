@@ -31,9 +31,16 @@ void main() {
 
   test('همهٔ ۴۹۵ غزل تعبیر فال معتبر دارند', () async {
     final ghazals = await DivanRepository.byCategory(PoemCategory.ghazal);
+    expect(ghazals.length, 495);
     for (final ghazal in ghazals) {
       expect(ghazal.meaning, isNotNull, reason: ghazal.id);
       expect(ghazal.meaning!.trim(), isNotEmpty, reason: ghazal.id);
+      // تعبیر واقعی ثبت شده باشد، نه جای‌گذار (placeholder)
+      expect(ghazal.meaning, isNot(contains('هنوز تعبیری ثبت نشده')),
+          reason: ghazal.id);
+      // تعبیر باید متنی معنادار و به‌اندازهٔ کافی گسترده باشد (حداقل چند جمله)
+      expect(ghazal.meaning!.trim().length, greaterThan(100),
+          reason: ghazal.id);
     }
   });
 
