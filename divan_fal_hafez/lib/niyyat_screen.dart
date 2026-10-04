@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
@@ -22,7 +24,6 @@ class _NiyyatScreenState extends State<NiyyatScreen>
   static const Color _accent = Color.fromRGBO(234, 158, 77, 1);
   static const Color _dark = Color.fromRGBO(107, 38, 15, 1);
   static const Color _bracket = Color(0xFF2E8B57);
-  static const Color _printRed = Color(0xFF8E2820);
 
   /// مدت نگه‌داشتن انگشت تا گرفتن فال
   static const Duration _holdDuration = Duration(milliseconds: 800);
@@ -227,27 +228,27 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                               return Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  // حلقهٔ پیشرفت نگه‌داشتن انگشت
+                                  // حلقهٔ پیشرفت دایره‌ای با گرادیان طلایی،
+                                  // هالهٔ نور و سرِ دنباله‌دارِ درخشان
                                   SizedBox(
-                                    width: scanner * 0.8,
-                                    height: scanner * 0.8,
-                                    child: CircularProgressIndicator(
-                                      value: _hold.value,
-                                      strokeWidth: 6,
-                                      backgroundColor:
-                                          Colors.white.withOpacity(0.35),
-                                      color: _accent,
+                                    width: scanner * 0.84,
+                                    height: scanner * 0.84,
+                                    child: CustomPaint(
+                                      painter: _ProgressRingPainter(
+                                          progress: _hold.value),
                                     ),
                                   ),
+                                  // اثر انگشتِ دست‌ساز: خطوط قوسی که با
+                                  // پیشرفت اسکن، کم‌کم قرمزِ درخشان می‌شوند
                                   Transform.scale(
                                     scale: 1.0 + _hold.value * 0.08,
-                                    child: Icon(
-                                      Icons.fingerprint,
-                                      size: scanner * 0.55,
-                                      color: Color.lerp(
-                                        _printRed.withOpacity(0.7),
-                                        _printRed,
-                                        _hold.value,
+                                    child: SizedBox(
+                                      width: scanner * 0.62,
+                                      height: scanner * 0.62,
+                                      child: CustomPaint(
+                                        key: const Key('fingerprint_print'),
+                                        painter: _FingerprintPainter(
+                                            progress: _hold.value),
                                       ),
                                     ),
                                   ),
@@ -366,4 +367,145 @@ class _CornerBracketsPainter extends CustomPainter {
   @override
   bool shouldRepaint(_CornerBracketsPainter oldDelegate) =>
       oldDelegate.color != color;
+}
+
+/// حلقهٔ پیشرفت دایره‌ایِ نگه‌داشتن انگشت:
+/// ریلِ نازک + قوسِ گرادیانیِ طلایی با درخششِ نرم و نقطهٔ نورانی در نوک قوس.
+class _ProgressRingPainter extends CustomPainter {
+  const _ProgressRingPainter({required this.progress});
+
+  static const _gold = Color(0xFFEA9E4D);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final stroke = size.width * 0.07;
+    final radius = size.width / 2 - stroke * 1.6;
+
+    // ریلِ پس‌زمینهٔ ظریف
+    final trackPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke * 0.65
+      ..color = Colors.white.withOpacity(0.26);
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (progress <= 0.002) return;
+
+    const start = -math.pi / 2;
+    final sweep = math.pi * 2 * progress;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // هالهٔ نرم زیر قوس
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke * 2.3
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, stroke * 1.3)
+      ..color = _gold.withOpacity(0.5 * progress);
+    canvas.drawArc(rect, start, sweep, false, glowPaint);
+
+    // قوسِ اصلی با گرادیانِ طلایی (از کهرباییِ تیره به کرمِ روشن در نوک)
+    final gradient = SweepGradient(
+      startAngle: start,
+      endAngle: start + sweep,
+      colors: const [
+        Color(0xFFB96A20),
+        Color(0xFFEA9E4D),
+        Color(0xFFFFDFA6),
+      ],
+      stops: const [0.0, 0.6, 1.0],
+    );
+    final arcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..shader = gradient.createShader(rect);
+    canvas.drawArc(rect, start, sweep, false, arcPaint);
+
+    // سرِ دنباله‌دار: نقطهٔ نورانیِ در حال حرکت روی نوک قوس
+    if (progress > 0.01) {
+      final tipAngle = start + sweep;
+      final tip = Offset(
+        center.dx + radius * math.cos(tipAngle),
+        center.dy + radius * math.sin(tipAngle),
+      );
+      const cream = Color(0xFFFFF3D6);
+      canvas.drawCircle(
+        tip,
+        stroke * 1.05,
+        Paint()
+          ..color = cream.withOpacity(0.85)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, stroke * 0.85),
+      );
+      canvas.drawCircle(tip, stroke * 0.42, Paint()..color = cream);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ProgressRingPainter old) => old.progress != progress;
+}
+
+/// اثر انگشتِ دست‌ساز: قوس‌های تو‌در‌توی ارگانیک (به سبک Touch ID)
+/// که با پیشرفتِ اسکن، کم‌کم از مرکز به سوی بیرون قرمزِ درخشان می‌شوند.
+class _FingerprintPainter extends CustomPainter {
+  const _FingerprintPainter({required this.progress});
+
+  static const _baseRed = Color(0xFF8E2820);
+  static const _litRed = Color(0xFFE0452F);
+  static const _gold = Color(0xFFEA9E4D);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final stroke = size.width * 0.045;
+    const ridges = 6;
+
+    // هالهٔ گرمی که با شروعِ اسکن پشتِ اثر انگشت پدیدار می‌شود
+    if (progress > 0.01) {
+      canvas.drawCircle(
+        center,
+        size.width * 0.42,
+        Paint()
+          ..color = _gold.withOpacity(0.10 + 0.22 * progress)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, size.width * 0.14),
+      );
+    }
+
+    final ridgePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+
+    for (var i = 0; i < ridges; i++) {
+      final r = size.width * (0.46 - i * 0.072);
+      if (r <= stroke * 2) break;
+      final rect = Rect.fromCircle(center: center, radius: r);
+      // شروع و زاویهٔ متفاوتِ هر قوس برای حسِ ارگانیکِ خط‌های اثر انگشت
+      final startA = -math.pi * 0.72 - i * 0.42;
+      final sweepA = math.pi * (1.16 + i * 0.10);
+      // ظاهر شدنِ تدریجیِ هر خط متناسب با پیشرفت اسکن (تاخیرِ پلکانی)
+      final reveal = (progress * (ridges + 1) - i).clamp(0.0, 1.0);
+      ridgePaint.color =
+          Color.lerp(_baseRed.withOpacity(0.30), _litRed, reveal)!;
+      canvas.drawArc(rect, startA, sweepA, false, ridgePaint);
+    }
+
+    // قلبِ اثر انگشت: نقطهٔ مرکزی + قوس کوچکِ دور آن
+    final coreReveal = (progress * (ridges + 1) - ridges).clamp(0.0, 1.0);
+    final core = size.width * 0.035;
+    canvas.drawCircle(
+      center,
+      core,
+      Paint()
+        ..color = Color.lerp(
+            _baseRed.withOpacity(0.30), _litRed, coreReveal)!,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FingerprintPainter old) => old.progress != progress;
 }

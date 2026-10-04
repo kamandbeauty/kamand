@@ -89,13 +89,14 @@ void main() {
     expect(find.byType(NiyyatScreen), findsOneWidget);
     expect(find.text('این فال مرا بکشای'), findsOneWidget);
     expect(find.text('نیّت کنید و اشاره‌ای بفرمایید'), findsOneWidget);
-    expect(find.byIcon(Icons.fingerprint), findsOneWidget);
+    expect(find.byKey(const Key('fingerprint_print')), findsOneWidget);
 
     // نگه‌داشتن انگشت روی اثر انگشت (بیش از ۸۰۰ میلی‌ثانیه)
     // نکتهٔ تست: پمپِ یک‌بارهٔ طولانی انیمیشن را کامل نمی‌کند چون تیکر در
     // اولین فریم مبنای زمانش را می‌سازد؛ پس در دو گام جلو می‌رویم.
     final gesture = await tester
-        .startGesture(tester.getCenter(find.byIcon(Icons.fingerprint)));
+        .startGesture(
+            tester.getCenter(find.byKey(const Key('fingerprint_print'))));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 1600));
     await gesture.up();

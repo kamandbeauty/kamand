@@ -157,7 +157,8 @@ void main() {
 
       // شروع نگه‌داشتن انگشت
       final gesture = await tester
-          .startGesture(tester.getCenter(find.byIcon(Icons.fingerprint)));
+          .startGesture(
+              tester.getCenter(find.byKey(const Key('fingerprint_print'))));
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 400));
 
