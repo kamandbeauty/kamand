@@ -48,7 +48,38 @@ jobs:
 
       - name: Analyze
         working-directory: divan_fal_hafez
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        shell: bash
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze-report.txt 2>&1
+          code=$?
+          echo "EXIT_CODE=$code" >> analyze-report.txt
+          exit $code
+
+      - name: Upload analyze report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyze-report
+          path: divan_fal_hafez/analyze-report.txt
+          retention-days: 30
+
+      - name: Post analyze failure report to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: divan_fal_hafez
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          if [ -n "$PR" ] && [ "$PR" != "null" ] && [ -f analyze-report.txt ]; then
+            {
+              echo "### ❌ گزارش خطای آنالیز (run #${GITHUB_RUN_NUMBER})"
+              echo '```text'
+              tail -c 6000 analyze-report.txt
+              echo '```'
+            } > /tmp/comment-analyze.md
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment-analyze.md
+          fi
 
       - name: Run tests
         working-directory: divan_fal_hafez
@@ -77,7 +108,7 @@ jobs:
         run: |
           PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
           echo "PR=$PR"
-          if [ -n "$PR" ] && [ "$PR" != "null" ]; then
+          if [ -n "$PR" ] && [ "$PR" != "null" ] && [ -f test-report.txt ]; then
             {
               echo "### ❌ گزارش خطای تست (run #${GITHUB_RUN_NUMBER})"
               echo '```text'
