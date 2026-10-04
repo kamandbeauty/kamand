@@ -2,7 +2,10 @@
 
 import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/settings_service.dart';
+import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/main.dart';
+import 'package:fale_hafez/niyyat_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,7 +35,7 @@ void main() {
     await tester.pumpWidget(app);
 
     // در ابتدا صفحهٔ اسپلش با نسخهٔ برنامه دیده می‌شود
-    expect(find.text('نسخه برنامه 1.3'), findsOneWidget);
+    expect(find.text('نسخه برنامه 1.4'), findsOneWidget);
 
     // پس از پایان اسپلش (۳ ثانیه) صفحهٔ اصلی با دکمه‌ها نمایش داده می‌شود
     await tester.pump(const Duration(seconds: 3));
@@ -68,5 +71,32 @@ void main() {
     expect(find.text('کپی'), findsOneWidget);
     expect(find.text('اشتراک‌گذاری'), findsOneWidget);
     expect(find.text('دلخواه'), findsOneWidget);
+  });
+
+  testWidgets('نیّت و فال: متن آیین نیّت و گرفتن فال با نگه‌داشتن اثر انگشت',
+      (WidgetTester tester) async {
+    final app = await _buildApp(tester);
+    await tester.pumpWidget(app);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+
+    // ورود به صفحهٔ نیّت
+    await tester.tap(find.text('نیت کردم ، فالمو بگیر'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NiyyatScreen), findsOneWidget);
+    expect(find.text('این فال مرا بکشای'), findsOneWidget);
+    expect(find.text('نیّت کنید و اشاره‌ای بفرمایید'), findsOneWidget);
+    expect(find.byIcon(Icons.fingerprint), findsOneWidget);
+
+    // نگه‌داشتن انگشت روی اثر انگشت (بیش از ۱۴۰۰ میلی‌ثانیه)
+    final gesture = await tester
+        .startGesture(tester.getCenter(find.byIcon(Icons.fingerprint)));
+    await tester.pump(const Duration(milliseconds: 1700));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    // پس از اسکن، صفحهٔ فال باز می‌شود
+    expect(find.byType(FalScreen), findsOneWidget);
   });
 }

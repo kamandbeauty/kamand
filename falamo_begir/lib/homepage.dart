@@ -1,7 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:fale_hafez/about.dart';
 import 'package:fale_hafez/divan_screen.dart';
-import 'package:fale_hafez/falscreen.dart';
+import 'package:fale_hafez/niyyat_screen.dart';
 import 'package:fale_hafez/favorites_screen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/settings_screen.dart';
@@ -44,9 +44,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// رفتن به صفحهٔ فال - فال‌ها آفلاین و داخل برنامه‌اند
-  /// و دیگر به اینترنت نیازی نیست.
-  void _onFalButtonPressed() => Get.to(const FalScreen());
+  /// رفتن به صفحهٔ نیّت - متن آیین نیّت و سپس نگه‌داشتن انگشت
+  /// روی اثر انگشت برای گرفتن فال (فال‌ها آفلاین و داخل برنامه‌اند)
+  void _onFalButtonPressed() => Get.to(const NiyyatScreen());
 
   /// رفتن به دیوان حافظ - فهرست کامل آثار با جستجو
   void _onDivanButtonPressed() => Get.to(const DivanScreen());
