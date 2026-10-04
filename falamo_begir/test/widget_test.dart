@@ -90,9 +90,12 @@ void main() {
     expect(find.byIcon(Icons.fingerprint), findsOneWidget);
 
     // نگه‌داشتن انگشت روی اثر انگشت (بیش از ۱۴۰۰ میلی‌ثانیه)
+    // نکتهٔ تست: پمپِ یک‌بارهٔ طولانی انیمیشن را کامل نمی‌کند چون تیکر در
+    // اولین فریم مبنای زمانش را می‌سازد؛ پس در دو گام جلو می‌رویم.
     final gesture = await tester
         .startGesture(tester.getCenter(find.byIcon(Icons.fingerprint)));
-    await tester.pump(const Duration(milliseconds: 1700));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 1600));
     await gesture.up();
     await tester.pumpAndSettle();
 
