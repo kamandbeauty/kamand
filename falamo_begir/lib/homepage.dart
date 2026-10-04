@@ -7,6 +7,7 @@ import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/settings_screen.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_button.dart';
+import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -113,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('assets/background/mainscreen.png'),
+                  image: AssetImage('assets/background/homebg.jpg'),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -124,21 +125,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               top: topPadding + 12,
               right: 15,
               left: 15,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GlassCircleButton(
-                    onPressed: _isPlaying ? _stopAudio : _playAudio,
-                    icon: _isPlaying
-                        ? Icons.music_note_outlined
-                        : Icons.music_off_outlined,
-                  ),
-                  const AppBrand(fontSize: 24, onDark: true),
-                  GlassCircleButton(
-                    onPressed: () => Get.to(const AboutScreen()),
-                    icon: CupertinoIcons.person_alt_circle,
-                  ),
-                ],
+              child: GlassPanel(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 8),
+                radius: 18,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GlassCircleButton(
+                      onPressed: _isPlaying ? _stopAudio : _playAudio,
+                      icon: _isPlaying
+                          ? Icons.music_note_outlined
+                          : Icons.music_off_outlined,
+                    ),
+                    const AppBrand(fontSize: 24, onDark: true),
+                    GlassCircleButton(
+                      onPressed: () => Get.to(const AboutScreen()),
+                      icon: CupertinoIcons.person_alt_circle,
+                    ),
+                  ],
+                ),
               ),
             ),
 

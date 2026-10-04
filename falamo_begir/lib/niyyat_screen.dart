@@ -1,6 +1,7 @@
 import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
+import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -109,20 +110,26 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                       right: 10,
                       left: 10,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _headerButton(
-                          size: headerH,
-                          icon: CupertinoIcons.back,
-                          onPressed: Get.back,
-                        ),
-                        const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: AppBrand(fontSize: 18, onDark: true),
-                        ),
-                        SizedBox(width: headerH),
-                      ],
+                    child: GlassPanel(
+                      radius: 16,
+                      blur: 12,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _headerButton(
+                            size: headerH,
+                            icon: CupertinoIcons.back,
+                            onPressed: Get.back,
+                          ),
+                          const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: AppBrand(fontSize: 17, onDark: true),
+                          ),
+                          SizedBox(width: headerH),
+                        ],
+                      ),
                     ),
                   ),
 

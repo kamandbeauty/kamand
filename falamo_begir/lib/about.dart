@@ -34,7 +34,7 @@ class AboutScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
                     Image.asset(
-                      'assets/applogo.png',
+                      'assets/appicon.png',
                       width: width / 2,
                     ),
                     SizedBox(height: height / 30),

@@ -3,6 +3,7 @@ import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
+import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -86,24 +87,32 @@ class _FalScreenState extends State<FalScreen> {
               top: topPadding + 12,
               right: 10,
               left: 10,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _headerButton(
-                    width: width,
-                    icon: CupertinoIcons.back,
-                    onPressed: Get.back,
-                  ),
-                  const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: AppBrand(fontSize: 20, onDark: false),
-                  ),
-                  _headerButton(
-                    width: width,
-                    icon: CupertinoIcons.person_alt_circle,
-                    onPressed: () => Get.to(const AboutScreen()),
-                  ),
-                ],
+              child: GlassPanel(
+                tintOpacity: 0.30,
+                borderOpacity: 0.55,
+                radius: 16,
+                blur: 12,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _headerButton(
+                      width: width,
+                      icon: CupertinoIcons.back,
+                      onPressed: Get.back,
+                    ),
+                    const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: AppBrand(fontSize: 18, onDark: false),
+                    ),
+                    _headerButton(
+                      width: width,
+                      icon: CupertinoIcons.person_alt_circle,
+                      onPressed: () => Get.to(const AboutScreen()),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -223,64 +232,93 @@ class _FalScreenState extends State<FalScreen> {
       child: Column(
         children: [
           SizedBox(height: height / 7),
-          Text(
-            'شماره صفحه فال شما : ${fal.number}',
-            textAlign: TextAlign.center,
-            locale: const Locale('fa'),
-            textDirection: TextDirection.rtl,
-            style: vazirText(
-              fontSize: 20,
-              color: const Color.fromRGBO(107, 38, 15, 1),
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(height: height / 20),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: width / 15),
-            child: Text(
-              fal.verses,
-              textAlign: TextAlign.center,
-              locale: const Locale('fa'),
-              textDirection: TextDirection.rtl,
-              style: vazirText(
-                fontSize: 18,
-                color: const Color.fromRGBO(107, 38, 15, 1),
-                fontWeight: FontWeight.w900,
-                height: 2,
+            padding: EdgeInsets.symmetric(horizontal: width / 14),
+            child: GlassPanel(
+              tintOpacity: 0.42,
+              borderOpacity: 0.60,
+              radius: 20,
+              blur: 16,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 16),
+              child: Column(
+                children: [
+                  Text(
+                    'شماره صفحه فال شما : ${fal.number}',
+                    textAlign: TextAlign.center,
+                    locale: const Locale('fa'),
+                    textDirection: TextDirection.rtl,
+                    style: vazirText(
+                      fontSize: 18,
+                      color: const Color.fromRGBO(107, 38, 15, 1),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 1.4,
+                    width: 120,
+                    color: const Color.fromRGBO(107, 38, 15, 0.35),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    fal.verses,
+                    textAlign: TextAlign.center,
+                    locale: const Locale('fa'),
+                    textDirection: TextDirection.rtl,
+                    style: vazirText(
+                      fontSize: 18,
+                      color: const Color.fromRGBO(107, 38, 15, 1),
+                      fontWeight: FontWeight.w900,
+                      height: 2,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          SizedBox(height: height / 20),
-          const Divider(
-            color: Color.fromRGBO(107, 38, 15, 0.45),
-            thickness: 1.2,
-            indent: 40,
-            endIndent: 40,
-          ),
-          SizedBox(height: height / 20),
-          Text(
-            'تفسیر فال شما',
-            textAlign: TextAlign.center,
-            locale: const Locale('fa'),
-            textDirection: TextDirection.rtl,
-            style: vazirText(
-              fontSize: 20,
-              color: const Color.fromRGBO(107, 38, 15, 1),
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(height: height / 30),
-          SizedBox(
-            width: width / 1.2,
-            child: Text(
-              fal.meaning ?? '',
-              textAlign: TextAlign.center,
-              locale: const Locale('fa'),
-              textDirection: TextDirection.rtl,
-              style: vazirText(
-                fontSize: 16,
-                color: const Color.fromRGBO(107, 38, 15, 1),
-                height: 1.8,
+          SizedBox(height: height / 24),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: width / 14),
+            child: GlassPanel(
+              tintOpacity: 0.42,
+              borderOpacity: 0.60,
+              radius: 20,
+              blur: 16,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 14),
+              child: Column(
+                children: [
+                  Text(
+                    'تفسیر فال شما',
+                    textAlign: TextAlign.center,
+                    locale: const Locale('fa'),
+                    textDirection: TextDirection.rtl,
+                    style: vazirText(
+                      fontSize: 18,
+                      color: const Color.fromRGBO(107, 38, 15, 1),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 1.4,
+                    width: 100,
+                    color: const Color.fromRGBO(107, 38, 15, 0.35),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    fal.meaning ?? '',
+                    textAlign: TextAlign.center,
+                    locale: const Locale('fa'),
+                    textDirection: TextDirection.rtl,
+                    style: vazirText(
+                      fontSize: 16,
+                      color: const Color.fromRGBO(107, 38, 15, 1),
+                      height: 1.8,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

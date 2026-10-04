@@ -1,6 +1,7 @@
 import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/homepage.dart';
+import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -48,10 +49,29 @@ class _MyHomePageState extends State<MyHomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  Image.asset(
-                    "assets/logotext.png",
-                    width: width / 1.2,
+                  // نماد برنامه (آیکون رسمی) به‌جای لوگوی قدیمی
+                  Container(
+                    width: width / 2.2,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(width / 8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.45),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(width / 8),
+                      child: Image.asset(
+                        "assets/appicon.png",
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
+                  const SizedBox(height: 18),
+                  const AppBrand(fontSize: 28, onDark: true),
                   SizedBox(
                     height: height / 30,
                   ),

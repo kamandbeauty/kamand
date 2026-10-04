@@ -3,6 +3,7 @@ import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
+import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -203,18 +204,27 @@ class _PoemScreenState extends State<PoemScreen> {
                   right: 14,
                   left: 14,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: AppBrand(fontSize: 20, onDark: false),
-                    ),
-                    _headerButton(
-                      icon: CupertinoIcons.back,
-                      onPressed: Get.back,
-                    ),
-                  ],
+                child: GlassPanel(
+                  tintOpacity: 0.30,
+                  borderOpacity: 0.55,
+                  radius: 16,
+                  blur: 12,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: AppBrand(fontSize: 18, onDark: false),
+                      ),
+                      const SizedBox(width: 12),
+                      _headerButton(
+                        icon: CupertinoIcons.back,
+                        onPressed: Get.back,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -296,17 +306,6 @@ class _PoemScreenState extends State<PoemScreen> {
         final isFav = _settings.isFavorite(poem.id);
         return Column(
           children: [
-            Text(
-              poem.displayTitle,
-              textAlign: TextAlign.center,
-              textDirection: TextDirection.rtl,
-              style: vazirText(
-                fontSize: 22,
-                color: _dark,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-
             // متن شعر + بزرگنمایی دو انگشتی
             Expanded(
               child: GestureDetector(
@@ -323,16 +322,46 @@ class _PoemScreenState extends State<PoemScreen> {
                           const SizedBox(height: 12),
                           Padding(
                             padding:
-                                const EdgeInsets.symmetric(horizontal: 20),
-                            child: Text(
-                              poem.verses,
-                              textAlign: TextAlign.center,
-                              textDirection: TextDirection.rtl,
-                              style: vazirText(
-                                fontSize: 17 * fontScale,
-                                color: _dark,
-                                fontWeight: FontWeight.w700,
-                                height: 2.2,
+                                const EdgeInsets.symmetric(horizontal: 16),
+                            child: GlassPanel(
+                              tintOpacity: 0.42,
+                              borderOpacity: 0.60,
+                              radius: 20,
+                              blur: 16,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 18),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    poem.displayTitle,
+                                    textAlign: TextAlign.center,
+                                    textDirection: TextDirection.rtl,
+                                    style: vazirText(
+                                      fontSize: 21,
+                                      color: _dark,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    height: 1.4,
+                                    width: 120,
+                                    color:
+                                        _dark.withOpacity(0.35),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Text(
+                                    poem.verses,
+                                    textAlign: TextAlign.center,
+                                    textDirection: TextDirection.rtl,
+                                    style: vazirText(
+                                      fontSize: 17 * fontScale,
+                                      color: _dark,
+                                      fontWeight: FontWeight.w700,
+                                      height: 2.2,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
