@@ -39,7 +39,6 @@ class SettingsService extends ChangeNotifier {
   static const String _kNotes = 'poem_notes';
   static const String _kFalHistory = 'fal_history';
   static const String _kLastPoemId = 'last_poem_id';
-  static const String _kOnboardingSeen = 'onboarding_seen_v1';
   static const String _kNightMode = 'night_mode';
 
   /// کمترین و بیشترین ضریب بزرگنمایی قلم اشعار
@@ -58,7 +57,6 @@ class SettingsService extends ChangeNotifier {
   Map<String, String> _notes = {};
   List<FalEntry> _falHistory = [];
   String? _lastPoemId;
-  bool _onboardingSeen = false;
   bool _nightMode = false;
 
   String get fontKey => _fontKey;
@@ -66,7 +64,6 @@ class SettingsService extends ChangeNotifier {
   Set<String> get favorites => Set.unmodifiable(_favorites);
   List<FalEntry> get falHistory => List.unmodifiable(_falHistory);
   String? get lastPoemId => _lastPoemId;
-  bool get onboardingSeen => _onboardingSeen;
   bool get nightMode => _nightMode;
 
   /// خواندن تنظیمات ذخیره‌شده از حافظهٔ دستگاه
@@ -79,7 +76,6 @@ class SettingsService extends ChangeNotifier {
     _notes = _decodeNoteList(_prefs!.getStringList(_kNotes));
     _falHistory = _decodeFalHistory(_prefs!.getStringList(_kFalHistory));
     _lastPoemId = _prefs!.getString(_kLastPoemId);
-    _onboardingSeen = _prefs!.getBool(_kOnboardingSeen) ?? false;
     _nightMode = _prefs!.getBool(_kNightMode) ?? false;
     notifyListeners();
   }
@@ -167,14 +163,6 @@ class SettingsService extends ChangeNotifier {
     _lastPoemId = poemId;
     notifyListeners();
     _persist((prefs) => prefs.setString(_kLastPoemId, poemId));
-  }
-
-  /// ثبت دیده‌شدن آنبوردینگ (اولین اجرا)
-  Future<void> markOnboardingSeen() async {
-    if (_onboardingSeen) return;
-    _onboardingSeen = true;
-    notifyListeners();
-    _persist((prefs) => prefs.setBool(_kOnboardingSeen, true));
   }
 
   /// روشن/خاموش کردن حالت مطالعهٔ شبانه

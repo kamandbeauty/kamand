@@ -103,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.85),
+                                    color: const Color(0xFFFDF7E7),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -352,8 +352,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: const Color(0xFFF7EFDD),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFCFA865), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

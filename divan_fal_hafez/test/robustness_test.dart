@@ -19,8 +19,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> _setupGet(WidgetTester tester) async {
-  // آنبوردینگ اولین اجرا در تست‌ها از قبل «دیده‌شده» است
-  SharedPreferences.setMockInitialValues({'onboarding_seen_v1': true});
+  SharedPreferences.setMockInitialValues({});
   final settings = SettingsService();
   await settings.load();
   await Get.deleteAll(force: true);

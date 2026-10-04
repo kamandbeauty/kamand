@@ -4,7 +4,6 @@ import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/error_reporter.dart';
 import 'package:fale_hafez/fonts.dart';
-import 'package:fale_hafez/onboarding_screen.dart';
 import 'package:fale_hafez/splash.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -48,9 +47,7 @@ class MyApp extends StatelessWidget {
             useMaterial3: true,
           ),
           debugShowCheckedModeBanner: false,
-          home: settings.onboardingSeen
-              ? const MyHomePage()
-              : const OnboardingScreen(),
+          home: const MyHomePage(),
         );
       },
     );
