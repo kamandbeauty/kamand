@@ -39,18 +39,16 @@ class Assets {
   Assets._();
 
   static const AssetGenImage appicon = AssetGenImage('assets/appicon.png');
-  static const AssetGenImage applogo = AssetGenImage('assets/applogo.png');
   static const $AssetsBackgroundGen background = $AssetsBackgroundGen();
   static const String github = 'assets/github.svg';
   static const String instagram = 'assets/instagram.svg';
   static const String linkedin = 'assets/linkedin.svg';
-  static const AssetGenImage logotext = AssetGenImage('assets/logotext.png');
   static const String twitter = 'assets/twitter.svg';
   static const AssetGenImage wifi = AssetGenImage('assets/wifi.png');
 
   /// List of all assets
   List<dynamic> get values =>
-      [appicon, applogo, github, instagram, linkedin, logotext, twitter, wifi];
+      [appicon, github, instagram, linkedin, twitter, wifi];
 }
 
 class AssetGenImage {
