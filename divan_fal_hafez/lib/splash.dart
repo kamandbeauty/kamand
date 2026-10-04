@@ -1,7 +1,6 @@
 import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/homepage.dart';
-import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -26,76 +25,82 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.sizeOf(context).width;
-    double height = MediaQuery.sizeOf(context).height;
-    return Scaffold(
+    return const Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Stack(children: [
-            Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage("assets/background/splash.png"),
-                  fit: BoxFit.cover,
-                ),
-              ),
+        child: _SplashView(),
+      ),
+    );
+  }
+}
+
+/// نمایش صفحهٔ اسپلش
+///
+/// تصویر تمام‌صفحهٔ اختصاصی «دیوان و فال حافظ» (اثر استودیو جاوید)،
+/// بدون پوشش مجدد لوگو/عنوان؛ فقط اسپینر بارگذاری و شمارهٔ نسخه در
+/// پایینِ خوانا (با پردهٔ تیرهٔ ملایم) نمایش داده می‌شوند.
+class _SplashView extends StatelessWidget {
+  const _SplashView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // پس‌زمینهٔ تمام‌صفحهٔ اسپلش
+        Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage("assets/background/splash.jpg"),
+              fit: BoxFit.cover,
             ),
-            Positioned(
-              left: 5,
-              right: 5,
-              top: 20,
-              bottom: 20,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  // نماد برنامه (آیکون رسمی) به‌جای لوگوی قدیمی
-                  Container(
-                    width: width / 2.2,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(width / 8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.45),
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(width / 8),
-                      child: Image.asset(
-                        "assets/appicon.png",
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const AppBrand(fontSize: 28, onDark: true),
-                  SizedBox(
-                    height: height / 30,
-                  ),
-                  const SpinKitFadingFour(
-                    color: Colors.white,
-                    size: 50.0,
-                  ),
+          ),
+        ),
+
+        // پردهٔ تیرهٔ ملایم در قسمت پایین برای خوانایی لود و نسخه
+        Positioned(
+          bottom: 0,
+          right: 0,
+          left: 0,
+          child: Container(
+            height: 110,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.55),
                 ],
               ),
             ),
-            Positioned(
-              bottom: 10,
-              right: 5,
-              left: 5,
-              child: Center(
-                child: Text(
-                  "نسخه برنامه ${AppInfo.version}",
-                  style: vazirText(color: Colors.white),
-                ),
-              ),
-            )
-          ]),
+          ),
         ),
-      ),
+
+        // اسپینر بارگذاری
+        const Positioned(
+          bottom: 44,
+          right: 0,
+          left: 0,
+          child: Center(
+            child: SpinKitFadingFour(
+              color: Colors.white,
+              size: 34.0,
+            ),
+          ),
+        ),
+
+        // نسخهٔ برنامه
+        Positioned(
+          bottom: 12,
+          right: 5,
+          left: 5,
+          child: Center(
+            child: Text(
+              "نسخه برنامه ${AppInfo.version}",
+              style: vazirText(color: Colors.white),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

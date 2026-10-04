@@ -39,7 +39,11 @@ jobs:
         working-directory: divan_fal_hafez
         shell: bash
         run: |
-          echo "one-time dependency refresh for SDK compatibility"
+          if flutter pub get; then
+            echo "dependencies resolved from committed lockfile (reproducible)"
+          else
+          echo "lockfile incompatible with current SDK - one-time refresh"
+          set -e
           flutter pub upgrade
           if ! git diff --quiet -- pubspec.lock; then
             git config user.name "github-actions[bot]"
@@ -48,8 +52,7 @@ jobs:
             git commit -m "chore: refresh pubspec.lock for current Flutter SDK [skip ci]"
             git push
             echo "refreshed lockfile pushed to branch"
-          else
-            echo "lockfile already up to date"
+          fi
           fi
 
       - name: Analyze
@@ -145,9 +148,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Resolve dependencies (temporary upgrade for lock refresh)
+      - name: Resolve dependencies (pub get from committed lock)
         working-directory: divan_fal_hafez
-        run: flutter pub upgrade
+        run: flutter pub get || flutter pub upgrade
 
       - name: Build release APKs (universal + split per ABI)
         working-directory: divan_fal_hafez
