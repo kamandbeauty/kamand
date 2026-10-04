@@ -1,5 +1,6 @@
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fonts.dart';
+import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -268,23 +269,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required IconData icon,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
-      width: 36,
-      height: 36,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.yellow,
-          backgroundColor: _accent,
-          shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: EdgeInsets.zero,
-        ),
-        child: Icon(icon, color: _dark),
-      ),
-    );
+    return AppThemeButton.icon(icon: icon, onPressed: onPressed);
   }
 }

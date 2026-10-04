@@ -5,6 +5,7 @@ import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_button.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
+import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -127,26 +128,10 @@ class _FalScreenState extends State<FalScreen> {
     required IconData icon,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
-      width: width / 10,
-      height: width / 10,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.yellow,
-          backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
-          shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: EdgeInsets.zero,
-        ),
-        child: Icon(
-          icon,
-          color: const Color.fromRGBO(107, 38, 15, 1),
-        ),
-      ),
+    return AppThemeButton.icon(
+      icon: icon,
+      onPressed: onPressed,
+      size: width / 10,
     );
   }
 

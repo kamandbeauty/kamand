@@ -3,6 +3,7 @@ import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/poem_screen.dart';
 import 'package:fale_hafez/util/persian_text.dart';
+import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -215,24 +216,7 @@ class _DivanScreenState extends State<DivanScreen> {
     required IconData icon,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
-      width: 36,
-      height: 36,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.yellow,
-          backgroundColor: _accent,
-          shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: EdgeInsets.zero,
-        ),
-        child: Icon(icon, color: _dark),
-      ),
-    );
+    return AppThemeButton.icon(icon: icon, onPressed: onPressed);
   }
 
   Widget _buildList(double bottomPadding) {
@@ -276,10 +260,11 @@ class _DivanScreenState extends State<DivanScreen> {
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _load,
-              style: ElevatedButton.styleFrom(backgroundColor: _accent),
+              style: AppThemeButton.style(),
               child: Text(
                 'تلاش مجدد',
-                style: vazirText(color: _dark, fontWeight: FontWeight.w700),
+                style: vazirText(
+                    color: AppThemeButton.gold, fontWeight: FontWeight.w700),
               ),
             ),
           ],
