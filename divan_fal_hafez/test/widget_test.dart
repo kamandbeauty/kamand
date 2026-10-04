@@ -75,7 +75,7 @@ void main() {
     expect(find.text('دلخواه'), findsOneWidget);
   });
 
-  testWidgets('نیّت و فال: متن آیین نیّت و گرفتن فال با نگه‌داشتن اثر انگشت',
+  testWidgets('نیّت و فال: گرفتن فال با نگه‌داشتن اثر انگشت',
       (WidgetTester tester) async {
     final app = await _buildApp(tester);
     await tester.pumpWidget(app);
@@ -86,9 +86,8 @@ void main() {
     await tester.tap(find.text('گرفتن فال'));
     await tester.pumpAndSettle();
 
+    // صفحهٔ نیّت فقط آثار تصویری + اسکنر اثر انگشت دارد (بدون نوشته)
     expect(find.byType(NiyyatScreen), findsOneWidget);
-    expect(find.text('این فال مرا بکشای'), findsOneWidget);
-    expect(find.text('نیّت کنید و اشاره‌ای بفرمایید'), findsOneWidget);
     expect(find.byKey(const Key('fingerprint_print')), findsOneWidget);
 
     // نگه‌داشتن انگشت روی اثر انگشت (بیش از ۸۰۰ میلی‌ثانیه)

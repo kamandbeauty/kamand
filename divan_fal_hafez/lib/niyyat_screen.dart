@@ -1,17 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:fale_hafez/falscreen.dart';
-import 'package:fale_hafez/fonts.dart';
-import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-/// صفحهٔ نیّت و گرفتن فال - به سبک آیین سنتی استخاره با دیوان حافظ:
-/// ابتدا متن آیین نیّت خوانده می‌شود و سپس کاربر با «نگه‌داشتن انگشت»
-/// روی اثر انگشت، فال خود را می‌گیرد.
+/// صفحهٔ نیّت و گرفتن فال روی آثار اختصاصیِ صاحب‌اثر:
+/// خودِ تصویر (قابِ طلایی، خوش‌نویسیِ نیّت، دیوانِ باز و حافظیه)
+/// تمام روایتِ صفحه است؛ هیچ نوشته‌ای روی آن نیامده و فقط اسکنرِ
+/// اثر انگشت، متناسب با ترکیب‌بندی تصویر، روی مُهرِ طلاییِ وسطِ
+/// قاب (میان خوش‌نویسی و دیوانِ باز) نشسته است.
 class NiyyatScreen extends StatefulWidget {
   const NiyyatScreen({super.key});
 
@@ -21,20 +21,11 @@ class NiyyatScreen extends StatefulWidget {
 
 class _NiyyatScreenState extends State<NiyyatScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  static const Color _accent = Color.fromRGBO(234, 158, 77, 1);
-  static const Color _dark = Color.fromRGBO(107, 38, 15, 1);
-  static const Color _bracket = Color(0xFF2E8B57);
+  /// قابِ گوشه‌های اسکنر: کهرباییِ تیره هم‌رنگِ قابِ طلاییِ تصویر
+  static const Color _bracketGold = Color(0xFF8A5A2B);
 
   /// مدت نگه‌داشتن انگشت تا گرفتن فال
   static const Duration _holdDuration = Duration(milliseconds: 800);
-
-  /// بیت‌های آیین نیّت برای گرفتن فال از حافظ (روایت سنتی کهن)
-  static const List<String> _niyyatVerses = [
-    'حافظ ای حافظ شیرازی، بر من نظر اندازی',
-    'من طالب یک رازم، تو کاشف هر فالی',
-    'به شاخِ نبات، قمری دم به قولی که در سینه داری',
-    'این فال مرا بکشای',
-  ];
 
   late final AnimationController _hold =
       AnimationController(vsync: this, duration: _holdDuration)
@@ -106,7 +97,6 @@ class _NiyyatScreenState extends State<NiyyatScreen>
 
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.sizeOf(context).width;
     final double topPadding = MediaQuery.viewPaddingOf(context).top;
 
     return Directionality(
@@ -115,181 +105,97 @@ class _NiyyatScreenState extends State<NiyyatScreen>
         body: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/background/homebg.jpg'),
+              image: AssetImage('assets/background/faalbg.jpg'),
               fit: BoxFit.cover,
             ),
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
               // اندازهٔ اسکنر متناسب با ارتفاع صفحه تا روی صفحه‌های کوتاه
-              // (یا لندسکیپ) سرریز رخ ندهد
+              // (یا لندسکیپ) از تصویر بیرون نزند
               final double scanner =
-                  (constraints.maxHeight * 0.26).clamp(110.0, 210.0);
-              // ارتفاع نوار بالایی محدود و وابسته به عرض می‌ماند تا
-              // لوگو (ابعاد دلخواه تصویر) باعث سرریز نشود
-              final double headerH = (width / 10).clamp(36.0, 60.0);
+                  (constraints.maxHeight * 0.165).clamp(96.0, 170.0);
+              // جایگاه متناسب با ترکیب‌بندی اثر: بلافاصله زیر خوش‌نویسیِ
+              // نیّت و روی مُهرِ طلاییِ وسطِ قاب، بالای دیوانِ باز
+              final double centerY = constraints.maxHeight * 0.63;
 
-              // روی صفحه‌های کوتاه یا لندسکیپ: محتوا به‌جای Overflow
-              // اسکرول می‌شود؛ روی صفحه‌های معمولی با ConstrainedBox+Spacer
-              // همان چیدمان قبلی (top/…/bottom) حفظ می‌شود.
-              return SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints:
-                      BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      children: [
-                  // نوار بالایی: دکمهٔ بازگشت و لوگو (سبک صفحهٔ فال)
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: topPadding + 12,
-                      right: 10,
-                      left: 10,
-                    ),
-                    child: GlassPanel(
-                      radius: 16,
-                      blur: 12,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _headerButton(
-                            size: headerH,
-                            icon: CupertinoIcons.back,
-                            onPressed: Get.back,
-                          ),
-                          const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: AppBrand(fontSize: 17, onDark: true),
-                          ),
-                          SizedBox(width: headerH),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // متن آیین نیّت
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.92),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _dark.withOpacity(0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          for (final verse in _niyyatVerses)
-                            Text(
-                              verse,
-                              textDirection: TextDirection.rtl,
-                              textAlign: TextAlign.center,
-                              style: vazirText(
-                                fontSize: 19,
-                                fontWeight: FontWeight.w700,
-                                color: _dark,
-                                height: 1.9,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const Spacer(),
-
+              return Stack(
+                children: [
                   // قاب اسکنر و اثر انگشت - نگه‌داشتن انگشت برای گرفتن فال
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTapDown: _startHold,
-                    onTapUp: _cancelHold,
-                    onTapCancel: () => _cancelHold(),
-                    child: SizedBox(
-                      width: scanner,
-                      height: scanner,
-                      child: CustomPaint(
-                        painter: _CornerBracketsPainter(color: _bracket),
-                        child: Center(
-                          child: AnimatedBuilder(
-                            animation: _hold,
-                            builder: (context, child) {
-                              return Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // حلقهٔ پیشرفت دایره‌ای با گرادیان طلایی،
-                                  // هالهٔ نور و سرِ دنباله‌دارِ درخشان
-                                  SizedBox(
-                                    width: scanner * 0.84,
-                                    height: scanner * 0.84,
-                                    child: CustomPaint(
-                                      painter: _ProgressRingPainter(
-                                          progress: _hold.value),
-                                    ),
-                                  ),
-                                  // اثر انگشتِ دست‌ساز: خطوط قوسی که با
-                                  // پیشرفت اسکن، کم‌کم قرمزِ درخشان می‌شوند
-                                  Transform.scale(
-                                    scale: 1.0 + _hold.value * 0.08,
-                                    child: SizedBox(
-                                      width: scanner * 0.62,
-                                      height: scanner * 0.62,
+                  Positioned(
+                    top: centerY - scanner / 2,
+                    right: (constraints.maxWidth - scanner) / 2,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapDown: _startHold,
+                      onTapUp: _cancelHold,
+                      onTapCancel: () => _cancelHold(),
+                      child: SizedBox(
+                        width: scanner,
+                        height: scanner,
+                        child: CustomPaint(
+                          painter:
+                              const _CornerBracketsPainter(_bracketGold),
+                          child: Center(
+                            child: AnimatedBuilder(
+                              animation: _hold,
+                              builder: (context, child) {
+                                return Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // حلقهٔ پیشرفت دایره‌ای با گرادیان
+                                    // طلایی و سرِ دنباله‌دارِ درخشان
+                                    SizedBox(
+                                      width: scanner * 0.84,
+                                      height: scanner * 0.84,
                                       child: CustomPaint(
-                                        key: const Key('fingerprint_print'),
-                                        painter: _FingerprintPainter(
+                                        painter: _ProgressRingPainter(
                                             progress: _hold.value),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              );
-                            },
+                                    // اثر انگشتِ دست‌ساز: خطوط قوسی که با
+                                    // پیشرفت اسکن، کم‌کم قرمزِ درخشان می‌شوند
+                                    Transform.scale(
+                                      scale: 1.0 + _hold.value * 0.08,
+                                      child: SizedBox(
+                                        width: scanner * 0.62,
+                                        height: scanner * 0.62,
+                                        child: CustomPaint(
+                                          key: const Key('fingerprint_print'),
+                                          painter: _FingerprintPainter(
+                                              progress: _hold.value),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 14),
-
-                  // راهنمای کاربر
-                  Text(
-                    'نیّت کنید و اشاره‌ای بفرمایید',
-                    textDirection: TextDirection.rtl,
-                    textAlign: TextAlign.center,
-                    style: vazirText(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                  // دکمهٔ بازگشتِ شیشه‌ایِ شناور (بدون هیچ نوشتهٔ اضافی)
+                  Positioned(
+                    top: topPadding + 12,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: Get.back,
+                      child: GlassPanel(
+                        radius: 14,
+                        blur: 12,
+                        padding: const EdgeInsets.all(10),
+                        child: const Icon(
+                          CupertinoIcons.back,
+                          size: 22,
+                          color: Color(0xFF5B3A1E),
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'انگشت خود را روی اثر انگشت نگه دارید',
-                    textDirection: TextDirection.rtl,
-                    textAlign: TextAlign.center,
-                    style: vazirText(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.85),
-                    ),
-                  ),
-
-                  const Spacer(),
-                      ],
-                    ),
-                  ),
-                ),
+                ],
               );
             },
           ),
@@ -297,36 +203,11 @@ class _NiyyatScreenState extends State<NiyyatScreen>
       ),
     );
   }
-
-  Widget _headerButton({
-    required double size,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.yellow,
-          backgroundColor: _accent,
-          shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: EdgeInsets.zero,
-        ),
-        child: Icon(icon, color: _dark),
-      ),
-    );
-  }
 }
 
 /// نقاش چهار گوشهٔ قاب اسکنر اثر انگشت (مانند کادر دوربین)
 class _CornerBracketsPainter extends CustomPainter {
-  const _CornerBracketsPainter({required this.color});
+  const _CornerBracketsPainter(this.color);
 
   final Color color;
 
@@ -334,11 +215,11 @@ class _CornerBracketsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 6
+      ..strokeWidth = size.width * 0.035
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    const double arm = 42;
+    final double arm = size.width * 0.24;
     const double inset = 4;
 
     // گوشهٔ بالا-راست
@@ -384,11 +265,11 @@ class _ProgressRingPainter extends CustomPainter {
     final stroke = size.width * 0.07;
     final radius = size.width / 2 - stroke * 1.6;
 
-    // ریلِ پس‌زمینهٔ ظریف
+    // ریلِ پس‌زمینهٔ ظریف (کهرباییِ ملایم برای زمینهٔ روشنِ اثر)
     final trackPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 0.65
-      ..color = Colors.white.withOpacity(0.26);
+      ..strokeWidth = stroke * 0.5
+      ..color = const Color(0xFF8A5A2B).withOpacity(0.30);
     canvas.drawCircle(center, radius, trackPaint);
 
     if (progress <= 0.002) return;
@@ -431,15 +312,18 @@ class _ProgressRingPainter extends CustomPainter {
         center.dx + radius * math.cos(tipAngle),
         center.dy + radius * math.sin(tipAngle),
       );
-      const cream = Color(0xFFFFF3D6);
       canvas.drawCircle(
         tip,
         stroke * 1.05,
         Paint()
-          ..color = cream.withOpacity(0.85)
+          ..color = _gold.withOpacity(0.85)
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, stroke * 0.85),
       );
-      canvas.drawCircle(tip, stroke * 0.42, Paint()..color = cream);
+      // حاشیهٔ کهربایی تا نوکِ روشن روی زمینهٔ کرمِ تصویر هم دیده شود
+      canvas.drawCircle(
+          tip, stroke * 0.55, Paint()..color = const Color(0xFFB96A20));
+      canvas.drawCircle(
+          tip, stroke * 0.36, Paint()..color = const Color(0xFFFFF3D6));
     }
   }
 
@@ -494,15 +378,15 @@ class _FingerprintPainter extends CustomPainter {
       canvas.drawArc(rect, startA, sweepA, false, ridgePaint);
     }
 
-    // قلبِ اثر انگشت: نقطهٔ مرکزی + قوس کوچکِ دور آن
+    // قلبِ اثر انگشت: نقطهٔ مرکزی
     final coreReveal = (progress * (ridges + 1) - ridges).clamp(0.0, 1.0);
     final core = size.width * 0.035;
     canvas.drawCircle(
       center,
       core,
       Paint()
-        ..color = Color.lerp(
-            _baseRed.withOpacity(0.30), _litRed, coreReveal)!,
+        ..color =
+            Color.lerp(_baseRed.withOpacity(0.30), _litRed, coreReveal)!,
     );
   }
 
