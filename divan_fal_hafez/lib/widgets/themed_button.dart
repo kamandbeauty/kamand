@@ -1,3 +1,4 @@
+import 'package:fale_hafez/fonts.dart';
 import 'package:flutter/material.dart';
 
 /// دکمه‌های هماهنگ با تم اصلی اپ (لاجورد + طلایی) برای همهٔ صفحات داخلی —
@@ -29,6 +30,60 @@ class AppThemeButton {
         side: BorderSide(color: gold.withOpacity(0.45), width: 1.2),
       ),
       padding: padding,
+    );
+  }
+
+  /// دکمهٔ برچسب‌دار فشردهٔ لاجورد+طلایی برای اقدام‌ها و پیمایش‌ها
+  /// (طرح یکدستِ تم اپ — جایگزین دکمه‌های شیشه‌ایِ نارنجیِ قدیمی)
+  static Widget labeled({
+    required String label,
+    IconData? icon,
+    required VoidCallback? onPressed,
+    double height = 48,
+    double fontSize = 14,
+    double radius = 12,
+  }) {
+    final enabled = onPressed != null;
+    return SizedBox(
+      height: height,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          foregroundColor: gold,
+          backgroundColor: navy,
+          disabledForegroundColor: gold.withOpacity(0.35),
+          disabledBackgroundColor: navy.withOpacity(0.45),
+          shadowColor: Colors.black54,
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radius),
+            side: BorderSide(
+              color: gold.withOpacity(enabled ? 0.45 : 0.18),
+              width: 1.1,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon,
+                  size: 18, color: gold.withOpacity(enabled ? 1 : 0.35)),
+              const SizedBox(width: 7),
+            ],
+            Text(
+              label,
+              textDirection: TextDirection.rtl,
+              style: vazirText(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w700,
+                color: gold.withOpacity(enabled ? 1 : 0.35),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

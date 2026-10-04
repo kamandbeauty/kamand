@@ -118,9 +118,9 @@ class _NiyyatScreenState extends State<NiyyatScreen>
               // از اثر انگشتِ واقعی طراحی شده است
               final double scanner =
                   (constraints.maxHeight * 0.17).clamp(110.0, 185.0);
-              // جایگاه متناسب با ترکیب‌بندی اثر: میان خوش‌نویسیِ نیّت و
-              // دیوانِ باز، در مرکز قاب
-              final double centerY = constraints.maxHeight * 0.625;
+              // جایگاه متناسب با ترکیب‌بندی اثر: روی فضای خالیِ
+              // بین خوش‌نویسیِ نیّت و دیوانِ باز (پایینِ وسطِ قاب)
+              final double centerY = constraints.maxHeight * 0.66;
 
               return Stack(
                 children: [
@@ -155,18 +155,8 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                                             progress: _hold.value),
                                       ),
                                     ),
-                                    // حلقهٔ پیشرفت دایره‌ای با گرادیان
-                                    // طلایی و سرِ دنباله‌دارِ درخشان
-                                    SizedBox(
-                                      width: scanner * 0.84,
-                                      height: scanner * 0.84,
-                                      child: CustomPaint(
-                                        painter: _ProgressRingPainter(
-                                            progress: _hold.value),
-                                      ),
-                                    ),
-                                    // اثر انگشتِ واقعی: خطوط تو‌در‌توی
-                                    // ارگانیک که درون جوهر جا می‌افتند
+                                    // اثر انگشتِ واقعی: خطوط قوسیِ
+                                    // تو‌در‌تو که هنگام اسکن طلایی می‌شود
                                     Transform.scale(
                                       scale: 1.0 + _hold.value * 0.08,
                                       child: SizedBox(
@@ -291,86 +281,6 @@ class _CornerBracketsPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-/// حلقهٔ پیشرفت دایره‌ایِ نگه‌داشتن انگشت:
-/// ریلِ نازک + قوسِ گرادیانیِ طلایی با درخششِ نرم و نقطهٔ نورانی در نوک قوس.
-class _ProgressRingPainter extends CustomPainter {
-  const _ProgressRingPainter({required this.progress});
-
-  static const _gold = Color(0xFFEA9E4D);
-
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final stroke = size.width * 0.07;
-    final radius = size.width / 2 - stroke * 1.6;
-
-    // ریلِ پس‌زمینهٔ ظریف (کهرباییِ ملایم برای زمینهٔ روشنِ اثر)
-    final trackPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 0.5
-      ..color = const Color(0xFF8A5A2B).withOpacity(0.30);
-    canvas.drawCircle(center, radius, trackPaint);
-
-    if (progress <= 0.002) return;
-
-    const start = -math.pi / 2;
-    final sweep = math.pi * 2 * progress;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    // هالهٔ نرم زیر قوس (لطیف، تا جوهر ستارهٔ صحنه باقی بماند)
-    final glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 2.3
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, stroke * 1.3)
-      ..color = _gold.withOpacity(0.35 * progress);
-    canvas.drawArc(rect, start, sweep, false, glowPaint);
-
-    // قوسِ اصلی با گرادیانِ طلایی (از کهرباییِ تیره به کرمِ روشن در نوک)
-    final gradient = SweepGradient(
-      startAngle: start,
-      endAngle: start + sweep,
-      colors: const [
-        Color(0xFFB96A20),
-        Color(0xFFEA9E4D),
-        Color(0xFFFFDFA6),
-      ],
-      stops: const [0.0, 0.6, 1.0],
-    );
-    final arcPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round
-      ..shader = gradient.createShader(rect);
-    canvas.drawArc(rect, start, sweep, false, arcPaint);
-
-    // سرِ دنباله‌دار: نقطهٔ نورانیِ در حال حرکت روی نوک قوس
-    if (progress > 0.01) {
-      final tipAngle = start + sweep;
-      final tip = Offset(
-        center.dx + radius * math.cos(tipAngle),
-        center.dy + radius * math.sin(tipAngle),
-      );
-      canvas.drawCircle(
-        tip,
-        stroke * 1.05,
-        Paint()
-          ..color = _gold.withOpacity(0.85)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, stroke * 0.85),
-      );
-      // حاشیهٔ کهربایی تا نوکِ روشن روی زمینهٔ کرمِ تصویر هم دیده شود
-      canvas.drawCircle(
-          tip, stroke * 0.55, Paint()..color = const Color(0xFFB96A20));
-      canvas.drawCircle(
-          tip, stroke * 0.36, Paint()..color = const Color(0xFFFFF3D6));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ProgressRingPainter old) => old.progress != progress;
-}
 
 /// قطرهٔ جوهرِ سرخ که با لمس ظاهر می‌شود و هم‌زمان با نگه‌داشتن انگشت
 /// بزرگ و بزرگ‌تر می‌شود تا دور اثر انگشت را بگیرد؛ لبه‌های نامنظمِ
@@ -378,8 +288,8 @@ class _ProgressRingPainter extends CustomPainter {
 class _InkBloomPainter extends CustomPainter {
   const _InkBloomPainter({required this.progress});
 
-  /// قرمزِ جوهرِ لاکی (هم‌خانوادهٔ رنگِ اثر انگشتِ سنتی روی سربوم)
-  static const _ink = Color(0xFF7C2015);
+  /// جوهرِ مشکیِ دست‌نویسِ سنتی (مرکبِ خوش‌نویسان)
+  static const _ink = Color(0xFF161310);
 
   final double progress;
 
@@ -438,7 +348,7 @@ class _InkBloomPainter extends CustomPainter {
     // برقِ مرطوبِ جوهر نزدیک مرکز (هایلایت نرمِ مایع)
     if (progress > 0.12) {
       final sheen = Paint()
-        ..color = const Color(0xFFD98A6C).withOpacity(0.34 * opacity)
+        ..color = const Color(0xFFB8B0A2).withOpacity(0.30 * opacity)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, size.width * 0.06);
       final sheenCenter =
           center.translate(-r * 0.30, -r * 0.34);
@@ -480,53 +390,58 @@ class _InkBloomPainter extends CustomPainter {
   bool shouldRepaint(_InkBloomPainter old) => old.progress != progress;
 }
 
-/// اثر انگشتِ واقع‌گرا: ده خطِ قوسیِ بیضی‌شکل و ناهمگون (مانند چین‌های
-/// نوک انگشت) با گسستِ طبیعیِ جوهر و دلتای پایین-چپ؛ با پیشرفت اسکن
-/// خط‌به‌خط به قرمزِ تیرهٔ جاافتاده تبدیل می‌شوند.
+/// اثر انگشت به الگوی «قوسی» (Arch) مطابق مرجعِ بصریِ صاحب‌اثر:
+/// ردیف‌های Uشکلِ تو‌در‌تو با دهانهٔ پایین؛ در حالت عادی به جوهرِ
+/// مشکی است و هنگام نگه‌داشتن انگشت — هم‌زمان با پخش‌شدن جوهر —
+/// به‌تدریج به طلایی بدل می‌شود.
 class _FingerprintPainter extends CustomPainter {
   const _FingerprintPainter({required this.progress});
 
-  static const _baseRed = Color(0xFF7E2A1E);
-  static const _litRed = Color(0xFF4E120B);
+  static const _inkBlack = Color(0xFF1B1713);
+  static const _gold = Color(0xFFE3AC45);
 
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    // فرمِ بیضیِ کشیدهٔ اثرِ واقعیِ انگشت
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(0.86, 1.0);
-    canvas.translate(-center.dx, -center.dy);
-
     final stroke = size.width * 0.030;
     final ridgePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
 
-    const ridges = 10;
+    // همهٔ خطوط هم‌گام با پیشرفت از مشکیِ جوهری به طلایی بدل می‌شوند
+    final goldness = progress.clamp(0.0, 1.0);
+
+    const ridges = 11;
+    final cx = size.width / 2;
+    final cy = size.height * 0.42;
+
     for (var i = 0; i < ridges; i++) {
       final t = i / (ridges - 1); // 0 بیرونی‌ترین → 1 درونی‌ترین
-      final r = size.width * (0.46 - 0.379 * t);
-      if (r <= stroke * 2) break;
-      final rect = Rect.fromCircle(center: center, radius: r);
-      // خطوط بیرونی تقریباً بسته، خطوط داخلی به‌سوی دلتای پایین بازتر
-      final sweep = math.pi * (1.92 - 0.72 * t);
-      final gapCenter = -math.pi * (0.48 + 0.18 * math.sin(i * 1.7));
-      final start = gapCenter - sweep / 2;
+      final w = size.width * (0.94 - 0.80 * t); // 0.94W → 0.14W
+      // قوس‌های داخلی کشیده‌تر (حسِ U باریکِ میانیِ اثر انگشت)
+      final h = w * (1.18 + 0.32 * t);
+      final rect =
+          Rect.fromCenter(center: Offset(cx, cy), width: w, height: h);
+
+      // دهانهٔ پایینِ قوس‌ها (مطابق تصویر مرجع)
+      final startDeg = 168 - 18 * t; // بیرونی ۱۶۸° → درونی ۱۵۰°
+      final sweepDeg = 372 + 18 * t - startDeg;
+      final start = startDeg * math.pi / 180;
+      final sweep = sweepDeg * math.pi / 180;
+
       // ناهمسانیِ طبیعیِ جوهر (قطعی و تکرارپذیر برای ثباتِ ظاهر)
       final jitter = 0.78 + 0.22 * (math.sin(i * 2.39 + 1.7)).abs();
-      final reveal = (progress * (ridges + 2) - i * 0.85).clamp(0.0, 1.0);
-      final col = Color.lerp(_baseRed.withOpacity(0.30), _litRed, reveal)!;
+      final col = Color.lerp(_inkBlack.withOpacity(0.90), _gold, goldness)!;
       ridgePaint.color = col.withAlpha((col.alpha * jitter).round());
 
-      if (i % 3 != 0) {
-        // گسستِ میانیِ بعضی خطوط برای حسِ جوهرِ واقعی
-        final frac = 0.34 + 0.28 * ((math.sin(i * 5.13) + 1) / 2);
-        final mid = 0.055 + 0.09 * ((math.cos(i * 3.7) + 1) / 2);
-        canvas.drawArc(rect, start, sweep * (frac - mid / 2), false, ridgePaint);
+      // گسستِ کوچکِ جوهر در بعضی ردیف‌ها (حسِ دستی بودن)
+      if (i % 4 == 1) {
+        final frac = 0.42 + 0.2 * ((math.sin(i * 5.13) + 1) / 2);
+        const mid = 0.05;
+        canvas.drawArc(
+            rect, start, sweep * (frac - mid / 2), false, ridgePaint);
         canvas.drawArc(rect, start + sweep * (frac + mid / 2),
             sweep * (1 - frac - mid / 2), false, ridgePaint);
       } else {
@@ -534,32 +449,14 @@ class _FingerprintPainter extends CustomPainter {
       }
     }
 
-    // قلبِ اثر انگشت: هستهٔ مرکزی + حلقهٔ ریزِ دور آن
-    final coreReveal =
-        (progress * (ridges + 2) - ridges).clamp(0.0, 1.0);
+    // قلبِ هستهٔ مرکزی
     final coreCol =
-        Color.lerp(_baseRed.withOpacity(0.30), _litRed, coreReveal)!;
-    canvas.drawCircle(center, stroke * 1.05, Paint()..color = coreCol);
-    final coreRing = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 0.9
-      ..strokeCap = StrokeCap.round
-      ..color = coreCol;
-    canvas.drawArc(Rect.fromCircle(center: center, radius: stroke * 2.4),
-        -math.pi * 0.6, math.pi * 1.45, false, coreRing);
-
-    // ذرات ریزِ جوهرِ پاشیده‌شده نزدیک مرکز
-    final speckAlpha = (140 * (0.3 + 0.7 * coreReveal)).round();
-    final speck = Paint()..color = _litRed.withAlpha(speckAlpha);
-    canvas
-      ..drawCircle(center.translate(size.width * 0.10, -size.width * 0.07),
-          stroke * 0.42, speck)
-      ..drawCircle(center.translate(-size.width * 0.09, size.width * 0.11),
-          stroke * 0.36, speck)
-      ..drawCircle(center.translate(size.width * 0.05, size.width * 0.14),
-          stroke * 0.30, speck);
-
-    canvas.restore();
+        Color.lerp(_inkBlack.withOpacity(0.90), _gold, goldness)!;
+    canvas.drawCircle(
+      Offset(cx, cy + size.width * 0.14 * 1.5 / 2 - stroke),
+      stroke * 0.55,
+      Paint()..color = coreCol,
+    );
   }
 
   @override

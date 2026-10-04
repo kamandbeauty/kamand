@@ -3,10 +3,9 @@ import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
-import 'package:fale_hafez/widgets/glass_button.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
+import 'package:fale_hafez/widgets/page_share.dart';
 import 'package:fale_hafez/widgets/night_overlay.dart';
-import 'package:fale_hafez/widgets/share_card.dart';
 import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -43,10 +42,12 @@ class PoemScreen extends StatefulWidget {
 }
 
 class _PoemScreenState extends State<PoemScreen> {
-  static const Color _accent = Color.fromRGBO(234, 158, 77, 1);
   static const Color _dark = Color.fromRGBO(107, 38, 15, 1);
 
   SettingsService get _settings => Get.find<SettingsService>();
+
+  /// کلیدِ ناحیهٔ رسمِ صفحه برای اشتراک تصویری (اسکرین‌شاتِ همین صفحه)
+  final GlobalKey _pageKey = GlobalKey();
 
   final Map<String, Poem> _byId = {};
   List<String> _ids = const [];
@@ -140,20 +141,13 @@ class _PoemScreenState extends State<PoemScreen> {
   Future<void> _sharePoem(Poem poem) =>
       Share.share(_shareText(poem, includeMeaning: _showMeaning));
 
-  /// برگهٔ انتخاب نوع اشتراک: متنی یا کارت تصویریِ قاب‌طلایی
+  /// برگهٔ انتخاب نوع اشتراک: اسکرین‌شاتِ همین صفحه یا متن
   void _openShare(Poem poem) {
-    ShareOptionsSheet.show(
+    SharePage.showSheet(
       context: context,
-      fileName: '${poem.id}.png',
-      card: ShareCard(
-        title: poem.displayTitle,
-        verses: poem.verses,
-        meaning: _showMeaning ? poem.meaning : null,
-      ),
-      onShareText: () {
-        Get.back();
-        _sharePoem(poem);
-      },
+      key: _pageKey,
+      fileName: 'poem-${poem.id}.png',
+      onShareText: () => _sharePoem(poem),
     );
   }
 
@@ -284,14 +278,16 @@ class _PoemScreenState extends State<PoemScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/background/poems.jpg'),
-              fit: BoxFit.cover,
+        body: RepaintBoundary(
+          key: _pageKey,
+          child: Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/background/poems.jpg'),
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          child: Stack(
+            child: Stack(
             children: [
               Column(
             children: [
@@ -351,6 +347,7 @@ class _PoemScreenState extends State<PoemScreen> {
               // لایهٔ حالت مطالعهٔ شبانه (در صورت فعال‌بودن در تنظیمات)
               const NightOverlay(),
             ],
+          ),
           ),
         ),
       ),
@@ -475,9 +472,9 @@ class _PoemScreenState extends State<PoemScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // دکمهٔ تعبیر فال (فقط غزلیات) - شیشه‌ای
+                          // دکمهٔ تعبیر فال (فقط غزلیات) - طرح یکدستِ تم
                           if (poem.meaning != null)
-                            GlassButton(
+                            AppThemeButton.labeled(
                               onPressed: () => setState(
                                   () => _showMeaning = !_showMeaning),
                               icon: _showMeaning
@@ -486,12 +483,6 @@ class _PoemScreenState extends State<PoemScreen> {
                               label: _showMeaning
                                   ? 'بستن تعبیر فال'
                                   : 'مشاهدهٔ تعبیر فال',
-                              expand: false,
-                              tint: _accent,
-                              tintOpacity: 0.32,
-                              borderOpacity: 0.55,
-                              textColor: _dark,
-                              iconColor: _dark,
                               fontSize: 16,
                               height: 54,
                               radius: 14,
@@ -595,21 +586,13 @@ class _PoemScreenState extends State<PoemScreen> {
     required VoidCallback onPressed,
     Color? color,
   }) {
-    final resolved = color ?? _dark;
-    return GlassButton(
-      onPressed: onPressed,
-      icon: icon,
-      iconSize: 18,
+    // طرح یکدستِ تم لاجورد+طلایی (پارامتر color قدیمی دیگر مصرفی ندارد)
+    return AppThemeButton.labeled(
       label: label,
-      expand: false,
-      tint: _accent,
-      tintOpacity: 0.28,
-      borderOpacity: 0.5,
-      textColor: resolved,
-      iconColor: resolved,
+      icon: icon,
+      onPressed: onPressed,
       fontSize: 13,
       height: 48,
-      radius: 12,
     );
   }
 
@@ -619,20 +602,12 @@ class _PoemScreenState extends State<PoemScreen> {
     required bool enabled,
     required VoidCallback onPressed,
   }) {
-    return GlassButton(
-      onPressed: enabled ? onPressed : null,
-      icon: icon,
-      iconSize: 18,
+    return AppThemeButton.labeled(
       label: label,
-      expand: false,
-      tint: _accent,
-      tintOpacity: 0.30,
-      borderOpacity: 0.5,
-      textColor: _dark,
-      iconColor: _dark,
+      icon: icon,
+      onPressed: enabled ? onPressed : null,
       fontSize: 14,
       height: 48,
-      radius: 12,
     );
   }
 }

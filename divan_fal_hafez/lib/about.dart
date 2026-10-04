@@ -92,45 +92,58 @@ class AboutScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: height / 200),
-                    Text(
-                      ':طراح و توسعه دهنده',
-                      textAlign: TextAlign.justify,
-                      style: vazirText(
-                        color: Colors.white,
-                        fontSize: 20,
-                      ).copyWith(shadows: const [
-                        Shadow(
-                            color: Colors.black87,
-                            blurRadius: 10,
-                            offset: Offset(0, 2)),
-                        Shadow(color: Colors.black45, blurRadius: 18),
-                      ]),
-                    ),
-                    SizedBox(height: height / 80),
-                    Text(
-                      'استودیو جاوید',
-                      textAlign: TextAlign.center,
-                      locale: const Locale('fa'),
-                      textDirection: TextDirection.rtl,
-                      style: vazirText(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                      ).copyWith(shadows: const [
-                        Shadow(
-                            color: Colors.black87,
-                            blurRadius: 12,
-                            offset: Offset(0, 2)),
-                        Shadow(color: Colors.black45, blurRadius: 20),
-                      ]),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Studio Javid',
-                      textAlign: TextAlign.center,
-                      style: vazirText(
-                        color: Colors.white70,
-                        fontSize: 16,
+                    Container(
+                      width: width / 1.5,
+                      margin: EdgeInsets.only(top: height / 80),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7EDD9).withOpacity(0.94),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                            color: const Color(0xFFCFA865), width: 1.4),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 14,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            ':طراح و توسعه دهنده',
+                            textAlign: TextAlign.center,
+                            locale: const Locale('fa'),
+                            textDirection: TextDirection.rtl,
+                            style: vazirText(
+                              color: const Color(0xFF7A5B2E),
+                              fontSize: 17,
+                            ),
+                          ),
+                          SizedBox(height: height / 120),
+                          Text(
+                            'استودیو جاوید',
+                            textAlign: TextAlign.center,
+                            locale: const Locale('fa'),
+                            textDirection: TextDirection.rtl,
+                            style: vazirText(
+                              color: const Color(0xFF233C6C),
+                              fontSize: 30,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Studio Javid',
+                            textAlign: TextAlign.center,
+                            style: vazirText(
+                              color: const Color(0xFF8A6F45),
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

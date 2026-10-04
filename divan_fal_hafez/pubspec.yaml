@@ -2,7 +2,7 @@ name: fale_hafez
 description: "دیوان و فال حافظ - غزلیات، رباعیات، قطعات، قصاید و منتسبات به همراه فال"
 publish_to: 'none'
 
-version: 1.6.0+23
+version: 1.6.1+24
 
 environment:
   sdk: '>=3.1.4 <4.0.0'
@@ -63,4 +63,7 @@ flutter:
       fonts:
         - asset: assets/fonts/Shabnam.ttf
         - asset: assets/fonts/Shabnam-Bold.ttf
+    - family: Nastaliq
+      fonts:
+        - asset: assets/fonts/NotoNastaliqUrdu-Var.ttf
           weight: 700

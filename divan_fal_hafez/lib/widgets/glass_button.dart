@@ -21,6 +21,7 @@ class GlassButton extends StatelessWidget {
     this.borderOpacity = 0.38,
     this.textColor = Colors.white,
     this.iconColor = Colors.white,
+    this.fontFamily,
     this.expand = true,
   });
 
@@ -32,6 +33,9 @@ class GlassButton extends StatelessWidget {
   final FontWeight fontWeight;
   final double height;
   final double radius;
+
+  /// قلم سفارشی متن دکمه (مثل نستعلیق)؛ null یعنی قلم تم
+  final String? fontFamily;
 
   /// رنگ تنت شیشه (پیش‌فرض سفید؛ برای دکمهٔ اصلی طلایی شود)
   final Color tint;
@@ -109,6 +113,7 @@ class GlassButton extends StatelessWidget {
                         label,
                         textDirection: TextDirection.rtl,
                         style: vazirText(
+                          fontFamily: fontFamily,
                           fontSize: fontSize,
                           fontWeight: fontWeight,
                           color: textColor.withOpacity(enabled ? 1 : 0.55),

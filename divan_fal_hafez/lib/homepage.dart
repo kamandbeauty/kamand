@@ -163,6 +163,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 8),
                 radius: 18,
+                tint: const Color(0xFF14263D),
+                tintOpacity: 0.45,
+                borderOpacity: 0.55,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -196,7 +199,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   GlassButton(
                     onPressed: _onDivanButtonPressed,
                     label: 'اشعار',
-                    fontSize: 20,
+                    fontFamily: 'Nastaliq',
+                    fontSize: 22,
                     height: 62,
                   ),
                   const SizedBox(height: 16),
@@ -205,7 +209,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   GlassButton(
                     onPressed: _onFalButtonPressed,
                     label: 'گرفتن فال',
-                    fontSize: 26,
+                    fontFamily: 'Nastaliq',
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                     height: 74,
                     radius: 24,

@@ -5,10 +5,9 @@ import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fal_history_screen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
-import 'package:fale_hafez/widgets/glass_button.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:fale_hafez/widgets/night_overlay.dart';
-import 'package:fale_hafez/widgets/share_card.dart';
+import 'package:fale_hafez/widgets/page_share.dart';
 import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +28,9 @@ class FalScreen extends StatefulWidget {
 
 class _FalScreenState extends State<FalScreen> {
   Poem? _fal;
+
+  /// کلیدِ ناحیهٔ رسمِ صفحه برای اشتراک تصویری (اسکرین‌شاتِ همین صفحه)
+  final GlobalKey _pageKey = GlobalKey();
 
   bool _isLoading = true;
   bool _hasError = false;
@@ -79,17 +81,25 @@ class _FalScreenState extends State<FalScreen> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/background/poems.jpg'),
-                  fit: BoxFit.cover,
-                ),
+            RepaintBoundary(
+              key: _pageKey,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/background/poems.jpg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+
+                  // محتوای اصلی: لودینگ / خطا / نمایش فال
+                  _buildBody(width, height),
+                ],
               ),
             ),
-
-            // محتوای اصلی: لودینگ / خطا / نمایش فال
-            _buildBody(width, height),
 
             // لایهٔ حالت مطالعهٔ شبانه (در صورت فعال‌بودن در تنظیمات)
             const NightOverlay(),
@@ -205,19 +215,12 @@ class _FalScreenState extends State<FalScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          GlassButton(
+          AppThemeButton.labeled(
             onPressed: _pickFal,
             icon: Icons.refresh,
             label: 'تلاش مجدد',
-            expand: false,
-            tint: const Color.fromRGBO(234, 158, 77, 1),
-            tintOpacity: 0.32,
-            borderOpacity: 0.5,
-            textColor: const Color.fromRGBO(107, 38, 15, 1),
-            iconColor: const Color.fromRGBO(107, 38, 15, 1),
             fontSize: 16,
             height: 50,
-            radius: 12,
           ),
         ],
       );
@@ -321,40 +324,26 @@ class _FalScreenState extends State<FalScreen> {
           ),
           SizedBox(height: height / 28),
 
-          // اشتراک فال به‌صورت متن یا کارت تصویریِ قاب‌طلایی
+          // اشتراک فال: اسکرین‌شاتِ همین صفحه یا متن (به سبکِ تمِ اپ)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: width / 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                GlassButton(
+                AppThemeButton.labeled(
                   onPressed: () {
-                    ShareOptionsSheet.show(
+                    SharePage.showSheet(
                       context: context,
+                      key: _pageKey,
                       fileName: 'fal-${fal.number}.png',
-                      card: ShareCard(
-                        title: 'فالِ شما — غزل ${fal.number}',
-                        verses: fal.verses,
-                        meaning: fal.meaning,
-                      ),
-                      onShareText: () {
-                        Get.back();
-                        Share.share(
-                            '${fal.verses}\n\nتعبیر فال: ${fal.meaning ?? ''}\n\n— اپلیکیشن «دیوان و فال حافظ»');
-                      },
+                      onShareText: () => Share.share(
+                          '${fal.verses}\n\nتعبیر فال: ${fal.meaning ?? ''}\n\n— اپلیکیشن «دیوان و فال حافظ»'),
                     );
                   },
                   icon: CupertinoIcons.share,
                   label: 'اشتراک فال',
-                  expand: false,
-                  tint: const Color.fromRGBO(234, 158, 77, 1),
-                  tintOpacity: 0.32,
-                  borderOpacity: 0.5,
-                  textColor: const Color.fromRGBO(107, 38, 15, 1),
-                  iconColor: const Color.fromRGBO(107, 38, 15, 1),
                   fontSize: 15,
                   height: 48,
-                  radius: 12,
                 ),
               ],
             ),
