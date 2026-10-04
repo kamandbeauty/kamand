@@ -42,7 +42,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('دیوان حافظ'), findsOneWidget);
-    expect(find.text('نیت کردم ، فالمو بگیر'), findsOneWidget);
+    expect(find.text('گرفتن فال'), findsOneWidget);
     expect(find.text('اشعار دلخواه'), findsOneWidget);
     expect(find.text('تنظیمات'), findsOneWidget);
   });
@@ -81,7 +81,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // ورود به صفحهٔ نیّت
-    await tester.tap(find.text('نیت کردم ، فالمو بگیر'));
+    await tester.tap(find.text('گرفتن فال'));
     await tester.pumpAndSettle();
 
     expect(find.byType(NiyyatScreen), findsOneWidget);

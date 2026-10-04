@@ -2,6 +2,7 @@ import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fonts.dart';
+import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -189,7 +190,7 @@ class _PoemScreenState extends State<PoemScreen> {
         body: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/background/falscreen.png'),
+              image: AssetImage('assets/background/poems.jpg'),
               fit: BoxFit.cover,
             ),
           ),
@@ -205,7 +206,10 @@ class _PoemScreenState extends State<PoemScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Image.asset('assets/logotext.png', width: width / 2.6),
+                    const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: AppBrand(fontSize: 20, onDark: false),
+                    ),
                     _headerButton(
                       icon: CupertinoIcons.back,
                       onPressed: Get.back,
@@ -249,7 +253,7 @@ class _PoemScreenState extends State<PoemScreen> {
   Widget _buildBody(double width) {
     if (_isLoading) {
       return const Center(
-        child: SpinKitFadingFour(color: Colors.white, size: 50),
+        child: SpinKitFadingFour(color: _dark, size: 50),
       );
     }
 
@@ -258,14 +262,14 @@ class _PoemScreenState extends State<PoemScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 50),
+            const Icon(Icons.error_outline, color: _dark, size: 50),
             const SizedBox(height: 16),
             Text(
               'خطا در باز کردن دیوان',
               textDirection: TextDirection.rtl,
               style: vazirText(
                 fontSize: 16,
-                color: Colors.white,
+                color: _dark,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -298,7 +302,7 @@ class _PoemScreenState extends State<PoemScreen> {
               textDirection: TextDirection.rtl,
               style: vazirText(
                 fontSize: 22,
-                color: Colors.white,
+                color: _dark,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -326,7 +330,7 @@ class _PoemScreenState extends State<PoemScreen> {
                               textDirection: TextDirection.rtl,
                               style: vazirText(
                                 fontSize: 17 * fontScale,
-                                color: Colors.white,
+                                color: _dark,
                                 fontWeight: FontWeight.w700,
                                 height: 2.2,
                               ),

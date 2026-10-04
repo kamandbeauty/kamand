@@ -2,6 +2,7 @@ import 'package:fale_hafez/about.dart';
 import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/fonts.dart';
+import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -71,7 +72,7 @@ class _FalScreenState extends State<FalScreen> {
             Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('assets/background/falscreen.png'),
+                  image: AssetImage('assets/background/poems.jpg'),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -93,9 +94,9 @@ class _FalScreenState extends State<FalScreen> {
                     icon: CupertinoIcons.back,
                     onPressed: Get.back,
                   ),
-                  Image.asset(
-                    'assets/logotext.png',
-                    width: width / 2,
+                  const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: AppBrand(fontSize: 20, onDark: false),
                   ),
                   _headerButton(
                     width: width,
@@ -146,7 +147,7 @@ class _FalScreenState extends State<FalScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SpinKitFadingFour(
-            color: Colors.white,
+            color: Color.fromRGBO(107, 38, 15, 1),
             size: 50,
           ),
           const SizedBox(height: 20),
@@ -157,7 +158,7 @@ class _FalScreenState extends State<FalScreen> {
             textDirection: TextDirection.rtl,
             style: vazirText(
               fontSize: 18,
-              color: Colors.white,
+              color: const Color.fromRGBO(107, 38, 15, 1),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -172,7 +173,7 @@ class _FalScreenState extends State<FalScreen> {
         children: [
           const Icon(
             Icons.error_outline,
-            color: Colors.white,
+            color: Color.fromRGBO(107, 38, 15, 1),
             size: 60,
           ),
           const SizedBox(height: 20),
@@ -183,7 +184,7 @@ class _FalScreenState extends State<FalScreen> {
             textDirection: TextDirection.rtl,
             style: vazirText(
               fontSize: 18,
-              color: Colors.white,
+              color: const Color.fromRGBO(107, 38, 15, 1),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -229,7 +230,7 @@ class _FalScreenState extends State<FalScreen> {
             textDirection: TextDirection.rtl,
             style: vazirText(
               fontSize: 20,
-              color: Colors.white,
+              color: const Color.fromRGBO(107, 38, 15, 1),
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -243,14 +244,19 @@ class _FalScreenState extends State<FalScreen> {
               textDirection: TextDirection.rtl,
               style: vazirText(
                 fontSize: 18,
-                color: Colors.white,
+                color: const Color.fromRGBO(107, 38, 15, 1),
                 fontWeight: FontWeight.w900,
                 height: 2,
               ),
             ),
           ),
           SizedBox(height: height / 20),
-          const Divider(),
+          const Divider(
+            color: Color.fromRGBO(107, 38, 15, 0.45),
+            thickness: 1.2,
+            indent: 40,
+            endIndent: 40,
+          ),
           SizedBox(height: height / 20),
           Text(
             'تفسیر فال شما',
@@ -259,7 +265,7 @@ class _FalScreenState extends State<FalScreen> {
             textDirection: TextDirection.rtl,
             style: vazirText(
               fontSize: 20,
-              color: Colors.white,
+              color: const Color.fromRGBO(107, 38, 15, 1),
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -271,7 +277,11 @@ class _FalScreenState extends State<FalScreen> {
               textAlign: TextAlign.center,
               locale: const Locale('fa'),
               textDirection: TextDirection.rtl,
-              style: vazirText(fontSize: 16, color: Colors.white, height: 1.8),
+              style: vazirText(
+                fontSize: 16,
+                color: const Color.fromRGBO(107, 38, 15, 1),
+                height: 1.8,
+              ),
             ),
           ),
           SizedBox(height: height / 20),

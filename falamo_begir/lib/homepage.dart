@@ -5,6 +5,8 @@ import 'package:fale_hafez/niyyat_screen.dart';
 import 'package:fale_hafez/favorites_screen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/settings_screen.dart';
+import 'package:fale_hafez/widgets/app_brand.dart';
+import 'package:fale_hafez/widgets/glass_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -117,27 +119,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
 
-            // نوار بالایی: دکمهٔ موسیقی، لوگو و دربارهٔ ما
+            // نوار بالایی: دکمهٔ موسیقی، عنوان برند و دربارهٔ ما
             Positioned(
               top: topPadding + 12,
               right: 15,
               left: 15,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _headerButton(
-                    width: width,
+                  GlassCircleButton(
                     onPressed: _isPlaying ? _stopAudio : _playAudio,
                     icon: _isPlaying
                         ? Icons.music_note_outlined
                         : Icons.music_off_outlined,
                   ),
-                  Image.asset(
-                    'assets/logotext.png',
-                    width: width / 2,
-                  ),
-                  _headerButton(
-                    width: width,
+                  const AppBrand(fontSize: 24, onDark: true),
+                  GlassCircleButton(
                     onPressed: () => Get.to(const AboutScreen()),
                     icon: CupertinoIcons.person_alt_circle,
                   ),
@@ -145,83 +142,65 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
 
-            // دکمه‌های دیوان حافظ و گرفتن فال
+            // دکمه‌های شیشه‌ای: دیوان، گرفتن فال، دلخواه و تنظیمات
             Positioned(
               bottom: bottomPadding + 16,
-              right: 5,
-              left: 5,
+              right: 14,
+              left: 14,
               child: Column(
                 children: [
                   // دکمهٔ دیوان حافظ
-                  ElevatedButton.icon(
+                  GlassButton(
                     onPressed: _onDivanButtonPressed,
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.yellow,
-                      backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
-                      shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-                      elevation: 5,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    icon: const Icon(
-                      CupertinoIcons.book,
-                      color: Color.fromRGBO(107, 38, 15, 1),
-                    ),
-                    label: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        'دیوان حافظ',
-                        style: vazirText(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 20,
-                          color: const Color.fromRGBO(107, 38, 15, 1),
-                        ),
-                      ),
-                    ),
+                    icon: CupertinoIcons.book,
+                    iconSize: 28,
+                    label: 'دیوان حافظ',
+                    fontSize: 20,
+                    height: 62,
                   ),
                   const SizedBox(height: 12),
 
-                  // دکمهٔ گرفتن فال
-                  ElevatedButton(
+                  // دکمهٔ اصلی: گرفتن فال
+                  GlassButton(
                     onPressed: _onFalButtonPressed,
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.yellow,
-                      backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
-                      shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-                      elevation: 5,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(15),
-                      child: Text(
-                        'نیت کردم ، فالمو بگیر',
-                        style: vazirText(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 30,
-                          color: const Color.fromRGBO(107, 38, 15, 1),
-                        ),
-                      ),
-                    ),
+                    icon: CupertinoIcons.moon_stars,
+                    iconSize: 30,
+                    label: 'گرفتن فال',
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    height: 74,
+                    radius: 24,
+                    tint: const Color.fromRGBO(234, 158, 77, 1),
+                    tintOpacity: 0.34,
+                    borderOpacity: 0.55,
                   ),
                   const SizedBox(height: 12),
 
                   // دکمه‌های اشعار دلخواه و تنظیمات
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _smallButton(
-                        onPressed: _onFavoritesButtonPressed,
-                        icon: CupertinoIcons.heart_fill,
-                        label: 'اشعار دلخواه',
+                      Expanded(
+                        child: GlassButton(
+                          onPressed: _onFavoritesButtonPressed,
+                          icon: CupertinoIcons.heart_fill,
+                          iconSize: 24,
+                          label: 'اشعار دلخواه',
+                          fontSize: 15,
+                          height: 52,
+                          radius: 16,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      _smallButton(
-                        onPressed: _onSettingsButtonPressed,
-                        icon: CupertinoIcons.gear_alt_fill,
-                        label: 'تنظیمات',
+                      Expanded(
+                        child: GlassButton(
+                          onPressed: _onSettingsButtonPressed,
+                          icon: CupertinoIcons.gear_alt_fill,
+                          iconSize: 24,
+                          label: 'تنظیمات',
+                          fontSize: 15,
+                          height: 52,
+                          radius: 16,
+                        ),
                       ),
                     ],
                   ),
@@ -229,65 +208,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _smallButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.yellow,
-        backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
-        shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-        elevation: 5,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-      ),
-      icon: Icon(icon, color: const Color.fromRGBO(107, 38, 15, 1), size: 18),
-      label: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          label,
-          style: vazirText(
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-            color: const Color.fromRGBO(107, 38, 15, 1),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _headerButton({
-    required double width,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: width / 10,
-      height: width / 10,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.yellow,
-          backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
-          shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: EdgeInsets.zero,
-        ),
-        child: Icon(
-          icon,
-          color: const Color.fromRGBO(107, 38, 15, 1),
         ),
       ),
     );

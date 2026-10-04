@@ -1,5 +1,6 @@
 import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/fonts.dart';
+import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -116,9 +117,9 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                           icon: CupertinoIcons.back,
                           onPressed: Get.back,
                         ),
-                        Image.asset(
-                          'assets/logotext.png',
-                          height: headerH * 0.9,
+                        const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: AppBrand(fontSize: 18, onDark: true),
                         ),
                         SizedBox(width: headerH),
                       ],
