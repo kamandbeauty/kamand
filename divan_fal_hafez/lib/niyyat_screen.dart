@@ -25,7 +25,7 @@ class _NiyyatScreenState extends State<NiyyatScreen>
   static const Color _printRed = Color(0xFF8E2820);
 
   /// مدت نگه‌داشتن انگشت تا گرفتن فال
-  static const Duration _holdDuration = Duration(milliseconds: 1400);
+  static const Duration _holdDuration = Duration(milliseconds: 800);
 
   /// بیت‌های آیین نیّت برای گرفتن فال از حافظ (روایت سنتی کهن)
   static const List<String> _niyyatVerses = [
