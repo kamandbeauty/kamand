@@ -182,29 +182,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
 
-            // دکمه‌های شیشه‌ای: دیوان، گرفتن فال، دلخواه و تنظیمات
+            // دو دکمهٔ اصلی (بدون آیکون) در «وسطِ صفحه» —
+            // روی فضای خالیِ طراحی پس‌زمینه، بین قاب بالا و کتاب پایین
             Positioned(
-              bottom: bottomPadding + 16,
+              top: topPadding + 96,
+              bottom: bottomPadding + 92,
               right: 14,
               left: 14,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // دکمهٔ دیوان حافظ
+                  // دکمهٔ اشعار (ورود به دیوان حافظ)
                   GlassButton(
                     onPressed: _onDivanButtonPressed,
-                    icon: CupertinoIcons.book,
-                    iconSize: 28,
-                    label: 'دیوان حافظ',
+                    label: 'اشعار',
                     fontSize: 20,
                     height: 62,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
                   // دکمهٔ اصلی: گرفتن فال
                   GlassButton(
                     onPressed: _onFalButtonPressed,
-                    icon: CupertinoIcons.moon_stars,
-                    iconSize: 30,
                     label: 'گرفتن فال',
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
@@ -214,35 +213,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     tintOpacity: 0.34,
                     borderOpacity: 0.55,
                   ),
-                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
 
-                  // دکمه‌های اشعار دلخواه و تنظیمات
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GlassButton(
-                          onPressed: _onFavoritesButtonPressed,
-                          icon: CupertinoIcons.heart_fill,
-                          iconSize: 24,
-                          label: 'اشعار دلخواه',
-                          fontSize: 15,
-                          height: 52,
-                          radius: 16,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GlassButton(
-                          onPressed: _onSettingsButtonPressed,
-                          icon: CupertinoIcons.gear_alt_fill,
-                          iconSize: 24,
-                          label: 'تنظیمات',
-                          fontSize: 15,
-                          height: 52,
-                          radius: 16,
-                        ),
-                      ),
-                    ],
+            // دکمه‌های ثانویهٔ پایین صفحه: اشعار دلخواه و تنظیمات
+            Positioned(
+              bottom: bottomPadding + 16,
+              right: 14,
+              left: 14,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GlassButton(
+                      onPressed: _onFavoritesButtonPressed,
+                      icon: CupertinoIcons.heart_fill,
+                      iconSize: 24,
+                      label: 'اشعار دلخواه',
+                      fontSize: 15,
+                      height: 52,
+                      radius: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GlassButton(
+                      onPressed: _onSettingsButtonPressed,
+                      icon: CupertinoIcons.gear_alt_fill,
+                      iconSize: 24,
+                      label: 'تنظیمات',
+                      fontSize: 15,
+                      height: 52,
+                      radius: 16,
+                    ),
                   ),
                 ],
               ),

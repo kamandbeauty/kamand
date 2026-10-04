@@ -43,7 +43,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
-    expect(find.text('دیوان حافظ'), findsOneWidget);
+    expect(find.text('اشعار'), findsOneWidget);
     expect(find.text('گرفتن فال'), findsOneWidget);
     expect(find.text('اشعار دلخواه'), findsOneWidget);
     expect(find.text('تنظیمات'), findsOneWidget);
@@ -57,7 +57,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // ورود به دیوان
-    await tester.tap(find.text('دیوان حافظ'));
+    await tester.tap(find.text('اشعار'));
     await tester.pumpAndSettle();
 
     // چیپ‌های بخش‌ها و اولین غزل دیده می‌شود
