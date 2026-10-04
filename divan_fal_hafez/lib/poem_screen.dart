@@ -180,13 +180,9 @@ class _PoemScreenState extends State<PoemScreen> {
     if (mounted) setState(() => _transientScale = null);
   }
 
-  /// اگر ژست (مثلاً با تماس ورودی یا رفتن به پس‌زمینه) لغو شود،
-  /// مقیاس موقت پاک می‌شود تا در حالت نیمه‌کاره نماند
-  void _onScaleCancel() {
-    if (_transientScale != null && mounted) {
-      setState(() => _transientScale = null);
-    }
-  }
+  // نکته: onScaleCancel در GestureDetectorِ SDKهای قدیمی‌تر وجود ندارد؛
+  // مدیریت حالت موقت فقط با ژست‌های start/update/end انجام می‌شود و
+  // مقدار موقت همواره بعد از پایان ژست با مقدار ذخیره‌شده جایگزین می‌گردد.
 
   @override
   void initState() {
@@ -329,7 +325,6 @@ class _PoemScreenState extends State<PoemScreen> {
                 onScaleStart: _onScaleStart,
                 onScaleUpdate: _onScaleUpdate,
                 onScaleEnd: _onScaleEnd,
-                onScaleCancel: _onScaleCancel,
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 640),

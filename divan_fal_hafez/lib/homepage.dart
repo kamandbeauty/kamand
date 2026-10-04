@@ -3,7 +3,6 @@ import 'package:fale_hafez/about.dart';
 import 'package:fale_hafez/divan_screen.dart';
 import 'package:fale_hafez/niyyat_screen.dart';
 import 'package:fale_hafez/favorites_screen.dart';
-import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/settings_screen.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_button.dart';
@@ -139,7 +138,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.sizeOf(context).width;
     final double topPadding = MediaQuery.viewPaddingOf(context).top;
     final double bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
 

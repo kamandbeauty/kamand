@@ -32,19 +32,28 @@ jobs:
         run: flutter --version
 
       # بیلدِ قابل‌تکرار: pub get بر اساس pubspec.lock کامیت‌شده.
-      # گذار: اگر lockfile فعلی با SDK جدید ناسازگار بود، یک‌بار upgrade
-      # انجام و lock تازه به‌عنوان artifact منتشر می‌شود تا کامیت شود.
-      - name: Resolve dependencies (pub get)
+      # اگر lockfile با SDK فعلی ناسازگار بود، یک‌بار upgrade انجام و
+      # lock تازه خودِ بات روی همان شاخه کامیت می‌کند تا بیلدهای بعدی
+      # کاملاً تطابق pub get←lockfile داشته باشند (بدون حلقه: [skip ci])
+      - name: Resolve dependencies (pub get + refresh lock if needed)
         working-directory: divan_fal_hafez
-        run: flutter pub get || flutter pub upgrade
-
-      - name: Upload resolved pubspec.lock
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: resolved-pubspec-lock
-          path: divan_fal_hafez/pubspec.lock
-          retention-days: 7
+        shell: bash
+        run: |
+          if flutter pub get; then
+            echo "dependencies resolved from committed lockfile"
+          else
+            echo "lockfile incompatible with current SDK - upgrading"
+            set -e
+            flutter pub upgrade
+            if ! git diff --quiet -- pubspec.lock; then
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add pubspec.lock
+              git commit -m "chore: refresh pubspec.lock for current Flutter SDK [skip ci]"
+              git push
+              echo "refreshed lockfile pushed to branch"
+            fi
+          fi
 
       - name: Analyze
         working-directory: divan_fal_hafez
