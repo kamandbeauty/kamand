@@ -19,7 +19,7 @@ class AboutScreen extends StatelessWidget {
               Container(
                 decoration: const BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage('assets/background/about-bg.png'),
+                    image: AssetImage('assets/background/homebg.jpg'),
                     fit: BoxFit.cover,
                   ),
                 ),

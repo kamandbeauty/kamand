@@ -3,6 +3,7 @@ import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
+import 'package:fale_hafez/widgets/glass_button.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -380,37 +381,26 @@ class _PoemScreenState extends State<PoemScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // دکمهٔ تعبیر فال (فقط غزلیات)
+                          // دکمهٔ تعبیر فال (فقط غزلیات) - شیشه‌ای
                           if (poem.meaning != null)
-                            ElevatedButton.icon(
+                            GlassButton(
                               onPressed: () => setState(
                                   () => _showMeaning = !_showMeaning),
-                              style: ElevatedButton.styleFrom(
-                                foregroundColor: Colors.yellow,
-                                backgroundColor: _accent,
-                                shadowColor:
-                                    const Color.fromRGBO(183, 116, 50, 1),
-                                elevation: 5,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              icon: Icon(
-                                _showMeaning
-                                    ? CupertinoIcons.eye_slash
-                                    : CupertinoIcons.book,
-                                color: _dark,
-                              ),
-                              label: Text(
-                                _showMeaning
-                                    ? 'بستن تعبیر فال'
-                                    : 'مشاهدهٔ تعبیر فال',
-                                style: vazirText(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                  color: _dark,
-                                ),
-                              ),
+                              icon: _showMeaning
+                                  ? CupertinoIcons.eye_slash
+                                  : CupertinoIcons.book,
+                              label: _showMeaning
+                                  ? 'بستن تعبیر فال'
+                                  : 'مشاهدهٔ تعبیر فال',
+                              expand: false,
+                              tint: _accent,
+                              tintOpacity: 0.32,
+                              borderOpacity: 0.55,
+                              textColor: _dark,
+                              iconColor: _dark,
+                              fontSize: 16,
+                              height: 54,
+                              radius: 14,
                             ),
 
                           // تعبیر فال
@@ -511,27 +501,21 @@ class _PoemScreenState extends State<PoemScreen> {
     required VoidCallback onPressed,
     Color? color,
   }) {
-    return ElevatedButton.icon(
+    final resolved = color ?? _dark;
+    return GlassButton(
       onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.yellow,
-        backgroundColor: _accent,
-        shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-        elevation: 5,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      icon: Icon(icon, color: color ?? _dark, size: 18),
-      label: Text(
-        label,
-        style: vazirText(
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-          color: color ?? _dark,
-        ),
-      ),
+      icon: icon,
+      iconSize: 18,
+      label: label,
+      expand: false,
+      tint: _accent,
+      tintOpacity: 0.28,
+      borderOpacity: 0.5,
+      textColor: resolved,
+      iconColor: resolved,
+      fontSize: 13,
+      height: 48,
+      radius: 12,
     );
   }
 
@@ -541,27 +525,20 @@ class _PoemScreenState extends State<PoemScreen> {
     required bool enabled,
     required VoidCallback onPressed,
   }) {
-    return ElevatedButton.icon(
+    return GlassButton(
       onPressed: enabled ? onPressed : null,
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.yellow,
-        backgroundColor: _accent,
-        disabledBackgroundColor: Colors.white38,
-        shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-        elevation: 5,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      icon: Icon(icon, color: _dark, size: 18),
-      label: Text(
-        label,
-        style: vazirText(
-          fontWeight: FontWeight.w700,
-          fontSize: 14,
-          color: _dark,
-        ),
-      ),
+      icon: icon,
+      iconSize: 18,
+      label: label,
+      expand: false,
+      tint: _accent,
+      tintOpacity: 0.30,
+      borderOpacity: 0.5,
+      textColor: _dark,
+      iconColor: _dark,
+      fontSize: 14,
+      height: 48,
+      radius: 12,
     );
   }
 }

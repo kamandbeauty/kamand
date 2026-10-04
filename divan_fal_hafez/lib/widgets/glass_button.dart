@@ -19,6 +19,8 @@ class GlassButton extends StatelessWidget {
     this.tint = Colors.white,
     this.tintOpacity = 0.16,
     this.borderOpacity = 0.38,
+    this.textColor = Colors.white,
+    this.iconColor = Colors.white,
     this.expand = true,
   });
 
@@ -35,6 +37,10 @@ class GlassButton extends StatelessWidget {
   final Color tint;
   final double tintOpacity;
   final double borderOpacity;
+
+  /// رنگ متن و آیکون (پیش‌فرض سفید؛ روی زمینهٔ روشن تیره شود)
+  final Color textColor;
+  final Color iconColor;
 
   /// اگر true باشد کل عرض موجود را می‌گیرد
   final bool expand;
@@ -93,7 +99,7 @@ class GlassButton extends StatelessWidget {
                       if (icon != null) ...[
                         Icon(
                           icon,
-                          color: Colors.white.withOpacity(enabled ? 1 : 0.5),
+                          color: iconColor.withOpacity(enabled ? 1 : 0.5),
                           size: iconSize,
                           shadows: _textShadow,
                         ),
@@ -105,7 +111,7 @@ class GlassButton extends StatelessWidget {
                         style: vazirText(
                           fontSize: fontSize,
                           fontWeight: fontWeight,
-                          color: Colors.white.withOpacity(enabled ? 1 : 0.55),
+                          color: textColor.withOpacity(enabled ? 1 : 0.55),
                         ).copyWith(shadows: _textShadow),
                       ),
                     ],

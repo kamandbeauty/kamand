@@ -32,7 +32,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         body: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/background/mainscreen.png'),
+              image: AssetImage('assets/background/homebg.jpg'),
               fit: BoxFit.cover,
             ),
           ),

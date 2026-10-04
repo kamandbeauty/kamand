@@ -3,6 +3,7 @@ import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
+import 'package:fale_hafez/widgets/glass_button.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -198,29 +199,19 @@ class _FalScreenState extends State<FalScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          ElevatedButton.icon(
+          GlassButton(
             onPressed: _pickFal,
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.yellow,
-              backgroundColor: const Color.fromRGBO(234, 158, 77, 1),
-              shadowColor: const Color.fromRGBO(183, 116, 50, 1),
-              elevation: 5,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: const Icon(
-              Icons.refresh,
-              color: Color.fromRGBO(107, 38, 15, 1),
-            ),
-            label: Text(
-              'تلاش مجدد',
-              style: vazirText(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: const Color.fromRGBO(107, 38, 15, 1),
-              ),
-            ),
+            icon: Icons.refresh,
+            label: 'تلاش مجدد',
+            expand: false,
+            tint: const Color.fromRGBO(234, 158, 77, 1),
+            tintOpacity: 0.32,
+            borderOpacity: 0.5,
+            textColor: const Color.fromRGBO(107, 38, 15, 1),
+            iconColor: const Color.fromRGBO(107, 38, 15, 1),
+            fontSize: 16,
+            height: 50,
+            radius: 12,
           ),
         ],
       );

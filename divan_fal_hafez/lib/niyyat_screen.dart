@@ -114,7 +114,7 @@ class _NiyyatScreenState extends State<NiyyatScreen>
         body: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/background/falscreen.png'),
+              image: AssetImage('assets/background/homebg.jpg'),
               fit: BoxFit.cover,
             ),
           ),
