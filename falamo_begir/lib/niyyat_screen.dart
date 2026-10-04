@@ -94,7 +94,10 @@ class _NiyyatScreenState extends State<NiyyatScreen>
               // اندازهٔ اسکنر متناسب با ارتفاع صفحه تا روی صفحه‌های کوتاه
               // (یا لندسکیپ) سرریز رخ ندهد
               final double scanner =
-                  (constraints.maxHeight * 0.27).clamp(120.0, 210.0);
+                  (constraints.maxHeight * 0.26).clamp(110.0, 210.0);
+              // ارتفاع نوار بالایی محدود و وابسته به عرض می‌ماند تا
+              // لوگو (ابعاد دلخواه تصویر) باعث سرریز نشود
+              final double headerH = (width / 10).clamp(36.0, 60.0);
 
               return Column(
                 children: [
@@ -109,12 +112,15 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _headerButton(
-                          width: width,
+                          size: headerH,
                           icon: CupertinoIcons.back,
                           onPressed: Get.back,
                         ),
-                        Image.asset('assets/logotext.png', width: width / 2),
-                        SizedBox(width: width / 10),
+                        Image.asset(
+                          'assets/logotext.png',
+                          height: headerH * 0.9,
+                        ),
+                        SizedBox(width: headerH),
                       ],
                     ),
                   ),
@@ -245,13 +251,13 @@ class _NiyyatScreenState extends State<NiyyatScreen>
   }
 
   Widget _headerButton({
-    required double width,
+    required double size,
     required IconData icon,
     required VoidCallback onPressed,
   }) {
     return SizedBox(
-      width: width / 10,
-      height: width / 10,
+      width: size,
+      height: size,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
