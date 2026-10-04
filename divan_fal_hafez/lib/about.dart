@@ -98,7 +98,13 @@ class AboutScreen extends StatelessWidget {
                       style: vazirText(
                         color: Colors.white,
                         fontSize: 20,
-                      ),
+                      ).copyWith(shadows: const [
+                        Shadow(
+                            color: Colors.black87,
+                            blurRadius: 10,
+                            offset: Offset(0, 2)),
+                        Shadow(color: Colors.black45, blurRadius: 18),
+                      ]),
                     ),
                     SizedBox(height: height / 80),
                     Text(
@@ -110,7 +116,13 @@ class AboutScreen extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 30,
                         fontWeight: FontWeight.w700,
-                      ),
+                      ).copyWith(shadows: const [
+                        Shadow(
+                            color: Colors.black87,
+                            blurRadius: 12,
+                            offset: Offset(0, 2)),
+                        Shadow(color: Colors.black45, blurRadius: 20),
+                      ]),
                     ),
                     const SizedBox(height: 4),
                     Text(

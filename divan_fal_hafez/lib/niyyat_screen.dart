@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:fale_hafez/falscreen.dart';
+import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -177,6 +178,34 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                     ),
                   ),
 
+                  // راهنمای نگه‌داشتن انگشت زیر اثر انگشت، داخل قاب
+                  // شیشه‌ایِ شیری تا روی هر نقطه از تصویر خوانا بماند
+                  Positioned(
+                    top: centerY + scanner / 2 + 14,
+                    right: 0,
+                    left: 0,
+                    child: Center(
+                      child: GlassPanel(
+                        radius: 14,
+                        blur: 12,
+                        tintOpacity: 0.85,
+                        borderOpacity: 0.35,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 9),
+                        child: Text(
+                          'انگشت خود را روی اثر انگشت نگه دارید',
+                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.center,
+                          style: vazirText(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF4A2E12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
                   // دکمهٔ بازگشتِ شیشه‌ایِ شناور (بدون هیچ نوشتهٔ اضافی)
                   Positioned(
                     top: topPadding + 12,
@@ -230,9 +259,9 @@ class _CornerBracketsPainter extends CustomPainter {
           Offset(size.width - inset, inset + arm), paint)
       // گوشهٔ بالا-چپ
       ..drawLine(
-          const Offset(inset + arm, inset), const Offset(inset, inset), paint)
+          Offset(inset + arm, inset), const Offset(inset, inset), paint)
       ..drawLine(
-          const Offset(inset, inset), const Offset(inset, inset + arm), paint)
+          const Offset(inset, inset), Offset(inset, inset + arm), paint)
       // گوشهٔ پایین-راست
       ..drawLine(Offset(size.width - inset - arm, size.height - inset),
           Offset(size.width - inset, size.height - inset), paint)

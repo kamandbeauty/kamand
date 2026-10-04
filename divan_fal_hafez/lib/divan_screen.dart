@@ -118,7 +118,13 @@ class _DivanScreenState extends State<DivanScreen> {
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
-                      ),
+                      ).copyWith(shadows: const [
+                        Shadow(
+                            color: Colors.black87,
+                            blurRadius: 10,
+                            offset: Offset(0, 2)),
+                        Shadow(color: Colors.black45, blurRadius: 18),
+                      ]),
                     ),
                     const Spacer(),
                     _headerButton(
