@@ -2,6 +2,7 @@ import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/poem_screen.dart';
+import 'package:fale_hafez/util/persian_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -24,6 +25,11 @@ class _DivanScreenState extends State<DivanScreen> {
   String _query = '';
   PoemCategory? _selectedCategory; // null = همهٔ بخش‌ها
 
+  /// متن نرمال‌شدهٔ هر شعر (عنوان + ابیات) برای جستجوی فارسیِ قابل‌اتکا:
+  /// ایندکس یک‌بار هنگام بارگذاری ساخته می‌شود و کاربر با ی/ك عربی،
+  /// نیم‌فاصله، اعراب یا ارقام فارسی هم به نتیجه می‌رسد.
+  final Map<String, String> _searchIndex = {};
+
   bool _isLoading = true;
   bool _hasError = false;
 
@@ -38,6 +44,12 @@ class _DivanScreenState extends State<DivanScreen> {
       if (!mounted) return;
       setState(() {
         _all = poems;
+        _searchIndex
+          ..clear()
+          ..addEntries(poems.map(
+            (p) => MapEntry(
+                p.id, normalizePersian('${p.displayTitle}\n${p.verses}')),
+          ));
         _isLoading = false;
       });
     } catch (_) {
@@ -51,14 +63,15 @@ class _DivanScreenState extends State<DivanScreen> {
 
   /// اشعار فیلترشده بر اساس بخش انتخابی و متن جستجو
   List<Poem> get _filtered {
-    final q = _query.trim();
+    final q = normalizePersian(_query);
     return _all.where((p) {
       if (_selectedCategory != null && p.category != _selectedCategory) {
         return false;
       }
       if (q.isEmpty) return true;
-      return p.verses.contains(q) ||
-          p.displayTitle.contains(q) ||
+      // جستجو در متن نرمال‌شده (تحمل ی/ك عربی، اعراب، نیم‌فاصله و...)
+      // یا تطابق با شمارهٔ شعر (پس از تبدیل ارقام فارسی به لاتین)
+      return (_searchIndex[p.id] ?? '').contains(q) ||
           p.number.toString() == q;
     }).toList(growable: false);
   }

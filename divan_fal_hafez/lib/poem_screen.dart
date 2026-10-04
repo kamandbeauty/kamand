@@ -152,10 +152,15 @@ class _PoemScreenState extends State<PoemScreen> {
   // ---- بزرگنمایی با دو انگشت ----
 
   void _onScaleStart(ScaleStartDetails details) {
+    // مبنا، مقیاسِ جاریِ اعمال‌شده است (نه مقدار ذخیره‌شدهٔ قدیمی) تا
+    // دومین ژستِ پیاپی پرش نداشته باشد
     _gestureBase = _fontScale;
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
+    // با یک انگشت (اسکرول معمولی) مقیاس تغییر نمی‌کند؛ وقتی یکی از دو
+    // انگشت برداشته شود، آخرین مقدار تا onScaleEnd نگه داشته می‌شود و
+    // همان‌جا نهایی می‌گردد (باگ ماندگاری حالت موقت)
     if (details.pointerCount < 2) return;
     setState(() {
       _transientScale = (_gestureBase * details.scale)
@@ -166,11 +171,20 @@ class _PoemScreenState extends State<PoemScreen> {
 
   void _onScaleEnd(ScaleEndDetails details) {
     final scale = _transientScale;
-    // ابتدا حالت موقت پاک و سپس مقدار نهایی در تنظیمات ذخیره می‌شود
-    setState(() => _transientScale = null);
     if (scale != null) {
-      // بزرگنمایی دو انگشتی به‌عنوان اندازهٔ قلم ذخیره می‌شود
+      // ابتدا مقدار نهایی در تنظیمات اعمال می‌شود (بخش همگامش بلافاصله
+      // notify می‌کند) و سپس حالت موقت پاک می‌گردد تا متن هرگز به
+      // اندازهٔ قبلی برنگردد
       _settings.setPoemScale(scale);
+    }
+    if (mounted) setState(() => _transientScale = null);
+  }
+
+  /// اگر ژست (مثلاً با تماس ورودی یا رفتن به پس‌زمینه) لغو شود،
+  /// مقیاس موقت پاک می‌شود تا در حالت نیمه‌کاره نماند
+  void _onScaleCancel() {
+    if (_transientScale != null && mounted) {
+      setState(() => _transientScale = null);
     }
   }
 
@@ -298,11 +312,14 @@ class _PoemScreenState extends State<PoemScreen> {
     }
 
     final poem = _poem!;
-    final fontScale = _fontScale;
 
     return AnimatedBuilder(
       animation: _settings,
       builder: (context, _) {
+        // مقیاس قلم «داخل» builder محاسبه می‌شود تا با هر تغییر در
+        // SettingsService (اسلایدر تنظیمات یا ذخیرهٔ زوم دو انگشتی)
+        // همان فریم با مقدار تازه رسم شود — نه مقدار کهنهٔ بیرونی
+        final fontScale = _fontScale;
         final isFav = _settings.isFavorite(poem.id);
         return Column(
           children: [
@@ -312,6 +329,7 @@ class _PoemScreenState extends State<PoemScreen> {
                 onScaleStart: _onScaleStart,
                 onScaleUpdate: _onScaleUpdate,
                 onScaleEnd: _onScaleEnd,
+                onScaleCancel: _onScaleCancel,
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 640),

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/splash.dart';
@@ -11,6 +14,11 @@ Future<void> main() async {
   final settings = SettingsService();
   await settings.load();
   Get.put<SettingsService>(settings, permanent: true);
+
+  // پیش‌گرم کردن کش دیوان از همان ابتدای اجرا تا اولین ورود به
+  // «دیوان» یا «فال» بدون مکث بارگذاری JSON انجام شود (به‌ویژه
+  // روی دستگاه‌های ضعیف). سه‌ثانیهٔ اسپلش زمانِ کافی برای این I/O است.
+  unawaited(DivanRepository.all());
 
   runApp(MyApp(settings: settings));
 }

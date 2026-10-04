@@ -15,10 +15,16 @@ enum PoemCategory {
   /// نام مفرد برای نمایش شماره - مثل «غزل ۱۲»
   final String singularTitle;
 
-  static PoemCategory fromKey(String key) => values.firstWhere(
-        (c) => c.name == key,
-        orElse: () => PoemCategory.ghazal,
-      );
+  /// تبدیل مقدار «c» دیتاست به بخش دیوان.
+  ///
+  /// مقدار ناشناخته خطاست و FormatException پرتاب می‌کند؛ تبدیلِ بی‌صدا
+  /// به غزل (fall-back قبلی) خرابی دیتاست را پنهان می‌کرد.
+  static PoemCategory fromKey(String key) {
+    for (final category in values) {
+      if (category.name == key) return category;
+    }
+    throw FormatException('بخش ناشناختهٔ دیوان: «$key»', key);
+  }
 }
 
 /// مدل یک اثر از دیوان حافظ (غزل، رباعی، قطعه، قصیده، منتسب یا مثنوی)

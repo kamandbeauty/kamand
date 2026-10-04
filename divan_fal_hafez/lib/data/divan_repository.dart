@@ -77,6 +77,17 @@ class DivanRepository {
     return poem;
   }
 
+  /// یافتن گروهی شعرها بر اساس شناسه‌ها (مثلاً فهرست دلخواه‌ها).
+  /// نگاشت مستقیم از کش انجام می‌شود — یک await کلی، نه یک await برای
+  /// هر شناسه؛ ترتیب ورودی حفظ و شناسه‌های ناموجود نادیده گرفته می‌شوند.
+  static Future<List<Poem>> findByIds(Iterable<String> ids) async {
+    await _ensureLoaded();
+    return ids
+        .map((id) => _byId[id])
+        .whereType<Poem>()
+        .toList(growable: false);
+  }
+
   /// یک غزل تصادفی - برای فال حافظ
   static Future<Poem> randomGhazal() async {
     final ghazals = await byCategory(PoemCategory.ghazal);

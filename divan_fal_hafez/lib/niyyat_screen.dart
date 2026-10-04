@@ -3,6 +3,7 @@ import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -18,7 +19,7 @@ class NiyyatScreen extends StatefulWidget {
 }
 
 class _NiyyatScreenState extends State<NiyyatScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   static const Color _accent = Color.fromRGBO(234, 158, 77, 1);
   static const Color _dark = Color.fromRGBO(107, 38, 15, 1);
   static const Color _bracket = Color(0xFF2E8B57);
@@ -46,6 +47,39 @@ class _NiyyatScreenState extends State<NiyyatScreen>
   /// جلوگیری از باز کردن چند صفحهٔ فال پشت سر هم
   bool _wentToFal = false;
 
+  /// فقط برای تست: پیشرفت انیمیشن نگه‌داشتن اثر انگشت
+  @visibleForTesting
+  double get holdProgress => _hold.value;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// اگر کاربر هنگام نگه‌داشتن انگشت اپ را مینیمایز کند، انیمیشنِ
+  /// نیمه‌کاره در زندگی می‌ماند و با بازگشت — بدون انگشت روی صفحه —
+  /// ممکن بود به شکل شبح‌وار ادامه یابد؛ پس با خروج از پیش‌زمینه،
+  /// اول ریست می‌شود و کاربر پس از بازگشت از نو نگه می‌دارد.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      if (_hold.status != AnimationStatus.completed) {
+        _hold.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _hold.dispose();
+    super.dispose();
+  }
+
   void _openFal() {
     if (_wentToFal) return;
     _wentToFal = true;
@@ -68,12 +102,6 @@ class _NiyyatScreenState extends State<NiyyatScreen>
         _hold.status != AnimationStatus.dismissed) {
       _hold.reverse();
     }
-  }
-
-  @override
-  void dispose() {
-    _hold.dispose();
-    super.dispose();
   }
 
   @override
@@ -101,8 +129,17 @@ class _NiyyatScreenState extends State<NiyyatScreen>
               // لوگو (ابعاد دلخواه تصویر) باعث سرریز نشود
               final double headerH = (width / 10).clamp(36.0, 60.0);
 
-              return Column(
-                children: [
+              // روی صفحه‌های کوتاه یا لندسکیپ: محتوا به‌جای Overflow
+              // اسکرول می‌شود؛ روی صفحه‌های معمولی با ConstrainedBox+Spacer
+              // همان چیدمان قبلی (top/…/bottom) حفظ می‌شود.
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
                   // نوار بالایی: دکمهٔ بازگشت و لوگو (سبک صفحهٔ فال)
                   Padding(
                     padding: EdgeInsets.only(
@@ -249,7 +286,10 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                   ),
 
                   const Spacer(),
-                ],
+                      ],
+                    ),
+                  ),
+                ),
               );
             },
           ),

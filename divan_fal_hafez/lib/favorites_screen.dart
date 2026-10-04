@@ -109,17 +109,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Future<List<Poem>> _resolve(List<String> ids) async {
-    final poems = <Poem>[];
-    for (final id in ids) {
-      try {
-        poems.add(await DivanRepository.findById(id));
-      } catch (_) {
-        // شعری که دیگر در دیتاست نیست نادیده گرفته می‌شود
-      }
-    }
-    return poems;
-  }
+  /// نگاشت شناسه‌های دلخواه به شعرها از کشِ دیوان
+  /// (به‌جای یک await جداگانه برای هر شناسه)
+  Future<List<Poem>> _resolve(List<String> ids) =>
+      DivanRepository.findByIds(ids);
 
   Widget _emptyState() {
     return Center(

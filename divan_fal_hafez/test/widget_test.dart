@@ -1,5 +1,6 @@
 // تست دود (smoke test) برنامهٔ «دیوان و فال حافظ»
 
+import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/falscreen.dart';
@@ -35,7 +36,8 @@ void main() {
     await tester.pumpWidget(app);
 
     // در ابتدا صفحهٔ اسپلش با نسخهٔ برنامه دیده می‌شود
-    expect(find.text('نسخه برنامه 1.5.1'), findsOneWidget);
+    // (متن از روی AppInfo.version ساخته می‌شود تا با هر بامپ به‌روز بماند)
+    expect(find.text('نسخه برنامه ${AppInfo.version}'), findsOneWidget);
 
     // پس از پایان اسپلش (۳ ثانیه) صفحهٔ اصلی با دکمه‌ها نمایش داده می‌شود
     await tester.pump(const Duration(seconds: 3));

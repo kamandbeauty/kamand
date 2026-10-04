@@ -31,9 +31,20 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
-      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
+      # بیلدِ قابل‌تکرار: pub get بر اساس pubspec.lock کامیت‌شده.
+      # گذار: اگر lockfile فعلی با SDK جدید ناسازگار بود، یک‌بار upgrade
+      # انجام و lock تازه به‌عنوان artifact منتشر می‌شود تا کامیت شود.
+      - name: Resolve dependencies (pub get)
         working-directory: divan_fal_hafez
-        run: flutter pub upgrade
+        run: flutter pub get || flutter pub upgrade
+
+      - name: Upload resolved pubspec.lock
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resolved-pubspec-lock
+          path: divan_fal_hafez/pubspec.lock
+          retention-days: 7
 
       - name: Analyze
         working-directory: divan_fal_hafez
@@ -93,9 +104,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
+      - name: Resolve dependencies (pub get)
         working-directory: divan_fal_hafez
-        run: flutter pub upgrade
+        run: flutter pub get || flutter pub upgrade
 
       - name: Build release APKs (universal + split per ABI)
         working-directory: divan_fal_hafez
@@ -167,11 +178,18 @@ jobs:
           - **arm64-v8a**: بیشتر گوشی‌های امروزی (کم‌حجم‌تر)
           - **armeabi-v7a**: گوشی‌های قدیمی ۳۲بیتی
           - **x86_64**: شبیه‌ساز و برخی تبلت‌ها"
+          # هر تگ فقط یک‌بار ساخته می‌شود تا APK همیشه دقیقاً با کامیتِ
+          # تگ هم‌خوان بماند؛ بازنویسی ریلیز موجود (--clobber) حذف شد.
+          # برای انتشار تغییرات باید version در pubspec.yaml افزایش یابد.
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" out/*.apk \
-              --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create "$TAG" out/*.apk \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "دیوان و فال حافظ ${VERSION}" --notes "$NOTES"
+            {
+              echo "## ⚠️ ریلیز \`${TAG}\` از قبل وجود دارد — انتشار جدید انجام نشد"
+              echo ""
+              echo 'برای انتشار نسخهٔ جدید، مقدار `version` در `divan_fal_hafez/pubspec.yaml` را افزایش دهید (مثلاً 1.5.3+14).'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "Release $TAG already exists; skipping publish (bump version to release)."
+            exit 0
           fi
+          gh release create "$TAG" out/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "دیوان و فال حافظ ${VERSION}" --notes "$NOTES"

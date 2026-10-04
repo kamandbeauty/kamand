@@ -35,11 +35,26 @@ class SettingsService extends ChangeNotifier {
 
   bool isFavorite(String poemId) => _favorites.contains(poemId);
 
+  /// نوشتن روی حافظهٔ دستگاه با تحمل خطا.
+  ///
+  /// اگر ذخیره‌سازی شکست بخورد (کمبود فضا یا خطای I/O)، مهم‌ترین چیز
+  /// تجربهٔ کاربر در همین اجراست و وضعیتِ حافظهٔ درون برنامه معتبر
+  /// می‌ماند؛ خطا لاگ می‌شود تا failure بی‌سروصدا از دست نرود و UI
+  /// وضعیت اشتباه «حتماً ذخیره شد» را قطعی القا نکند.
+  void _persist(Future<bool> Function(SharedPreferences prefs) write) {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    write(prefs).onError((Object error, StackTrace _) {
+      debugPrint('SettingsService: خطا در ذخیره‌سازی تنظیمات — $error');
+      return false;
+    });
+  }
+
   Future<void> setFont(String key) async {
     if (_fontKey == key) return;
     _fontKey = key;
     notifyListeners();
-    await _prefs?.setString(_kFont, key);
+    _persist((prefs) => prefs.setString(_kFont, key));
   }
 
   Future<void> setPoemScale(double scale) async {
@@ -47,7 +62,7 @@ class SettingsService extends ChangeNotifier {
     if ((_poemScale - clamped).abs() < 0.001) return;
     _poemScale = clamped;
     notifyListeners();
-    await _prefs?.setDouble(_kScale, clamped);
+    _persist((prefs) => prefs.setDouble(_kScale, clamped));
   }
 
   /// افزودن/حذف شعر از «اشعار دلخواه»
@@ -58,6 +73,7 @@ class SettingsService extends ChangeNotifier {
       _favorites.add(poemId);
     }
     notifyListeners();
-    await _prefs?.setStringList(_kFavorites, _favorites.toList());
+    _persist(
+        (prefs) => prefs.setStringList(_kFavorites, _favorites.toList()));
   }
 }

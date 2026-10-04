@@ -1,4 +1,4 @@
-package com.example.fale_hafez
+package com.javidstudio.divanfalhafez
 
 import io.flutter.embedding.android.FlutterActivity
 

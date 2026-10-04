@@ -29,7 +29,16 @@ class AboutScreen extends StatelessWidget {
                 right: 5,
                 top: 20,
                 bottom: 20,
-                child: Column(
+                // روی صفحه‌های کوتاه/لندسکیپ به‌جای Overflow اسکرول می‌شود؛
+                // روی صفحه‌های بلند همچنان محتوای وسط‌چین حفظ می‌شود.
+                child: LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
@@ -113,6 +122,10 @@ class AboutScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               Positioned(

@@ -25,27 +25,44 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   bool _isPlaying = false;
 
+  /// صفِ ترتیبی عملیات صوتی.
+  ///
+  /// همهٔ دستورهای play / stop / pause / resume به‌ترتیبِ صدورشان اجرا
+  /// می‌شوند؛ بدون این صف، تغییر سریع چرخهٔ حیات (Background→Foreground)
+  /// یا چند تپِ پشت‌سرهم روی دکمهٔ موسیقی می‌توانست play و stop را
+  /// هم‌پوشانی (race) کند و وضعیت پخش را با _isPlaying ناهماهنگ سازد.
+  Future<void> _audioChain = Future<void>.value();
+
+  /// افزودن یک عملیات صوتی به انتهای صف؛ خطای یک عملیات، اجرای
+  /// عملیات‌های بعدی صف را متوقف نمی‌کند.
+  void _enqueueAudio(Future<void> Function() operation) {
+    _audioChain = _audioChain
+        .then((_) => operation())
+        .onError((Object error, StackTrace _) =>
+            debugPrint('عملیات صوتی ناموفق: $error'));
+  }
+
   /// آیا هنگام بازگشت از پس‌زمینه، موسیقی باید ادامه پیدا کند؟
   bool _resumeMusicOnForeground = false;
 
   /// پخش آفلاین آهنگ حافظ از فایل داخل برنامه (بدون نیاز به اینترنت)
-  Future<void> _playAudio() async {
-    try {
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer.play(AssetSource('background/hafez.mp3'));
-      if (mounted) setState(() => _isPlaying = true);
-    } catch (_) {
-      if (mounted) setState(() => _isPlaying = false);
-    }
-  }
+  void _playAudio() => _enqueueAudio(() async {
+        try {
+          await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+          await _audioPlayer.play(AssetSource('background/hafez.mp3'));
+          if (mounted) setState(() => _isPlaying = true);
+        } catch (_) {
+          if (mounted) setState(() => _isPlaying = false);
+        }
+      });
 
-  Future<void> _stopAudio() async {
-    try {
-      await _audioPlayer.stop();
-    } finally {
-      if (mounted) setState(() => _isPlaying = false);
-    }
-  }
+  void _stopAudio() => _enqueueAudio(() async {
+        try {
+          await _audioPlayer.stop();
+        } finally {
+          if (mounted) setState(() => _isPlaying = false);
+        }
+      });
 
   /// رفتن به صفحهٔ نیّت - متن آیین نیّت و سپس نگه‌داشتن انگشت
   /// روی اثر انگشت برای گرفتن فال (فال‌ها آفلاین و داخل برنامه‌اند)
@@ -67,25 +84,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// چون پلاگین بعد از pause فوکوس صوتی را نگه می‌دارد و هنگام بازگشت
   /// فوکوس (مثلاً بعد از پخش صدای اپ‌های دیگر) پخش را خودکار از سر می‌گیرد
   /// — همان باگی که باعث می‌شد موسیقی در حالت مینیمایز نواخته شود.
-  Future<void> _pauseAudio() async {
-    try {
-      _savedPosition = await _audioPlayer.getCurrentPosition();
-      await _audioPlayer.stop(); // رهاسازی کامل فوکوس و مدیا‌سیشن
-    } catch (_) {}
-  }
+  /// اجرایش همیشه از طریق صفِ صوتی تا با resume بالقوه هم‌پوشانی نشود.
+  void _pauseAudio() => _enqueueAudio(() async {
+        try {
+          _savedPosition = await _audioPlayer.getCurrentPosition();
+          await _audioPlayer.stop(); // رهاسازی کامل فوکوس و مدیا‌سیشن
+        } catch (_) {}
+      });
 
-  /// ادامهٔ پخش از موقعیت ذخیره‌شده بعد از بازگشت به اپ
-  Future<void> _resumeAudio() async {
-    try {
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer.play(AssetSource('background/hafez.mp3'));
-      final pos = _savedPosition;
-      _savedPosition = null;
-      if (pos != null && pos > Duration.zero) {
-        await _audioPlayer.seek(pos);
-      }
-    } catch (_) {}
-  }
+  /// ادامهٔ پخش از موقعیت ذخیره‌شده بعد از بازگشت به اپ؛
+  /// چون از طریق همان صف اجرا می‌شود، تضمین می‌شود کاملاً بعد از
+  /// توقفِ پس‌زمینه انجام شود (بدون race).
+  void _resumeAudio() => _enqueueAudio(() async {
+        try {
+          await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+          await _audioPlayer.play(AssetSource('background/hafez.mp3'));
+          final pos = _savedPosition;
+          _savedPosition = null;
+          if (pos != null && pos > Duration.zero) {
+            await _audioPlayer.seek(pos);
+          }
+        } catch (_) {}
+      });
 
   /// با رفتن برنامه به پس‌زمینه موسیقی متوقف و
   /// با بازگشت کاربر (اگر خودش قطعش نکرده باشد) ادامه پیدا می‌کند.
