@@ -2,7 +2,7 @@ name: fale_hafez
 description: "دیوان و فال حافظ - غزلیات، رباعیات، قطعات، قصاید و منتسبات به همراه فال"
 publish_to: 'none'
 
-version: 1.5.11+22
+version: 1.6.0+23
 
 environment:
   sdk: '>=3.1.4 <4.0.0'
@@ -11,7 +11,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.2
   flutter_spinkit: ^5.2.0
   get: ^4.6.6
   audioplayers: ^5.2.1
@@ -35,7 +34,7 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/appicon.png"
   adaptive_icon_background: "#193B49"
-  adaptive_icon_foreground: "assets/appicon_foreground.png"
+  adaptive_icon_foreground: "../tool/icon/appicon_foreground.png"
 
 flutter:
   uses-material-design: true

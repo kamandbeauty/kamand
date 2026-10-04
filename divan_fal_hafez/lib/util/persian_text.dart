@@ -59,3 +59,19 @@ String normalizePersian(String input) {
 /// هر دو ورودی پیش از مقایسه نرمال می‌شوند.
 bool persianContains(String haystack, String query) =>
     normalizePersian(haystack).contains(normalizePersian(query));
+
+/// تبدیل ارقام لاتین هر رشته به ارقام فارسی برای نمایش
+String toPersianDigits(String input) {
+  const fa = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  final buffer = StringBuffer();
+  for (var i = 0; i < input.length; i++) {
+    final c = input[i];
+    final code = c.codeUnitAt(0);
+    if (code >= 0x30 && code <= 0x39) {
+      buffer.write(fa[code - 0x30]);
+    } else {
+      buffer.write(c);
+    }
+  }
+  return buffer.toString();
+}

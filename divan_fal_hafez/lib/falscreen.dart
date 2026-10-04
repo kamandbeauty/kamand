@@ -1,15 +1,20 @@
 import 'package:fale_hafez/about.dart';
 import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
+import 'package:fale_hafez/data/settings_service.dart';
+import 'package:fale_hafez/fal_history_screen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_button.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
+import 'package:fale_hafez/widgets/night_overlay.dart';
+import 'package:fale_hafez/widgets/share_card.dart';
 import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// صفحهٔ نمایش فال حافظ.
 ///
@@ -42,6 +47,8 @@ class _FalScreenState extends State<FalScreen> {
         _fal = fal;
         _isLoading = false;
       });
+      // ثبت در «دفترچهٔ فال» برای مرور دوباره
+      Get.find<SettingsService>().recordFal(fal);
     } catch (_) {
       _showError();
     }
@@ -84,6 +91,9 @@ class _FalScreenState extends State<FalScreen> {
             // محتوای اصلی: لودینگ / خطا / نمایش فال
             _buildBody(width, height),
 
+            // لایهٔ حالت مطالعهٔ شبانه (در صورت فعال‌بودن در تنظیمات)
+            const NightOverlay(),
+
             // نوار بالایی: دکمهٔ بازگشت، لوگو و دربارهٔ ما
             Positioned(
               top: topPadding + 12,
@@ -96,25 +106,36 @@ class _FalScreenState extends State<FalScreen> {
                 blur: 12,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _headerButton(
-                      width: width,
-                      icon: CupertinoIcons.back,
-                      onPressed: Get.back,
-                    ),
-                    const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: AppBrand(fontSize: 18, onDark: false),
-                    ),
-                    _headerButton(
-                      width: width,
-                      icon: CupertinoIcons.person_alt_circle,
-                      onPressed: () => Get.to(const AboutScreen()),
-                    ),
-                  ],
-                ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _headerButton(
+                        width: width,
+                        icon: CupertinoIcons.back,
+                        onPressed: Get.back,
+                      ),
+                      const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: AppBrand(fontSize: 18, onDark: false),
+                      ),
+                      Row(
+                        children: [
+                          _headerButton(
+                            width: width,
+                            icon: CupertinoIcons.book,
+                            onPressed: () =>
+                                Get.to(() => const FalHistoryScreen()),
+                          ),
+                          const SizedBox(width: 6),
+                          _headerButton(
+                            width: width,
+                            icon: CupertinoIcons.person_alt_circle,
+                            onPressed: () => Get.to(const AboutScreen()),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
               ),
             ),
           ],
@@ -298,6 +319,47 @@ class _FalScreenState extends State<FalScreen> {
               ),
             ),
           ),
+          SizedBox(height: height / 28),
+
+          // اشتراک فال به‌صورت متن یا کارت تصویریِ قاب‌طلایی
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: width / 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GlassButton(
+                  onPressed: () {
+                    ShareOptionsSheet.show(
+                      context: context,
+                      fileName: 'fal-${fal.number}.png',
+                      card: ShareCard(
+                        title: 'فالِ شما — غزل ${fal.number}',
+                        verses: fal.verses,
+                        meaning: fal.meaning,
+                      ),
+                      onShareText: () {
+                        Get.back();
+                        Share.share(
+                            '${fal.verses}\n\nتعبیر فال: ${fal.meaning ?? ''}\n\n— اپلیکیشن «دیوان و فال حافظ»');
+                      },
+                    );
+                  },
+                  icon: CupertinoIcons.share,
+                  label: 'اشتراک فال',
+                  expand: false,
+                  tint: const Color.fromRGBO(234, 158, 77, 1),
+                  tintOpacity: 0.32,
+                  borderOpacity: 0.5,
+                  textColor: const Color.fromRGBO(107, 38, 15, 1),
+                  iconColor: const Color.fromRGBO(107, 38, 15, 1),
+                  fontSize: 15,
+                  height: 48,
+                  radius: 12,
+                ),
+              ],
+            ),
+          ),
+
           SizedBox(height: height / 20),
         ],
       ),

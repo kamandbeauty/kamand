@@ -1,8 +1,10 @@
 import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
+import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/poem_screen.dart';
 import 'package:fale_hafez/util/persian_text.dart';
+import 'package:fale_hafez/widgets/night_overlay.dart';
 import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +23,8 @@ class DivanScreen extends StatefulWidget {
 class _DivanScreenState extends State<DivanScreen> {
   static const Color _accent = Color.fromRGBO(234, 158, 77, 1);
   static const Color _dark = Color.fromRGBO(107, 38, 15, 1);
+
+  SettingsService get _settings => Get.find<SettingsService>();
 
   List<Poem> _all = const [];
   String _query = '';
@@ -102,8 +106,10 @@ class _DivanScreenState extends State<DivanScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          child: Column(
+          child: Stack(
             children: [
+              Column(
+                children: [
               // نوار بالایی: عنوان و دکمهٔ بازگشت
               Padding(
                 padding: EdgeInsets.only(
@@ -165,6 +171,9 @@ class _DivanScreenState extends State<DivanScreen> {
                 ),
               ),
 
+              // ادامهٔ مطالعه از آخرین شعر خوانده‌شده
+              _continueReadingChip(),
+
               // چیپ‌های بخش‌های دیوان
               SizedBox(
                 height: 44,
@@ -186,10 +195,54 @@ class _DivanScreenState extends State<DivanScreen> {
 
               // فهرست اشعار
               Expanded(child: _buildList(bottomPadding)),
+                ],
+              ),
+              // لایهٔ حالت مطالعهٔ شبانه
+              const NightOverlay(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// چیپ «ادامهٔ مطالعه» — بازگشت مستقیم به آخرین شعر خوانده‌شده
+  Widget _continueReadingChip() {
+    return AnimatedBuilder(
+      animation: _settings,
+      builder: (context, _) {
+        final lastId = _settings.lastPoemId;
+        if (lastId == null || _all.isEmpty) return const SizedBox.shrink();
+        Poem? last;
+        for (final poem in _all) {
+          if (poem.id == lastId) {
+            last = poem;
+            break;
+          }
+        }
+        if (last == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(right: 12, bottom: 2),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: ActionChip(
+              avatar: const Icon(Icons.play_circle_outline,
+                  size: 20, color: Color(0xFFF0B45C)),
+              backgroundColor: const Color(0xFF14263D),
+              side: BorderSide(
+                  color: const Color(0xFFF0B45C).withOpacity(0.45),
+                  width: 1.1),
+              labelStyle: vazirText(
+                color: const Color(0xFFF0B45C),
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+              label: Text('ادامهٔ مطالعه: ${last!.displayTitle}'),
+              onPressed: () => Get.to(() => PoemScreen(poemId: last!.id)),
+            ),
+          ),
+        );
+      },
     );
   }
 

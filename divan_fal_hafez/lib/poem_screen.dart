@@ -5,6 +5,8 @@ import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_button.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
+import 'package:fale_hafez/widgets/night_overlay.dart';
+import 'package:fale_hafez/widgets/share_card.dart';
 import 'package:fale_hafez/widgets/themed_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -99,6 +101,10 @@ class _PoemScreenState extends State<PoemScreen> {
         _isLoading = false;
         _hasError = _ids.isEmpty;
       });
+      // به‌یاد سپردن آخرین شعر برای «ادامهٔ مطالعه» در صفحهٔ دیوان
+      if (index >= 0 && _ids.isNotEmpty) {
+        _settings.saveLastPoemId(_ids[index]);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -117,6 +123,7 @@ class _PoemScreenState extends State<PoemScreen> {
       _showMeaning = false;
       _transientScale = null;
     });
+    _settings.saveLastPoemId(_ids[next]);
   }
 
   // ---- اشتراک‌گذاری و کپی ----
@@ -132,6 +139,83 @@ class _PoemScreenState extends State<PoemScreen> {
 
   Future<void> _sharePoem(Poem poem) =>
       Share.share(_shareText(poem, includeMeaning: _showMeaning));
+
+  /// برگهٔ انتخاب نوع اشتراک: متنی یا کارت تصویریِ قاب‌طلایی
+  void _openShare(Poem poem) {
+    ShareOptionsSheet.show(
+      context: context,
+      fileName: '${poem.id}.png',
+      card: ShareCard(
+        title: poem.displayTitle,
+        verses: poem.verses,
+        meaning: _showMeaning ? poem.meaning : null,
+      ),
+      onShareText: () {
+        Get.back();
+        _sharePoem(poem);
+      },
+    );
+  }
+
+  /// گفت‌وگوی نوشتن/ویرایش یادداشت شخصی روی شعر
+  void _openNoteDialog() {
+    final poem = _poem;
+    if (poem == null) return;
+    final controller =
+        TextEditingController(text: _settings.noteFor(poem.id) ?? '');
+    Get.dialog(
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFFF7EDD9),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: Text(
+            'یادداشت من — ${poem.displayTitle}',
+            style: vazirText(
+                fontWeight: FontWeight.w900, color: _dark, fontSize: 16),
+          ),
+          content: TextField(
+            controller: controller,
+            maxLines: 5,
+            autofocus: true,
+            style: vazirText(color: _dark, height: 1.8),
+            decoration: InputDecoration(
+              hintText: 'یادداشت خود را بنویسید…',
+              hintStyle: vazirText(color: _dark.withOpacity(0.45)),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.7),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            TextButton(
+              onPressed: Get.back,
+              child: Text('انصراف',
+                  style: vazirText(color: _dark.withOpacity(0.6))),
+            ),
+            ElevatedButton(
+              style: AppThemeButton.style(),
+              onPressed: () {
+                _settings.setNote(poem.id, controller.text);
+                Get.back();
+              },
+              child: Text(
+                'ذخیره',
+                style: vazirText(
+                    color: AppThemeButton.gold, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).then((_) => controller.dispose());
+  }
 
   Future<void> _copyPoem(Poem poem) async {
     await Clipboard.setData(
@@ -207,7 +291,9 @@ class _PoemScreenState extends State<PoemScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          child: Column(
+          child: Stack(
+            children: [
+              Column(
             children: [
               // نوار بالایی: لوگو + بازگشت
               Padding(
@@ -230,10 +316,29 @@ class _PoemScreenState extends State<PoemScreen> {
                         fit: BoxFit.scaleDown,
                         child: AppBrand(fontSize: 18, onDark: false),
                       ),
-                      const SizedBox(width: 12),
-                      _headerButton(
-                        icon: CupertinoIcons.back,
-                        onPressed: Get.back,
+                      Row(
+                        children: [
+                          // یادداشت شخصی روی همین شعر (پُر = یادداشت دارد)
+                          AnimatedBuilder(
+                            animation: _settings,
+                            builder: (context, _) {
+                              final poem = _poem;
+                              final hasNote = poem != null &&
+                                  (_settings.noteFor(poem.id) ?? '').isNotEmpty;
+                              return _headerButton(
+                                icon: hasNote
+                                    ? Icons.sticky_note_2
+                                    : Icons.sticky_note_2_outlined,
+                                onPressed: _openNoteDialog,
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _headerButton(
+                            icon: CupertinoIcons.back,
+                            onPressed: Get.back,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -241,6 +346,10 @@ class _PoemScreenState extends State<PoemScreen> {
               ),
 
               Expanded(child: _buildBody(width)),
+            ],
+              ),
+              // لایهٔ حالت مطالعهٔ شبانه (در صورت فعال‌بودن در تنظیمات)
+              const NightOverlay(),
             ],
           ),
         ),
@@ -419,7 +528,7 @@ class _PoemScreenState extends State<PoemScreen> {
                               _actionButton(
                                 icon: CupertinoIcons.share,
                                 label: 'اشتراک‌گذاری',
-                                onPressed: () => _sharePoem(poem),
+                                onPressed: () => _openShare(poem),
                               ),
                               const SizedBox(width: 10),
                               _actionButton(

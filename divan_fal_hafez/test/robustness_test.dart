@@ -19,7 +19,8 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> _setupGet(WidgetTester tester) async {
-  SharedPreferences.setMockInitialValues({});
+  // آنبوردینگ اولین اجرا در تست‌ها از قبل «دیده‌شده» است
+  SharedPreferences.setMockInitialValues({'onboarding_seen_v1': true});
   final settings = SettingsService();
   await settings.load();
   await Get.deleteAll(force: true);
@@ -197,6 +198,66 @@ void main() {
       await tester.enterText(find.byType(TextField), '');
       await tester.pumpAndSettle();
       expect(find.text('غزل 2'), findsWidgets);
+    });
+  });
+
+  group('دفترچهٔ فال، یادداشت‌ها و پشتیبان‌گیری', () {
+    Poem samplePoem(int n) => Poem(
+          id: 'ghazal-$n',
+          category: PoemCategory.ghazal,
+          number: n,
+          verses: 'مصرع آزمایشی',
+        );
+
+    test('دفترچهٔ فال تازه‌ترین را اول نگه می‌دارد و از سقف رد نمی‌شود',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+
+      for (var i = 1; i <= 120; i++) {
+        await settings.recordFal(samplePoem(i));
+      }
+      expect(settings.falHistory.length, SettingsService.maxFalHistory);
+      expect(settings.falHistory.first.number, 120);
+    });
+
+    test('ذخیره و حذف یادداشت شخصی', () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+
+      await settings.setNote('ghazal-1', 'یادداشت آزمایشی');
+      expect(settings.noteFor('ghazal-1'), 'یادداشت آزمایشی');
+      await settings.setNote('ghazal-1', '   ');
+      expect(settings.noteFor('ghazal-1'), isNull);
+    });
+
+    test('پشتیبان‌گیری و بازیابی: دلخواه، یادداشت و دفترچهٔ فال', () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+
+      await settings.toggleFavorite('ghazal-1');
+      await settings.setNote('ghazal-1', 'یادداشت مهم');
+      await settings.recordFal(samplePoem(7));
+      final backup = settings.exportBackup();
+
+      final restored = SettingsService();
+      await restored.load();
+      expect(restored.importBackup(backup), isTrue);
+      expect(restored.isFavorite('ghazal-1'), isTrue);
+      expect(restored.noteFor('ghazal-1'), 'یادداشت مهم');
+      expect(restored.falHistory.single.number, 7);
+
+      // ورودی نامعتبر هیچ داده‌ای را خراب نمی‌کند
+      expect(restored.importBackup('متن الکی'), isFalse);
+      expect(restored.isFavorite('ghazal-1'), isTrue);
+    });
+
+    test('ارقام لاتین به فارسی تبدیل می‌شوند', () {
+      expect(toPersianDigits('غزل 123'), 'غزل ۱۲۳');
+      expect(toPersianDigits('2026/10/04'), '۲۰۲۶/۱۰/۰۴');
     });
   });
 }

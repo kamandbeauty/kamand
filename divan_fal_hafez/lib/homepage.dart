@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _playAudio() => _enqueueAudio(() async {
         try {
           await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-          await _audioPlayer.play(AssetSource('background/hafez.mp3'));
+          await _audioPlayer.play(AssetSource('background/hafez.m4a'));
           if (mounted) setState(() => _isPlaying = true);
         } catch (_) {
           if (mounted) setState(() => _isPlaying = false);
@@ -97,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _resumeAudio() => _enqueueAudio(() async {
         try {
           await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-          await _audioPlayer.play(AssetSource('background/hafez.mp3'));
+          await _audioPlayer.play(AssetSource('background/hafez.m4a'));
           final pos = _savedPosition;
           _savedPosition = null;
           if (pos != null && pos > Duration.zero) {
