@@ -240,7 +240,7 @@ class _FalScreenState extends State<FalScreen> {
               radius: 20,
               blur: 16,
               padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 16),
+                  horizontal: 24, vertical: 24),
               child: Column(
                 children: [
                   Text(
@@ -286,7 +286,7 @@ class _FalScreenState extends State<FalScreen> {
               radius: 20,
               blur: 16,
               padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 14),
+                  horizontal: 24, vertical: 22),
               child: Column(
                 children: [
                   Text(

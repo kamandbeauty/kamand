@@ -33,9 +33,25 @@ class AboutScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Image.asset(
-                      'assets/appicon.png',
-                      width: width / 2,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(width / 10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(width / 10),
+                        child: Image.asset(
+                          'assets/appicon.png',
+                          width: width / 2,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                     SizedBox(height: height / 30),
                     SizedBox(

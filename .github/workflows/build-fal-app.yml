@@ -1,11 +1,13 @@
 # ساخت خودکار اپلیکیشن «دیوان و فال حافظ» روی GitHub Actions
+# خروجی: ۴ فایل APK — universal (همهٔ گوشی‌ها) + اختصاصی هر معماری
+# (arm64-v8a گوشی‌های امروزی، armeabi-v7a قدیمی ۳۲بیتی، x86_64 شبیه‌ساز/تبلت)
 name: Build Divan & Fal Hafez App
 
 on:
   push:
     branches: [arena/01a10170-kamand, main]
     paths:
-      - 'falamo_begir/**'
+      - 'divan_fal_hafez/**'
       - '.github/workflows/build-fal-app.yml'
   workflow_dispatch:
 
@@ -30,15 +32,15 @@ jobs:
         run: flutter --version
 
       - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
-        working-directory: falamo_begir
+        working-directory: divan_fal_hafez
         run: flutter pub upgrade
 
       - name: Analyze
-        working-directory: falamo_begir
+        working-directory: divan_fal_hafez
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Run tests
-        working-directory: falamo_begir
+        working-directory: divan_fal_hafez
         shell: bash
         run: |
           set +e
@@ -52,14 +54,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-report
-          path: falamo_begir/test-report.txt
+          path: divan_fal_hafez/test-report.txt
           retention-days: 30
 
       - name: Post failure report to PR
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: falamo_begir
+        working-directory: divan_fal_hafez
         shell: bash
         run: |
           PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
@@ -75,7 +77,7 @@ jobs:
           fi
 
   build-apk:
-    name: Build APK (release)
+    name: Build APKs (universal + per-ABI)
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -92,15 +94,16 @@ jobs:
           cache: true
 
       - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
-        working-directory: falamo_begir
+        working-directory: divan_fal_hafez
         run: flutter pub upgrade
 
-      - name: Build release APK
-        working-directory: falamo_begir
+      - name: Build release APKs (universal + split per ABI)
+        working-directory: divan_fal_hafez
         shell: bash
         run: |
           set +e
-          flutter build apk --release > apk-build-report.txt 2>&1
+          flutter build apk --release --split-per-abi > apk-build-report.txt 2>&1 \
+            && flutter build apk --release >> apk-build-report.txt 2>&1
           code=$?
           echo "EXIT_CODE=$code" >> apk-build-report.txt
           exit $code
@@ -109,7 +112,7 @@ jobs:
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: falamo_begir
+        working-directory: divan_fal_hafez
         shell: bash
         run: |
           PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
@@ -123,43 +126,20 @@ jobs:
             gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment-apk.md
           fi
 
-      - name: Upload APK artifact
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: divan-hafez-apk
-          path: falamo_begir/build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 90
-
-  build-web:
-    name: Build Web
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Pub upgrade (lockfile قدیمی است؛ نسخه‌های تازهٔ سازگار با SDK فعلی حل شوند)
-        working-directory: falamo_begir
-        run: flutter pub upgrade
-
-      - name: Build web bundle
-        working-directory: falamo_begir
-        run: flutter build web --release
-
-      - name: Upload web artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: divan-hafez-web
-          path: falamo_begir/build/web
+          path: |
+            divan_fal_hafez/build/app/outputs/flutter-apk/app-release.apk
+            divan_fal_hafez/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            divan_fal_hafez/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            divan_fal_hafez/build/app/outputs/flutter-apk/app-x86_64-release.apk
           retention-days: 90
 
   release:
-    name: Publish GitHub Release (APK + Web)
-    needs: [build-apk, build-web]
+    name: Publish GitHub Release (Android APKs)
+    needs: build-apk
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -169,28 +149,29 @@ jobs:
           name: divan-hafez-apk
           path: apk
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: divan-hafez-web
-          path: web
-
       - name: Publish release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          VERSION=$(grep -m1 '^version:' falamo_begir/pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+          VERSION=$(grep -m1 '^version:' divan_fal_hafez/pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
           TAG="v$VERSION"
           [ "$TAG" = "v" ] && echo "version not found" && exit 1
-          APK_NAME="divan-fal-hafez-${TAG}.apk"
-          cp apk/app-release.apk "$APK_NAME"
-          (cd web && zip -qr "../divan-fal-hafez-web-${TAG}.zip" .)
-          NOTES="نسخهٔ ${VERSION} — ساخت خودکار CI: فایل نصبی اندروید (APK) و نسخهٔ وب. ساخته‌شده از شاخه ${GITHUB_REF_NAME}, کامیت ${GITHUB_SHA}"
+          mkdir -p out
+          cp apk/app-release.apk "out/divan-fal-hafez-${TAG}-universal.apk"
+          cp apk/app-arm64-v8a-release.apk "out/divan-fal-hafez-${TAG}-arm64-v8a.apk"
+          cp apk/app-armeabi-v7a-release.apk "out/divan-fal-hafez-${TAG}-armeabi-v7a.apk"
+          cp apk/app-x86_64-release.apk "out/divan-fal-hafez-${TAG}-x86_64.apk"
+          NOTES="نسخهٔ ${VERSION} — فایل‌های نصبی اندروید (ساخت خودکار CI از شاخه ${GITHUB_REF_NAME}, کامیت ${GITHUB_SHA}):
+          - **universal**: برای همهٔ گوشی‌ها (اگر مطمئن نیستید همین را نصب کنید)
+          - **arm64-v8a**: بیشتر گوشی‌های امروزی (کم‌حجم‌تر)
+          - **armeabi-v7a**: گوشی‌های قدیمی ۳۲بیتی
+          - **x86_64**: شبیه‌ساز و برخی تبلت‌ها"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$APK_NAME" "divan-fal-hafez-web-${TAG}.zip" \
+            gh release upload "$TAG" out/*.apk \
               --repo "$GITHUB_REPOSITORY" --clobber
           else
-            gh release create "$TAG" "$APK_NAME" "divan-fal-hafez-web-${TAG}.zip" \
+            gh release create "$TAG" out/*.apk \
               --repo "$GITHUB_REPOSITORY" \
               --title "دیوان و فال حافظ ${VERSION}" --notes "$NOTES"
           fi

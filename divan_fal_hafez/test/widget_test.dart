@@ -35,7 +35,7 @@ void main() {
     await tester.pumpWidget(app);
 
     // در ابتدا صفحهٔ اسپلش با نسخهٔ برنامه دیده می‌شود
-    expect(find.text('نسخه برنامه 1.4'), findsOneWidget);
+    expect(find.text('نسخه برنامه 1.5'), findsOneWidget);
 
     // پس از پایان اسپلش (۳ ثانیه) صفحهٔ اصلی با دکمه‌ها نمایش داده می‌شود
     await tester.pump(const Duration(seconds: 3));

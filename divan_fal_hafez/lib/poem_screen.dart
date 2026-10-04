@@ -152,7 +152,7 @@ class _PoemScreenState extends State<PoemScreen> {
   // ---- بزرگنمایی با دو انگشت ----
 
   void _onScaleStart(ScaleStartDetails details) {
-    _gestureBase = _settings.poemScale;
+    _gestureBase = _fontScale;
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
@@ -329,7 +329,7 @@ class _PoemScreenState extends State<PoemScreen> {
                               radius: 20,
                               blur: 16,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 18),
+                                  horizontal: 26, vertical: 28),
                               child: Column(
                                 children: [
                                   Text(
