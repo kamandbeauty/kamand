@@ -65,5 +65,3 @@ flutter test
 ## 👨‍💻 توسعه‌دهنده
 
 **استودیو جاوید · Studio Javid**
-
-نسخهٔ اولیه: امیررضا جلوس حقی — [github.com/amirrezahaqi](https://github.com/amirrezahaqi)
