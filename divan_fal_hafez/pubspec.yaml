@@ -2,7 +2,7 @@ name: fale_hafez
 description: "دیوان و فال حافظ - غزلیات، رباعیات، قطعات، قصاید و منتسبات به همراه فال"
 publish_to: 'none'
 
-version: 1.6.3+26
+version: 1.6.4+27
 
 environment:
   sdk: '>=3.1.4 <4.0.0'
