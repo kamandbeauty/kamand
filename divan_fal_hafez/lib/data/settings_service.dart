@@ -171,7 +171,7 @@ class SettingsService extends ChangeNotifier {
     });
   }
 
-  static double _sanitizeScale(double? raw,
+  static double _sanitizeScale(num? raw,
           {double fallback = defaultScale}) =>
       (raw == null || raw.isNaN || raw.isInfinite)
           ? fallback
