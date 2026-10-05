@@ -304,11 +304,12 @@ void main() {
       expect(goldScanTint(), findsOneWidget,
           reason: 'اسکن پیش از خروج در حال پیشرفت است');
 
-      // رفتن به پس‌زمینه و برگشت → پیشرفتِ نیمه‌کاره قاطی‌ای ریست شده
-      await tester.binding
+      // رفتن به پس‌زمینه و برگشت → پیشرفتِ نیمه‌کاره قطعاً ریست شده است
+      // (نکته: API تغییر وضعیت سینک است و مقداری برنمی‌گرداند → بدون await)
+      tester.binding
           .handleAppLifecycleStateChanged(AppLifecycleState.paused);
       await tester.pump();
-      await tester.binding
+      tester.binding
           .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
       expect(goldScanTint(), findsNothing,

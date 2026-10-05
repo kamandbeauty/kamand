@@ -260,8 +260,8 @@ class _DivanScreenState extends State<DivanScreen> {
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
-              label: Text('ادامهٔ مطالعه: ${last!.displayTitle}'),
-              onPressed: () => Get.to(() => PoemScreen(poemId: last!.id)),
+              label: Text('ادامهٔ مطالعه: ${last.displayTitle}'),
+              onPressed: () => Get.to(() => PoemScreen(poemId: last.id)),
             ),
           ),
         );
