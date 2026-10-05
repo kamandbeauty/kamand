@@ -7,5 +7,5 @@ class AppInfo {
 
   /// نسخه‌ای که داخل برنامه به کاربر نمایش داده می‌شود
   /// (تست version_consistency یک‌خوان بودنش با pubspec.yaml را اجباری می‌کند)
-  static const String version = '1.6.10';
+  static const String version = '1.6.11';
 }

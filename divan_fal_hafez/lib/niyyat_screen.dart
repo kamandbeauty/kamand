@@ -473,8 +473,8 @@ class PetalBloomPainter extends CustomPainter {
   static const _petalPale = Color(0xFFFADCE3);
   static const _petalCore = Color(0xFFD9A94A);
 
-  /// تعداد گلبرگ‌های پخش‌شده در هوای اطراف
-  static const int _petalCount = 16;
+  /// تعداد گلبرگ‌های پخش‌شده در هوای کلِ کادر
+  static const int _petalCount = 34;
 
   final double progress;
 
@@ -544,24 +544,24 @@ class PetalBloomPainter extends CustomPainter {
       );
     }
 
-    // پخش‌شدنِ پراکنده در هوا: هر گلبرگ جایِ نُخودابه در هوای اطراف
-    // اثر انگشت دارد (از نزدیکِ مرکز تا بیرون‌تر از ناحیه‌اش)؛ با
+    // پخش‌شدنِ پراکنده در سراسر کادر اثر انگشت: هر گلبرگ جایِ خاصِ
+    // خودش را در هوا دارد — از کنارِ مرکز تا لبه‌های دورِ کادر؛ با
     // پیشرفت، از آستانهٔ خودش ظاهر و بزرگ می‌شود، کمی می‌چرخد و در
     // وزشِ نامنظمی چند پیکسل جابه‌جا می‌شود.
     const palette = [_petalDeep, _petalRose, _petalBlush, _petalPale];
     for (var i = 0; i < _petalCount; i++) {
       // آستانهٔ ظهورِ نامنظمِ هر گلبرگ: بعضی زود و بعضی دیرتر ظاهر می‌شوند
-      final thr = 0.09 + (i / _petalCount) * 0.30 + _rand(i, 1) * 0.38;
+      final thr = 0.05 + (i / _petalCount) * 0.22 + _rand(i, 1) * 0.36;
       final local = _smooth(((progress - thr) / 0.34).clamp(0.0, 1.0));
       if (local <= 0) continue;
 
       final angle = _rand(i, 2) * 2 * math.pi +
           progress * 0.22 * (0.5 + _rand(i, 3));
-      final distFactor = 0.22 + _rand(i, 4) * 0.72; // نزدیک تا دور از اثر انگشت
+      final distFactor = 0.06 + _rand(i, 4) * 0.93; // کنارِ مرکز تا لبهٔ کادر
       final dist = size.width * 0.5 * distFactor * (0.55 + 0.45 * ease);
 
       final petalLen = size.width *
-          (0.045 + 0.045 * _rand(i, 5)) *
+          (0.034 + 0.040 * _rand(i, 5)) *
           (0.35 + 0.65 * local);
       final petalW = petalLen * (0.55 + 0.25 * _rand(i, 6));
       if (petalLen < 0.6) continue;
