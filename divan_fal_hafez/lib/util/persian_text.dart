@@ -41,7 +41,10 @@ String normalizePersian(String input) {
   text = text.replaceAll(RegExp('[ً-ْٰـ]'), '');
 
   // نیم‌فاصله و سایر جداکننده‌های نامرئی → فاصلهٔ معمولی
-  text = text.replaceAll(RegExp('[‌‍‎‏‪-‮⁦-⁩]'), ' ');
+  // (اسکیپ یونیکد: کدپوینت‌های کنترلیِ جهت نباید خام در سورس باشند)
+  text = text.replaceAll(
+      RegExp('[\\u200C\\u200D\\u200E\\u200F\\u202A-\\u202E\\u2066-\\u2069]'),
+      ' ');
 
   // ارقام فارسی و عربی → لاتین تا جستجوی شمارهٔ شعر فارسی هم کار کند
   text = text.replaceAllMapped(RegExp('[۰-۹٠-٩]'), (match) {

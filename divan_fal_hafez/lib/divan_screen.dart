@@ -244,6 +244,8 @@ class _DivanScreenState extends State<DivanScreen> {
           }
         }
         if (last == null) return const SizedBox.shrink();
+        // متغیرِ نهاییِ تابع برای استفادهٔ بدون ! در closures
+        final Poem continuedPoem = last;
         return Padding(
           padding: const EdgeInsets.only(right: 12, bottom: 2),
           child: Align(
@@ -260,8 +262,9 @@ class _DivanScreenState extends State<DivanScreen> {
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
-              label: Text('ادامهٔ مطالعه: ${last.displayTitle}'),
-              onPressed: () => Get.to(() => PoemScreen(poemId: last.id)),
+              label: Text('ادامهٔ مطالعه: ${continuedPoem.displayTitle}'),
+              onPressed: () =>
+                  Get.to(() => PoemScreen(poemId: continuedPoem.id)),
             ),
           ),
         );
