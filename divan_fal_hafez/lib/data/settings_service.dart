@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
+import 'package:fale_hafez/fonts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,6 +42,13 @@ class SettingsService extends ChangeNotifier {
   static const String _kFalHistory = 'fal_history';
   static const String _kLastPoemId = 'last_poem_id';
 
+  /// مهر نسخهٔ طرح (schema) داده‌های ذخیره‌شده روی دستگاه؛ برای
+  /// مهاجرت‌های آیندهٔ ساختار ذخیره‌سازی استفاده می‌شود.
+  static const String _kSchemaVersion = 'prefs_schema_version';
+
+  /// نسخهٔ فعلی طرح ذخیره‌سازی
+  static const int currentSchemaVersion = 1;
+
   /// کمترین و بیشترین ضریب بزرگنمایی قلم اشعار
   static const double minScale = 0.7;
   static const double maxScale = 2.0;
@@ -48,9 +57,14 @@ class SettingsService extends ChangeNotifier {
   /// سقف نگه‌داری ورودی‌های دفترچهٔ فال
   static const int maxFalHistory = 100;
 
+  /// نسخهٔ فعلی ساختار نسخهٔ پشتیبان:
+  /// - نسخهٔ ۱: فقط اطلاعات شخصی (دلخواه‌ها، یادداشت‌ها، دفترچهٔ فال)
+  /// - نسخهٔ ۲: + ترجیحات (قلم، اندازهٔ قلم) و آخرین شعر خوانده‌شده
+  static const int currentBackupVersion = 2;
+
   SharedPreferences? _prefs;
 
-  String _fontKey = 'vazirmatn';
+  String _fontKey = defaultPoemFontKey;
   double _poemScale = defaultScale;
   Set<String> _favorites = {};
   Map<String, String> _notes = {};
@@ -63,17 +77,57 @@ class SettingsService extends ChangeNotifier {
   List<FalEntry> get falHistory => List.unmodifiable(_falHistory);
   String? get lastPoemId => _lastPoemId;
 
-  /// خواندن تنظیمات ذخیره‌شده از حافظهٔ دستگاه
+  /// خواندن تنظیمات ذخیره‌شده از حافظهٔ دستگاه.
+  ///
+  /// همهٔ مقادیر هنگام خواندن اعتبارسنجی می‌شوند: قلمِ نامعتبر به
+  /// قلم پیش‌فرض، ضریبِ خارج از بازه به مرز مجاز، و NaN/Inf به مقدار
+  /// پیش‌فرض بازمی‌گردد. دیتای خراب روی دستگاه هرگز وضعیت نامعتبر
+  /// به حافظهٔ برنامه تزریق نمی‌کند.
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
-    _fontKey = _prefs!.getString(_kFont) ?? _fontKey;
-    _poemScale = _prefs!.getDouble(_kScale) ?? _poemScale;
-    _favorites =
-        (_prefs!.getStringList(_kFavorites) ?? const <String>[]).toSet();
+    _migratePrefsIfNeeded();
+
+    final rawFont = _prefs!.getString(_kFont);
+    _fontKey = poemFontFamilies.containsKey(rawFont)
+        ? rawFont!
+        : defaultPoemFontKey;
+    _poemScale = _sanitizeScale(_prefs!.getDouble(_kScale));
+    _favorites = (_prefs!.getStringList(_kFavorites) ?? const <String>[])
+        .where((id) => id.isNotEmpty)
+        .toSet();
     _notes = _decodeNoteList(_prefs!.getStringList(_kNotes));
-    _falHistory = _decodeFalHistory(_prefs!.getStringList(_kFalHistory));
-    _lastPoemId = _prefs!.getString(_kLastPoemId);
+    _falHistory = _decodeFalHistory(_prefs!.getStringList(_kFalHistory))
+        .take(maxFalHistory)
+        .toList();
+    final rawLast = _prefs!.getString(_kLastPoemId);
+    _lastPoemId = (rawLast == null || rawLast.isEmpty) ? null : rawLast;
     notifyListeners();
+  }
+
+  /// مهاجرت طرح داده‌های ذخیره‌شده — حاضر برای مهاجرت‌های آینده.
+  ///
+  /// هر مهاجرت آینده به‌عنوان یک case جدید اضافه می‌شود و مراحل به
+  /// ترتیب پشت‌سر‌هم اجرا می‌شوند؛ در پایان مهر نسخهٔ فعلی ثبت می‌شود.
+  void _migratePrefsIfNeeded() {
+    final int fromVersion =
+        _prefs!.getInt(_kSchemaVersion) ?? 0; // 0 = قبل از مهر نسخه
+    if (fromVersion >= currentSchemaVersion) {
+      if (fromVersion > currentSchemaVersion) {
+        debugPrint('SettingsService: مهر طرح از نسخهٔ جدیدتری است '
+            '($fromVersion)؛ دست‌زی نمی‌شود');
+      }
+      return;
+    }
+    switch (fromVersion) {
+      case 0:
+        // مهاجرت از طرح اولیه: ساختار کلیدها سازگار است؛ فقط مهر می‌خورد.
+        // نکتهٔ آینده: اگر نسخهٔ تازه‌ای کلیدی را تغییر دهد، این‌جا
+        // به‌ترتیب case 1، case 2 و… ادامه پیدا می‌کند.
+        break;
+    }
+    // مهر نسخهٔ فعلی با همان صف سریالیِ نوشتن ثبت می‌شود تا با
+    // نوشت‌های دیگر هم‌زمان نشود.
+    _persist((prefs) => prefs.setInt(_kSchemaVersion, currentSchemaVersion));
   }
 
   bool isFavorite(String poemId) => _favorites.contains(poemId);
@@ -82,30 +136,56 @@ class SettingsService extends ChangeNotifier {
 
   bool get notesEmpty => _notes.isEmpty;
 
-  /// نوشتن روی حافظهٔ دستگاه با تحمل خطا.
+  // ————— صف سریالیِ نوشتن روی حافظهٔ دستگاه —————
+
+  /// زنجیرهٔ ترتیبیِ نوشت‌ها؛ هر عملیات پس از پایان موفق یا ناموفق
+  /// عملیات قبلی اجرا می‌شود تا ترتیبِ نهاییِ ذخیره‌شده همیشه برابر
+  /// آخرین تغییرِ کاربر باشد (نوشت‌های موازیِ پرسرعت همدیگر را
+  /// بازنویسی نمی‌کنند).
+  Future<void> _writeChain = Future<void>.value();
+
+  /// فقط برای تست: تکمیل شدن تمام نوشت‌های صف‌بندی‌شده تاکنون.
+  @visibleForTesting
+  Future<void> debugWritesIdle() => _writeChain;
+
+  /// نوشتن روی حافظهٔ دستگاه با تحمل خطا و ترتیب تضمین‌شده.
   ///
-  /// اگر ذخیره‌سازی شکست بخورد (کمبود فضا یا خطای I/O)، مهم‌ترین چیز
-  /// تجربهٔ کاربر در همین اجراست و وضعیتِ حافظهٔ درون برنامه معتبر
-  /// می‌ماند؛ خطا لاگ می‌شود تا failure بی‌سروصدا از دست نرود و UI
-  /// وضعیت اشتباه «حتماً ذخیره شد» را قطعی القا نکند.
+  /// اگر ذخیره‌سازی شکست بخورد (کمبود فضا یا خطای I/O)، وضعیتِ درونِ
+  /// حافظهٔ برنامه معتبر می‌ماند و خطا بازگردانده نمی‌شود تا به UI
+  /// به‌عنوان استثنا نشیرجهد (که در GetX سادِ برنامه‌ی ما بی‌معناست؛
+  /// کاربر همان وضعیتِ معتبر در حافظه را می‌بیند) ولی بی‌سروصدا هم از
+  /// دست نمی‌رود: در لاگ دیباگ ثبت می‌شود.
   void _persist(Future<bool> Function(SharedPreferences prefs) write) {
     final prefs = _prefs;
     if (prefs == null) return;
-    write(prefs).onError((Object error, StackTrace _) {
+    _writeChain = _writeChain
+        .then((_) => write(prefs))
+        .onError((Object error, StackTrace _) {
       debugPrint('SettingsService: خطا در ذخیره‌سازی تنظیمات — $error');
       return false;
+    }).then((ok) {
+      if (ok == false) {
+        debugPrint(
+            'SettingsService: ذخیرهٔ تنظیمات ناموفق بود (برگشت false)');
+      }
     });
   }
 
+  static double _sanitizeScale(double? raw,
+          {double fallback = defaultScale}) =>
+      (raw == null || raw.isNaN || raw.isInfinite)
+          ? fallback
+          : raw.clamp(minScale, maxScale).toDouble();
+
   Future<void> setFont(String key) async {
-    if (_fontKey == key) return;
+    if (_fontKey == key || !poemFontFamilies.containsKey(key)) return;
     _fontKey = key;
     notifyListeners();
     _persist((prefs) => prefs.setString(_kFont, key));
   }
 
   Future<void> setPoemScale(double scale) async {
-    final clamped = scale.clamp(minScale, maxScale).toDouble();
+    final clamped = _sanitizeScale(scale);
     if ((_poemScale - clamped).abs() < 0.001) return;
     _poemScale = clamped;
     notifyListeners();
@@ -134,17 +214,30 @@ class SettingsService extends ChangeNotifier {
       _notes[poemId] = trimmed;
     }
     notifyListeners();
-    _persist((prefs) => prefs.setStringList(
-        _kNotes, _encodeNoteMap(_notes)));
+    _persist(
+        (prefs) => prefs.setStringList(_kNotes, _encodeNoteMap(_notes)));
   }
 
-  /// ثبت فال تازه در «دفترچهٔ فال» (تازه‌ترین در ابتدای فهرست)
+  /// ثبت فال تازه در «دفترچهٔ فال» (تازه‌ترین در ابتدای فهرست).
+  ///
+  /// **سیاست تکرار (مستند):** اگر همان شعر بلافاصله دوباره فال شود
+  /// (دو فال پیاپیِ یکسانِ متوالی)، ورودیِ اول به‌روزرسانی می‌شود و
+  /// ردیفِ دوم ساخته نمی‌شود تا دفترچهٔ فال با دوباره‌زدنِ زمانی از
+  /// همان شعر شلوغ نشود؛ تکرار شعر پس از یک فالِ دیگر (تکرارِ
+  /// غیرمتوالی) ردیفِ مستقل می‌سازد چون از نظر تاریخچه دو رویدادِ
+  /// واقعی مجزا است.
   Future<void> recordFal(Poem poem) async {
-    _falHistory.insert(
-      0,
-      FalEntry(
-          poemId: poem.id, number: poem.number, occurredAt: DateTime.now()),
-    );
+    final now = DateTime.now();
+    if (_falHistory.isNotEmpty && _falHistory.first.poemId == poem.id) {
+      // فالِ همان شعرِ بلافاصله قبلی؛ فقط زمان به‌روزرسانی می‌شود.
+      _falHistory[0] = FalEntry(
+          poemId: poem.id, number: poem.number, occurredAt: now);
+    } else {
+      _falHistory.insert(
+        0,
+        FalEntry(poemId: poem.id, number: poem.number, occurredAt: now),
+      );
+    }
     if (_falHistory.length > maxFalHistory) {
       _falHistory = _falHistory.sublist(0, maxFalHistory);
     }
@@ -161,70 +254,180 @@ class SettingsService extends ChangeNotifier {
     _persist((prefs) => prefs.setString(_kLastPoemId, poemId));
   }
 
-  
+  // ————— پشتیبان‌گیری —————
 
-
-  /// ساخت متن کامل نسخهٔ پشتیبان (دلخواه‌ها + یادداشت‌ها + دفترچهٔ فال)
+  /// ساخت متن کامل نسخهٔ پشتیبان: دلخواه‌ها + یادداشت‌ها + دفترچهٔ فال
+  /// + ترجیحات (قلم و اندازهٔ قلم) + آخرین شعر خوانده‌شده
+  /// (نسخهٔ ۲ — پشتیبانِ کامل; دادهٔ کاربر در انتقال از دست نمی‌رود).
   String exportBackup() {
     return jsonEncode({
       'app': 'divan-fal-hafez',
-      'v': 1,
+      'v': currentBackupVersion,
       'favorites': _favorites.toList(),
       'notes': _notes,
       'falHistory': _falHistory.map((e) => e.toJson()).toList(),
+      'font': _fontKey,
+      'poemScale': _poemScale,
+      'lastPoemId': _lastPoemId,
     });
   }
 
   /// بازیابی از متن کپی‌شدهٔ نسخهٔ پشتیبان؛ در صورت نامعتبر بودن
   /// فرمت، false برمی‌گرداند و هیچ داده‌ای دست‌نخورده می‌ماند.
-  bool importBackup(String text) {
+  ///
+  /// پردازش اتمیک است: ابتدا تجزیه و اعتبارسنجی‌ی کامل انجام می‌شود و
+  /// فقط در صورت سلامت، همهٔ تغییرات یک‌جا commit (اعمال و ذخیره)
+  /// می‌شوند. شناسه‌های جعلی (فاقد شعر در دیتاست) حذف می‌شوند تا
+  /// لیست‌های دلخواه/یادداشت/دفترچه به شعرهای خیالی ارجاع ندهند.
+  Future<bool> importBackup(String text) async {
+    final Map<String, dynamic> decoded;
     try {
-      final decoded = jsonDecode(text);
-      if (decoded is! Map<String, dynamic>) return false;
-      if (decoded['app'] != 'divan-fal-hafez') return false;
-
-      final favorites = <String>{};
-      final rawFavorites = decoded['favorites'];
-      if (rawFavorites is List) {
-        favorites.addAll(rawFavorites.whereType<String>());
-      }
-
-      final notes = <String, String>{};
-      final rawNotes = decoded['notes'];
-      if (rawNotes is Map) {
-        rawNotes.forEach((key, value) {
-          if (key is String && value is String) notes[key] = value;
-        });
-      }
-
-      final history = <FalEntry>[];
-      final rawHistory = decoded['falHistory'];
-      if (rawHistory is List) {
-        for (final item in rawHistory) {
-          if (item is Map<String, dynamic>) {
-            try {
-              history.add(FalEntry.fromJson(item));
-            } catch (_) {
-              // یک ورودی خراب کل بازیابی را از کار نمی‌اندازد
-            }
-          }
-        }
-      }
-
-      _favorites = favorites;
-      _notes = notes;
-      _falHistory = history.take(maxFalHistory).toList();
-      notifyListeners();
-      _persist((prefs) => prefs.setStringList(
-          _kFavorites, _favorites.toList()));
-      _persist((prefs) => prefs.setStringList(
-          _kNotes, _encodeNoteMap(_notes)));
-      _persist((prefs) => prefs.setStringList(
-          _kFalHistory, _encodeFalHistory(_falHistory)));
-      return true;
+      final parsed = jsonDecode(text);
+      if (parsed is! Map<String, dynamic>) return false;
+      if (parsed['app'] != 'divan-fal-hafez') return false;
+      decoded = parsed;
     } catch (_) {
       return false;
     }
+
+    // نسخه‌بندیِ ساختار نسخهٔ پشتیبان: نسخهٔ نامشخص رد می‌شود تا
+    // unknown handling از نیما سازگاری به دردسر تبدیل نشود.
+    final version = decoded['v'];
+    if (version is! int) return false;
+    switch (version) {
+      case 1:
+        // پشتیبانِ قدیمی: فقط اطلاعات شخصی؛ ترجیحات همان پیش‌فرض باقی می‌ماند.
+        break;
+      case 2:
+        // کامل: شامل ترجیحات و آخرین شعر.
+        break;
+      default:
+        debugPrint('SettingsService: نسخهٔ پشتیبانِ ناشناخته ($version)');
+        return false;
+    }
+
+    // ——— اعتبارسنجی مرکزی: کامل قبل از اعمال (commit) ———
+    // هر استثنای غیرمنتظره در پاک‌سازی هم به ردِ کاملِ نسخه منجر می‌شود؛
+    // بازیابیِ خراب هرگز وضعیتِ نیمه‌کارهٔ جزئی روی دستگاه برنمی‌دارد.
+    final _SanitizedBackup? sanitized;
+    try {
+      sanitized = await _sanitizeBackup(decoded, version);
+    } catch (e) {
+      debugPrint('SettingsService: پاک‌سازی نسخهٔ پشتیبان ناموفق بود — $e');
+      return false;
+    }
+    if (sanitized == null) return false;
+
+    // ——— commit اتمیک: اعمال+ذخیره بعد از اعتبارسنجی کامل ———
+    _favorites = sanitized.favorites;
+    _notes = sanitized.notes;
+    _falHistory = sanitized.falHistory;
+    _fontKey = sanitized.fontKey;
+    _poemScale = sanitized.poemScale;
+    _lastPoemId = sanitized.lastPoemId;
+    notifyListeners();
+    _persist((prefs) => prefs.setStringList(
+        _kFavorites, _favorites.toList()));
+    _persist((prefs) => prefs.setStringList(
+        _kNotes, _encodeNoteMap(_notes)));
+    _persist((prefs) => prefs.setStringList(
+        _kFalHistory, _encodeFalHistory(_falHistory)));
+    _persist((prefs) => prefs.setString(_kFont, _fontKey));
+    _persist((prefs) => prefs.setDouble(_kScale, _poemScale));
+    if (_lastPoemId != null) {
+      _persist((prefs) => prefs.setString(_kLastPoemId, _lastPoemId!));
+    } else {
+      _persist((prefs) => prefs.remove(_kLastPoemId));
+    }
+    return true;
+  }
+
+  /// پاک‌سازی مرکزیِ نسخهٔ پشتیبان در برابر دیتاست واقعی.
+  ///
+  /// اگر هر بخشی از پاک‌سازی شکست بخورد (مثلاً بارگیری دیوان) null
+  /// برمی‌گردد و importBackup بدون هیچ تغییری رد می‌کند؛ وگر شیءِ
+  /// پاک‌سازی‌شده به importBackup برای commitِ اتمیک برمی‌گردد.
+  Future<_SanitizedBackup?> _sanitizeBackup(
+      Map<String, dynamic> decoded, int version) async {
+    // مجموعهٔ شناسه‌های واقعی دیوان برای حذف ارجاع‌های جعلی
+    final Map<String, Poem> validPoems;
+    try {
+      validPoems = {for (final poem in await DivanRepository.all()) poem.id: poem};
+    } catch (e) {
+      debugPrint('SettingsService: دیوان برای اعتبارسنجی پشتیبان بارگیری نشد — $e');
+      return null;
+    }
+
+    final favorites = <String>{};
+    final rawFavorites = decoded['favorites'];
+    if (rawFavorites is List) {
+      for (final id in rawFavorites.whereType<String>()) {
+        if (validPoems.containsKey(id)) favorites.add(id);
+      }
+    }
+
+    final notes = <String, String>{};
+    final rawNotes = decoded['notes'];
+    if (rawNotes is Map) {
+      rawNotes.forEach((key, value) {
+        if (key is String &&
+            value is String &&
+            validPoems.containsKey(key)) {
+          notes[key] = value;
+        }
+      });
+    }
+
+    final history = <FalEntry>[];
+    final rawHistory = decoded['falHistory'];
+    if (rawHistory is List) {
+      for (final item in rawHistory) {
+        if (item is! Map<String, dynamic>) continue;
+        FalEntry? entry;
+        try {
+          entry = FalEntry.fromJson(item);
+        } catch (_) {
+          entry = null; // ورودی خراب
+        }
+        if (entry == null) continue;
+        final poem = validPoems[entry.poemId];
+        // شعر باید وجود داشته باشد و شماره با دیتاستِ واقعی سازگار باشد
+        if (poem == null || poem.number != entry.number) continue;
+        history.add(entry);
+      }
+    }
+
+    // فقط نسخهٔ ۲ ترجیحات را بازیابی می‌کند؛ در پشتیبانِ قدیمیِ نسخهٔ
+    // ۱ این فیلدها وجود نداشتند، پس ترجیحاتِ *فعلیِ* کاربر حفظ می‌شود
+    // (بازیابی دادهٔ قدیمی، انتخابِ کنونیِ قلم را از بین نمی‌برد).
+    final String fontKey;
+    final double poemScale;
+    final String? lastPoemId;
+    if (version >= 2) {
+      fontKey = poemFontFamilies.containsKey(decoded['font'])
+          ? decoded['font'] as String
+          : defaultPoemFontKey;
+      poemScale =
+          _sanitizeScale(decoded['poemScale'] as num?);
+      final rawLast = decoded['lastPoemId'];
+      lastPoemId =
+          (rawLast is String && validPoems.containsKey(rawLast))
+              ? rawLast
+              : null;
+    } else {
+      fontKey = _fontKey;
+      poemScale = _poemScale;
+      lastPoemId = _lastPoemId;
+    }
+
+    return _SanitizedBackup(
+      favorites: favorites,
+      notes: notes,
+      falHistory: history.take(maxFalHistory).toList(),
+      fontKey: fontKey,
+      poemScale: poemScale,
+      lastPoemId: lastPoemId,
+    );
   }
 
   // ————— ابزارهای سریال‌سازی —————
@@ -260,4 +463,24 @@ class SettingsService extends ChangeNotifier {
 
   static List<String> _encodeFalHistory(List<FalEntry> entries) =>
       entries.map((e) => jsonEncode(e.toJson())).toList();
+}
+
+/// حمل‌کنندهٔ دادهٔ پاک‌سازی‌شدهٔ یک نسخهٔ پشتیبان؛ فقط به خودِ
+/// importBackup برمی‌گردد (commitِ اتمیک همان‌جا انجام می‌شود).
+class _SanitizedBackup {
+  const _SanitizedBackup({
+    required this.favorites,
+    required this.notes,
+    required this.falHistory,
+    required this.fontKey,
+    required this.poemScale,
+    required this.lastPoemId,
+  });
+
+  final Set<String> favorites;
+  final Map<String, String> notes;
+  final List<FalEntry> falHistory;
+  final String fontKey;
+  final double poemScale;
+  final String? lastPoemId;
 }

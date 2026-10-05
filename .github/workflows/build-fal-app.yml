@@ -1,6 +1,14 @@
 # ساخت خودکار اپلیکیشن «دیوان و فال حافظ» روی GitHub Actions
 # خروجی: ۴ فایل APK — universal (همهٔ گوشی‌ها) + اختصاصی هر معماری
 # (arm64-v8a گوشی‌های امروزی، armeabi-v7a قدیمی ۳۲بیتی، x86_64 شبیه‌ساز/تبلت)
+#
+# خط‌مشی‌های پایداری CI:
+# - نسخهٔ Flutter پین شده است و هرگز روی «آخرین stable» شناور نیست؛
+#   بیلد قطعی (deterministic) است و شکست‌های ناشی از نسخهٔ جدید SDK
+#   را در زمانِ مشخص و قابل‌ترمیم می‌دهد.
+# - CI هرگز مخزن را تغییر نمی‌دهد (کامیت/پوش خودکار lockfile حذف شد)
+#   و pub upgrade اجرا نمی‌کند؛ pubspec.lock تنها سرنکتهٔ بیلد است و
+#   ناسازگاری آن با fail واضح خود را نشان می‌دهد.
 name: Build Divan & Fal Hafez App
 
 on:
@@ -23,44 +31,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # نسخهٔ SDK پین است: همان نسخه‌ای که لوکال/تجربهٔ سازنده تایید شد
+      # (3.47.6 = آخرین تگ stable هنگام بررسی؛ تطبیق با pubspec.lock)
       - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.6'
           cache: true
 
       - name: Flutter version
         run: flutter --version
 
-      # بیلدِ قابل‌تکرار: pub get بر اساس pubspec.lock کامیت‌شده.
-      # اگر lockfile با SDK فعلی ناسازگار بود، یک‌بار upgrade انجام و
-      # lock تازه خودِ بات روی همان شاخه کامیت می‌کند تا بیلدهای بعدی
-      # کاملاً تطابق pub get←lockfile داشته باشند (بدون حلقه: [skip ci])
-      - name: Resolve dependencies (pub get + refresh lock if needed)
+      # بیلدِ قابل‌تکرار: فقط از pubspec.lock کامیت‌شده؛ اگر با pubspec
+      # ناسازگار باشد با خطای واضح fail می‌شود (هیچ mutate/auto-upgrade وجود ندارد)
+      - name: Resolve dependencies (pub get from committed lock)
         working-directory: divan_fal_hafez
-        shell: bash
-        run: |
-          if flutter pub get; then
-            echo "dependencies resolved from committed lockfile (reproducible)"
-          else
-          echo "lockfile incompatible with current SDK - one-time refresh"
-          set -e
-          flutter pub upgrade
-          if ! git diff --quiet -- pubspec.lock; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add pubspec.lock
-            git commit -m "chore: refresh pubspec.lock for current Flutter SDK [skip ci]"
-            git push
-            echo "refreshed lockfile pushed to branch"
-          fi
-          fi
+        run: flutter pub get --enforce-lockfile
 
+      # آنالیز کامل: خطاها و هشدارها و نکته‌ها همه مانع بیلد می‌شوند تا
+      # regression فنی در می‌دهند+ آن‌ها واضح گزارش شود (PR comment)
       - name: Analyze
         working-directory: divan_fal_hafez
         shell: bash
         run: |
           set +e
-          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze-report.txt 2>&1
+          flutter analyze > analyze-report.txt 2>&1
           code=$?
           echo "EXIT_CODE=$code" >> analyze-report.txt
           exit $code
@@ -145,12 +139,13 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.6'
           cache: true
 
+      # همان سیاست: فقط از lockfile کامیت‌شده؛ pub upgrade وجود ندارد
       - name: Resolve dependencies (pub get from committed lock)
         working-directory: divan_fal_hafez
-        run: flutter pub get || flutter pub upgrade
+        run: flutter pub get --enforce-lockfile
 
       - name: Build release APKs (universal + split per ABI)
         working-directory: divan_fal_hafez

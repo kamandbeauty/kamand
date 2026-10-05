@@ -106,4 +106,45 @@ void main() {
     // پس از اسکن، صفحهٔ فال باز می‌شود
     expect(find.byType(FalScreen), findsOneWidget);
   });
+
+  testWidgets(
+      'نیّت و فال: هر تکمیل اسکن فقط یک صفحهٔ فال باز می‌کند و بعد از '
+      'بازگشت، دوباره می‌شود فال گرفت',
+      (WidgetTester tester) async {
+    final app = await _buildApp(tester);
+    await tester.pumpWidget(app);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('گرفتن فال'));
+    await tester.pumpAndSettle();
+    expect(find.byType(NiyyatScreen), findsOneWidget);
+
+    Future<void> completeHold() async {
+      final gesture = await tester.startGesture(
+          tester.getCenter(find.byKey(const Key('fingerprint_print'))));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 1600));
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    // اسکنِ کامل → دقیقاً یک صفحهٔ فال (پوشِ دوباره اتفاق نمی‌افتد)
+    await completeHold();
+    expect(find.byType(FalScreen), findsOneWidget,
+        reason: 'تکمیل اسکن فقط یک FalScreen باز می‌کند');
+    await tester.pump(const Duration(seconds: 1)); // فریم‌های بعدی
+    expect(find.byType(FalScreen), findsOneWidget,
+        reason: 'هیچ pushِ مجددی در فریم‌های بعدی رخ نمی‌دهد');
+
+    // بازگشت از فال → صفحهٔ نیّت آماده برای فالِ دوباره است
+    Get.back();
+    await tester.pumpAndSettle();
+    expect(find.byType(FalScreen), findsNothing);
+    expect(find.byType(NiyyatScreen), findsOneWidget);
+
+    await completeHold();
+    expect(find.byType(FalScreen), findsOneWidget,
+        reason: 'فالِ دوم هم دقیقاً یک صفحه باز می‌کند');
+  });
 }

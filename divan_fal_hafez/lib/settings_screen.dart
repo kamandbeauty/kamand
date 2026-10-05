@@ -160,7 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Text(
-                                  'دلخواه‌ها، یادداشت‌ها و دفترچهٔ فال را کپی کنید و روی دستگاه دیگر بازیابی کنید',
+                                  'دلخواه‌ها، یادداشت‌ها، دفترچهٔ فال، قلم و اندازهٔ قلم و ادامهٔ مطالعه را کپی کنید و روی دستگاه دیگر بازیابی کنید',
                                   style: vazirText(
                                       fontSize: 12.5,
                                       color: Colors.black54,
@@ -389,9 +389,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             ElevatedButton(
               style: AppThemeButton.style(),
-              onPressed: () {
-                final ok = _settings.importBackup(controller.text);
+              onPressed: () async {
+                // وجودن: اعتبارسنجی نسخهٔ پشتیبان با دیتاست (async) و
+                // فقط پس از تکمیل، جا و نتیجه اعلام می‌شود؛ در جریان
+                // آن هیچ وضعیت جدیدی اعمال نشده است.
+                final ok =
+                    await _settings.importBackup(controller.text);
                 Get.back();
+                if (!mounted) return;
                 _snack(ok
                     ? 'بازیابی با موفقیت انجام شد'
                     : 'متن واردشده نسخهٔ پشتیبان معتبری نیست');

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/data/settings_service.dart';
@@ -29,6 +31,14 @@ class _DivanScreenState extends State<DivanScreen> {
   String _query = '';
   PoemCategory? _selectedCategory; // null = همهٔ بخش‌ها
 
+  /// جستجو با مکثِ کوتاه (دیبانس): فیلتر سنگینِ کل دیوان نباید با
+  /// تک‌تک ضربه‌های کیبورد روی عباراتِ میانی اجرا شود؛ وقتی کاربر حدود
+  /// ۲۵۰ میلی‌ثانیه مکث کرد، فیلتر یک‌بار روی عبارتِ نهایی اجرا می‌شود.
+  /// خود عبارتِ ورودی در هنگام اجرا نرمال می‌شود و ایندکسِ متنِ اشعار
+  /// از قبل (هنگام بارگیری) ساخته شده است — هیچ نرمال‌سازیِ تکراری روی
+  /// کل متنِ دیوان به ازای هر ضربهٔ کیبورد انجام نمی‌گیرد.
+  Timer? _searchDebounce;
+
   /// متن نرمال‌شدهٔ هر شعر (عنوان + ابیات) برای جستجوی فارسیِ قابل‌اتکا:
   /// ایندکس یک‌بار هنگام بارگذاری ساخته می‌شود و کاربر با ی/ك عربی،
   /// نیم‌فاصله، اعراب یا ارقام فارسی هم به نتیجه می‌رسد.
@@ -56,13 +66,23 @@ class _DivanScreenState extends State<DivanScreen> {
           ));
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('DivanScreen: بارگذاری دیوان ناموفق بود — $e');
       if (!mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
       });
     }
+  }
+
+  /// تغییر متن جستجو با دیبانس؛ عبارتِ بین این مکثِ کوتاه فیلتر سنگین
+  /// را راه نمی‌اندازد (فیلتر+نرمال‌سازی فقط روی عبارت تازه).
+  void _onQueryChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) setState(() => _query = value);
+    });
   }
 
   /// اشعار فیلترشده بر اساس بخش انتخابی و متن جستجو
@@ -88,6 +108,12 @@ class _DivanScreenState extends State<DivanScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   @override
@@ -146,7 +172,7 @@ class _DivanScreenState extends State<DivanScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextField(
-                  onChanged: (value) => setState(() => _query = value),
+                  onChanged: _onQueryChanged,
                   textDirection: TextDirection.rtl,
                   style: vazirText(color: _dark, fontSize: 16),
                   decoration: InputDecoration(

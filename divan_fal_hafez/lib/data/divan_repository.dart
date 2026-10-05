@@ -2,13 +2,16 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:fale_hafez/data/poem.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 /// مخزن آفلاین آثار حافظ.
 ///
-/// کل مجموعه (۵۹۵ اثر: ۴۹۵ غزل، ۴۲ رباعی، ۳۴ قطعه، ۳ قصیده،
-/// ۱۹ شعر منتسب و ۲ مثنوی) در assets/data/hafez_divan.json
-/// داخل خود برنامه ذخیره شده است.
+/// کل مجموعهٔ آثار (غزلیات، رباعیات، قطعات، قصاید، منتسبات و مثنویات)
+/// در assets/data/hafez_divan.json داخل خود برنامه ذخیره شده است.
+/// ترکیب دقیق فعلی دیتاست (سنپ‌شات: ۵۹۵ اثر) صرفاً یک مشخصهٔ داده‌ای
+/// است و در منطق برنامه قاعدهٔ تجاری نیست — منطق برنامه روی فهرستِ
+/// بارگیری‌شده کار می‌کند، نه روی عددهای ثابت.
 class DivanRepository {
   DivanRepository._();
 
@@ -36,21 +39,36 @@ class DivanRepository {
     }
   }
 
+  /// خواندن و اعتبارسنجی سخت‌گیرانهٔ دیتاست.
+  ///
+  /// هر خرابی در ساختار دیتاست — فیلد نامعتبر، شناسهٔ خالی یا
+  /// تکراری، ابیاتِ خالی، شمارهٔ نامعتبر یا تکراری در یک بخش — با
+  /// زمانی همراه است و FormatException پرتاب می‌کند تا دیتاستِ
+  /// بی‌کیفیت (تهاجمی‌تر: در زمان CI، تست حاکیت دیتاست گیر کند) هرگز
+  /// بی‌صدا با رفتار حدسی جبران شود.
   static Future<void> _parse() async {
     final raw = await rootBundle.loadString(_assetPath);
-    final list = (jsonDecode(raw) as List<dynamic>)
-        .cast<Map<String, dynamic>>()
-        .map(
-          (e) => Poem(
-            id: e['id'] as String,
-            category: PoemCategory.fromKey(e['c'] as String),
-            number: (e['n'] as num).toInt(),
-            verses: e['v'] as String,
-            meaning: e['m'] as String?,
-            title: e['t'] as String?,
-          ),
-        )
-        .toList(growable: false);
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) {
+      throw const FormatException(
+          'ساختار ریشهٔ hafez_divan.json باید فهرست (List) شعرها باشد');
+    }
+
+    final seenIds = <String>{};
+    final seenNumbers = <({PoemCategory category, int number})>{};
+    final list = <Poem>[];
+    for (var i = 0; i < decoded.length; i++) {
+      final poem = _parsePoem(decoded[i], i);
+      if (!seenIds.add(poem.id)) {
+        throw FormatException(
+            'شناسهٔ تکراری در دیتاست دیوان: «${poem.id}»');
+      }
+      if (!seenNumbers.add((category: poem.category, number: poem.number))) {
+        throw FormatException(
+            'شمارهٔ تکراری ${poem.number} در بخش «${poem.category.name}»');
+      }
+      list.add(poem);
+    }
 
     if (list.isEmpty) {
       throw StateError('دیتای دیوان خالی است');
@@ -61,6 +79,43 @@ class DivanRepository {
       _byCategory.putIfAbsent(poem.category, () => <Poem>[]).add(poem);
     }
     _poems = list;
+  }
+
+  static Poem _parsePoem(Object? entry, int index) {
+    try {
+      if (entry is! Map<String, dynamic>) {
+        throw const FormatException('شعر باید نگاشتِ کلید‌دار (Map) باشد');
+      }
+      final poem = Poem(
+        id: entry['id'] as String,
+        category: PoemCategory.fromKey(entry['c'] as String),
+        number: (entry['n'] as num).toInt(),
+        verses: entry['v'] as String,
+        meaning: entry['m'] as String?,
+        title: entry['t'] as String?,
+      );
+      if (poem.id.isEmpty) {
+        throw const FormatException('شناسهٔ شعر خالی است');
+      }
+      if (poem.verses.trim().isEmpty) {
+        throw FormatException('ابیات شعر «${poem.id}» خالی است');
+      }
+      if (poem.number <= 0) {
+        throw FormatException(
+            'شمارهٔ نامعتبر (َغیرمثبت) برای شعر «${poem.id}»: ${poem.number}');
+      }
+      if (poem.title != null && poem.title!.isEmpty) {
+        throw FormatException(
+            'عنوان شعر «${poem.id}» رشتهٔ خالی است (باید null یا متن باشد)');
+      }
+      return poem;
+    } on FormatException catch (e) {
+      throw FormatException(
+          'اعتبارسنجی شعر شمارهٔ ${index + 1} دیتاست دیوان ناموفق بود: ${e.message}');
+    } on TypeError {
+      throw FormatException(
+          'خواندن شعر شمارهٔ ${index + 1} در دیتاست دیوان ناموفق بود: کلید یا نوع دادهٔ نامعتبراست');
+    }
   }
 
   /// همهٔ اشعار (به ترتیب بخش‌ها)
@@ -103,9 +158,21 @@ class DivanRepository {
         .toList(growable: false);
   }
 
+  /// انتخاب تصادفی یک شعر از فهرست داده‌شده.
+  /// روی فهرستِ خالی StateError پرتاب می‌کند تا یک کالِ میان‌تیجب با
+  /// ایندکس نامعتبر (crash خام) به جای خطای گفتنی اتفاق نیفتد.
+  @visibleForTesting
+  static Poem pickRandom(List<Poem> items) {
+    if (items.isEmpty) {
+      throw StateError(
+          'فهرست انتخاب تصادفی خالی است؛ برنامه نمی‌تواند از مجموعهٔ تهی شعر برگرداند');
+    }
+    return items[_random.nextInt(items.length)];
+  }
+
   /// یک غزل تصادفی - برای فال حافظ
   static Future<Poem> randomGhazal() async {
     final ghazals = await byCategory(PoemCategory.ghazal);
-    return ghazals[_random.nextInt(ghazals.length)];
+    return pickRandom(ghazals);
   }
 }

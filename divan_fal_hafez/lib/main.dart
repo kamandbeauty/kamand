@@ -18,9 +18,21 @@ Future<void> main() async {
   // پیش‌گرم کردن کش دیوان از همان ابتدای اجرا تا اولین ورود به
   // «دیوان» یا «فال» بدون مکث بارگذاری JSON انجام شود (به‌ویژه
   // روی دستگاه‌های ضعیف). سه‌ثانیهٔ اسپلش زمانِ کافی برای این I/O است.
-  unawaited(DivanRepository.all());
+  unawaited(_preloadDivan());
 
   runApp(MyApp(settings: settings));
+}
+
+/// پیش‌بارگذاری دیوان با تحمل خطا: failure پیش‌گرم به شکستِ برنامه
+/// منجر نمی‌شود (دیوان هنگام باز شدنِ صفحات دوباره تلاش می‌کند)، اما
+/// بی‌سروصدا هم نمی‌میرد و در لاگ ثبت می‌شود.
+Future<void> _preloadDivan() async {
+  try {
+    await DivanRepository.all();
+  } catch (e) {
+    debugPrint(
+        'پیش‌بارگذاری دیوان ناموفق بود؛ باز شدن صفحات دوباره تلاش می‌کند: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {

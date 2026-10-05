@@ -3,6 +3,7 @@
 // یک‌خوان بودن نسخه، پایداری دلخواه‌ها، به‌روزرسانی زندهٔ اندازهٔ قلم،
 // و ریست شدن نگه‌داشتن اثر انگشت هنگام رفتن به پس‌زمینه.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:fale_hafez/config.dart';
@@ -10,9 +11,11 @@ import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/divan_screen.dart';
+import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/niyyat_screen.dart';
 import 'package:fale_hafez/poem_screen.dart';
 import 'package:fale_hafez/util/persian_text.dart';
+import 'package:fale_hafez/widgets/page_share.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -52,6 +55,13 @@ void main() {
     test('ارقام فارسی به لاتین تبدیل می‌شوند', () {
       expect(normalizePersian('غزل ۱۲۳'), 'غزل 123');
       expect(normalizePersian('٤٥٦'), '456');
+    });
+
+    test('ارقام فارسی، عربی و لاتین هم‌ارز می‌شوند', () {
+      // جستجوی «غزل ۱» با هر نگارشِ رقم باید به یک عبارت واحد برسد
+      expect(normalizePersian('غزل ۱'), 'غزل 1'); // یونیکد Farsi
+      expect(normalizePersian('غزل ١'), 'غزل 1'); // یونیکد Arabic-Indic
+      expect(normalizePersian('غزل 1'), 'غزل 1'); // Latin همان است
     });
 
     test('جستجوی عربی روی متن فارسی نتیجه می‌دهد', () {
@@ -121,6 +131,100 @@ void main() {
     });
   });
 
+  group('صف سریالیِ ذخیره‌سازی روی دستگاه', () {
+    test('تغییرات پیاپی: آخرین تغییرِ کاربر، آخرین وضعیتِ ذخیره‌است',
+        () async {
+      // مسابقهٔ نوشتن: اگر دو نوشت موازی هم‌زمان انجام شوند (بدون صف)،
+      // ترتیبِ کامل‌شدن ممکن است برعکسِ صدور باشد و وضعیتِ قدیمی‌تر،
+      // حاصل نهاییِ دیسک شود؛ صفِ سریالی ترتیبِ نهایی را تضمین می‌کند.
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+
+      await settings.toggleFavorite('ghazal-1'); // موجود
+      await settings.toggleFavorite('ghazal-2'); // موجود
+      await settings.toggleFavorite('ghazal-1'); // حذف → netِ فقط ghazal-2
+      await settings.setNote('ghazal-5', 'یادداشت سریع');
+      await settings.setPoemScale(1.5);
+      await settings.setPoemScale(1.8); // آخرین مقدارِ نهایی
+      await settings.debugWritesIdle(); // صبر تا پایانِ زنجیرهٔ نوشتن
+
+      final reloaded = SettingsService();
+      await reloaded.load();
+      expect(reloaded.favorites, unorderedEquals({'ghazal-2'}));
+      expect(reloaded.noteFor('ghazal-5'), 'یادداشت سریع');
+      expect(reloaded.poemScale, closeTo(1.8, 0.001));
+    });
+  });
+
+  group('اعتبارسنجی هنگام بارگذاری تنظیمات', () {
+    test('قلم نامعتبر، ضریب خارج از بازه، NaN و آخرین شعرِ خالی بازیابی می‌شوند',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'poem_font_key': 'nastaliq', // در سیستم نیست → پیش‌فرض
+        'poem_font_scale': 50.0, // بیرون از بازه → clamp
+        'last_poem_id': '', // رشتهٔ خالی → null
+      });
+      final settings = SettingsService();
+      await settings.load();
+      expect(settings.fontKey, 'vazirmatn');
+      expect(settings.poemScale, SettingsService.maxScale);
+      expect(settings.lastPoemId, isNull);
+
+      SharedPreferences.setMockInitialValues({
+        'poem_font_scale': double.nan, // NaN → پیش‌فرض
+      });
+      final naned = SettingsService();
+      await naned.load();
+      expect(naned.poemScale, SettingsService.defaultScale);
+    });
+
+    test('دفترچهٔ فال با بیشتر از ۱۰۰ ورودی سرریز نمی‌شود', () async {
+      final raw = <String>[
+        for (var i = 1; i <= 150; i++)
+          jsonEncode(
+              {'id': 'ghazal-$i', 'n': i, 't': '2026-01-01T10:00:00.000'}),
+      ];
+      SharedPreferences.setMockInitialValues({'fal_history': raw});
+      final settings = SettingsService();
+      await settings.load();
+      expect(settings.falHistory.length, SettingsService.maxFalHistory);
+    });
+  });
+
+  group('مهر نسخهٔ طرح ذخیره‌سازی (prefs schema)', () {
+    test('بارگذاری اولیه مهر نسخهٔ فعلی را روی دستگاه ثبت می‌کند', () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+      await settings.debugWritesIdle(); // نوشتنِ مهر هم از صف آمده است
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('prefs_schema_version'),
+          SettingsService.currentSchemaVersion);
+
+      // مهاجرتِ آینده مهرِ تازه‌تری را حفظ می‌کند (جاسازی + جلوگیری از رجک به عقب)
+      SharedPreferences.setMockInitialValues({
+        'prefs_schema_version':
+            SettingsService.currentSchemaVersion + 1, // فرضی از آینده
+      });
+      final future = SettingsService();
+      await future.load(); // نباید کرش کند
+      expect(future.poemScale, SettingsService.defaultScale);
+    });
+  });
+
+  group('سقف حافظهٔ تصویر اشتراک', () {
+    test('نسبتِ پیکسلِ موثر باکیفیت و جیر از حدّ حافظه نگه می‌دارد', () {
+      // صفحهٔ معمولی (۳۶۰) → کفِ کیفیت (۲×) حفظ می‌شود
+      expect(SharePage.effectivePixelRatio(360), 2.0);
+      // عرضِ بزرگ‌تر → تا سقف ~۲۰۴۸px پایین می‌آید (هنوز بالای ۱×)
+      expect(SharePage.effectivePixelRatio(1152), closeTo(2048 / 1152, 0.001));
+      // عرضِ بسیار بزرگ → حداقل ۱×؛ هرگز زیر ۱× پایین نمی‌آید
+      expect(SharePage.effectivePixelRatio(4000), 1.0);
+      expect(SharePage.effectivePixelRatio(7200, pixelRatio: 3.0), 1.0);
+    });
+  });
+
   group('رفتارهای ویجتی حساس', () {
     testWidgets(
         'تغییر اندازهٔ قلم در تنظیمات همان‌جا روی متن شعر اعمال می‌شود',
@@ -149,36 +253,86 @@ void main() {
       expect(hasVerseSize(17.0), isFalse);
     });
 
-    testWidgets('نگه‌داشتن اثر انگشت با رفتن به پس‌زمینه ریست می‌شود',
+    /// اثرِ قابل‌مشاهدهٔ «در حال اسکن بودن»: رنگِ طلاییِ پیشرفتِ اسکن
+    /// روی اثر انگشت ظاهر شده است (ویجت Opacityِ تحت‌الجریان دارای
+    /// شفافیت غیر‌صفر). این اساس رفتار صفحه است که از حافظه‌ی درونی
+    /// State (مثل holdProgress) جداست.
+    Finder goldScanTint() => find.byWidgetPredicate(
+          (w) => w is Opacity && w.opacity > 0.05,
+        );
+
+    testWidgets('نگه‌داشتن نیمه‌کاره با رهاکردن انگشت فال نمی‌دهد',
         (WidgetTester tester) async {
       await _setupGet(tester);
       await tester.pumpWidget(const GetMaterialApp(home: NiyyatScreen()));
       await tester.pumpAndSettle();
 
-      // شروع نگه‌داشتن انگشت
+      // در حالت سکون هیچ رنگِ طلاییِ پیشرفت دیده نمی‌شود
+      expect(goldScanTint(), findsNothing);
+
+      // نگه‌داشتن تا ۵۰۰/۸۰۰ میلی‌ثانیه → پیشرفتِ ظاهری اثر انگشت
       final gesture = await tester
           .startGesture(
               tester.getCenter(find.byKey(const Key('fingerprint_print'))));
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 400));
+      expect(goldScanTint(), findsOneWidget,
+          reason: 'اثر انگشت با نگه‌داشتن در حال طلایی‌شدن است');
 
-      double hold() =>
-          (tester.state(find.byType(NiyyatScreen)) as dynamic).holdProgress;
-
-      expect(hold(), greaterThan(0),
-          reason: 'انیمیشن نگه‌داشتن در حال پیشرفت است');
-
-      // رفتن اپ به پس‌زمینه → انیمیشن نیمه‌کاره ریست می‌شود
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump();
-      expect(hold(), 0);
-
+      // رها کردنِ زودتر از ۸۰۰ms → برگشت به حالت سکون، بدون باز شدن فال
       await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.byType(FalScreen), findsNothing);
+      expect(find.byType(NiyyatScreen), findsOneWidget);
+      expect(goldScanTint(), findsNothing, reason: 'پیشرفت به‌کلی برگشت');
+    });
+
+    testWidgets(
+        'رفتن به پس‌زمینه هنگام نگه‌داشتن: فال بعدِ رهاکردن باز نمی‌شود '
+        'و پس از بازگشت دوباره می‌شود فال گرفت',
+        (WidgetTester tester) async {
+      await _setupGet(tester);
+      await tester.pumpWidget(const GetMaterialApp(home: NiyyatScreen()));
+      await tester.pumpAndSettle();
+
+      // شروع نگه‌داشتن (۵۰۰/۸۰۰ میلی‌ثانیه پیشرفت)
+      var gesture = await tester
+          .startGesture(
+              tester.getCenter(find.byKey(const Key('fingerprint_print'))));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(goldScanTint(), findsOneWidget,
+          reason: 'اسکن پیش از خروج در حال پیشرفت است');
+
+      // رفتن به پس‌زمینه و برگشت → پیشرفتِ نیمه‌کاره قاطی‌ای ریست شده
+      await tester.binding
+          .handleAppLifecycleStateChanged(AppLifecycleState.paused);
       await tester.pump();
-      tester.binding
+      await tester.binding
           .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
+      expect(goldScanTint(), findsNothing,
+          reason: 'پیشرفتِ نیمه‌کاره بعد خروج ریست می‌شود');
+
+      // رها کردنِ انگشت پس از بازگشت نباید ناگهان فال باز کند
+      // (باگ قدیمی: انیمیشنِ نیمه‌کاره در پس‌زمینه به اتمام می‌رسید)
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.byType(FalScreen), findsNothing,
+          reason: 'فالِ شبح‌وار پس از بازگشت اتفاق نمی‌افتد');
       expect(find.byType(NiyyatScreen), findsOneWidget);
+
+      // دوباره با انگشتِ محکم: نگه‌داشتنِ کامل به فال منتهی می‌شود و
+      // دو ناوبری پشت‌سر هم ساخته نمی‌شود
+      gesture = await tester
+          .startGesture(
+              tester.getCenter(find.byKey(const Key('fingerprint_print'))));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 1600));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.byType(FalScreen), findsOneWidget,
+          reason: 'پس از بازگشت و نگه‌داشتن کامل، فال باز می‌شود');
     });
 
     testWidgets('جستجوی دیوان با حروف عربی (ك/ي) هم نتیجه می‌دهد',
@@ -221,6 +375,29 @@ void main() {
       expect(settings.falHistory.first.number, 120);
     });
 
+    test('سیاست تکرار در دفترچهٔ فال: تکرارِ پیاپیِ همان شعر ردیف نمی‌سازد',
+        () async {
+      // سیاست مستند: دو فالِ بلافاصله‌پیاپی از یک شعر → همان ردیف (زمان فقط
+      // به‌روزرسانی می‌شود). بعداً شعرِ دیگر، شکافِ متوالیِ آن را می‌شکند.
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+
+      await settings.recordFal(samplePoem(1));
+      await settings.recordFal(samplePoem(1));
+      expect(settings.falHistory.length, 1,
+          reason: 'فالِ تکراریِ همان شعرِ بلافاصله قبلی، ردیفِ جدید نمی‌سازد');
+
+      await settings.recordFal(samplePoem(2));
+      expect(settings.falHistory.length, 2);
+
+      // تکرارِ غیرمتوالیِ ghazal-1 دو رویدادِ واقعی مجزا است → ردیفِ جدید
+      await settings.recordFal(samplePoem(1));
+      expect(settings.falHistory.map((e) => e.poemId).toList(),
+          ['ghazal-1', 'ghazal-2', 'ghazal-1'],
+          reason: 'تکرارِ غیرمتوالی ردیفِ مستقل می‌سازد و ترتیب حفظ می‌شود');
+    });
+
     test('ذخیره و حذف یادداشت شخصی', () async {
       SharedPreferences.setMockInitialValues({});
       final settings = SettingsService();
@@ -232,7 +409,8 @@ void main() {
       expect(settings.noteFor('ghazal-1'), isNull);
     });
 
-    test('پشتیبان‌گیری و بازیابی: دلخواه، یادداشت و دفترچهٔ فال', () async {
+    test('پشتیبان‌گیری و بازیابی (v2): دلخواه، یادداشت، دفترچهٔ فال، '
+        'قلم، ضریب قلم و ادامهٔ مطالعه', () async {
       SharedPreferences.setMockInitialValues({});
       final settings = SettingsService();
       await settings.load();
@@ -240,18 +418,141 @@ void main() {
       await settings.toggleFavorite('ghazal-1');
       await settings.setNote('ghazal-1', 'یادداشت مهم');
       await settings.recordFal(samplePoem(7));
+      await settings.setFont('sahel');
+      await settings.setPoemScale(1.4);
+      await settings.saveLastPoemId('ghazal-3');
       final backup = settings.exportBackup();
+      expect(jsonDecode(backup),
+          containsPair('v', SettingsService.currentBackupVersion));
 
       final restored = SettingsService();
       await restored.load();
-      expect(restored.importBackup(backup), isTrue);
+      expect(await restored.importBackup(backup), isTrue);
       expect(restored.isFavorite('ghazal-1'), isTrue);
       expect(restored.noteFor('ghazal-1'), 'یادداشت مهم');
       expect(restored.falHistory.single.number, 7);
+      expect(restored.fontKey, 'sahel');
+      expect(restored.poemScale, closeTo(1.4, 0.001));
+      expect(restored.lastPoemId, 'ghazal-3');
 
-      // ورودی نامعتبر هیچ داده‌ای را خراب نمی‌کند
-      expect(restored.importBackup('متن الکی'), isFalse);
+      // ورودی نامعتبر هیچ داده‌ای را خراب نمی‌کند (commit اتمیک)
+      expect(await restored.importBackup('متن الکی'), isFalse);
       expect(restored.isFavorite('ghazal-1'), isTrue);
+    });
+
+    test('نسخهٔ پشتیبان: نسخهٔ ۱ پذیرفته و نسخه‌های ناشناخته رد می‌شوند',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+      await settings.toggleFavorite('ghazal-2'); // دادهٔ موجود؛ جان می‌ماند
+
+      // v1 قدیمی فقط اطلاعات شخصی دارد؛ ترجیحات همان پیش‌فرض می‌ماند
+      final legacy = jsonEncode({
+        'app': 'divan-fal-hafez',
+        'v': 1,
+        'favorites': ['ghazal-1'],
+        'notes': {'ghazal-1': 'یادداشت قدیمی'},
+      });
+      expect(await settings.importBackup(legacy), isTrue);
+      expect(settings.isFavorite('ghazal-1'), isTrue);
+      expect(settings.isFavorite('ghazal-2'), isFalse,
+          reason: 'بازیابی v1 فهرستِ موجود را پس از commit جایگزین می‌کند');
+      expect(settings.fontKey, 'vazirmatn',
+          reason: 'v1 قلم ندارد → پیش‌فرض می‌ماند');
+      expect(settings.poemScale, SettingsService.defaultScale);
+
+      // نسخهٔ ناشناخته یا بدون نسخه رد می‌شود و هیچ داده‌ای عوض نمی‌شود
+      final before = settings.isFavorite('ghazal-1');
+      expect(
+          await settings.importBackup(jsonEncode(
+              {'app': 'divan-fal-hafez', 'v': 3, 'favorites': []})),
+          isFalse,
+          reason: 'نسخهٔ ۳ نسخهٔ ناشناخته‌ای از آینده است');
+      expect(
+          await settings
+              .importBackup(jsonEncode({'app': 'divan-fal-hafez'})),
+          isFalse,
+          reason: 'نسخهٔ پشتیبان بدون "v" رد می‌شود');
+      expect(settings.isFavorite('ghazal-1'), before,
+          reason: 'ورودیِ ردِشده هیچ تغییری ایجاد نمی‌کند');
+
+      // اپِ دیگر یا متنِ نامعتبر نباید کاری کنند
+      expect(
+          await settings
+              .importBackup(jsonEncode({'app': 'other-app', 'v': 2})),
+          isFalse);
+      expect(await settings.importBackup('{}'), isFalse);
+    });
+
+    test('فیلتر داده‌های جعلی نسبت به دیتاست: شناسه/شماره/ترجیحات نامعتبر',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+
+      final tampered = jsonEncode({
+        'app': 'divan-fal-hafez',
+        'v': 2,
+        'favorites': ['ghazal-1', 'fake-poem', 'ghazal-999'],
+        'notes': {'fake-poem': 'یادداشت خیالی', 'ghazal-2': 'درست'},
+        'falHistory': [
+          {
+            'id': 'ghazal-7',
+            'n': 7,
+            't': DateTime.now().toIso8601String()
+          }, // درست
+          {
+            'id': 'fake-poem',
+            'n': 1,
+            't': DateTime.now().toIso8601String()
+          }, // شعر وجود ندارد
+          {
+            'id': 'ghazal-1',
+            'n': 999,
+            't': DateTime.now().toIso8601String()
+          }, // شماره با دیتاست سازگار نیست
+          {'rubbish': true}, // بدون کلیدهای لازم
+        ],
+        'font': 'nastaliq', // ناشناخته → پیش‌فرض
+        'poemScale': 9.5, // بیرون از بازه → clamp
+        'lastPoemId': 'fake-poem', // ناموجود → null
+      });
+      expect(await settings.importBackup(tampered), isTrue);
+      expect(settings.favorites,
+          unorderedEquals({'ghazal-1'}), reason: 'فقط شناسه‌های واقعی ماندند');
+      expect(settings.noteFor('fake-poem'), isNull);
+      expect(settings.noteFor('ghazal-2'), 'درست');
+      expect(settings.falHistory.single.poemId, 'ghazal-7');
+      expect(settings.fontKey, 'vazirmatn',
+          reason: 'قلم نامعتبر به پیش‌فرض بازگردانده می‌شود');
+      expect(settings.poemScale, SettingsService.maxScale);
+      expect(settings.lastPoemId, isNull);
+    });
+
+    test('سقف ۱۰۰ ورودی دفترچهٔ فال در بازیابیِ بزرگ رعایت می‌شود',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsService();
+      await settings.load();
+
+      final many = <Map<String, dynamic>>[
+        for (var i = 1; i <= 150; i++)
+          {
+            'id': 'ghazal-$i',
+            'n': i,
+            't': DateTime(2026, 1, 1, 10).toIso8601String()
+          },
+      ];
+      final backup = jsonEncode({
+        'app': 'divan-fal-hafez',
+        'v': 2,
+        'falHistory': many,
+      });
+      expect(await settings.importBackup(backup), isTrue);
+      expect(settings.falHistory.length, SettingsService.maxFalHistory);
+      expect(settings.falHistory.first.number, 1,
+          reason: 'ترتیبِ ردیف‌های صحیح حفظ شده است');
     });
 
     test('ارقام لاتین به فارسی تبدیل می‌شوند', () {

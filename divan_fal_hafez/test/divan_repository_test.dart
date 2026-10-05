@@ -8,7 +8,11 @@ void main() {
   // برای دسترسی به rootBundle/assets در تست لازم است
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('کل آثار: ۵۹۵ شعر در شش بخش دیوان', () async {
+  test('نگاه‌اسنپ‌شات: ۵۹۵ شعر در شش بخش دیوان', () async {
+    // سنپ‌شات: این اعداد ترکیب *کنونیِ* دیتاست‌اند و قاعدهٔ تجاریِ
+    // برنامه نیستند (منطق برنامه روانی فهرستِ بارگیری‌شده کار می‌کند،
+    // نه روی عددِ ثابت). اگر شعری افزوده یا حذف شد، این تست تنها
+    // ترکیبِ دیتاست را عمداً به‌روزرسانی می‌کند.
     expect(await DivanRepository.count(), 595);
     expect(await DivanRepository.count(PoemCategory.ghazal), 495);
     expect(await DivanRepository.count(PoemCategory.robaee), 42);
@@ -22,10 +26,43 @@ void main() {
     final poems = await DivanRepository.all();
     final ids = poems.map((p) => p.id).toSet();
 
-    expect(ids.length, poems.length);
+    expect(ids.length, poems.length,
+        reason: 'هیچ شناسهٔ تکراری در دیتاست نیست');
     for (final poem in poems) {
+      expect(poem.id, isNotEmpty, reason: 'شناسهٔ خالی مجاز نیست');
       expect(poem.verses.trim(), isNotEmpty, reason: poem.id);
+      expect(poem.number, greaterThan(0), reason: poem.id);
       expect(poem.displayTitle.trim(), isNotEmpty, reason: poem.id);
+      if (poem.title != null) {
+        expect(poem.title!.trim(), isNotEmpty,
+            reason: 'عنوانِ فیلد t یا null است یا متنِ مفید: ${poem.id}');
+      }
+    }
+  });
+
+  test('هیچ دو شعری در یک بخش شمارهٔ یکسان ندارند', () async {
+    final poems = await DivanRepository.all();
+    final seen = <String>{};
+    for (final poem in poems) {
+      final key = '${poem.category.name}:${poem.number}';
+      expect(seen.add(key), isTrue,
+          reason: 'شمارهٔ تکراری ${poem.number} در بخش '
+              '«${poem.category.name}» (${poem.id})');
+    }
+    // کاربر با «غزل ۱۲» (بخش + شماره) به یک شعرِ معلوم مالک می‌رسد؛
+    // شمارهٔ تکراری در بخش این ناوبری را دوپهلو و دیتاست را معیوب می‌کرد.
+  });
+
+  test('بخش‌های دیتاست فقط از شش بخش شناخته‌شدهٔ دیوان‌اند', () async {
+    final poems = await DivanRepository.all();
+    final cats = poems.map((p) => p.category).toSet();
+    // کلید «c» نامعتبر هنگام بارگیری FormatException می‌اندازد؛ این
+    // گارد کنترلی می‌گوید دیتای فعلی فقط بخش‌های رسمی دارد.
+    expect(cats, unorderedEquals(PoemCategory.values.toSet()));
+    // گارد: همهٔ بخش‌ها حداقل یک شعر دارند تا UI از بخشِ تهی کرش نکند
+    for (final c in PoemCategory.values) {
+      expect(await DivanRepository.byCategory(c), isNotEmpty,
+          reason: c.name);
     }
   });
 
@@ -51,6 +88,14 @@ void main() {
       expect(fal.number, inInclusiveRange(1, 495));
       expect(fal.meaning, isNotNull);
     }
+  });
+
+  test('انتخاب تصادفی از مجموعهٔ تهی خطای واضح می‌دهد (بدون کرشِ خام)',
+      () {
+    // راستی‌آزمایی: روی لیست خالی به جای RangeError مبهم، StateErrorِ
+    // هدایت‌شده با پیامِ قابل‌دستۀعیب پرتاب می‌شود (empty-safe).
+    expect(() => DivanRepository.pickRandom(const <Poem>[]),
+        throwsA(isA<StateError>()));
   });
 
   test('یافتن شعر با شناسهٔ یکتا درست کار می‌کند', () async {

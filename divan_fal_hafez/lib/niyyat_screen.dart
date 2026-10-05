@@ -40,10 +40,6 @@ class _NiyyatScreenState extends State<NiyyatScreen>
   /// جلوگیری از باز کردن چند صفحهٔ فال پشت سر هم
   bool _wentToFal = false;
 
-  /// فقط برای تست: پیشرفت انیمیشن نگه‌داشتن اثر انگشت
-  @visibleForTesting
-  double get holdProgress => _hold.value;
-
   @override
   void initState() {
     super.initState();
