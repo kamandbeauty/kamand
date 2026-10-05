@@ -158,17 +158,24 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                                         final effect = Get.find<
                                                 SettingsService>()
                                             .fingerprintEffect;
-                                        // گلبرگ باید تا بیرون از ناحیهٔ
-                                        // اثر انگشت پخش شود؛ جوهر درون‌تر
-                                        // می‌ماند (کادرِ جداکننده ندارد)
+                                        // فضای پخش گلبرگ دو برابرِ کادر
+                                        // اثر انگشت در هواست و با
+                                        // OverflowBox از بیرونِ کادر هم
+                                        // می‌گذرد؛ جوهر درون‌تر می‌ماند
                                         final bloomSide = effect == 'petal'
-                                            ? scanner * 1.30
+                                            ? scanner * 2.00
                                             : scanner * 0.80;
-                                        return SizedBox(
-                                          width: bloomSide,
-                                          height: bloomSide,
-                                          child: CustomPaint(
-                                            painter: _bloomPainter(effect),
+                                        return OverflowBox(
+                                          minWidth: 0,
+                                          maxWidth: bloomSide,
+                                          minHeight: 0,
+                                          maxHeight: bloomSide,
+                                          child: SizedBox(
+                                            width: bloomSide,
+                                            height: bloomSide,
+                                            child: CustomPaint(
+                                              painter: _bloomPainter(effect),
+                                            ),
                                           ),
                                         );
                                       },
@@ -561,7 +568,7 @@ class PetalBloomPainter extends CustomPainter {
       final dist = size.width * 0.5 * distFactor * (0.55 + 0.45 * ease);
 
       final petalLen = size.width *
-          (0.034 + 0.040 * _rand(i, 5)) *
+          (0.043 + 0.048 * _rand(i, 5)) *
           (0.35 + 0.65 * local);
       final petalW = petalLen * (0.55 + 0.25 * _rand(i, 6));
       if (petalLen < 0.6) continue;
