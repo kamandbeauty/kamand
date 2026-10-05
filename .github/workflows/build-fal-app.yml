@@ -81,8 +81,11 @@ jobs:
               echo '—— خطاها ——'
               grep "error •" analyze-report.txt || echo '(موردی)'
               echo ''
-              echo '—— گزارش کامل (پایانی) ——'
-              tail -c 20000 analyze-report.txt
+              echo '—— هشدارها (fatal در حالت فعلی) ——'
+              grep "warning •" analyze-report.txt || echo '(موردی)'
+              echo ''
+              echo '—— خلاصه ——'
+              tail -20 analyze-report.txt
               echo '```'
             } > /tmp/comment-analyze.md
             gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment-analyze.md
