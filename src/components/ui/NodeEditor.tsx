@@ -35,20 +35,20 @@ export function NodeEditor() {
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Motion values for the Center node ("AutoDM Hub") - fully draggable
-    const cx = useMotionValue(-150);
+    const cx = useMotionValue(150);
     const cy = useMotionValue(0);
 
-    // Motion values for peripheral nodes - branching to the right like n8n
-    const dmX = useMotionValue(80);
+    // Motion values for peripheral nodes - branching toward the end (left in RTL) like n8n
+    const dmX = useMotionValue(-80);
     const dmY = useMotionValue(-80);
 
-    const contentX = useMotionValue(250);
+    const contentX = useMotionValue(-250);
     const contentY = useMotionValue(-80);
 
-    const linksX = useMotionValue(80);
+    const linksX = useMotionValue(-80);
     const linksY = useMotionValue(90);
 
-    const analyticsX = useMotionValue(250);
+    const analyticsX = useMotionValue(-250);
     const analyticsY = useMotionValue(90);
 
     useEffect(() => {

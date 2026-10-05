@@ -36,7 +36,8 @@ export async function GET(request: Request): Promise<Response> {
 
   const settings = await getMetaSettings();
 
-  if (mode === 'subscribe' && settings && verifyToken === settings.webhookVerifyToken) {
+  if (mode === 'subscribe' && settings && verifyToken && settings.webhookVerifyToken
+      && safeCompare(verifyToken, settings.webhookVerifyToken)) {
     debugLog('webhook', 'info', 'webhook_verify', 'ok', 'Meta webhook verification successful', {});
     return new Response(challenge ?? '', { status: 200 });
   }

@@ -198,7 +198,7 @@ export default function AnalyticsPage() {
                                         </div>
                                         <span className="w-20 shrink-0 text-end text-[12.5px] font-semibold text-foreground tabular-nums">
                                             {faNum(f.value)}
-                                            {conv !== null && <span className="text-[10px] text-muted-foreground font-normal ms-1" dir="ltr">٪{faNum(conv)}</span>}
+                                            {conv !== null && <span className="text-[10px] text-muted-foreground font-normal ms-1">{faNum(conv)}٪</span>}
                                         </span>
                                     </div>
                                 );

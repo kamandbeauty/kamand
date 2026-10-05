@@ -29,7 +29,7 @@ const NAV = {
     "سیستم": [
         { name: "ویزارد راه‌اندازی", href: "/setup", icon: Wrench, external: false },
         { name: "تنظیمات", href: "/settings", icon: Settings, external: false },
-        { name: "گیت‌هاب", href: "https://github.com", icon: Github, external: true },
+        { name: "گیت‌هاب", href: "https://github.com/kamandbeauty/kamand", icon: Github, external: true },
     ],
 } as const;
 
