@@ -1,33 +1,24 @@
-# Flutter / Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-build/
-
-# Node / Web Preview
+# dependencies
 node_modules/
-web_preview/node_modules/
-web_preview/dist/
-.npm/
 
-# IDE / OS
-.idea/
-.vscode/
-*.swp
-*.swo
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# opennext / cloudflare
+.open-next/
+.wrangler/
+
+# env - NEVER commit real secrets
+.env
+.env.local
+.env*.local
+
+# misc
 .DS_Store
-Thumbs.db
+*.tsbuildinfo
 
-# Android
-.gradle/
-local.properties
-capture*.png
-*.apk
-*.aab
-release/
-web_preview/public/FactorRuby*
-
-!release_package/FactorRuby-v5.8.0.apk
-!release_package/FactorRuby-v5.8.0-release.zip
+# supabase local
+supabase/.temp/
+supabase/.branches/
