@@ -156,50 +156,60 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                                       ),
                                     ),
                                     // اثر انگشتِ واقعی (همان thumb.jpg مرجعِ
-                                    // صاحب‌اثر): زمینهٔ سفیدِ عکس شفاف و
-                                    // خطوطش به جوهرِ طلایی بازنگاشته شده تا
-                                    // روی اثرِ تیرهٔ زمینه زیبا دیده شود؛
-                                    // هنگام نگه‌داشتن درخششش بیشتر می‌شود
+                                    // صاحب‌اثر) با محوِ لبهٔ بیضی‌وار — بدون
+                                    // قاب؛ خطوط روی سوادِ کاغذیِ روشن دیده
+                                    // می‌شوند و هنگام نگه‌داشتن انگشت به
+                                    // رنگ طلایی درمی‌آیند
                                     Transform.scale(
                                       scale: 1.0 + _hold.value * 0.08,
                                       child: SizedBox(
-                                        width: scanner * 0.70,
-                                        height: scanner * 0.70,
+                                        width: scanner * 0.74,
+                                        height: scanner * 0.74,
                                         child: Stack(
                                           fit: StackFit.expand,
                                           children: [
-                                            ColorFiltered(
+                                            ShaderMask(
                                               key: const Key(
                                                   'fingerprint_print'),
-                                              colorFilter:
-                                                  const ColorFilter.matrix(
-                                                      <double>[
-                                                    0, 0, 0, 0, 224, //
-                                                    0, 0, 0, 0, 168, //
-                                                    0, 0, 0, 0, 66, //
-                                                    -1, -1, -1, 0, 765, //
-                                                  ]),
+                                              shaderCallback: (bounds) =>
+                                                  const RadialGradient(
+                                                colors: [
+                                                  Colors.white,
+                                                  Colors.white,
+                                                  Colors.transparent,
+                                                ],
+                                                stops: [0.0, 0.52, 0.86],
+                                              ).createShader(bounds),
+                                              blendMode: BlendMode.dstIn,
                                               child: Image.asset(
                                                 'assets/fingerprint.png',
                                                 fit: BoxFit.contain,
                                               ),
                                             ),
-                                            // درخششِ پیشرفت در لحظهٔ
-                                            // نگه‌داشتن (طلاییِ روشن‌تر)
+                                            // رنگِ طلاییِ پیشرفتِ اسکن
                                             Opacity(
                                               opacity: _hold.value,
-                                              child: ColorFiltered(
-                                                colorFilter:
-                                                    const ColorFilter.matrix(
-                                                        <double>[
-                                                      0, 0, 0, 0, 248, //
-                                                      0, 0, 0, 0, 214, //
-                                                      0, 0, 0, 0, 142, //
-                                                      -1, -1, -1, 0, 765, //
-                                                    ]),
-                                                child: Image.asset(
-                                                  'assets/fingerprint.png',
-                                                  fit: BoxFit.contain,
+                                              child: ShaderMask(
+                                                shaderCallback: (bounds) =>
+                                                    const RadialGradient(
+                                                  colors: [
+                                                    Colors.white,
+                                                    Colors.white,
+                                                    Colors.transparent,
+                                                  ],
+                                                  stops: [0.0, 0.52, 0.86],
+                                                ).createShader(bounds),
+                                                blendMode: BlendMode.dstIn,
+                                                child: ColorFiltered(
+                                                  colorFilter:
+                                                      const ColorFilter.mode(
+                                                    Color(0xFFD9A94A),
+                                                    BlendMode.modulate,
+                                                  ),
+                                                  child: Image.asset(
+                                                    'assets/fingerprint.png',
+                                                    fit: BoxFit.contain,
+                                                  ),
                                                 ),
                                               ),
                                             ),
