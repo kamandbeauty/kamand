@@ -156,52 +156,47 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                                       ),
                                     ),
                                     // اثر انگشتِ واقعی (همان thumb.jpg مرجعِ
-                                    // صاحب‌اثر) داخل کارتِ سفیدِ پنجه‌نگاری —
-                                    // روی اثرِ تیرهٔ زمینه کاملاً دیده می‌شود؛
-                                    // هنگام نگه‌داشتن، کارتنمای طلایی می‌گیرد
+                                    // صاحب‌اثر): زمینهٔ سفیدِ عکس شفاف و
+                                    // خطوطش به جوهرِ طلایی بازنگاشته شده تا
+                                    // روی اثرِ تیرهٔ زمینه زیبا دیده شود؛
+                                    // هنگام نگه‌داشتن درخششش بیشتر می‌شود
                                     Transform.scale(
                                       scale: 1.0 + _hold.value * 0.08,
-                                      child: Container(
-                                        width: scanner * 0.74,
-                                        height: scanner * 0.74,
-                                        clipBehavior: Clip.antiAlias,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                              scanner * 0.13),
-                                          border: Border.all(
-                                            color: const Color(0xFF8A5A2B)
-                                                .withOpacity(0.85),
-                                            width: 1.6,
-                                          ),
-                                          boxShadow: const [
-                                            BoxShadow(
-                                              color: Colors.black26,
-                                              blurRadius: 10,
-                                              offset: Offset(0, 4),
-                                            ),
-                                          ],
-                                        ),
+                                      child: SizedBox(
+                                        width: scanner * 0.70,
+                                        height: scanner * 0.70,
                                         child: Stack(
                                           fit: StackFit.expand,
                                           children: [
-                                            Image.asset(
-                                              'assets/fingerprint.png',
+                                            ColorFiltered(
                                               key: const Key(
                                                   'fingerprint_print'),
-                                              fit: BoxFit.contain,
+                                              colorFilter:
+                                                  const ColorFilter.matrix(
+                                                      <double>[
+                                                    0, 0, 0, 0, 224, //
+                                                    0, 0, 0, 0, 168, //
+                                                    0, 0, 0, 0, 66, //
+                                                    -1, -1, -1, 0, 765, //
+                                                  ]),
+                                              child: Image.asset(
+                                                'assets/fingerprint.png',
+                                                fit: BoxFit.contain,
+                                              ),
                                             ),
-                                            // لایهٔ طلاییِ پیشرفت: خطوط مشکی
-                                            // می‌مانند و زمینهٔ کارت به رنگ
-                                            // طلاییِ فرورفته درمی‌آید
+                                            // درخششِ پیشرفت در لحظهٔ
+                                            // نگه‌داشتن (طلاییِ روشن‌تر)
                                             Opacity(
                                               opacity: _hold.value,
                                               child: ColorFiltered(
                                                 colorFilter:
-                                                    const ColorFilter.mode(
-                                                  Color(0xFFD9A94A),
-                                                  BlendMode.modulate,
-                                                ),
+                                                    const ColorFilter.matrix(
+                                                        <double>[
+                                                      0, 0, 0, 0, 248, //
+                                                      0, 0, 0, 0, 214, //
+                                                      0, 0, 0, 0, 142, //
+                                                      -1, -1, -1, 0, 765, //
+                                                    ]),
                                                 child: Image.asset(
                                                   'assets/fingerprint.png',
                                                   fit: BoxFit.contain,
