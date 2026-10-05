@@ -6,6 +6,7 @@ import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/main.dart';
 import 'package:fale_hafez/niyyat_screen.dart';
+import 'package:fale_hafez/util/persian_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -37,7 +38,8 @@ void main() {
 
     // در ابتدا صفحهٔ اسپلش با نسخهٔ برنامه دیده می‌شود
     // (متن از روی AppInfo.version ساخته می‌شود تا با هر بامپ به‌روز بماند)
-    expect(find.text('نسخه برنامه ${AppInfo.version}'), findsOneWidget);
+    expect(find.text('نسخه برنامه ${toPersianDigits(AppInfo.version)}'),
+        findsOneWidget);
 
     // پس از پایان اسپلش (۳ ثانیه) صفحهٔ اصلی با دکمه‌ها نمایش داده می‌شود
     await tester.pump(const Duration(seconds: 3));
@@ -62,10 +64,10 @@ void main() {
 
     // چیپ‌های بخش‌ها و اولین غزل دیده می‌شود
     expect(find.textContaining('غزلیات'), findsWidgets);
-    expect(find.text('غزل 1'), findsOneWidget);
+    expect(find.text('غزل ۱'), findsOneWidget);
 
     // باز کردن غزل اول - صفحهٔ خواندن با همهٔ دکمه‌ها
-    await tester.tap(find.text('غزل 1'));
+    await tester.tap(find.text('غزل ۱'));
     await tester.pumpAndSettle();
 
     expect(find.text('مشاهدهٔ تعبیر فال'), findsOneWidget);

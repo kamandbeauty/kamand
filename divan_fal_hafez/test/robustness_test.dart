@@ -190,13 +190,13 @@ void main() {
       // مصرع معروف غزل اول «ادر کاسا» را با «ك» عربی جستجو می‌کنیم
       await tester.enterText(find.byType(TextField), 'كاسا');
       await tester.pumpAndSettle();
-      expect(find.text('غزل 1'), findsOneWidget);
-      expect(find.text('غزل 2'), findsNothing);
+      expect(find.text('غزل ۱'), findsOneWidget);
+      expect(find.text('غزل ۲'), findsNothing);
 
       // پاک کردن جستجو → فهرست کامل برمی‌گردد
       await tester.enterText(find.byType(TextField), '');
       await tester.pumpAndSettle();
-      expect(find.text('غزل 2'), findsWidgets);
+      expect(find.text('غزل ۲'), findsWidgets);
     });
   });
 
