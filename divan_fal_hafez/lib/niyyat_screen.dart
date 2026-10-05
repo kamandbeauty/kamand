@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
@@ -93,6 +94,14 @@ class _NiyyatScreenState extends State<NiyyatScreen>
     }
   }
 
+  /// نقاشِ افکتِ انتخاب‌شده برای پیشرفتِ اسکنِ اثر انگشت
+  CustomPainter _bloomPainter(String effect) {
+    if (effect == 'petal') {
+      return PetalBloomPainter(progress: _hold.value);
+    }
+    return InkBloomPainter(progress: _hold.value);
+  }
+
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.viewPaddingOf(context).top;
@@ -141,14 +150,16 @@ class _NiyyatScreenState extends State<NiyyatScreen>
                                 return Stack(
                                   alignment: Alignment.center,
                                   children: [
-                                    // قطرهٔ جوهر که زیر انگشت پخش و
-                                    // به‌تدریج دور اثر انگشت را می‌گیرد
+                                    // افکتِ اسکن (انتخابی در تنظیمات):
+                                    // پخش‌شدنِ قطرهٔ جوهر یا گلبرگ‌ها
+                                    // زیر انگشت و به‌تدریج دور اثر انگشت
                                     SizedBox(
                                       width: scanner * 0.80,
                                       height: scanner * 0.80,
                                       child: CustomPaint(
-                                        painter: _InkBloomPainter(
-                                            progress: _hold.value),
+                                        painter: _bloomPainter(
+                                            Get.find<SettingsService>()
+                                                .fingerprintEffect),
                                       ),
                                     ),
                                     // اثر انگشتِ واقعی (همان thumb.jpg مرجعِ
@@ -329,8 +340,9 @@ class _CornerBracketsPainter extends CustomPainter {
 /// قطرهٔ جوهرِ سرخ که با لمس ظاهر می‌شود و هم‌زمان با نگه‌داشتن انگشت
 /// بزرگ و بزرگ‌تر می‌شود تا دور اثر انگشت را بگیرد؛ لبه‌های نامنظمِ
 /// ارگانیک، پاشش‌های ریز اطراف و برقِ مرطوبِ جوهر را شبیه‌سازی می‌کند.
-class _InkBloomPainter extends CustomPainter {
-  const _InkBloomPainter({required this.progress});
+/// (یکی از دو افکتِ قابل‌انتخاب در تنظیمات برای اسکنِ اثر انگشت)
+class InkBloomPainter extends CustomPainter {
+  const InkBloomPainter({required this.progress});
 
   /// جوهرِ مشکیِ دست‌نویسِ سنتی (مرکبِ خوش‌نویسان)
   static const _ink = Color(0xFF161310);
@@ -431,5 +443,131 @@ class _InkBloomPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_InkBloomPainter old) => old.progress != progress;
+  bool shouldRepaint(InkBloomPainter old) => old.progress != progress;
+}
+
+/// گلبرگ‌های رز که با نگه‌داشتن انگشت یکی‌یکی پخش و بزرگ می‌شوند و
+/// دور اثر انگشت را می‌گیرند — افکتِ انتخابی جایگزینِ پخش‌شدنِ جوهر.
+///
+/// ساختار با جوهر هماهنگ است: هر گلبرگ در آستانه‌ای از پیشرفت ظاهر
+/// می‌شود، نرم بیرون می‌رود و کمی می‌چرخد؛ در مرکز، هالهٔ رز و قلبِ
+/// طلایی می‌تراکم.
+class PetalBloomPainter extends CustomPainter {
+  const PetalBloomPainter({required this.progress});
+
+  /// پالت گلبرگ رز (عمیق تا blush) + قلبِ طلایی هماهنگ با تمِ اپ
+  static const _petalDeep = Color(0xFFB83A5C);
+  static const _petalRose = Color(0xFFDF7E97);
+  static const _petalBlush = Color(0xFFF4C3CE);
+  static const _petalCore = Color(0xFFD9A94A);
+
+  final double progress;
+
+  static double _smooth(double t) => t * t * (3 - 2 * t);
+
+  /// رسم یک گلبرگ قطره‌ای‌شکل از [base] تا [tip] با پهنای [width].
+  /// لبه‌ها با منحنی‌های cubic موجِ ارگانیک می‌گیرند.
+  static Path _petalPath(Offset base, Offset tip, double width) {
+    final dir = (tip - base);
+    final length = dir.distance;
+    if (length <= 0) return Path();
+    final unit = dir / length;
+    final side = Offset(-unit.dy, unit.dx);
+    final p1 = base + side * (width * 0.62) + unit * (length * 0.14);
+    final p2 = base + side * (width * 0.48) + unit * (length * 0.72);
+    final p3 = base - side * (width * 0.48) + unit * (length * 0.72);
+    final p4 = base - side * (width * 0.62) + unit * (length * 0.14);
+    return Path()
+      ..moveTo(base.dx, base.dy)
+      ..cubicTo(p1.dx, p1.dy, p2.dx, p2.dy, tip.dx, tip.dy)
+      ..cubicTo(p3.dx, p3.dy, p4.dx, p4.dy, base.dx, base.dy)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0.003) return;
+
+    final center = size.center(Offset.zero);
+    final maxR = size.width * 0.46;
+    final ease = 1 - (1 - progress) * (1 - progress) * (1 - progress);
+
+    // هالهٔ رز که با پیشرفت پخش می‌شود (بستر نرمِ زیر گلبرگ‌ها)
+    final glowOpacity = (progress * 2.2).clamp(0.0, 1.0);
+    final glowR = maxR * (0.45 + 0.65 * ease);
+    canvas.drawCircle(
+      center,
+      glowR,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            const Color(0xFF9C2F50).withOpacity(0.30 * glowOpacity),
+            const Color(0xFF9C2F50).withOpacity(0.16 * glowOpacity),
+            const Color(0xFF9C2F50).withOpacity(0.0),
+          ],
+          stops: const [0.0, 0.62, 1.0],
+        ).createShader(Rect.fromCircle(center: center, radius: glowR))
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, size.width * 0.03),
+    );
+
+    // قلبِ طلاییِ مرکزی که اول ظاهر می‌شود
+    if (progress > 0.06) {
+      final heartT = _smooth(((progress - 0.06) / 0.30).clamp(0.0, 1.0));
+      canvas.drawCircle(
+        center,
+        size.width * 0.055 * (0.35 + 0.65 * heartT),
+        Paint()
+          ..color = _petalCore.withOpacity(0.85 * heartT)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, size.width * 0.012),
+      );
+    }
+
+    // دو ردیف گلبرگ: ردیف اول عمیق‌تر و کوچک‌تر، ردیف دوم روشن‌تر و
+    // بلندتر؛ هر ردیف با آستانهٔ پازل‌وار ظاهر می‌شود تا حسِ پخش‌شدن
+    // گلبرگ‌ها از یک گلبرگ به دو دسته داشته باشیم
+    for (var ring = 0; ring < 2; ring++) {
+      final n = ring == 0 ? 7 : 9;
+      final ringPhase = ring * (math.pi / n);
+      final ringOffset = 0.16 + ring * 0.055;
+      for (var i = 0; i < n; i++) {
+        final local = _smooth(
+            ((progress - (0.10 + i * 0.052)) / 0.40).clamp(0.0, 1.0));
+        if (local <= 0) continue;
+
+        final angle =
+            ringPhase + i * (2 * math.pi / n) + progress * 0.30;
+        final dir = Offset(math.cos(angle), math.sin(angle));
+        final baseR = maxR * ringOffset * (0.55 + 0.45 * ease);
+        final petalLen =
+            size.width * (0.105 + 0.055 * ring) * (0.30 + 0.70 * local);
+        final petalW = petalLen * (0.72 - 0.20 * local);
+        final base = center + dir * baseR;
+        final tip = base + dir * (petalLen * (0.55 + 0.45 * local));
+
+        final palette = [_petalDeep, _petalRose, _petalBlush];
+        final color = palette[(i + ring * 2) % 3];
+        final opacity = (local * 1.3).clamp(0.0, 0.92);
+
+        canvas.drawPath(
+          _petalPath(base, tip, petalW),
+          Paint()..color = color.withOpacity(opacity),
+        );
+
+        // رگبرگِ ظریف در میانهٔ گلبرگ
+        if (petalLen > 3) {
+          canvas.drawLine(
+            base + dir * (petalLen * 0.10),
+            tip - dir * (petalLen * 0.10),
+            Paint()
+              ..color = Colors.white.withOpacity(opacity * 0.38)
+              ..strokeWidth = (petalLen * 0.045).clamp(0.4, 1.6)
+              ..strokeCap = StrokeCap.round,
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(PetalBloomPainter old) => old.progress != progress;
 }

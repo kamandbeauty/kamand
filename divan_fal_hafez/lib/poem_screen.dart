@@ -45,8 +45,6 @@ class _PoemScreenState extends State<PoemScreen> {
 
   SettingsService get _settings => Get.find<SettingsService>();
 
-  /// کلیدِ ناحیهٔ رسمِ صفحه برای اشتراک تصویری (اسکرین‌شاتِ همین صفحه)
-  final GlobalKey _pageKey = GlobalKey();
 
   final Map<String, Poem> _byId = {};
   List<String> _ids = const [];
@@ -140,12 +138,10 @@ class _PoemScreenState extends State<PoemScreen> {
   Future<void> _sharePoem(Poem poem) =>
       Share.share(_shareText(poem, includeMeaning: _showMeaning));
 
-  /// برگهٔ انتخاب نوع اشتراک: اسکرین‌شاتِ همین صفحه یا متن
+  /// برگهٔ انتخاب نوع اشتراک (فعلاً فقط متنی)
   void _openShare(Poem poem) {
     SharePage.showSheet(
       context: context,
-      key: _pageKey,
-      fileName: 'poem-${poem.id}.png',
       onShareText: () => _sharePoem(poem),
     );
   }
@@ -278,7 +274,6 @@ class _PoemScreenState extends State<PoemScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         body: RepaintBoundary(
-          key: _pageKey,
           child: Container(
             decoration: const BoxDecoration(
               image: DecorationImage(

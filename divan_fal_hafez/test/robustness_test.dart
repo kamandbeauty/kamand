@@ -15,7 +15,6 @@ import 'package:fale_hafez/falscreen.dart';
 import 'package:fale_hafez/niyyat_screen.dart';
 import 'package:fale_hafez/poem_screen.dart';
 import 'package:fale_hafez/util/persian_text.dart';
-import 'package:fale_hafez/widgets/page_share.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -213,15 +212,26 @@ void main() {
     });
   });
 
-  group('سقف حافظهٔ تصویر اشتراک', () {
-    test('نسبتِ پیکسلِ موثر باکیفیت و جیر از حدّ حافظه نگه می‌دارد', () {
-      // صفحهٔ معمولی (۳۶۰) → کفِ کیفیت (۲×) حفظ می‌شود
-      expect(SharePage.effectivePixelRatio(360), 2.0);
-      // عرضِ بزرگ‌تر → تا سقف ~۲۰۴۸px پایین می‌آید (هنوز بالای ۱×)
-      expect(SharePage.effectivePixelRatio(1152), closeTo(2048 / 1152, 0.001));
-      // عرضِ بسیار بزرگ → حداقل ۱×؛ هرگز زیر ۱× پایین نمی‌آید
-      expect(SharePage.effectivePixelRatio(4000), 1.0);
-      expect(SharePage.effectivePixelRatio(7200, pixelRatio: 3.0), 1.0);
+  group('افکتِ اثر انگشت', () {
+    test('افکتِ ذخیره‌شدهٔ نامعتبر به جوهر (پیش‌فرض) بازمی‌گردد', () async {
+      SharedPreferences.setMockInitialValues({
+        'fingerprint_effect': 'wind', // افکت نامعتبر → پیش‌فرض
+      });
+      final settings = SettingsService();
+      await settings.load();
+      expect(settings.fingerprintEffect, 'ink');
+
+      // مقدار معتبر حفظ می‌شود و دوباره load صحیح بازیابی می‌کند
+      await settings.setFingerprintEffect('petal');
+      expect(settings.fingerprintEffect, 'petal');
+      await settings.debugWritesIdle();
+      final reloaded = SettingsService();
+      await reloaded.load();
+      expect(reloaded.fingerprintEffect, 'petal');
+
+      // افکتِ خارج از فهرست نادیده گرفته می‌شود (تغییری نمی‌کند)
+      await reloaded.setFingerprintEffect('nonsense');
+      expect(reloaded.fingerprintEffect, 'petal');
     });
   });
 
@@ -336,6 +346,49 @@ void main() {
           reason: 'پس از بازگشت و نگه‌داشتن کامل، فال باز می‌شود');
     });
 
+    testWidgets('افکتِ انتخاب‌شدهٔ اثر انگشت، نقاشِ متناسب را می‌سازد',
+        (WidgetTester tester) async {
+      await _setupGet(tester);
+
+      // پیش‌فرض: افکتِ جوهر
+      expect(Get.find<SettingsService>().fingerprintEffect, 'ink');
+      await tester.pumpWidget(const GetMaterialApp(home: NiyyatScreen()));
+      await tester.pumpAndSettle();
+      expect(
+          find.byWidgetPredicate((w) =>
+              w is CustomPaint && w.painter is InkBloomPainter),
+          findsOneWidget,
+          reason: 'پیش‌فرضِ جوهر = نقاشِ جوهر');
+
+      // گلبرگ → نقاشِ گلبرگ
+      await Get.find<SettingsService>().setFingerprintEffect('petal');
+      await tester.pumpWidget(const GetMaterialApp(home: NiyyatScreen()));
+      await tester.pumpAndSettle();
+      expect(
+          find.byWidgetPredicate((w) =>
+              w is CustomPaint && w.painter is PetalBloomPainter),
+          findsOneWidget,
+          reason: 'با انتخابِ گلبرگ، نقاشِ گلبرگ کشیده می‌شود');
+      expect(
+          find.byWidgetPredicate((w) =>
+              w is CustomPaint && w.painter is InkBloomPainter),
+          findsNothing);
+
+      // و رفتارِ نگه‌داشتن عیناً کار می‌کند (طلایی‌شدن اثر انگشت)
+      final gesture = await tester
+          .startGesture(
+              tester.getCenter(find.byKey(const Key('fingerprint_print'))));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+          find.byWidgetPredicate((w) => w is Opacity && w.opacity > 0.05),
+          findsOneWidget,
+          reason: 'افکتِ گلبرگ مسیرِ پیشرفتِ اسکن را حفظ می‌کند');
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.byType(FalScreen), findsNothing);
+    });
+
     testWidgets('جستجوی دیوان با حروف عربی (ك/ي) هم نتیجه می‌دهد',
         (WidgetTester tester) async {
       await _setupGet(tester);
@@ -426,6 +479,7 @@ void main() {
       await settings.setFont('sahel');
       await settings.setPoemScale(1.4);
       await settings.saveLastPoemId('ghazal-3');
+      await settings.setFingerprintEffect('petal');
       final backup = settings.exportBackup();
       expect(jsonDecode(backup),
           containsPair('v', SettingsService.currentBackupVersion));
@@ -439,6 +493,8 @@ void main() {
       expect(restored.fontKey, 'sahel');
       expect(restored.poemScale, closeTo(1.4, 0.001));
       expect(restored.lastPoemId, 'ghazal-3');
+      expect(restored.fingerprintEffect, 'petal',
+          reason: 'افکتِ انتخاب‌شده در نسخهٔ پشتیبان حفظ می‌شود');
 
       // ورودی نامعتبر هیچ داده‌ای را خراب نمی‌کند (commit اتمیک)
       expect(await restored.importBackup('متن الکی'), isFalse);
@@ -522,6 +578,7 @@ void main() {
         'font': 'nastaliq', // ناشناخته → پیش‌فرض
         'poemScale': 9.5, // بیرون از بازه → clamp
         'lastPoemId': 'fake-poem', // ناموجود → null
+        'fingerprintEffect': 'wind', // افکت نامعتبر → پیش‌فرضِ جوهر
       });
       expect(await settings.importBackup(tampered), isTrue);
       expect(settings.favorites,
@@ -533,6 +590,8 @@ void main() {
           reason: 'قلم نامعتبر به پیش‌فرض بازگردانده می‌شود');
       expect(settings.poemScale, SettingsService.maxScale);
       expect(settings.lastPoemId, isNull);
+      expect(settings.fingerprintEffect, 'ink',
+          reason: 'افکتِ نامعتبر به جوهرِ پیش‌فرض بازگردانده می‌شود');
     });
 
     test('سقف ۱۰۰ ورودی دفترچهٔ فال در بازیابیِ بزرگ رعایت می‌شود',

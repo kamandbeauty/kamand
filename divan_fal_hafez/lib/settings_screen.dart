@@ -152,6 +152,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 14),
 
+                          // افکتِ هنگام نگه‌داشتنِ اثر انگشت در صفحهٔ نیّت
+                          _sectionCard(
+                            title: 'افکت اثر انگشت',
+                            icon: CupertinoIcons.sparkles,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'هنگام نگه‌داشتنِ اثر انگشت برای گرفتن فال چه چیزی پخش شود؟',
+                                  textDirection: TextDirection.rtl,
+                                  style: vazirText(
+                                      fontSize: 12.5,
+                                      color: Colors.black54,
+                                      height: 1.8),
+                                ),
+                                ...SettingsService.fingerprintEffects
+                                    .map(_effectOption),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
                           // پشتیبان‌گیری و انتقال داده‌ها
                           _sectionCard(
                             title: 'پشتیبان‌گیری و انتقال',
@@ -218,6 +240,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+
+  /// نام‌های نمایشی افکت‌های اثر انگشت برای انتخاب کاربر
+  static const Map<String, String> _effectLabels = {
+    'ink': 'پخش‌شدنِ جوهر',
+    'petal': 'پخش‌شدنِ گلبرگ‌ها',
+  };
+
+  /// توضیح کوتاهِ زیر هر گزینهٔ افکت
+  static const Map<String, String> _effectHints = {
+    'ink': 'قطرهٔ جوهر زیر انگشت باز و دور اثر انگشت را می‌گیرد',
+    'petal': 'گلبرگ‌های رز نرم بیرون می‌روند و دور اثر انگشت را می‌گیرند',
+  };
+
+  Widget _effectOption(String key) {
+    final selected = _settings.fingerprintEffect == key;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _settings.setFingerprintEffect(key),
+      child: Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? _accent.withOpacity(0.95)
+              : Colors.white.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? _dark : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected
+                  ? CupertinoIcons.check_mark_circled_solid
+                  : CupertinoIcons.circle,
+              color: _dark,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _effectLabels[key] ?? key,
+                    textDirection: TextDirection.rtl,
+                    style: vazirText(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: _dark,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _effectHints[key] ?? key,
+                    textDirection: TextDirection.rtl,
+                    style: vazirText(
+                      fontSize: 12,
+                      color: _dark.withOpacity(0.75),
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

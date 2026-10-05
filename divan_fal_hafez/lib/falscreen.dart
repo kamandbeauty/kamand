@@ -29,8 +29,6 @@ class FalScreen extends StatefulWidget {
 class _FalScreenState extends State<FalScreen> {
   Poem? _fal;
 
-  /// کلیدِ ناحیهٔ رسمِ صفحه برای اشتراک تصویری (اسکرین‌شاتِ همین صفحه)
-  final GlobalKey _pageKey = GlobalKey();
 
   bool _isLoading = true;
   bool _hasError = false;
@@ -82,7 +80,6 @@ class _FalScreenState extends State<FalScreen> {
           alignment: Alignment.center,
           children: [
             RepaintBoundary(
-              key: _pageKey,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -332,8 +329,6 @@ class _FalScreenState extends State<FalScreen> {
                   onPressed: () {
                     SharePage.showSheet(
                       context: context,
-                      key: _pageKey,
-                      fileName: 'fal-${fal.number}.png',
                       onShareText: () => Share.share(
                           '${fal.verses}\n\nتعبیر فال: ${fal.meaning ?? ''}\n\n— اپلیکیشن «دیوان و فال حافظ»'),
                     );

@@ -42,6 +42,16 @@ class SettingsService extends ChangeNotifier {
   static const String _kFalHistory = 'fal_history';
   static const String _kLastPoemId = 'last_poem_id';
 
+  /// کلید ذخیرهٔ افکت انتخابیِ اسکنِ اثر انگشت در صفحهٔ نیّت
+  static const String _kFingerprintEffect = 'fingerprint_effect';
+
+  /// افکت‌های قابل‌انتخاب برای زمانِ نگه‌داشتنِ اثر انگشت:
+  /// 'ink' = پخش‌شدنِ قطرهٔ جوهر، 'petal' = پخش‌شدنِ گلبرگ‌ها
+  static const List<String> fingerprintEffects = ['ink', 'petal'];
+
+  /// افکت پیش‌فرض (جوهر) — حفظِ رفتارِ قدیمی برای کاربران موجود
+  static const String defaultFingerprintEffect = 'ink';
+
   /// مهر نسخهٔ طرح (schema) داده‌های ذخیره‌شده روی دستگاه؛ برای
   /// مهاجرت‌های آیندهٔ ساختار ذخیره‌سازی استفاده می‌شود.
   static const String _kSchemaVersion = 'prefs_schema_version';
@@ -70,12 +80,14 @@ class SettingsService extends ChangeNotifier {
   Map<String, String> _notes = {};
   List<FalEntry> _falHistory = [];
   String? _lastPoemId;
+  String _fingerprintEffect = defaultFingerprintEffect;
 
   String get fontKey => _fontKey;
   double get poemScale => _poemScale;
   Set<String> get favorites => Set.unmodifiable(_favorites);
   List<FalEntry> get falHistory => List.unmodifiable(_falHistory);
   String? get lastPoemId => _lastPoemId;
+  String get fingerprintEffect => _fingerprintEffect;
 
   /// خواندن تنظیمات ذخیره‌شده از حافظهٔ دستگاه.
   ///
@@ -101,6 +113,10 @@ class SettingsService extends ChangeNotifier {
         .toList();
     final rawLast = _prefs!.getString(_kLastPoemId);
     _lastPoemId = (rawLast == null || rawLast.isEmpty) ? null : rawLast;
+    final rawEffect = _prefs!.getString(_kFingerprintEffect);
+    _fingerprintEffect = fingerprintEffects.contains(rawEffect)
+        ? rawEffect!
+        : defaultFingerprintEffect;
     notifyListeners();
   }
 
@@ -254,6 +270,16 @@ class SettingsService extends ChangeNotifier {
     _persist((prefs) => prefs.setString(_kLastPoemId, poemId));
   }
 
+  /// انتخاب افکتِ اسکنِ اثر انگشت (جوهر یا گلبرگ)
+  Future<void> setFingerprintEffect(String key) async {
+    if (_fingerprintEffect == key || !fingerprintEffects.contains(key)) {
+      return;
+    }
+    _fingerprintEffect = key;
+    notifyListeners();
+    _persist((prefs) => prefs.setString(_kFingerprintEffect, key));
+  }
+
   // ————— پشتیبان‌گیری —————
 
   /// ساخت متن کامل نسخهٔ پشتیبان: دلخواه‌ها + یادداشت‌ها + دفترچهٔ فال
@@ -269,6 +295,7 @@ class SettingsService extends ChangeNotifier {
       'font': _fontKey,
       'poemScale': _poemScale,
       'lastPoemId': _lastPoemId,
+      'fingerprintEffect': _fingerprintEffect,
     });
   }
 
@@ -325,6 +352,7 @@ class SettingsService extends ChangeNotifier {
     _fontKey = sanitized.fontKey;
     _poemScale = sanitized.poemScale;
     _lastPoemId = sanitized.lastPoemId;
+    _fingerprintEffect = sanitized.fingerprintEffect;
     notifyListeners();
     _persist((prefs) => prefs.setStringList(
         _kFavorites, _favorites.toList()));
@@ -334,6 +362,8 @@ class SettingsService extends ChangeNotifier {
         _kFalHistory, _encodeFalHistory(_falHistory)));
     _persist((prefs) => prefs.setString(_kFont, _fontKey));
     _persist((prefs) => prefs.setDouble(_kScale, _poemScale));
+    _persist((prefs) =>
+        prefs.setString(_kFingerprintEffect, _fingerprintEffect));
     if (_lastPoemId != null) {
       _persist((prefs) => prefs.setString(_kLastPoemId, _lastPoemId!));
     } else {
@@ -403,6 +433,7 @@ class SettingsService extends ChangeNotifier {
     final String fontKey;
     final double poemScale;
     final String? lastPoemId;
+    final String fingerprintEffect;
     if (version >= 2) {
       fontKey = poemFontFamilies.containsKey(decoded['font'])
           ? decoded['font'] as String
@@ -414,10 +445,15 @@ class SettingsService extends ChangeNotifier {
           (rawLast is String && validPoems.containsKey(rawLast))
               ? rawLast
               : null;
+      fingerprintEffect =
+          fingerprintEffects.contains(decoded['fingerprintEffect'])
+              ? decoded['fingerprintEffect'] as String
+              : defaultFingerprintEffect;
     } else {
       fontKey = _fontKey;
       poemScale = _poemScale;
       lastPoemId = _lastPoemId;
+      fingerprintEffect = _fingerprintEffect;
     }
 
     return _SanitizedBackup(
@@ -427,6 +463,7 @@ class SettingsService extends ChangeNotifier {
       fontKey: fontKey,
       poemScale: poemScale,
       lastPoemId: lastPoemId,
+      fingerprintEffect: fingerprintEffect,
     );
   }
 
@@ -475,6 +512,7 @@ class _SanitizedBackup {
     required this.fontKey,
     required this.poemScale,
     required this.lastPoemId,
+    required this.fingerprintEffect,
   });
 
   final Set<String> favorites;
@@ -483,4 +521,5 @@ class _SanitizedBackup {
   final String fontKey;
   final double poemScale;
   final String? lastPoemId;
+  final String fingerprintEffect;
 }
