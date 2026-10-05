@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { MessageCircle, Send, Image, AtSign } from "lucide-react";
+import { MessageCircle, Send, Image } from "lucide-react";
 import { AUTOMATION_TYPES } from "../constants";
 import { cn } from "@/lib/utils";
 
@@ -11,8 +11,7 @@ interface SelectTypeStepProps {
 const ICONS = {
     "message": MessageCircle,
     "send": Send,
-    "image": Image,
-    "at-sign": AtSign
+    "image": Image
 };
 
 export function SelectTypeStep({ onSelect, selectedType }: SelectTypeStepProps) {

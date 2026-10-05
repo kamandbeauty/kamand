@@ -75,7 +75,7 @@ async function sendOneResponse(
   const messageText = renderTemplate(response.content.trim(), username);
   const link = response.buttonLink?.trim();
   if (link) {
-    const buttonTitle = response.buttonTitle?.trim() || 'Open link';
+    const buttonTitle = response.buttonTitle?.trim() || 'باز کردن لینک';
     try {
       await sendInstagramLinkButtonDm(igAccountIgsid, recipient, messageText, buttonTitle, link, accessToken);
     } catch (buttonErr) {
@@ -470,7 +470,7 @@ export async function processAutoDmJob(payload: AutoDmJobPayload, attempt: numbe
     } else if (openingLink) {
       // 1-step flow with a link: try a tappable web_url button template first;
       // if Meta rejects it for this recipient, fall back to an inline link.
-      const buttonTitle = automation.dm_opening_message_button_title?.trim() || 'Open link';
+      const buttonTitle = automation.dm_opening_message_button_title?.trim() || 'باز کردن لینک';
       try {
         messageId = await sendInstagramLinkButtonDm(
           payload.igAccountIgsid,
@@ -765,7 +765,7 @@ export async function processFollowUpDmJob(payload: AutoDmJobPayload): Promise<v
       const link = response.buttonLink?.trim();
       if (link) {
         // Tappable link button first; inline-link fallback if Meta rejects it.
-        const buttonTitle = response.buttonTitle?.trim() || 'Open link';
+        const buttonTitle = response.buttonTitle?.trim() || 'باز کردن لینک';
         try {
           await sendInstagramLinkButtonDm(
             payload.igAccountIgsid,

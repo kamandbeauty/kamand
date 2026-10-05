@@ -27,7 +27,7 @@ export type CardButton = {
 
 export type DMResponse = {
     id: string;
-    type: "text" | "card" | "ask_follow";
+    type: "text" | "card";
     content: string;
     buttonTitle?: string;
     buttonLink?: string;
@@ -50,6 +50,7 @@ export type AutomationFlowData = {
     dmOpeningMessageEnabled: boolean;
     dmOpeningMessage: string;
     dmOpeningMessageButtonTitle: string;
+    dmOpeningMessageButtonLink: string;
     askToFollowEnabled: boolean;
     askToFollowMessage: string;
     askToFollowVisitProfileButton: string;
@@ -84,6 +85,7 @@ const defaultFlowData = (): AutomationFlowData => ({
     dmOpeningMessageEnabled: true,
     dmOpeningMessage: "سلام! خیلی خوشحالم که اینجایی، ممنون از علاقه‌ات 🥰\n\nروی دکمه زیر بزن تا لینک رو همین چند لحظه بعد برات بفرستم ✨",
     dmOpeningMessageButtonTitle: "لینک رو بفرست",
+    dmOpeningMessageButtonLink: "",
     askToFollowEnabled: false,
     askToFollowMessage: "سلام! به نظر می‌رسه هنوز فالووم نکردی 😊",
     askToFollowVisitProfileButton: "مشاهده پروفایل",
@@ -109,6 +111,7 @@ function automationToFlowData(automation: AutomationFromDB): AutomationFlowData 
         dmOpeningMessageEnabled: automation.dm_opening_message_enabled,
         dmOpeningMessage: automation.dm_opening_message || defaults.dmOpeningMessage,
         dmOpeningMessageButtonTitle: automation.dm_opening_message_button_title ?? defaults.dmOpeningMessageButtonTitle,
+        dmOpeningMessageButtonLink: automation.dm_opening_message_button_link ?? "",
         askToFollowEnabled: automation.ask_to_follow_enabled,
         askToFollowMessage: automation.ask_to_follow_message || defaults.askToFollowMessage,
         askToFollowVisitProfileButton: automation.ask_to_follow_visit_profile_button || defaults.askToFollowVisitProfileButton,
@@ -203,7 +206,7 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
             dmOpeningMessageEnabled: flowData.isAutoDmEnabled && flowData.dmOpeningMessageEnabled,
             dmOpeningMessage: flowData.dmOpeningMessage,
             dmOpeningMessageButtonTitle: flowData.dmOpeningMessageButtonTitle || null,
-            dmOpeningMessageButtonLink: null,
+            dmOpeningMessageButtonLink: flowData.dmOpeningMessageButtonLink.trim() || null,
             askToFollowEnabled: flowData.askToFollowEnabled,
             askToFollowMessage: flowData.askToFollowMessage,
             askToFollowVisitProfileButton: flowData.askToFollowVisitProfileButton,
@@ -217,7 +220,7 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
         setPendingAction(activate ? 'activate' : 'save');
 
         if (isEditMode && editAutomation) {
-            const { name, commentReplyOptions, dmOpeningMessageEnabled, dmOpeningMessage, dmOpeningMessageButtonTitle,
+            const { name, commentReplyOptions, dmOpeningMessageEnabled, dmOpeningMessage, dmOpeningMessageButtonTitle, dmOpeningMessageButtonLink,
                 askToFollowEnabled, askToFollowMessage, askToFollowVisitProfileButton,
                 askToFollowConfirmButton, dmResponses, keywords, postThumbnailUrl, postCaption } = buildPayload(null);
             updateMutation.mutate({
@@ -229,7 +232,7 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
                 dm_opening_message_enabled: dmOpeningMessageEnabled,
                 dm_opening_message: dmOpeningMessage,
                 dm_opening_message_button_title: dmOpeningMessageButtonTitle ?? null,
-                dm_opening_message_button_link: null,
+                dm_opening_message_button_link: dmOpeningMessageButtonLink || null,
                 post_thumbnail_url: postThumbnailUrl ?? null,
                 post_caption: postCaption ?? null,
                 ask_to_follow_enabled: askToFollowEnabled,

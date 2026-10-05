@@ -131,13 +131,14 @@ export function StoryPhone({ keyword }: { keyword: string }) {
    Creator (sender) messages: LEFT (blue). Audience: RIGHT (gray).
    `trigger` renders the audience's triggering message first (dm/story flows). */
 export function DMConversationPhone({
-    openingEnabled, openingMessage, openingBtnTitle,
+    openingEnabled, openingMessage, openingBtnTitle, openingBtnLink,
     askToFollowEnabled, askToFollowMessage, askToFollowVisitBtn, askToFollowConfirmBtn,
     responses, phase, onPhaseChange, creatorProfilePicUrl, trigger,
 }: {
     openingEnabled: boolean;
     openingMessage: string;
     openingBtnTitle?: string;
+    openingBtnLink?: string;
     askToFollowEnabled: boolean;
     askToFollowMessage: string;
     askToFollowVisitBtn: string;
@@ -150,6 +151,8 @@ export function DMConversationPhone({
 }) {
     const textResponses = responses.filter(r => r.type === "text");
     const hasQuickReply = !!openingBtnTitle?.trim();
+    // No reveal title + a link instead -> the opening DM is a tappable link button.
+    const hasLinkButton = !hasQuickReply && !!openingBtnLink?.trim();
     // Without an opening button there is no tap step - responses show immediately.
     const showResponses = hasQuickReply ? (phase !== "initial" && (!askToFollowEnabled || phase === "followed")) : true;
 
@@ -209,6 +212,13 @@ export function DMConversationPhone({
                                     >
                                         {openingBtnTitle}
                                     </button>
+                                </div>
+                            )}
+                            {hasLinkButton && (
+                                <div className="border-t border-white/20">
+                                    <div className="w-full text-center text-[12px] font-semibold text-white/90 py-2">
+                                        {openingBtnTitle?.trim() || "باز کردن لینک"}
+                                    </div>
                                 </div>
                             )}
                         </div>

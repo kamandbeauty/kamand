@@ -20,12 +20,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const SaveSetupSchema = z.object({
-  metaAppId: z.string().regex(/^\d{5,25}$/, 'Meta App ID must be numeric'),
-  metaAppSecret: z.string().regex(/^[0-9a-f]{32}$/i, 'Meta App Secret must be 32 hex characters'),
+  metaAppId: z.string().regex(/^\d{5,25}$/, 'شناسه اپ متا باید عددی باشد'),
+  metaAppSecret: z.string().regex(/^[0-9a-f]{32}$/i, 'اپ سکرت متا باید دقیقاً ۳۲ کاراکتر هگز باشد'),
   // Optional: some Meta apps sign webhooks with the Facebook app secret.
   metaFbAppSecret: z
     .string()
-    .regex(/^[0-9a-f]{32}$/i, 'Facebook App Secret must be 32 hex characters')
+    .regex(/^[0-9a-f]{32}$/i, 'اپ سکرت فیسبوک باید دقیقاً ۳۲ کاراکتر هگز باشد')
     .optional()
     .or(z.literal('').transform(() => undefined)),
 });
@@ -131,8 +131,8 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json(
         {
           error:
-            'Database schema is missing - the migrations have not been applied to your Supabase project. ' +
-            'Run: supabase link --project-ref <your-ref> && supabase db push, then try again.',
+            'اسکیمای دیتابیس وجود ندارد — migrationها هنوز روی پروژه ساپابیس شما اعمال نشده‌اند. ' +
+            'دستور supabase link --project-ref <your-ref> و سپس supabase db push را اجرا کن و دوباره تلاش کن.',
         },
         { status: 500 }
       );

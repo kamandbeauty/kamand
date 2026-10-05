@@ -15,7 +15,7 @@ const logger = createLogger('api:automations:id');
 
 const UpdateAutomationSchema = z.object({
   is_active: z.boolean().optional(),
-  name: z.string().min(1).max(200).optional(),
+  name: z.string().min(1, 'نام الزامی است').max(200, 'نام حداکثر ۲۰۰ کاراکتر است').optional(),
   keywords: z.array(z.string()).nullable().optional(),
   comment_reply_options: z.array(z.string()).optional(),
   dm_opening_message_enabled: z.boolean().optional(),
@@ -28,7 +28,7 @@ const UpdateAutomationSchema = z.object({
   ask_to_follow_message: z.string().optional(),
   ask_to_follow_visit_profile_button: z.string().optional(),
   ask_to_follow_confirm_button: z.string().optional(),
-  dm_responses: z.array(DMResponseSchema).max(MAX_DM_RESPONSES, `Max ${MAX_DM_RESPONSES} responses per automation`).optional(),
+  dm_responses: z.array(DMResponseSchema).max(MAX_DM_RESPONSES, `حداکثر ${MAX_DM_RESPONSES} پاسخ برای هر خودکارساز`).optional(),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };

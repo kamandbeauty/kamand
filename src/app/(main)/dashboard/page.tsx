@@ -41,7 +41,7 @@ export default function DashboardPage() {
         { label: "خودکارسازهای فعال", value: faNum(activeCount), icon: Bot },
         { label: "کامنت · ۳۰ روز", value: faNum(analytics?.totals.comments ?? 0), icon: MessageCircle },
         { label: "دایرکت ارسال‌شده", value: faNum(totalDms), icon: Send },
-        { label: "مخاطبان ثبت‌شده", value: faNum(contacts?.length ?? 0), icon: Instagram },
+        { label: "مخاطبان ثبت‌شده", value: faNum(contacts?.total ?? 0), icon: Instagram },
     ];
 
     return (

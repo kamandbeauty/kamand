@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Users, MessageCircle, Send, Image as ImageIcon, MousePointerClick, RefreshCw } from "lucide-react";
+import { Search, Users, MessageCircle, Send, Image as ImageIcon, MousePointerClick, RefreshCw, Download, Loader2 } from "lucide-react";
 import { cn, faNum, faDate } from "@/lib/utils";
-import { useContacts, type ContactFromDB } from "@/hooks/useContacts";
+import { useContactsInfinite, type ContactFromDB } from "@/hooks/useContacts";
+import { useActiveAccount } from "@/hooks/useActiveAccount";
+import { createBrowserClient } from "@/lib/supabase";
 
 /**
  * Contacts - every unique audience member captured through an automation:
@@ -49,19 +51,53 @@ function formatDate(iso: string): string {
 }
 
 export function ContactsList() {
-    const { data: contacts, isLoading, refetch, isFetching } = useContacts();
+    const { accountId } = useActiveAccount();
+    const { data, isLoading, refetch, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useContactsInfinite(accountId);
     const [search, setSearch] = useState("");
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
+
+    const allContacts = useMemo(
+        () => data?.pages.flatMap((p) => p.contacts) ?? [],
+        [data]
+    );
+    const total = data?.pages[0]?.total ?? 0;
 
     const filtered = useMemo(() => {
-        if (!contacts) return [];
         const q = search.trim().toLowerCase();
-        if (!q) return contacts;
-        return contacts.filter((c) =>
+        if (!q) return allContacts;
+        return allContacts.filter((c) =>
             (c.username ?? "").toLowerCase().includes(q) ||
             c.audience_ig_user_id.includes(q) ||
             (c.automations?.name ?? "").toLowerCase().includes(q)
         );
-    }, [contacts, search]);
+    }, [allContacts, search]);
+
+    const handleExport = async () => {
+        setExporting(true);
+        setExportError(null);
+        try {
+            // Raw fetch (not apiClient - the response is a CSV file, not JSON)
+            const supabase = createBrowserClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch(
+                `/api/contacts/export${accountId ? `?accountId=${encodeURIComponent(accountId)}` : ""}`,
+                { headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {} }
+            );
+            if (!res.ok) throw new Error("export failed");
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            setExportError("خروجی گرفتن ممکن نشد. دوباره تلاش کن.");
+        } finally {
+            setExporting(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -73,7 +109,7 @@ export function ContactsList() {
         );
     }
 
-    if (!contacts || contacts.length === 0) {
+    if (total === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-12 text-center border border-border border-dashed rounded-xl">
                 <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -104,17 +140,34 @@ export function ContactsList() {
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                     <span className="text-xs font-semibold text-muted-foreground">
-                        {faNum(filtered.length)} مخاطب
+                        {faNum(filtered.length)} از {faNum(total)} مخاطب
                     </span>
-                    <button
-                        onClick={() => void refetch()}
-                        className="flex items-center justify-center gap-2 px-4 py-2 border border-border/50 rounded-xl bg-background hover:bg-muted/50 transition-colors text-sm font-medium"
-                    >
-                        <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
-                        <span>به‌روزرسانی</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => void handleExport()}
+                            disabled={exporting}
+                            className="flex items-center justify-center gap-2 px-4 py-2 border border-border/50 rounded-xl bg-background hover:bg-muted/50 transition-colors text-sm font-medium disabled:opacity-60"
+                            title="دانلود CSV (اکسل)"
+                        >
+                            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            <span>خروجی CSV</span>
+                        </button>
+                        <button
+                            onClick={() => void refetch()}
+                            className="flex items-center justify-center gap-2 px-4 py-2 border border-border/50 rounded-xl bg-background hover:bg-muted/50 transition-colors text-sm font-medium"
+                        >
+                            <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
+                            <span>به‌روزرسانی</span>
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {exportError && (
+                <div className="px-3.5 py-2.5 rounded-lg bg-destructive/10 text-[13px] text-destructive font-medium">
+                    {exportError}
+                </div>
+            )}
 
             {/* Table */}
             <div className="w-full overflow-x-auto bg-card border border-border rounded-xl">
@@ -179,6 +232,20 @@ export function ContactsList() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Load more */}
+            {(hasNextPage || isFetchingNextPage) && (
+                <div className="flex justify-center">
+                    <button
+                        onClick={() => void fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                        className="inline-flex items-center gap-2 h-9 px-5 text-[13px] font-medium border border-border hover:bg-muted rounded-lg transition-colors disabled:opacity-60"
+                    >
+                        {isFetchingNextPage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                        {isFetchingNextPage ? "در حال بارگذاری…" : "نمایش بیشتر"}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

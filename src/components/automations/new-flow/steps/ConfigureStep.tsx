@@ -544,16 +544,41 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                                                     )}
 
                                                     <div className="rounded-lg border border-border p-2.5 space-y-1.5">
-                                                        <p className="micro-label">دکمه دریافت</p>
-                                                        <p className="text-[11px] text-muted-foreground">با لمس این دکمه پاسخ‌ها را دریافت می‌کنند — این لمس، علاقه واقعی را تأیید می‌کند.</p>
-                                                        <input
-                                                            value={data.dmOpeningMessageButtonTitle}
-                                                            onChange={e => onUpdate({ dmOpeningMessageButtonTitle: e.target.value })}
-                                                            maxLength={20}
-                                                            placeholder="لینک رو بفرست"
-                                                            className={inputCls}
-                                                        />
-                                                        <p className="text-[10px] text-muted-foreground">حداکثر ۲۰ کاراکتر (محدودیت اینستاگرام). خالی بگذار تا پاسخ‌ها بلافاصله ارسال شوند.</p>
+                                                        <p className="micro-label">دکمه</p>
+                                                        <div>
+                                                            <label className="micro-label block mb-1">عنوان دکمه (جریان دو مرحله‌ای)</label>
+                                                            <input
+                                                                value={data.dmOpeningMessageButtonTitle}
+                                                                onChange={e => onUpdate({ dmOpeningMessageButtonTitle: e.target.value })}
+                                                                maxLength={20}
+                                                                placeholder="لینک رو بفرست"
+                                                                className={inputCls}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="micro-label block mb-1">لینک دکمه (جریان یک مرحله‌ای)</label>
+                                                            <input
+                                                                value={data.dmOpeningMessageButtonLink}
+                                                                onChange={e => onUpdate({ dmOpeningMessageButtonLink: e.target.value })}
+                                                                placeholder="https://your-link.com"
+                                                                dir="ltr"
+                                                                className={cn(inputCls, "text-left")}
+                                                            />
+                                                        </div>
+                                                        {data.dmOpeningMessageButtonTitle.trim() ? (
+                                                            <>
+                                                                <p className="text-[11px] text-muted-foreground">با لمس این دکمه پاسخ‌ها را دریافت می‌کنند — این لمس، علاقه واقعی را تأیید می‌کند.</p>
+                                                                {data.dmOpeningMessageButtonLink.trim() && (
+                                                                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                                                        وقتی عنوان دکمه پر باشد، جریان دو مرحله‌ای است و این لینک نادیده گرفته می‌شود.
+                                                                    </p>
+                                                                )}
+                                                            </>
+                                                        ) : data.dmOpeningMessageButtonLink.trim() ? (
+                                                            <p className="text-[11px] text-muted-foreground">پیام آغازین با یک دکمه «باز کردن لینک» لمس‌شدنی ارسال می‌شود و پاسخ‌ها بلافاصله پس از آن می‌روند.</p>
+                                                        ) : (
+                                                            <p className="text-[10px] text-muted-foreground">حداکثر ۲۰ کاراکتر (محدودیت اینستاگرام). هر دو را خالی بگذار تا پاسخ‌ها بلافاصله ارسال شوند.</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -704,6 +729,7 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                             openingEnabled={data.dmOpeningMessageEnabled}
                             openingMessage={data.dmOpeningMessage}
                             openingBtnTitle={data.dmOpeningMessageButtonTitle}
+                            openingBtnLink={data.dmOpeningMessageButtonLink}
                             askToFollowEnabled={data.askToFollowEnabled}
                             askToFollowMessage={data.askToFollowMessage}
                             askToFollowVisitBtn={data.askToFollowVisitProfileButton}

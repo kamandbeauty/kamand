@@ -34,6 +34,7 @@ function SettingsContent() {
     const [resubscribingId, setResubscribingId] = useState<string | null>(null);
     const [checkingSubId, setCheckingSubId] = useState<string | null>(null);
     const [subStatus, setSubStatus] = useState<Record<string, { subscribedFields: string[]; hasComments: boolean; hasMessages: boolean } | null>>({});
+    const [confirmDisconnect, setConfirmDisconnect] = useState<{ id: string; username: string } | null>(null);
     const [banner, setBanner] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
     useEffect(() => {
@@ -82,13 +83,17 @@ function SettingsContent() {
         }
     };
 
-    const handleDisconnect = async (accountId: string) => {
-        if (!confirm("این اکانت اینستاگرام قطع شود؟ تمام خودکارسازهای متصل به آن حذف خواهند شد.")) return;
-        setDisconnectingId(accountId);
+    // Open the confirmation dialog (replaces the browser's native confirm()).
+    const handleDisconnect = (accountId: string, username: string) => setConfirmDisconnect({ id: accountId, username });
+
+    const doDisconnect = async () => {
+        if (!confirmDisconnect) return;
+        setDisconnectingId(confirmDisconnect.id);
         try {
-            await apiClient(`/instagram/disconnect/${accountId}`, { method: "DELETE" });
+            await apiClient(`/instagram/disconnect/${confirmDisconnect.id}`, { method: "DELETE" });
             void queryClient.invalidateQueries({ queryKey: ["instagram-accounts"] });
             setBanner({ type: "success", message: "اکانت اینستاگرام قطع شد." });
+            setConfirmDisconnect(null);
         } catch (err) {
             const message = err instanceof ApiError ? err.message : "قطع اتصال اکانت ممکن نشد";
             setBanner({ type: "error", message });
@@ -311,7 +316,7 @@ function SettingsContent() {
                                             {resubscribingId === account.id ? "در حال همگام‌سازی…" : "تعمیر وبهوک"}
                                         </button>
                                         <button
-                                            onClick={() => handleDisconnect(account.id)}
+                                            onClick={() => handleDisconnect(account.id, account.username)}
                                             disabled={disconnectingId === account.id}
                                             className="inline-flex items-center gap-1 h-7 px-2 text-[12px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                                         >
@@ -371,6 +376,44 @@ function SettingsContent() {
                     خروج از حساب
                 </button>
             </section>
+
+            {/* Disconnect confirmation dialog */}
+            {confirmDisconnect && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmDisconnect(null)} />
+                    <div className="relative bg-card border border-border rounded-xl p-5 max-w-sm w-full shadow-xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                                <Unlink className="w-4 h-4 text-destructive" />
+                            </div>
+                            <div>
+                                <p className="text-[13.5px] font-semibold text-foreground">قطع اتصال اکانت</p>
+                                <p className="text-[12.5px] text-muted-foreground">
+                                    اکانت <span className="font-semibold text-foreground" dir="ltr">@{confirmDisconnect.username}</span> قطع شود؟
+                                    تمام خودکارسازها، مخاطبان و تاریخچه متصل به آن حذف خواهند شد. این عمل قابل بازگشت نیست.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setConfirmDisconnect(null)}
+                                disabled={disconnectingId === confirmDisconnect.id}
+                                className="flex-1 h-9 rounded-lg border border-border text-[13px] font-medium hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                                انصراف
+                            </button>
+                            <button
+                                onClick={() => void doDisconnect()}
+                                disabled={disconnectingId === confirmDisconnect.id}
+                                className="flex-1 h-9 rounded-lg bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 transition-colors disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
+                            >
+                                {disconnectingId === confirmDisconnect.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                قطع اتصال
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

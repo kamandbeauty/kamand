@@ -15,7 +15,7 @@ export const MAX_DM_RESPONSES = 5;
 
 export const DMResponseSchema = z.object({
   id: z.string(),
-  type: z.enum(['text', 'card', 'ask_follow']),
+  type: z.enum(['text', 'card']),
   content: z.string(),
   buttonTitle: z.string().optional(),
   buttonLink: z.string().optional(),

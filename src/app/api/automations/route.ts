@@ -15,9 +15,9 @@ export const dynamic = 'force-dynamic';
 const logger = createLogger('api:automations');
 
 const CreateAutomationSchema = z.object({
-  instagramAccountId: z.string().uuid('instagramAccountId must be a UUID'),
-  name: z.string().min(1, 'name is required').max(200),
-  type: z.enum(['comment_dm', 'dm_reply', 'story_reply']),
+  instagramAccountId: z.string().uuid('شناسه اکانت اینستاگرام نامعتبر است'),
+  name: z.string().min(1, 'نام الزامی است').max(200, 'نام حداکثر ۲۰۰ کاراکتر است'),
+  type: z.enum(['comment_dm', 'dm_reply', 'story_reply'], { errorMap: () => ({ message: 'نوع خودکارساز نامعتبر است' }) }),
   isActive: z.boolean().default(true),
   postId: z.string().nullable().optional(),
   postThumbnailUrl: z.string().nullable().optional(),
@@ -32,7 +32,7 @@ const CreateAutomationSchema = z.object({
   askToFollowMessage: z.string().default(''),
   askToFollowVisitProfileButton: z.string().default('Visit Profile'),
   askToFollowConfirmButton: z.string().default("I'm following ✅"),
-  dmResponses: z.array(DMResponseSchema).max(MAX_DM_RESPONSES, `Max ${MAX_DM_RESPONSES} responses per automation`).default([]),
+  dmResponses: z.array(DMResponseSchema).max(MAX_DM_RESPONSES, `حداکثر ${MAX_DM_RESPONSES} پاسخ برای هر خودکارساز`).default([]),
 });
 
 export async function GET(request: Request): Promise<Response> {

@@ -2,180 +2,125 @@
 
 <img src="public/logo.svg" width="90" alt="open-autoDM logo" />
 
-# open-autoDM
+# open-autoDM · اُپن‌اتودی‌ام
 
-**Open-source, self-hosted Instagram comment-to-DM automation.**
+**اتوماسیون متن‌باز و سلف‌هاستِ کامنت‌به‌دایرکت اینستاگرام — با رابط فارسی و راست‌به‌چپ**
 
-Someone comments a keyword on your post → they instantly get your link in their DMs.
-The exact engine behind ManyChat-style "comment *LINK* to get it" funnels - except it's
-free, it runs on **your** infrastructure, through **your own** Meta app, and your data
-never touches anyone else's servers.
+کسی زیر پستت کامنتِ کلمه‌ی کلیدی می‌ذاره → چند ثانیه بعد لینکت رو توی دایرکت خودش می‌گیره.
+همون موتور قیف‌های «کامنت بذار *لینک* بگیر» — ولی رایگان، روی **زیرساخت خودت**، از طریق **اپ متای خودت**، و داده‌ات هیچ‌وقت سرور دیگری رو لمس نمی‌کنه.
 
-`Next.js (one deployment)` · `Supabase (DB + auth + queue + cron)` · `Vercel or Cloudflare`
+`Next.js (یک دیپلوی)` · `Supabase (دیتابیس + احراز هویت + صف + کرون)` · `Vercel یا Cloudflare`
 
-**⭐ Star this repo now** - it takes 2 seconds, helps other creators find a free alternative to
-$25/month tools, and new features land here regularly. **Watch** the repo to catch them.
-
-> 🛠️ **Don't want to set it up yourself?** I'll deploy the whole system on your own accounts -
-> running at near-zero server cost - for a minimal one-time setup charge, for all your Instagram
-> accounts. DM me on Instagram: [**@buildwharsha**](https://www.instagram.com/buildwharsha/) 🙂
+> 🧬 این ریپو بر پایه‌ی پروژه‌ی متن‌باز
+> [open-autodm](https://github.com/harshithgangone/open-autodm) ساخته‌شده و از ایده و کد اون پروژه (مجوز MIT) بهره می‌برد — سپاس از [@harshithgangone](https://github.com/harshithgangone).
 
 </div>
 
 ---
 
-## ✨ What it does
+## ✨ چه کاری می‌کند؟
 
-- **Comment → DM** - auto-DM anyone who comments a trigger keyword (or any comment) on a specific post or all posts. Sent as Meta **Private Replies** - the purpose-built comment-to-DM channel with its own 750/hour allowance, valid up to 7 days after the comment.
-- **DM keyword auto-replies** - someone DMs you `DIET` → they instantly get the resource you attached to that keyword.
-- **Story reply triggers** - someone replies `DIET` to your story → same thing. Story replies route to their own automations, separate from plain DMs.
-- **Tappable link buttons** - links are delivered as real button-template DMs (a button that opens the URL), with automatic fallback to an inline link if Meta rejects the template for a recipient.
-- **Public comment replies** - replies to the trigger comment with a random line from your list ("Sent! Check your DMs 📬"). Idempotent - a retried job never double-posts.
-- **2-step button flow** - opening DM with a *"Send me the link"* button; content is delivered only after the tap (massively better delivery + engagement).
-- **Ask-to-follow gate** - optionally ask people to follow you before delivering the content (Visit Profile + "I'm following ✅" buttons).
-- **Text + card responses** - plain messages, link buttons, or rich cards with image / subtitle / up to 3 URL buttons.
-- **`{username}` personalization** - greet commenters by their @handle in messages and public replies.
-- **Multiple Instagram accounts** - connect as many professional accounts as you like and switch between them in the sidebar; automations, contacts, and analytics are scoped per account.
-- **Analytics** - conversion funnel (trigger → delivered → button tap → follow gained), daily trigger/delivery/contact charts, and per-automation breakdowns, filterable by automation and time range.
-- **Live debug panel** - watch every webhook → match → send step stream in real time while testing.
+- **کامنت ← دایرکت** — ارسال خودکار دایرکت به کامنت‌گذار کلیدواژه (یا هر کامنتی) روی یک پست خاص یا همه‌ی پست‌ها؛ به‌صورت **Private Reply** رسمی متا (سهمیه‌ی جداگانه ۷۵۰ در ساعت، تا ۷ روز بعد از کامنت).
+- **پاسخ خودکار به کلیدواژه‌ی دایرکت** — کسی توی دایرکت `لینک` بفرسته → همان لحظه محتوای اون کلیدواژه رو می‌گیره.
+- **پاسخ استوری** — جواب کلیدواژه‌ای به استوری‌ات → همون جریان، با اتوماسیون جداگانه.
+- **دکمه‌ی لینک لمس‌شدنی** — لینک به‌صورت دکمه‌ی واقعی (button template) ارسال می‌شود؛ اگر متا رد کند، خودکار به لینک متنی برمی‌گردد.
+- **جریان دو مرحله‌ای** — پیام آغازین با دکمه‌ی «لینک رو بفرست»؛ محتوا فقط بعد از لمس دکمه ارسال می‌شود (نرخ تحویل و تعامل خیلی بهتر).
+- **پاسخ عمومی کامنت** — یک سطر تصادفی از لیستت («فرستادم! 🚀») عمومیاً زیر کامنت منتشر می‌شود؛ idempotent و بدون تکرار.
+- **دروازه‌ی الزام فالو** — قبل از تحویل محتوا، وضعیت فالو *واقعاً* از API پروفایل اینستاگرام بررسی می‌شود.
+- **پیام متنی، دکمه لینک و کارت** — کارت با تصویر، زیرعنوان و تا ۳ دکمه.
+- **شخصی‌سازی `{username}`** — خطاب به آیدی کامنت‌گذار.
+- **چند اکانت اینستاگرام** — هر تعداد اکانت حرفه‌ای که بخواهی؛ خودکارسازها، مخاطبان و تحلیل‌ها برای هر اکانت جداگانه‌اند.
+- **تحلیل‌ها** — قیف تبدیل، نمودارهای روزانه، تفکیک به‌ازای هر خودکارساز.
+- **مخاطبان (CRM)** — هر کسی که اتوماسیون را فعال کند با وضعیت فالو ثبت می‌شود؛ صفحه‌بندی + خروجی CSV.
+- **پنل دیباگ زنده** — تماشای زنده‌ی تمام مراحل وبهوک ← تطبیق ← ارسال هنگام تست.
 
-## 🛡️ Built to keep your Instagram account safe
+## 🛡️ ساخته‌شده برای امنیت اکانت اینستاگرامت
 
-This isn't a scraper or a browser bot - it uses the **official Instagram API** end-to-end, and the architecture enforces every platform rule:
+این پروژه نه اسکرپر است نه ربات مرورگر — فقط و فقط از **API رسمی متا** استفاده می‌کند و تمام قواعد پلتفرم را خودکار رعایت می‌کند:
 
-| Rule | How it's enforced |
+| قاعده | نحوه‌ی رعایت |
 |---|---|
-| 200 DMs/hour per account (Meta hard limit) | Atomic Postgres rate limiter capped at **180/hour** (rolling window, 20-DM safety buffer for your manual DMs) |
-| 24-hour messaging window | Checked at webhook receipt **and** again before every send |
-| One DM per person per trigger | `UNIQUE` constraints at the database level - duplicates are physically impossible |
-| No bot-like bursts | Randomized 2-5s delay before every flow, 1-2.5s between consecutive messages; sends are sequential, never parallel |
-| Response bursts | Hard cap of 5 messages per flow (enforced server-side), and every message counts against the hourly window - not just the first |
-| Policy blocks (Meta error 368) | **Circuit breaker**: all sends for the account auto-pause for 24h instead of retrying into a ban |
-| Meta-side rate limit errors (4/17/32/613) | Generous 15-minute backoff, no attempt burned |
-| Webhook authenticity | HMAC-SHA256 signature verified over the raw body before *anything* else runs (accepts the Instagram **or** Facebook app-secret signature - Meta uses either depending on app type) |
-| Token safety | Instagram tokens + your App Secret are AES-256-GCM encrypted at rest; auto-refreshed before their 60-day expiry |
+| سقف ۲۰۰ دایرکت در ساعت | محدودکننده‌ی اتمیک Postgres با سقف محافظ ۱۸۰ در ساعت |
+| پنجره‌ی پیام‌رسانی ۲۴ ساعته | بررسی هنگام دریافت وبهوک + قبل از هر ارسال |
+| یک دایرکت برای هر نفر | constraint های `UNIQUE` در سطح دیتابیس — دوباره‌فرستی غیرممکن است |
+| رفتار غیررباتی | تأخیر تصادفی ۲–۵ ثانیه قبل از هر جریان؛ ارسال‌ها ترتیبی، نه موازی |
+| بلاک سیاستی متا (خطای 368) | قطع‌کننده‌ی اضطراری: توقف ۲۴ ساعته‌ی همه‌ی ارسال‌های اکانت |
+| اصالت وبهوک | تأیید امضای HMAC-SHA256 روی بدنه‌ی خام، قبل از هر پردازشی |
+| امنیت توکن | توکن‌ها و App Secret با AES-256-GCM رمزنگاری می‌شوند؛ تازه‌سازی خودکار قبل از انقضا |
 
-**Build and test with zero waiting:** in Development mode your app already delivers real events for the
-accounts on your app (you + testers you add) - so you can fully build, test and run automations within your
-own circle immediately, no approval needed. When you want the **general public's** comments to trigger your
-automations, submit Meta's free **App Review** once (a short screencast of your working flow - typically
-approved in days). The in-app Setup Wizard walks you through both stages.
+## 🏗️ معماری
 
-## 🏗️ Architecture
-
-One Next.js app. No Redis, no worker servers, no message broker.
+یک اپ Next.js. بدون Redis، بدون سرور ورکر، بدون صف پیام.
 
 ```
-Instagram comment
+کامنت اینستاگرام
       │
       ▼
-Meta webhook ──► /api/webhook ── verify HMAC ── 200 OK to Meta (< 1s)
-                                      │ after() - background of same invocation
+وبهوک متا ──► /api/webhook ── تأیید HMAC ── پاسخ 200 به متا (زیر ۱ ثانیه)
+                                      │ after() - پس‌زمینه‌ی همین اجرا
                                       ▼
-                          match keyword/post ─► job row in Postgres (job_queue)
+                        تطبیق کلیدواژه/پست ──► ردیف job در Postgres
                                       │
                                       ▼
-                    engine claims job (FOR UPDATE SKIP LOCKED)
-                    window check → dedup → rate limit → jitter → send DM
+                    موتور، job را بردار می‌کند (FOR UPDATE SKIP LOCKED)
+                    بررسی پنجره ──► dedup ──► محدودیت نرخ ──► تأخیر انسانی ──► ارسال
                                       │
               ┌───────────────────────┴─────────────────────┐
-   sent instantly (95% case)              rate-limited / transient error
-                                          → rescheduled with run_after
-                                          → drained by pg_cron every minute
+   ارسال فوری (۹۵٪ موارد)              محدودیت نرخ / خطای گذرا
+                                          → زمان‌بندی مجدد
+                                          → تخلیه توسط pg_cron هر دقیقه
 ```
 
-- **Supabase** is the entire backend: Postgres (data + job queue + rate limiter), Auth, Storage (card images), and pg_cron (background ticks).
-- **Deploys identically** to Vercel (zero config) and Cloudflare Workers (via OpenNext).
+- **Supabase** کل بک‌اند است: Postgres (داده + صف کار + محدودکننده‌ی نرخ)، Auth، Storage (تصاویر کارت) و pg_cron.
+- روی **Vercel** (بدون تنظیم) و **Cloudflare Workers** (با OpenNext) یکسان دیپلوی می‌شود.
 
-## 🚀 Quick start
+## 🚀 راه‌اندازی سریع
 
-You need: a free [Supabase](https://supabase.com) account, a free [Vercel](https://vercel.com) or [Cloudflare](https://cloudflare.com) account, and a free [Meta developer](https://developers.facebook.com) account. Full walkthrough: **[docs/SELF_HOSTING.md](docs/SELF_HOSTING.md)**.
+چه چیزهایی لازم داری: یک اکانت رایگان [Supabase](https://supabase.com)، یک اکانت رایگان [Vercel](https://vercel.com) یا [Cloudflare](https://cloudflare.com)، و یک اکانت رایگان [Meta developer](https://developers.facebook.com).
+
+1. **ساپابیس** — پروژه‌ی جدید بساز؛ ۵ فایل `supabase/migrations/` را به‌ترتیب در **SQL Editor** اجرا کن (یا `supabase db push`).
+2. **کاربر ورود** — در Supabase: Authentication → Users → Add user (ثبت‌نام عمومی عمداً خاموش است).
+3. **دیپلوی** — ریپو را در Vercel ایمپورت کن و ۶ متغیر `.env.example` را تنظیم کن.
+4. **ویزارد داخلی** — وارد اپ شو؛ ویزارد راه‌اندازی ۵ مرحله‌ای، مقادیر دقیق وبهوک/ریدایرکت و اسکریپت pg_cron را می‌سازد (~۱۵ دقیقه).
+
+راهنمای گام‌به‌گام کامل: [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) (انگلیسی) · تست انتها‌به‌انتها: [docs/TESTING.md](docs/TESTING.md)
+
+## 🔐 مدل امنیتی
+
+- تنها رازهای محیطی: کلیدهای Supabase، یک کلید رمزنگاری، یک راز کرون.
+- App ID/Secret متا در UI وارد و **AES-256-GCM رمزنگاری‌شده** در دیتابیس خودت ذخیره می‌شوند.
+- توکن‌های اینستاگرام: رمزنگاری‌شده در حالت سکون، فقط هنگام ارسال رمزگشایی، هرگز لاگ نمی‌شوند.
+- وبهوک‌ها: تأیید HMAC (مقایسه‌ی زمان-امن) قبل از هر پردازش.
+- OAuth: محافظت CSRF با state-JWT امضاشده و ۱۰ دقیقه‌ای.
+- هر مسیر API، JWT ساپابیس را احراز هویت می‌کند؛ مالکیت در SQL روی هر کوئری چک می‌شود.
+- Row Level Security روی همه‌ی جدول‌ها؛ جدول‌های موتور فقط با service-role.
+
+## 🧪 توسعه
 
 ```bash
-# 1. Clone + install
-git clone https://github.com/YOUR_USERNAME/open-autodm && cd open-autodm
 npm install
-
-# 2. Create a Supabase project, then apply the schema
-npm i -g supabase
-supabase login
-supabase link --project-ref YOUR_PROJECT_REF
-supabase db push
-
-# 3. Configure env
-cp .env.example .env
-#    → fill in the 6 values (each one is explained in the file)
-
-# 4. Deploy
-npx vercel            # …or: npm run cf:deploy  (Cloudflare)
-
-# 5. Create your login in Supabase (Authentication → Users → Add user),
-#    then open your deployment → sign in → follow the in-app Setup Wizard
+npm run typecheck   # بررسی تایپ‌ها
+npm run test        # تست‌های واحد (vitest)
+npm run dev         # اجرای محلی
+npm run build       # بیلد پروداکشن
 ```
 
-**No register page, on purpose.** Access is invite-only: accounts exist only when the instance
-owner creates them in the Supabase dashboard (and public signups are switched off there too).
-Your instance, your guest list.
+## 📄 مجوز
 
-The **Setup Wizard** inside the app walks you through creating the Meta app, gives you the
-exact webhook URL / verify token / redirect URI to paste into the Meta portal, and generates
-the one SQL snippet that turns on the background engine. ~15 minutes total.
+MIT — استفاده، تغییر، سلف‌هاست برای خودت یا مشتری‌هات، تجاری یا غیرتجاری.
+متن مجوز: [LICENSE](LICENSE)
 
-## 🧪 Testing your instance
+## ⚠️ سلب مسئولیت
 
-See **[docs/TESTING.md](docs/TESTING.md)** for the full end-to-end test script
-(local dev with a Cloudflare/ngrok tunnel, the debug panel event flow you should see,
-and a troubleshooting table for every failure mode we've ever hit).
-
-## 🔐 Security model
-
-- The only secrets in your deployment env: Supabase keys, one encryption key, one cron secret.
-- Meta App ID/Secret are entered in the UI and stored **AES-256-GCM encrypted** in your own DB.
-- Instagram OAuth tokens: encrypted at rest, decrypted only at send time, never logged.
-- Webhooks: HMAC-verified (timing-safe compare) before any processing.
-- OAuth: CSRF-protected with signed, 10-minute state JWTs.
-- Every API route authenticates the Supabase JWT; ownership is checked in SQL on every query.
-- Row Level Security on every table, service-role isolation for engine tables.
-
-## 🤝 Contributing
-
-Feature ideas and pull requests are very welcome - open an issue to discuss bigger changes
-first, then send a PR. **More features are actively being added; watch the repo to keep up.**
-If you build something cool on top of this, share it in an issue so others can find it.
-
-## ☕ Support this project
-
-open-autoDM is free forever and saves you a real monthly subscription. If it saved you money
-or a weekend of building, you can fuel the next feature:
-
-<a href="https://github.com/sponsors/harshithgangone" target="_blank"><img src="https://img.shields.io/badge/❤️_Sponsor-support_the_project-F97316?style=for-the-badge&logo=githubsponsors" alt="Sponsor on GitHub" /></a>
-
-Starring the repo is free and helps just as much. ⭐
-
-## 📄 License
-
-MIT - use it, modify it, self-host it for yourself or your clients, commercially or not.
-See [LICENSE](LICENSE).
-
-## ⚠️ Disclaimer
-
-- This software is provided **"as is", without warranty of any kind** - see the LICENSE. The
-  author is **not liable** for anything that happens through your use of it, including (but not
-  limited to) actions Meta or Instagram takes on your account or app.
-- open-autoDM talks to Instagram exclusively through **Meta's official APIs** using **your own**
-  Meta developer app and credentials. It never scrapes, never automates a browser, and never
-  asks for your Instagram password.
-- Built-in safety rails (conservative rate limits, humanized delays, dedup, circuit breaker)
-  are designed to keep you inside Meta's published policies - but **you** are responsible for
-  how you use automation and for your own compliance with Instagram's Terms of Use and Meta's
-  Platform Policies.
-- This project is not affiliated with, endorsed by, or sponsored by Meta, Instagram, or any
-  automation vendor mentioned for comparison.
+- این نرم‌افزار «همین‌طور که هست» ارائه می‌شود؛ نویسنده‌ی اصلی مسئولیتی در قبال عواقب استفاده ندارد — از جمله اقدامات متا یا اینستاگرام نسبت به اکانت یا اپ تو.
+- open-autoDM فقط از طریق **APIهای رسمی متا** و با **اعتبارنامه‌های خودت** کار می‌کند؛ هرگز اسکرپ نمی‌کند، مرورگر را خودکار نمی‌کند و رمز اینستاگرامت را نمی‌پرسد.
+- ترمزهای ایمنی داخلی (محدودیت‌های محافظه‌کارانه، تأخیرهای انسانی، dedup، قطع‌کننده‌ی اضطراری) برای ماندن در محدوده‌ی سیاست‌های منتشرشده‌ی متا طراحی شده‌اند — اما مسئولیت نحوه‌ی استفاده و پایبندی به شرایط استفاده‌ی اینستاگرام با توست.
+- این پروژه وابسته به، تأییدشده‌ی یا حمایت‌شده‌ی متا و اینستاگرام نیست.
 
 ---
 
 <div align="center">
 
-Built with ❤️ by <a href="https://www.instagram.com/buildwharsha/"><b>@buildwharsha</b></a> - say hi on Instagram
+ساخته‌شده با ❤️ بر پایه‌ی <a href="https://github.com/harshithgangone/open-autodm"><b>open-autodm</b></a>
 
 </div>

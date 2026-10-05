@@ -28,15 +28,5 @@ export const AUTOMATION_TYPES = [
         bg: "from-green-500/20 to-emerald-500/10",
         border: "group-hover:border-green-500/50",
         iconColor: "text-green-500"
-    },
-    {
-        id: "story-mention",
-        name: "منشن استوری",
-        description: "پاداش‌دادن به فالوورهایی که در استوری خودشان تو را منشن می‌کنند.",
-        iconType: "at-sign",
-        available: false,
-        bg: "from-muted/20 to-muted/10",
-        border: "border-border/50",
-        iconColor: "text-muted-foreground"
     }
 ];
