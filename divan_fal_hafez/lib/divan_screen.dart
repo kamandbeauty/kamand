@@ -257,7 +257,7 @@ class _DivanScreenState extends State<DivanScreen> {
           fontWeight: FontWeight.w700,
           fontSize: 13,
         ),
-        label: Text('$label ($count)'),
+        label: Text('$label (${toPersianDigits(count.toString())})'),
       ),
     );
   }

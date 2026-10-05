@@ -111,7 +111,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden) {
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
       _resumeMusicOnForeground = _isPlaying;
       if (_isPlaying) _pauseAudio();
     } else if (state == AppLifecycleState.resumed) {
@@ -175,7 +177,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ? Icons.music_note_outlined
                           : Icons.music_off_outlined,
                     ),
-                    const AppBrand(fontSize: 24, onDark: true),
+                    // روی صفحه‌های باریک/گوشی‌های بزرگ به‌جای سرریز،
+                    // برند کوچک‌نمای متناسب جا می‌شود
+                    const Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: AppBrand(fontSize: 24, onDark: true),
+                      ),
+                    ),
                     GlassCircleButton(
                       onPressed: () => Get.to(const AboutScreen()),
                       icon: CupertinoIcons.person_alt_circle,

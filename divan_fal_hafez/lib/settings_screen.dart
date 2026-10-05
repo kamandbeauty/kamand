@@ -150,6 +150,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ],
                             ),
                           ),
+                          const SizedBox(height: 14),
+
                           // پشتیبان‌گیری و انتقال داده‌ها
                           _sectionCard(
                             title: 'پشتیبان‌گیری و انتقال',

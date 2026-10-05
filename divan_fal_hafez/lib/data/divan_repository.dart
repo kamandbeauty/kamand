@@ -19,9 +19,24 @@ class DivanRepository {
   static final Map<String, Poem> _byId = {};
   static final Random _random = Random();
 
-  static Future<void> _ensureLoaded() async {
-    if (_poems != null) return;
+  /// در پرواز: اگر دو خواسته هم‌زمان بیایند، فایل فقط یک‌بار خوانده و
+  /// تجزیه می‌شود (قبلاً هر دو مسیر موازی پارس می‌کردند)
+  static Future<void>? _loading;
 
+  static Future<void> _ensureLoaded() {
+    if (_poems != null) return Future<void>.value();
+    return _loading ??= _loadOnce();
+  }
+
+  static Future<void> _loadOnce() async {
+    try {
+      await _parse();
+    } finally {
+      _loading = null;
+    }
+  }
+
+  static Future<void> _parse() async {
     final raw = await rootBundle.loadString(_assetPath);
     final list = (jsonDecode(raw) as List<dynamic>)
         .cast<Map<String, dynamic>>()

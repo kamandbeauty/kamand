@@ -4,6 +4,7 @@ import 'package:fale_hafez/data/poem.dart';
 import 'package:fale_hafez/data/settings_service.dart';
 import 'package:fale_hafez/fal_history_screen.dart';
 import 'package:fale_hafez/fonts.dart';
+import 'package:fale_hafez/util/persian_text.dart';
 import 'package:fale_hafez/widgets/app_brand.dart';
 import 'package:fale_hafez/widgets/glass_panel.dart';
 import 'package:fale_hafez/widgets/page_share.dart';
@@ -241,7 +242,7 @@ class _FalScreenState extends State<FalScreen> {
               child: Column(
                 children: [
                   Text(
-                    'شماره صفحه فال شما : ${fal.number}',
+                    'شماره صفحه فال شما : ${toPersianDigits('${fal.number}')}',
                     textAlign: TextAlign.center,
                     locale: const Locale('fa'),
                     textDirection: TextDirection.rtl,

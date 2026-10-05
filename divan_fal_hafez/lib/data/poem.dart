@@ -1,3 +1,5 @@
+import 'package:fale_hafez/util/persian_text.dart';
+
 /// بخش‌های مختلف آثار حافظ در برنامه
 enum PoemCategory {
   ghazal('غزلیات', 'غزل'),
@@ -61,5 +63,6 @@ class Poem {
   String get firstMesra => verses.split('\n').first.trim();
 
   /// عنوان نمایشی - مثل «غزل ۱۲» یا «ساقی‌نامه»
-  String get displayTitle => title ?? '${category.singularTitle} $number';
+  String get displayTitle =>
+      title ?? toPersianDigits('${category.singularTitle} $number');
 }
