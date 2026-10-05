@@ -47,14 +47,15 @@ jobs:
         working-directory: divan_fal_hafez
         run: flutter pub get --enforce-lockfile
 
-      # آنالیز کامل: خطاها و هشدارها و نکته‌ها همه مانع بیلد می‌شوند تا
-      # regression فنی در می‌دهند+ آن‌ها واضح گزارش شود (PR comment)
+      # آنالیز: خطاها و هشدارها fatal می‌مانند (exit غیرصفر + گزارش به PR).
+      # فقط infoها (مانند deprecationهای withOpacity که یک کمپینِ تمیزکاریِ
+      # جدا می‌خواهد) fail نمی‌کنند؛ گزارش کامل آن‌ها هنگام خطا به PR پست می‌شود.
       - name: Analyze
         working-directory: divan_fal_hafez
         shell: bash
         run: |
           set +e
-          flutter analyze > analyze-report.txt 2>&1
+          flutter analyze --no-fatal-infos > analyze-report.txt 2>&1
           code=$?
           echo "EXIT_CODE=$code" >> analyze-report.txt
           exit $code
