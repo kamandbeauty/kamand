@@ -42,7 +42,7 @@ export default function LoginPage() {
     <div className="h-screen w-screen flex flex-col p-4 sm:p-8 md:p-12 font-sans relative overflow-hidden text-foreground bg-background">
 
       {/* Global Theme Toggle */}
-      <div className="absolute top-6 right-6 lg:top-8 lg:right-8 z-50 flex items-center">
+      <div className="absolute top-6 left-6 lg:top-8 lg:left-8 z-50 flex items-center">
         <ThemeToggle />
       </div>
 
@@ -58,7 +58,7 @@ export default function LoginPage() {
       <BackgroundDoodles />
 
       {/* Header Logo Row */}
-      <div className="relative z-10 flex items-center space-x-3 mb-2 mx-auto lg:mx-0 lg:ml-12 w-full max-w-[90rem]">
+      <div className="relative z-10 flex items-center gap-3 mb-2 mx-auto lg:mx-0 w-full max-w-[90rem]">
         <LogoMark className="w-9 h-9 drop-shadow-lg" />
         <LogoWordmark className="text-xl" />
       </div>
@@ -66,27 +66,28 @@ export default function LoginPage() {
       {/* Main Container */}
       <div className="flex flex-col lg:flex-row gap-6 w-full max-w-[90rem] z-10 mx-auto flex-1 min-h-0 items-center justify-between">
 
-        {/* Left Area - headline + interactive nodes */}
-        <div className="hidden lg:flex relative flex-col justify-center items-start flex-1 w-full lg:w-[55%] h-full lg:pl-16 pt-2 lg:pt-8 pointer-events-none">
+        {/* Right Area (RTL) - headline + interactive nodes */}
+        <div className="hidden lg:flex relative flex-col justify-center items-start flex-1 w-full lg:w-[55%] h-full lg:pr-16 pt-2 lg:pt-8 pointer-events-none">
 
-          <div className="relative z-10 flex flex-col w-full max-w-2xl shrink-0 text-left mt-2 lg:mt-4 pointer-events-auto">
+          <div className="relative z-10 flex flex-col w-full max-w-2xl shrink-0 text-right mt-2 lg:mt-4 pointer-events-auto">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-5xl lg:text-[68px] font-heading font-extrabold leading-[1.0] tracking-tighter mb-6 relative"
+              className="text-5xl lg:text-[64px] font-heading font-extrabold leading-[1.15] tracking-tight mb-6 relative"
             >
               <div className="absolute -inset-4 bg-primary/10 blur-[60px] rounded-full z-[-1] hidden lg:block" />
-              Comment-to-DM, <motion.span
+              کامنت به دایرکت،{" "}
+              <motion.span
                 initial={{ rotate: 0 }}
                 animate={{ rotate: -3 }}
                 transition={{ duration: 0.7, delay: 0.8, type: "spring", stiffness: 200, damping: 10 }}
                 className="inline-block relative ml-1 mr-2"
               >
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F97316] to-[#fc9c54] font-serif italic drop-shadow-sm px-1 font-light tracking-normal">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F97316] to-[#fc9c54] font-light tracking-normal" dir="ltr">
                   self-hosted
                 </span>
-                <svg className="absolute -bottom-2 left-0 w-full h-4 text-[#F97316] opacity-90" viewBox="0 0 100 20" preserveAspectRatio="none">
+                <svg className="absolute -bottom-2 right-0 w-full h-4 text-[#F97316] opacity-90" viewBox="0 0 100 20" preserveAspectRatio="none">
                   <motion.path
                     d="M 5 15 Q 50 25 95 10"
                     stroke="currentColor"
@@ -98,18 +99,19 @@ export default function LoginPage() {
                     transition={{ duration: 0.8, delay: 1.2, ease: "easeOut" }}
                   />
                 </svg>
-              </motion.span><br className="hidden sm:block" />
-              <div className="mt-3 lg:mt-5">and 100% yours.</div>
+              </motion.span>
+              <br className="hidden sm:block" />
+              <div className="mt-3 lg:mt-5">و ۱۰۰٪ مال خودت.</div>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-base lg:text-[1.1rem] text-muted-foreground font-medium max-w-screen-sm mb-2 leading-relaxed mx-auto lg:mx-0 opacity-90"
+              className="text-base lg:text-[1.1rem] text-muted-foreground font-medium max-w-screen-sm mb-2 leading-relaxed lg:mx-0 mx-auto opacity-90"
             >
-              Automate Instagram comment replies and DMs through your own Meta app, on your own
-              infrastructure - free, open source, and built to respect every Instagram API rule.
-              Drag the nodes to interact.
+              پاسخ خودکار به کامنت‌ها و دایرکت‌های اینستاگرام، از طریق اپ متای خودت و روی
+              زیرساخت خودت — رایگان، متن‌باز و منطبق با تمام قواعد API اینستاگرام.
+              گره‌ها را بکشید و جابه‌جا کنید.
             </motion.p>
           </div>
 
@@ -124,11 +126,11 @@ export default function LoginPage() {
 
         </div>
 
-        {/* Right Area - auth form */}
-        <div className="flex w-full lg:w-1/2 max-w-[460px] flex-col justify-center items-center lg:items-end relative h-full shrink-0 lg:pr-12 pointer-events-none">
+        {/* Left Area (RTL) - auth form */}
+        <div className="flex w-full lg:w-1/2 max-w-[460px] flex-col justify-center items-center lg:items-end relative h-full shrink-0 lg:pl-12 pointer-events-none">
 
           <div className="absolute inset-0 pointer-events-none items-center justify-center lg:justify-end opacity-80 mix-blend-multiply dark:mix-blend-screen z-20 hidden lg:flex">
-            <svg width="650" height="650" viewBox="0 0 650 650" className="absolute -right-8 pointer-events-none">
+            <svg width="650" height="650" viewBox="0 0 650 650" className="absolute -left-8 pointer-events-none">
               <motion.path
                 d="M 325,40 C 550,20 650,250 550,480 C 450,710 150,650 50,450 C -50,250 100,60 325,40"
                 fill="none"
@@ -143,15 +145,10 @@ export default function LoginPage() {
                     "M 325,40 C 550,20 650,250 550,480 C 450,710 150,650 50,450 C -50,250 100,60 325,40",
                     "M 315,35 C 560,25 640,240 560,490 C 460,700 140,660 60,440 C -40,260 110,65 315,35",
                     "M 335,45 C 540,15 660,260 540,470 C 440,720 160,640 40,460 C -60,240 90,55 335,45",
-                    "M 325,40 C 550,20 650,250 550,480 C 450,710 150,650 50,450 C -50,250 100,60 325,40"
-                  ]
+                    "M 325,40 C 550,20 650,250 550,480 C 450,710 150,650 50,450 C -50,250 100,60 325,40",
+                  ],
                 }}
-                transition={{
-                  pathLength: { duration: 2, ease: "easeOut" },
-                  opacity: { duration: 1 },
-                  d: { duration: 15, repeat: Infinity, ease: "easeInOut" }
-                }}
-                style={{ filter: "drop-shadow(0px 0px 8px rgba(249,115,22,0.4))" }}
+                transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
               />
             </svg>
           </div>
@@ -160,10 +157,9 @@ export default function LoginPage() {
             <LoginForm />
           </div>
         </div>
-
       </div>
 
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 text-[9px] text-muted-foreground uppercase tracking-widest font-mono">
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 text-[9px] text-muted-foreground font-mono" dir="ltr">
         open-autoDM · MIT Licensed · Self-Hosted &amp; Free Forever
       </div>
     </div>

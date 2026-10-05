@@ -12,7 +12,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { apiClient } from "@/lib/api/client";
 import { ChevronDown, ChevronUp, Trash2, RefreshCw, Circle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, faNum, faTime } from "@/lib/utils";
 
 interface DebugEvent {
   id: string;
@@ -45,8 +45,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  return faTime(iso);
 }
 
 function MetadataBlock({ metadata }: { metadata: Record<string, unknown> }) {
@@ -61,7 +60,7 @@ function MetadataBlock({ metadata }: { metadata: Record<string, unknown> }) {
         className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-0.5"
       >
         {open ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
-        {open ? "hide" : `${keys.length} field${keys.length !== 1 ? "s" : ""}`}
+        {open ? "بستن" : `${faNum(keys.length)} فیلد`}
       </button>
       {open && (
         <pre className="mt-1 text-[10px] text-zinc-400 bg-zinc-900/60 rounded-md px-2 py-1.5 overflow-x-auto max-w-full whitespace-pre-wrap break-all">
@@ -98,7 +97,7 @@ function DebugPanelInner(): React.ReactElement {
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load debug events");
+      setError(err instanceof Error ? err.message : "بارگذاری رویدادهای دیباگ ممکن نشد");
     }
   }, []);
 
@@ -154,8 +153,8 @@ function DebugPanelInner(): React.ReactElement {
               ? <ChevronDown className="w-3.5 h-3.5" />
               : <ChevronUp   className="w-3.5 h-3.5" />
             }
-            <span className="text-xs font-bold tracking-widest uppercase text-zinc-400">
-              Automation Debug Log
+            <span className="text-xs font-bold text-zinc-400">
+              لاگ دیباگ خودکارساز
             </span>
           </button>
 
@@ -172,12 +171,12 @@ function DebugPanelInner(): React.ReactElement {
             <Circle
               className={cn("w-2 h-2 fill-current", isLive && "animate-pulse")}
             />
-            {isLive ? "LIVE" : "PAUSED"}
+            {isLive ? "زنده" : "متوقف"}
           </button>
 
           {!isCollapsed && (
             <span className="text-[10px] text-zinc-600">
-              {events.length} event{events.length !== 1 ? "s" : ""}
+              {faNum(events.length)} رویداد
               {lastUpdated && ` · ${formatTime(lastUpdated.toISOString())}`}
             </span>
           )}
@@ -188,7 +187,7 @@ function DebugPanelInner(): React.ReactElement {
             <button
               onClick={() => { void fetchEvents(); }}
               className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/40 rounded-lg transition-colors"
-              title="Refresh now"
+              title="تازه‌سازی"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
@@ -196,7 +195,7 @@ function DebugPanelInner(): React.ReactElement {
               onClick={() => { void handleClear(); }}
               disabled={isClearing || events.length === 0}
               className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-30"
-              title="Clear all events"
+              title="پاک‌کردن همه رویدادها"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -214,15 +213,15 @@ function DebugPanelInner(): React.ReactElement {
         >
           {error && (
             <div className="text-red-400 text-xs py-2 px-2">
-              Error: {error}
+              خطا: {error}
             </div>
           )}
 
           {events.length === 0 && !error && (
             <div className="flex flex-col items-center justify-center h-full text-zinc-600 text-xs py-8 text-center">
-              <p>No events yet.</p>
+              <p>هنوز رویدادی نیست.</p>
               <p className="mt-1 text-zinc-700">
-                Comment on a post connected to an active automation to see events flow here.
+                زیر پستی که به یک خودکارساز فعال وصل است کامنت بگذار تا رویدادها را اینجا جاری ببینی.
               </p>
             </div>
           )}
@@ -274,7 +273,7 @@ function DebugPanelInner(): React.ReactElement {
               </div>
 
               {/* Metadata expandable */}
-              <div className="pl-[84px]">
+              <div className="ps-[84px]">
                 <MetadataBlock metadata={event.metadata} />
               </div>
             </div>

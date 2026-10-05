@@ -21,17 +21,17 @@ import { AccountSwitcher } from "@/components/dashboard/AccountSwitcher";
 import { useUiStore } from "@/lib/store";
 
 const NAV = {
-    Workspace: [
-        { name: "Dashboard", href: "/dashboard", icon: Home, external: false },
-        { name: "Automations", href: "/automations", icon: Bot, external: false },
-        { name: "Analytics", href: "/analytics", icon: ChartNoAxesColumn, external: false },
+    "فضای کار": [
+        { name: "داشبورد", href: "/dashboard", icon: Home, external: false },
+        { name: "خودکارسازها", href: "/automations", icon: Bot, external: false },
+        { name: "تحلیل‌ها", href: "/analytics", icon: ChartNoAxesColumn, external: false },
     ],
-    System: [
-        { name: "Setup Wizard", href: "/setup", icon: Wrench, external: false },
-        { name: "Settings", href: "/settings", icon: Settings, external: false },
-        { name: "GitHub", href: "https://github.com", icon: Github, external: true },
+    "سیستم": [
+        { name: "ویزارد راه‌اندازی", href: "/setup", icon: Wrench, external: false },
+        { name: "تنظیمات", href: "/settings", icon: Settings, external: false },
+        { name: "گیت‌هاب", href: "https://github.com", icon: Github, external: true },
     ],
-};
+} as const;
 
 /**
  * Shared nav groups. `threadId` must be unique per rendered instance -
@@ -51,7 +51,7 @@ function NavGroups({
 
     return (
         <>
-            {Object.entries(NAV).map(([group, items]) => (
+            {(Object.entries(NAV) as [string, typeof NAV["فضای کار"]][]).map(([group, items]) => (
                 <div key={group} className="mb-5">
                     {!collapsed && (
                         <div className="micro-label px-4 mb-1.5 opacity-70">{group}</div>
@@ -79,7 +79,7 @@ function NavGroups({
                                     {isActive && (
                                         <motion.span
                                             layoutId={threadId}
-                                            className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full ig-thread"
+                                            className="absolute start-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full ig-thread"
                                         />
                                     )}
                                     <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-foreground" : "")} />
@@ -102,15 +102,15 @@ export function Sidebar() {
             initial={false}
             animate={{ width: isCollapsed ? 64 : 232 }}
             transition={{ duration: 0.22, ease: "easeInOut" }}
-            className="flex-shrink-0 h-screen sticky top-0 left-0 hidden lg:flex flex-col bg-background border-r border-border overflow-visible z-50"
+            className="flex-shrink-0 h-screen sticky top-0 start-0 hidden lg:flex flex-col bg-background border-e border-border overflow-visible z-50"
         >
-            {/* Collapse toggle */}
+            {/* Collapse toggle - sits on the boundary edge (inline-end in RTL) */}
             <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute -right-2.5 top-7 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors z-50"
-                aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="absolute -end-2.5 top-7 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors z-50"
+                aria-label={isCollapsed ? "باز کردن سایدبار" : "جمع کردن سایدبار"}
             >
-                {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+                {isCollapsed ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
 
             {/* Brand */}
@@ -122,9 +122,9 @@ export function Sidebar() {
                 <AnimatePresence mode="popLayout">
                     {!isCollapsed && (
                         <motion.span
-                            initial={{ opacity: 0, x: -6 }}
+                            initial={{ opacity: 0, x: 6 }}
                             animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -6 }}
+                            exit={{ opacity: 0, x: 6 }}
                             className="truncate"
                         >
                             <LogoWordmark className="text-[13px] tracking-[0.14em]" />
@@ -149,6 +149,7 @@ export function Sidebar() {
 /**
  * Mobile navigation drawer (< lg). Opened by the Topbar hamburger via
  * useUiStore; closes on backdrop tap, the X button, Escape, or navigation.
+ * In RTL the drawer slides in from the right edge.
  */
 export function MobileSidebar() {
     const isOpen = useUiStore((s) => s.mobileSidebarOpen);
@@ -183,16 +184,16 @@ export function MobileSidebar() {
                         className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
                     />
 
-                    {/* Panel */}
+                    {/* Panel - anchored to the start edge (right in RTL) */}
                     <motion.aside
-                        initial={{ x: -280 }}
+                        initial={{ x: 280 }}
                         animate={{ x: 0 }}
-                        exit={{ x: -280 }}
+                        exit={{ x: 280 }}
                         transition={{ duration: 0.22, ease: "easeInOut" }}
-                        className="absolute inset-y-0 left-0 w-[260px] flex flex-col bg-background border-r border-border shadow-2xl"
+                        className="absolute inset-y-0 start-0 w-[260px] flex flex-col bg-background border-e border-border shadow-2xl"
                     >
                         {/* Brand */}
-                        <div className="h-14 flex items-center justify-between border-b border-border pl-4 pr-2">
+                        <div className="h-14 flex items-center justify-between border-b border-border pe-2 ps-4">
                             <div className="flex items-center gap-2.5 min-w-0">
                                 <LogoMark className="w-6 h-6 shrink-0" />
                                 <LogoWordmark className="text-[13px] tracking-[0.14em]" />
@@ -200,7 +201,7 @@ export function MobileSidebar() {
                             <button
                                 onClick={close}
                                 className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                                aria-label="Close menu"
+                                aria-label="بستن منو"
                             >
                                 <X className="w-4 h-4" />
                             </button>

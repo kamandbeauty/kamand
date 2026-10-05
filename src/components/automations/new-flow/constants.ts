@@ -1,8 +1,8 @@
 export const AUTOMATION_TYPES = [
     {
         id: "comment-dm",
-        name: "Comment to DM",
-        description: "Auto-DM people who comment on your posts or reels.",
+        name: "کامنت به دایرکت",
+        description: "ارسال خودکار دایرکت به کسانی که زیر پست‌ها یا ریلزهایت کامنت می‌گذارند.",
         iconType: "message",
         available: true,
         bg: "from-[#F97316]/20 to-[#fc9c54]/10",
@@ -11,8 +11,8 @@ export const AUTOMATION_TYPES = [
     },
     {
         id: "dm-reply",
-        name: "DM Auto Reply",
-        description: "Instantly reply to specific keywords in your DMs.",
+        name: "پاسخ خودکار دایرکت",
+        description: "پاسخ آنی به کلیدواژه‌های خاص در دایرکت‌هایت.",
         iconType: "send",
         available: true,
         bg: "from-blue-500/20 to-indigo-500/10",
@@ -21,8 +21,8 @@ export const AUTOMATION_TYPES = [
     },
     {
         id: "story-reply",
-        name: "Story Reply",
-        description: "Send an automated response when someone replies to your story.",
+        name: "پاسخ استوری",
+        description: "ارسال پاسخ خودکار وقتی کسی به استوری‌ات جواب می‌دهد.",
         iconType: "image",
         available: true,
         bg: "from-green-500/20 to-emerald-500/10",
@@ -31,8 +31,8 @@ export const AUTOMATION_TYPES = [
     },
     {
         id: "story-mention",
-        name: "Story Mention",
-        description: "Reward followers who mention you in their own stories.",
+        name: "منشن استوری",
+        description: "پاداش‌دادن به فالوورهایی که در استوری خودشان تو را منشن می‌کنند.",
         iconType: "at-sign",
         available: false,
         bg: "from-muted/20 to-muted/10",

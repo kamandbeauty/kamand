@@ -16,7 +16,7 @@ import {
     Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Loader2, MessageCircle, Send, Image as ImageIcon, Users, UserCheck, AlertTriangle, ChartNoAxesColumn } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, faNum, faDate } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useActiveAccount } from "@/hooks/useActiveAccount";
 
@@ -27,14 +27,14 @@ const PALETTE = {
 };
 
 const RANGES = [
-    { label: "7d", days: 7 },
-    { label: "30d", days: 30 },
-    { label: "90d", days: 90 },
+    { label: "۷ روز", days: 7 },
+    { label: "۳۰ روز", days: 30 },
+    { label: "۹۰ روز", days: 90 },
 ] as const;
 
 function fmtDay(iso: string): string {
     const d = new Date(iso + "T00:00:00Z");
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+    return faDate(d, { month: "long", day: "numeric", timeZone: "UTC" });
 }
 
 function LegendRow({ items }: { items: { label: string; color: string }[] }) {
@@ -59,7 +59,7 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
             {payload.map((p, i) => (
                 <p key={i} className="text-[11.5px] text-muted-foreground flex items-center gap-1.5 tabular-nums">
                     <span className="w-2 h-2 rounded-[2px]" style={{ backgroundColor: p.color }} />
-                    {p.name}: <span className="text-foreground font-medium">{p.value}</span>
+                    {p.name}: <span className="text-foreground font-medium">{faNum(Number(p.value ?? 0))}</span>
                 </p>
             ))}
         </div>
@@ -91,20 +91,20 @@ export default function AnalyticsPage() {
     const totals = data?.totals;
     const funnel = totals
         ? [
-              { label: "Triggered", value: totals.triggers },
-              { label: "DMs delivered", value: totals.delivered },
-              { label: "Button flows completed", value: totals.flowsCompleted },
-              { label: "Follows gained", value: totals.followsGained },
+              { label: "تریگر شده", value: totals.triggers },
+              { label: "دایرکت ارسال‌شده", value: totals.delivered },
+              { label: "جریان‌های تکمیل‌شده", value: totals.flowsCompleted },
+              { label: "فالو کسب‌شده", value: totals.followsGained },
           ]
         : [];
     const funnelMax = Math.max(1, ...funnel.map((f) => f.value));
 
     const tiles = totals
         ? [
-              { label: "Triggers", value: totals.triggers, sub: `${totals.comments} comments · ${totals.dmKeywords} DMs · ${totals.storyReplies} stories`, icon: MessageCircle },
-              { label: "DMs delivered", value: totals.delivered, sub: totals.failed > 0 ? `${totals.failed} failed` : "no failures", icon: Send },
-              { label: "Follows gained", value: totals.followsGained, sub: `${totals.askToFollowShown} asked to follow`, icon: UserCheck },
-              { label: "New contacts", value: totals.newContacts, sub: `${totals.newContactFollowers} already follow you`, icon: Users },
+              { label: "تریگرها", value: faNum(totals.triggers), sub: `${faNum(totals.comments)} کامنت · ${faNum(totals.dmKeywords)} دایرکت · ${faNum(totals.storyReplies)} استوری`, icon: MessageCircle },
+              { label: "دایرکت ارسال‌شده", value: faNum(totals.delivered), sub: totals.failed > 0 ? `${faNum(totals.failed)} خطا` : "بدون خطا", icon: Send },
+              { label: "فالو کسب‌شده", value: faNum(totals.followsGained), sub: `${faNum(totals.askToFollowShown)} درخواست فالو`, icon: UserCheck },
+              { label: "مخاطبان جدید", value: faNum(totals.newContacts), sub: `${faNum(totals.newContactFollowers)} نفر از قبل فالو کرده بودند`, icon: Users },
           ]
         : [];
 
@@ -114,18 +114,18 @@ export default function AnalyticsPage() {
             {/* Filter row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-heading font-semibold tracking-tight text-foreground">Analytics</h1>
+                    <h1 className="text-xl font-heading font-semibold tracking-tight text-foreground">تحلیل‌ها</h1>
                     <p className="text-[13px] text-muted-foreground mt-0.5">
-                        {account ? <>What <span className="font-medium text-foreground">@{account.username}</span>&apos;s automations actually did.</> : "What your automations actually did."}
+                        {account ? <>کاری که خودکارسازهای <span className="font-medium text-foreground" dir="ltr">@{account.username}</span> واقعاً انجام دادند.</> : "کاری که خودکارسازهایت واقعاً انجام دادند."}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <select
                         value={automationId}
                         onChange={(e) => setAutomationId(e.target.value)}
-                        className="h-8 px-2.5 pr-7 text-[12.5px] font-medium bg-card border border-border rounded-lg outline-none focus:border-foreground/30 max-w-[220px] truncate"
+                        className="h-8 px-2.5 pe-7 text-[12.5px] font-medium bg-card border border-border rounded-lg outline-none focus:border-foreground/30 max-w-[220px] truncate"
                     >
-                        <option value="all">All automations</option>
+                        <option value="all">همه خودکارسازها</option>
                         {(data?.automations ?? []).map((a) => (
                             <option key={a.id} value={a.id}>{a.name}</option>
                         ))}
@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
                     {data.truncated && (
                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 text-[12px] font-medium text-amber-600 dark:text-amber-400">
                             <AlertTriangle className="w-3.5 h-3.5" />
-                            Very large range - numbers are computed from the first 20,000 events.
+                            بازه بسیار بزرگ — اعداد از ۲۰٬۰۰۰ رویداد اول محاسبه شده‌اند.
                         </div>
                     )}
 
@@ -171,7 +171,7 @@ export default function AnalyticsPage() {
                                     <t.icon className="w-3.5 h-3.5 text-muted-foreground/60" />
                                 </div>
                                 <p className="text-2xl font-heading font-semibold tracking-tight text-foreground mt-2 tabular-nums">
-                                    {t.value.toLocaleString()}
+                                    {t.value}
                                 </p>
                                 <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{t.sub}</p>
                             </div>
@@ -180,8 +180,8 @@ export default function AnalyticsPage() {
 
                     {/* Funnel */}
                     <div className="bg-card border border-border rounded-xl p-5">
-                        <h2 className="text-[13.5px] font-heading font-semibold text-foreground mb-1">Conversion funnel</h2>
-                        <p className="text-[11.5px] text-muted-foreground mb-4">From trigger to gained follower, in this range.</p>
+                        <h2 className="text-[13.5px] font-heading font-semibold text-foreground mb-1">قیف تبدیل</h2>
+                        <p className="text-[11.5px] text-muted-foreground mb-4">از تریگر تا فالوور جدید، در این بازه.</p>
                         <div className="space-y-2">
                             {funnel.map((f, i) => {
                                 const pct = (f.value / funnelMax) * 100;
@@ -196,9 +196,9 @@ export default function AnalyticsPage() {
                                                 style={{ width: `${Math.max(pct, f.value > 0 ? 2 : 0)}%`, backgroundColor: colors.comments }}
                                             />
                                         </div>
-                                        <span className="w-20 shrink-0 text-right text-[12.5px] font-semibold text-foreground tabular-nums">
-                                            {f.value.toLocaleString()}
-                                            {conv !== null && <span className="text-[10px] text-muted-foreground font-normal ml-1">{conv}%</span>}
+                                        <span className="w-20 shrink-0 text-end text-[12.5px] font-semibold text-foreground tabular-nums">
+                                            {faNum(f.value)}
+                                            {conv !== null && <span className="text-[10px] text-muted-foreground font-normal ms-1" dir="ltr">٪{faNum(conv)}</span>}
                                         </span>
                                     </div>
                                 );
@@ -206,29 +206,29 @@ export default function AnalyticsPage() {
                         </div>
                     </div>
 
-                    {/* Daily triggers - stacked bars */}
+                    {/* Daily triggers - stacked bars (charts render LTR inside an RTL page) */}
                     <div className="bg-card border border-border rounded-xl p-5">
                         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                             <div>
-                                <h2 className="text-[13.5px] font-heading font-semibold text-foreground">Triggers per day</h2>
-                                <p className="text-[11.5px] text-muted-foreground mt-0.5">Comments, DM keywords, and story replies that matched an automation.</p>
+                                <h2 className="text-[13.5px] font-heading font-semibold text-foreground">تریگرهای روزانه</h2>
+                                <p className="text-[11.5px] text-muted-foreground mt-0.5">کامنت‌ها، کلیدواژه‌های دایرکت و پاسخ استوری‌هایی که با یک خودکارساز تطبیق داده شدند.</p>
                             </div>
                             <LegendRow items={[
-                                { label: "Comments", color: colors.comments },
-                                { label: "DM keywords", color: colors.dms },
-                                { label: "Story replies", color: colors.stories },
+                                { label: "کامنت‌ها", color: colors.comments },
+                                { label: "کلیدواژه دایرکت", color: colors.dms },
+                                { label: "پاسخ استوری", color: colors.stories },
                             ]} />
                         </div>
-                        <div className="h-56">
+                        <div className="h-56" dir="ltr">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={data.daily} margin={{ top: 4, right: 4, bottom: 0, left: -18 }} barCategoryGap="25%">
                                     <CartesianGrid stroke={gridStroke} vertical={false} />
                                     <XAxis dataKey="date" tickFormatter={fmtDay} tick={axisTick} axisLine={false} tickLine={false} minTickGap={28} />
                                     <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false} />
                                     <Tooltip content={<ChartTooltip />} cursor={{ fill: gridStroke, opacity: 0.35 }} />
-                                    <Bar dataKey="comments" name="Comments" stackId="t" fill={colors.comments} stroke={surface} strokeWidth={1} />
-                                    <Bar dataKey="dms" name="DM keywords" stackId="t" fill={colors.dms} stroke={surface} strokeWidth={1} />
-                                    <Bar dataKey="stories" name="Story replies" stackId="t" fill={colors.stories} stroke={surface} strokeWidth={1} radius={[3, 3, 0, 0]} />
+                                    <Bar dataKey="comments" name="کامنت‌ها" stackId="t" fill={colors.comments} stroke={surface} strokeWidth={1} />
+                                    <Bar dataKey="dms" name="کلیدواژه دایرکت" stackId="t" fill={colors.dms} stroke={surface} strokeWidth={1} />
+                                    <Bar dataKey="stories" name="پاسخ استوری" stackId="t" fill={colors.stories} stroke={surface} strokeWidth={1} radius={[3, 3, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -238,23 +238,23 @@ export default function AnalyticsPage() {
                     <div className="bg-card border border-border rounded-xl p-5">
                         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                             <div>
-                                <h2 className="text-[13.5px] font-heading font-semibold text-foreground">Deliveries &amp; new contacts per day</h2>
-                                <p className="text-[11.5px] text-muted-foreground mt-0.5">DMs that reached inboxes, and audience members captured for the first time.</p>
+                                <h2 className="text-[13.5px] font-heading font-semibold text-foreground">تحویل‌ها و مخاطبان جدید روزانه</h2>
+                                <p className="text-[11.5px] text-muted-foreground mt-0.5">دایرکت‌هایی که به اینباکس رسیدند و مخاطبانی که برای اولین بار ثبت شدند.</p>
                             </div>
                             <LegendRow items={[
-                                { label: "DMs delivered", color: colors.delivered },
-                                { label: "New contacts", color: colors.contacts },
+                                { label: "دایرکت ارسال‌شده", color: colors.delivered },
+                                { label: "مخاطبان جدید", color: colors.contacts },
                             ]} />
                         </div>
-                        <div className="h-56">
+                        <div className="h-56" dir="ltr">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={data.daily} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
                                     <CartesianGrid stroke={gridStroke} vertical={false} />
                                     <XAxis dataKey="date" tickFormatter={fmtDay} tick={axisTick} axisLine={false} tickLine={false} minTickGap={28} />
                                     <YAxis tick={axisTick} axisLine={false} tickLine={false} allowDecimals={false} />
                                     <Tooltip content={<ChartTooltip />} cursor={{ stroke: gridStroke }} />
-                                    <Line type="monotone" dataKey="delivered" name="DMs delivered" stroke={colors.delivered} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                                    <Line type="monotone" dataKey="contacts" name="New contacts" stroke={colors.contacts} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                                    <Line type="monotone" dataKey="delivered" name="دایرکت ارسال‌شده" stroke={colors.delivered} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                                    <Line type="monotone" dataKey="contacts" name="مخاطبان جدید" stroke={colors.contacts} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -263,25 +263,25 @@ export default function AnalyticsPage() {
                     {/* Per-automation table */}
                     <div className="bg-card border border-border rounded-xl overflow-hidden">
                         <div className="px-5 py-3.5 border-b border-border">
-                            <h2 className="text-[13.5px] font-heading font-semibold text-foreground">By automation</h2>
+                            <h2 className="text-[13.5px] font-heading font-semibold text-foreground">به تفکیک خودکارساز</h2>
                         </div>
                         {data.perAutomation.length === 0 ? (
                             <div className="p-10 text-center">
                                 <ChartNoAxesColumn className="w-6 h-6 mx-auto mb-2 text-muted-foreground/30" />
-                                <p className="text-[13px] text-muted-foreground">No automations yet - create one and the numbers start here.</p>
+                                <p className="text-[13px] text-muted-foreground">هنوز خودکارسازی نیست — یکی بساز تا اعداد از همین‌جا شروع شوند.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left whitespace-nowrap">
-                                    <thead className="text-muted-foreground uppercase tracking-widest text-[10px] font-bold border-b border-border">
+                                <table className="w-full text-start whitespace-nowrap">
+                                    <thead className="text-muted-foreground text-[10px] font-bold border-b border-border">
                                         <tr>
-                                            <th className="px-5 py-2.5">Automation</th>
-                                            <th className="px-5 py-2.5">Type</th>
-                                            <th className="px-5 py-2.5 text-right">Triggers</th>
-                                            <th className="px-5 py-2.5 text-right">Delivered</th>
-                                            <th className="px-5 py-2.5 text-right">Flows completed</th>
-                                            <th className="px-5 py-2.5 text-right">Follows</th>
-                                            <th className="px-5 py-2.5 text-right">Failed</th>
+                                            <th className="px-5 py-2.5">خودکارساز</th>
+                                            <th className="px-5 py-2.5">نوع</th>
+                                            <th className="px-5 py-2.5 text-end">تریگر</th>
+                                            <th className="px-5 py-2.5 text-end">ارسال‌شده</th>
+                                            <th className="px-5 py-2.5 text-end">جریان کامل</th>
+                                            <th className="px-5 py-2.5 text-end">فالو</th>
+                                            <th className="px-5 py-2.5 text-end">خطا</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border/60">
@@ -298,14 +298,14 @@ export default function AnalyticsPage() {
                                                     <td className="px-5 py-3">
                                                         <span className="inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
                                                             <TypeIcon className="w-3 h-3" />
-                                                            {a.type === "comment_dm" ? "Comment" : a.type === "dm_reply" ? "DM" : "Story"}
+                                                            {a.type === "comment_dm" ? "کامنت" : a.type === "dm_reply" ? "دایرکت" : "استوری"}
                                                         </span>
                                                     </td>
-                                                    <td className="px-5 py-3 text-right text-[13px] font-medium tabular-nums">{a.triggers.toLocaleString()}</td>
-                                                    <td className="px-5 py-3 text-right text-[13px] tabular-nums">{a.delivered.toLocaleString()}</td>
-                                                    <td className="px-5 py-3 text-right text-[13px] tabular-nums">{a.flowsCompleted.toLocaleString()}</td>
-                                                    <td className="px-5 py-3 text-right text-[13px] tabular-nums">{a.follows.toLocaleString()}</td>
-                                                    <td className={cn("px-5 py-3 text-right text-[13px] tabular-nums", a.failed > 0 ? "text-destructive font-medium" : "text-muted-foreground")}>{a.failed.toLocaleString()}</td>
+                                                    <td className="px-5 py-3 text-end text-[13px] font-medium tabular-nums">{faNum(a.triggers)}</td>
+                                                    <td className="px-5 py-3 text-end text-[13px] tabular-nums">{faNum(a.delivered)}</td>
+                                                    <td className="px-5 py-3 text-end text-[13px] tabular-nums">{faNum(a.flowsCompleted)}</td>
+                                                    <td className="px-5 py-3 text-end text-[13px] tabular-nums">{faNum(a.follows)}</td>
+                                                    <td className={cn("px-5 py-3 text-end text-[13px] tabular-nums", a.failed > 0 ? "text-destructive font-medium" : "text-muted-foreground")}>{faNum(a.failed)}</td>
                                                 </tr>
                                             );
                                         })}
@@ -316,8 +316,8 @@ export default function AnalyticsPage() {
                     </div>
 
                     <p className="text-[11px] text-muted-foreground px-1">
-                        &ldquo;Follows gained&rdquo; counts button flows where the ask-to-follow card was shown and the person
-                        then passed the follow re-check. Contact follow status reflects the last check, not history.
+                        «فالو کسب‌شده» یعنی جریان‌های دکمه‌ای که کارت درخواست فالو برایشان نمایش داده شد و شخص
+                        سپس در بررسی مجدد، فالو بودنش تأیید شد. وضعیت فالوی مخاطبان مربوط به آخرین بررسی است، نه کل تاریخچه.
                     </p>
                 </>
             )}

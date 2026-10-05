@@ -1,22 +1,29 @@
 import type { Metadata } from "next";
-import { Inter, Bricolage_Grotesque } from "next/font/google";
+import localFont from "next/font/local";
 import { AppProviders } from "@/components/providers/Providers";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
-  subsets: ["latin"],
+/**
+ * Vazirmatn (SIL OFL 1.1) - bundled locally so the app never depends on
+ * Google Fonts at build time, on Vercel, or on Cloudflare Workers.
+ * Source: https://github.com/rastikerdar/vazirmatn (v33.0.3)
+ */
+const vazirmatn = localFont({
+  src: [
+    { path: "./fonts/Vazirmatn-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Vazirmatn-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Vazirmatn-SemiBold.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/Vazirmatn-Bold.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/Vazirmatn-ExtraBold.woff2", weight: "800", style: "normal" },
+  ],
+  variable: "--font-vazirmatn",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "open-autoDM",
   description:
-    "Open-source, self-hosted Instagram comment-to-DM automation. Your own Meta app, your own Supabase, your own deployment.",
+    "اتوماسیون متن‌باز کامنت‌به‌دایرکت اینستاگرام — با اپ متای خودت، ساپابیس خودت و دیپلوی خودت.",
 };
 
 export default function RootLayout({
@@ -25,9 +32,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="fa" dir="rtl" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${bricolage.variable} font-sans antialiased bg-background text-foreground transition-colors duration-300`}
+        className={`${vazirmatn.variable} font-sans antialiased bg-background text-foreground transition-colors duration-300`}
       >
         <AppProviders>
           {children}

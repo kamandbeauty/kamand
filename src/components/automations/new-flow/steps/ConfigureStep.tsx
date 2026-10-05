@@ -6,7 +6,7 @@ import {
     Image as ImageIcon, ChevronDown, MessageSquare, LayoutGrid,
     Zap, AlertTriangle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, faNum } from "@/lib/utils";
 import { AutomationFlowData, DMResponse, CardButton } from "../NewAutomationModal";
 import { CommentsPhone, DMConversationPhone, StoryPhone } from "./PhoneComponents";
 import { MAX_DM_RESPONSES } from "@/lib/api/schemas";
@@ -33,24 +33,24 @@ const TYPE_COPY: Record<string, {
     anyModeHint: string | null;
 }> = {
     "comment-dm": {
-        triggerTitle: "When someone comments",
-        keywordModeSpecific: "Specific keywords",
-        keywordModeAny: "Any comment",
-        keywordPlaceholder: "Type a keyword and press Enter…",
+        triggerTitle: "وقتی کسی کامنت می‌گذارد",
+        keywordModeSpecific: "کلیدواژه‌های مشخص",
+        keywordModeAny: "هر کامنتی",
+        keywordPlaceholder: "یک کلیدواژه بنویس و Enter بزن…",
         anyModeHint: null,
     },
     "dm-reply": {
-        triggerTitle: "When someone DMs you",
-        keywordModeSpecific: "Specific keywords",
-        keywordModeAny: "Any message",
-        keywordPlaceholder: "e.g. DIET, GUIDE, LINK…",
-        anyModeHint: "Any message replies to EVERY DM you receive - including real conversations. Use specific keywords unless you're sure.",
+        triggerTitle: "وقتی کسی بهت دایرکت می‌دهد",
+        keywordModeSpecific: "کلیدواژه‌های مشخص",
+        keywordModeAny: "هر پیامی",
+        keywordPlaceholder: "مثلاً DIET ،GUIDE ،LINK…",
+        anyModeHint: "حالت «هر پیامی» به تک‌تک دایرکت‌هایی که می‌گیری جواب می‌دهد — شامل گفتگوهای واقعی. مگر اینکه مطمئن باشی، از کلیدواژه‌های مشخص استفاده کن.",
     },
     "story-reply": {
-        triggerTitle: "When someone replies to your story",
-        keywordModeSpecific: "Specific keywords",
-        keywordModeAny: "Any reply",
-        keywordPlaceholder: "e.g. DIET, GUIDE, LINK…",
+        triggerTitle: "وقتی کسی به استوری‌ات جواب می‌دهد",
+        keywordModeSpecific: "کلیدواژه‌های مشخص",
+        keywordModeAny: "هر پاسخی",
+        keywordPlaceholder: "مثلاً DIET ،GUIDE ،LINK…",
         anyModeHint: null,
     },
 };
@@ -148,7 +148,7 @@ function KeywordInput({ keywords, onChange, anyMode, onAnyModeChange, copy }: {
                 <div>
                     <div className="flex flex-wrap gap-1.5 p-1.5 bg-background border border-border rounded-lg min-h-[40px] focus-within:border-foreground/30 transition-colors">
                         {keywords.map(kw => (
-                            <span key={kw} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[11.5px] font-semibold px-2 py-1 rounded-md">
+                            <span key={kw} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-[11.5px] font-semibold px-2 py-1 rounded-md" dir="auto">
                                 {kw}
                                 <button onClick={() => onChange(keywords.filter(k => k !== kw))} className="opacity-60 hover:opacity-100">
                                     <X className="w-2.5 h-2.5" />
@@ -160,11 +160,12 @@ function KeywordInput({ keywords, onChange, anyMode, onAnyModeChange, copy }: {
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={onKeyDown}
                             onBlur={() => input.trim() && addKw(input)}
-                            placeholder={keywords.length === 0 ? copy.keywordPlaceholder : "Add another…"}
+                            placeholder={keywords.length === 0 ? copy.keywordPlaceholder : "افزودن یکی دیگر…"}
+                            dir="auto"
                             className="flex-1 min-w-[110px] bg-transparent text-[13px] outline-none placeholder:text-muted-foreground/50 px-1 py-0.5"
                         />
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-1">Separate with Enter or comma. Case-insensitive, whole-word match.</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">با Enter یا کاما جدا کن. تطبیق بدون حساسیت به بزرگی حروف و به‌صورت واژهٔ کامل است.</p>
                 </div>
             )}
         </div>
@@ -180,7 +181,7 @@ function CardEditor({ res, onUpdate }: { res: DMResponse; onUpdate: (p: Partial<
         setSizeError("");
         if (!file) return;
         if (file.size > MAX_IMAGE_BYTES) {
-            setSizeError("Image must be under 2 MB.");
+            setSizeError("تصویر باید کمتر از ۲ مگابایت باشد.");
             return;
         }
         const reader = new FileReader();
@@ -188,7 +189,7 @@ function CardEditor({ res, onUpdate }: { res: DMResponse; onUpdate: (p: Partial<
         reader.readAsDataURL(file);
     };
 
-    const addBtn = () => onUpdate({ cardButtons: [...buttons, { id: randomId(), title: "Learn more", link: "" }] });
+    const addBtn = () => onUpdate({ cardButtons: [...buttons, { id: randomId(), title: "اطلاعات بیشتر", link: "" }] });
     const updateBtn = (id: string, patch: Partial<CardButton>) =>
         onUpdate({ cardButtons: buttons.map(b => b.id === id ? { ...b, ...patch } : b) });
     const removeBtn = (id: string) => onUpdate({ cardButtons: buttons.filter(b => b.id !== id) });
@@ -198,16 +199,16 @@ function CardEditor({ res, onUpdate }: { res: DMResponse; onUpdate: (p: Partial<
             <div className="border border-dashed border-border rounded-lg overflow-hidden">
                 {res.cardImage ? (
                     <div className="relative">
-                        <img src={res.cardImage} className="w-full h-32 object-cover" alt="card" />
-                        <button onClick={() => onUpdate({ cardImage: "" })} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1">
+                        <img src={res.cardImage} className="w-full h-32 object-cover" alt="کارت" />
+                        <button onClick={() => onUpdate({ cardImage: "" })} className="absolute top-2 end-2 bg-black/60 text-white rounded-full p-1">
                             <X className="w-3 h-3" />
                         </button>
                     </div>
                 ) : (
                     <label className="flex flex-col items-center justify-center h-24 cursor-pointer hover:bg-muted/40 transition-colors gap-1.5">
                         <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
-                        <span className="text-[12px] text-muted-foreground font-medium">Upload an image</span>
-                        <span className="text-[10px] text-muted-foreground/60">Max 2 MB · JPG, PNG, WebP</span>
+                        <span className="text-[12px] text-muted-foreground font-medium">آپلود تصویر</span>
+                        <span className="text-[10px] text-muted-foreground/60" dir="ltr">Max 2 MB · JPG, PNG, WebP</span>
                         <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
                             onChange={e => handleFile(e.target.files?.[0])} />
                     </label>
@@ -216,31 +217,31 @@ function CardEditor({ res, onUpdate }: { res: DMResponse; onUpdate: (p: Partial<
             {sizeError && <p className="text-[12px] text-destructive font-medium">{sizeError}</p>}
 
             <div>
-                <label className="micro-label block mb-1">Card title</label>
+                <label className="micro-label block mb-1">عنوان کارت</label>
                 <input value={res.cardTitle ?? ""} onChange={e => onUpdate({ cardTitle: e.target.value })} maxLength={80}
-                    placeholder="e.g. The Complete Creator Toolkit" className={inputCls} />
+                    placeholder="مثلاً: جعبه‌ابزار کامل کریتورها" className={inputCls} />
             </div>
 
             <div>
-                <label className="micro-label block mb-1">Subtitle</label>
+                <label className="micro-label block mb-1">زیرعنوان</label>
                 <input value={res.cardSubtitle ?? ""} onChange={e => onUpdate({ cardSubtitle: e.target.value })} maxLength={80}
-                    placeholder="Short description" className={inputCls} />
+                    placeholder="توضیح کوتاه" className={inputCls} />
             </div>
 
             <div>
                 <div className="flex items-center justify-between mb-1.5">
-                    <label className="micro-label">Buttons (max 3)</label>
+                    <label className="micro-label">دکمه‌ها (حداکثر ۳)</label>
                     {buttons.length < 3 && (
                         <button onClick={addBtn} className="text-[12px] text-primary font-semibold flex items-center gap-1 hover:opacity-80">
-                            <Plus className="w-3 h-3" /> Add
+                            <Plus className="w-3 h-3" /> افزودن
                         </button>
                     )}
                 </div>
                 <div className="space-y-1.5">
                     {buttons.map(btn => (
                         <div key={btn.id} className="flex gap-1.5">
-                            <input value={btn.title} onChange={e => updateBtn(btn.id, { title: e.target.value })} placeholder="Button label" className={inputCls} />
-                            <input value={btn.link} onChange={e => updateBtn(btn.id, { link: e.target.value })} placeholder="https://" className={inputCls} />
+                            <input value={btn.title} onChange={e => updateBtn(btn.id, { title: e.target.value })} placeholder="متن دکمه" className={inputCls} />
+                            <input value={btn.link} onChange={e => updateBtn(btn.id, { link: e.target.value })} placeholder="https://" dir="ltr" className={cn(inputCls, "text-left")} />
                             <button onClick={() => removeBtn(btn.id)} className="p-2 text-muted-foreground hover:text-destructive shrink-0">
                                 <X className="w-3.5 h-3.5" />
                             </button>
@@ -264,16 +265,16 @@ function TextEditor({ res, onUpdate }: { res: DMResponse; onUpdate: (p: Partial<
                     onChange={e => onUpdate({ content: e.target.value })}
                     maxLength={1000}
                     rows={3}
-                    placeholder="Type your message…"
+                    placeholder="پیامت را بنویس…"
                     className={textareaCls}
                 />
-                <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground tabular-nums">{res.content.length}/1000</span>
+                <span className="absolute bottom-2 end-3 text-[10px] text-muted-foreground tabular-nums" dir="ltr">{faNum(res.content.length)}/۱۰۰۰</span>
             </div>
 
             {showBtn ? (
                 <div className="rounded-lg border border-border overflow-hidden">
                     <div className="px-3 py-1.5 bg-muted/50 border-b border-border flex items-center justify-between">
-                        <span className="micro-label">Link button</span>
+                        <span className="micro-label">دکمه لینک</span>
                         <button onClick={() => { setShowBtn(false); onUpdate({ buttonTitle: "", buttonLink: "" }); }}
                             className="text-muted-foreground hover:text-destructive">
                             <X className="w-3 h-3" />
@@ -281,16 +282,16 @@ function TextEditor({ res, onUpdate }: { res: DMResponse; onUpdate: (p: Partial<
                     </div>
                     <div className="p-2.5 space-y-1.5">
                         <input value={res.buttonTitle ?? ""} onChange={e => onUpdate({ buttonTitle: e.target.value })}
-                            placeholder="Button label (e.g. Get the guide)" className={inputCls} />
+                            placeholder="متن دکمه (مثلاً: دریافت راهنما)" className={inputCls} />
                         <input value={res.buttonLink ?? ""} onChange={e => onUpdate({ buttonLink: e.target.value })}
-                            placeholder="https://your-link.com" className={inputCls} />
-                        <p className="text-[10px] text-muted-foreground">Delivered as a tappable button inside the DM.</p>
+                            placeholder="https://your-link.com" dir="ltr" className={cn(inputCls, "text-left")} />
+                        <p className="text-[10px] text-muted-foreground">به‌صورت یک دکمه قابل لمس داخل دایرکت ارسال می‌شود.</p>
                     </div>
                 </div>
             ) : (
                 <button onClick={() => setShowBtn(true)}
                     className="flex items-center gap-1 text-[12px] font-semibold text-primary hover:opacity-80 transition-opacity">
-                    <Plus className="w-3 h-3" /> Add link button
+                    <Plus className="w-3 h-3" /> افزودن دکمه لینک
                 </button>
             )}
         </div>
@@ -305,13 +306,13 @@ function ResponseBlock({ res, idx, onUpdate, onDelete }: {
     onDelete: () => void;
 }) {
     const [open, setOpen] = useState(true);
-    const typeLabel = res.type === "card" ? "Card message" : "Text message";
+    const typeLabel = res.type === "card" ? "پیام کارتی" : "پیام متنی";
 
     return (
         <div className="border border-border rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-3 h-9 bg-muted/50 border-b border-border">
                 <div className="flex items-center gap-2">
-                    <span className="w-4.5 h-4.5 w-[18px] h-[18px] rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+                    <span className="w-[18px] h-[18px] rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">{faNum(idx + 1)}</span>
                     <span className="text-[12px] font-semibold text-foreground">{typeLabel}</span>
                 </div>
                 <div className="flex items-center">
@@ -358,7 +359,7 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
 
     const isAnyMode = data.keywordsAnyMode ?? data.keywords.length === 0;
     const previewKeywords = isAnyMode ? ["😍", "🔥✨", "❤️🙌"] : data.keywords.slice(0, 3);
-    const previewTriggerText = isAnyMode ? (isStory ? "Love this! 🔥" : "Hey! 👋") : (data.keywords[0] ?? "DIET");
+    const previewTriggerText = isAnyMode ? (isStory ? "چه عالی! 🔥" : "سلام! 👋") : (data.keywords[0] ?? "DIET");
 
     const addResponse = (type: "text" | "card") => {
         onUpdate({
@@ -397,16 +398,16 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
 
     return (
         <div className="flex h-full overflow-hidden">
-            {/* ── Left - form ── */}
+            {/* ── Form (start side - right in RTL) ── */}
             <div className="flex-1 min-w-0 overflow-y-auto p-5 space-y-6 custom-scrollbar">
 
                 {/* Name */}
                 <section className="space-y-2">
-                    <SectionHeader title="Name" />
+                    <SectionHeader title="نام" />
                     <input
                         value={data.name}
                         onChange={e => onUpdate({ name: e.target.value })}
-                        placeholder="e.g. Diet guide funnel"
+                        placeholder="مثلاً: قیف راهنمای رژیم"
                         className={inputCls}
                     />
                 </section>
@@ -416,11 +417,11 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                     <>
                         {data.postThumbnailUrl ? (
                             <div className="flex items-center gap-2.5 p-2.5 bg-muted/40 rounded-lg">
-                                <img src={data.postThumbnailUrl} alt="post" className="w-9 h-9 object-cover rounded-md shrink-0" />
+                                <img src={data.postThumbnailUrl} alt="پست" className="w-9 h-9 object-cover rounded-md shrink-0" />
                                 <div className="min-w-0">
-                                    <p className="micro-label">Selected post</p>
+                                    <p className="micro-label">پست انتخاب‌شده</p>
                                     <p className="text-[12px] text-foreground truncate">
-                                        {data.postCaption ? data.postCaption.slice(0, 70) : "No caption"}
+                                        {data.postCaption ? data.postCaption.slice(0, 70) : "بدون کپشن"}
                                     </p>
                                 </div>
                             </div>
@@ -428,7 +429,7 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                             <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 rounded-lg">
                                 <Zap className="w-3.5 h-3.5 text-muted-foreground" />
                                 <span className="text-[12px] font-medium text-muted-foreground">
-                                    {data.postId && data.postId !== "all" ? "Specific post selected" : "Triggers on all posts"}
+                                    {data.postId && data.postId !== "all" ? "پست مشخصی انتخاب شده" : "روی همه پست‌ها اجرا می‌شود"}
                                 </span>
                             </div>
                         )}
@@ -450,9 +451,9 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                 {/* Public comment replies - comment automations only */}
                 {isComment && (
                     <section className="space-y-2.5">
-                        <SectionHeader title="Public comment reply" />
+                        <SectionHeader title="پاسخ عمومی کامنت" />
                         <p className="text-[12px] text-muted-foreground">
-                            A random line from this list is posted publicly under the trigger comment.
+                            یک سطر به‌تصادف از این لیست، به‌صورت عمومی زیر کامنت تریگر منتشر می‌شود.
                         </p>
 
                         <div className="space-y-1.5">
@@ -474,7 +475,7 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                                 value={commentInput}
                                 onChange={e => setCommentInput(e.target.value)}
                                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCommentReply(); } }}
-                                placeholder="Type a reply and press Enter…"
+                                placeholder="یک پاسخ بنویس و Enter بزن…"
                                 className={inputCls}
                             />
                             <button
@@ -490,7 +491,7 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                 {/* Auto DM */}
                 <section className="space-y-3">
                     <SectionHeader
-                        title="Auto DM"
+                        title="دایرکت خودکار"
                         action={<Toggle on={data.isAutoDmEnabled} onChange={() => onUpdate({ isAutoDmEnabled: !data.isAutoDmEnabled })} />}
                     />
 
@@ -507,8 +508,8 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                                 <div className="border border-border rounded-lg overflow-hidden">
                                     <div className="flex items-center justify-between px-3 py-2.5 bg-muted/50 border-b border-border">
                                         <div>
-                                            <p className="text-[12.5px] font-semibold text-foreground">Opening message</p>
-                                            <p className="text-[11px] text-muted-foreground">The first DM, sent automatically on trigger</p>
+                                            <p className="text-[12.5px] font-semibold text-foreground">پیام آغازین</p>
+                                            <p className="text-[11px] text-muted-foreground">اولین دایرکت، بلافاصله پس از تریگر ارسال می‌شود</p>
                                         </div>
                                         <Toggle
                                             on={data.dmOpeningMessageEnabled}
@@ -531,28 +532,28 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                                                             onChange={e => onUpdate({ dmOpeningMessage: e.target.value })}
                                                             rows={4}
                                                             maxLength={1000}
-                                                            placeholder="Hey! Thanks so much for stopping by…"
+                                                            placeholder="سلام! ممنون که سر زدی…"
                                                             className={textareaCls}
                                                         />
-                                                        <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground tabular-nums">{data.dmOpeningMessage.length}/1000</span>
+                                                        <span className="absolute bottom-2 end-3 text-[10px] text-muted-foreground tabular-nums" dir="ltr">{faNum(data.dmOpeningMessage.length)}/۱۰۰۰</span>
                                                     </div>
                                                     {isComment && (
                                                         <p className="text-[10px] text-muted-foreground">
-                                                            Tip: <code className="font-mono bg-muted px-1 rounded">{"{username}"}</code> becomes the commenter&apos;s @handle.
+                                                            نکته: <code className="font-mono bg-muted px-1 rounded" dir="ltr">{"{username}"}</code> با آیدی (@) کامنت‌گذار جایگزین می‌شود.
                                                         </p>
                                                     )}
 
                                                     <div className="rounded-lg border border-border p-2.5 space-y-1.5">
-                                                        <p className="micro-label">Reveal button</p>
-                                                        <p className="text-[11px] text-muted-foreground">They tap this to receive your responses - the tap confirms real interest.</p>
+                                                        <p className="micro-label">دکمه دریافت</p>
+                                                        <p className="text-[11px] text-muted-foreground">با لمس این دکمه پاسخ‌ها را دریافت می‌کنند — این لمس، علاقه واقعی را تأیید می‌کند.</p>
                                                         <input
                                                             value={data.dmOpeningMessageButtonTitle}
                                                             onChange={e => onUpdate({ dmOpeningMessageButtonTitle: e.target.value })}
                                                             maxLength={20}
-                                                            placeholder="Send me the link"
+                                                            placeholder="لینک رو بفرست"
                                                             className={inputCls}
                                                         />
-                                                        <p className="text-[10px] text-muted-foreground">Max 20 characters (Instagram limit). Leave empty to send responses immediately.</p>
+                                                        <p className="text-[10px] text-muted-foreground">حداکثر ۲۰ کاراکتر (محدودیت اینستاگرام). خالی بگذار تا پاسخ‌ها بلافاصله ارسال شوند.</p>
                                                     </div>
                                                 </div>
                                             </motion.div>
@@ -564,8 +565,8 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                                 <div className="border border-border rounded-lg overflow-hidden">
                                     <div className="flex items-center justify-between px-3 py-2.5 bg-muted/50 border-b border-border">
                                         <div>
-                                            <p className="text-[12.5px] font-semibold text-foreground">Require follow</p>
-                                            <p className="text-[11px] text-muted-foreground">Deliver only after Instagram confirms they follow you</p>
+                                            <p className="text-[12.5px] font-semibold text-foreground">الزام به فالو</p>
+                                            <p className="text-[11px] text-muted-foreground">تحویل فقط وقتی اینستاگرام تأیید کند فالو کرده‌اند</p>
                                         </div>
                                         <Toggle on={data.askToFollowEnabled} onChange={() => onUpdate({ askToFollowEnabled: !data.askToFollowEnabled })} />
                                     </div>
@@ -581,43 +582,43 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                                             >
                                                 <div className="p-3 space-y-2.5">
                                                     <div>
-                                                        <label className="micro-label block mb-1">&ldquo;Not following&rdquo; message</label>
+                                                        <label className="micro-label block mb-1">پیام «هنوز فالو نکردی»</label>
                                                         <textarea
                                                             value={data.askToFollowMessage}
                                                             onChange={e => onUpdate({ askToFollowMessage: e.target.value })}
                                                             rows={2}
                                                             maxLength={80}
-                                                            placeholder="Hey! It seems you're not following me yet…"
+                                                            placeholder="سلام! به نظر می‌رسه هنوز فالووم نکردی…"
                                                             className={textareaCls}
                                                         />
-                                                        <p className="text-[10px] text-muted-foreground mt-0.5">Max 80 chars (card title limit).</p>
+                                                        <p className="text-[10px] text-muted-foreground mt-0.5">حداکثر ۸۰ کاراکتر (محدودیت عنوان کارت).</p>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <div>
-                                                            <label className="micro-label block mb-1">Profile button</label>
+                                                            <label className="micro-label block mb-1">دکمه پروفایل</label>
                                                             <input
                                                                 value={data.askToFollowVisitProfileButton}
                                                                 onChange={e => onUpdate({ askToFollowVisitProfileButton: e.target.value })}
                                                                 maxLength={20}
-                                                                placeholder="Visit Profile"
+                                                                placeholder="مشاهده پروفایل"
                                                                 className={inputCls}
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="micro-label block mb-1">Confirm button</label>
+                                                            <label className="micro-label block mb-1">دکمه تأیید</label>
                                                             <input
                                                                 value={data.askToFollowConfirmButton}
                                                                 onChange={e => onUpdate({ askToFollowConfirmButton: e.target.value })}
                                                                 maxLength={20}
-                                                                placeholder="I'm following ✅"
+                                                                placeholder="فالو کردم ✅"
                                                                 className={inputCls}
                                                             />
                                                         </div>
                                                     </div>
                                                     <p className="text-[10px] text-muted-foreground">
-                                                        Follow status is really checked via Instagram&apos;s profile API - followers skip this card,
-                                                        and the confirm tap re-checks before delivering.
+                                                        وضعیت فالو واقعاً از طریق API پروفایل اینستاگرام بررسی می‌شود — فالوورها این کارت را نمی‌بینند،
+                                                        و لمس دکمه تأیید قبل از تحویل، دوباره بررسی می‌شود.
                                                     </p>
                                                 </div>
                                             </motion.div>
@@ -627,17 +628,17 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
 
                                 {/* Responses */}
                                 <div className="space-y-2.5">
-                                    <SectionHeader title="Responses" />
+                                    <SectionHeader title="پاسخ‌ها" />
 
                                     {data.dmResponses.length >= MAX_DM_RESPONSES && (
                                         <div className="text-[12px] text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                                            Max {MAX_DM_RESPONSES} responses per flow - each one is a separate Instagram send, and short flows keep your account safe and your audience reading.
+                                            حداکثر {faNum(MAX_DM_RESPONSES)} پاسخ در هر جریان — هر پاسخ یک ارسال جداگانه به اینستاگرام است؛ جریان‌های کوتاه‌تر اکانتت را امن و مخاطب را درگیر نگه می‌دارد.
                                         </div>
                                     )}
 
                                     {!data.dmOpeningMessageEnabled && data.dmResponses.length >= 1 && (
                                         <div className="text-[12px] text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg px-3 py-2 font-medium">
-                                            Opening message is off - only one response is sent.
+                                            پیام آغازین خاموش است — فقط یک پاسخ ارسال می‌شود.
                                         </div>
                                     )}
 
@@ -657,14 +658,14 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                                             disabled={!canAddMoreResponses}
                                             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium border border-border text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
-                                            <MessageSquare className="w-3.5 h-3.5" /> Text message
+                                            <MessageSquare className="w-3.5 h-3.5" /> پیام متنی
                                         </button>
                                         <button
                                             onClick={() => canAddMoreResponses && addResponse("card")}
                                             disabled={!canAddMoreResponses}
                                             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium border border-border text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
-                                            <LayoutGrid className="w-3.5 h-3.5" /> Card message
+                                            <LayoutGrid className="w-3.5 h-3.5" /> پیام کارتی
                                         </button>
                                     </div>
                                 </div>
@@ -674,8 +675,8 @@ export function ConfigureStep({ data, onUpdate, creatorProfilePicUrl }: Configur
                 </section>
             </div>
 
-            {/* ── Right - phones ── */}
-            <div className="hidden xl:flex w-[600px] shrink-0 bg-[#0a0a0b] border-l border-border overflow-hidden relative">
+            {/* ── Phones (end side - left in RTL) ── */}
+            <div className="hidden xl:flex w-[600px] shrink-0 bg-[#0a0a0b] border-s border-border overflow-hidden relative">
                 <div
                     className="absolute inset-0 opacity-[0.12] pointer-events-none"
                     style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)`, backgroundSize: "28px 28px" }}

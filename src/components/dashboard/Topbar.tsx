@@ -6,11 +6,11 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useUiStore } from "@/lib/store";
 
 const TITLES: Record<string, string> = {
-    "/dashboard": "Dashboard",
-    "/automations": "Automations",
-    "/analytics": "Analytics",
-    "/settings": "Settings",
-    "/setup": "Setup Wizard",
+    "/dashboard": "داشبورد",
+    "/automations": "خودکارسازها",
+    "/analytics": "تحلیل‌ها",
+    "/settings": "تنظیمات",
+    "/setup": "ویزارد راه‌اندازی",
 };
 
 export function Topbar() {
@@ -23,8 +23,8 @@ export function Topbar() {
             <div className="flex items-center gap-3">
                 <button
                     onClick={openMobileSidebar}
-                    className="lg:hidden p-1.5 -ml-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    aria-label="Open menu"
+                    className="lg:hidden p-1.5 -ms-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    aria-label="باز کردن منو"
                 >
                     <Menu className="w-4 h-4" />
                 </button>

@@ -31,7 +31,7 @@ export function LoginForm() {
             }
             window.location.href = "/dashboard";
         } catch {
-            setError("Something went wrong. Try again.");
+            setError("مشکلی پیش آمد. دوباره تلاش کنید.");
         } finally {
             setIsLoading(false);
         }
@@ -51,10 +51,10 @@ export function LoginForm() {
                 <div className="flex flex-col mb-7">
                     <LogoMark className="w-9 h-9 mb-5" />
                     <h1 className="text-lg font-heading font-semibold tracking-tight text-foreground mb-1">
-                        Welcome back
+                        خوش برگشتی
                     </h1>
                     <p className="text-[13px] text-muted-foreground">
-                        Sign in to your automation console.
+                        به کنسول خودکارسازی‌ات وارد شو.
                     </p>
                 </div>
 
@@ -62,7 +62,7 @@ export function LoginForm() {
                     {error && <p className="text-[12.5px] text-destructive font-medium">{error}</p>}
 
                     <div>
-                        <label className="micro-label block mb-1">Email</label>
+                        <label className="micro-label block mb-1">ایمیل</label>
                         <input
                             type="email"
                             required
@@ -70,11 +70,12 @@ export function LoginForm() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="you@example.com"
-                            className="w-full h-10 px-3 text-[13.5px] bg-background border border-border rounded-lg outline-none focus:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring/30 transition-colors"
+                            dir="ltr"
+                            className="w-full h-10 px-3 text-[13.5px] text-left bg-background border border-border rounded-lg outline-none focus:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring/30 transition-colors"
                         />
                     </div>
                     <div>
-                        <label className="micro-label block mb-1">Password</label>
+                        <label className="micro-label block mb-1">رمز عبور</label>
                         <input
                             type="password"
                             required
@@ -82,7 +83,8 @@ export function LoginForm() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••••••"
-                            className="w-full h-10 px-3 text-[13.5px] bg-background border border-border rounded-lg outline-none focus:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring/30 transition-colors"
+                            dir="ltr"
+                            className="w-full h-10 px-3 text-[13.5px] text-left bg-background border border-border rounded-lg outline-none focus:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring/30 transition-colors"
                         />
                     </div>
 
@@ -92,14 +94,14 @@ export function LoginForm() {
                         className="flex items-center justify-center gap-2 w-full h-10 mt-1 text-[13.5px] font-semibold bg-foreground text-background rounded-lg hover:opacity-90 disabled:opacity-60 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                     >
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-                        {isLoading ? "Signing in…" : "Sign in"}
+                        {isLoading ? "در حال ورود…" : "ورود"}
                     </button>
                 </form>
 
                 <div className="mt-6 pt-5 border-t border-border">
                     <p className="text-[11.5px] text-muted-foreground leading-relaxed">
-                        No account? Access is invite-only - the instance owner creates users in the
-                        Supabase dashboard <span className="text-foreground/70 font-medium">(Authentication → Users → Add user)</span>.
+                        حساب نداری؟ دسترسی فقط با دعوت است — صاحبِ نمونه، کاربرها را در داشبورد
+                        ساپابیس می‌سازد <span className="text-foreground/70 font-medium" dir="ltr">(Authentication → Users → Add user)</span>.
                     </p>
                 </div>
             </div>

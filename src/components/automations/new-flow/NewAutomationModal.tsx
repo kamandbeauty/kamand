@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowLeft, Check, AlertTriangle, Loader2 } from "lucide-react";
+import { X, ArrowRight, Check, AlertTriangle, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
 import { SelectTypeStep } from "./steps/SelectTypeStep";
@@ -27,7 +27,7 @@ export type CardButton = {
 
 export type DMResponse = {
     id: string;
-    type: "text" | "card" | "ask_follow" | "lead_form";
+    type: "text" | "card" | "ask_follow";
     content: string;
     buttonTitle?: string;
     buttonLink?: string;
@@ -64,28 +64,30 @@ const DB_TYPE_TO_FLOW: Record<string, string> = {
 };
 
 const DEFAULT_NAMES: Record<string, string> = {
-    "comment-dm": "Comment funnel",
-    "dm-reply": "DM keyword reply",
-    "story-reply": "Story reply funnel",
+    "comment-dm": "قیف کامنت",
+    "dm-reply": "پاسخ کلیدواژه دایرکت",
+    "story-reply": "قیف پاسخ استوری",
 };
 
+const NEW_AUTOMATION_NAME = "خودکارساز جدید";
+
 const defaultFlowData = (): AutomationFlowData => ({
-    name: "New automation",
+    name: NEW_AUTOMATION_NAME,
     type: null,
     postId: null,
     postThumbnailUrl: null,
     postCaption: "",
     keywords: [],
     keywordsAnyMode: false,
-    customReplies: ["Sent! 🚀", "Check your DMs 📬", "Got it, check your inbox! ✉️"],
+    customReplies: ["فرستادم! 🚀", "دایرکتت رو چک کن 📬", "دریافت شد، اینباکست رو ببین! ✉️"],
     isAutoDmEnabled: true,
     dmOpeningMessageEnabled: true,
-    dmOpeningMessage: "Hey there!\n\nI'm so happy you're here, thank you so much for your interest 🥰\n\nClick below and I'll send you the link in just a sec ✨",
-    dmOpeningMessageButtonTitle: "Send me the link",
+    dmOpeningMessage: "سلام! خیلی خوشحالم که اینجایی، ممنون از علاقه‌ات 🥰\n\nروی دکمه زیر بزن تا لینک رو همین چند لحظه بعد برات بفرستم ✨",
+    dmOpeningMessageButtonTitle: "لینک رو بفرست",
     askToFollowEnabled: false,
-    askToFollowMessage: "Hey! It seems you're not following me yet 😊",
-    askToFollowVisitProfileButton: "Visit Profile",
-    askToFollowConfirmButton: "I'm following ✅",
+    askToFollowMessage: "سلام! به نظر می‌رسه هنوز فالووم نکردی 😊",
+    askToFollowVisitProfileButton: "مشاهده پروفایل",
+    askToFollowConfirmButton: "فالو کردم ✅",
     dmResponses: [],
 });
 
@@ -156,7 +158,7 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
         setFlowData(prev => ({ ...prev, ...patch })), []);
 
     const handleTypeSelect = (type: string) => {
-        const name = flowData.name === "New automation" ? (DEFAULT_NAMES[type] ?? flowData.name) : flowData.name;
+        const name = flowData.name === NEW_AUTOMATION_NAME ? (DEFAULT_NAMES[type] ?? flowData.name) : flowData.name;
         if (type === "comment-dm") {
             updateData({ type, name });
             setStep(1);
@@ -246,7 +248,7 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
         } else {
             if (!firstAccountId) {
                 setPendingAction(null);
-                setActivateError("Connect an Instagram account first in Settings.");
+                setActivateError("اول یک اکانت اینستاگرام در تنظیمات متصل کن.");
                 return;
             }
             createMutation.mutate(
@@ -267,9 +269,9 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
     const isActivating = pendingAction === 'activate' && (createMutation.isPending || updateMutation.isPending);
     const isPending = isSaving || isActivating;
 
-    const stepTitle = step === 0 ? "New automation"
-        : step === 1 ? "Choose a post"
-        : isEditMode ? `Edit - ${flowData.name}` : flowData.name || "Configure";
+    const stepTitle = step === 0 ? "خودکارساز جدید"
+        : step === 1 ? "انتخاب پست"
+        : isEditMode ? `ویرایش — ${flowData.name}` : flowData.name || "پیکربندی";
 
     return (
         <AnimatePresence>
@@ -302,7 +304,7 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
                             <div className="flex items-center gap-1.5 shrink-0">
                                 {step > 0 && (
                                     <button onClick={handleBack} className="inline-flex items-center gap-1 h-8 px-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
-                                        <ArrowLeft className="w-3.5 h-3.5" /> Back
+                                        <ArrowRight className="w-3.5 h-3.5" /> بازگشت
                                     </button>
                                 )}
 
@@ -319,7 +321,7 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
                                             className="inline-flex items-center gap-1.5 h-8 px-3 text-[13px] font-medium text-foreground border border-border hover:bg-muted disabled:opacity-50 rounded-lg transition-colors"
                                         >
                                             {isSaving && <Loader2 className="w-3 h-3 animate-spin" />}
-                                            {isSaving ? "Saving…" : "Save"}
+                                            {isSaving ? "در حال ذخیره…" : "ذخیره"}
                                         </button>
                                         <button
                                             disabled={isPending || (!isEditMode && !firstAccountId)}
@@ -327,7 +329,7 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
                                             className="inline-flex items-center gap-1.5 h-8 px-3 text-[13px] font-semibold bg-foreground text-background hover:opacity-90 disabled:opacity-50 rounded-lg transition-opacity"
                                         >
                                             {isActivating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                                            {isActivating ? "Activating…" : "Activate"}
+                                            {isActivating ? "در حال فعال‌سازی…" : "فعال‌سازی"}
                                         </button>
                                     </>
                                 )}
@@ -344,9 +346,9 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={step}
-                                    initial={{ opacity: 0, x: 8 }}
+                                    initial={{ opacity: 0, x: -8 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -8 }}
+                                    exit={{ opacity: 0, x: 8 }}
                                     transition={{ duration: 0.15, ease: "easeOut" }}
                                     className="w-full h-full"
                                 >
@@ -398,8 +400,8 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
                                                 <AlertTriangle className="w-4 h-4 text-amber-500" />
                                             </div>
                                             <div>
-                                                <p className="text-[13.5px] font-semibold text-foreground">Unsaved changes</p>
-                                                <p className="text-[12.5px] text-muted-foreground">Your edits haven&apos;t been saved.</p>
+                                                <p className="text-[13.5px] font-semibold text-foreground">تغییرات ذخیره‌نشده</p>
+                                                <p className="text-[12.5px] text-muted-foreground">ویرایش‌هایت هنوز ذخیره نشده است.</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
@@ -407,13 +409,13 @@ export function NewAutomationModal({ isOpen, onClose, editAutomation, accountId 
                                                 onClick={() => setShowConfirm(false)}
                                                 className="flex-1 h-9 rounded-lg border border-border text-[13px] font-medium hover:bg-muted transition-colors"
                                             >
-                                                Keep editing
+                                                ادامه ویرایش
                                             </button>
                                             <button
                                                 onClick={() => { setShowConfirm(false); onClose(); }}
                                                 className="flex-1 h-9 rounded-lg bg-destructive text-white text-[13px] font-semibold hover:bg-destructive/90 transition-colors"
                                             >
-                                                Discard
+                                                دورریختن
                                             </button>
                                         </div>
                                     </motion.div>

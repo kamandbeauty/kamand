@@ -11,6 +11,11 @@ import { useActiveAccount } from "@/hooks/useActiveAccount";
 import type { AutomationFromDB } from "@/hooks/useAutomations";
 import { AutomationDebugPanel } from "@/components/debug/AutomationDebugPanel";
 
+const TAB_LABELS: Record<"automations" | "contacts", string> = {
+    automations: "خودکارسازها",
+    contacts: "مخاطبان",
+};
+
 export default function AutomationsPage() {
     const [activeTab, setActiveTab] = useState<"automations" | "contacts">("automations");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,13 +55,13 @@ export default function AutomationsPage() {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={cn(
-                                "h-8 px-3.5 rounded-[7px] text-[13px] font-medium capitalize transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                                "h-8 px-3.5 rounded-[7px] text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
                                 activeTab === tab
                                     ? "bg-card text-foreground shadow-sm"
                                     : "text-muted-foreground hover:text-foreground"
                             )}
                         >
-                            {tab}
+                            {TAB_LABELS[tab]}
                         </button>
                     ))}
                 </div>
@@ -66,7 +71,7 @@ export default function AutomationsPage() {
                     className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-foreground text-background text-[13px] font-semibold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                 >
                     <Plus className="w-3.5 h-3.5" />
-                    New automation
+                    خودکارساز جدید
                 </button>
             </div>
 

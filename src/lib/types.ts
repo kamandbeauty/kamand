@@ -5,7 +5,7 @@
 // ── Automations ─────────────────────────────────────────────────────────────
 
 export type AutomationType = 'comment_dm' | 'dm_reply' | 'story_reply';
-export type DMResponseType = 'text' | 'card' | 'ask_follow' | 'lead_form';
+export type DMResponseType = 'text' | 'card' | 'ask_follow';
 
 export interface CardButton {
   id: string;

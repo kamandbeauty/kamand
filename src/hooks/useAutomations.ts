@@ -36,7 +36,7 @@ export interface AutomationFromDB {
 
 export interface DMResponse {
   id: string;
-  type: 'text' | 'card' | 'ask_follow' | 'lead_form';
+  type: 'text' | 'card' | 'ask_follow';
   content: string;
   buttonTitle?: string;
   buttonLink?: string;

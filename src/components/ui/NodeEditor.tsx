@@ -101,7 +101,7 @@ export function NodeEditor() {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 mb-1.5 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
                     <Workflow className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
-                <span className="font-bold text-[11px] sm:text-[13px] tracking-tight text-white drop-shadow-sm">AutoDM Hub</span>
+                <span className="font-bold text-[11px] sm:text-[13px] tracking-tight text-white drop-shadow-sm">هاب AutoDM</span>
             </motion.div>
 
             {/* Peripheral Nodes - Draggable */}
@@ -116,7 +116,7 @@ export function NodeEditor() {
                 <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-primary/10 flex items-center justify-center">
                     <Send className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
                 </div>
-                <span className="font-semibold text-[10px] sm:text-xs uppercase tracking-wider text-foreground dark:text-white/80">DM Auto</span>
+                <span className="font-semibold text-[10px] sm:text-xs text-foreground dark:text-white/80">دایرکت خودکار</span>
             </motion.div>
 
             <motion.div
@@ -130,7 +130,7 @@ export function NodeEditor() {
                 <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-primary/10 flex items-center justify-center">
                     <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
                 </div>
-                <span className="font-semibold text-[10px] sm:text-xs uppercase tracking-wider text-foreground dark:text-white/80">Content</span>
+                <span className="font-semibold text-[10px] sm:text-xs text-foreground dark:text-white/80">محتوا</span>
             </motion.div>
 
             <motion.div
@@ -144,7 +144,7 @@ export function NodeEditor() {
                 <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-secondary/10 flex items-center justify-center">
                     <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-secondary" />
                 </div>
-                <span className="font-semibold text-[10px] sm:text-xs uppercase tracking-wider text-foreground dark:text-white/80">Links</span>
+                <span className="font-semibold text-[10px] sm:text-xs text-foreground dark:text-white/80">لینک‌ها</span>
             </motion.div>
 
             <motion.div
@@ -158,12 +158,12 @@ export function NodeEditor() {
                 <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-secondary/10 flex items-center justify-center">
                     <BarChart className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-secondary" />
                 </div>
-                <span className="font-semibold text-[10px] sm:text-xs uppercase tracking-wider text-foreground dark:text-white/80">Analytics</span>
+                <span className="font-semibold text-[10px] sm:text-xs text-foreground dark:text-white/80">تحلیل‌ها</span>
             </motion.div>
 
             {/* Hint Text */}
-            <div className="absolute bottom-2 right-4 text-[9px] uppercase tracking-widest text-muted-foreground/60 font-mono pointer-events-none">
-                Drag Any Node
+            <div className="absolute bottom-2 left-4 text-[9px] text-muted-foreground/60 font-sans pointer-events-none">
+                گره‌ها را بکشید و جابه‌جا کنید
             </div>
         </div>
     );
