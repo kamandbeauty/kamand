@@ -343,13 +343,17 @@ void main() {
       await tester.pumpAndSettle();
 
       // مصرع معروف غزل اول «ادر کاسا» را با «ك» عربی جستجو می‌کنیم
+      // (پمپِ ۳۰۰ms: عبورِ صریحِ ساعتِ فیک از دیبانسِ ۲۵۰ms جستجو تا
+      // تست وابسته به رفتارِ pumpAndSettle نسبت به تایمر نباشد)
       await tester.enterText(find.byType(TextField), 'كاسا');
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       expect(find.text('غزل ۱'), findsOneWidget);
       expect(find.text('غزل ۲'), findsNothing);
 
       // پاک کردن جستجو → فهرست کامل برمی‌گردد
       await tester.enterText(find.byType(TextField), '');
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       expect(find.text('غزل ۲'), findsWidgets);
     });
