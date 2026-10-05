@@ -1,6 +1,7 @@
 import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/fonts.dart';
 import 'package:fale_hafez/homepage.dart';
+import 'package:fale_hafez/util/persian_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -95,7 +96,7 @@ class _SplashView extends StatelessWidget {
           left: 5,
           child: Center(
             child: Text(
-              "نسخه برنامه ${AppInfo.version}",
+              "نسخه برنامه ${toPersianDigits(AppInfo.version)}",
               style: vazirText(color: Colors.white),
             ),
           ),
