@@ -5,6 +5,7 @@ import 'package:sqlite3/sqlite3.dart';
 import '../../core/normalization/persian_normalizer.dart';
 import '../../domain/models/archive_entry.dart';
 import '../../domain/models/abjad_system.dart';
+import '../../domain/models/compatibility_rule.dart';
 import '../../domain/models/name.dart';
 import '../../domain/models/numerology_rule.dart';
 import '../../domain/models/profile.dart';
@@ -369,6 +370,41 @@ class AppDatabase {
       _setMetadata('content_version', 'seed-4');
       version = 4;
     }
+
+    if (version < 5) {
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS compatibility_systems (
+          id TEXT PRIMARY KEY,
+          system_key TEXT NOT NULL UNIQUE,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          source_id TEXT,
+          version TEXT NOT NULL,
+          status TEXT NOT NULL,
+          disclaimer TEXT NOT NULL,
+          FOREIGN KEY(source_id) REFERENCES sources(id) ON DELETE SET NULL
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS compatibility_rules (
+          id TEXT PRIMARY KEY,
+          system_id TEXT NOT NULL,
+          rule_key TEXT NOT NULL,
+          operation TEXT NOT NULL,
+          configuration_json TEXT NOT NULL DEFAULT '{}',
+          source_id TEXT,
+          version TEXT NOT NULL,
+          status TEXT NOT NULL,
+          FOREIGN KEY(system_id) REFERENCES compatibility_systems(id) ON DELETE CASCADE,
+          FOREIGN KEY(source_id) REFERENCES sources(id) ON DELETE SET NULL
+        )
+      ''');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_compatibility_rules_system ON compatibility_rules(system_id)');
+      _db.execute('PRAGMA user_version = 5');
+      _setMetadata('schema_version', '5');
+      _setMetadata('content_version', 'seed-5');
+      version = 5;
+    }
   }
 
   void _seedIfEmpty() {
@@ -487,6 +523,23 @@ class AppDatabase {
     ''', ['rule-digit-sum-reduce-v1', 'numerology-abjad-digital-root-v1', 'digit_sum_reduce', 'digit_sum_reduce', '{}', null, '1', 'unverified']);
     _db.execute("UPDATE abjad_systems SET source_id = 'source-iranica-abjad', status = 'supported' WHERE system_key = 'kabir' AND EXISTS (SELECT 1 FROM sources WHERE id = 'source-iranica-abjad')");
     _db.execute("UPDATE abjad_letters SET source_id = 'source-iranica-abjad', mapping_status = 'supported' WHERE system_id = (SELECT id FROM abjad_systems WHERE system_key = 'kabir') AND EXISTS (SELECT 1 FROM sources WHERE id = 'source-iranica-abjad')");
+    _db.execute('''
+      INSERT OR IGNORE INTO compatibility_systems (id, system_key, title, description, source_id, version, status, disclaimer)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', [
+      'compatibility-written-form-v1',
+      'written-form-similarity',
+      'شاخص شباهت نوشتاری',
+      'مقایسه‌ای محدود بر اساس حروف یکتای دو ورودی؛ این سیستم ادعای سازگاری عاطفی یا پیش‌بینی رابطه ندارد.',
+      null,
+      '1',
+      'unverified',
+      'این شاخص فقط شباهت نوشتاری دو ورودی را نشان می‌دهد و سازگاری علمی، عاطفی یا پیش‌بینی رابطه نیست.',
+    ]);
+    _db.execute('''
+      INSERT OR IGNORE INTO compatibility_rules (id, system_id, rule_key, operation, configuration_json, source_id, version, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', ['rule-written-form-jaccard-v1', 'compatibility-written-form-v1', 'unique_letter_jaccard', 'unique_letter_jaccard', '{}', null, '1', 'unverified']);
   }
 
   void _upgradeContentSeed() {
@@ -644,6 +697,19 @@ class AppDatabase {
       [systemKey],
     );
     return rows.isEmpty ? null : NumerologyRule.fromMap(Map<String, Object?>.from(rows.first));
+  }
+
+  CompatibilityRule? getCompatibilityRule(String systemKey) {
+    final rows = _db.select(
+      '''SELECT r.*, c.system_key, c.title AS system_title, c.disclaimer, s.title AS source_title
+         FROM compatibility_rules r
+         JOIN compatibility_systems c ON c.id = r.system_id
+         LEFT JOIN sources s ON s.id = r.source_id
+         WHERE c.system_key = ?
+         ORDER BY r.version DESC LIMIT 1''',
+      [systemKey],
+    );
+    return rows.isEmpty ? null : CompatibilityRule.fromMap(Map<String, Object?>.from(rows.first));
   }
 
   List<Source> getSources() {

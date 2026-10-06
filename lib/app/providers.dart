@@ -64,7 +64,9 @@ final abjadEngineProvider = Provider<AbjadEngine>((ref) {
 final numerologyEngineProvider = Provider<NumerologyEngine>((ref) {
   return NumerologyEngine(rule: ref.watch(databaseProvider).getNumerologyRule('abjad-digital-root'));
 });
-final compatibilityEngineProvider = Provider<CompatibilityEngine>((ref) => const CompatibilityEngine());
+final compatibilityEngineProvider = Provider<CompatibilityEngine>((ref) {
+  return CompatibilityEngine(rule: ref.watch(databaseProvider).getCompatibilityRule('written-form-similarity'));
+});
 final nameSearchEngineProvider = Provider<NameSearchEngine>((ref) => const NameSearchEngine());
 final smartSearchEngineProvider = Provider<SmartSearchEngine>((ref) => const SmartSearchEngine());
 

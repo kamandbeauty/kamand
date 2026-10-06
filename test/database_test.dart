@@ -15,7 +15,7 @@ void main() {
 
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
-    expect(metadata['schema_version'], '4');
+    expect(metadata['schema_version'], '5');
     expect(metadata['content_version'], 'knowledge-1');
     expect(database.getSources().length, greaterThan(3));
     expect(database.searchNames('آ'), isNotEmpty);
@@ -31,6 +31,9 @@ void main() {
     expect(mapping.containsKey('پ'), isFalse);
     expect(rule?.operation, 'digit_sum_reduce');
     expect(rule?.status, 'unverified');
+    final compatibilityRule = database.getCompatibilityRule('written-form-similarity');
+    expect(compatibilityRule?.operation, 'unique_letter_jaccard');
+    expect(compatibilityRule?.status, 'unverified');
   });
 
   test('persists and deletes local profiles', () {

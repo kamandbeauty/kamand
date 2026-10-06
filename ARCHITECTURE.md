@@ -50,11 +50,12 @@ lib/
 1. هر ادعای دانشی باید Source Claim داشته باشد یا `unverified` باشد.
 2. هر نتیجه سنتی باید System و Rule Version داشته باشد.
 3. حروف فارسی اضافه در ابجد بدون Source Claim مقداردهی نمی‌شوند.
-4. Mapping و Rule از SQLite و با Version خوانده می‌شوند؛ تفسیرهای عددی بدون منبع Seed نمی‌شوند.
-5. موتورهای محاسباتی به Flutter و UI وابستگی ندارند.
-6. جست‌وجو ابتدا Normalization و سپس FTS5 و Fallback امن دارد.
-7. پروفایل‌ها و تنظیمات حریم خصوصی Local هستند.
-8. هیچ اطلاعات شخصی به عنوان Analytics Event ارسال نمی‌شود.
+4. Mapping، Numerology Rule و Compatibility Rule از SQLite و با Version خوانده می‌شوند؛ تفسیرهای عددی بدون منبع Seed نمی‌شوند.
+5. Compatibility فعلاً فقط شاخص نوشتاری آزمایشی است و نباید به سازگاری عاطفی تعبیر شود.
+6. موتورهای محاسباتی به Flutter و UI وابستگی ندارند.
+7. جست‌وجو ابتدا Normalization و سپس FTS5 و Fallback امن دارد.
+8. پروفایل‌ها و تنظیمات حریم خصوصی Local هستند.
+9. هیچ اطلاعات شخصی به عنوان Analytics Event ارسال نمی‌شود.
 
 ## نسخه‌بندی
 
@@ -67,7 +68,8 @@ lib/
 - Phase 1: Foundation، نرمال‌سازی، دیتابیس، FTS، تاریخ، Privacy و تست
 - Phase 2: منابع گسترده، Source Claims و Knowledge Base
 - Phase 3: ابجد، عددشناسی، تاریخ تولد و تحلیل روزانه
-- Phase 4: سازگاری زوجین و خانواده
+- Phase 4: مقایسه محدود و شفاف نام‌ها؛ بدون ادعای سازگاری عاطفی
+- Phase 5: سازگاری زوجین و خانواده
 - Phase 5: انتخاب نوزاد، Ranking و مقایسه
 - Phase 6: UI Polish، Share و Accessibility
 - Phase 7: Ads، Premium و Billing-ready
