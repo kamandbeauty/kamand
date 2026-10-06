@@ -1,0 +1,375 @@
+# ساخت خودکار اپلیکیشن «دیوان و فال حافظ» روی GitHub Actions
+# خروجی: ۴ فایل APK امضاشده — universal (همهٔ گوشی‌ها) + اختصاصی هر معماری
+# (arm64-v8a گوشی‌های امروزی، armeabi-v7a قدیمی ۳۲بیتی، x86_64 شبیه‌ساز/تبلت)
+#
+# خط‌مشی‌های پایداری CI:
+# - نسخهٔ Flutter پین شده است و هرگز روی «آخرین stable» شناور نیست؛
+#   بیلد قطعی (deterministic) است و شکست‌های ناشی از نسخهٔ جدید SDK
+#   را در زمانِ مشخص و قابل‌ترمیم می‌دهد.
+# - CI هرگز مخزن را تغییر نمی‌دهد (کامیت/پوش خودکار lockfile حذف شد)
+#   و pub upgrade اجرا نمی‌کند؛ pubspec.lock تنها سرنکتهٔ بیلد است و
+#   ناسازگاری آن با fail واضح خود را نشان می‌دهد.
+name: Build Divan & Fal Hafez App
+
+on:
+  push:
+    branches: [arena/01a10170-kamand, main]
+    paths:
+      - 'divan_fal_hafez/**'
+      - '.github/workflows/build-fal-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # نسخهٔ SDK پین است: همان نسخه‌ای که لوکال/تجربهٔ سازنده تایید شد
+      # (3.47.6 = آخرین تگ stable هنگام بررسی؛ تطبیق با pubspec.lock)
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      # بیلدِ قابل‌تکرار: فقط از pubspec.lock کامیت‌شده؛ اگر با pubspec
+      # ناسازگار باشد با خطای واضح fail می‌شود (هیچ mutate/auto-upgrade وجود ندارد)
+      - name: Resolve dependencies (pub get from committed lock)
+        working-directory: divan_fal_hafez
+        run: flutter pub get --enforce-lockfile
+
+      # آنالیز: خطاها و هشدارها fatal می‌مانند (exit غیرصفر + گزارش به PR).
+      # فقط infoها (مانند deprecationهای withOpacity که یک کمپینِ تمیزکاریِ
+      # جدا می‌خواهد) fail نمی‌کنند؛ گزارش کامل آن‌ها هنگام خطا به PR پست می‌شود.
+      - name: Analyze
+        working-directory: divan_fal_hafez
+        shell: bash
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > analyze-report.txt 2>&1
+          code=$?
+          echo "EXIT_CODE=$code" >> analyze-report.txt
+          exit $code
+
+      - name: Upload analyze report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyze-report
+          path: divan_fal_hafez/analyze-report.txt
+          retention-days: 30
+
+      - name: Post analyze failure report to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: divan_fal_hafez
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          if [ -n "$PR" ] && [ "$PR" != "null" ] && [ -f analyze-report.txt ]; then
+            {
+              echo "### ❌ گزارش خطای آنالیز (run #${GITHUB_RUN_NUMBER})"
+              echo '```text'
+              echo '—— خطاها ——'
+              grep "error •" analyze-report.txt || echo '(موردی)'
+              echo ''
+              echo '—— هشدارها (fatal در حالت فعلی) ——'
+              grep "warning •" analyze-report.txt || echo '(موردی)'
+              echo ''
+              echo '—— خلاصه ——'
+              tail -20 analyze-report.txt
+              echo '```'
+            } > /tmp/comment-analyze.md
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment-analyze.md
+          fi
+
+      - name: Run tests
+        working-directory: divan_fal_hafez
+        shell: bash
+        run: |
+          set +e
+          flutter test --reporter expanded > test-report.txt 2>&1
+          code=$?
+          echo "EXIT_CODE=$code" >> test-report.txt
+          exit $code
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: divan_fal_hafez/test-report.txt
+          retention-days: 30
+
+      - name: Post failure report to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: divan_fal_hafez
+        shell: bash
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          echo "PR=$PR"
+          if [ -n "$PR" ] && [ "$PR" != "null" ] && [ -f test-report.txt ]; then
+            {
+              echo "### ❌ گزارش خطای تست (run #${GITHUB_RUN_NUMBER})"
+              echo '```text'
+              grep -v "═\|─" test-report.txt | tail -c 9000
+              echo '```'
+            } > /tmp/comment.md
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+          fi
+
+  build-apk:
+    name: Build APKs (universal + per-ABI)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          cache: true
+
+      # Keystore فقط داخل حافظهٔ موقت Runner بازسازی می‌شود و هرگز در
+      # مخزن یا artifact ذخیره نمی‌شود. نام Alias و رمزها نیز چاپ نمی‌شوند.
+      - name: Prepare and validate release keystore
+        shell: bash
+        env:
+          DIVAN_RELEASE_KEYSTORE_BASE64: ${{ secrets.DIVAN_RELEASE_KEYSTORE_BASE64 }}
+          DIVAN_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DIVAN_RELEASE_KEYSTORE_PASSWORD }}
+          DIVAN_RELEASE_KEY_ALIAS: ${{ secrets.DIVAN_RELEASE_KEY_ALIAS }}
+          DIVAN_RELEASE_KEY_PASSWORD: ${{ secrets.DIVAN_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          required=(
+            DIVAN_RELEASE_KEYSTORE_BASE64
+            DIVAN_RELEASE_KEYSTORE_PASSWORD
+            DIVAN_RELEASE_KEY_ALIAS
+            DIVAN_RELEASE_KEY_PASSWORD
+          )
+          for variable in "${required[@]}"; do
+            if [[ -z "${!variable:-}" ]]; then
+              echo "::error::Required signing secret is missing: $variable"
+              exit 1
+            fi
+          done
+
+          keystore_path="$RUNNER_TEMP/divan-release.jks"
+          if ! printf '%s' "$DIVAN_RELEASE_KEYSTORE_BASE64" \
+              | base64 --decode > "$keystore_path"; then
+            echo "::error::DIVAN_RELEASE_KEYSTORE_BASE64 is not valid Base64"
+            exit 1
+          fi
+          chmod 600 "$keystore_path"
+          if [[ ! -s "$keystore_path" ]]; then
+            echo "::error::Decoded release keystore is empty"
+            exit 1
+          fi
+
+          if ! keytool -list \
+              -keystore "$keystore_path" \
+              -storepass "$DIVAN_RELEASE_KEYSTORE_PASSWORD" \
+              -alias "$DIVAN_RELEASE_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Keystore, store password, or key alias is invalid"
+            exit 1
+          fi
+
+          certificate_digest=$(keytool -exportcert \
+              -keystore "$keystore_path" \
+              -storepass "$DIVAN_RELEASE_KEYSTORE_PASSWORD" \
+              -alias "$DIVAN_RELEASE_KEY_ALIAS" \
+              | sha256sum | awk '{print $1}')
+          if [[ ! "$certificate_digest" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::Could not calculate the release certificate digest"
+            exit 1
+          fi
+
+          echo "DIVAN_RELEASE_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+          echo "DIVAN_RELEASE_CERT_SHA256=${certificate_digest,,}" >> "$GITHUB_ENV"
+          echo "Release keystore decoded and validated."
+
+      # همان سیاست: فقط از lockfile کامیت‌شده؛ pub upgrade وجود ندارد
+      - name: Resolve dependencies (pub get from committed lock)
+        working-directory: divan_fal_hafez
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build signed release APKs (universal + split per ABI)
+        working-directory: divan_fal_hafez
+        shell: bash
+        env:
+          DIVAN_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DIVAN_RELEASE_KEYSTORE_PASSWORD }}
+          DIVAN_RELEASE_KEY_ALIAS: ${{ secrets.DIVAN_RELEASE_KEY_ALIAS }}
+          DIVAN_RELEASE_KEY_PASSWORD: ${{ secrets.DIVAN_RELEASE_KEY_PASSWORD }}
+        run: |
+          set +e
+          flutter build apk --release --split-per-abi > apk-build-report.txt 2>&1 \
+            && flutter build apk --release >> apk-build-report.txt 2>&1
+          code=$?
+          echo "EXIT_CODE=$code" >> apk-build-report.txt
+          exit $code
+
+      - name: Verify APK signatures and signing certificate
+        working-directory: divan_fal_hafez
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [[ -z "$sdk_root" ]]; then
+            echo "::error::Android SDK path is unavailable"
+            exit 1
+          fi
+
+          apksigner=$(find "$sdk_root/build-tools" -maxdepth 2 -type f \
+            -name apksigner | sort -V | tail -n 1)
+          if [[ -z "$apksigner" || ! -x "$apksigner" ]]; then
+            echo "::error::apksigner was not found"
+            exit 1
+          fi
+
+          apks=(
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
+          )
+          if [[ ! "${DIVAN_RELEASE_CERT_SHA256:-}" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Expected release certificate digest is unavailable"
+            exit 1
+          fi
+
+          for apk in "${apks[@]}"; do
+            if [[ ! -s "$apk" ]]; then
+              echo "::error::Expected APK is missing or empty: $apk"
+              exit 1
+            fi
+
+            if ! verification=$("$apksigner" verify --verbose --print-certs \
+                "$apk" 2>&1); then
+              echo "::error::APK signature verification failed: $apk"
+              echo "$verification"
+              exit 1
+            fi
+
+            # خروجی apksigner میان نسخه‌های Build Tools کمی تفاوت نگارشی دارد؛
+            # با نرمال‌سازی آن، اثر انگشت عمومی گواهی را بدون وابستگی به متن
+            # یک نسخهٔ خاص با گواهی داخل Keystore مقایسه می‌کنیم.
+            verification_compact=$(printf '%s' "$verification" \
+              | tr '[:upper:]' '[:lower:]' \
+              | tr -d '[:space:]:')
+            if [[ "$verification_compact" != *"$DIVAN_RELEASE_CERT_SHA256"* ]]; then
+              echo "::error::APK signing certificate does not match the release keystore: $apk"
+              exit 1
+            fi
+            echo "Verified signed APK: $(basename "$apk")"
+          done
+
+          {
+            echo '### ✅ امضای APKهای انتشار تأیید شد'
+            echo ''
+            echo "هر ۴ فایل با گواهی Release مورد انتظار امضا شده‌اند."
+            echo "\`SHA-256: $DIVAN_RELEASE_CERT_SHA256\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post APK build or signing failure report to PR
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: divan_fal_hafez
+        shell: bash
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          if [ -n "$PR" ] && [ "$PR" != "null" ]; then
+            {
+              echo "### ❌ گزارش خطای ساخت یا امضای APK (run #${GITHUB_RUN_NUMBER})"
+              echo '```text'
+              if [ -f apk-build-report.txt ]; then
+                grep -v "═\|─" apk-build-report.txt | tail -c 9000
+              else
+                echo 'مرحلهٔ آماده‌سازی و اعتبارسنجی Keystore ناموفق بود؛ لاگ امن اجرای CI را بررسی کنید.'
+              fi
+              echo '```'
+            } > /tmp/comment-apk.md
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment-apk.md
+          fi
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: divan-hafez-apk
+          path: |
+            divan_fal_hafez/build/app/outputs/flutter-apk/app-release.apk
+            divan_fal_hafez/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            divan_fal_hafez/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            divan_fal_hafez/build/app/outputs/flutter-apk/app-x86_64-release.apk
+          retention-days: 90
+
+      - name: Remove temporary release keystore
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${DIVAN_RELEASE_KEYSTORE_PATH:-}" ]]; then
+            rm -f "$DIVAN_RELEASE_KEYSTORE_PATH"
+          fi
+
+  release:
+    name: Publish GitHub Release (Android APKs)
+    needs: build-apk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: divan-hafez-apk
+          path: apk
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          VERSION=$(grep -m1 '^version:' divan_fal_hafez/pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+          TAG="v$VERSION"
+          [ "$TAG" = "v" ] && echo "version not found" && exit 1
+          mkdir -p out
+          cp apk/app-release.apk "out/divan-fal-hafez-${TAG}-universal.apk"
+          cp apk/app-arm64-v8a-release.apk "out/divan-fal-hafez-${TAG}-arm64-v8a.apk"
+          cp apk/app-armeabi-v7a-release.apk "out/divan-fal-hafez-${TAG}-armeabi-v7a.apk"
+          cp apk/app-x86_64-release.apk "out/divan-fal-hafez-${TAG}-x86_64.apk"
+          NOTES="نسخهٔ ${VERSION} — فایل‌های نصبی اندروید (ساخت خودکار CI از شاخه ${GITHUB_REF_NAME}, کامیت ${GITHUB_SHA}):
+          - ✅ هر چهار APK با کلید Release امضا و گواهی آن‌ها در CI راستی‌آزمایی شده است.
+          - **universal**: برای همهٔ گوشی‌ها (اگر مطمئن نیستید همین را نصب کنید)
+          - **arm64-v8a**: بیشتر گوشی‌های امروزی (کم‌حجم‌تر)
+          - **armeabi-v7a**: گوشی‌های قدیمی ۳۲بیتی
+          - **x86_64**: شبیه‌ساز و برخی تبلت‌ها"
+          # هر تگ فقط یک‌بار ساخته می‌شود تا APK همیشه دقیقاً با کامیتِ
+          # تگ هم‌خوان بماند؛ بازنویسی ریلیز موجود (--clobber) حذف شد.
+          # برای انتشار تغییرات باید version در pubspec.yaml افزایش یابد.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            {
+              echo "## ⚠️ ریلیز \`${TAG}\` از قبل وجود دارد — انتشار جدید انجام نشد"
+              echo ""
+              echo 'برای انتشار نسخهٔ جدید، مقدار `version` در `divan_fal_hafez/pubspec.yaml` را افزایش دهید (مثلاً 1.5.3+14).'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "Release $TAG already exists; skipping publish (bump version to release)."
+            exit 0
+          fi
+          gh release create "$TAG" out/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "دیوان و فال حافظ ${VERSION}" --notes "$NOTES"

@@ -1,0 +1,110 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+// امضای Release از متغیرهای امن CI خوانده می‌شود. برای ساخت محلی نیز
+// key.properties استاندارد فلاتر پشتیبانی می‌شود؛ هیچ کلید یا رمزی وارد گیت نیست.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def signingValue = { String environmentName, String propertyName ->
+    def environmentValue = System.getenv(environmentName)
+    environmentValue != null ? environmentValue : keystoreProperties.getProperty(propertyName)
+}
+
+def releaseStorePath = signingValue('DIVAN_RELEASE_KEYSTORE_PATH', 'storeFile')
+def releaseStorePassword = signingValue('DIVAN_RELEASE_KEYSTORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = signingValue('DIVAN_RELEASE_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = signingValue('DIVAN_RELEASE_KEY_PASSWORD', 'keyPassword')
+def hasReleaseSigning = [
+    releaseStorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+].every { value -> value != null && !value.toString().isEmpty() }
+
+// بیلد Debug بدون کلید انتشار همچنان ممکن است، اما Release هرگز با کلید Debug
+// یا به‌صورت بی‌امضا ساخته نمی‌شود.
+def releaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase().contains('release')
+}
+if (releaseBuildRequested && !hasReleaseSigning) {
+    throw new GradleException(
+        'Release signing credentials are missing. Configure the DIVAN_RELEASE_* environment variables or android/key.properties.'
+    )
+}
+
+android {
+    namespace "com.javidstudio.divanfalhafez"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        applicationId "com.javidstudio.divanfalhafez"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+                storeFile file(releaseStorePath)
+                storePassword releaseStorePassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {}
