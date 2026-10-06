@@ -1,5 +1,6 @@
 // تست دود (smoke test) برنامهٔ «دیوان و فال حافظ»
 
+import 'package:fale_hafez/about.dart';
 import 'package:fale_hafez/config.dart';
 import 'package:fale_hafez/data/divan_repository.dart';
 import 'package:fale_hafez/data/settings_service.dart';
@@ -30,6 +31,28 @@ Future<MyApp> _buildApp(WidgetTester tester) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('صفحهٔ معرفی، محتوای کامل حافظ و امضای استودیو را نشان می‌دهد',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AboutScreen()),
+    );
+    await tester.pump();
+
+    expect(find.text('معرفی حافظ و اپلیکیشن'), findsOneWidget);
+    expect(
+      find.text('به حریم کلام لسان‌الغیب، حافظ شیرازی خوش آمدید.'),
+      findsOneWidget,
+    );
+    expect(find.text('محتوای این اپلیکیشن شامل:'), findsOneWidget);
+    expect(find.text('حافظ؛ ترجمان‌الاسرار'), findsOneWidget);
+    expect(find.text('طراحی شده در'), findsOneWidget);
+    expect(find.text('استودیو جاوید'), findsOneWidget);
+    expect(
+      find.text('نسخه برنامه ${toPersianDigits(AppInfo.version)}'),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('اپ اجرا می‌شود؛ اسپلش و سپس صفحهٔ اصلی نمایش داده می‌شود',
       (WidgetTester tester) async {
