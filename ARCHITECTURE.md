@@ -71,7 +71,6 @@ lib/
 - Phase 3: ابجد، عددشناسی، تاریخ تولد و تحلیل روزانه
 - Phase 4: مقایسه محدود و شفاف نام‌ها؛ بدون ادعای سازگاری عاطفی
 - Phase 5: سازگاری زوجین و خانواده
-- Phase 5: انتخاب نوزاد، Ranking و مقایسه
-- Phase 6: UI Polish، Share و Accessibility
-- Phase 7: Ads، Premium و Billing-ready
+- Phase 6: انتخاب نوزاد، Ranking و مقایسه
+- Phase 7: UI Polish، Share و Accessibility
 - Phase 8: QA، Performance و Release

@@ -1,4 +1,4 @@
-name: Android quality
+name: Nameology Android Quality
 
 on:
   push:
