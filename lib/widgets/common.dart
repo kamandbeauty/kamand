@@ -111,6 +111,8 @@ class CategoryCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),

@@ -79,7 +79,14 @@ class GlassCard extends StatelessWidget {
                       ),
                     ],
             ),
-            child: child,
+            // A transparent Material above the decoration lets ListTiles /
+            // SwitchListTiles hosted in glass cards paint their own
+            // background & ink splashes correctly (instead of the
+            // decoration hiding them).
+            child: Material(
+              type: MaterialType.transparency,
+              child: child,
+            ),
           ),
         ),
       ),

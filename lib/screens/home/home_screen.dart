@@ -208,43 +208,40 @@ class _HomeContent extends ConsumerWidget {
         const SizedBox(height: 14),
 
         // ── Four categories ───────────────────────────────────────
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.85,
-          children: [
-            CategoryCard(
-              icon: Icons.favorite,
-              title: 'عشق',
-              score: daily.scores.love,
-              description: shortScorePhrase(daily.scores.love),
-              color: AppTheme.rose,
-            ),
-            CategoryCard(
-              icon: Icons.work_outline,
-              title: 'کار',
-              score: daily.scores.career,
-              description: shortScorePhrase(daily.scores.career),
-              color: AppTheme.sky,
-            ),
-            CategoryCard(
-              icon: Icons.savings_outlined,
-              title: 'مالی',
-              score: daily.scores.finance,
-              description: shortScorePhrase(daily.scores.finance),
-              color: AppTheme.gold,
-            ),
-            CategoryCard(
-              icon: Icons.psychology_outlined,
-              title: 'روحیه',
-              score: daily.scores.mood,
-              description: shortScorePhrase(daily.scores.mood),
-              color: AppTheme.violet,
-            ),
-          ],
+        // Auto-height rows (not a fixed-aspect grid) so the cards never
+        // overflow on narrow screens or at large text scales.
+        _ScoreCardRow(
+          CategoryCard(
+            icon: Icons.favorite,
+            title: 'عشق',
+            score: daily.scores.love,
+            description: shortScorePhrase(daily.scores.love),
+            color: AppTheme.rose,
+          ),
+          CategoryCard(
+            icon: Icons.work_outline,
+            title: 'کار',
+            score: daily.scores.career,
+            description: shortScorePhrase(daily.scores.career),
+            color: AppTheme.sky,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _ScoreCardRow(
+          CategoryCard(
+            icon: Icons.savings_outlined,
+            title: 'مالی',
+            score: daily.scores.finance,
+            description: shortScorePhrase(daily.scores.finance),
+            color: AppTheme.gold,
+          ),
+          CategoryCard(
+            icon: Icons.psychology_outlined,
+            title: 'روحیه',
+            score: daily.scores.mood,
+            description: shortScorePhrase(daily.scores.mood),
+            color: AppTheme.violet,
+          ),
         ),
         const SizedBox(height: 20),
 
@@ -453,6 +450,28 @@ class _WeekDot extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Two score cards side by side, equal height, sized to their content.
+class _ScoreCardRow extends StatelessWidget {
+  const _ScoreCardRow(this.left, this.right);
+
+  final Widget left;
+  final Widget right;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: left),
+          const SizedBox(width: 12),
+          Expanded(child: right),
+        ],
+      ),
     );
   }
 }
