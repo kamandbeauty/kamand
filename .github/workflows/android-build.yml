@@ -221,38 +221,40 @@ jobs:
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
           tag="tale-man-v1.1.0"
+
+          # Copy artifacts to their final, self-describing filenames (the
+          # runner's gh does not apply "#label" asset renames reliably).
+          dist="$RUNNER_TEMP/dist"
+          mkdir -p "$dist"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/tale-man-v1.1.0-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/tale-man-v1.1.0-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/tale-man-v1.1.0-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/tale-man-v1.1.0-universal.apk"
+          cp "$aab"                                 "$dist/tale-man-v1.1.0.aab"
+
           notes="نسخهٔ ۱.۱.۰ «طالع من» — گرافیک جدید، بانک محتوای سه‌برابرشده و رفع اشکال.
 
           کدام فایل را دانلود کنم؟ نسخهٔ مخصوص گوشیِ خودت:
 
           | فایل | مخصوص |
           |---|---|
-          | arm64-v8a | گوشی‌های مدرن (اکثر گوشی‌های سامسونگ، شیائومی، پیکسل و…) |
-          | armeabi-v7a | گوشی‌های قدیمی‌تر ۳۲ بیتی |
-          | x86_64 | شبیه‌ساز اندروید روی کامپیوتر |
-          | universal | همهٔ گوشی‌ها — فقط حجمش بیشتر است |
-          | aab | فقط برای انتشار در Google Play (نصب مستقیم ندارد) |
+          | tale-man-v1.1.0-arm64-v8a.apk | گوشی‌های مدرن (اکثر گوشی‌های سامسونگ، شیائومی، پیکسل و…) |
+          | tale-man-v1.1.0-armeabi-v7a.apk | گوشی‌های قدیمی‌تر ۳۲ بیتی |
+          | tale-man-v1.1.0-x86_64.apk | شبیه‌ساز اندروید روی کامپیوتر |
+          | tale-man-v1.1.0-universal.apk | همهٔ گوشی‌ها — فقط حجمش بیشتر است |
+          | tale-man-v1.1.0.aab | فقط برای انتشار در Google Play (نصب مستقیم ندارد) |
 
           برای نصب، فایل apk را دانلود و اجرا کنید (اجازهٔ نصب از منابع ناشناس لازم است)."
+
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            # drop the old generically-named assets from earlier runs
-            gh release delete-asset "$tag" app-release.apk --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
-            gh release delete-asset "$tag" app-release.aab --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
-            gh release upload "$tag" \
-              "$apkdir/app-arm64-v8a-release.apk#tale-man-v1.1.0-arm64-v8a.apk" \
-              "$apkdir/app-armeabi-v7a-release.apk#tale-man-v1.1.0-armeabi-v7a.apk" \
-              "$apkdir/app-x86_64-release.apk#tale-man-v1.1.0-x86_64.apk" \
-              "$apkdir/app-release.apk#tale-man-v1.1.0-universal.apk" \
-              "$aab#tale-man-v1.1.0.aab" \
-              --clobber --repo "$GITHUB_REPOSITORY"
+            # drop stale raw build names from older runs, if any
+            for old in app-release.apk app-release.aab app-arm64-v8a-release.apk app-armeabi-v7a-release.apk app-x86_64-release.apk; do
+              gh release delete-asset "$tag" "$old" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+            done
+            gh release upload "$tag" "$dist"/* --clobber --repo "$GITHUB_REPOSITORY"
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$tag" \
-              "$apkdir/app-arm64-v8a-release.apk#tale-man-v1.1.0-arm64-v8a.apk" \
-              "$apkdir/app-armeabi-v7a-release.apk#tale-man-v1.1.0-armeabi-v7a.apk" \
-              "$apkdir/app-x86_64-release.apk#tale-man-v1.1.0-x86_64.apk" \
-              "$apkdir/app-release.apk#tale-man-v1.1.0-universal.apk" \
-              "$aab#tale-man-v1.1.0.aab" \
+            gh release create "$tag" "$dist"/* \
               --title "طالع من — نسخهٔ ۱.۱.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
