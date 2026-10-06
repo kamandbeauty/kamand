@@ -80,7 +80,7 @@ class ProfilesScreen extends ConsumerWidget {
                     TextField(controller: mother, decoration: const InputDecoration(labelText: 'نام مادر (اختیاری)')),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<CalendarKind>(
-                      value: calendar,
+                      initialValue: calendar,
                       decoration: const InputDecoration(labelText: 'تقویم تاریخ تولد'),
                       items: const [DropdownMenuItem(value: CalendarKind.jalali, child: Text('شمسی')), DropdownMenuItem(value: CalendarKind.gregorian, child: Text('میلادی'))],
                       onChanged: (value) => setDialogState(() => calendar = value ?? CalendarKind.jalali),

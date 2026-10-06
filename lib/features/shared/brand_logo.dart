@@ -16,9 +16,9 @@ class BrandLogo extends StatelessWidget {
       height: size,
       padding: EdgeInsets.all(size * .12),
       decoration: BoxDecoration(
-        color: light ? Colors.white.withOpacity(.16) : const Color(0xFFE2F2EF),
+        color: light ? Colors.white.withAlpha(41) : const Color(0xFFE2F2EF),
         borderRadius: BorderRadius.circular(size * .28),
-        border: light ? Border.all(color: Colors.white.withOpacity(.18)) : null,
+        border: light ? Border.all(color: Colors.white.withAlpha(46)) : null,
       ),
       child: Image.asset(
         'assets/images/nameology_logo.png',

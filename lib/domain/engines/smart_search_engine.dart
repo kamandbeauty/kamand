@@ -47,7 +47,7 @@ class SmartSearchEngine {
     if (normalized.contains('کوتاه') && maxLetters == null) maxLetters = 5;
 
     final stopWords = {
-      'اسم', 'نام', 'دختر', 'پسر', 'به', 'معنی', 'با', 'حرف', 'کمتر', 'از', 'حداکثر', 'حرف',
+      'اسم', 'نام', 'دختر', 'پسر', 'به', 'معنی', 'با', 'حرف', 'کمتر', 'از', 'حداکثر',
       ...styles,
     };
     final text = tokens.where((token) => !stopWords.contains(token) && token != 'بین' && token != 'المللی').join(' ');

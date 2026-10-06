@@ -13,7 +13,7 @@ class StatusBadge extends StatelessWidget {
     final text = verified ? 'بررسی‌شده' : disputed ? 'اختلاف منابع' : 'نیازمند بررسی';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(.10), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: color.withAlpha(26), borderRadius: BorderRadius.circular(20)),
       child: Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
     );
   }

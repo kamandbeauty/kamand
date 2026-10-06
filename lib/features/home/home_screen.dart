@@ -61,9 +61,9 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 25, 20, 12),
-              child: const SectionTitle(title: 'شروع سریع', subtitle: 'ابزارهای پرکاربرد'),
+            child: const Padding(
+              padding: EdgeInsets.fromLTRB(20, 25, 20, 12),
+              child: SectionTitle(title: 'شروع سریع', subtitle: 'ابزارهای پرکاربرد'),
             ),
           ),
           SliverPadding(
@@ -162,7 +162,7 @@ class _WelcomeHero extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [const Color(0xFF163F41).withOpacity(.96), const Color(0xFF163F41).withOpacity(.38), Colors.transparent],
+                  colors: [const Color.fromRGBO(22, 63, 65, .96), const Color.fromRGBO(22, 63, 65, .38), Colors.transparent],
                   begin: Alignment.centerRight,
                   end: Alignment.centerLeft,
                   stops: const [0, .53, 1],
@@ -209,7 +209,7 @@ class _QuickAction extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Container(width: 42, height: 42, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.white.withOpacity(.65), shape: BoxShape.circle), child: Icon(icon, color: Theme.of(context).colorScheme.primary)), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(caption, style: const TextStyle(fontSize: 11, color: Colors.blueGrey))])]),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Container(width: 42, height: 42, alignment: Alignment.center, decoration: BoxDecoration(color: const Color.fromRGBO(255, 255, 255, .65), shape: BoxShape.circle), child: Icon(icon, color: Theme.of(context).colorScheme.primary)), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(caption, style: const TextStyle(fontSize: 11, color: Colors.blueGrey))])]),
         ),
       ),
     );

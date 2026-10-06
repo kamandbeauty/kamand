@@ -59,7 +59,7 @@ class _ArchiveIntro extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Image.asset('assets/images/archive_illustration.png', fit: BoxFit.cover),
-          DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color(0xFF123F42).withOpacity(.92), const Color(0xFF123F42).withOpacity(.25)], begin: Alignment.centerRight, end: Alignment.centerLeft))),
+          DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(colors: [const Color.fromRGBO(18, 63, 66, .92), const Color.fromRGBO(18, 63, 66, .25)], begin: Alignment.centerRight, end: Alignment.centerLeft))),
           const Padding(
             padding: EdgeInsets.all(20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, children: [Text('از ادعا تا منبع', style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900)), SizedBox(height: 6), Text('محتوا، روش‌شناسی و مسیر بررسی نام‌ها', style: TextStyle(color: Colors.white70, fontSize: 12))]),

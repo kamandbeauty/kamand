@@ -10,6 +10,7 @@ import '../../domain/models/name.dart';
 import '../../domain/models/numerology_rule.dart';
 import '../../domain/models/profile.dart';
 import '../../domain/models/source.dart';
+import '../../domain/models/source_claim.dart';
 import 'seed_data.dart';
 
 class AppDatabase {

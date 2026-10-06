@@ -56,7 +56,7 @@ class AppTheme {
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: Colors.redAccent)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
         margin: EdgeInsets.zero,
@@ -91,7 +91,7 @@ class AppTheme {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         indicatorColor: tealLight,
-        labelTextStyle: MaterialStatePropertyAll(TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+        labelTextStyle: WidgetStatePropertyAll(TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
       ),
       dividerTheme: const DividerThemeData(color: Color(0xFFE8ECE9), thickness: 1),
     );
