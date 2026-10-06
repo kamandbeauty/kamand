@@ -1,5 +1,6 @@
 import '../../domain/models/name.dart';
 import '../../domain/models/source.dart';
+import '../../domain/models/source_claim.dart';
 import '../../domain/repositories/name_repository.dart';
 import '../database/app_database.dart';
 
@@ -16,4 +17,7 @@ class NameRepository implements NameRepositoryContract {
 
   @override
   List<Source> sources() => database.getSources();
+
+  @override
+  List<SourceClaim> claimsForName(String nameId) => database.getClaims('name', nameId);
 }
