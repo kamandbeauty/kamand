@@ -60,6 +60,11 @@ jobs:
       - name: Fail if tests failed
         if: steps.test.outcome == 'failure'
         run: exit 1
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
       - name: Build APK
         id: build
         continue-on-error: true
