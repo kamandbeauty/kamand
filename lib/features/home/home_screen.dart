@@ -8,6 +8,7 @@ import '../baby_names/baby_names_screen.dart';
 import '../compatibility/compatibility_screen.dart';
 import '../names/name_detail_screen.dart';
 import '../names/name_search_screen.dart';
+import '../shared/brand_logo.dart';
 import '../shared/section_title.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -19,49 +20,50 @@ class HomeScreen extends ConsumerWidget {
     final featured = names.take(4).toList(growable: false);
     return SafeArea(
       child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('علم اسامی', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-                            const SizedBox(height: 5),
-                            Text('نامت را بهتر بشناس', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.blueGrey)),
-                          ],
-                        ),
-                      ),
-                      CircleAvatar(
-                        radius: 25,
-                        backgroundColor: const Color(0xFFE2F2EF),
-                        child: Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.primary),
-                      ),
-                    ],
+                  const BrandLogo(size: 43, showName: true),
+                  const Spacer(),
+                  IconButton.filledTonal(
+                    onPressed: () {},
+                    icon: const Icon(Icons.notifications_none_rounded),
+                    tooltip: 'اعلان‌ها',
                   ),
-                  const SizedBox(height: 22),
-                  TextField(
-                    readOnly: true,
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameSearchScreen())),
-                    decoration: const InputDecoration(
-                      hintText: 'نام، معنی یا ریشه را جست‌وجو کن',
-                      prefixIcon: Icon(Icons.search),
-                      suffixIcon: Icon(Icons.tune),
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  const _DisclaimerCard(),
-                  const SizedBox(height: 24),
-                  const SectionTitle(title: 'شروع سریع', subtitle: 'ابزارهای پرکاربرد'),
-                  const SizedBox(height: 12),
                 ],
               ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              child: _WelcomeHero(
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameAnalysisScreen())),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              child: TextField(
+                readOnly: true,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameSearchScreen())),
+                decoration: const InputDecoration(
+                  hintText: 'نام، معنی یا ریشه را جست‌وجو کن',
+                  prefixIcon: Icon(Icons.search_rounded),
+                  suffixIcon: Icon(Icons.tune_rounded),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 25, 20, 12),
+              child: const SectionTitle(title: 'شروع سریع', subtitle: 'ابزارهای پرکاربرد'),
             ),
           ),
           SliverPadding(
@@ -70,12 +72,12 @@ class HomeScreen extends ConsumerWidget {
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.45,
+              childAspectRatio: 1.28,
               children: [
-                _QuickAction(icon: Icons.insights, title: 'تحلیل نام', color: const Color(0xFFE2F2EF), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameAnalysisScreen()))),
-                _QuickAction(icon: Icons.calculate_outlined, title: 'ابجد', color: const Color(0xFFF6EDDC), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameAnalysisScreen()))),
-                _QuickAction(icon: Icons.favorite_outline, title: 'سازگاری', color: const Color(0xFFF8E9EC), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CompatibilityScreen()))),
-                _QuickAction(icon: Icons.child_friendly_outlined, title: 'نام نوزاد', color: const Color(0xFFEAF0FA), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BabyNamesScreen()))),
+                _QuickAction(icon: Icons.insights_rounded, title: 'تحلیل نام', caption: 'معنی و ریشه', color: const Color(0xFFE2F2EF), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameAnalysisScreen()))),
+                _QuickAction(icon: Icons.calculate_rounded, title: 'ابجد', caption: 'محاسبه مرحله‌ای', color: const Color(0xFFF6EDDC), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameAnalysisScreen()))),
+                _QuickAction(icon: Icons.favorite_rounded, title: 'سازگاری', caption: 'مقایسه دو نام', color: const Color(0xFFF8E9EC), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CompatibilityScreen()))),
+                _QuickAction(icon: Icons.child_friendly_rounded, title: 'نام نوزاد', caption: 'پیشنهاد توضیح‌پذیر', color: const Color(0xFFEAF0FA), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BabyNamesScreen()))),
               ],
             ),
           ),
@@ -84,7 +86,7 @@ class HomeScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
               child: Row(
                 children: [
-                  const Expanded(child: SectionTitle(title: 'چند نام برای بررسی', subtitle: 'داده‌های نسخه آزمایشی')),
+                  const Expanded(child: SectionTitle(title: 'چند نام برای بررسی', subtitle: 'رکوردهای محلی نسخه آزمایشی')),
                   TextButton(
                     onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameSearchScreen())),
                     child: const Text('همه'),
@@ -98,34 +100,42 @@ class HomeScreen extends ConsumerWidget {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                final name = featured[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    tileColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFFE2F2EF),
-                      child: Text(name.displayName.characters.first, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800)),
+                  final name = featured[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => NameDetailScreen(nameId: name.id))),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 23,
+                                backgroundColor: const Color(0xFFE2F2EF),
+                                child: Text(name.displayName.characters.first, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name.displayName, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 4), Text(name.meaning, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.blueGrey, fontSize: 12))])),
+                              const Icon(Icons.chevron_left_rounded, color: Colors.blueGrey),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                    title: Text(name.displayName, style: const TextStyle(fontWeight: FontWeight.w800)),
-                    subtitle: Text(name.meaning),
-                    trailing: const Icon(Icons.chevron_left),
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => NameDetailScreen(nameId: name.id))),
-                  ),
-                );
-              },
-              childCount: featured.length,
+                  );
+                },
+                childCount: featured.length,
+              ),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ArchiveScreen())),
-                icon: const Icon(Icons.inventory_2_outlined),
-                label: const Text('آرشیو پژوهشی و روش‌شناسی'),
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+              child: _ArchiveBanner(onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ArchiveScreen()))),
             ),
           ),
         ],
@@ -134,28 +144,45 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({required this.icon, required this.title, required this.color, required this.onTap});
+class _WelcomeHero extends StatelessWidget {
+  const _WelcomeHero({required this.onTap});
 
-  final IconData icon;
-  final String title;
-  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Ink(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return SizedBox(
+      height: 218,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+            Image.asset('assets/images/home_hero.png', fit: BoxFit.cover),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [const Color(0xFF163F41).withOpacity(.96), const Color(0xFF163F41).withOpacity(.38), Colors.transparent],
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                  stops: const [0, .53, 1],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const BrandLogo(size: 34, light: true),
+                  const SizedBox(height: 18),
+                  const Text('نامت را\nبهتر بشناس', style: TextStyle(color: Colors.white, fontSize: 27, height: 1.18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 14),
+                  FilledButton.tonalIcon(onPressed: onTap, icon: const Icon(Icons.arrow_back_rounded), label: const Text('شروع تحلیل'), style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF176B67))),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -163,29 +190,54 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-class _DisclaimerCard extends StatelessWidget {
-  const _DisclaimerCard();
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({required this.icon, required this.title, required this.caption, required this.color, required this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String caption;
+  final Color color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF253238),
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(22),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Container(width: 42, height: 42, alignment: Alignment.center, decoration: BoxDecoration(color: Colors.white.withOpacity(.65), shape: BoxShape.circle), child: Icon(icon, color: Theme.of(context).colorScheme.primary)), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 3), Text(caption, style: const TextStyle(fontSize: 11, color: Colors.blueGrey))])]),
+        ),
       ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, color: Color(0xFFF6EDDC)),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'در علم اسامی، ادعاهای تاریخی و زبانی از تفسیرهای سنتی جدا هستند. نتایج ابجد و عددشناسی جنبه تفسیری و سرگرمی دارند.',
-              style: TextStyle(color: Colors.white, height: 1.6, fontSize: 12),
-            ),
+    );
+  }
+}
+
+class _ArchiveBanner extends StatelessWidget {
+  const _ArchiveBanner({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF253238),
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: 116,
+          child: Row(
+            children: [
+              Expanded(child: Padding(padding: const EdgeInsetsDirectional.only(start: 18), child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('آرشیو پژوهشی', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)), const SizedBox(height: 7), const Text('منابع، روش‌ها و مسیر بررسی نام‌ها', style: TextStyle(color: Colors.white70, fontSize: 12)), const SizedBox(height: 8), Text('مشاهده آرشیو  ←', style: TextStyle(color: const Color(0xFFF6EDDC), fontWeight: FontWeight.w800, fontSize: 12))]))),
+              SizedBox(width: 128, height: 116, child: Image.asset('assets/images/archive_illustration.png', fit: BoxFit.cover)),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

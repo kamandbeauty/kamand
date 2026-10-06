@@ -2,7 +2,7 @@
     <application
         android:label="علم اسامی"
         android:name="${applicationName}"
-        android:icon="@android:drawable/sym_def_app_icon">
+        android:icon="@drawable/nameology_logo">
         <activity
             android:name=".MainActivity"
             android:exported="true"

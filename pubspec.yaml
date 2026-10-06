@@ -27,3 +27,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/nameology_logo.png
+    - assets/images/home_hero.png
+    - assets/images/archive_illustration.png
