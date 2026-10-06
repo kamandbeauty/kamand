@@ -19,4 +19,11 @@ void main() {
     expect(DateEngine.birthNumber(date), 9);
     expect(DateEngine.lifePath(birthDate: date), 9);
   });
+
+  test('validates calendar dates before conversion', () {
+    expect(DateEngine.isValid(const CalendarDate(year: 1403, month: 13, day: 1, calendar: CalendarKind.jalali)), isFalse);
+    expect(DateEngine.isValid(const CalendarDate(year: 1402, month: 12, day: 30, calendar: CalendarKind.jalali)), isFalse);
+    expect(DateEngine.isValid(const CalendarDate(year: 2024, month: 2, day: 29, calendar: CalendarKind.gregorian)), isTrue);
+    expect(DateEngine.isValid(const CalendarDate(year: 2023, month: 2, day: 29, calendar: CalendarKind.gregorian)), isFalse);
+  });
 }

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database/app_database.dart';
-import '../data/database/seed_data.dart';
 import '../data/repositories/archive_repository.dart';
 import '../data/repositories/name_repository.dart';
 import '../data/repositories/profile_repository.dart';
@@ -51,13 +50,20 @@ final archiveEntriesProvider = Provider<List<ArchiveEntry>>((ref) {
 });
 
 final abjadEngineProvider = Provider<AbjadEngine>((ref) {
-  return const AbjadEngine(
-    mapping: abjadKabirLetters,
-    sourceNote: 'نگاشت Phase 1 آزمایشی است و پیش از انتشار باید به Source Claim دانشگاهی/تاریخی متصل شود.',
+  final database = ref.watch(databaseProvider);
+  final system = database.getAbjadSystem('kabir');
+  final mapping = database.getAbjadMapping('kabir');
+  return AbjadEngine(
+    mapping: mapping,
+    systemKey: system?.key ?? 'kabir',
+    systemTitle: system?.title ?? 'ابجد کبیر',
+    sourceNote: '${system?.description ?? 'توضیح سیستم ثبت نشده است'} نسخه: ${system?.version ?? 'نامشخص'} منبع: ${system?.sourceTitle ?? 'بدون منبع نهایی'} وضعیت: ${system?.status ?? 'unverified'}.',
   );
 });
 
-final numerologyEngineProvider = Provider<NumerologyEngine>((ref) => const NumerologyEngine());
+final numerologyEngineProvider = Provider<NumerologyEngine>((ref) {
+  return NumerologyEngine(rule: ref.watch(databaseProvider).getNumerologyRule('abjad-digital-root'));
+});
 final compatibilityEngineProvider = Provider<CompatibilityEngine>((ref) => const CompatibilityEngine());
 final nameSearchEngineProvider = Provider<NameSearchEngine>((ref) => const NameSearchEngine());
 final smartSearchEngineProvider = Provider<SmartSearchEngine>((ref) => const SmartSearchEngine());

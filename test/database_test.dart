@@ -15,11 +15,22 @@ void main() {
 
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
-    expect(metadata['schema_version'], '3');
+    expect(metadata['schema_version'], '4');
     expect(metadata['content_version'], 'knowledge-1');
     expect(database.getSources().length, greaterThan(3));
     expect(database.searchNames('آ'), isNotEmpty);
     expect(database.getClaims('name', 'name-داریوش'), isNotEmpty);
+  });
+
+  test('loads sourced calculation systems and refuses unsupported letter guesses', () {
+    final system = database.getAbjadSystem('kabir');
+    final mapping = database.getAbjadMapping('kabir');
+    final rule = database.getNumerologyRule('abjad-digital-root');
+    expect(system?.status, 'supported');
+    expect(mapping['ا'], 1);
+    expect(mapping.containsKey('پ'), isFalse);
+    expect(rule?.operation, 'digit_sum_reduce');
+    expect(rule?.status, 'unverified');
   });
 
   test('persists and deletes local profiles', () {

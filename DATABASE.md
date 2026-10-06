@@ -7,11 +7,12 @@
 - Schema 1: هسته نام‌ها، منابع، ابجد، پروفایل و آرشیو
 - Schema 2: FTS5، Source Claims، تنظیمات حریم خصوصی، Meaning و Etymology
 - Schema 3: Language، Culture و Pronunciation
+- Schema 4: Abjad Mapping، Numerology Systems، Rules و Interpretation placeholders
 
 Metadata فعلی:
 
 ```text
-schema_version = 3
+schema_version = 4
 content_version = knowledge-1
 ```
 
@@ -36,7 +37,17 @@ abjad_letters
 profiles
 archive_entries
 app_settings
+numerology_systems
+numerology_rules
+numerology_interpretations
 ```
+
+## Calculation Layer
+
+- `abjad_systems` و `abjad_letters` نگاشت نسخه‌دار را نگه می‌دارند؛ Query نگاشت فقط وقتی مقدار می‌دهد که برای System یک Source Claim معتبر ثبت شده باشد.
+- `numerology_systems` و `numerology_rules` عملیات قابل تنظیم را نگه می‌دارند و Rule فعلی `unverified` است.
+- `numerology_interpretations` فعلاً عمداً خالی است؛ بدون منبع معتبر هیچ تفسیر عددی Seed نمی‌شود.
+- UI باید Formula، Rule Version، وضعیت، منبع و Disclaimer را همراه نتیجه نمایش دهد.
 
 ## وضعیت محتوا
 

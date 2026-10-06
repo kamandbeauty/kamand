@@ -92,6 +92,19 @@ class DateEngine {
 
   static CalendarDate nowJalali() => gregorianToJalali(DateTime.now());
 
+  static bool isValid(CalendarDate date) {
+    if (date.month < 1 || date.month > 12 || date.day < 1) return false;
+    if (date.calendar == CalendarKind.jalali) {
+      final maxDay = date.month <= 6 ? 31 : date.month <= 11 ? 30 : 30;
+      if (date.day > maxDay) return false;
+      final converted = jalaliToGregorian(date);
+      final roundTrip = gregorianToJalali(converted);
+      return roundTrip.year == date.year && roundTrip.month == date.month && roundTrip.day == date.day;
+    }
+    final converted = DateTime(date.year, date.month, date.day);
+    return converted.year == date.year && converted.month == date.month && converted.day == date.day;
+  }
+
   static int digitSum(String value) {
     return value.replaceAll(RegExp(r'[^0-9]'), '').split('').fold(0, (sum, digit) => sum + int.parse(digit));
   }

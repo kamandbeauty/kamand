@@ -2,10 +2,17 @@ import '../../core/normalization/persian_normalizer.dart';
 import '../models/abjad_result.dart';
 
 class AbjadEngine {
-  const AbjadEngine({required this.mapping, required this.sourceNote});
+  const AbjadEngine({
+    required this.mapping,
+    required this.sourceNote,
+    this.systemKey = 'kabir',
+    this.systemTitle = 'ابجد کبیر',
+  });
 
   final Map<String, int> mapping;
   final String sourceNote;
+  final String systemKey;
+  final String systemTitle;
 
   AbjadResult calculate(String input) {
     final normalized = PersianNormalizer.normalize(input);
@@ -26,8 +33,8 @@ class AbjadEngine {
     }
 
     return AbjadResult(
-      systemKey: 'kabir',
-      systemTitle: 'ابجد کبیر',
+      systemKey: systemKey,
+      systemTitle: systemTitle,
       steps: steps,
       total: total,
       unknownLetters: unknown,

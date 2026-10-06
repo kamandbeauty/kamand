@@ -4,7 +4,9 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../../core/normalization/persian_normalizer.dart';
 import '../../domain/models/archive_entry.dart';
+import '../../domain/models/abjad_system.dart';
 import '../../domain/models/name.dart';
+import '../../domain/models/numerology_rule.dart';
 import '../../domain/models/profile.dart';
 import '../../domain/models/source.dart';
 import 'seed_data.dart';
@@ -31,6 +33,7 @@ class AppDatabase {
       database._migrate();
       database._seedIfEmpty();
       database._upgradeContentSeed();
+      database._ensureCalculationSystems();
       return database;
     } catch (_) {
       db.dispose();
@@ -286,6 +289,85 @@ class AppDatabase {
       _db.execute('PRAGMA user_version = 3');
       _setMetadata('schema_version', '3');
       _setMetadata('content_version', 'seed-3');
+      version = 3;
+    }
+
+    if (version < 4) {
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS abjad_systems (
+          id TEXT PRIMARY KEY,
+          system_key TEXT NOT NULL UNIQUE,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          source_id TEXT,
+          version TEXT NOT NULL,
+          status TEXT NOT NULL,
+          FOREIGN KEY(source_id) REFERENCES sources(id) ON DELETE SET NULL
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS abjad_letters (
+          id TEXT PRIMARY KEY,
+          system_id TEXT NOT NULL,
+          letter TEXT NOT NULL,
+          normalized_letter TEXT NOT NULL,
+          arabic_letter TEXT NOT NULL DEFAULT '',
+          persian_letter TEXT NOT NULL DEFAULT '',
+          numeric_value INTEGER,
+          mapping_status TEXT NOT NULL,
+          source_id TEXT,
+          FOREIGN KEY(system_id) REFERENCES abjad_systems(id) ON DELETE CASCADE,
+          FOREIGN KEY(source_id) REFERENCES sources(id) ON DELETE SET NULL
+        )
+      ''');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_abjad_letters_system ON abjad_letters(system_id)');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS numerology_systems (
+          id TEXT PRIMARY KEY,
+          system_key TEXT NOT NULL UNIQUE,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          source_id TEXT,
+          version TEXT NOT NULL,
+          status TEXT NOT NULL,
+          disclaimer TEXT NOT NULL,
+          FOREIGN KEY(source_id) REFERENCES sources(id) ON DELETE SET NULL
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS numerology_rules (
+          id TEXT PRIMARY KEY,
+          system_id TEXT NOT NULL,
+          rule_key TEXT NOT NULL,
+          operation TEXT NOT NULL,
+          configuration_json TEXT NOT NULL DEFAULT '{}',
+          source_id TEXT,
+          version TEXT NOT NULL,
+          status TEXT NOT NULL,
+          FOREIGN KEY(system_id) REFERENCES numerology_systems(id) ON DELETE CASCADE,
+          FOREIGN KEY(source_id) REFERENCES sources(id) ON DELETE SET NULL
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS numerology_interpretations (
+          id TEXT PRIMARY KEY,
+          system_id TEXT NOT NULL,
+          number_value INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          status TEXT NOT NULL,
+          confidence TEXT NOT NULL,
+          source_id TEXT,
+          FOREIGN KEY(system_id) REFERENCES numerology_systems(id) ON DELETE CASCADE,
+          FOREIGN KEY(source_id) REFERENCES sources(id) ON DELETE SET NULL
+        )
+      ''');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_numerology_rules_system ON numerology_rules(system_id)');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_numerology_interpretations_system ON numerology_interpretations(system_id, number_value)');
+      _db.execute('PRAGMA user_version = 4');
+      _setMetadata('schema_version', '4');
+      _setMetadata('content_version', 'seed-4');
+      version = 4;
     }
   }
 
@@ -371,6 +453,40 @@ class AppDatabase {
       _db.execute('ROLLBACK');
       rethrow;
     }
+  }
+
+  void _ensureCalculationSystems() {
+    final hasIranica = _db.select("SELECT 1 FROM sources WHERE id = 'source-iranica-abjad' LIMIT 1").isNotEmpty;
+    final abjadSource = hasIranica ? 'source-iranica-abjad' : internalSourceId;
+    _db.execute('''
+      INSERT OR IGNORE INTO abjad_systems (id, system_key, title, description, source_id, version, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', ['abjad-kabir-v1', 'kabir', 'ابجد کبیر', 'نگاشت حرف به عدد برای نمایش سنت تاریخی؛ این بخش ادعای علمی یا پیش‌بینی نیست.', abjadSource, '1', 'supported']);
+    for (final entry in abjadKabirLetters.entries) {
+      _db.execute('''
+        INSERT OR IGNORE INTO abjad_letters (id, system_id, letter, normalized_letter, arabic_letter, persian_letter, numeric_value, mapping_status, source_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ''', ['kabir-${entry.key}', 'abjad-kabir-v1', entry.key, entry.key, entry.key, entry.key, entry.value, 'supported', abjadSource]);
+    }
+    _db.execute('''
+      INSERT OR IGNORE INTO numerology_systems (id, system_key, title, description, source_id, version, status, disclaimer)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', [
+      'numerology-abjad-digital-root-v1',
+      'abjad-digital-root',
+      'کاهش رقمی بر پایه مجموع ابجد',
+      'یک عملیات عددی قابل مشاهده برای نمایش مقدار کاهش‌یافته؛ تفسیر شخصیتی در این نسخه ثبت نشده است.',
+      null,
+      '1',
+      'unverified',
+      'این نتیجه سنتی و تفسیری است و پیش‌بینی علمی شخصیت یا آینده محسوب نمی‌شود.',
+    ]);
+    _db.execute('''
+      INSERT OR IGNORE INTO numerology_rules (id, system_id, rule_key, operation, configuration_json, source_id, version, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', ['rule-digit-sum-reduce-v1', 'numerology-abjad-digital-root-v1', 'digit_sum_reduce', 'digit_sum_reduce', '{}', null, '1', 'unverified']);
+    _db.execute("UPDATE abjad_systems SET source_id = 'source-iranica-abjad', status = 'supported' WHERE system_key = 'kabir' AND EXISTS (SELECT 1 FROM sources WHERE id = 'source-iranica-abjad')");
+    _db.execute("UPDATE abjad_letters SET source_id = 'source-iranica-abjad', mapping_status = 'supported' WHERE system_id = (SELECT id FROM abjad_systems WHERE system_key = 'kabir') AND EXISTS (SELECT 1 FROM sources WHERE id = 'source-iranica-abjad')");
   }
 
   void _upgradeContentSeed() {
@@ -492,6 +608,42 @@ class AppDatabase {
       [id],
     );
     return rows.isEmpty ? null : Name.fromMap(Map<String, Object?>.from(rows.first));
+  }
+
+  AbjadSystem? getAbjadSystem(String systemKey) {
+    final rows = _db.select(
+      '''SELECT a.*, s.title AS source_title
+         FROM abjad_systems a LEFT JOIN sources s ON s.id = a.source_id
+         WHERE a.system_key = ?''',
+      [systemKey],
+    );
+    return rows.isEmpty ? null : AbjadSystem.fromMap(Map<String, Object?>.from(rows.first));
+  }
+
+  Map<String, int> getAbjadMapping(String systemKey) {
+    final rows = _db.select(
+      '''SELECT l.normalized_letter, l.numeric_value
+         FROM abjad_letters l JOIN abjad_systems a ON a.id = l.system_id
+         WHERE a.system_key = ? AND l.numeric_value IS NOT NULL
+           AND EXISTS (SELECT 1 FROM source_claims c WHERE c.subject_type = 'abjad_system' AND c.subject_id = a.id AND c.status IN ('supported', 'verified'))''',
+      [systemKey],
+    );
+    return {
+      for (final row in rows) row['normalized_letter'] as String: row['numeric_value'] as int,
+    };
+  }
+
+  NumerologyRule? getNumerologyRule(String systemKey) {
+    final rows = _db.select(
+      '''SELECT r.*, n.system_key, n.title AS system_title, n.disclaimer, s.title AS source_title
+         FROM numerology_rules r
+         JOIN numerology_systems n ON n.id = r.system_id
+         LEFT JOIN sources s ON s.id = r.source_id
+         WHERE n.system_key = ?
+         ORDER BY r.version DESC LIMIT 1''',
+      [systemKey],
+    );
+    return rows.isEmpty ? null : NumerologyRule.fromMap(Map<String, Object?>.from(rows.first));
   }
 
   List<Source> getSources() {
