@@ -56,6 +56,21 @@ flutter test
 ```
 شامل smoke test اپ، مسیر «دیوان ← خواندن شعر» و تست سلامت کامل دیتاست (۵۹۵ رکورد، تعبیر هر ۴۹۵ غزل).
 
+## 🔏 امضای امن نسخهٔ اندروید
+
+بیلد Release در GitHub Actions فقط با این چهار Repository Secret اجرا می‌شود:
+
+- `DIVAN_RELEASE_KEYSTORE_BASE64`
+- `DIVAN_RELEASE_KEYSTORE_PASSWORD`
+- `DIVAN_RELEASE_KEY_ALIAS`
+- `DIVAN_RELEASE_KEY_PASSWORD`
+
+Keystore هنگام اجرا فقط در پوشهٔ موقت Runner بازسازی می‌شود، وارد مخزن یا artifact
+نمی‌شود و پس از پایان Job از بین می‌رود. پایپ‌لاین پس از ساخت نیز امضای هر چهار APK
+را با `apksigner` بررسی می‌کند و یکسان بودن اثر انگشت SHA-256 گواهی آن‌ها را تأیید
+می‌کند. بیلد Release بدون اطلاعات کامل امضا متوقف می‌شود و هیچ fallback به کلید
+Debug ندارد.
+
 ## 📜 مجوزها و سپاس
 
 - **متن اشعار:** مجموعهٔ [ChronologicalPersianPoetryDataset](https://github.com/aghasemi/ChronologicalPersianPoetryDataset) (بر پایهٔ دادهٔ گنجور) با مجوز **CC BY-SA 4.0**

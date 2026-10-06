@@ -21,11 +21,41 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
+// امضای Release از متغیرهای امن CI خوانده می‌شود. برای ساخت محلی نیز
+// key.properties استاندارد فلاتر پشتیبانی می‌شود؛ هیچ کلید یا رمزی وارد گیت نیست.
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
-       keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
+
+def signingValue = { String environmentName, String propertyName ->
+    def environmentValue = System.getenv(environmentName)
+    environmentValue != null ? environmentValue : keystoreProperties.getProperty(propertyName)
+}
+
+def releaseStorePath = signingValue('DIVAN_RELEASE_KEYSTORE_PATH', 'storeFile')
+def releaseStorePassword = signingValue('DIVAN_RELEASE_KEYSTORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = signingValue('DIVAN_RELEASE_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = signingValue('DIVAN_RELEASE_KEY_PASSWORD', 'keyPassword')
+def hasReleaseSigning = [
+    releaseStorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+].every { value -> value != null && !value.toString().isEmpty() }
+
+// بیلد Debug بدون کلید انتشار همچنان ممکن است، اما Release هرگز با کلید Debug
+// یا به‌صورت بی‌امضا ساخته نمی‌شود.
+def releaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase().contains('release')
+}
+if (releaseBuildRequested && !hasReleaseSigning) {
+    throw new GradleException(
+        'Release signing credentials are missing. Configure the DIVAN_RELEASE_* environment variables or android/key.properties.'
+    )
+}
+
 android {
     namespace "com.javidstudio.divanfalhafez"
     compileSdk flutter.compileSdkVersion
@@ -53,24 +83,22 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
-    if (keystorePropertiesFile.exists()) {
-        signingConfigs {
+    signingConfigs {
+        if (hasReleaseSigning) {
             release {
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-                storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-                storePassword keystoreProperties['storePassword']
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+                storeFile file(releaseStorePath)
+                storePassword releaseStorePassword
             }
         }
     }
+
     buildTypes {
         release {
-            // اگر فایل key.properties (که در گیت نیست) موجود بود با کلید
-            // اصلی امضا می‌شود؛ در غیر این صورت با کلید دیباگ تا بیلدِ
-            // ریلیز روی هر دستگاهی بدون خطا انجام شود.
-            signingConfig keystorePropertiesFile.exists()
-                    ? signingConfigs.release
-                    : signingConfigs.debug
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

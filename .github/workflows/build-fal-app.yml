@@ -1,5 +1,5 @@
 # ساخت خودکار اپلیکیشن «دیوان و فال حافظ» روی GitHub Actions
-# خروجی: ۴ فایل APK — universal (همهٔ گوشی‌ها) + اختصاصی هر معماری
+# خروجی: ۴ فایل APK امضاشده — universal (همهٔ گوشی‌ها) + اختصاصی هر معماری
 # (arm64-v8a گوشی‌های امروزی، armeabi-v7a قدیمی ۳۲بیتی، x86_64 شبیه‌ساز/تبلت)
 #
 # خط‌مشی‌های پایداری CI:
@@ -146,14 +146,65 @@ jobs:
           flutter-version: '3.47.6'
           cache: true
 
+      # Keystore فقط داخل حافظهٔ موقت Runner بازسازی می‌شود و هرگز در
+      # مخزن یا artifact ذخیره نمی‌شود. نام Alias و رمزها نیز چاپ نمی‌شوند.
+      - name: Prepare and validate release keystore
+        shell: bash
+        env:
+          DIVAN_RELEASE_KEYSTORE_BASE64: ${{ secrets.DIVAN_RELEASE_KEYSTORE_BASE64 }}
+          DIVAN_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DIVAN_RELEASE_KEYSTORE_PASSWORD }}
+          DIVAN_RELEASE_KEY_ALIAS: ${{ secrets.DIVAN_RELEASE_KEY_ALIAS }}
+          DIVAN_RELEASE_KEY_PASSWORD: ${{ secrets.DIVAN_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          required=(
+            DIVAN_RELEASE_KEYSTORE_BASE64
+            DIVAN_RELEASE_KEYSTORE_PASSWORD
+            DIVAN_RELEASE_KEY_ALIAS
+            DIVAN_RELEASE_KEY_PASSWORD
+          )
+          for variable in "${required[@]}"; do
+            if [[ -z "${!variable:-}" ]]; then
+              echo "::error::Required signing secret is missing: $variable"
+              exit 1
+            fi
+          done
+
+          keystore_path="$RUNNER_TEMP/divan-release.jks"
+          if ! printf '%s' "$DIVAN_RELEASE_KEYSTORE_BASE64" \
+              | base64 --decode > "$keystore_path"; then
+            echo "::error::DIVAN_RELEASE_KEYSTORE_BASE64 is not valid Base64"
+            exit 1
+          fi
+          chmod 600 "$keystore_path"
+          if [[ ! -s "$keystore_path" ]]; then
+            echo "::error::Decoded release keystore is empty"
+            exit 1
+          fi
+
+          if ! keytool -list \
+              -keystore "$keystore_path" \
+              -storepass "$DIVAN_RELEASE_KEYSTORE_PASSWORD" \
+              -alias "$DIVAN_RELEASE_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Keystore, store password, or key alias is invalid"
+            exit 1
+          fi
+
+          echo "DIVAN_RELEASE_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+          echo "Release keystore decoded and validated."
+
       # همان سیاست: فقط از lockfile کامیت‌شده؛ pub upgrade وجود ندارد
       - name: Resolve dependencies (pub get from committed lock)
         working-directory: divan_fal_hafez
         run: flutter pub get --enforce-lockfile
 
-      - name: Build release APKs (universal + split per ABI)
+      - name: Build signed release APKs (universal + split per ABI)
         working-directory: divan_fal_hafez
         shell: bash
+        env:
+          DIVAN_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DIVAN_RELEASE_KEYSTORE_PASSWORD }}
+          DIVAN_RELEASE_KEY_ALIAS: ${{ secrets.DIVAN_RELEASE_KEY_ALIAS }}
+          DIVAN_RELEASE_KEY_PASSWORD: ${{ secrets.DIVAN_RELEASE_KEY_PASSWORD }}
         run: |
           set +e
           flutter build apk --release --split-per-abi > apk-build-report.txt 2>&1 \
@@ -162,7 +213,67 @@ jobs:
           echo "EXIT_CODE=$code" >> apk-build-report.txt
           exit $code
 
-      - name: Post APK build failure report to PR
+      - name: Verify APK signatures and signing certificate
+        working-directory: divan_fal_hafez
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [[ -z "$sdk_root" ]]; then
+            echo "::error::Android SDK path is unavailable"
+            exit 1
+          fi
+
+          apksigner=$(find "$sdk_root/build-tools" -maxdepth 2 -type f \
+            -name apksigner | sort -V | tail -n 1)
+          if [[ -z "$apksigner" || ! -x "$apksigner" ]]; then
+            echo "::error::apksigner was not found"
+            exit 1
+          fi
+
+          apks=(
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
+          )
+          certificate_digest=''
+          for apk in "${apks[@]}"; do
+            if [[ ! -s "$apk" ]]; then
+              echo "::error::Expected APK is missing or empty: $apk"
+              exit 1
+            fi
+
+            if ! verification=$("$apksigner" verify --verbose --print-certs \
+                "$apk" 2>&1); then
+              echo "::error::APK signature verification failed: $apk"
+              echo "$verification"
+              exit 1
+            fi
+            current_digest=$(printf '%s\n' "$verification" \
+              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
+              | head -n 1)
+            if [[ -z "$current_digest" ]]; then
+              echo "::error::Signing certificate digest was not found: $apk"
+              exit 1
+            fi
+            if [[ -z "$certificate_digest" ]]; then
+              certificate_digest="$current_digest"
+            elif [[ "$certificate_digest" != "$current_digest" ]]; then
+              echo "::error::Release APKs were signed with different certificates"
+              exit 1
+            fi
+            echo "Verified signed APK: $(basename "$apk")"
+          done
+
+          {
+            echo '### ✅ امضای APKهای انتشار تأیید شد'
+            echo ''
+            echo "هر ۴ فایل با یک گواهی یکسان امضا شده‌اند."
+            echo "\`SHA-256: $certificate_digest\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post APK build or signing failure report to PR
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -172,9 +283,13 @@ jobs:
           PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
           if [ -n "$PR" ] && [ "$PR" != "null" ]; then
             {
-              echo "### ❌ گزارش خطای ساخت APK (run #${GITHUB_RUN_NUMBER})"
+              echo "### ❌ گزارش خطای ساخت یا امضای APK (run #${GITHUB_RUN_NUMBER})"
               echo '```text'
-              grep -v "═\|─" apk-build-report.txt | tail -c 9000
+              if [ -f apk-build-report.txt ]; then
+                grep -v "═\|─" apk-build-report.txt | tail -c 9000
+              else
+                echo 'مرحلهٔ آماده‌سازی و اعتبارسنجی Keystore ناموفق بود؛ لاگ امن اجرای CI را بررسی کنید.'
+              fi
               echo '```'
             } > /tmp/comment-apk.md
             gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment-apk.md
@@ -190,6 +305,14 @@ jobs:
             divan_fal_hafez/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
             divan_fal_hafez/build/app/outputs/flutter-apk/app-x86_64-release.apk
           retention-days: 90
+
+      - name: Remove temporary release keystore
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${DIVAN_RELEASE_KEYSTORE_PATH:-}" ]]; then
+            rm -f "$DIVAN_RELEASE_KEYSTORE_PATH"
+          fi
 
   release:
     name: Publish GitHub Release (Android APKs)
@@ -217,6 +340,7 @@ jobs:
           cp apk/app-armeabi-v7a-release.apk "out/divan-fal-hafez-${TAG}-armeabi-v7a.apk"
           cp apk/app-x86_64-release.apk "out/divan-fal-hafez-${TAG}-x86_64.apk"
           NOTES="نسخهٔ ${VERSION} — فایل‌های نصبی اندروید (ساخت خودکار CI از شاخه ${GITHUB_REF_NAME}, کامیت ${GITHUB_SHA}):
+          - ✅ هر چهار APK با کلید Release امضا و گواهی آن‌ها در CI راستی‌آزمایی شده است.
           - **universal**: برای همهٔ گوشی‌ها (اگر مطمئن نیستید همین را نصب کنید)
           - **arm64-v8a**: بیشتر گوشی‌های امروزی (کم‌حجم‌تر)
           - **armeabi-v7a**: گوشی‌های قدیمی ۳۲بیتی
