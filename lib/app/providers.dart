@@ -11,6 +11,7 @@ import '../domain/engines/name_search_engine.dart';
 import '../domain/engines/numerology_engine.dart';
 import '../domain/models/archive_entry.dart';
 import '../domain/models/name.dart';
+import '../domain/models/privacy_settings.dart';
 import '../domain/models/profile.dart';
 import '../domain/models/source.dart';
 
@@ -58,6 +59,40 @@ final nameSearchEngineProvider = Provider<NameSearchEngine>((ref) => const NameS
 final profilesProvider = StateNotifierProvider<ProfilesNotifier, List<Profile>>((ref) {
   return ProfilesNotifier(ref.watch(profileRepositoryProvider));
 });
+
+final privacySettingsProvider = StateNotifierProvider<PrivacySettingsNotifier, PrivacySettings>((ref) {
+  return PrivacySettingsNotifier(ref.watch(databaseProvider));
+});
+
+class PrivacySettingsNotifier extends StateNotifier<PrivacySettings> {
+  PrivacySettingsNotifier(this.database) : super(_read(database));
+
+  final AppDatabase database;
+
+  static PrivacySettings _read(AppDatabase database) {
+    final values = database.getPrivacySettings();
+    return PrivacySettings(
+      analyticsEnabled: values['analytics_enabled'] ?? PrivacySettings.defaults.analyticsEnabled,
+      personalizedAdsEnabled: values['personalized_ads_enabled'] ?? PrivacySettings.defaults.personalizedAdsEnabled,
+      contentUpdatesEnabled: values['content_updates_enabled'] ?? PrivacySettings.defaults.contentUpdatesEnabled,
+    );
+  }
+
+  void setAnalyticsEnabled(bool value) {
+    database.setPrivacySetting('analytics_enabled', value);
+    state = state.copyWith(analyticsEnabled: value);
+  }
+
+  void setPersonalizedAdsEnabled(bool value) {
+    database.setPrivacySetting('personalized_ads_enabled', value);
+    state = state.copyWith(personalizedAdsEnabled: value);
+  }
+
+  void setContentUpdatesEnabled(bool value) {
+    database.setPrivacySetting('content_updates_enabled', value);
+    state = state.copyWith(contentUpdatesEnabled: value);
+  }
+}
 
 class ProfilesNotifier extends StateNotifier<List<Profile>> {
   ProfilesNotifier(this.repository) : super(repository.all());

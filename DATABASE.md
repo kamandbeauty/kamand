@@ -1,17 +1,42 @@
-# طرح دیتابیس محلی
+# معماری دیتابیس محلی «علم اسامی»
 
-نسخه فعلی از SQLite مستقیم با Migration صریح استفاده می‌کند تا بدون کد تولیدشده، رفتار قابل بررسی و قابل تست داشته باشد. در صورت نیاز، لایه DAO می‌تواند در مرحله بعد به Drift منتقل شود؛ قرارداد Repository و Schema مستقل از این تصمیم نگه داشته شده‌اند.
+نسخه فعلی از SQLite محلی با Migration صریح استفاده می‌کند. Repository و Engineها به API دیتابیس وابستگی مستقیم ندارند و در صورت نیاز می‌توان لایه پیاده‌سازی را بدون تغییر Domain به Drift منتقل کرد.
 
-## جدول‌های Phase 1
+## نسخه Schema
 
-- `database_metadata`
-- `sources`
-- `names`
-- `name_variants`
-- `abjad_systems`
-- `abjad_letters`
-- `profiles`
-- `archive_entries`
+- Schema 1: هسته نام‌ها، منابع، ابجد، پروفایل و آرشیو
+- Schema 2: FTS5، Source Claims، تنظیمات حریم خصوصی، Meaning و Etymology
+- Schema 3: Language، Culture و Pronunciation
+
+Metadata فعلی:
+
+```text
+schema_version = 3
+content_version = seed-3
+```
+
+## جداول فعلی
+
+```text
+database_metadata
+sources
+source_authors
+source_categories
+source_claims
+names
+name_variants
+name_meanings
+name_etymologies
+name_languages
+name_cultures
+name_pronunciations
+names_fts
+abjad_systems
+abjad_letters
+profiles
+archive_entries
+app_settings
+```
 
 ## وضعیت محتوا
 
@@ -21,6 +46,7 @@
 - `unverified`
 - `disputed`
 - `deprecated`
+- `pending`
 
 مقادیر `confidence`:
 
@@ -28,6 +54,44 @@
 - `medium`
 - `low`
 
-## نسخه‌های آینده
+## Source Claims
 
-جداول `name_meanings`، `name_etymologies`، `name_languages`، `name_cultures`، `name_genders`، `name_pronunciations`، `name_popularity`، `name_historical_usage`، `name_literary_references`، `name_famous_people`، `name_related_names`، `source_claims`، `numerology_systems`، `numerology_rules` و `compatibility_rules` در Migrationهای بعدی اضافه می‌شوند. تا قبل از ورود داده منبع‌دار، معنی و ریشه در رکورد پایه به‌صورت وضعیت‌دار نگه داشته می‌شود.
+`source_claims` با `claim_group_id` اجازه می‌دهد چند منبع درباره یک ادعا ثبت شوند و اختلاف یا پشتیبانی آن‌ها از بین نرود.
+
+```text
+claim_group_id
+source_id
+subject_type
+subject_id
+claim_type
+claim_text
+normalized_value
+status
+confidence
+evidence_note
+review_status
+```
+
+## جست‌وجو
+
+جدول `names_fts` برای جست‌وجوی Full Text و Prefix ایجاد شده است. در صورت خطای FTS یا ورودی دارای عملگرهای خاص، Repository به صورت ایمن به LIKE fallback می‌کند.
+
+## Privacy
+
+تنظیمات زیر فقط Local نگهداری می‌شوند:
+
+```text
+analytics_enabled
+personalized_ads_enabled
+content_updates_enabled
+```
+
+پیش‌فرض Analytics و تبلیغات شخصی‌سازی‌شده خاموش است.
+
+## Migration Rules
+
+- Migrationها فقط افزایشی هستند.
+- حذف جدول یا ستون بدون Migration صریح ممنوع است.
+- هر تغییر Schema باید تست Migration داشته باشد.
+- `content_version` مستقل از `schema_version` است.
+- داده‌های محتوایی بدون Source یا با وضعیت Unverified نباید به عنوان Fact نمایش داده شوند.

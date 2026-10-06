@@ -2,11 +2,11 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../core/normalization/persian_normalizer.dart';
 import '../../domain/models/archive_entry.dart';
 import '../../domain/models/name.dart';
 import '../../domain/models/profile.dart';
 import '../../domain/models/source.dart';
-import '../../core/normalization/persian_normalizer.dart';
 import 'seed_data.dart';
 
 class AppDatabase {
@@ -18,16 +18,29 @@ class AppDatabase {
   static Future<AppDatabase> open() async {
     final directory = await getApplicationDocumentsDirectory();
     final filePath = path.join(directory.path, 'nameology.sqlite');
-    final db = sqlite3.open(filePath);
+    return _open(sqlite3.open(filePath), filePath);
+  }
+
+  static AppDatabase openInMemory() {
+    return _open(sqlite3.openInMemory(), ':memory:');
+  }
+
+  static AppDatabase _open(Database db, String filePath) {
     final database = AppDatabase._(db, filePath);
-    database._migrate();
-    database._seedIfEmpty();
-    return database;
+    try {
+      database._migrate();
+      database._seedIfEmpty();
+      return database;
+    } catch (_) {
+      db.dispose();
+      rethrow;
+    }
   }
 
   void _migrate() {
     _db.execute('PRAGMA foreign_keys = ON');
-    final version = _db.select('PRAGMA user_version').first['user_version'] as int;
+    var version = (_db.select('PRAGMA user_version').first['user_version'] as int?) ?? 0;
+
     if (version < 1) {
       _db.execute('''
         CREATE TABLE IF NOT EXISTS database_metadata (
@@ -137,15 +150,151 @@ class AppDatabase {
       _db.execute('CREATE INDEX IF NOT EXISTS idx_names_normalized ON names(normalized_name)');
       _db.execute('CREATE INDEX IF NOT EXISTS idx_names_status ON names(status)');
       _db.execute('CREATE INDEX IF NOT EXISTS idx_archive_category ON archive_entries(category)');
-      _db.execute("PRAGMA user_version = 1");
+      _db.execute('PRAGMA user_version = 1');
       _setMetadata('schema_version', '1');
       _setMetadata('content_version', 'seed-1');
+      version = 1;
+    }
+
+    if (version < 2) {
+      _db.execute('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS names_fts USING fts5(
+          name_id UNINDEXED,
+          display_name,
+          normalized_name,
+          meaning,
+          etymology,
+          tokenize = 'unicode61 remove_diacritics 2'
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS source_authors (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          affiliation TEXT NOT NULL DEFAULT '',
+          notes TEXT NOT NULL DEFAULT ''
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS source_categories (
+          id TEXT PRIMARY KEY,
+          category_key TEXT NOT NULL UNIQUE,
+          title TEXT NOT NULL
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS source_claims (
+          id TEXT PRIMARY KEY,
+          claim_group_id TEXT NOT NULL,
+          source_id TEXT NOT NULL,
+          subject_type TEXT NOT NULL,
+          subject_id TEXT NOT NULL,
+          claim_type TEXT NOT NULL,
+          claim_text TEXT NOT NULL,
+          normalized_value TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL,
+          confidence TEXT NOT NULL,
+          evidence_note TEXT NOT NULL DEFAULT '',
+          review_status TEXT NOT NULL DEFAULT 'pending',
+          created_at TEXT NOT NULL,
+          FOREIGN KEY(source_id) REFERENCES sources(id) ON DELETE CASCADE
+        )
+      ''');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_claim_subject ON source_claims(subject_type, subject_id)');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_claim_group ON source_claims(claim_group_id)');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS name_meanings (
+          id TEXT PRIMARY KEY,
+          name_id TEXT NOT NULL,
+          meaning_text TEXT NOT NULL,
+          context TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL,
+          confidence TEXT NOT NULL,
+          claim_group_id TEXT,
+          FOREIGN KEY(name_id) REFERENCES names(id) ON DELETE CASCADE
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS name_etymologies (
+          id TEXT PRIMARY KEY,
+          name_id TEXT NOT NULL,
+          etymology_text TEXT NOT NULL,
+          root_form TEXT NOT NULL DEFAULT '',
+          source_language TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL,
+          confidence TEXT NOT NULL,
+          claim_group_id TEXT,
+          FOREIGN KEY(name_id) REFERENCES names(id) ON DELETE CASCADE
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
+      _db.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('analytics_enabled', 'false')");
+      _db.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('personalized_ads_enabled', 'false')");
+      _db.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('content_updates_enabled', 'true')");
+      _db.execute('PRAGMA user_version = 2');
+      _setMetadata('schema_version', '2');
+      _setMetadata('content_version', 'seed-2');
+      version = 2;
+    }
+
+    if (version < 3) {
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS name_languages (
+          id TEXT PRIMARY KEY,
+          name_id TEXT NOT NULL,
+          language_code TEXT NOT NULL,
+          language_title TEXT NOT NULL,
+          status TEXT NOT NULL,
+          confidence TEXT NOT NULL,
+          claim_group_id TEXT,
+          FOREIGN KEY(name_id) REFERENCES names(id) ON DELETE CASCADE
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS name_cultures (
+          id TEXT PRIMARY KEY,
+          name_id TEXT NOT NULL,
+          culture_key TEXT NOT NULL,
+          culture_title TEXT NOT NULL,
+          status TEXT NOT NULL,
+          confidence TEXT NOT NULL,
+          claim_group_id TEXT,
+          FOREIGN KEY(name_id) REFERENCES names(id) ON DELETE CASCADE
+        )
+      ''');
+      _db.execute('''
+        CREATE TABLE IF NOT EXISTS name_pronunciations (
+          id TEXT PRIMARY KEY,
+          name_id TEXT NOT NULL,
+          ipa TEXT NOT NULL DEFAULT '',
+          local_phonetic TEXT NOT NULL DEFAULT '',
+          dialect TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL,
+          confidence TEXT NOT NULL,
+          claim_group_id TEXT,
+          FOREIGN KEY(name_id) REFERENCES names(id) ON DELETE CASCADE
+        )
+      ''');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_name_languages_name ON name_languages(name_id)');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_name_cultures_name ON name_cultures(name_id)');
+      _db.execute('PRAGMA user_version = 3');
+      _setMetadata('schema_version', '3');
+      _setMetadata('content_version', 'seed-3');
     }
   }
 
   void _seedIfEmpty() {
     final count = (_db.select('SELECT COUNT(*) AS count FROM sources').first['count'] as int?) ?? 0;
-    if (count > 0) return;
+    if (count > 0) {
+      _refreshSearchIndex();
+      return;
+    }
+
     final now = DateTime.now().toUtc().toIso8601String();
     _db.execute('BEGIN');
     try {
@@ -189,35 +338,67 @@ class AppDatabase {
         );
       }
       _db.execute('COMMIT');
+      _refreshSearchIndex();
     } catch (_) {
       _db.execute('ROLLBACK');
       rethrow;
     }
   }
 
+  void _refreshSearchIndex() {
+    _db.execute('DELETE FROM names_fts');
+    _db.execute('''
+      INSERT INTO names_fts (name_id, display_name, normalized_name, meaning, etymology)
+      SELECT id, display_name, normalized_name, meaning, etymology FROM names
+    ''');
+  }
+
   void _setMetadata(String key, String value) {
-    _db.execute(
-      'INSERT OR REPLACE INTO database_metadata (key, value) VALUES (?, ?)',
-      [key, value],
-    );
+    _db.execute('INSERT OR REPLACE INTO database_metadata (key, value) VALUES (?, ?)', [key, value]);
   }
 
   List<Name> searchNames(String query) {
     final normalized = PersianNormalizer.normalizeForSearch(query);
-    final rows = normalized.isEmpty
-        ? _db.select('SELECT n.*, s.title AS source_title FROM names n LEFT JOIN sources s ON s.id = n.source_id ORDER BY n.display_name')
-        : _db.select(
-            '''SELECT n.*, s.title AS source_title FROM names n
-               LEFT JOIN sources s ON s.id = n.source_id
-               WHERE n.normalized_name LIKE ?
-                  OR n.meaning LIKE ?
-                  OR n.origin LIKE ?
-                  OR n.language LIKE ?
-                  OR n.styles LIKE ?
-               ORDER BY n.display_name''',
-            ['%$normalized%', '%$normalized%', '%$normalized%', '%$normalized%', '%$normalized%'],
-          );
+    final rows = normalized.isEmpty ? _allNameRows() : _searchRows(normalized);
     return rows.map((row) => Name.fromMap(Map<String, Object?>.from(row))).toList(growable: false);
+  }
+
+  List<Map<String, Object?>> _allNameRows() {
+    final rows = _db.select('SELECT n.*, s.title AS source_title FROM names n LEFT JOIN sources s ON s.id = n.source_id ORDER BY n.display_name');
+    return rows.map((row) => Map<String, Object?>.from(row)).toList(growable: false);
+  }
+
+  List<Map<String, Object?>> _searchRows(String normalized) {
+    try {
+      final match = normalized
+          .split(' ')
+          .where((token) => token.isNotEmpty)
+          .map((token) => '"${token.replaceAll('"', '""')}"*')
+          .join(' AND ');
+      final rows = _db.select(
+        '''SELECT n.*, s.title AS source_title FROM names n
+           LEFT JOIN sources s ON s.id = n.source_id
+           WHERE n.id IN (SELECT name_id FROM names_fts WHERE names_fts MATCH ?)
+           ORDER BY n.display_name''',
+        [match],
+      );
+      if (rows.isNotEmpty) return rows.map((row) => Map<String, Object?>.from(row)).toList(growable: false);
+    } catch (_) {
+      // User input can contain FTS operators; the LIKE fallback below is intentional.
+    }
+    final like = '%$normalized%';
+    final rows = _db.select(
+      '''SELECT n.*, s.title AS source_title FROM names n
+         LEFT JOIN sources s ON s.id = n.source_id
+         WHERE n.normalized_name LIKE ?
+            OR n.meaning LIKE ?
+            OR n.origin LIKE ?
+            OR n.language LIKE ?
+            OR n.styles LIKE ?
+         ORDER BY n.display_name''',
+      [like, like, like, like, like],
+    );
+    return rows.map((row) => Map<String, Object?>.from(row)).toList(growable: false);
   }
 
   Name? getName(String id) {
@@ -260,6 +441,19 @@ class AppDatabase {
   Map<String, String> getMetadata() {
     final rows = _db.select('SELECT key, value FROM database_metadata');
     return {for (final row in rows) row['key'] as String: row['value'] as String};
+  }
+
+  Map<String, bool> getPrivacySettings() {
+    final rows = _db.select('SELECT key, value FROM app_settings WHERE key IN (?, ?, ?)', ['analytics_enabled', 'personalized_ads_enabled', 'content_updates_enabled']);
+    return {
+      for (final row in rows) row['key'] as String: (row['value'] as String).toLowerCase() == 'true',
+    };
+  }
+
+  void setPrivacySetting(String key, bool value) {
+    const allowed = {'analytics_enabled', 'personalized_ads_enabled', 'content_updates_enabled'};
+    if (!allowed.contains(key)) throw ArgumentError('Unsupported privacy setting: $key');
+    _db.execute('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)', [key, value.toString()]);
   }
 
   void close() => _db.dispose();

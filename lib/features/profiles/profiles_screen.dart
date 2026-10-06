@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/models/profile.dart';
 import '../shared/empty_state.dart';
+import 'privacy_screen.dart';
 
 class ProfilesScreen extends ConsumerWidget {
   const ProfilesScreen({super.key});
@@ -12,7 +13,7 @@ class ProfilesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profiles = ref.watch(profilesProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('پروفایل‌های محلی'), actions: [IconButton(onPressed: () => _showProfileDialog(context, ref), icon: const Icon(Icons.add), tooltip: 'افزودن پروفایل')]),
+      appBar: AppBar(title: const Text('پروفایل‌های محلی'), actions: [IconButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PrivacyScreen())), icon: const Icon(Icons.shield_outlined), tooltip: 'حریم خصوصی'), IconButton(onPressed: () => _showProfileDialog(context, ref), icon: const Icon(Icons.add), tooltip: 'افزودن پروفایل')]),
       body: profiles.isEmpty
           ? EmptyState(title: 'پروفایلی ثبت نشده', message: 'اطلاعات فقط روی همین دستگاه ذخیره می‌شود.', icon: Icons.person_add_alt_1_outlined)
           : ListView.separated(padding: const EdgeInsets.fromLTRB(20, 8, 20, 30), itemCount: profiles.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (context, index) { final profile = profiles[index]; return Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.person_outline)), title: Text(profile.title, style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text(profile.name.isEmpty ? 'نام وارد نشده' : profile.name), trailing: IconButton(onPressed: () => ref.read(profilesProvider.notifier).delete(profile.id), icon: const Icon(Icons.delete_outline), tooltip: 'حذف')); }),
