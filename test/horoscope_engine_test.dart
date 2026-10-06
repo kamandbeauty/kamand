@@ -118,7 +118,7 @@ void main() {
 
   group('Weekly generation', () {
     test('week has 7 days starting Saturday', () {
-      final weekStart = Jalali(1405, 7, 12); // 2026-10-03, a Saturday
+      final weekStart = Jalali(1405, 7, 11); // 2026-10-03, a Saturday
       final week = engine.generateWeekly(signs[7], weekStart);
       expect(week.days.length, 7);
       expect(AppDate.weekDayIndex(week.days[0].date), 0); // Saturday
@@ -130,8 +130,8 @@ void main() {
     });
 
     test('same week → same summary', () {
-      final w1 = engine.generateWeekly(signs[2], Jalali(1405, 7, 12));
-      final w3 = engine.generateWeekly(signs[2], Jalali(1405, 7, 12));
+      final w1 = engine.generateWeekly(signs[2], Jalali(1405, 7, 11));
+      final w3 = engine.generateWeekly(signs[2], Jalali(1405, 7, 11));
       expect(w1.summaryText, w3.summaryText);
     });
   });

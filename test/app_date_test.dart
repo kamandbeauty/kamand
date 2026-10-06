@@ -6,13 +6,24 @@ import 'package:factor_ruby/core/utils/persian_numbers.dart';
 
 void main() {
   group('Jalali ↔ Gregorian conversion (known dates)', () {
-    test('1405-07-15 == 2026-10-06 (Tuesday)', () {
-      final j = Jalali(1405, 7, 15);
+    test('1405-07-14 == 2026-10-06 (Tuesday)', () {
+      // 1405-01-01 == 2026-03-21 (Nowruz after Tehran-noon equinox).
+      final j = Jalali(1405, 7, 14);
       final g = AppDate.toGregorian(j);
       expect(g.year, 2026);
       expect(g.month, 10);
       expect(g.day, 6);
       expect(g.weekday, DateTime.tuesday);
+    });
+
+    test('1405-01-01 == 2026-03-21 (Nowruz anchor)', () {
+      final g = AppDate.toGregorian(Jalali(1405, 1, 1));
+      expect(g.year, 2026);
+      expect(g.month, 3);
+      expect(g.day, 21);
+      // Round-trip the year boundary.
+      expect(AppDate.fromGregorian(const DateTime(2026, 3, 20)),
+          Jalali(1404, 12, 29));
     });
 
     test('round-trip for a whole year', () {
@@ -29,20 +40,20 @@ void main() {
 
   group('Week helpers', () {
     test('weekday names & indices', () {
-      // 1405-07-12 == 2026-10-03 == Saturday
-      expect(AppDate.weekDayName(Jalali(1405, 7, 12)), 'شنبه');
-      expect(AppDate.weekDayIndex(Jalali(1405, 7, 12)), 0);
-      // 1405-07-15 == Tuesday → سه‌شنبه
-      expect(AppDate.weekDayName(Jalali(1405, 7, 15)), 'سه‌شنبه');
-      expect(AppDate.weekDayIndex(Jalali(1405, 7, 15)), 3);
-      // Friday end of week
-      expect(AppDate.weekDayName(Jalali(1405, 7, 18)), 'جمعه');
-      expect(AppDate.weekDayIndex(Jalali(1405, 7, 18)), 6);
+      // 1405-07-11 == 2026-10-03 == Saturday
+      expect(AppDate.weekDayName(Jalali(1405, 7, 11)), 'شنبه');
+      expect(AppDate.weekDayIndex(Jalali(1405, 7, 11)), 0);
+      // 1405-07-14 == 2026-10-06 == Tuesday → سه‌شنبه
+      expect(AppDate.weekDayName(Jalali(1405, 7, 14)), 'سه‌شنبه');
+      expect(AppDate.weekDayIndex(Jalali(1405, 7, 14)), 3);
+      // Friday end of week: 1405-07-17 == 2026-10-09
+      expect(AppDate.weekDayName(Jalali(1405, 7, 17)), 'جمعه');
+      expect(AppDate.weekDayIndex(Jalali(1405, 7, 17)), 6);
     });
 
     test('weekStart lands on Saturday for any date', () {
       for (var i = 0; i < 40; i++) {
-        final d = AppDate.addDays(Jalali(1405, 7, 12), i);
+        final d = AppDate.addDays(Jalali(1405, 7, 11), i);
         final start = AppDate.weekStart(d);
         expect(AppDate.weekDayIndex(start), 0, reason: '$d');
         expect(start.compareTo(d) <= 0, isTrue);
@@ -53,9 +64,10 @@ void main() {
 
   group('Formatting (Persian digits)', () {
     test('formatMedium / formatFull', () {
-      final j = Jalali(1405, 7, 15);
-      expect(AppDate.formatMedium(j), '۱۵ مهر ۱۴۰۵');
-      expect(AppDate.formatFull(j), 'سه‌شنبه ۱۵ مهر ۱۴۰۵');
+      // 1405-07-14 == 2026-10-06 == Tuesday
+      final j = Jalali(1405, 7, 14);
+      expect(AppDate.formatMedium(j), '۱۴ مهر ۱۴۰۵');
+      expect(AppDate.formatFull(j), 'سه‌شنبه ۱۴ مهر ۱۴۰۵');
     });
 
     test('formatShort & dayKey', () {

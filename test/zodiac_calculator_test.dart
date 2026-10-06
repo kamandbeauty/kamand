@@ -65,9 +65,12 @@ void main() {
       expectSign(Jalali(1403, 2, 1), 'taurus'); // 2024-04-20
     });
 
-    test('Dec 21/22 Sagittarius→Capricorn boundary', () {
-      expectSign(Jalali(1403, 9, 1), 'sagittarius'); // 2024-11-21
-      expectSign(Jalali(1403, 9, 2), 'capricorn'); // 2024-11-22
+    test('Nov 21/22 Scorpio→Sagittarius & Dec 21/22 Sagittarius→Capricorn',
+        () {
+      expectSign(Jalali(1403, 9, 1), 'scorpio'); // 2024-11-21 (last day)
+      expectSign(Jalali(1403, 9, 2), 'sagittarius'); // 2024-11-22
+      expectSign(Jalali(1403, 10, 1), 'sagittarius'); // 2024-12-21 (last day)
+      expectSign(Jalali(1403, 10, 2), 'capricorn'); // 2024-12-22
     });
 
     test('Capricorn wraps the year end: Dec 25 & Jan 1 are both capricorn', () {
@@ -76,13 +79,13 @@ void main() {
     });
 
     test('Jan 19/20 Capricorn→Aquarius boundary', () {
-      expectSign(Jalali(1403, 10, 30), 'capricorn'); // 2025-01-19
-      expectSign(Jalali(1403, 10, 31), 'aquarius'); // 2025-01-20
+      expectSign(Jalali(1403, 10, 30), 'capricorn'); // 2025-01-19 (last day)
+      expectSign(Jalali(1403, 11, 1), 'aquarius'); // 2025-01-20
     });
 
     test('Feb 18/19 Aquarius→Pisces boundary', () {
-      expectSign(Jalali(1403, 11, 29), 'aquarius'); // 2025-02-18
-      expectSign(Jalali(1403, 11, 30), 'pisces'); // 2025-02-19
+      expectSign(Jalali(1403, 11, 30), 'aquarius'); // 2025-02-18 (last day)
+      expectSign(Jalali(1403, 12, 1), 'pisces'); // 2025-02-19
     });
   });
 

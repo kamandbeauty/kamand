@@ -40,9 +40,9 @@ class Profile {
   Profile copyWith({
     String? name,
     String? birthDate,
-    String? birthTime,
+    Object? birthTime = _unset,
     bool? birthTimeKnown,
-    String? birthCity,
+    Object? birthCity = _unset,
     String? zodiacId,
     String? updatedAt,
   }) =>
@@ -50,9 +50,13 @@ class Profile {
         id: id,
         name: name ?? this.name,
         birthDate: birthDate ?? this.birthDate,
-        birthTime: birthTime ?? this.birthTime,
+        birthTime: birthTime == _unset
+            ? this.birthTime
+            : birthTime as String?,
         birthTimeKnown: birthTimeKnown ?? this.birthTimeKnown,
-        birthCity: birthCity ?? this.birthCity,
+        birthCity: birthCity == _unset
+            ? this.birthCity
+            : birthCity as String?,
         zodiacId: zodiacId ?? this.zodiacId,
         isPrimary: isPrimary,
         createdAt: createdAt,

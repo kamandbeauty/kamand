@@ -15,12 +15,26 @@ Future<void> settle(WidgetTester tester, {int frames = 6}) async {
   }
 }
 
+/// Taps a bottom-nav tab by its label — scoped to the NavigationBar so
+/// same-text labels elsewhere (e.g. the home tab's «عشق» score card)
+/// never make the finder ambiguous.
+Future<void> tapTab(WidgetTester tester, String label) async {
+  await tester.tap(find.descendant(
+    of: find.byType(NavigationBar),
+    matching: find.text(label),
+  ));
+}
+
 void main() {
   // End-to-end UI flow test against in-memory services:
   // onboarding → home → tabs → partner → theme → wipe.
   testWidgets('onboarding completes, home renders, partner flow works',
       (tester) async {
     final services = AppServices.forTest();
+
+    // Tall surface so every lazily-built list section exists for finders.
+    await tester.binding.setSurfaceSize(const Size(420, 2000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       ProviderScope(
@@ -81,7 +95,7 @@ void main() {
     expect(profile.zodiacId, isNotEmpty);
 
     // ── Tab: برج من ───────────────────────────────────────────────
-    await tester.tap(find.text('برج من'));
+    await tapTab(tester, 'برج من');
     await settle(tester);
     expect(find.text('نقاط قوت'), findsOneWidget);
     expect(find.text('نقاط ضعف'), findsOneWidget);
@@ -89,7 +103,7 @@ void main() {
     expect(find.text('در دوستی'), findsOneWidget);
 
     // ── Tab: عشق ──────────────────────────────────────────────────
-    await tester.tap(find.text('عشق'));
+    await tapTab(tester, 'عشق');
     await settle(tester);
     expect(find.text('با چه برج‌هایی هماهنگ هستی؟'), findsOneWidget);
     expect(find.textContaining('هنوز کسی را برای مقایسه'), findsOneWidget);
@@ -109,7 +123,7 @@ void main() {
     expect(partner.zodiacId, isNotEmpty);
 
     // ── Tab: پروفایل ──────────────────────────────────────────────
-    await tester.tap(find.text('پروفایل'));
+    await tapTab(tester, 'پروفایل');
     await settle(tester);
     expect(find.text('ویرایش اطلاعات'), findsOneWidget);
     expect(find.text('حریم خصوصی'), findsOneWidget);
@@ -133,10 +147,11 @@ void main() {
 
   testWidgets('AppGate renders splash without a crash', (tester) async {
     final services = AppServices.forTest();
+    // AppGate lives under TaleManApp's MaterialApp (Directionality + RTL).
     await tester.pumpWidget(
       ProviderScope(
         overrides: [servicesProvider.overrideWithValue(services)],
-        child: const AppGate(),
+        child: const TaleManApp(),
       ),
     );
     await settle(tester, frames: 4);
