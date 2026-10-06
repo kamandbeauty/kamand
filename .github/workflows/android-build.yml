@@ -146,29 +146,32 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Build release APK
+      - name: Build release APK + AAB
         id: apk
         continue-on-error: true
         run: |
           set +e
           flutter build apk --release 2>&1 | tee "$RUNNER_TEMP/apk.log"
-          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-          exit "${PIPESTATUS[0]}"
+          apk_exit="${PIPESTATUS[0]}"
+          flutter build appbundle --release 2>&1 | tee "$RUNNER_TEMP/aab.log"
+          aab_exit="${PIPESTATUS[0]}"
+          echo "exit=$(( apk_exit > aab_exit ? apk_exit : aab_exit ))" >> "$GITHUB_OUTPUT"
+          exit $(( apk_exit > aab_exit ? apk_exit : aab_exit ))
 
       - name: Publish build output as check run
         if: steps.apk.outputs.exit != '0'
         env:
           GH_TOKEN: ${{ github.token }}
           LOG_PATH: ${{ runner.temp }}/apk.log
-          TITLE: APK build output
+          TITLE: Release build output
           SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
         run: python3 .github/scripts/publish_check_run.py
 
-      - name: Fail job if APK build failed
+      - name: Fail job if release build failed
         if: steps.apk.outputs.exit != '0'
         run: |
-          echo "flutter build apk failed — see the 'APK build output' check run on this commit."
+          echo "flutter build failed — see the 'Release build output' check run on this commit."
           exit 1
 
       - name: Upload APK artifact
@@ -178,6 +181,13 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 90
 
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tale-man-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
       - name: Publish/update GitHub Release
         shell: bash
         env:
@@ -185,12 +195,17 @@ jobs:
         run: |
           set -euo pipefail
           apk="build/app/outputs/flutter-apk/app-release.apk"
-          tag="tale-man-v1.0.0"
+          aab="build/app/outputs/bundle/release/app-release.aab"
+          tag="tale-man-v1.1.0"
+          notes="نسخهٔ ۱.۱.۰ «طالع من» — گرافیک جدید، بانک محتوای سه‌برابرشده و رفع اشکال.
+
+          برای نصب روی گوشی، فایل tale-man-v1.1.0.apk را دانلود و اجرا کنید (اجازهٔ نصب از منابع ناشناس لازم است).
+          فایل aab مخصوص انتشار در Google Play است."
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$tag" "$apk#tale-man-v1.0.0.apk" --clobber --repo "$GITHUB_REPOSITORY"
+            gh release upload "$tag" "$apk#tale-man-v1.1.0.apk" "$aab#tale-man-v1.1.0.aab" --clobber --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$tag" "$apk#tale-man-v1.0.0.apk" \
-              --title "طالع من — نسخهٔ ۱.۰.۰" \
-              --notes "نسخهٔ اندرویدی «طالع من» — APK امضاشده. برای نصب، فایل را دانلود و اجرا کنید (اجازهٔ نصب از منابع ناشناس لازم است)." \
+            gh release create "$tag" "$apk#tale-man-v1.1.0.apk" "$aab#tale-man-v1.1.0.aab" \
+              --title "طالع من — نسخهٔ ۱.۱.۰" \
+              --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi

@@ -1,5 +1,6 @@
 package com.ruby.factor_ruby
 
+import android.app.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -19,6 +20,31 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Native share sheet (keeps the app dependency-free).
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "app/share",
+        ).setMethodCallHandler { call, result ->
+            if (call.method == "shareText") {
+                val text = call.argument<String>("text") ?: ""
+                val subject = call.argument<String>("subject") ?: "طالع من"
+                try {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, text)
+                        putExtra(Intent.EXTRA_SUBJECT, subject)
+                    }
+                    startActivity(Intent.createChooser(intent, "اشتراک‌گذاری"))
+                    result.success(true)
+                } catch (e: ActivityNotFoundException) {
+                    result.error("no_share_app", "No app available to share", null)
+                }
+            } else {
+                result.notImplemented()
+            }
+        }
+
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             NotificationScheduler.CHANNEL,

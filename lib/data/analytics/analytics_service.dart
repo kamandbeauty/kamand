@@ -18,7 +18,8 @@ enum AnalyticsEvent {
   partnerCreated('partner_created'),
   premiumScreenOpened('premium_screen_opened'),
   rewardedAdStarted('rewarded_ad_started'),
-  settingsChanged('settings_changed');
+  settingsChanged('settings_changed'),
+  dailyShared('daily_shared');
 
   const AnalyticsEvent(this.id);
   final String id;
