@@ -6,6 +6,7 @@ class Profile {
     required this.motherName,
     required this.gender,
     required this.birthDate,
+    this.birthCalendar = '',
     required this.createdAt,
   });
 
@@ -15,6 +16,7 @@ class Profile {
   final String motherName;
   final String gender;
   final String birthDate;
+  final String birthCalendar;
   final String createdAt;
 
   factory Profile.fromMap(Map<String, Object?> map) {
@@ -25,6 +27,7 @@ class Profile {
       motherName: map['mother_name'] as String? ?? '',
       gender: map['gender'] as String? ?? 'نامشخص',
       birthDate: map['birth_date'] as String? ?? '',
+      birthCalendar: map['birth_calendar'] as String? ?? '',
       createdAt: map['created_at'] as String? ?? '',
     );
   }

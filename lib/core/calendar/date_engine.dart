@@ -1,3 +1,5 @@
+import '../normalization/persian_normalizer.dart';
+
 enum CalendarKind { gregorian, jalali }
 
 class CalendarDate {
@@ -92,8 +94,16 @@ class DateEngine {
 
   static CalendarDate nowJalali() => gregorianToJalali(DateTime.now());
 
+  static CalendarDate? parse(String input, CalendarKind calendar) {
+    final normalized = PersianNormalizer.toLatinDigits(input.trim()).replaceAll('/', '-');
+    final match = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})$').firstMatch(normalized);
+    if (match == null) return null;
+    final date = CalendarDate(year: int.parse(match.group(1)!), month: int.parse(match.group(2)!), day: int.parse(match.group(3)!), calendar: calendar);
+    return isValid(date) ? date : null;
+  }
+
   static bool isValid(CalendarDate date) {
-    if (date.month < 1 || date.month > 12 || date.day < 1) return false;
+    if (date.year < 1 || date.month < 1 || date.month > 12 || date.day < 1) return false;
     if (date.calendar == CalendarKind.jalali) {
       final maxDay = date.month <= 6 ? 31 : date.month <= 11 ? 30 : 30;
       if (date.day > maxDay) return false;

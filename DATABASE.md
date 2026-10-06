@@ -9,11 +9,12 @@
 - Schema 3: Language، Culture و Pronunciation
 - Schema 4: Abjad Mapping، Numerology Systems، Rules و Interpretation placeholders
 - Schema 5: Compatibility Systems و Rules
+- Schema 6: تقویم تولد پروفایل‌ها (`birth_calendar`)
 
 Metadata فعلی:
 
 ```text
-schema_version = 5
+schema_version = 6
 content_version = knowledge-1
 ```
 
@@ -51,6 +52,7 @@ compatibility_rules
 - `numerology_systems` و `numerology_rules` عملیات قابل تنظیم را نگه می‌دارند و Rule فعلی `unverified` است.
 - `numerology_interpretations` فعلاً عمداً خالی است؛ بدون منبع معتبر هیچ تفسیر عددی Seed نمی‌شود.
 - `compatibility_systems` و `compatibility_rules` شاخص‌های مقایسه‌ای را نسخه‌دار نگه می‌دارند؛ Rule فعلی فقط شباهت نوشتاری است و `unverified` باقی می‌ماند.
+- پروفایل‌ها محلی هستند و `birth_calendar` تقویم تاریخ ذخیره‌شده را از مقدار تاریخ جدا نگه می‌دارد.
 - UI باید Formula، Rule Version، وضعیت، منبع و Disclaimer را همراه نتیجه نمایش دهد.
 
 ## وضعیت محتوا

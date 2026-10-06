@@ -405,6 +405,14 @@ class AppDatabase {
       _setMetadata('content_version', 'seed-5');
       version = 5;
     }
+
+    if (version < 6) {
+      _db.execute("ALTER TABLE profiles ADD COLUMN birth_calendar TEXT NOT NULL DEFAULT ''");
+      _db.execute('PRAGMA user_version = 6');
+      _setMetadata('schema_version', '6');
+      _setMetadata('content_version', 'seed-6');
+      version = 6;
+    }
   }
 
   void _seedIfEmpty() {
@@ -742,9 +750,9 @@ class AppDatabase {
 
   void saveProfile(Profile profile) {
     _db.execute(
-      '''INSERT OR REPLACE INTO profiles (id, title, name, mother_name, gender, birth_date, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)''',
-      [profile.id, profile.title, profile.name, profile.motherName, profile.gender, profile.birthDate, profile.createdAt],
+      '''INSERT OR REPLACE INTO profiles (id, title, name, mother_name, gender, birth_date, birth_calendar, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+      [profile.id, profile.title, profile.name, profile.motherName, profile.gender, profile.birthDate, profile.birthCalendar, profile.createdAt],
     );
   }
 

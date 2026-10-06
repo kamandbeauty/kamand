@@ -15,7 +15,7 @@ void main() {
 
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
-    expect(metadata['schema_version'], '5');
+    expect(metadata['schema_version'], '6');
     expect(metadata['content_version'], 'knowledge-1');
     expect(database.getSources().length, greaterThan(3));
     expect(database.searchNames('آ'), isNotEmpty);
@@ -38,8 +38,9 @@ void main() {
 
   test('persists and deletes local profiles', () {
     final now = DateTime.now().toUtc().toIso8601String();
-    database.saveProfile(Profile(id: 'profile-test', title: 'من', name: 'آوا', motherName: '', gender: 'نامشخص', birthDate: '', createdAt: now));
+    database.saveProfile(Profile(id: 'profile-test', title: 'من', name: 'آوا', motherName: '', gender: 'نامشخص', birthDate: '1403-01-01', birthCalendar: 'jalali', createdAt: now));
     expect(database.getProfiles().single.name, 'آوا');
+    expect(database.getProfiles().single.birthCalendar, 'jalali');
     database.deleteProfile('profile-test');
     expect(database.getProfiles(), isEmpty);
   });
