@@ -83,9 +83,19 @@ void main() {
         PlayedCard(0, c(Suit.spades, 14)),
         PlayedCard(1, c(Suit.clubs, 2)),
         PlayedCard(2, c(Suit.spades, 13)),
-        PlayedCard(3, c(Suit.clubs, 3)),
+        PlayedCard(3, c(Suit.spades, 4)),
       ];
       expect(trickWinner(trick, Suit.clubs), 1);
+    });
+
+    test('حکمِ بالاتر، حکمِ پایین‌تر را می‌بُرد', () {
+      final List<PlayedCard> trick = <PlayedCard>[
+        PlayedCard(0, c(Suit.spades, 14)),
+        PlayedCard(1, c(Suit.clubs, 2)),
+        PlayedCard(2, c(Suit.spades, 13)),
+        PlayedCard(3, c(Suit.clubs, 3)),
+      ];
+      expect(trickWinner(trick, Suit.clubs), 3);
     });
 
     test('جوکر قرمز بالاترین برگِ حکم است', () {

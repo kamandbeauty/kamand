@@ -157,7 +157,7 @@ void main() {
 
   group('کالیبراسیون هوش مصنوعی', () {
     test('نرخ موفقیتِ قرارداد در بازی ربات‌ها منطقی است', () {
-      const int rounds = 160;
+      const int rounds = 200;
       final ShelemEngine e = ShelemEngine(
         config: const GameConfig(targetScore: 100000000),
         random: Random(2024),
@@ -165,35 +165,57 @@ void main() {
       int made = 0;
       int yasa = 0;
       int slams = 0;
+      double estimateSum = 0;
+      double actualSum = 0;
       final Map<int, int> contracts = <int, int>{};
       for (int i = 0; i < rounds; i++) {
-        playRound(e, Difficulty.hard, Random(1000 + i));
+        final Random r = Random(1000 + i);
+        e.startRound();
+        double estimate = 0;
+        int guard = 0;
+        while (e.phase != GamePhase.roundComplete &&
+            e.phase != GamePhase.gameOver &&
+            guard < 5000) {
+          if (e.phase == GamePhase.kitty && estimate == 0) {
+            estimate = ShelemBot.estimatePoints(
+              e.hands[e.hakem!],
+              withKitty: true,
+            );
+          }
+          botStep(e, Difficulty.hard, r);
+          guard++;
+        }
         final RoundRecord last = e.history.last;
         contracts[last.outcome.contract] =
             (contracts[last.outcome.contract] ?? 0) + 1;
+        estimateSum += estimate;
+        actualSum += last.outcome.hakemPoints;
         if (last.outcome.contractMade) made++;
         if (last.outcome.yasa) yasa++;
         if (last.outcome.slam) slams++;
       }
       final double rate = made / rounds;
-      // ignore: avoid_print
-      print('کالیبراسیون: نرخ موفقیت قرارداد = '
-          '${(rate * 100).toStringAsFixed(1)}٪، یاسا = $yasa، شلم = $slams');
-      // ignore: avoid_print
-      print('توزیع قراردادها: $contracts');
-      expect(
-        rate > 0.30 && rate < 0.95,
-        isTrue,
-        reason: 'نرخ موفقیتِ قرارداد غیرمنطقی است: $rate',
-      );
       final double avgContract = contracts.entries
               .map((MapEntry<int, int> x) => x.key * x.value)
               .fold<int>(0, (int a, int b) => a + b) /
           rounds;
       // ignore: avoid_print
-      print('میانگین قرارداد = ${avgContract.toStringAsFixed(1)}');
+      print('کالیبراسیون ($rounds راند): موفقیت قرارداد = '
+          '${(rate * 100).toStringAsFixed(1)}٪ | یاسا = $yasa | شلم = $slams');
+      // ignore: avoid_print
+      print('میانگین قرارداد = ${avgContract.toStringAsFixed(1)} | '
+          'میانگین تخمین حاکم = ${(estimateSum / rounds).toStringAsFixed(1)} | '
+          'میانگین امتیاز واقعی حاکم = '
+          '${(actualSum / rounds).toStringAsFixed(1)}');
+      // ignore: avoid_print
+      print('توزیع قراردادها: $contracts');
       expect(
-        avgContract >= 100 && avgContract <= 200,
+        rate > 0.40 && rate < 0.92,
+        isTrue,
+        reason: 'نرخ موفقیتِ قرارداد غیرمنطقی است: $rate',
+      );
+      expect(
+        avgContract >= 105 && avgContract <= 150,
         isTrue,
         reason: 'میانگینِ قرارداد غیرمنطقی است: $avgContract',
       );

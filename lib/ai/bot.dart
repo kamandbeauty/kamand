@@ -85,12 +85,13 @@ class ShelemBot {
   static double estimatePoints(List<PlayingCard> hand, {required bool withKitty}) {
     final Suit s = bestTrump(hand);
     final double tricks = expectedTricks(hand, s);
-    // هر دست به‌طور میانگین حدود ۱۲٫۷ امتیاز دارد (۱۶۵ ÷ ۱۳).
-    double pts = tricks * 12.7;
+    // هر دست به‌طور میانگین حدود ۱۲٫۷ امتیاز دارد (۱۶۵ ÷ ۱۳)؛ دست‌های حاکم
+    // معمولاً پرامتیازترها هستند، پس کمی بالاتر گرفته می‌شود.
+    double pts = tricks * 13.5;
     // سهم یار (به‌طور میانگین حدود دو دست، ولی با قوی‌تر شدن دستِ خودمان کمتر)
-    pts += max(8.0, 30.0 - tricks * 1.8);
-    // گلِ وسط: ۵ امتیازِ دست + میانگین امتیاز برگ‌ها و بهبود دست
-    if (withKitty) pts += 15;
+    pts += max(10.0, 34.0 - tricks * 1.6);
+    // گلِ وسط: ۵ امتیازِ دست + امتیاز برگ‌های کنارگذاشته + بهبود دست
+    if (withKitty) pts += 22;
     return min(pts, 165);
   }
 

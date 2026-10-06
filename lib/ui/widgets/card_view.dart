@@ -160,21 +160,25 @@ class _FaceCenter extends StatelessWidget {
         borderRadius: BorderRadius.circular(width * 0.07),
         color: color.withValues(alpha: 0.06),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Text(
-            card.label,
-            style: TextStyle(
-              fontSize: width * 0.34,
-              height: 1,
-              fontWeight: FontWeight.w900,
-              color: color,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              card.label,
+              style: TextStyle(
+                fontSize: width * 0.34,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
             ),
-          ),
-          SizedBox(height: width * 0.04),
-          SuitIcon(suit: card.suit, size: width * 0.2, color: color),
-        ],
+            SizedBox(height: width * 0.04),
+            SuitIcon(suit: card.suit, size: width * 0.2, color: color),
+          ],
+        ),
       ),
     );
   }
@@ -188,20 +192,24 @@ class _JokerCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        SuitIcon(suit: Suit.joker, size: width * 0.42, color: color),
-        SizedBox(height: width * 0.05),
-        Text(
-          'جوکر',
-          style: TextStyle(
-            fontSize: width * 0.16,
-            fontWeight: FontWeight.w700,
-            color: color,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          SuitIcon(suit: Suit.joker, size: width * 0.42, color: color),
+          SizedBox(height: width * 0.05),
+          Text(
+            'جوکر',
+            style: TextStyle(
+              fontSize: width * 0.16,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
