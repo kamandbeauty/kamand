@@ -1,57 +1,69 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/theme/app_theme.dart';
-import 'screens/onboarding/onboarding_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
-import 'providers/app_providers.dart';
+/// شلم — بازی ورق ایرانی (یک بازیکن + سه ربات).
+library;
 
-void main() {
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'state/game_controller.dart';
+import 'state/settings.dart';
+import 'ui/screens/menu_screen.dart';
+import 'ui/theme.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(
-    const ProviderScope(
-      child: FactorRubyApp(),
-    ),
-  );
+  await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Color(0xFF13100C),
+  ));
+  final AppSettings settings = await AppSettings.load();
+  runApp(ShelemApp(settings: settings));
 }
 
-class FactorRubyApp extends ConsumerWidget {
-  const FactorRubyApp({super.key});
+class ShelemApp extends StatefulWidget {
+  const ShelemApp({super.key, required this.settings});
+
+  final AppSettings settings;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(userProvider);
-    final settings = ref.watch(settingsProvider);
+  State<ShelemApp> createState() => _ShelemAppState();
+}
 
-    ThemeMode currentThemeMode = ThemeMode.light;
-    if (settings.themeMode == 'dark') {
-      currentThemeMode = ThemeMode.dark;
-    } else if (settings.themeMode == 'system') {
-      currentThemeMode = ThemeMode.system;
-    }
+class _ShelemAppState extends State<ShelemApp> {
+  late final GameController controller =
+      GameController(settings: widget.settings);
 
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'فاکتور روبی',
+      title: 'شلم',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: currentThemeMode,
-      localizationsDelegates: const [
+      theme: buildAppTheme(),
+      locale: const Locale('fa'),
+      supportedLocales: const <Locale>[Locale('fa'), Locale('en')],
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('fa', 'IR'),
-      ],
-      locale: const Locale('fa', 'IR'),
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        );
-      },
-      home: user.isOnboarded ? const DashboardScreen() : const OnboardingScreen(),
+      builder: (BuildContext context, Widget? child) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.2,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
+      home: MenuScreen(controller: controller),
     );
   }
 }

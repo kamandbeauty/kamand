@@ -1,55 +1,225 @@
-name: Build Ruby Factor
+name: Build Shelem (شلم)
 
 on:
   push:
     branches:
-      - "arena/019feb3d-kamand"
-
+      - "arena/01a101de-kamand"
+      - main
+    paths:
+      - "lib/**"
+      - "test/**"
+      - "android/**"
+      - "assets/**"
+      - "pubspec.yaml"
+      - "analysis_options.yaml"
+      - ".github/workflows/android-build.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+  checks: write
+
 jobs:
-  build:
-    name: Build Android APK and AAB
+  test:
+    name: Analyze & Test
     runs-on: ubuntu-latest
-
     steps:
+      - uses: actions/checkout@v4
 
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: subosito/flutter-action@v2
         with:
-          distribution: temurin
-          java-version: "17"
-          cache: gradle
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
+          flutter-version: '3.47.6'
           cache: true
 
-      - name: Show Flutter version
+      - name: Flutter version
         run: flutter --version
 
-      - name: Get Flutter dependencies
+      - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Build Release APK
-        run: flutter build apk --release
+      # ── Analyze ────────────────────────────────────────────────────────
+      # On failure the output is re-published as a check run (annotations +
+      # summary) so it is readable through the REST API without log download.
+      - name: Analyze (errors & warnings fatal; infos tolerated)
+        id: analyze
+        continue-on-error: true
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos 2>&1 | tee "$RUNNER_TEMP/analyze.log"
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit "${PIPESTATUS[0]}"
 
-      - name: Build Release AAB
-        run: flutter build appbundle --release
+      - name: Publish analyzer output as check run
+        if: steps.analyze.outputs.exit != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOG_PATH: ${{ runner.temp }}/analyze.log
+          TITLE: Analyzer output
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: python3 .github/scripts/publish_check_run.py
 
-      - name: Upload APK
+      - name: Fail job if analyzer failed
+        if: steps.analyze.outputs.exit != '0'
+        run: |
+          echo "flutter analyze failed — see the 'Analyzer output' check run on this commit."
+          exit 1
+
+      # ── Tests ──────────────────────────────────────────────────────────
+      - name: Run tests
+        id: tests
+        continue-on-error: true
+        run: |
+          set +e
+          flutter test --reporter expanded 2>&1 | tee "$RUNNER_TEMP/test.log"
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit "${PIPESTATUS[0]}"
+
+      - name: Publish test output as check run
+        if: steps.tests.outputs.exit != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOG_PATH: ${{ runner.temp }}/test.log
+          TITLE: Test output
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: python3 .github/scripts/publish_check_run.py
+
+      - name: Fail job if tests failed
+        if: steps.tests.outputs.exit != '0'
+        run: |
+          echo "flutter test failed — see the 'Test output' check run on this commit."
+          exit 1
+
+  build-apk:
+    name: Build release APK
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Build release APKs (per-ABI + universal) + AAB
+        id: apk
+        continue-on-error: true
+        run: |
+          set +e
+          rc=0
+          flutter build apk --release --split-per-abi 2>&1 | tee "$RUNNER_TEMP/apk.log"
+          r="${PIPESTATUS[0]}"; [ "$r" -ne 0 ] && rc="$r"
+          flutter build apk --release 2>&1 | tee -a "$RUNNER_TEMP/apk.log"
+          r="${PIPESTATUS[0]}"; [ "$r" -ne 0 ] && rc="$r"
+          flutter build appbundle --release 2>&1 | tee -a "$RUNNER_TEMP/apk.log"
+          r="${PIPESTATUS[0]}"; [ "$r" -ne 0 ] && rc="$r"
+          echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Publish build output as check run
+        if: steps.apk.outputs.exit != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOG_PATH: ${{ runner.temp }}/apk.log
+          TITLE: Release build output
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: python3 .github/scripts/publish_check_run.py
+
+      - name: Fail job if release build failed
+        if: steps.apk.outputs.exit != '0'
+        run: |
+          echo "flutter build failed — see the 'Release build output' check run on this commit."
+          exit 1
+
+      - name: Upload APK artifact (arm64)
         uses: actions/upload-artifact@v4
         with:
-          name: ruby-factor-APK
+          name: shelem-apk-arm64
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          retention-days: 90
+
+      - name: Upload APK artifact (arm32)
+        uses: actions/upload-artifact@v4
+        with:
+          name: shelem-apk-arm32
+          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          retention-days: 90
+
+      - name: Upload APK artifact (x86_64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: shelem-apk-x64
+          path: build/app/outputs/flutter-apk/app-x86_64-release.apk
+          retention-days: 90
+
+      - name: Upload APK artifact (universal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: shelem-apk-universal
           path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 90
 
-      - name: Upload AAB
+      - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ruby-factor-AAB
+          name: shelem-aab
           path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+      - name: Publish/update GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          apkdir="build/app/outputs/flutter-apk"
+          aab="build/app/outputs/bundle/release/app-release.aab"
+          tag="shelem-v1.0.0"
+          notes="بازی «شلم» — نسخهٔ ۱.۰.۰
+
+          بازی کلاسیک ورق ایرانی: شما به‌همراه یک یارِ هوشمند در برابر دو حریف.
+          خواندن (حراج)، گلِ وسط، اعلام حکم با اولین برگ، یاسا، شلم و سرشلم،
+          چهار سطح سختی، هفت زمین بازی و ذخیرهٔ خودکار.
+
+          کدام فایل را دانلود کنم؟
+
+          | فایل | مخصوص |
+          |---|---|
+          | arm64-v8a | گوشی‌های مدرن (اکثر گوشی‌های سامسونگ، شیائومی، پیکسل و…) |
+          | armeabi-v7a | گوشی‌های قدیمی‌تر ۳۲ بیتی |
+          | x86_64 | شبیه‌ساز اندروید روی کامپیوتر |
+          | universal | همهٔ گوشی‌ها — فقط حجمش بیشتر است |
+          | aab | فقط برای انتشار در Google Play (نصب مستقیم ندارد) |
+
+          برای نصب، فایل apk را دانلود و اجرا کنید (اجازهٔ نصب از منابع ناشناس لازم است)."
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" \
+              "$apkdir/app-arm64-v8a-release.apk#shelem-v1.0.0-arm64-v8a.apk" \
+              "$apkdir/app-armeabi-v7a-release.apk#shelem-v1.0.0-armeabi-v7a.apk" \
+              "$apkdir/app-x86_64-release.apk#shelem-v1.0.0-x86_64.apk" \
+              "$apkdir/app-release.apk#shelem-v1.0.0-universal.apk" \
+              "$aab#shelem-v1.0.0.aab" \
+              --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" \
+              "$apkdir/app-arm64-v8a-release.apk#shelem-v1.0.0-arm64-v8a.apk" \
+              "$apkdir/app-armeabi-v7a-release.apk#shelem-v1.0.0-armeabi-v7a.apk" \
+              "$apkdir/app-x86_64-release.apk#shelem-v1.0.0-x86_64.apk" \
+              "$apkdir/app-release.apk#shelem-v1.0.0-universal.apk" \
+              "$aab#shelem-v1.0.0.aab" \
+              --title "شلم — نسخهٔ ۱.۰.۰" \
+              --notes "$notes" \
+              --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
+          fi
