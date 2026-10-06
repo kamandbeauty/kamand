@@ -38,5 +38,26 @@ jobs:
       - name: Fail if analyze failed
         if: steps.analyze.outcome == 'failure'
         run: exit 1
-      - run: flutter test
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter test 2>&1 | tee test.log
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: test.log
+      - name: Publish test diagnostics
+        if: always()
+        run: |
+          if [ -f test.log ]; then
+            message=$(cat test.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=Flutter Test::$message"
+          fi
+      - name: Fail if tests failed
+        if: steps.test.outcome == 'failure'
+        run: exit 1
       - run: flutter build apk --release
