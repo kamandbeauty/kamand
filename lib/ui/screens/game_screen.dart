@@ -1,6 +1,8 @@
 /// صفحهٔ میز بازی شلم.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../game/engine.dart';
@@ -11,6 +13,7 @@ import '../../model/enums.dart';
 import '../../state/game_controller.dart';
 import '../../util/persian.dart';
 import '../theme.dart';
+import '../widgets/animations.dart';
 import '../widgets/card_view.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/suit_icon.dart';
@@ -272,7 +275,9 @@ class _TopBar extends StatelessWidget {
           ),
           const Spacer(),
           if (e.trump != null)
-            Container(
+            PopIn(
+              key: ValueKey<Suit>(e.trump!),
+              child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.paper,
@@ -295,11 +300,15 @@ class _TopBar extends StatelessWidget {
                 ],
               ),
             ),
+            ),
           if (e.contract > 0) ...<Widget>[
             const SizedBox(width: 6),
-            _Chip(
-              text: 'قرارداد ${contractLabel(e.contract)}',
-              color: AppColors.gold,
+            PopIn(
+              key: ValueKey<int>(e.contract),
+              child: _Chip(
+                text: 'قرارداد ${contractLabel(e.contract)}',
+                color: AppColors.gold,
+              ),
             ),
           ],
           const Spacer(),
@@ -322,13 +331,34 @@ class _TopBar extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Text(
-                    '${fa(e.scores[0])} : ${fa(e.scores[1])}',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.gold,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      CountUpText(
+                        value: e.scores[0],
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.teamUs,
+                        ),
+                      ),
+                      const Text(
+                        ' : ',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.gold,
+                        ),
+                      ),
+                      CountUpText(
+                        value: e.scores[1],
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.teamThem,
+                        ),
+                      ),
+                    ],
                   ),
                   Text(
                     'این راند ${fa(pts[0])}-${fa(pts[1])}',
@@ -378,7 +408,7 @@ class _TableArea extends StatelessWidget {
     final ShelemEngine e = controller.engine!;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
-        final double cw = (box.maxWidth * 0.1).clamp(26.0, 40.0);
+        final double cw = (box.maxWidth * 0.115).clamp(30.0, 50.0);
         return Stack(
           children: <Widget>[
             Align(
@@ -396,7 +426,7 @@ class _TableArea extends StatelessWidget {
             Center(
               child: _TrickArea(
                 controller: controller,
-                size: Size(box.maxWidth * 0.62, box.maxHeight * 0.74),
+                size: Size(box.maxWidth * 0.70, box.maxHeight * 0.80),
               ),
             ),
             if (e.phase == GamePhase.kitty)
@@ -444,12 +474,17 @@ class _Seat extends StatelessWidget {
             height: cardWidth * kCardAspect,
             child: Stack(
               children: <Widget>[
-                for (int i = 0; i < hand.length; i++)
+                for (int i = hand.length - 1; i >= 0; i--)
                   Positioned(
                     left: i * cardWidth * 0.22,
-                    child: CardBackView(
-                      width: cardWidth,
-                      back: controller.settings.cardBack,
+                    child: Transform.rotate(
+                      angle: (i - (hand.length - 1) / 2) * 0.035,
+                      alignment: Alignment.bottomCenter,
+                      child: CardBackView(
+                        width: cardWidth,
+                        back: controller.settings.cardBack,
+                        elevation: 3,
+                      ),
                     ),
                   ),
               ],
@@ -499,6 +534,7 @@ class _NamePlate extends StatelessWidget {
     final bool isHakem = e.hakem == player;
     final int? bid = e.bids[player];
     final bool passed = e.passed[player];
+    final bool us = teamOf(player) == 0;
 
     String? tag;
     if (e.phase == GamePhase.bidding) {
@@ -509,67 +545,78 @@ class _NamePlate extends StatelessWidget {
       }
     }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: highlight
-            ? AppColors.gold
-            : Colors.black.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: teamOf(player) == 0
-              ? AppColors.teamUs.withValues(alpha: 0.7)
-              : AppColors.teamThem.withValues(alpha: 0.7),
-        ),
-        boxShadow: highlight
-            ? <BoxShadow>[
-                BoxShadow(
-                  color: AppColors.gold.withValues(alpha: 0.5),
-                  blurRadius: 14,
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (isHakem)
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Icon(
-                Icons.workspace_premium,
-                size: 15,
-                color: highlight ? const Color(0xFF6B4E10) : AppColors.gold,
-              ),
-            ),
-          Text(
-            controller.nameOf(player),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: highlight ? const Color(0xFF241B06) : Colors.white,
-            ),
+    return PulseGlow(
+      active: highlight,
+      radius: 20,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: highlight
+                ? const <Color>[AppColors.gold, Color(0xFFF0DCAA)]
+                : <Color>[
+                    Colors.black.withValues(alpha: 0.62),
+                    Colors.black.withValues(alpha: 0.42),
+                  ],
           ),
-          if (tag != null) ...<Widget>[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                tag,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: highlight ? const Color(0xFF241B06) : Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: (us ? AppColors.teamUs : AppColors.teamThem)
+                .withValues(alpha: highlight ? 0.95 : 0.6),
+            width: 1.3,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (isHakem)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 15,
+                  color: highlight ? const Color(0xFF6B4E10) : AppColors.gold,
                 ),
               ),
+            Text(
+              controller.nameOf(player),
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: highlight ? const Color(0xFF241B06) : Colors.white,
+              ),
             ),
+            if (tag != null) ...<Widget>[
+              const SizedBox(width: 6),
+              PopIn(
+                key: ValueKey<String>('bid-$player-$tag'),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: highlight
+                        ? Colors.black.withValues(alpha: 0.18)
+                        : Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    tag,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color:
+                          highlight ? const Color(0xFF241B06) : Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -581,15 +628,26 @@ class _TrickArea extends StatelessWidget {
   final GameController controller;
   final Size size;
 
+  /// جهتی که کارتِ هر بازیکن از آن وارد میز می‌شود.
+  static const List<Offset> _from = <Offset>[
+    Offset(0, 1), // جنوب
+    Offset(1, 0), // شرق
+    Offset(0, -1), // شمال
+    Offset(-1, 0), // غرب
+  ];
+
+  /// زاویهٔ کوچکِ طبیعیِ هر کارت روی میز.
+  static const List<double> _tilt = <double>[0.02, -0.05, 0.03, 0.06];
+
   @override
   Widget build(BuildContext context) {
     final ShelemEngine e = controller.engine!;
-    final double cw = (size.width * 0.28).clamp(38.0, 68.0);
-    const List<Alignment> spots = <Alignment>[
-      Alignment(0, 0.95), // 0 — جنوب
-      Alignment(0.95, 0), // 1 — شرق
-      Alignment(0, -0.95), // 2 — شمال
-      Alignment(-0.95, 0), // 3 — غرب
+    final double cw = (size.width * 0.38).clamp(56.0, 104.0);
+    final List<Alignment> spots = <Alignment>[
+      const Alignment(0, 0.92),
+      const Alignment(0.92, 0.04),
+      const Alignment(0, -0.9),
+      const Alignment(-0.92, 0.04),
     ];
     final int? winner = e.phase == GamePhase.trickComplete && e.trick.length == 4
         ? trickWinner(e.trick, e.trump)
@@ -601,36 +659,85 @@ class _TrickArea extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[
+          // هالهٔ ملایمِ وسطِ میز
+          Center(
+            child: Container(
+              width: size.width * 0.86,
+              height: size.width * 0.86,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: <Color>[
+                    Colors.white.withValues(alpha: 0.05),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
           for (final PlayedCard p in e.trick)
             Align(
               alignment: spots[p.player],
-              child: AnimatedScale(
-                duration: const Duration(milliseconds: 180),
-                scale: winner == p.player ? 1.12 : 1,
-                child: CardView(
-                  card: p.card,
-                  width: cw,
-                  isTrump: isTrumpCard(p.card, e.trump),
-                  elevation: 6,
+              child: FlyIn(
+                key: ValueKey<String>('trick-${p.card.id}'),
+                from: _from[p.player],
+                distance: cw * 2.1,
+                tilt: _tilt[p.player],
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutBack,
+                  scale: winner == p.player ? 1.14 : 1,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(cw * 0.1),
+                      boxShadow: winner == p.player
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: AppColors.gold.withValues(alpha: 0.75),
+                                blurRadius: 22,
+                                spreadRadius: 1,
+                              ),
+                            ]
+                          : const <BoxShadow>[],
+                    ),
+                    child: CardView(
+                      card: p.card,
+                      width: cw,
+                      isTrump: isTrumpCard(p.card, e.trump),
+                      elevation: 8,
+                    ),
+                  ),
                 ),
               ),
             ),
           if (winner != null)
             Align(
-              alignment: Alignment.center,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.gold,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${controller.nameOf(winner)} برد '
-                  '(${fa(trickScore(e.trick))})',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF241B06),
+              alignment: const Alignment(0, 0.04),
+              child: PopIn(
+                key: ValueKey<int>(e.completedTricks.length),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: <Color>[AppColors.gold, Color(0xFFF3DFA8)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '${controller.nameOf(winner)}  ${fa(trickScore(e.trick))}+',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF241B06),
+                    ),
                   ),
                 ),
               ),
@@ -667,10 +774,16 @@ class _KittyView extends StatelessWidget {
           children: <Widget>[
             for (int i = 0; i < e.kitty.length; i++)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: CardBackView(
-                  width: 40,
-                  back: controller.settings.cardBack,
+                padding: const EdgeInsets.symmetric(horizontal: 2.5),
+                child: PopIn(
+                  delay: Duration(milliseconds: 70 * i),
+                  child: Transform.rotate(
+                    angle: (i - (e.kitty.length - 1) / 2) * 0.06,
+                    child: CardBackView(
+                      width: 46,
+                      back: controller.settings.cardBack,
+                    ),
+                  ),
                 ),
               ),
           ],
@@ -763,12 +876,35 @@ class _ActionArea extends StatelessWidget {
         child = null;
     }
 
-    if (child == null) return const SizedBox(height: 6);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      color: Colors.black.withValues(alpha: 0.35),
-      child: child,
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      child: child == null
+          ? const SizedBox(width: double.infinity, height: 6)
+          : Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: <Color>[
+                    Colors.black.withValues(alpha: 0.18),
+                    Colors.black.withValues(alpha: 0.48),
+                  ],
+                ),
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 240),
+                switchInCurve: Curves.easeOut,
+                child: KeyedSubtree(
+                  key: ValueKey<String>('${e.phase}-${e.bidder}-${e.turn}'),
+                  child: child,
+                ),
+              ),
+            ),
     );
   }
 
@@ -800,7 +936,7 @@ class _BidBar extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         SizedBox(
-          height: 38,
+          height: 46,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: <Widget>[
@@ -816,19 +952,12 @@ class _BidBar extends StatelessWidget {
                   child: const Text('پاس'),
                 ),
               ),
-              for (final int v in options.take(14))
+              for (int bi = 0; bi < options.length && bi < 14; bi++)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: FilledButton(
-                    onPressed: () => controller.humanBid(v),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      backgroundColor: v >= kShelemBid
-                          ? AppColors.teamUs
-                          : AppColors.gold,
-                    ),
-                    child: Text(contractLabel(v)),
-                  ),
+                  child: PopIn(
+                    delay: Duration(milliseconds: 28 * bi),
+                    child: _bidButton(options[bi])),
                 ),
             ],
           ),
@@ -836,6 +965,15 @@ class _BidBar extends StatelessWidget {
       ],
     );
   }
+
+  Widget _bidButton(int v) => FilledButton(
+        onPressed: () => controller.humanBid(v),
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          backgroundColor: v >= kShelemBid ? AppColors.teamUs : AppColors.gold,
+        ),
+        child: Text(contractLabel(v)),
+      );
 }
 
 // ── دست بازیکن ─────────────────────────────────────────────────────────
@@ -852,56 +990,136 @@ class _HandArea extends StatelessWidget {
         : e.hands[0];
     final bool discarding = e.phase == GamePhase.discarding && e.hakem == 0;
     final bool myTurn = controller.isHumanTurn;
-    final Set<PlayingCard> legal = myTurn
-        ? e.legalFor(0).toSet()
-        : <PlayingCard>{};
+    final Set<PlayingCard> legal =
+        myTurn ? e.legalFor(0).toSet() : <PlayingCard>{};
+    final bool highlight = controller.settings.highlightLegal;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
         final int n = hand.length;
-        if (n == 0) return const SizedBox(height: 90);
-        final double avail = box.maxWidth - 16;
-        double cw = avail / (1 + (n - 1) * 0.5);
-        cw = cw.clamp(30.0, 78.0);
-        final double overlap = cw * 0.5;
+        if (n == 0) return const SizedBox(height: 96);
+
+        // هرچه برگ‌ها بیشتر، هم‌پوشانی بیشتر؛ کارت‌ها بزرگ می‌مانند.
+        final double avail = box.maxWidth - 14;
+        double cw = avail / (1 + (n - 1) * 0.40);
+        cw = cw.clamp(44.0, 108.0);
+        final double overlap = math.min(cw * 0.62, (avail - cw) / math.max(1, n - 1));
         final double total = cw + (n - 1) * overlap;
         final double start = (box.maxWidth - total) / 2;
-        final double h = cw * kCardAspect + 26;
+        final double ch = cw * kCardAspect;
+        final double spread = math.min(0.052, 0.52 / n);
+        final double mid = (n - 1) / 2;
+        final double arc = cw * 0.055;
+        final double h = ch + arc * mid * mid * 0.5 + 34;
 
         return SizedBox(
           height: h,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: <Widget>[
-              for (int i = 0; i < n; i++)
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 160),
-                  left: start + i * overlap,
-                  bottom: controller.selectedDiscards.contains(hand[i]) ? 22 : 6,
-                  child: CardView(
-                    card: hand[i],
-                    width: cw,
-                    isTrump: isTrumpCard(hand[i], e.trump),
-                    selected: controller.selectedDiscards.contains(hand[i]),
-                    playable: myTurn &&
-                        controller.settings.highlightLegal &&
-                        legal.contains(hand[i]),
-                    dimmed: myTurn &&
-                        controller.settings.highlightLegal &&
-                        !legal.contains(hand[i]),
-                    onTap: () {
-                      if (discarding) {
-                        controller.toggleDiscard(hand[i]);
-                      } else {
-                        controller.humanPlay(hand[i]);
-                      }
-                    },
-                  ),
-                ),
-            ],
+          child: TweenAnimationBuilder<double>(
+            // با شروع هر راند، ورق‌ها دوباره «پخش» می‌شوند.
+            key: ValueKey<int>(e.round * 10 + (e.hakem ?? 0)),
+            tween: Tween<double>(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 760),
+            curve: Curves.linear,
+            builder: (BuildContext context, double t, Widget? _) {
+              return Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  // کارت‌های سمت راست زیرتر رسم می‌شوند تا گوشهٔ هر برگ پیدا باشد
+                  for (int i = n - 1; i >= 0; i--)
+                    _card(
+                      context: context,
+                      index: i,
+                      count: n,
+                      card: hand[i],
+                      engine: e,
+                      cw: cw,
+                      overlap: overlap,
+                      start: start,
+                      spread: spread,
+                      mid: mid,
+                      arc: arc,
+                      progress: _stagger(t, i, n),
+                      discarding: discarding,
+                      myTurn: myTurn,
+                      legal: legal,
+                      highlight: highlight,
+                    ),
+                ],
+              );
+            },
           ),
         );
       },
+    );
+  }
+
+  /// پیشرفتِ پخشِ ورقِ شمارهٔ [i] (پله‌ای، از راست به چپ).
+  double _stagger(double t, int i, int n) {
+    final double startAt = (i / math.max(1, n)) * 0.55;
+    return ((t - startAt) / 0.45).clamp(0.0, 1.0);
+  }
+
+  Widget _card({
+    required BuildContext context,
+    required int index,
+    required int count,
+    required PlayingCard card,
+    required ShelemEngine engine,
+    required double cw,
+    required double overlap,
+    required double start,
+    required double spread,
+    required double mid,
+    required double arc,
+    required double progress,
+    required bool discarding,
+    required bool myTurn,
+    required Set<PlayingCard> legal,
+    required bool highlight,
+  }) {
+    final bool selected = controller.selectedDiscards.contains(card);
+    final bool isLegal = legal.contains(card);
+    final double d = index - mid;
+    final double angle = d * spread;
+    final double lift = arc * (mid * mid - d * d) * 0.5;
+    final double eased = Curves.easeOutCubic.transform(progress);
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      left: start + index * overlap,
+      bottom: 8 + lift + (selected ? 26 : 0),
+      child: Opacity(
+        opacity: eased,
+        child: Transform.translate(
+          // ورود از سمتِ بالا-راست (جایی که ورق پخش می‌شود)
+          offset: Offset((1 - eased) * 120, (1 - eased) * -110),
+          child: Transform.rotate(
+            angle: angle * eased + (1 - eased) * 0.5,
+            alignment: Alignment.bottomCenter,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 180),
+              scale: selected ? 1.06 : 1,
+              child: CardView(
+                card: card,
+                width: cw,
+                isTrump: isTrumpCard(card, engine.trump),
+                selected: selected,
+                playable: myTurn && highlight && isLegal,
+                dimmed: myTurn && highlight && !isLegal,
+                elevation: 6,
+                onTap: () {
+                  if (discarding) {
+                    controller.toggleDiscard(card);
+                  } else {
+                    controller.humanPlay(card);
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
