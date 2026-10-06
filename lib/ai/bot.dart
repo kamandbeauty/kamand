@@ -87,11 +87,11 @@ class ShelemBot {
     final double tricks = expectedTricks(hand, s);
     // هر دست به‌طور میانگین حدود ۱۲٫۷ امتیاز دارد (۱۶۵ ÷ ۱۳)؛ دست‌های حاکم
     // معمولاً پرامتیازترها هستند، پس کمی بالاتر گرفته می‌شود.
-    double pts = tricks * 13.5;
+    double pts = tricks * 15.0;
     // سهم یار (به‌طور میانگین حدود دو دست، ولی با قوی‌تر شدن دستِ خودمان کمتر)
-    pts += max(10.0, 34.0 - tricks * 1.6);
+    pts += max(12.0, 36.0 - tricks * 1.5);
     // گلِ وسط: ۵ امتیازِ دست + امتیاز برگ‌های کنارگذاشته + بهبود دست
-    if (withKitty) pts += 22;
+    if (withKitty) pts += 26;
     return min(pts, 165);
   }
 

@@ -225,7 +225,7 @@ void main() {
       // تیم ۰ = استاد، تیم ۱ = آسان؛ هر دو با یک دستِ یکسان شروع می‌کنند.
       int masterPoints = 0;
       int easyPoints = 0;
-      for (int i = 0; i < 24; i++) {
+      for (int i = 0; i < 60; i++) {
         final ShelemEngine e = ShelemEngine(
           config: const GameConfig(targetScore: 100000000),
           random: Random(500 + i),
@@ -242,9 +242,9 @@ void main() {
           }
           guard++;
         }
-        final List<int> pts = e.currentPoints();
-        masterPoints += pts[0];
-        easyPoints += pts[1];
+        // فقط امتیاز دست‌های برده‌شده (بدون برگ‌های گل) تا اثر حاکم‌شدن حذف شود
+        masterPoints += kTrickBonus * e.tricksWon[0] + cardPointsOf(e.taken[0]);
+        easyPoints += kTrickBonus * e.tricksWon[1] + cardPointsOf(e.taken[1]);
       }
       // ignore: avoid_print
       print('استاد $masterPoints در برابر آسان $easyPoints');
