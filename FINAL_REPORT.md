@@ -1,0 +1,120 @@
+# گزارش نهایی — «طالع من» نسخهٔ ۱.۰.۰
+
+اکتبر ۲۰۲۶ · شاخهٔ `arena/0b8c881d-kamand` · وضعیت CI: ✅ سبز (آنالیز + تست + بیلد)
+
+---
+
+## ۱. خلاصه
+
+اپلیکیشن اندرویدی «طالع من» — طالع‌بینی شخصی آفلاین با تجربهٔ Premium Mystical Glass — به‌صورت کامل پیاده‌سازی، تست و بیلد شد.
+
+- **APK امضاشدهٔ Release** در GitHub Release با تگ [`tale-man-v1.0.0`](../../releases/tag/tale-man-v1.0.0) منتشر شد (۶۰٫۵ MB؛ آرتیفکت فشردهٔ CI: ۲۸٫۵ MB).
+- **۸۱ تست** (واحد + دیتابیس + سرویس + E2E ویجت) همگی پاس.
+- **پیش‌نمایش وب تعاملی** با همان موتور قطعی (تطبیق برداری bit-for-bit با نسخهٔ Dart).
+- **۹ کامیت منطقی** روی شاخهٔ کاری؛ بدون تغییر نام پکیج (`com.ruby.factor_ruby`).
+
+## ۲. معماری
+
+```
+lib/
+├── core/          ابزارهای پایه: تاریخ شمسی (AppDate)، ارقام فارسی، شهرها، تم
+├── domain/        منطق خالص بدون وابستگی به Flutter:
+│   ├── zodiac/        محاسبهٔ برج از تاریخ تولد + مخزن برج‌ها
+│   ├── horoscope/     موتور قطعی طالع + PRNG قطعی (fnv1a32 + LCG)
+│   ├── compatibility/ ماتریس ۱۲×۱۲ سازگاری (الگوریتمی، نه ۱۴۴ ردیف ثابت)
+│   ├── profile/       مدل‌های Profile/Partner/BirthData (آمادهٔ چارت تولد)
+│   └── entitlement/   مدل اشتراک (monthly/yearly/lifetime + rewarded)
+├── data/          لایهٔ داده:
+│   ├── database/      sqlite3 خام (بدون ORM/build_runner) + مهاجرت idempotent
+│   ├── repositories/  Profile/Partner/Horoscope/Zodiac + کش طالع روزانه
+│   ├── content/       محتوای تولیدشده (app_content.dart از content/*.json)
+│   ├── settings/      SharedPreferences + EntitlementCodec + BillingGateway انتزاعی
+│   ├── notifications/ زمان‌بند اعلان (MethodChannel به Kotlin)
+│   └── analytics/     رویدادهای محلی (بدون ارسال به بیرون)
+├── providers/     Riverpod (StateNotifier + FutureProvider + autoDispose family)
+├── widgets/       StarField (تک‌فاز، سازگار با reduced-motion)، GlassCard، ...
+└── screens/       ۱۸ صفحه (فهرست در §۳)
+```
+
+**اصل طراحی:** همهٔ محاسبات تاریخ/برج/طالع از طریق لایهٔ دامنه؛ UI هرگز مستقیم با Jalali/Gregorian کار نمی‌کند. هیچ Random غیرقطعی در تولید محتوا وجود ندارد.
+
+## ۳. صفحه‌ها
+
+| دسته | صفحه‌ها |
+|---|---|
+| ورود | Splash، آنبوردینگ ۷ مرحله‌ای (خوش‌آمد → نام → تاریخ تولد شمسی → ساعت تولد → شهر تولد → نتیجه «تو یک … هستی» → اعلان روزانه) |
+| پوسته | MainShell با نوار پایین ۴ تبی: خانه / برج من / عشق / پروفایل |
+| خانه | HomeScreen، DailyScreen (پریمیوم + مسیر پاداش)، WeeklyScreen، MonthlyScreen |
+| برج من | ZodiacScreen (شخصیت، قوت/ضعف، سبک عشق/کار/دوستی، شانس‌های همیشگی) |
+| عشق | LoveScreen (رتبه‌بندی ۱۲ برج)، CompatibilityDetailScreen («چرا این دو برج با هم سازگارند؟»)، CoupleScreen (تحلیل زوج)، PartnerFormScreen |
+| پروفایل | ProfileScreen، ProfileEditScreen |
+| تنظیمات | SettingsScreen (اعلان + ساعت، تم تیره/روشن/سیستمی، حذف کامل داده با تأیید)، AboutScreen، PrivacyScreen، TermsScreen |
+| پریمیوم | PremiumScreen (سه پلن، بدون dark pattern) |
+
+## ۴. اسکیمای دیتابیس (sqlite3، user_version = 1)
+
+- **profiles** — تک‌ردیف primary: id, name, birth_date (کلید شمسی)، birth_time?, birth_time_known, birth_city?, zodiac_id, is_primary, created_at, updated_at
+- **partners** — شریک فعال v1: id, profile_id, name, birth_date, birth_time?, birth_city?, zodiac_id, created_at
+- **daily_horoscopes** — کش: (zodiac_id, date) یکتا؛ متن‌ها + امتیازها + generated_version (بازتولید خودکار در تغییر الگوریتم)
+- **app_settings** — key-value (onboarding، اعلان، تم، اشتراک)
+
+مهاجرت **idempotent** است: بازاجرای آن داده‌ها را حفظ می‌کند (تست‌شده).
+
+## ۵. الگوریتم طالع‌بینی (قطعی)
+
+```
+seed روزانه   = fnv1a32("برج|سال-ماه-روز")          ← همان محتوا برای همهٔ هم‌برج‌ها
+امتیازها      = fnv1a32("scores|برج|تاریخ") → LCG → پایه ۴۲ + بایاس برج/بخش → clamp ۲۵..۹۷
+متن‌ها        = fnv1a32("text|برج|تاریخ") → انتخاب بدون تکرار از استخرهای هر برج
+شانس‌ها       = fnv1a32("lucky|برج|تاریخ") → رنگ/عدد/ساعت
+هفتگی/ماهانه  = بذر week|… و month|… (ماهانه: mscores|…)
+جیتر شخصی     = fnv1a32("jitter|پروفایل|برج|روز") % 7 − 3   (لایهٔ جداشدنی)
+سازگاری       = فاصلهٔ برج‌ها → اسبکت (تثلث/تربیع/...) + شیمی عناصر + بذر متقارن جفت
+```
+
+تضمین‌ها: هیچ `Random` غیرقطعی؛ اعداد همیشه ۰–۱۰۰ clamp؛ متن‌ها از استخرهای تألیف‌شده (بدون تکرار قابل‌مشاهده)؛ چارچوب «سرگرمی/تفسیری» در همهٔ بخش‌ها (§۲.۱۶/§۴۸).
+
+## ۶. تست‌ها (۸۱ مورد — همه پاس ✅)
+
+| فایل | موارد | پوشش |
+|---|---|---|
+| zodiac_calculator_test | ۱۳ | مرزهای برج (۲۱/۲۲ مارس، ۱۹/۲۰ ژانویه، ...)، کبیسه، تاریخ نامعتبر → null |
+| app_date_test | ۱۷ | تبدیل شمسی↔میلادی (لنگر Nowruz)، روز هفته، قالب‌ها، ارقام فارسی |
+| horoscope_engine_test | ۱۸ | قطعیت، دامنهٔ امتیاز، وکتورهای FNV/LCG (قرارداد بین‌نسخه‌ای)، هفتگی/ماهانه |
+| compatibility_test | ۱۰ | تقارن ماتریس، دامنه‌ها، رتبه‌بندی |
+| repository_test | ۱۳ | مهاجرت DB، چرخهٔ پروفایل/شریک، کش طالع، پاک‌سازی، تاریخ نامعتبر |
+| services_test | ۹ | اشتراک (خرید/پاداش/فاسد/منقضی)، تنظیمات |
+| widget_flow_test | ۱ (E2E) | کل سفر کاربر: آنبوردینگ → خانه → تب‌ها → شریک → تم روشن → حذف کامل → بازگشت به آنبوردینگ |
+
+## ۷. باگ‌های واقعی که در این فرایند پیدا و رفع شد
+
+1. `Profile.copyWith` با `null` مقدار قبلی را نگه می‌داشت → پاک‌کردن شهر/ساعت تولد در ویرایش پروفایل بی‌اثر بود (الگوی sentinel اعمال شد).
+2. کارت‌های امتیاز خانه با `GridView` با نسبت ثابت در عرض گوشی‌های واقعی ۷–۲۴px سرریز می‌کردند → ردیف‌های ارتفاع-خودکار.
+3. `ListTile` داخل `GlassCard` هشدار ink splash می‌داد → `Material` شفاف بالای تزئین.
+
+## ۸. موارد باقی‌مانده / محدودیت‌ها
+
+- چارت تولد (NatalChart، PlanetPosition، ...) فقط مدل دامنه‌ای دارد — رندر و محاسبات نجومی نسخهٔ بعد.
+- خرید درون‌برنامه‌ای: `BillingGateway` انتزاعی + پیاده‌سازی نمایشی؛ اتصال به Google Play Billing نیاز به انتشار در پلی دارد.
+- APK یکی (universal) است؛ برای کاهش حجم می‌توان split per-abi یا App Bundle منتشر کرد.
+- اعلان‌ها درexact-hour با `setRepeating` درشت (inexact) اجرا می‌شوند (بدون مجوز SCHEDULE_EXACT_ALARM — تصمیم حریم‌خصوصی).
+- اتصال زندهٔ اعلان هنگام نصب مجدد (بازآوری از BootReceiver) فقط برای رابطهٔ ذخیره‌شده برقرار است.
+
+## ۹. پیشنهادهای نسخهٔ بعد
+
+۱. چارت تولد و طالع (Ascendant) با دادهٔ ساعت/شهر تولدِ از قبل ذخیره‌شده.
+۲. App Bundle + پرداخت واقعی Play Billing + ریجن‌بندی قیمت.
+۳. هم‌رسانی کارت طالع روز (Share sheet) و ویجت خانهٔ اندروید.
+۴. همگام‌سازی رمزگذاری‌شدهٔ اختیاری پروفایل (فقط با رضایت صریح).
+۵. بومی‌سازی انگلیسی (فیلد nameEn برج‌ها از قبل موجود است).
+۶. آمار «دقت پیش‌بینی» تعاملی برای تعامل کاربر (بدون ادعای علمی).
+
+## ۱۰. نتیجهٔ بیلد
+
+```
+jobs:   Analyze & Test ✅  →  Build signed APK ✅
+artifact: tale-man-apk  (retention 90d)
+release:  tale-man-v1.0.0 — «طالع من — نسخهٔ ۱.۰.۰» (app-release.apk, ۶۰٫۵ MB, امضاشده)
+```
+
+امضای Release از سیکرت‌های موجود CI (DIVAN_RELEASE_*) خوانده می‌شود؛ کلید هرگز در مخزن ذخیره نمی‌شود.
