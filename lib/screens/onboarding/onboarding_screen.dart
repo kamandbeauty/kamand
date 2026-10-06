@@ -171,7 +171,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case 5:
         return 'ادامه';
       case 6:
-        return 'ورود به طالع من';
+        return 'ورود به طالع بین';
       default:
         return 'ادامه';
     }

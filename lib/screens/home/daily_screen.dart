@@ -33,7 +33,7 @@ class DailyScreen extends ConsumerWidget {
               if (d == null) return;
               analytics.logEvent(AnalyticsEvent.dailyShared.id);
               ShareService.share(
-                '✦ طالع من — ${AppDate.formatFull(AppDate.now())}\n\n'
+                '✦ طالع بین — ${AppDate.formatFull(AppDate.now())}\n\n'
                 '${d.generalText}\n\n'
                 'عشق ${d.scores.love}٪ · کار ${d.scores.career}٪ · '
                 'مالی ${d.scores.finance}٪ · حال‌وهوا ${d.scores.mood}٪\n\n'

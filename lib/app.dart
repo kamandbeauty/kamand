@@ -98,7 +98,7 @@ class _SplashScreen extends StatelessWidget {
               ),
               const SizedBox(height: 22),
               Text(
-                'طالع من',
+                'طالع بین',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,

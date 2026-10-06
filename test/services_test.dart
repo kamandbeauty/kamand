@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:factor_ruby/data/settings/settings_service.dart';
-import 'package:factor_ruby/domain/entitlement/entitlement.dart';
+import 'package:taalebin/data/settings/settings_service.dart';
+import 'package:taalebin/domain/entitlement/entitlement.dart';
 
 void main() {
   group('EntitlementCodec', () {

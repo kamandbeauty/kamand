@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
-import 'package:factor_ruby/core/date/app_date.dart';
-import 'package:factor_ruby/domain/zodiac/zodiac_calculator.dart';
-import 'package:factor_ruby/domain/zodiac/zodiac_repository.dart';
+import 'package:taalebin/core/date/app_date.dart';
+import 'package:taalebin/domain/zodiac/zodiac_calculator.dart';
+import 'package:taalebin/domain/zodiac/zodiac_repository.dart';
 
 void main() {
   const repository = LocalZodiacRepository();

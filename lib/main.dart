@@ -28,7 +28,7 @@ Future<void> main() async {
   runApp(
     ProviderScope(
       overrides: [servicesProvider.overrideWithValue(services)],
-      child: const TaleManApp(),
+      child: const TaalebinApp(),
     ),
   );
 }
@@ -51,8 +51,8 @@ Future<void> _scheduleStartupTasks(AppServices services) async {
   }
 }
 
-class TaleManApp extends ConsumerWidget {
-  const TaleManApp({super.key});
+class TaalebinApp extends ConsumerWidget {
+  const TaalebinApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -65,7 +65,7 @@ class TaleManApp extends ConsumerWidget {
     };
 
     return MaterialApp(
-      title: 'طالع من',
+      title: 'طالع بین',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

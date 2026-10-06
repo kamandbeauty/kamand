@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
-import 'package:factor_ruby/core/date/app_date.dart';
-import 'package:factor_ruby/data/database/app_database.dart';
-import 'package:factor_ruby/data/repositories/horoscope_repository.dart';
-import 'package:factor_ruby/data/repositories/profile_repository.dart';
-import 'package:factor_ruby/domain/horoscope/horoscope_engine.dart';
-import 'package:factor_ruby/domain/profile/profile.dart';
-import 'package:factor_ruby/domain/zodiac/zodiac_repository.dart';
+import 'package:taalebin/core/date/app_date.dart';
+import 'package:taalebin/data/database/app_database.dart';
+import 'package:taalebin/data/repositories/horoscope_repository.dart';
+import 'package:taalebin/data/repositories/profile_repository.dart';
+import 'package:taalebin/domain/horoscope/horoscope_engine.dart';
+import 'package:taalebin/domain/profile/profile.dart';
+import 'package:taalebin/domain/zodiac/zodiac_repository.dart';
 
 void main() {
   late AppDatabase db;

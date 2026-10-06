@@ -1,4 +1,4 @@
-package com.ruby.factor_ruby
+package com.studiojavid.taalebin
 
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
@@ -9,7 +9,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * طالع من — entry activity.
+ * طالع بین — entry activity.
  *
  * Hosts the `app/notifications` MethodChannel used by the Dart side for the
  * daily horoscope reminder. The native implementation lives in
@@ -28,7 +28,7 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             if (call.method == "shareText") {
                 val text = call.argument<String>("text") ?: ""
-                val subject = call.argument<String>("subject") ?: "طالع من"
+                val subject = call.argument<String>("subject") ?: "طالع بین"
                 try {
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"

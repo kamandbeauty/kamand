@@ -2,7 +2,7 @@
 // Source: content/signs/*.json + content/compatibility.json
 // Regenerate with: python3 tool/build_content.py
 //
-// Persian content for the "طالع من" horoscope app. This file is the data
+// Persian content for the "طالع بین" horoscope app. This file is the data
 // layer (content repository) consumed by the domain engines; UI code never
 // hardcodes horoscope text (see lib/domain/horoscope/horoscope_engine.dart).
 

@@ -58,7 +58,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'طالع من',
+                  'طالع بین',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -82,7 +82,7 @@ class AboutScreen extends StatelessWidget {
           const _TextCard(
             title: 'این برنامه چه می‌کند؟',
             body:
-                '«طالع من» بر اساس تاریخ تولد تو، برج ستاره‌ای‌ات را محاسبه می‌کند و '
+                '«طالع بین» بر اساس تاریخ تولد تو، برج ستاره‌ای‌ات را محاسبه می‌کند و '
                 'هر روز طالع، امتیازها، رنگ و عدد شانس و تحلیل سازگاری عاطفی را نمایش می‌دهد. '
                 'همهٔ محاسبات به‌صورت آفلاین و روی همین دستگاه انجام می‌شود.',
           ),

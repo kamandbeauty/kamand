@@ -1,4 +1,4 @@
-package com.ruby.factor_ruby
+package com.studiojavid.taalebin
 
 import android.Manifest
 import android.app.AlarmManager
@@ -31,7 +31,7 @@ object NotificationScheduler {
 
     const val CHANNEL = "app/notifications"
     private const val CHANNEL_ID = "daily_horoscope"
-    private const val PREFS = "tale_man_notifications"
+    private const val PREFS = "taalebin_notifications"
     private const val PREF_HOUR = "hour"
     private const val PREF_MINUTE = "minute"
     private const val PREF_ENABLED = "enabled"

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// "Premium Mystical Glass" design system for طالع من.
+/// "Premium Mystical Glass" design system for طالع بین.
 ///
 /// Dark = midnight-navy sky with glass cards, soft violet/gold accents.
 /// Light = airy lavender-white with the same celestial accents.

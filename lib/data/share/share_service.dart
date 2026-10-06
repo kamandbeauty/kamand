@@ -9,7 +9,7 @@ class ShareService {
 
   /// Opens the system share sheet with [text]. Never throws — failures
   /// (e.g. no share target, or running in tests) are swallowed.
-  static Future<void> share(String text, {String subject = 'طالع من'}) async {
+  static Future<void> share(String text, {String subject = 'طالع بین'}) async {
     try {
       await _channel.invokeMethod<bool>('shareText', {
         'text': text,

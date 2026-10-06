@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Build script for "طالع من" content pipeline.
+Build script for "طالع بین" content pipeline.
 
 Single source of truth: content/signs/*.json + content/compatibility.json
 Outputs:
@@ -112,7 +112,7 @@ def generate_dart(signs, compat):
 // Source: content/signs/*.json + content/compatibility.json
 // Regenerate with: python3 tool/build_content.py
 //
-// Persian content for the "طالع من" horoscope app. This file is the data
+// Persian content for the "طالع بین" horoscope app. This file is the data
 // layer (content repository) consumed by the domain engines; UI code never
 // hardcodes horoscope text (see lib/domain/horoscope/horoscope_engine.dart).
 

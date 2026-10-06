@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
-import 'package:factor_ruby/core/date/app_date.dart';
-import 'package:factor_ruby/core/utils/persian_numbers.dart';
+import 'package:taalebin/core/date/app_date.dart';
+import 'package:taalebin/core/utils/persian_numbers.dart';
 
 void main() {
   group('Jalali ↔ Gregorian conversion (known dates)', () {

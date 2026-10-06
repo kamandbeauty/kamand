@@ -39,10 +39,10 @@ def signingValue = { String environmentName, String propertyName ->
     environmentValue != null ? environmentValue : keystoreProperties.getProperty(propertyName)
 }
 
-def releaseStorePath = signingValue('TALE_MAN_RELEASE_KEYSTORE_PATH', 'storeFile')
-def releaseStorePassword = signingValue('TALE_MAN_RELEASE_KEYSTORE_PASSWORD', 'storePassword')
-def releaseKeyAlias = signingValue('TALE_MAN_RELEASE_KEY_ALIAS', 'keyAlias')
-def releaseKeyPassword = signingValue('TALE_MAN_RELEASE_KEY_PASSWORD', 'keyPassword')
+def releaseStorePath = signingValue('TAALEBIN_RELEASE_KEYSTORE_PATH', 'storeFile')
+def releaseStorePassword = signingValue('TAALEBIN_RELEASE_KEYSTORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = signingValue('TAALEBIN_RELEASE_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = signingValue('TAALEBIN_RELEASE_KEY_PASSWORD', 'keyPassword')
 def hasReleaseSigning = [
     releaseStorePath,
     releaseStorePassword,
@@ -51,7 +51,7 @@ def hasReleaseSigning = [
 ].every { value -> value != null && !value.toString().isEmpty() }
 
 android {
-    namespace "com.ruby.factor_ruby"
+    namespace "com.studiojavid.taalebin"
     compileSdk flutter.compileSdkVersion
 
     compileOptions {
@@ -68,7 +68,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.ruby.factor_ruby"
+        applicationId "com.studiojavid.taalebin"
         minSdk 23
         targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()

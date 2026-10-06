@@ -2,7 +2,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-/// SQLite database for طالع من (offline-first).
+/// SQLite database for طالع بین (offline-first).
 ///
 /// Uses `package:sqlite3` directly (no codegen) with explicit versioned
 /// migrations via `PRAGMA user_version`.
@@ -21,7 +21,7 @@ class AppDatabase {
   /// Opens the on-disk database (app usage).
   static Future<AppDatabase> openDefault() async {
     final dir = await getApplicationDocumentsDirectory();
-    return open(p.join(dir.path, 'tale_man.sqlite'));
+    return open(p.join(dir.path, 'taalebin.sqlite'));
   }
 
   /// Opens a database at an explicit path (or in-memory when null).

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:factor_ruby/app.dart';
-import 'package:factor_ruby/data/settings/settings_service.dart';
-import 'package:factor_ruby/main.dart';
-import 'package:factor_ruby/providers/app_providers.dart';
-import 'package:factor_ruby/screens/zodiac/zodiac_screen.dart';
+import 'package:taalebin/app.dart';
+import 'package:taalebin/data/settings/settings_service.dart';
+import 'package:taalebin/main.dart';
+import 'package:taalebin/providers/app_providers.dart';
+import 'package:taalebin/screens/zodiac/zodiac_screen.dart';
 
 /// Deterministic, timed pumps (never waits forever — spinners/animations
 /// are finite so a few frames always suffice).
@@ -40,7 +40,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [servicesProvider.overrideWithValue(services)],
-        child: const TaleManApp(),
+        child: const TaalebinApp(),
       ),
     );
 
@@ -164,11 +164,11 @@ void main() {
 
   testWidgets('AppGate renders splash without a crash', (tester) async {
     final services = AppServices.forTest();
-    // AppGate lives under TaleManApp's MaterialApp (Directionality + RTL).
+    // AppGate lives under TaalebinApp's MaterialApp (Directionality + RTL).
     await tester.pumpWidget(
       ProviderScope(
         overrides: [servicesProvider.overrideWithValue(services)],
-        child: const TaleManApp(),
+        child: const TaalebinApp(),
       ),
     );
     await settle(tester, frames: 4);

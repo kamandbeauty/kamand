@@ -1,4 +1,4 @@
-name: Build Tale Man (طالع من)
+name: Build Talebin (طالع بین)
 
 on:
   push:
@@ -133,15 +133,15 @@ jobs:
             echo "::notice::Release secrets not found — APK will be debug-signed."
             exit 0
           fi
-          keystore_path="$RUNNER_TEMP/tale-man-release.jks"
+          keystore_path="$RUNNER_TEMP/taalebin-release.jks"
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           if ! keytool -list -keystore "$keystore_path" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null 2>&1; then
             echo "::error::Keystore validation failed"; exit 1
           fi
-          echo "TALE_MAN_RELEASE_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
-          echo "TALE_MAN_RELEASE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "TALE_MAN_RELEASE_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "TALE_MAN_RELEASE_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "TAALEBIN_RELEASE_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+          echo "TAALEBIN_RELEASE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "TAALEBIN_RELEASE_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "TAALEBIN_RELEASE_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
 
       - name: Resolve dependencies
         run: flutter pub get
@@ -180,35 +180,35 @@ jobs:
       - name: Upload APK artifacts (per-ABI + universal)
         uses: actions/upload-artifact@v4
         with:
-          name: tale-man-apk-arm64
+          name: taalebin-apk-arm64
           path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           retention-days: 90
 
       - name: Upload APK artifact (arm32)
         uses: actions/upload-artifact@v4
         with:
-          name: tale-man-apk-arm32
+          name: taalebin-apk-arm32
           path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
           retention-days: 90
 
       - name: Upload APK artifact (x86_64)
         uses: actions/upload-artifact@v4
         with:
-          name: tale-man-apk-x64
+          name: taalebin-apk-x64
           path: build/app/outputs/flutter-apk/app-x86_64-release.apk
           retention-days: 90
 
       - name: Upload APK artifact (universal)
         uses: actions/upload-artifact@v4
         with:
-          name: tale-man-apk-universal
+          name: taalebin-apk-universal
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 90
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tale-man-aab
+          name: taalebin-aab
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 90
 
@@ -220,40 +220,44 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="tale-man-v1.1.1"
+          tag="taalebin-v1.2.0"
 
           # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
           rm -rf "$dist"; mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/tale-man-v1.1.1-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/tale-man-v1.1.1-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/tale-man-v1.1.1-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/tale-man-v1.1.1-universal.apk"
-          cp "$aab"                                 "$dist/tale-man-v1.1.1.aab"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.2.0-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.2.0-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.2.0-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.2.0-universal.apk"
+          cp "$aab"                                 "$dist/taalebin-v1.2.0.aab"
 
           # Integrity manifest: exact size + SHA-256 of every file, so a
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in tale-man-v1.1.1-*; do
+            for f in taalebin-v1.2.0-*; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
 
-          notes="نسخهٔ ۱.۱.۱ «طالع من» — امضای تقویت‌شده (v1+v2+v3) و رفع مشکل نصب.
+          notes="نسخهٔ ۱.۲.۰ «طالع بین» — هویت جدید و مستقل (com.studiojavid.taalebin).
+
+          این نسخه شناسهٔ پکیج اختصاصی خودش را دارد و با هیچ برنامهٔ قدیمی روی گوشی تداخل نمی‌کند.
 
           کدام فایل را دانلود کنم؟ نسخهٔ مخصوص گوشیِ خودت:
 
           | فایل | مخصوص |
           |---|---|
-          | tale-man-v1.1.1-arm64-v8a.apk | گوشی‌های مدرن (اکثر گوشی‌ها) |
-          | tale-man-v1.1.1-armeabi-v7a.apk | گوشی‌های قدیمی‌تر ۳۲ بیتی |
-          | tale-man-v1.1.1-x86_64.apk | شبیه‌ساز اندروید |
-          | tale-man-v1.1.1-universal.apk | همهٔ گوشی‌ها (حجم بیشتر) |
-          | tale-man-v1.1.1.aab | فقط Google Play — نصب مستقیم ندارد |
+          | taalebin-v1.2.0-arm64-v8a.apk | گوشی‌های مدرن (اکثر گوشی‌ها) |
+          | taalebin-v1.2.0-armeabi-v7a.apk | گوشی‌های قدیمی‌تر ۳۲ بیتی |
+          | taalebin-v1.2.0-x86_64.apk | شبیه‌ساز اندروید |
+          | taalebin-v1.2.0-universal.apk | همهٔ گوشی‌ها (حجم بیشتر) |
+          | taalebin-v1.2.0.aab | فقط Google Play — نصب مستقیم ندارد |
+
+          حداقل سیستم لازم: اندروید ۶.۰ (به بالا).
 
           اگر نصب نشد («بسته دارای مشکل است» / «برنامه نصب نشد»):
-          ۱. اگر برنامهٔ قدیمی «فاکتور روبی» یا «طالع من» روی گوشی نصب است، اول کاملاً حذفش کن (نام پکیج یکی است و امضای متفاوت مانع نصب می‌شود).
+          ۱. این نسخه شناسهٔ پکیج جدیدی دارد و بدون تداخل کنار هر برنامهٔ دیگری نصب می‌شود؛ نسخه‌های قدیمی را در صورت تمایل حذف کن (پروفایل را یک بار دیگر وارد می‌کنی).
           ۲. فایل را دوباره دانلود کن و حجمش را با CHECKSUMS.txt مقایسه کن — اگر کمتر بود، دانلود ناقص است.
           ۳. از برنامهٔ «فایل‌ها» روی فایل apk بزن (نه از داخل مرورگر) و اجازهٔ «نصب از منابع ناشناس» را همان‌جا بده.
           ۴. اگر Play Protect هشدار داد: «جزئیات بیشتر» ← «نصب در هر صورت».
@@ -267,7 +271,7 @@ jobs:
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" "$dist"/* \
-              --title "طالع من — نسخهٔ ۱.۱.۱" \
+              --title "طالع بین — نسخهٔ ۱.۲.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi

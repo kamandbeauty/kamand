@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Generates launcher + notification icons for طالع من.
+"""Generates launcher + notification icons for طالع بین.
 
 Draws a premium "midnight sky" mark: deep navy radial background, a golden
 crescent moon, scattered stars and a subtle zodiac-wheel ring. Output sizes

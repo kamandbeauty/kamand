@@ -97,7 +97,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'طالع من پرمیوم',
+                  'طالع بین پرمیوم',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,

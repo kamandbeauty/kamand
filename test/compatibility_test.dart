@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:factor_ruby/domain/compatibility/compatibility_engine.dart';
-import 'package:factor_ruby/domain/horoscope/deterministic_random.dart';
-import 'package:factor_ruby/domain/zodiac/zodiac_repository.dart';
+import 'package:taalebin/domain/compatibility/compatibility_engine.dart';
+import 'package:taalebin/domain/horoscope/deterministic_random.dart';
+import 'package:taalebin/domain/zodiac/zodiac_repository.dart';
 
 void main() {
   const repository = LocalZodiacRepository();

@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
-import 'package:factor_ruby/domain/horoscope/deterministic_random.dart';
-import 'package:factor_ruby/core/date/app_date.dart';
-import 'package:factor_ruby/domain/horoscope/horoscope_engine.dart';
-import 'package:factor_ruby/domain/zodiac/zodiac_repository.dart';
+import 'package:taalebin/domain/horoscope/deterministic_random.dart';
+import 'package:taalebin/core/date/app_date.dart';
+import 'package:taalebin/domain/horoscope/horoscope_engine.dart';
+import 'package:taalebin/domain/zodiac/zodiac_repository.dart';
 
 void main() {
   const repository = LocalZodiacRepository();
