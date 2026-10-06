@@ -40,7 +40,7 @@ jobs:
       - name: Regenerate content (verify it is in sync)
         run: |
           python3 tool/build_content.py
-          git diff --exit-code -- lib/data/content/app_content.dart content/app_content.json web_preview/src/content/appContent.json \
+          git diff --exit-code -- lib/data/content/app_content.dart content/app_content.json \
             || (echo "::error::Generated content is out of sync — run python3 tool/build_content.py and commit"; exit 1)
 
       - name: Resolve dependencies

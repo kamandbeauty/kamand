@@ -5,9 +5,8 @@ Build script for "طالع من" content pipeline.
 
 Single source of truth: content/signs/*.json + content/compatibility.json
 Outputs:
-  1. content/app_content.json            — merged content (used by web preview)
+  1. content/app_content.json            — merged content
   2. lib/data/content/app_content.dart   — generated Dart data layer (offline, typed)
-  3. web_preview/src/content/appContent.json — copy for the web preview app
 
 Run: python3 tool/build_content.py
 """
@@ -22,7 +21,6 @@ SIGNS_DIR = os.path.join(ROOT, "content", "signs")
 COMPAT_FILE = os.path.join(ROOT, "content", "compatibility.json")
 OUT_JSON = os.path.join(ROOT, "content", "app_content.json")
 OUT_DART = os.path.join(ROOT, "lib", "data", "content", "app_content.dart")
-OUT_WEB = os.path.join(ROOT, "web_preview", "src", "content", "appContent.json")
 
 EXPECTED_ORDER = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
@@ -224,9 +222,6 @@ def main():
         f.write(generate_dart(signs, compat))
 
     # 3. web copy
-    os.makedirs(os.path.dirname(OUT_WEB), exist_ok=True)
-    with open(OUT_WEB, "w", encoding="utf-8") as f:
-        json.dump(merged, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
     total_texts = 0
@@ -237,7 +232,6 @@ def main():
     print(f"OK: 12 signs validated · {total_texts} horoscope texts · wrote:")
     print(f"  {os.path.relpath(OUT_JSON, ROOT)}")
     print(f"  {os.path.relpath(OUT_DART, ROOT)}")
-    print(f"  {os.path.relpath(OUT_WEB, ROOT)}")
 
 
 if __name__ == "__main__":
