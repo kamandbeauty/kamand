@@ -6,6 +6,7 @@ import 'package:factor_ruby/app.dart';
 import 'package:factor_ruby/data/settings/settings_service.dart';
 import 'package:factor_ruby/main.dart';
 import 'package:factor_ruby/providers/app_providers.dart';
+import 'package:factor_ruby/screens/zodiac/zodiac_screen.dart';
 
 /// Deterministic, timed pumps (never waits forever — spinners/animations
 /// are finite so a few frames always suffice).
@@ -99,7 +100,23 @@ void main() {
     await settle(tester);
     expect(find.text('نقاط قوت'), findsOneWidget);
     expect(find.text('نقاط ضعف'), findsOneWidget);
+    // Lower sections live below the fold of the lazy ListView — scroll
+    // the zodiac tab's own scrollable until they are built.
+    final zodiacScrollable = find.descendant(
+      of: find.byType(ZodiacScreen),
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(
+      find.text('در عشق'),
+      300,
+      scrollable: zodiacScrollable,
+    );
     expect(find.text('در عشق'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('در دوستی'),
+      300,
+      scrollable: zodiacScrollable,
+    );
     expect(find.text('در دوستی'), findsOneWidget);
 
     // ── Tab: عشق ──────────────────────────────────────────────────
