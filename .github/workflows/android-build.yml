@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  checks: write
 
 jobs:
   test:
@@ -45,11 +46,59 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      # ── Analyze ────────────────────────────────────────────────────────
+      # On failure, the output is re-published as a check run (annotations +
+      # summary) so it is readable through the REST API without log download.
       - name: Analyze (errors & warnings fatal; infos tolerated)
-        run: flutter analyze --no-fatal-infos
+        id: analyze
+        continue-on-error: true
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos 2>&1 | tee "$RUNNER_TEMP/analyze.log"
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit "${PIPESTATUS[0]}"
 
+      - name: Publish analyzer output as check run
+        if: steps.analyze.outputs.exit != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOG_PATH: ${{ runner.temp }}/analyze.log
+          TITLE: Analyzer output
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: python3 .github/scripts/publish_check_run.py
+
+      - name: Fail job if analyzer failed
+        if: steps.analyze.outputs.exit != '0'
+        run: |
+          echo "flutter analyze failed — see the 'Analyzer output' check run on this commit."
+          exit 1
+
+      # ── Tests ──────────────────────────────────────────────────────────
       - name: Run tests
-        run: flutter test --reporter expanded
+        id: tests
+        continue-on-error: true
+        run: |
+          set +e
+          flutter test --reporter expanded 2>&1 | tee "$RUNNER_TEMP/test.log"
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit "${PIPESTATUS[0]}"
+
+      - name: Publish test output as check run
+        if: steps.tests.outputs.exit != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOG_PATH: ${{ runner.temp }}/test.log
+          TITLE: Test output
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: python3 .github/scripts/publish_check_run.py
+
+      - name: Fail job if tests failed
+        if: steps.tests.outputs.exit != '0'
+        run: |
+          echo "flutter test failed — see the 'Test output' check run on this commit."
+          exit 1
 
   build-apk:
     name: Build signed APK
@@ -98,7 +147,29 @@ jobs:
         run: flutter pub get
 
       - name: Build release APK
-        run: flutter build apk --release
+        id: apk
+        continue-on-error: true
+        run: |
+          set +e
+          flutter build apk --release 2>&1 | tee "$RUNNER_TEMP/apk.log"
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit "${PIPESTATUS[0]}"
+
+      - name: Publish build output as check run
+        if: steps.apk.outputs.exit != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOG_PATH: ${{ runner.temp }}/apk.log
+          TITLE: APK build output
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: python3 .github/scripts/publish_check_run.py
+
+      - name: Fail job if APK build failed
+        if: steps.apk.outputs.exit != '0'
+        run: |
+          echo "flutter build apk failed — see the 'APK build output' check run on this commit."
+          exit 1
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
