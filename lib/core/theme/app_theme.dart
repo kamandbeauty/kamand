@@ -1,143 +1,60 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand Primary Blue
-  static const Color primaryBlue = Color(0xFF1976D2);
-  static const Color primaryBlueDark = Color(0xFF0D47A1);
-  static const Color lightBlueBg = Color(0xFFE3F2FD);
-  static const Color bgLight = Color(0xFFF8FAFC);
-  static const Color bgDark = Color(0xFF0F172A);
-  static const Color cardDark = Color(0xFF1E293B);
+  const AppTheme._();
 
-  static const double cardRadius = 22.0;
+  static const ink = Color(0xFF253238);
+  static const teal = Color(0xFF176B67);
+  static const tealLight = Color(0xFFE2F2EF);
+  static const sand = Color(0xFFF9F7F2);
+  static const gold = Color(0xFFC08B3E);
+  static const muted = Color(0xFF687478);
 
-  static ThemeData lightTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.light,
-    primaryColor: primaryBlue,
-    scaffoldBackgroundColor: bgLight,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primaryBlue,
-      primary: primaryBlue,
-      secondary: const Color(0xFF0284C7),
-      surface: Colors.white,
+  static ThemeData get light {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: teal,
       brightness: Brightness.light,
-    ),
-    fontFamily: 'Vazirmatn',
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      centerTitle: true,
-      scrolledUnderElevation: 0,
-      iconTheme: IconThemeData(color: Color(0xFF1E293B)),
-      titleTextStyle: TextStyle(
-        color: Color(0xFF1E293B),
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        fontFamily: 'Vazirmatn',
+      surface: sand,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme.copyWith(primary: teal, secondary: gold, surface: sand),
+      scaffoldBackgroundColor: sand,
+      fontFamily: 'sans',
+      appBarTheme: const AppBarTheme(
+        backgroundColor: sand,
+        foregroundColor: ink,
+        elevation: 0,
+        centerTitle: false,
       ),
-    ),
-    cardTheme: CardTheme(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(cardRadius),
-        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
-        textStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Vazirmatn',
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE4E7E5)),
         ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: teal, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: const Color(0xFFF1F5F9),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: primaryBlue, width: 2),
-      ),
-    ),
-  );
-
-  static ThemeData darkTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    primaryColor: primaryBlue,
-    scaffoldBackgroundColor: bgDark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primaryBlue,
-      primary: primaryBlue,
-      secondary: const Color(0xFF38BDF8),
-      surface: cardDark,
-      brightness: Brightness.dark,
-    ),
-    fontFamily: 'Vazirmatn',
-    appBarTheme: const AppBarTheme(
-      backgroundColor: cardDark,
-      elevation: 0,
-      centerTitle: true,
-      scrolledUnderElevation: 0,
-      iconTheme: IconThemeData(color: Colors.white),
-      titleTextStyle: TextStyle(
+      cardTheme: CardTheme(
         color: Colors.white,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        fontFamily: 'Vazirmatn',
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
-    ),
-    cardTheme: CardTheme(
-      color: cardDark,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(cardRadius),
-        side: const BorderSide(color: Color(0xFF334155), width: 1),
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: tealLight,
+        labelTextStyle: WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.w700)),
       ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        textStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Vazirmatn',
-        ),
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: const Color(0xFF0F172A),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: primaryBlue, width: 2),
-      ),
-    ),
-  );
+    );
+  }
 }

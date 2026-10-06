@@ -1,67 +1,34 @@
-# معماری و راهنمای سیستم «فاکتور روبی» (Architecture Overview)
+# معماری «علم اسامی»
 
-اپلیکیشن «فاکتور روبی» بر پایه اصول **معماری تمیز (Clean Architecture)** و معماری لایه‌ای Flutter/Dart پیاده‌سازی شده است.
+## لایه‌ها
 
----
-
-## ۱. لایه‌های معماری (Layered Architecture)
-
-```
+```text
 lib/
-├── core/                  # هسته برنامه (تم‌ها، ثابت‌ها، تبدیل اعداد فارسی، تاریخ شمسی)
-│   ├── constants/
-│   ├── theme/
-│   └── utils/
-├── database/              # لایه دیتابیس محلی (Drift / SQLite / Migrations)
-├── models/                # لایه مدل‌های داده (Data Models & JSON Mappers)
-├── providers/             # لایه مدیریت وضعیت (Riverpod State Notifiers)
-└── screens/               # لایه رابط کاربری (UI Components & Screens)
-    ├── onboarding/
-    ├── dashboard/
-    ├── invoice/
-    ├── customer/
-    ├── product/
-    ├── financial/
-    └── settings/
+├── app/              # App shell, routing, global providers
+├── core/             # normalization, theme, shared infrastructure
+├── domain/           # entities and pure engines
+├── data/             # SQLite database, repositories, seed content
+└── features/         # presentation by product feature
 ```
 
----
+## اصول
 
-## ۲. تکنولوژی‌های اصلی (Tech Stack)
+1. Nameology و Traditional Analysis دو حوزه جدا هستند.
+2. هر نتیجه سنتی باید system و rule version داشته باشد.
+3. هر ادعا باید Source Claim داشته باشد یا `unverified` باشد.
+4. داده محلی منبع اصلی نسخه اول است؛ شبکه برای نسخه‌های بعدی اختیاری است.
+5. موتورهای محاسباتی به Flutter و دیتابیس وابسته نیستند.
+6. اطلاعات پروفایل فقط محلی و با حداقل‌گرایی ذخیره می‌شود.
 
-- **فریم‌ورک:** Flutter & Dart
-- **مدیریت وضعیت (State Management):** Flutter Riverpod (`StateNotifierProvider`)
-- **دیتابیس محلی (Offline Database):** SQLite / Drift (`drift`, `sqlite3_flutter_libs`)
-- **تقویم و تاریخ شمسی:** `shamsi_date`, `intl`
-- **تولید PDF و چاپ:** `pdf`, `printing`
-- **اشتراک‌گذاری:** `share_plus` (پشتیبانی از Android Share Sheet)
-- **کیوآرکد (QR Code):** `qr_flutter`
-- **امنیتی:** `local_auth` (بیومتریک / PIN Lock)
+## نسخه‌بندی
 
----
+- `schema_version`: نسخه ساختار SQLite
+- `content_version`: نسخه محتوای نام‌ها و منابع
+- `app_version`: نسخه اپلیکیشن
 
-## ۳. ویژگی‌های کلیدی آفلاین (Offline-First Approach)
+## مراحل توسعه
 
-1. **بدون نیاز به اینترنت:** تمامی محاسبات فاکتور، تخفیف، هزینه ارسال و مانده مشتری به صورت ۱۰۰٪ آفلاین محاسبه و ذخیره می‌شود.
-2. **پشتیبان‌گیری محلی:** خروجی مستقیم JSON برای فایل‌های بکاپ که به راحتی قابل انتقال به گوشی جدید است.
-3. **پشتیبانی کامل RTL:** چیدمان تمامی المان‌ها، فونت استاندارد Vazirmatn و تبدیل اعداد انگلیسی به فارسی.
-
----
-
-## ۴. دستورات ساخت و اجرا (Build & Run Instructions)
-
-### اجرای برنامه در محیط توسعه:
-```bash
-flutter pub get
-flutter run
-```
-
-### ساخت نسخه Release APK برای اندروید:
-```bash
-./build_apk.sh
-# یا با فرمان مستقیم فلاتر:
-flutter build apk --release
-```
-
-فایل خروجی APK در مسیر زیر قرار خواهد گرفت:
-`build/app/outputs/flutter-apk/app-release.apk`
+- Phase 1: Foundation، نرمال‌سازی، دیتابیس، جست‌وجو، جزئیات نام، ابجد پایه و آرشیو پژوهشی اولیه
+- Phase 2: منابع گسترده، سازگاری Rule-driven، انتخاب نام نوزاد و مقایسه
+- Phase 3: تاریخ تولد، پروفایل چندگانه، Share و تحلیل روزانه deterministic
+- Phase 4: Brand Analyzer، Generator، Remote Content Update و Monetization

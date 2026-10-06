@@ -5,12 +5,13 @@
 .pub-cache/
 .pub/
 build/
+pubspec.lock
 
-# Node / Web Preview
-node_modules/
-web_preview/node_modules/
-web_preview/dist/
-.npm/
+# Android
+.gradle/
+local.properties
+*.apk
+*.aab
 
 # IDE / OS
 .idea/
@@ -20,14 +21,7 @@ web_preview/dist/
 .DS_Store
 Thumbs.db
 
-# Android
-.gradle/
-local.properties
-capture*.png
-*.apk
-*.aab
-release/
-web_preview/public/FactorRuby*
-
-!release_package/FactorRuby-v5.8.0.apk
-!release_package/FactorRuby-v5.8.0-release.zip
+# Local database and generated content
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
