@@ -1,9 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shelem/main.dart';
 import 'package:shelem/model/card.dart';
+import 'package:shelem/state/game_controller.dart';
 import 'package:shelem/state/settings.dart';
+import 'package:shelem/ui/screens/game_screen.dart';
 import 'package:shelem/ui/theme.dart';
 import 'package:shelem/ui/widgets/card_view.dart';
 
@@ -62,5 +67,46 @@ void main() {
     await tester.pump();
     expect(find.text('A'), findsWidgets);
     expect(find.byType(CardView), findsOneWidget);
+  });
+
+  testWidgets('میز بازی روی صفحهٔ گوشی بدون سرریز چیده می‌شود',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2160);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final GameController controller =
+        GameController(settings: AppSettings(), random: Random(5))..newGame();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        locale: const Locale('fa'),
+        supportedLocales: const <Locale>[Locale('fa'), Locale('en')],
+        localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        builder: (BuildContext context, Widget? child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: GameScreen(controller: controller),
+      ),
+    );
+
+    // چند نوبتِ ربات را جلو می‌بریم تا مراحل مختلف رسم شوند.
+    for (int i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(tester.takeException(), isNull);
+    }
+
+    expect(find.byType(GameScreen), findsOneWidget);
+
+    controller.quitToMenu();
+    await tester.pump();
+    controller.dispose();
   });
 }
