@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/analytics/analytics_service.dart';
 import '../../core/utils/persian_numbers.dart';
 import '../../domain/compatibility/compatibility_engine.dart';
 import '../../domain/profile/profile.dart';
@@ -51,7 +52,6 @@ class _LoveScreenState extends ConsumerState<LoveScreen> {
     }
 
     final rankedAsync = ref.watch(rankedCompatibilityProvider);
-    final partnerState = ref.watch(partnerProvider);
     final analytics = ref.watch(analyticsProvider);
 
     return SafeArea(

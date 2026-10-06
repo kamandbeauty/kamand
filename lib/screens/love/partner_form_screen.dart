@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/cities.dart';
 import '../../core/date/app_date.dart';
+import '../../data/analytics/analytics_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../domain/profile/profile.dart';

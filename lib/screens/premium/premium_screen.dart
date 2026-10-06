@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/analytics/analytics_service.dart';
 import '../../core/utils/persian_numbers.dart';
 import '../../domain/entitlement/entitlement.dart';
 import '../../providers/app_providers.dart';

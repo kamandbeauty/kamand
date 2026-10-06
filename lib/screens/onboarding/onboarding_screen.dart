@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/cities.dart';
 import '../../core/date/app_date.dart';
+import '../../data/analytics/analytics_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_numbers.dart';
+import '../../data/repositories/profile_repository.dart';
+import '../../domain/profile/profile.dart';
 import '../../domain/zodiac/zodiac_calculator.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/birth_date_picker.dart';
+import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/star_field.dart';
 import '../shell/main_shell.dart';
@@ -210,7 +214,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      '${PersianNumbers.toPersian(_step + 1)} از ${PersianNumbers.toPersian(_totalSteps)}',
+                      '${PersianNumbers.toPersianNum(_step + 1)} از ${PersianNumbers.toPersianNum(_totalSteps)}',
                       style: TextStyle(
                         fontSize: 11,
                         color:
@@ -269,8 +273,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           month: _birthMonth,
           day: _birthDay,
           errorText: _dateError,
-          onChanged: (y, m, d) =>
-              setState(() => {_birthYear = y, _birthMonth = m, _birthDay = d}),
+          onChanged: (y, m, d) => setState(() {
+            _birthYear = y;
+            _birthMonth = m;
+            _birthDay = d;
+          }),
         );
       case 3:
         return _BirthTimeStep(
@@ -301,10 +308,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 // ── Steps ─────────────────────────────────────────────────────────────
 
 class _StepTitle extends StatelessWidget {
-  const _StepTitle(this.title, {this.subtitle});
+  const _StepTitle(this.title, this.subtitle);
 
   final String title;
-  final String? subtitle;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -321,27 +328,23 @@ class _StepTitle extends StatelessWidget {
             fontFamily: 'Vazirmatn',
           ),
         ),
-        if (subtitle != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            subtitle!,
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.9,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              fontFamily: 'Vazirmatn',
-            ),
+        const SizedBox(height: 8),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.9,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            fontFamily: 'Vazirmatn',
           ),
-        ],
+        ),
       ],
     );
   }
 }
 
 class _WelcomeStep extends StatelessWidget {
-  const _WelcomeStep({required this.onNext});
-
-  final VoidCallback onNext;
+  const _WelcomeStep();
 
   @override
   Widget build(BuildContext context) {
@@ -557,7 +560,6 @@ class _CityStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

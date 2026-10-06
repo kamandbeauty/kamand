@@ -97,7 +97,6 @@ class AppTheme {
         iconTheme: WidgetStatePropertyAll(IconThemeData(color: muted)),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        border: Border(top: BorderSide(color: border, width: 1)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -149,7 +148,6 @@ class AppTheme {
         ),
         hintStyle: TextStyle(color: muted, fontFamily: 'Vazirmatn'),
         labelStyle: TextStyle(color: muted, fontFamily: 'Vazirmatn'),
-        style: TextStyle(color: text, fontFamily: 'Vazirmatn'),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
         menuStyle: MenuStyle(

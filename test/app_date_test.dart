@@ -112,10 +112,20 @@ void main() {
       expect(AppDate.isValid(1403, 0, 10), isFalse);
     });
 
-    test('leap year matches shamsi_date across a century', () {
+    test('leap year matches shamsi_date month arithmetic across a century',
+        () {
+      // Esfand has 30 days exactly in leap years (authoritative shamsi_date).
       for (var y = 1300; y <= 1500; y++) {
-        expect(AppDate.isLeapYear(y), Jalali.isLeap(y), reason: 'year $y');
+        expect(AppDate.isLeapYear(y), Jalali(y, 12, 1).monthLength == 30,
+            reason: 'year $y');
       }
+    });
+
+    test('known leap years', () {
+      expect(AppDate.isLeapYear(1399), isTrue);
+      expect(AppDate.isLeapYear(1403), isTrue);
+      expect(AppDate.isLeapYear(1400), isFalse);
+      expect(AppDate.isLeapYear(1404), isFalse);
     });
   });
 }

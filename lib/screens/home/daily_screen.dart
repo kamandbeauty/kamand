@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/date/app_date.dart';
+import '../../data/analytics/analytics_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/horoscope/horoscope_models.dart';
 import '../../providers/app_providers.dart';
@@ -348,7 +349,7 @@ class _RewardedUnlockCard extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: const Text('طالع کامل امروز فعال شد'),
+                      content: Text('طالع کامل امروز فعال شد'),
                     ),
                   );
                 }

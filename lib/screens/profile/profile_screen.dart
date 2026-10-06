@@ -5,7 +5,6 @@ import '../../core/date/app_date.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_numbers.dart';
 import '../../data/repositories/profile_repository.dart';
-import '../../domain/profile/profile.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';

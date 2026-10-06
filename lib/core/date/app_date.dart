@@ -65,8 +65,15 @@ class AppDate {
     return isLeapYear(year) ? 30 : 29;
   }
 
-  /// Leap-year check delegated to shamsi_date (authoritative algorithm).
-  static bool isLeapYear(int jalaliYear) => Jalali.isLeap(jalaliYear);
+  /// Leap-year check via shamsi_date's month arithmetic (authoritative):
+  /// Esfand has 30 days exactly in leap years.
+  static bool isLeapYear(int jalaliYear) {
+    try {
+      return Jalali(jalaliYear, 12, 1).monthLength == 30;
+    } catch (_) {
+      return false;
+    }
+  }
 
   static Jalali addDays(Jalali date, int days) =>
       Jalali.fromDateTime(date.toDateTime().add(Duration(days: days)));

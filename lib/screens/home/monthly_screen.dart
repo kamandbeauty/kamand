@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/date/app_date.dart';
+import '../../data/analytics/analytics_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/horoscope/horoscope_models.dart';
 import '../../providers/app_providers.dart';

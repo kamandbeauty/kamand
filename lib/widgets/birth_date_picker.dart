@@ -121,7 +121,10 @@ class _Wheel extends StatelessWidget {
           padding: const EdgeInsets.only(right: 4, bottom: 6),
           child: Text(
             label,
-            style: _labelStyle.copyWith(
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Vazirmatn',
               color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
             ),
           ),

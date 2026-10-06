@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/analytics/analytics_service.dart';
 import '../../core/utils/persian_numbers.dart';
+import '../../domain/compatibility/compatibility_engine.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';

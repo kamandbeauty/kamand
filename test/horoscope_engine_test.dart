@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
 import 'package:factor_ruby/domain/horoscope/deterministic_random.dart';
+import 'package:factor_ruby/core/date/app_date.dart';
 import 'package:factor_ruby/domain/horoscope/horoscope_engine.dart';
 import 'package:factor_ruby/domain/zodiac/zodiac_repository.dart';
 
@@ -130,8 +131,6 @@ void main() {
 
     test('same week → same summary', () {
       final w1 = engine.generateWeekly(signs[2], Jalali(1405, 7, 12));
-      final w2 = engine.generateWeekly(signs[2], Jalali(1405, 7, 16));
-      // different weekStart → likely different; same input must match:
       final w3 = engine.generateWeekly(signs[2], Jalali(1405, 7, 12));
       expect(w1.summaryText, w3.summaryText);
     });

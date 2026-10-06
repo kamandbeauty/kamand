@@ -226,11 +226,6 @@ class CompatibilityEngine {
 
   static Map<String, Object?>? _cached;
   static Map<String, Object?> _compatibilityData() {
-    return _cached ??= (AppContent.compatibility as Map<String, Object?>)
-        .cast<String, Object?>();
+    return _cached ??= AppContent.compatibility as Map<String, Object?>;
   }
 }
-
-// Imported lazily to keep engine free of Flutter deps.
-// ignore: always_use_package_imports
-import '../../data/content/app_content.dart';
