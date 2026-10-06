@@ -226,6 +226,6 @@ class CompatibilityEngine {
 
   static Map<String, Object?>? _cached;
   static Map<String, Object?> _compatibilityData() {
-    return _cached ??= AppContent.compatibility as Map<String, Object?>;
+    return _cached ??= AppContent.compatibility;
   }
 }

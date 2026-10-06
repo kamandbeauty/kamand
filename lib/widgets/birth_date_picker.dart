@@ -26,11 +26,6 @@ class BirthDateField extends StatelessWidget {
   final void Function(int year, int month, int day) onChanged;
   final String? errorText;
 
-  static const _labelStyle = TextStyle(
-    fontSize: 11.5,
-    fontWeight: FontWeight.w600,
-  );
-
   @override
   Widget build(BuildContext context) {
     final daysInMonth = AppDate.monthLength(year, month);
