@@ -16,6 +16,20 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: flutter analyze
+      - name: Analyze
+        id: analyze
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter analyze 2>&1 | tee analyze.log
+      - name: Upload analyze log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyze-log
+          path: analyze.log
+      - name: Fail if analyze failed
+        if: steps.analyze.outcome == 'failure'
+        run: exit 1
       - run: flutter test
       - run: flutter build apk --release
