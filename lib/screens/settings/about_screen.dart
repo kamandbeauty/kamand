@@ -20,7 +20,7 @@ class AboutScreen extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              'نسخهٔ ${PersianNumbers.toPersianNum(AppInfo.version)}'
+              'نسخهٔ ${PersianNumbers.toPersian(AppInfo.version)}'
               ' (${PersianNumbers.toPersianNum(AppInfo.buildNumber)})',
               style: TextStyle(
                 fontSize: 11,
