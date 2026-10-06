@@ -1,4 +1,8 @@
 
+/// Sentinel allowing `copyWith(field: null)` to explicitly clear a nullable
+/// field (omitting the argument keeps the current value).
+const Object _unset = Object();
+
 /// User profile — collected once during onboarding, stored locally.
 ///
 /// Only birth data + optional display name. Nothing else is collected

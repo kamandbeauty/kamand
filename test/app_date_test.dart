@@ -22,7 +22,7 @@ void main() {
       expect(g.month, 3);
       expect(g.day, 21);
       // Round-trip the year boundary.
-      expect(AppDate.fromGregorian(const DateTime(2026, 3, 20)),
+      expect(AppDate.fromGregorian(DateTime(2026, 3, 20)),
           Jalali(1404, 12, 29));
     });
 
