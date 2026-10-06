@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/calendar/date_engine.dart';
-import '../../core/normalization/persian_normalizer.dart';
 import '../../domain/models/numerology_result.dart';
+import '../../domain/models/profile.dart';
 
 class BirthAnalysisScreen extends ConsumerStatefulWidget {
-  const BirthAnalysisScreen({super.key});
+  const BirthAnalysisScreen({super.key, this.profile});
+
+  final Profile? profile;
 
   @override
   ConsumerState<BirthAnalysisScreen> createState() => _BirthAnalysisScreenState();
@@ -24,6 +26,17 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
   CalendarDate? normalizedDate;
   NumerologyResult? numerology;
   bool isAnalyzing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = widget.profile;
+    if (profile != null) {
+      nameController.text = profile.name;
+      dateController.text = profile.birthDate;
+      calendar = profile.birthCalendar == CalendarKind.gregorian.name ? CalendarKind.gregorian : CalendarKind.jalali;
+    }
+  }
 
   @override
   void dispose() {
@@ -45,9 +58,8 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
     });
     await Future<void>.delayed(Duration.zero);
     final name = nameController.text.trim();
-    final rawDate = PersianNormalizer.toLatinDigits(dateController.text.trim()).replaceAll('/', '-');
-    final match = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})$').firstMatch(rawDate);
-    if (name.isEmpty || match == null) {
+    final date = DateEngine.parse(dateController.text, calendar);
+    if (name.isEmpty || date == null) {
       setState(() {
         isAnalyzing = false;
         error = 'نام و تاریخ را با قالب YYYY-MM-DD وارد کنید.';
@@ -55,13 +67,8 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
       return;
     }
 
-    final year = int.parse(match.group(1)!);
-    final month = int.parse(match.group(2)!);
-    final day = int.parse(match.group(3)!);
     try {
-      final date = CalendarDate(year: year, month: month, day: day, calendar: calendar);
-      if (!DateEngine.isValid(date)) throw const FormatException('تاریخ نامعتبر است.');
-      final gregorian = calendar == CalendarKind.jalali ? DateEngine.jalaliToGregorian(date) : DateTime(year, month, day);
+      final gregorian = calendar == CalendarKind.jalali ? DateEngine.jalaliToGregorian(date) : DateTime(date.year, date.month, date.day);
       final jalali = DateEngine.gregorianToJalali(gregorian);
       final abjad = ref.read(abjadEngineProvider).calculate(name);
       if (!abjad.isComplete) throw const FormatException('حرف ناشناخته در نام وجود دارد.');
@@ -86,7 +93,7 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('نام و تاریخ تولد')),
+      appBar: AppBar(title: Text(widget.profile == null ? 'نام و تاریخ تولد' : 'تحلیل ${widget.profile!.title}')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
         children: [

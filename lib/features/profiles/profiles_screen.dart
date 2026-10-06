@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../core/calendar/date_engine.dart';
 import '../../core/normalization/persian_normalizer.dart';
 import '../../domain/models/profile.dart';
+import '../analysis/birth_analysis_screen.dart';
 import '../shared/empty_state.dart';
 import 'privacy_screen.dart';
 
@@ -36,7 +37,13 @@ class ProfilesScreen extends ConsumerWidget {
                     leading: const CircleAvatar(child: Icon(Icons.person_outline)),
                     title: Text(profile.title, style: const TextStyle(fontWeight: FontWeight.w800)),
                     subtitle: Text(profile.name.isEmpty ? 'نام وارد نشده$birth' : '${profile.name}$birth'),
-                    trailing: IconButton(onPressed: () => ref.read(profilesProvider.notifier).delete(profile.id), icon: const Icon(Icons.delete_outline), tooltip: 'حذف'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => BirthAnalysisScreen(profile: profile))), icon: const Icon(Icons.insights_outlined), tooltip: 'تحلیل تولد'),
+                        IconButton(onPressed: () => ref.read(profilesProvider.notifier).delete(profile.id), icon: const Icon(Icons.delete_outline), tooltip: 'حذف'),
+                      ],
+                    ),
                   ),
                 );
               },
