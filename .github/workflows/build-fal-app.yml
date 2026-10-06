@@ -190,7 +190,18 @@ jobs:
             exit 1
           fi
 
+          certificate_digest=$(keytool -exportcert \
+              -keystore "$keystore_path" \
+              -storepass "$DIVAN_RELEASE_KEYSTORE_PASSWORD" \
+              -alias "$DIVAN_RELEASE_KEY_ALIAS" \
+              | sha256sum | awk '{print $1}')
+          if [[ ! "$certificate_digest" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::Could not calculate the release certificate digest"
+            exit 1
+          fi
+
           echo "DIVAN_RELEASE_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+          echo "DIVAN_RELEASE_CERT_SHA256=${certificate_digest,,}" >> "$GITHUB_ENV"
           echo "Release keystore decoded and validated."
 
       # همان سیاست: فقط از lockfile کامیت‌شده؛ pub upgrade وجود ندارد
@@ -237,7 +248,11 @@ jobs:
             build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
             build/app/outputs/flutter-apk/app-x86_64-release.apk
           )
-          certificate_digest=''
+          if [[ ! "${DIVAN_RELEASE_CERT_SHA256:-}" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Expected release certificate digest is unavailable"
+            exit 1
+          fi
+
           for apk in "${apks[@]}"; do
             if [[ ! -s "$apk" ]]; then
               echo "::error::Expected APK is missing or empty: $apk"
@@ -250,17 +265,15 @@ jobs:
               echo "$verification"
               exit 1
             fi
-            current_digest=$(printf '%s\n' "$verification" \
-              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
-              | head -n 1)
-            if [[ -z "$current_digest" ]]; then
-              echo "::error::Signing certificate digest was not found: $apk"
-              exit 1
-            fi
-            if [[ -z "$certificate_digest" ]]; then
-              certificate_digest="$current_digest"
-            elif [[ "$certificate_digest" != "$current_digest" ]]; then
-              echo "::error::Release APKs were signed with different certificates"
+
+            # خروجی apksigner میان نسخه‌های Build Tools کمی تفاوت نگارشی دارد؛
+            # با نرمال‌سازی آن، اثر انگشت عمومی گواهی را بدون وابستگی به متن
+            # یک نسخهٔ خاص با گواهی داخل Keystore مقایسه می‌کنیم.
+            verification_compact=$(printf '%s' "$verification" \
+              | tr '[:upper:]' '[:lower:]' \
+              | tr -d '[:space:]:')
+            if [[ "$verification_compact" != *"$DIVAN_RELEASE_CERT_SHA256"* ]]; then
+              echo "::error::APK signing certificate does not match the release keystore: $apk"
               exit 1
             fi
             echo "Verified signed APK: $(basename "$apk")"
@@ -269,8 +282,8 @@ jobs:
           {
             echo '### ✅ امضای APKهای انتشار تأیید شد'
             echo ''
-            echo "هر ۴ فایل با یک گواهی یکسان امضا شده‌اند."
-            echo "\`SHA-256: $certificate_digest\`"
+            echo "هر ۴ فایل با گواهی Release مورد انتظار امضا شده‌اند."
+            echo "\`SHA-256: $DIVAN_RELEASE_CERT_SHA256\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Post APK build or signing failure report to PR
