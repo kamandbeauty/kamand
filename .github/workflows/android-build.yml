@@ -146,17 +146,20 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Build release APK + AAB
+      - name: Build release APKs (per-ABI + universal) + AAB
         id: apk
         continue-on-error: true
         run: |
           set +e
-          flutter build apk --release 2>&1 | tee "$RUNNER_TEMP/apk.log"
-          apk_exit="${PIPESTATUS[0]}"
+          rc=0
+          flutter build apk --release --split-per-abi 2>&1 | tee "$RUNNER_TEMP/apk.log"
+          r="${PIPESTATUS[0]}"; [ "$r" -ne 0 ] && rc="$r"
+          flutter build apk --release 2>&1 | tee -a "$RUNNER_TEMP/apk.log"
+          r="${PIPESTATUS[0]}"; [ "$r" -ne 0 ] && rc="$r"
           flutter build appbundle --release 2>&1 | tee "$RUNNER_TEMP/aab.log"
-          aab_exit="${PIPESTATUS[0]}"
-          echo "exit=$(( apk_exit > aab_exit ? apk_exit : aab_exit ))" >> "$GITHUB_OUTPUT"
-          exit $(( apk_exit > aab_exit ? apk_exit : aab_exit ))
+          r="${PIPESTATUS[0]}"; [ "$r" -ne 0 ] && rc="$r"
+          echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
 
       - name: Publish build output as check run
         if: steps.apk.outputs.exit != '0'
@@ -174,10 +177,31 @@ jobs:
           echo "flutter build failed — see the 'Release build output' check run on this commit."
           exit 1
 
-      - name: Upload APK artifact
+      - name: Upload APK artifacts (per-ABI + universal)
         uses: actions/upload-artifact@v4
         with:
-          name: tale-man-apk
+          name: tale-man-apk-arm64
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          retention-days: 90
+
+      - name: Upload APK artifact (arm32)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tale-man-apk-arm32
+          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          retention-days: 90
+
+      - name: Upload APK artifact (x86_64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tale-man-apk-x64
+          path: build/app/outputs/flutter-apk/app-x86_64-release.apk
+          retention-days: 90
+
+      - name: Upload APK artifact (universal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tale-man-apk-universal
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 90
 
@@ -194,17 +218,41 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          apk="build/app/outputs/flutter-apk/app-release.apk"
+          apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
           tag="tale-man-v1.1.0"
           notes="نسخهٔ ۱.۱.۰ «طالع من» — گرافیک جدید، بانک محتوای سه‌برابرشده و رفع اشکال.
 
-          برای نصب روی گوشی، فایل tale-man-v1.1.0.apk را دانلود و اجرا کنید (اجازهٔ نصب از منابع ناشناس لازم است).
-          فایل aab مخصوص انتشار در Google Play است."
+          کدام فایل را دانلود کنم؟ نسخهٔ مخصوص گوشیِ خودت:
+
+          | فایل | مخصوص |
+          |---|---|
+          | arm64-v8a | گوشی‌های مدرن (اکثر گوشی‌های سامسونگ، شیائومی، پیکسل و…) |
+          | armeabi-v7a | گوشی‌های قدیمی‌تر ۳۲ بیتی |
+          | x86_64 | شبیه‌ساز اندروید روی کامپیوتر |
+          | universal | همهٔ گوشی‌ها — فقط حجمش بیشتر است |
+          | aab | فقط برای انتشار در Google Play (نصب مستقیم ندارد) |
+
+          برای نصب، فایل apk را دانلود و اجرا کنید (اجازهٔ نصب از منابع ناشناس لازم است)."
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$tag" "$apk#tale-man-v1.1.0.apk" "$aab#tale-man-v1.1.0.aab" --clobber --repo "$GITHUB_REPOSITORY"
+            # drop the old generically-named assets from earlier runs
+            gh release delete-asset "$tag" app-release.apk --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+            gh release delete-asset "$tag" app-release.aab --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+            gh release upload "$tag" \
+              "$apkdir/app-arm64-v8a-release.apk#tale-man-v1.1.0-arm64-v8a.apk" \
+              "$apkdir/app-armeabi-v7a-release.apk#tale-man-v1.1.0-armeabi-v7a.apk" \
+              "$apkdir/app-x86_64-release.apk#tale-man-v1.1.0-x86_64.apk" \
+              "$apkdir/app-release.apk#tale-man-v1.1.0-universal.apk" \
+              "$aab#tale-man-v1.1.0.aab" \
+              --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$tag" "$apk#tale-man-v1.1.0.apk" "$aab#tale-man-v1.1.0.aab" \
+            gh release create "$tag" \
+              "$apkdir/app-arm64-v8a-release.apk#tale-man-v1.1.0-arm64-v8a.apk" \
+              "$apkdir/app-armeabi-v7a-release.apk#tale-man-v1.1.0-armeabi-v7a.apk" \
+              "$apkdir/app-x86_64-release.apk#tale-man-v1.1.0-x86_64.apk" \
+              "$apkdir/app-release.apk#tale-man-v1.1.0-universal.apk" \
+              "$aab#tale-man-v1.1.0.aab" \
               --title "طالع من — نسخهٔ ۱.۱.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
