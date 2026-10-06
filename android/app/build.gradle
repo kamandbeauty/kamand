@@ -19,34 +19,83 @@ if (flutterVersionCode == null) {
 
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
+    flutterVersionName = '1.0.0'
 }
+
+// ── Release signing ────────────────────────────────────────────────────
+// Reads from environment (CI secrets) or android/key.properties (local).
+// Falls back to debug signing when neither is present so the project
+// always builds; CI enforces release signing separately.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+
+def signingValue = { String environmentName, String propertyName ->
+    def environmentValue = System.getenv(environmentName)
+    environmentValue != null ? environmentValue : keystoreProperties.getProperty(propertyName)
+}
+
+def releaseStorePath = signingValue('TALE_MAN_RELEASE_KEYSTORE_PATH', 'storeFile')
+def releaseStorePassword = signingValue('TALE_MAN_RELEASE_KEYSTORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = signingValue('TALE_MAN_RELEASE_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = signingValue('TALE_MAN_RELEASE_KEY_PASSWORD', 'keyPassword')
+def hasReleaseSigning = [
+    releaseStorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+].every { value -> value != null && !value.toString().isEmpty() }
 
 android {
     namespace "com.ruby.factor_ruby"
-    compileSdk 34
-    ndkVersion "25.1.8937393"
+    compileSdk flutter.compileSdkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
     }
 
     defaultConfig {
         applicationId "com.ruby.factor_ruby"
-        minSdk 21
-        targetSdk 34
+        minSdk 23
+        targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        resourceConfigurations += ['fa', 'en']
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+                storeFile file(releaseStorePath)
+                storePassword releaseStorePassword
+            }
+        }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else {
+                // Local/fallback builds only; CI release builds are signed
+                // with the repository release keystore.
+                signingConfig signingConfigs.debug
+            }
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -56,4 +105,9 @@ android {
 
 flutter {
     source '../..'
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:1.13.1"
+    implementation "androidx.appcompat:appcompat:1.7.0"
 }

@@ -1,57 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/onboarding/onboarding_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
+import 'data/analytics/analytics_service.dart';
+import 'data/settings/settings_service.dart';
 import 'providers/app_providers.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Composition root: services are created once before the first frame —
+  // startup stays fast because this only opens a local SQLite file and
+  // reads SharedPreferences.
+  final services = await AppServices.create();
+
+  // Post-boot maintenance (fire and forget — never blocks the UI).
+  _scheduleStartupTasks(services);
+
   runApp(
-    const ProviderScope(
-      child: FactorRubyApp(),
+    ProviderScope(
+      overrides: [servicesProvider.overrideWithValue(services)],
+      child: const TaleManApp(),
     ),
   );
 }
 
-class FactorRubyApp extends ConsumerWidget {
-  const FactorRubyApp({super.key});
+Future<void> _scheduleStartupTasks(AppServices services) async {
+  try {
+    final settings = await services.settingsService.load();
+    if (settings.notificationsEnabled) {
+      // Re-arm the daily reminder (covers the case where the OS cleared
+      // alarms after a reboot before our BootReceiver could reschedule).
+      await services.notificationScheduler.initialize();
+      await services.notificationScheduler.scheduleDaily(
+        settings.notificationHour,
+        settings.notificationMinute,
+      );
+    }
+    services.analytics.logEvent(AnalyticsEvent.appOpen.id);
+  } catch (_) {
+    // Maintenance failures must never block or crash startup (spec §36).
+  }
+}
+
+class TaleManApp extends ConsumerWidget {
+  const TaleManApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(userProvider);
     final settings = ref.watch(settingsProvider);
 
-    ThemeMode currentThemeMode = ThemeMode.light;
-    if (settings.themeMode == 'dark') {
-      currentThemeMode = ThemeMode.dark;
-    } else if (settings.themeMode == 'system') {
-      currentThemeMode = ThemeMode.system;
-    }
+    final themeMode = switch (settings.themeMode) {
+      ThemeModeSetting.dark => ThemeMode.dark,
+      ThemeModeSetting.light => ThemeMode.light,
+      ThemeModeSetting.system => ThemeMode.system,
+    };
 
     return MaterialApp(
-      title: 'فاکتور روبی',
+      title: 'طالع من',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: currentThemeMode,
+      themeMode: themeMode,
+      locale: const Locale('fa', 'IR'),
+      supportedLocales: const [Locale('fa', 'IR')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('fa', 'IR'),
-      ],
-      locale: const Locale('fa', 'IR'),
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        );
-      },
-      home: user.isOnboarded ? const DashboardScreen() : const OnboardingScreen(),
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: child!,
+      ),
+      home: const AppGate(),
     );
   }
 }

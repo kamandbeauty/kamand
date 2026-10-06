@@ -1,0 +1,12 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # Generated content file intentionally uses raw maps.
+    unused_element: warning
+
+linter:
+  rules:
+    # Keep the codebase pragmatic; these are informational in our CI too.
+    prefer_single_quotes: true
+    always_use_package_imports: false
