@@ -5,7 +5,6 @@ import 'dart:math';
 
 import 'package:shelem/ai/bot.dart';
 import 'package:shelem/game/engine.dart';
-import 'package:shelem/game/rules.dart';
 import 'package:shelem/model/card.dart';
 import 'package:shelem/model/enums.dart';
 

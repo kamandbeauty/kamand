@@ -91,8 +91,8 @@ void main() {
     test('جوکر قرمز بالاترین برگِ حکم است', () {
       final List<PlayedCard> trick = <PlayedCard>[
         PlayedCard(0, c(Suit.clubs, 14)),
-        PlayedCard(1, const PlayingCard(Suit.joker, kBlackJokerRank)),
-        PlayedCard(2, const PlayingCard(Suit.joker, kRedJokerRank)),
+        const PlayedCard(1, PlayingCard(Suit.joker, kBlackJokerRank)),
+        const PlayedCard(2, PlayingCard(Suit.joker, kRedJokerRank)),
         PlayedCard(3, c(Suit.clubs, 5)),
       ];
       expect(trickWinner(trick, Suit.clubs), 2);

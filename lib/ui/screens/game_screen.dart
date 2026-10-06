@@ -284,9 +284,9 @@ class _TopBar extends StatelessWidget {
                 children: <Widget>[
                   SuitIcon(suit: e.trump!, size: 16),
                   const SizedBox(width: 5),
-                  Text(
+                  const Text(
                     'حکم',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       color: AppColors.ink,
