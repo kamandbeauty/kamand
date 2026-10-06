@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../shared/empty_state.dart';
 import '../shared/status_badge.dart';
+import 'source_catalog_screen.dart';
 
 class ArchiveScreen extends ConsumerWidget {
   const ArchiveScreen({super.key});
@@ -12,7 +13,7 @@ class ArchiveScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(archiveEntriesProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('آرشیو پژوهشی')),
+      appBar: AppBar(title: const Text('آرشیو پژوهشی'), actions: [IconButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceCatalogScreen())), icon: const Icon(Icons.menu_book_outlined), tooltip: 'فهرست منابع')]),
       body: entries.isEmpty
           ? const EmptyState(title: 'آرشیو خالی است', message: 'با ورود محتوای بررسی‌شده، این بخش تکمیل می‌شود.', icon: Icons.inventory_2_outlined)
           : ListView.separated(

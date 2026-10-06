@@ -12,7 +12,7 @@ Metadata فعلی:
 
 ```text
 schema_version = 3
-content_version = seed-3
+content_version = knowledge-1
 ```
 
 ## جداول فعلی

@@ -31,8 +31,8 @@ class _NameSearchScreenState extends ConsumerState<NameSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final rawNames = ref.watch(namesProvider);
-    final names = ref.watch(nameSearchEngineProvider).filter(names: rawNames, style: selectedStyle);
+    final rawNames = ref.watch(allNamesProvider);
+    final names = ref.watch(smartSearchEngineProvider).search(names: rawNames, input: ref.watch(nameQueryProvider), selectedStyle: selectedStyle);
     return Scaffold(
       appBar: AppBar(title: const Text('دانشنامه نام‌ها')),
       body: Column(

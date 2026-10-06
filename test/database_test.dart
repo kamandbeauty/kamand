@@ -16,9 +16,10 @@ void main() {
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
     expect(metadata['schema_version'], '3');
-    expect(metadata['content_version'], 'seed-3');
-    expect(database.getSources(), isNotEmpty);
+    expect(metadata['content_version'], 'knowledge-1');
+    expect(database.getSources().length, greaterThan(3));
     expect(database.searchNames('آ'), isNotEmpty);
+    expect(database.getClaims('name', 'name-داریوش'), isNotEmpty);
   });
 
   test('persists and deletes local profiles', () {

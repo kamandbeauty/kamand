@@ -30,6 +30,7 @@ class AppDatabase {
     try {
       database._migrate();
       database._seedIfEmpty();
+      database._upgradeContentSeed();
       return database;
     } catch (_) {
       db.dispose();
@@ -298,15 +299,17 @@ class AppDatabase {
     final now = DateTime.now().toUtc().toIso8601String();
     _db.execute('BEGIN');
     try {
-      _db.execute(
-        '''INSERT INTO sources (id, title, author, publisher, publication_year, language, source_type, url, reliability_level, notes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-        [
-          seedSource['id'], seedSource['title'], seedSource['author'], seedSource['publisher'],
-          seedSource['publication_year'], seedSource['language'], seedSource['source_type'],
-          seedSource['url'], seedSource['reliability_level'], seedSource['notes'],
-        ],
-      );
+      for (final source in seedSources) {
+        _db.execute(
+          '''INSERT INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [
+            source['id'], source['title'], source['author'], source['publisher'], source['publication_year'],
+            source['language'], source['source_type'], source['url'], source['isbn'], source['doi'],
+            source['reliability_level'], source['notes'],
+          ],
+        );
+      }
       _db.execute(
         '''INSERT INTO abjad_systems (id, system_key, title, description, source_id, version, status)
            VALUES (?, ?, ?, ?, ?, ?, ?)''',
@@ -330,6 +333,31 @@ class AppDatabase {
           ],
         );
       }
+      for (final claim in seedClaims) {
+        _db.execute(
+          '''INSERT INTO source_claims (id, claim_group_id, source_id, subject_type, subject_id, claim_type, claim_text, normalized_value, status, confidence, evidence_note, review_status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [
+            claim['id'], claim['claim_group_id'], claim['source_id'], claim['subject_type'], claim['subject_id'],
+            claim['claim_type'], claim['claim_text'], claim['normalized_value'], claim['status'], claim['confidence'],
+            claim['evidence_note'], claim['review_status'], now,
+          ],
+        );
+        if (claim['subject_type'] == 'name' && claim['claim_type'] == 'meaning') {
+          _db.execute(
+            '''INSERT INTO name_meanings (id, name_id, meaning_text, context, status, confidence, claim_group_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            ["meaning-${claim['subject_id']}", claim['subject_id'], claim['claim_text'], 'ترجمه/شرح ثبت‌شده در Source Claim', claim['status'], claim['confidence'], claim['claim_group_id']],
+          );
+        }
+        if (claim['subject_type'] == 'name' && claim['claim_type'] == 'etymology') {
+          _db.execute(
+            '''INSERT INTO name_etymologies (id, name_id, etymology_text, root_form, source_language, status, confidence, claim_group_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+            ["etymology-${claim['subject_id']}", claim['subject_id'], claim['claim_text'], '', 'Old Persian / Iranian', claim['status'], claim['confidence'], claim['claim_group_id']],
+          );
+        }
+      }
       for (final entry in seedArchiveEntries) {
         _db.execute(
           '''INSERT INTO archive_entries (id, title, category, body, source_id, status, created_at)
@@ -337,6 +365,63 @@ class AppDatabase {
           [entry['id'], entry['title'], entry['category'], entry['body'], entry['source_id'], entry['status'], now],
         );
       }
+      _db.execute('COMMIT');
+      _refreshSearchIndex();
+    } catch (_) {
+      _db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  void _upgradeContentSeed() {
+    final metadata = getMetadata();
+    if (metadata['content_version'] == 'knowledge-1') return;
+    final now = DateTime.now().toUtc().toIso8601String();
+    _db.execute('BEGIN');
+    try {
+      for (final source in seedSources) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [source['id'], source['title'], source['author'], source['publisher'], source['publication_year'], source['language'], source['source_type'], source['url'], source['isbn'], source['doi'], source['reliability_level'], source['notes']],
+        );
+      }
+      for (final item in seedNames) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [item['id'], item['display_name'], item['normalized_name'], item['transliteration'], item['language'], item['origin'], item['gender'], item['meaning'], item['etymology'], item['pronunciation'], item['status'], item['confidence'], item['styles'], item['source_id'], item['source_note'], now, now],
+        );
+      }
+      for (final claim in seedClaims) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO source_claims (id, claim_group_id, source_id, subject_type, subject_id, claim_type, claim_text, normalized_value, status, confidence, evidence_note, review_status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [claim['id'], claim['claim_group_id'], claim['source_id'], claim['subject_type'], claim['subject_id'], claim['claim_type'], claim['claim_text'], claim['normalized_value'], claim['status'], claim['confidence'], claim['evidence_note'], claim['review_status'], now],
+        );
+        if (claim['subject_type'] == 'name' && claim['claim_type'] == 'meaning') {
+          _db.execute(
+            '''INSERT OR IGNORE INTO name_meanings (id, name_id, meaning_text, context, status, confidence, claim_group_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            ["meaning-${claim['subject_id']}", claim['subject_id'], claim['claim_text'], 'ترجمه/شرح ثبت‌شده در Source Claim', claim['status'], claim['confidence'], claim['claim_group_id']],
+          );
+        }
+        if (claim['subject_type'] == 'name' && claim['claim_type'] == 'etymology') {
+          _db.execute(
+            '''INSERT OR IGNORE INTO name_etymologies (id, name_id, etymology_text, root_form, source_language, status, confidence, claim_group_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+            ["etymology-${claim['subject_id']}", claim['subject_id'], claim['claim_text'], '', 'Old Persian / Iranian', claim['status'], claim['confidence'], claim['claim_group_id']],
+          );
+        }
+      }
+      for (final entry in seedArchiveEntries) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO archive_entries (id, title, category, body, source_id, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)''',
+          [entry['id'], entry['title'], entry['category'], entry['body'], entry['source_id'], entry['status'], now],
+        );
+      }
+      _setMetadata('content_version', 'knowledge-1');
       _db.execute('COMMIT');
       _refreshSearchIndex();
     } catch (_) {
@@ -412,6 +497,17 @@ class AppDatabase {
   List<Source> getSources() {
     final rows = _db.select('SELECT * FROM sources ORDER BY title');
     return rows.map((row) => Source.fromMap(Map<String, Object?>.from(row))).toList(growable: false);
+  }
+
+  List<SourceClaim> getClaims(String subjectType, String subjectId) {
+    final rows = _db.select(
+      '''SELECT c.*, s.title AS source_title, s.url AS source_url
+         FROM source_claims c LEFT JOIN sources s ON s.id = c.source_id
+         WHERE c.subject_type = ? AND c.subject_id = ?
+         ORDER BY c.confidence DESC, c.created_at''',
+      [subjectType, subjectId],
+    );
+    return rows.map((row) => SourceClaim.fromMap(Map<String, Object?>.from(row))).toList(growable: false);
   }
 
   List<ArchiveEntry> getArchiveEntries([String? category]) {

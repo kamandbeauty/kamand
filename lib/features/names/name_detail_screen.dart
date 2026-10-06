@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/models/name.dart';
+import '../../domain/models/source_claim.dart';
 import '../shared/empty_state.dart';
 import '../shared/status_badge.dart';
 
@@ -14,6 +15,7 @@ class NameDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final name = ref.watch(nameRepositoryProvider).byId(nameId);
+    final claims = ref.watch(nameRepositoryProvider).claimsForName(nameId);
     if (name == null) {
       return const Scaffold(body: EmptyState(title: 'نام پیدا نشد', message: 'این رکورد در دیتابیس محلی موجود نیست.'));
     }
@@ -32,6 +34,8 @@ class NameDetailScreen extends ConsumerWidget {
           _InfoSection(title: 'سبک‌های ثبت‌شده', icon: Icons.style_outlined, child: Wrap(spacing: 8, runSpacing: 8, children: name.styles.map((style) => Chip(label: Text(style))).toList())),
           _InfoSection(title: 'وضعیت داده', icon: Icons.fact_check_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [StatusBadge(status: name.status), const SizedBox(height: 10), Text('سطح اطمینان: ${name.confidence}'), const SizedBox(height: 6), Text(name.sourceNote, style: const TextStyle(color: Colors.blueGrey, height: 1.6))])),
           _InfoSection(title: 'منبع و روش', icon: Icons.menu_book_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name.sourceTitle, style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 6), const Text('این بخش برای اتصال هر ادعا به منبع طراحی شده است. تا زمان بررسی نهایی، وضعیت رکورد باید در UI حفظ شود.', style: TextStyle(color: Colors.blueGrey, height: 1.6))])),
+          _InfoSection(title: 'ادعاهای منبع‌دار', icon: Icons.fact_check_outlined, child: claims.isEmpty ? const Text('برای این نام هنوز Claim مستقلی ثبت نشده است.', style: TextStyle(color: Colors.blueGrey)) : Column(children: claims.map((claim) => _ClaimTile(claim: claim)).toList())),
+
         ],
       ),
     );
@@ -77,6 +81,30 @@ class _InfoSection extends StatelessWidget {
         padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon, color: Theme.of(context).colorScheme.primary), const SizedBox(width: 8), Text(title, style: const TextStyle(fontWeight: FontWeight.w900))]), const SizedBox(height: 12), child]),
       ),
+    );
+  }
+}
+
+class _ClaimTile extends StatelessWidget {
+  const _ClaimTile({required this.claim});
+
+  final SourceClaim claim;
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeStatus = claim.status == 'supported' ? 'verified' : claim.status;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: const Color(0xFFF4F6F3), borderRadius: BorderRadius.circular(15)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Expanded(child: Text(claim.claimType, style: const TextStyle(fontWeight: FontWeight.w800))), StatusBadge(status: badgeStatus)]),
+        const SizedBox(height: 8),
+        Text(claim.claimText, style: const TextStyle(height: 1.6)),
+        const SizedBox(height: 7),
+        Text('سطح اطمینان: ${claim.confidence} · منبع: ${claim.sourceTitle}', style: const TextStyle(color: Colors.blueGrey, fontSize: 11)),
+        if (claim.evidenceNote.isNotEmpty) ...[const SizedBox(height: 4), Text(claim.evidenceNote, style: const TextStyle(color: Colors.blueGrey, fontSize: 11))],
+      ]),
     );
   }
 }

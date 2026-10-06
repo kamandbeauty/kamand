@@ -9,6 +9,7 @@ import '../domain/engines/abjad_engine.dart';
 import '../domain/engines/compatibility_engine.dart';
 import '../domain/engines/name_search_engine.dart';
 import '../domain/engines/numerology_engine.dart';
+import '../domain/engines/smart_search_engine.dart';
 import '../domain/models/archive_entry.dart';
 import '../domain/models/name.dart';
 import '../domain/models/privacy_settings.dart';
@@ -33,6 +34,10 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 
 final nameQueryProvider = StateProvider<String>((ref) => '');
 
+final allNamesProvider = Provider<List<Name>>((ref) {
+  return ref.watch(nameRepositoryProvider).search('');
+});
+
 final namesProvider = Provider<List<Name>>((ref) {
   return ref.watch(nameRepositoryProvider).search(ref.watch(nameQueryProvider));
 });
@@ -55,6 +60,7 @@ final abjadEngineProvider = Provider<AbjadEngine>((ref) {
 final numerologyEngineProvider = Provider<NumerologyEngine>((ref) => const NumerologyEngine());
 final compatibilityEngineProvider = Provider<CompatibilityEngine>((ref) => const CompatibilityEngine());
 final nameSearchEngineProvider = Provider<NameSearchEngine>((ref) => const NameSearchEngine());
+final smartSearchEngineProvider = Provider<SmartSearchEngine>((ref) => const SmartSearchEngine());
 
 final profilesProvider = StateNotifierProvider<ProfilesNotifier, List<Profile>>((ref) {
   return ProfilesNotifier(ref.watch(profileRepositoryProvider));
