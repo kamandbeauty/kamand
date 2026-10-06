@@ -16,6 +16,8 @@ class _CompatibilityScreenState extends ConsumerState<CompatibilityScreen> {
   final second = TextEditingController();
   CompatibilityResult? result;
   String? error;
+  String? firstProfileId;
+  String? secondProfileId;
   bool isComparing = false;
 
   @override
@@ -25,11 +27,30 @@ class _CompatibilityScreenState extends ConsumerState<CompatibilityScreen> {
     super.dispose();
   }
 
-  Future<void> compare() async {
+  Future<void> compare() => _compareValues(first.text, second.text);
+
+  Future<void> compareProfiles() async {
+    final profiles = ref.read(profilesProvider);
+    final firstMatches = profiles.where((profile) => profile.id == firstProfileId);
+    final secondMatches = profiles.where((profile) => profile.id == secondProfileId);
+    final firstProfile = firstMatches.isEmpty ? null : firstMatches.first;
+    final secondProfile = secondMatches.isEmpty ? null : secondMatches.first;
+    if (firstProfile == null || secondProfile == null) {
+      setState(() => error = 'دو پروفایل را برای مقایسه انتخاب کنید.');
+      return;
+    }
+    if (firstProfile.id == secondProfile.id) {
+      setState(() => error = 'برای مقایسه، دو پروفایل متفاوت انتخاب کنید.');
+      return;
+    }
+    first.text = firstProfile.name;
+    second.text = secondProfile.name;
+    await _compareValues(firstProfile.name, secondProfile.name);
+  }
+
+  Future<void> _compareValues(String firstValue, String secondValue) async {
     if (isComparing) return;
-    final firstValue = first.text.trim();
-    final secondValue = second.text.trim();
-    if (firstValue.isEmpty || secondValue.isEmpty) {
+    if (firstValue.trim().isEmpty || secondValue.trim().isEmpty) {
       setState(() {
         result = null;
         error = 'برای مقایسه، هر دو نام را وارد کنید.';
@@ -52,6 +73,9 @@ class _CompatibilityScreenState extends ConsumerState<CompatibilityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profiles = ref.watch(profilesProvider);
+    final selectedFirst = profiles.any((profile) => profile.id == firstProfileId) ? firstProfileId : null;
+    final selectedSecond = profiles.any((profile) => profile.id == secondProfileId) ? secondProfileId : null;
     return Scaffold(
       appBar: AppBar(title: const Text('مقایسه دو نام')),
       body: ListView(
@@ -68,7 +92,21 @@ class _CompatibilityScreenState extends ConsumerState<CompatibilityScreen> {
           const SizedBox(height: 14),
           FilledButton.icon(onPressed: isComparing ? null : compare, icon: const Icon(Icons.compare_arrows), label: Text(isComparing ? 'در حال مقایسه…' : 'مقایسه')),
           if (isComparing) const Padding(padding: EdgeInsets.only(top: 12), child: LinearProgressIndicator()),
-          if (!isComparing && result == null && error == null) const Padding(padding: EdgeInsets.only(top: 24), child: Card(child: Padding(padding: EdgeInsets.all(17), child: Text('دو نام را وارد کنید تا شاخص نوشتاری محاسبه شود.', style: TextStyle(color: Colors.blueGrey, height: 1.6))))),
+          if (profiles.isNotEmpty) ...[
+            const SizedBox(height: 26),
+            const Divider(),
+            const SizedBox(height: 14),
+            const Text('مقایسه پروفایل‌های محلی', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            const Text('نام پروفایل‌ها فقط از حافظه محلی همین دستگاه خوانده می‌شود. تاریخ تولد فعلاً وارد این شاخص نمی‌شود.', style: TextStyle(color: Colors.blueGrey, height: 1.6)),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(value: selectedFirst, decoration: const InputDecoration(labelText: 'پروفایل اول', prefixIcon: Icon(Icons.person_outline)), items: [for (final profile in profiles) DropdownMenuItem(value: profile.id, child: Text(profile.title))], onChanged: isComparing ? null : (value) => setState(() => firstProfileId = value)),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(value: selectedSecond, decoration: const InputDecoration(labelText: 'پروفایل دوم', prefixIcon: Icon(Icons.person_outline)), items: [for (final profile in profiles) DropdownMenuItem(value: profile.id, child: Text(profile.title))], onChanged: isComparing ? null : (value) => setState(() => secondProfileId = value)),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(onPressed: isComparing ? null : compareProfiles, icon: const Icon(Icons.compare_arrows_outlined), label: const Text('مقایسه پروفایل‌ها')),
+          ],
+          if (!isComparing && result == null && error == null) const Padding(padding: EdgeInsets.only(top: 24), child: Card(child: Padding(padding: EdgeInsets.all(17), child: Text('دو نام یا دو پروفایل را وارد کنید تا شاخص نوشتاری محاسبه شود.', style: TextStyle(color: Colors.blueGrey, height: 1.6))))),
           if (result != null) ...[
             const SizedBox(height: 22),
             _ResultCard(result: result!),
