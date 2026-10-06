@@ -1,528 +1,307 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-import WelcomeSplashModal from './components/WelcomeSplashModal';
-import OnboardingModal from './components/OnboardingModal';
-import DashboardView from './components/DashboardView';
-import InvoiceCreatorView from './components/InvoiceCreatorView';
-import InvoiceDetailModal from './components/InvoiceDetailModal';
-import CustomerManagementView from './components/CustomerManagementView';
-import ProductManagementView from './components/ProductManagementView';
-import FinancialView from './components/FinancialView';
-import SmartToolsModal from './components/SmartToolsModal';
-import SettingsView from './components/SettingsView';
-import GoldenUpgradeModal from './components/GoldenUpgradeModal';
-import PricingPlansModal from './components/PricingPlansModal';
-import OpenWindowsModal from './components/OpenWindowsModal';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
-  INITIAL_USER,
-  INITIAL_BUSINESS,
-  INITIAL_CUSTOMERS,
-  INITIAL_PRODUCTS,
-  INITIAL_INVOICES,
-  INITIAL_EXPENSES,
-  INITIAL_INCOMES,
-  INITIAL_SETTINGS
-} from './data/mockData';
+  signById,
+  zodiacForGregorian,
+  jalaliToGregorian,
+  engineSelfCheckOk,
+} from './engine.js';
+
+import PhoneFrame from './components/PhoneFrame.jsx';
+import Onboarding from './components/Onboarding.jsx';
+import HomeTab, { DailySheet, WeeklySheet, MonthlySheet } from './components/HomeTab.jsx';
+import ZodiacTab from './components/ZodiacTab.jsx';
+import LoveTab, { CompatSheet, CoupleSheet } from './components/LoveTab.jsx';
+import ProfileTab, { PartnerSheet } from './components/ProfileTab.jsx';
+import { PartnerForm, EditProfileSheet } from './components/PartnerForm.jsx';
+import { PremiumSheet } from './components/PremiumSheet.jsx';
+import { Sheet } from './components/Glass.jsx';
+
+const LS_KEY = 'tale_man_preview_v1';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+const TABS = [
+  { id: 'home', label: 'خانه', icon: homeIcon },
+  { id: 'zodiac', label: 'برج من', icon: zodiacIcon },
+  { id: 'love', label: 'عشق', icon: loveIcon },
+  { id: 'profile', label: 'پروفایل', icon: personIcon },
+];
 
 export default function App() {
-  const loadState = (key, fallback) => {
-    try {
-      const saved = localStorage.getItem(`ruby_${key}`);
-      return saved ? JSON.parse(saved) : fallback;
-    } catch {
-      return fallback;
-    }
-  };
+  const saved = useMemo(loadState, []);
+  const [profile, setProfile] = useState(saved?.profile ?? null);
+  const [partner, setPartner] = useState(saved?.partner ?? null);
+  const [settings, setSettings] = useState(
+    saved?.settings ?? { theme: 'dark', notifications: false, premium: false },
+  );
+  const [tab, setTab] = useState('home');
+  const [sheet, setSheet] = useState(null); // {kind, param}
+  const [toast, setToast] = useState(null);
 
-  const saveState = (key, val) => {
-    try {
-      localStorage.setItem(`ruby_${key}`, JSON.stringify(val));
-    } catch (e) {
-      console.error('LocalStorage save error:', e);
-    }
-  };
-
-  // Main App State
-  const [user, setUser] = useState(() => loadState('user', INITIAL_USER));
-  const [business, setBusiness] = useState(() => loadState('business', INITIAL_BUSINESS));
-  const [customers, setCustomers] = useState(() => loadState('customers', INITIAL_CUSTOMERS));
-  const [products, setProducts] = useState(() => loadState('products', INITIAL_PRODUCTS));
-  const [invoices, setInvoices] = useState(() => loadState('invoices', INITIAL_INVOICES));
-  const [expenses, setExpenses] = useState(() => loadState('expenses', INITIAL_EXPENSES));
-  const [incomes, setIncomes] = useState(() => loadState('incomes', INITIAL_INCOMES));
-  const [settings, setSettings] = useState(() => loadState('settings', INITIAL_SETTINGS));
-
-  // Navigation & Modals
-  const [activeTab, setActiveTab] = useState('create_invoice');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isAppLocked, setIsAppLocked] = useState(false);
-  const [pinUnlockInput, setPinUnlockInput] = useState('');
-
-  const [showSplash, setShowSplash] = useState(false);
-  const [showGoldenModal, setShowGoldenModal] = useState(false);
-  const [showPricingModal, setShowPricingModal] = useState(false);
-  const [showWindowsModal, setShowWindowsModal] = useState(false);
-
-  const [selectedInvoiceModal, setSelectedInvoiceModal] = useState(null);
-  const [editingInvoiceData, setEditingInvoiceData] = useState(null);
-
-  const [showSmartToolsModal, setShowSmartToolsModal] = useState(false);
-  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
-  const [globalSearchQuery, setGlobalSearchOpenQuery] = useState('');
-
-  // Temporary Multi-window Tabs
-  const [factorTabs, setFactorTabs] = useState([
-    { id: 'tab-1', title: 'پیش فاکتور ۱', number: '۱' }
-  ]);
-  const [activeFactorTabId, setActiveFactorTabId] = useState('tab-1');
-  const [tabInvoiceStates, setTabInvoiceStates] = useState({});
-
-  // Persistence
-  useEffect(() => saveState('user', user), [user]);
-  useEffect(() => saveState('business', business), [business]);
-  useEffect(() => saveState('customers', customers), [customers]);
-  useEffect(() => saveState('products', products), [products]);
-  useEffect(() => saveState('invoices', invoices), [invoices]);
-  useEffect(() => saveState('expenses', expenses), [expenses]);
-  useEffect(() => saveState('incomes', incomes), [incomes]);
-  useEffect(() => saveState('settings', settings), [settings]);
-
-  // Dark mode
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({ profile, partner, settings }));
+    } catch {
+      /* storage full/blocked — preview still works in-memory */
     }
-  }, [isDarkMode]);
+  }, [profile, partner, settings]);
 
-  // Tab Manager Helpers
-  const handleAddFactorTab = () => {
-    const newNum = factorTabs.length + 1;
-    const newTab = {
-      id: `tab-${Date.now()}`,
-      title: `پیش فاکتور ${newNum}`,
-      number: newNum.toString()
-    };
-    setFactorTabs([...factorTabs, newTab]);
-    setActiveFactorTabId(newTab.id);
+  const showToast = useCallback((text) => {
+    setToast(text);
+    window.setTimeout(() => setToast(null), 2600);
+  }, []);
+
+  const enrichedProfile = useMemo(() => {
+    if (!profile) return null;
+    const g = jalaliToGregorian([profile.y, profile.m, profile.d]);
+    const sign = zodiacForGregorian(g.getMonth() + 1, g.getDate());
+    return { ...profile, sign, id: 'preview-profile' };
+  }, [profile]);
+
+  const closeSheet = useCallback(() => setSheet(null), []);
+
+  const resetAll = () => {
+    setProfile(null);
+    setPartner(null);
+    setSettings({ theme: 'dark', notifications: false, premium: false });
+    setTab('home');
+    setSheet(null);
+    try {
+      localStorage.removeItem(LS_KEY);
+    } catch { /* ignore */ }
   };
 
-  const handleCloseFactorTab = (id) => {
-    if (factorTabs.length === 1) return;
-    const updated = factorTabs.filter(t => t.id !== id);
-    setFactorTabs(updated);
-    if (activeFactorTabId === id) {
-      setActiveFactorTabId(updated[0].id);
-    }
-  };
-
-  // Invoice Actions
-  const handleSaveInvoice = (invoiceObj, shouldOpenModal = false) => {
-    const existingIndex = invoices.findIndex(i => i.id === invoiceObj.id);
-    let updatedInvoices = [];
-    if (existingIndex >= 0) {
-      updatedInvoices = [...invoices];
-      updatedInvoices[existingIndex] = invoiceObj;
-    } else {
-      updatedInvoices = [...invoices, invoiceObj];
-    }
-    setInvoices(updatedInvoices);
-
-    if (invoiceObj.customerId && invoiceObj.type === 'sale') {
-      setCustomers(prev =>
-        prev.map(c => {
-          if (c.id === invoiceObj.customerId) {
-            return { ...c, balance: Math.max(0, (c.balance || 0) + invoiceObj.remainingAmount) };
-          }
-          return c;
-        })
-      );
-    }
-
-    setEditingInvoiceData(null);
-    if (shouldOpenModal) {
-      setSelectedInvoiceModal(invoiceObj);
-    }
-  };
-
-  const handleCopyInvoice = (inv) => {
-    const copied = {
-      ...inv,
-      id: `inv-${Date.now()}`,
-      number: (parseInt(inv.number) + 1).toString(),
-      date: new Date().toLocaleDateString('fa-IR')
-    };
-    setSelectedInvoiceModal(null);
-    setEditingInvoiceData(copied);
-    setActiveTab('create_invoice');
-  };
-
-  const handleDeleteInvoice = (id) => setInvoices(invoices.filter(i => i.id !== id));
-
-  const handleConvertProforma = (id) => {
-    setInvoices(prev =>
-      prev.map(inv => {
-        if (inv.id === id) {
-          return {
-            ...inv,
-            type: 'sale',
-            status: inv.remainingAmount === 0 ? 'paid' : 'unpaid'
-          };
-        }
-        return inv;
-      })
-    );
-    setSelectedInvoiceModal(null);
-    alert('پیش‌فاکتور به فاکتور فروش تبدیل شد.');
-  };
-
-  const handleRecordPayment = (invoiceId, amount) => {
-    setInvoices(prev =>
-      prev.map(inv => {
-        if (inv.id === invoiceId) {
-          const newPaid = inv.paidAmount + amount;
-          const newRemaining = Math.max(0, inv.totalAmount - newPaid);
-          return {
-            ...inv,
-            paidAmount: newPaid,
-            remainingAmount: newRemaining,
-            status: newRemaining === 0 ? 'paid' : 'partial'
-          };
-        }
-        return inv;
-      })
-    );
-    setSelectedInvoiceModal(null);
-  };
-
-  // Reset
-  const handleResetData = () => {
-    setUser({ ...INITIAL_USER, isOnboarded: true });
-    setBusiness(INITIAL_BUSINESS);
-    setCustomers(INITIAL_CUSTOMERS);
-    setProducts(INITIAL_PRODUCTS);
-    setInvoices(INITIAL_INVOICES);
-    setExpenses(INITIAL_EXPENSES);
-    setIncomes(INITIAL_INCOMES);
-    setSettings(INITIAL_SETTINGS);
-    setShowSplash(true);
-  };
-
-  const handleRestoreData = (parsedData) => {
-    if (parsedData.user) setUser(parsedData.user);
-    if (parsedData.business) setBusiness(parsedData.business);
-    if (parsedData.customers) setCustomers(parsedData.customers);
-    if (parsedData.products) setProducts(parsedData.products);
-    if (parsedData.invoices) setInvoices(parsedData.invoices);
-  };
-
-  if (isAppLocked) {
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-900 text-white flex items-center justify-center p-4 dir-rtl font-vazir">
-        <div className="text-center space-y-4 max-w-xs">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-xl">
-            ر
-          </div>
-          <h2 className="font-extrabold text-lg">فاکتور روبی قفل است</h2>
-          <p className="text-xs text-slate-400">رمز ۴ رقمی خود را وارد کنید</p>
-
-          <input
-            type="password"
-            maxLength={4}
-            value={pinUnlockInput}
-            onChange={(e) => setPinUnlockInput(e.target.value)}
-            className="w-full p-3 rounded-2xl bg-slate-800 border border-slate-700 text-center font-mono text-xl tracking-widest"
-            autoFocus
-          />
-
-          <button
-            onClick={() => {
-              if (pinUnlockInput === (settings.pinCode || '1234') || pinUnlockInput === '1234') {
-                setIsAppLocked(false);
-                setPinUnlockInput('');
-              } else {
-                alert('رمز اشتباه است!');
-              }
-            }}
-            className="w-full py-3 rounded-2xl bg-blue-600 font-bold text-xs shadow-lg"
-          >
-            باز کردن قفل
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const light = settings.theme === 'light';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-vazir select-none">
-      
-      {/* Welcome Splash Screen */}
-      <WelcomeSplashModal
-        isOpen={showSplash}
-        onStart={() => setShowSplash(false)}
-        onSkip={() => setShowSplash(false)}
-      />
-
-      {/* Onboarding Wizard Modal on first launch */}
-      <OnboardingModal
-        isOpen={!user.isOnboarded}
-        initialData={user}
-        onComplete={(updatedUser) => {
-          setUser(updatedUser);
-          setBusiness(prev => ({ ...prev, shopName: `فروشگاه ${updatedUser.name}` }));
-        }}
-      />
-
-      {/* Main Top Navbar */}
-      <Navbar
-        onOpenSidebar={() => setIsSidebarOpen(true)}
-        onOpenGlobalSearch={() => setGlobalSearchOpen(true)}
-        onOpenSmartTools={() => setShowSmartToolsModal(true)}
-        onOpenGoldenModal={() => setShowPricingModal(true)}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        onLockApp={() => setIsAppLocked(true)}
-      />
-
-      {/* Sidebar Drawer Menu */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        onNavigateTab={(tab) => setActiveTab(tab)}
-        onOpenGoldenModal={() => setShowGoldenModal(true)}
-        onOpenSettings={() => setActiveTab('settings')}
-        onOpenSmartTools={() => setShowSmartToolsModal(true)}
-        onResetData={handleResetData}
-      />
-
-      {/* Main View Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6">
-        
-        {activeTab === 'create_invoice' && (
-          <InvoiceCreatorView
-            key={activeFactorTabId}
-            customers={customers}
-            products={products}
-            business={business}
-            editingInvoice={editingInvoiceData || tabInvoiceStates[activeFactorTabId]}
-            onSaveInvoice={handleSaveInvoice}
-            onCancel={() => setActiveTab('dashboard')}
-            onNewCustomerModal={() => setActiveTab('customers')}
-            tabs={factorTabs}
-            activeTabId={activeFactorTabId}
-            onSelectTab={(id) => {
-              setEditingInvoiceData(null);
-              setActiveFactorTabId(id);
-            }}
-            onAddTab={handleAddFactorTab}
-            onOpenWindowsModal={() => setShowWindowsModal(true)}
-            onUpdateTabState={(stateData) => {
-              setTabInvoiceStates(prev => ({ ...prev, [activeFactorTabId]: stateData }));
-            }}
-          />
-        )}
-
-        {activeTab === 'dashboard' && (
-          <DashboardView
-            invoices={invoices}
-            customers={customers}
-            products={products}
-            onNewInvoice={() => {
-              setEditingInvoiceData(null);
-              setActiveTab('create_invoice');
-            }}
-            onNewCustomer={() => setActiveTab('customers')}
-            onNewProduct={() => setActiveTab('products')}
-            onViewInvoice={(inv) => setSelectedInvoiceModal(inv)}
-            onNavigateTab={(tab) => setActiveTab(tab)}
-          />
-        )}
-
-        {activeTab === 'invoices' && (
-          <DashboardView
-            invoices={invoices}
-            customers={customers}
-            products={products}
-            onNewInvoice={() => {
-              setEditingInvoiceData(null);
-              setActiveTab('create_invoice');
-            }}
-            onNewCustomer={() => setActiveTab('customers')}
-            onNewProduct={() => setActiveTab('products')}
-            onViewInvoice={(inv) => setSelectedInvoiceModal(inv)}
-            onNavigateTab={(tab) => setActiveTab(tab)}
-          />
-        )}
-
-        {activeTab === 'customers' && (
-          <CustomerManagementView
-            customers={customers}
-            invoices={invoices}
-            business={business}
-            onAddCustomer={(c) => setCustomers([...customers, c])}
-            onEditCustomer={(c) => setCustomers(customers.map(item => item.id === c.id ? c : item))}
-            onDeleteCustomer={(id) => setCustomers(customers.filter(item => item.id !== id))}
-            onRecordCustomerPayment={(cId, amt) => {
-              setCustomers(prev =>
-                prev.map(c => (c.id === cId ? { ...c, balance: Math.max(0, c.balance - amt) } : c))
-              );
-            }}
-            onViewInvoice={(inv) => setSelectedInvoiceModal(inv)}
-          />
-        )}
-
-        {activeTab === 'products' && (
-          <ProductManagementView
-            products={products}
-            onAddProduct={(p) => setProducts([...products, p])}
-            onEditProduct={(p) => setProducts(products.map(item => item.id === p.id ? p : item))}
-            onDeleteProduct={(id) => setProducts(products.filter(item => item.id !== id))}
-            onBack={() => setActiveTab('dashboard')}
-          />
-        )}
-
-        {activeTab === 'financial' && (
-          <FinancialView
-            invoices={invoices}
-            customers={customers}
-            expenses={expenses}
-            incomes={incomes}
-            onAddExpense={(exp) => setExpenses([...expenses, exp])}
-            onAddIncome={(inc) => setIncomes([...incomes, inc])}
-          />
-        )}
-
-        {activeTab === 'settings' && (
-          <SettingsView
-            user={user}
-            business={business}
-            settings={settings}
-            onSaveUser={(u) => setUser(u)}
-            onSaveBusiness={(b) => setBusiness(b)}
-            onSaveSettings={(s) => setSettings(s)}
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-          />
-        )}
-
-      </main>
-
-      {/* Invoice Detail / PDF Modal */}
-      <InvoiceDetailModal
-        invoice={selectedInvoiceModal}
-        business={business}
-        isOpen={Boolean(selectedInvoiceModal)}
-        onClose={() => setSelectedInvoiceModal(null)}
-        onEdit={(inv) => {
-          setSelectedInvoiceModal(null);
-          setEditingInvoiceData(inv);
-          setActiveTab('create_invoice');
-        }}
-        onCopy={handleCopyInvoice}
-        onDelete={handleDeleteInvoice}
-        onConvertProforma={handleConvertProforma}
-        onRecordPayment={handleRecordPayment}
-      />
-
-      {/* Golden Upgrade Features Modal (Screenshot 6) */}
-      <GoldenUpgradeModal
-        isOpen={showGoldenModal}
-        onClose={() => setShowGoldenModal(false)}
-      />
-
-      {/* Pricing Plans Modal (Screenshot 1) */}
-      <PricingPlansModal
-        isOpen={showPricingModal}
-        onClose={() => setShowPricingModal(false)}
-      />
-
-      {/* Open Windows Modal (Screenshot 5) */}
-      <OpenWindowsModal
-        isOpen={showWindowsModal}
-        onClose={() => setShowWindowsModal(false)}
-        tabs={factorTabs}
-        activeTabId={activeFactorTabId}
-        onSelectTab={(id) => setActiveFactorTabId(id)}
-        onCloseTab={handleCloseFactorTab}
-      />
-
-      {/* Smart Tools Modal */}
-      <SmartToolsModal
-        isOpen={showSmartToolsModal}
-        onClose={() => setShowSmartToolsModal(false)}
-        invoices={invoices}
-        customers={customers}
-        products={products}
-        business={business}
-        settings={settings}
-        onUpdateSettings={(s) => setSettings(s)}
-        onOpenGlobalSearch={() => {
-          setShowSmartToolsModal(false);
-          setGlobalSearchOpen(true);
-        }}
-        onRestoreData={handleRestoreData}
-        onLockApp={() => {
-          setShowSmartToolsModal(false);
-          setIsAppLocked(true);
-        }}
-      />
-
-      {/* Global Search Dialog */}
-      {globalSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-xl bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-2xl space-y-4 font-vazir">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
-              <h3 className="font-bold text-sm text-slate-800 dark:text-white">
-                جستجوی سریع سراسری
-              </h3>
-              <button onClick={() => setGlobalSearchOpen(false)} className="text-slate-400 text-xs">
-                بستن (Esc)
-              </button>
-            </div>
-
-            <input
-              type="text"
-              autoFocus
-              value={globalSearchQuery}
-              onChange={(e) => setGlobalSearchOpenQuery(e.target.value)}
-              placeholder="جستجو در شماره فاکتور، نام مشتری، کالا..."
-              className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold"
-            />
-
-            <div className="max-h-64 overflow-y-auto space-y-2 text-xs">
-              {globalSearchQuery.trim() === '' ? (
-                <div className="text-center py-6 text-slate-400">
-                  عبارتی را برای جستجو در فاکتورها، مشتریان و کالاها تایپ کنید...
-                </div>
-              ) : (
-                <>
-                  <div className="font-bold text-slate-400 text-[11px]">فاکتورها:</div>
-                  {invoices
-                    .filter(i => i.number.includes(globalSearchQuery) || i.customerName.includes(globalSearchQuery))
-                    .map(inv => (
-                      <div
-                        key={inv.id}
-                        onClick={() => {
-                          setGlobalSearchOpen(false);
-                          setSelectedInvoiceModal(inv);
-                        }}
-                        className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl hover:bg-blue-50 cursor-pointer flex justify-between"
-                      >
-                        <div>فاکتور #{inv.number} - {inv.customerName}</div>
-                        <div className="font-bold text-blue-600">{inv.totalAmount.toLocaleString('fa-IR')} تومان</div>
-                      </div>
-                    ))}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#05070f] px-4 py-8" dir="rtl">
+      {engineSelfCheckOk ? null : (
+        <p className="mx-auto mb-4 max-w-[400px] rounded-xl bg-rose-500/20 p-3 text-center text-[11px] text-rose-200">
+          هشدار فنی: وکتورهای موتور قطعی با نسخهٔ اصلی هم‌خوانی ندارند.
+        </p>
       )}
 
+      {/* header (outside the phone) */}
+      <div className="mx-auto mb-6 max-w-[400px] text-center">
+        <h1 className="gold-text text-2xl font-black">طالع من</h1>
+        <p className="mt-1.5 text-[11px] text-slate-500">
+          پیش‌نمایش وب — همان موتور قطعی نسخهٔ اندروید، کاملاً آفلاین روی دستگاه تو
+        </p>
+      </div>
+
+      <PhoneFrame light={light}>
+        {!enrichedProfile ? (
+          <Onboarding
+            onFinish={(p) => {
+              setProfile({ name: p.name, y: p.y, m: p.m, d: p.d, time: p.time, city: p.city });
+              setSettings((s) => ({ ...s, notifications: p.notifications }));
+              setTab('home');
+            }}
+          />
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col">
+            {/* content */}
+            <main className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
+              {tab === 'home' && (
+                <HomeTab profile={enrichedProfile} onOpen={(kind) => setSheet({ kind })} />
+              )}
+              {tab === 'zodiac' && <ZodiacTab profile={enrichedProfile} />}
+              {tab === 'love' && (
+                <LoveTab
+                  profile={enrichedProfile}
+                  partner={partner ? { ...partner, sign: signById(partner.signId) } : null}
+                  onOpen={(kind, param) => setSheet({ kind, param })}
+                />
+              )}
+              {tab === 'profile' && (
+                <ProfileTab
+                  profile={enrichedProfile}
+                  partner={partner ? { ...partner, sign: signById(partner.signId) } : null}
+                  settings={settings}
+                  onOpen={(kind) => setSheet({ kind })}
+                  onSetTheme={(theme) => setSettings((s) => ({ ...s, theme }))}
+                  onToggleNotifications={(v) => {
+                    setSettings((s) => ({ ...s, notifications: v }));
+                    showToast(v ? 'اطلاع‌رسانی روزانه فعال شد' : 'اطلاع‌رسانی خاموش شد');
+                  }}
+                  onResetAll={resetAll}
+                />
+              )}
+            </main>
+
+            {/* bottom nav */}
+            <nav
+              className="relative z-10 grid grid-cols-4 border-t border-white/[0.07] bg-midnight-900/80 backdrop-blur-xl light:border-slate-900/[0.07] light:bg-white/80"
+              role="tablist"
+              aria-label="ناوبری اصلی"
+            >
+              {TABS.map((t) => {
+                const active = tab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setTab(t.id)}
+                    className={`flex flex-col items-center gap-1 py-2.5 transition-colors ${
+                      active ? 'text-gold-300' : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    {t.icon(active)}
+                    <span className={`text-[10px] ${active ? 'font-bold' : 'font-medium'}`}>{t.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* sheets */}
+            {sheet?.kind === 'daily' && (
+              <Sheet title="طالع کامل امروز" onClose={closeSheet}>
+                <DailySheet profile={enrichedProfile} />
+              </Sheet>
+            )}
+            {sheet?.kind === 'weekly' && (
+              <Sheet title="طالع هفته" onClose={closeSheet}>
+                <WeeklySheet profile={enrichedProfile} />
+              </Sheet>
+            )}
+            {sheet?.kind === 'monthly' && (
+              <Sheet title="طالع ماه" onClose={closeSheet}>
+                <MonthlySheet profile={enrichedProfile} />
+              </Sheet>
+            )}
+            {sheet?.kind === 'compat' && (
+              <Sheet title={`سازگاری برج ${enrichedProfile.sign.nameFa} و ${signById(sheet.param).nameFa}`} onClose={closeSheet}>
+                <CompatSheet profile={enrichedProfile} otherId={sheet.param} onClose={closeSheet} />
+              </Sheet>
+            )}
+            {sheet?.kind === 'couple' && partner && (
+              <Sheet title="تحلیل رابطهٔ شما" onClose={closeSheet}>
+                <CoupleSheet
+                  profile={enrichedProfile}
+                  partner={partner}
+                  onEditPartner={() => setSheet({ kind: 'partner' })}
+                  onRemovePartner={() => {
+                    setPartner(null);
+                    setSheet(null);
+                    showToast('شریک عاطفی حذف شد');
+                  }}
+                />
+              </Sheet>
+            )}
+            {sheet?.kind === 'partner' && (
+              <Sheet title={partner ? 'ویرایش شریک عاطفی' : 'افزودن شریک عاطفی'} onClose={closeSheet}>
+                <PartnerSheet
+                  partner={partner}
+                  onClose={closeSheet}
+                  onSave={(p) => {
+                    setPartner(p);
+                    setSheet({ kind: 'couple' });
+                    showToast('شریک عاطفی ذخیره شد');
+                  }}
+                  onRemove={() => {
+                    setPartner(null);
+                    setSheet(null);
+                    showToast('شریک عاطفی حذف شد');
+                  }}
+                />
+              </Sheet>
+            )}
+            {sheet?.kind === 'edit-profile' && (
+              <Sheet title="ویرایش پروفایل" onClose={closeSheet}>
+                <EditProfileSheet
+                  profile={enrichedProfile}
+                  onSave={(p) => {
+                    setProfile((old) => ({ ...old, name: p.name, y: p.y, m: p.m, d: p.d }));
+                    setSheet(null);
+                    showToast('پروفایل به‌روزرسانی شد');
+                  }}
+                />
+              </Sheet>
+            )}
+            {sheet?.kind === 'premium' && (
+              <Sheet title="طالع من ویژه" onClose={closeSheet}>
+                <PremiumSheet
+                  premium={settings.premium}
+                  onSubscribe={(plan) => {
+                    setSettings((s) => ({ ...s, premium: true }));
+                    setSheet(null);
+                    showToast(`اشتراک ${plan === 'lifetime' ? 'همیشگی' : plan === 'yearly' ? 'سالانه' : 'ماهانه'} فعال شد (نمایشی)`);
+                  }}
+                />
+              </Sheet>
+            )}
+
+            {/* toast */}
+            {toast && (
+              <div className="pointer-events-none absolute bottom-24 left-1/2 z-50 -translate-x-1/2 animate-fade-up">
+                <p className="rounded-full border border-white/10 bg-midnight-800/95 px-4 py-2 text-[11px] font-semibold text-slate-100 shadow-xl backdrop-blur">
+                  {toast}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </PhoneFrame>
+
+      <p className="mx-auto mt-6 max-w-[420px] text-center text-[10px] leading-6 text-slate-600">
+        این پیش‌نمایش برای نمایش تجربهٔ اپلیکیشن است؛ نسخهٔ اصلی یک اپلیکیشن
+        اندرویدی بومی است. محتوای طالع‌بینی بر پایهٔ astrologی سنتی و برای
+        سرگرمی ارائه می‌شود و توصیهٔ قطعی در زمینهٔ سلامت، مالی یا حقوقی نیست.
+      </p>
     </div>
+  );
+}
+
+/* ── tab icons (inline SVG, no extra deps) ────────────────────────────── */
+
+function homeIcon(active) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M3 10.5 12 3l9 7.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 9.5V21h5v-6h4v6h5V9.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      {active && <circle cx="12" cy="12" r="1.4" fill="currentColor" />}
+    </svg>
+  );
+}
+
+function zodiacIcon(active) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+      <circle cx="12" cy="12" r="5.2" stroke="currentColor" strokeWidth="1.5" opacity="0.8" />
+      {active
+        ? <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+        : <circle cx="12" cy="12" r="1.2" fill="currentColor" opacity="0.6" />}
+    </svg>
+  );
+}
+
+function loveIcon(active) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} aria-hidden>
+      <path
+        d="M12 20.5s-7.5-4.6-9.3-9.3C1.4 7.7 3.6 4.5 7 4.5c2.2 0 3.9 1.2 5 3 1.1-1.8 2.8-3 5-3 3.4 0 5.6 3.2 4.3 6.7-1.8 4.7-9.3 9.3-9.3 9.3z"
+        stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function personIcon(active) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M4.5 20.5c1.2-3.5 4-5.5 7.5-5.5s6.3 2 7.5 5.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      {active && <circle cx="12" cy="8" r="1.5" fill="currentColor" />}
+    </svg>
   );
 }
