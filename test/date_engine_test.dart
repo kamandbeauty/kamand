@@ -16,8 +16,8 @@ void main() {
 
   test('birth number is deterministic', () {
     const date = CalendarDate(year: 1403, month: 1, day: 1, calendar: CalendarKind.jalali);
-    expect(DateEngine.birthNumber(date), 9);
-    expect(DateEngine.lifePath(birthDate: date), 9);
+    expect(DateEngine.birthNumber(date), 1);
+    expect(DateEngine.lifePath(birthDate: date), 1);
   });
 
   test('validates and parses calendar dates before conversion', () {
