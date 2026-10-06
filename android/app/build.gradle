@@ -83,6 +83,12 @@ android {
                 keyPassword releaseKeyPassword
                 storeFile file(releaseStorePath)
                 storePassword releaseStorePassword
+                // Android 11+ rejects API-30+ APKs without a v2+
+                // signature with a misleading "package corrupt" error —
+                // enable all schemes explicitly (v1 covers minSdk 23).
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
             }
         }
     }

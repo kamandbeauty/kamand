@@ -220,42 +220,54 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="tale-man-v1.1.0"
+          tag="tale-man-v1.1.1"
 
-          # Copy artifacts to their final, self-describing filenames (the
-          # runner's gh does not apply "#label" asset renames reliably).
+          # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
-          mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/tale-man-v1.1.0-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/tale-man-v1.1.0-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/tale-man-v1.1.0-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/tale-man-v1.1.0-universal.apk"
-          cp "$aab"                                 "$dist/tale-man-v1.1.0.aab"
+          rm -rf "$dist"; mkdir -p "$dist"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/tale-man-v1.1.1-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/tale-man-v1.1.1-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/tale-man-v1.1.1-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/tale-man-v1.1.1-universal.apk"
+          cp "$aab"                                 "$dist/tale-man-v1.1.1.aab"
 
-          notes="نسخهٔ ۱.۱.۰ «طالع من» — گرافیک جدید، بانک محتوای سه‌برابرشده و رفع اشکال.
+          # Integrity manifest: exact size + SHA-256 of every file, so a
+          # corrupted/truncated download can be detected before installing.
+          (
+            cd "$dist"
+            for f in tale-man-v1.1.1-*; do
+              printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
+            done
+          ) > "$dist/CHECKSUMS.txt"
+
+          notes="نسخهٔ ۱.۱.۱ «طالع من» — امضای تقویت‌شده (v1+v2+v3) و رفع مشکل نصب.
 
           کدام فایل را دانلود کنم؟ نسخهٔ مخصوص گوشیِ خودت:
 
           | فایل | مخصوص |
           |---|---|
-          | tale-man-v1.1.0-arm64-v8a.apk | گوشی‌های مدرن (اکثر گوشی‌های سامسونگ، شیائومی، پیکسل و…) |
-          | tale-man-v1.1.0-armeabi-v7a.apk | گوشی‌های قدیمی‌تر ۳۲ بیتی |
-          | tale-man-v1.1.0-x86_64.apk | شبیه‌ساز اندروید روی کامپیوتر |
-          | tale-man-v1.1.0-universal.apk | همهٔ گوشی‌ها — فقط حجمش بیشتر است |
-          | tale-man-v1.1.0.aab | فقط برای انتشار در Google Play (نصب مستقیم ندارد) |
+          | tale-man-v1.1.1-arm64-v8a.apk | گوشی‌های مدرن (اکثر گوشی‌ها) |
+          | tale-man-v1.1.1-armeabi-v7a.apk | گوشی‌های قدیمی‌تر ۳۲ بیتی |
+          | tale-man-v1.1.1-x86_64.apk | شبیه‌ساز اندروید |
+          | tale-man-v1.1.1-universal.apk | همهٔ گوشی‌ها (حجم بیشتر) |
+          | tale-man-v1.1.1.aab | فقط Google Play — نصب مستقیم ندارد |
 
-          برای نصب، فایل apk را دانلود و اجرا کنید (اجازهٔ نصب از منابع ناشناس لازم است)."
+          اگر نصب نشد («بسته دارای مشکل است» / «برنامه نصب نشد»):
+          ۱. اگر برنامهٔ قدیمی «فاکتور روبی» یا «طالع من» روی گوشی نصب است، اول کاملاً حذفش کن (نام پکیج یکی است و امضای متفاوت مانع نصب می‌شود).
+          ۲. فایل را دوباره دانلود کن و حجمش را با CHECKSUMS.txt مقایسه کن — اگر کمتر بود، دانلود ناقص است.
+          ۳. از برنامهٔ «فایل‌ها» روی فایل apk بزن (نه از داخل مرورگر) و اجازهٔ «نصب از منابع ناشناس» را همان‌جا بده.
+          ۴. اگر Play Protect هشدار داد: «جزئیات بیشتر» ← «نصب در هر صورت».
+          ۵. فایل aab را نصب نکن — فقط apk نصب می‌شود."
 
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            # drop stale raw build names from older runs, if any
-            for old in app-release.apk app-release.aab app-arm64-v8a-release.apk app-armeabi-v7a-release.apk app-x86_64-release.apk; do
-              gh release delete-asset "$tag" "$old" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+            for old_asset in $(gh release view "$tag" --json assets --jq ".assets[].name"); do
+              gh release delete-asset "$tag" "$old_asset" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
             done
-            gh release upload "$tag" "$dist"/* --clobber --repo "$GITHUB_REPOSITORY"
+            gh release upload "$tag" "$dist"/* --repo "$GITHUB_REPOSITORY"
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" "$dist"/* \
-              --title "طالع من — نسخهٔ ۱.۱.۰" \
+              --title "طالع من — نسخهٔ ۱.۱.۱" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
