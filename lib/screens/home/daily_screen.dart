@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/date/app_date.dart';
 import '../../data/analytics/analytics_service.dart';
+import '../../data/share/share_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/horoscope/horoscope_models.dart';
 import '../../providers/app_providers.dart';
@@ -21,7 +22,28 @@ class DailyScreen extends ConsumerWidget {
     final analytics = ref.watch(analyticsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('طالع امروز')),
+      appBar: AppBar(
+        title: const Text('طالع امروز'),
+        actions: [
+          IconButton(
+            tooltip: 'اشتراک‌گذاری طالع امروز',
+            icon: const Icon(Icons.share_outlined, size: 20),
+            onPressed: () {
+              final d = dailyAsync.asData?.value;
+              if (d == null) return;
+              analytics.logEvent(AnalyticsEvent.dailyShared.id);
+              ShareService.share(
+                '✦ طالع من — ${AppDate.formatFull(AppDate.now())}\n\n'
+                '${d.generalText}\n\n'
+                'عشق ${d.scores.love}٪ · کار ${d.scores.career}٪ · '
+                'مالی ${d.scores.finance}٪ · حال‌وهوا ${d.scores.mood}٪\n\n'
+                'رنگ شانس: ${d.lucky.color} · عدد شانس: ${d.lucky.number} · '
+                'ساعت شانس: ${d.lucky.time}',
+              );
+            },
+          ),
+        ],
+      ),
       body: dailyAsync.when(
         data: (daily) {
           analytics.logEvent(AnalyticsEvent.dailyHoroscopeOpened.id);

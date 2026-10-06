@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/app_info.dart';
+import '../../core/utils/persian_numbers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 
@@ -11,7 +13,24 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('دربارهٔ برنامه')),
+      appBar: AppBar(
+        title: const Text('دربارهٔ برنامه'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(26),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'نسخهٔ ${PersianNumbers.toPersianNum(AppInfo.version)}'
+              ' (${PersianNumbers.toPersianNum(AppInfo.buildNumber)})',
+              style: TextStyle(
+                fontSize: 11,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+          ),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [

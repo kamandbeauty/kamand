@@ -265,6 +265,19 @@ class _PartnerCard extends ConsumerWidget {
         onTap: () => _openCouple(context),
         child: Column(
           children: [
+            // Romantic celestial banner.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: SizedBox(
+                height: 96,
+                width: double.infinity,
+                child: Image.asset(
+                  'assets/images/couple_love.jpg',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Text(

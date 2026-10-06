@@ -54,6 +54,18 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           // ── Hero ────────────────────────────────────────────────
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: SizedBox(
+              height: 130,
+              width: double.infinity,
+              child: Image.asset(
+                'assets/images/premium_bg.jpg',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           GlassCard(
             highlight: true,
             accent: AppTheme.gold,

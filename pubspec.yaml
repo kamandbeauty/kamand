@@ -1,7 +1,7 @@
 name: factor_ruby
 description: "طالع من — طالع‌بینی شخصی‌سازی‌شده بر اساس برج تولد (نسخهٔ آفلاین و فارسی)"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -41,6 +41,7 @@ flutter:
 
   assets:
     - assets/fonts/
+    - assets/images/
 
   fonts:
     - family: Vazirmatn

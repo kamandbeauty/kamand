@@ -349,10 +349,34 @@ class _WelcomeStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 30),
+    return Stack(
+      children: [
+        // Celestial hero backdrop with a scrim so text stays readable.
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/hero_night_sky.jpg',
+            fit: BoxFit.cover,
+            opacity: const AlwaysStoppedAnimation<double>(0.55),
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.0),
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 30),
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.7, end: 1),
             duration: const Duration(milliseconds: 900),
@@ -415,7 +439,9 @@ class _WelcomeStep extends StatelessWidget {
             ),
           ),
         ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 

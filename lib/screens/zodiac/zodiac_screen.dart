@@ -7,6 +7,22 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../premium/premium_screen.dart';
+
+/// Asset path for a sign's element artwork.
+String elementAsset(String elementId) {
+  switch (elementId) {
+    case 'fire':
+      return 'assets/images/element_fire.jpg';
+    case 'earth':
+      return 'assets/images/element_earth.jpg';
+    case 'air':
+      return 'assets/images/element_air.jpg';
+    case 'water':
+    default:
+      return 'assets/images/element_water.jpg';
+  }
+}
 
 /// برج من — deep dive into the user's sign (product spec §16).
 class ZodiacScreen extends ConsumerWidget {
@@ -61,8 +77,33 @@ class ZodiacScreen extends ConsumerWidget {
               builder: (context, v, child) =>
                   Transform.scale(scale: v, child: child),
               child: Container(
-                width: 132,
-                height: 132,
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(
+                    image: AssetImage(elementAsset(sign.elementId)),
+                    fit: BoxFit.cover,
+                    opacity: 0.85,
+                  ),
+                ),
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        theme.colorScheme.surface.withValues(alpha: 0.0),
+                        theme.colorScheme.surface.withValues(alpha: 0.55),
+                      ],
+                      radius: 0.9,
+                    ),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 132,
+                      height: 132,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
@@ -82,8 +123,11 @@ class ZodiacScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: Center(
-                  child: ZodiacSymbol(sign.symbol, fontSize: 72),
+                      child: Center(
+                        child: ZodiacSymbol(sign.symbol, fontSize: 72),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -224,6 +268,17 @@ class ZodiacScreen extends ConsumerWidget {
                     child: Text(sign.friendshipStyle, style: _bodyStyle(theme)),
                   ),
                 ],
+              ),
+            ),
+          ),
+          _Section(
+            title: 'چارت تولد',
+            child: LockedSection(
+              title: 'چارت تولدِ تو',
+              hint:
+                  'موقعیت سیارات، خانه‌ها و طالعِ دقیقِ تو — به‌زودی در نسخهٔ ویژه.',
+              onOpenPremium: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PremiumScreen()),
               ),
             ),
           ),
