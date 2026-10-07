@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.0-alpha.2 — 2026-10-07
+
+### Added
+
+- Complete local Abjad archive with Kabir, Saghir, Wasit/Medium, Akbar, Wazee and explicit Persian-equivalence variants.
+- Versioned Abjad formulas, letter mappings, source/status metadata and a full letter-by-letter archive screen.
+- Full name-analysis reports with all Abjad systems, step-by-step calculation, formula, source, status and disclaimer.
+- Expanded birth reports with normalized Jalali/Gregorian dates, Abjad total, digital reduction and transparent formulas.
+- Expanded source-backed etymology archive for Cyrus, Xerxes, Ardashir, Bahram and Mehrdad, with disputed claims preserved as disputed.
+- Name detail pages now show etymology, source trail and the distinction between language history and traditional analysis.
+
+### Verification
+
+- Flutter Analyze: passed.
+- Flutter Test: 25 tests passed.
+- Android APK Build: passed.
+
 ## 0.1.0-alpha.1 — 2026-10-07
 
 ### Added
