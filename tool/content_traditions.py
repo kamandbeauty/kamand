@@ -289,7 +289,7 @@ def dart_map_ss(pairs, indent):
     if not lines:
         return "{}"
     inner = ("\n" + indent + "  ").join(lines)
-    return "{\n" + indent + "  " + inner + ",\n" + indent + "}"
+    return "{\n" + indent + "  " + inner + "\n" + indent + "}"
 
 
 def dart_map_si(pairs, indent):
@@ -298,7 +298,7 @@ def dart_map_si(pairs, indent):
     if not lines:
         return "{}"
     inner = ("\n" + indent + "  ").join(lines)
-    return "{\n" + indent + "  " + inner + ",\n" + indent + "}"
+    return "{\n" + indent + "  " + inner + "\n" + indent + "}"
 
 
 def dart_map_so(pairs, indent):

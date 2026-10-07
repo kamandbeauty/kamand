@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_numbers.dart';
 import '../../data/content/traditions_content.dart';
-import '../../widgets/glass_card.dart';
 
 /// Small shared building blocks for the tradition screens.
 

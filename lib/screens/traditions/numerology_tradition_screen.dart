@@ -32,8 +32,7 @@ class NumerologyTraditionScreen extends ConsumerWidget {
         .numerologyNumbers[lifePath.toString()]! as Map<String, Object?>;
     final yearText = personalYear == null
         ? null
-        : TraditionsContent.numerologyPersonalYear[personalYear.toString()]
-            as String?;
+        : TraditionsContent.numerologyPersonalYear[personalYear.toString()];
 
     return Scaffold(
       appBar: AppBar(title: const Text('فراشماره و ابجد')),

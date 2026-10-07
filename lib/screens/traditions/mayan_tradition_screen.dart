@@ -26,7 +26,7 @@ class MayanTraditionScreen extends ConsumerWidget {
     }
 
     final toneText =
-        TraditionsContent.mayanTones[tzolkin.tone.toString()]! as String;
+        TraditionsContent.mayanTones[tzolkin.tone.toString()]!;
 
     return Scaffold(
       appBar: AppBar(title: const Text('تقویم مقدس مایا')),

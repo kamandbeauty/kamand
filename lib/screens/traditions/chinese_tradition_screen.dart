@@ -73,9 +73,7 @@ class ChineseTraditionScreen extends ConsumerWidget {
                     NatureChip(
                       sign.yang
                           ? TraditionsContent.chinesePolarity['yang']!
-                              as String
-                          : TraditionsContent.chinesePolarity['yin']!
-                              as String,
+                          : TraditionsContent.chinesePolarity['yin']!,
                       color: AppTheme.violet,
                     ),
                   ],
@@ -193,7 +191,7 @@ class _PartnerCompatibility extends StatelessWidget {
   Widget build(BuildContext context) {
     final level =
         ChineseZodiacCalculator.compatibility(sign.animalIndex, partnerSign.animalIndex);
-    final text = TraditionsContent.chineseCompatText[level]! as String;
+    final text = TraditionsContent.chineseCompatText[level]!;
     final (color, label) = switch (level) {
       'high' => (const Color(0xFF4CD97B), 'هم‌نوازی بالا'),
       'low' => (AppTheme.rose, 'نیازمند صبر'),
