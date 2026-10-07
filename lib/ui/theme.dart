@@ -35,6 +35,11 @@ ThemeData buildAppTheme() {
   );
 
   return base.copyWith(
+    chipTheme: base.chipTheme.copyWith(
+      labelStyle: const TextStyle(fontFamily: 'Vazirmatn', fontSize: 12),
+      secondaryLabelStyle:
+          const TextStyle(fontFamily: 'Vazirmatn', fontSize: 12),
+    ),
     textTheme: base.textTheme.apply(
       bodyColor: const Color(0xFFF3E9D2),
       displayColor: AppColors.gold,
@@ -51,7 +56,11 @@ ThemeData buildAppTheme() {
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.gold,
         foregroundColor: const Color(0xFF241B06),
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        textStyle: const TextStyle(
+          fontFamily: 'Vazirmatn',
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
         ),
@@ -62,7 +71,11 @@ ThemeData buildAppTheme() {
       style: OutlinedButton.styleFrom(
         foregroundColor: const Color(0xFFF3E9D2),
         side: const BorderSide(color: AppColors.goldDeep),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        textStyle: const TextStyle(
+          fontFamily: 'Vazirmatn',
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
         ),
@@ -71,7 +84,10 @@ ThemeData buildAppTheme() {
     ),
     snackBarTheme: const SnackBarThemeData(
       backgroundColor: AppColors.panelLight,
-      contentTextStyle: TextStyle(color: Color(0xFFF3E9D2)),
+      contentTextStyle: TextStyle(
+        fontFamily: 'Vazirmatn',
+        color: Color(0xFFF3E9D2),
+      ),
       behavior: SnackBarBehavior.floating,
     ),
   );

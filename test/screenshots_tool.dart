@@ -27,6 +27,16 @@ import 'package:shelem/ui/widgets/card_view.dart';
 
 import 'sim_helper.dart';
 
+Future<void> _loadIconFont() async {
+  try {
+    final FontLoader loader = FontLoader('MaterialIcons')
+      ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+    await loader.load();
+  } catch (_) {
+    // در برخی نسخه‌ها فونت آیکون در باندلِ تست نیست؛ مهم نیست.
+  }
+}
+
 Future<void> _loadFonts() async {
   for (final String family in <String>['Vazirmatn']) {
     final FontLoader loader = FontLoader(family);
@@ -56,13 +66,16 @@ Widget _wrap(Widget child) => MaterialApp(
         textDirection: TextDirection.rtl,
         child: c ?? const SizedBox.shrink(),
       ),
-      home: child,
+      home: Scaffold(backgroundColor: const Color(0xFF123F2C), body: child),
     );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(_loadFonts);
+  setUpAll(() async {
+    await _loadFonts();
+    await _loadIconFont();
+  });
   setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
 
   testWidgets('گالری ورق‌ها', (WidgetTester tester) async {
@@ -169,6 +182,10 @@ void main() {
 
     await tester.pumpWidget(_wrap(GameScreen(controller: controller)));
     await tester.pump(const Duration(milliseconds: 900));
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+    });
+    await tester.pump(const Duration(milliseconds: 60));
 
     await expectLater(
       find.byType(MaterialApp),

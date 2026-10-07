@@ -173,10 +173,10 @@ class CardView extends StatelessWidget {
             Positioned.fill(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
-                  width * 0.23,
-                  width * 0.1,
-                  width * 0.23,
-                  width * 0.1,
+                  width * 0.17,
+                  width * 0.30,
+                  width * 0.17,
+                  width * 0.30,
                 ),
                 child: _center(color, colorDeep),
               ),
@@ -201,15 +201,7 @@ class CardView extends StatelessWidget {
       ),
     );
 
-    final Widget content = dimmed
-        ? ColorFiltered(
-            colorFilter: const ColorFilter.mode(
-              Color(0x66101010),
-              BlendMode.srcATop,
-            ),
-            child: face,
-          )
-        : face;
+    final Widget content = dimmed ? Opacity(opacity: 0.58, child: face) : face;
 
     if (onTap == null) return content;
     return GestureDetector(
@@ -270,6 +262,7 @@ class _Corner extends StatelessWidget {
                 letterSpacing: -0.5,
                 fontFamily: 'Vazirmatn',
                 fontWeight: FontWeight.w800,
+                decoration: TextDecoration.none,
                 color: color,
               ),
             ),
@@ -301,7 +294,7 @@ class _PipField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Offset> spots = _pipLayout[rank] ?? const <Offset>[Offset(0, 0)];
-    final double pip = width * 0.21;
+    final double pip = width * 0.185;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
         final double cx = box.maxWidth / 2;
@@ -342,16 +335,16 @@ class _AceCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SizedBox(
-        width: width * 0.56,
-        height: width * 0.56,
+        width: width * 0.62,
+        height: width * 0.62,
         child: Stack(
           alignment: Alignment.center,
           children: <Widget>[
             CustomPaint(
-              size: Size.square(width * 0.56),
-              painter: _RingPainter(color.withValues(alpha: 0.35)),
+              size: Size.square(width * 0.62),
+              painter: _RingPainter(color.withValues(alpha: 0.3)),
             ),
-            SuitIcon(suit: suit, size: width * 0.38, color: color),
+            SuitIcon(suit: suit, size: width * 0.44, color: color),
           ],
         ),
       ),
@@ -359,7 +352,7 @@ class _AceCenter extends StatelessWidget {
   }
 }
 
-/// سرباز/بی‌بی/شاه: قابِ تزئینی با حرفِ بزرگ و نمادِ آینه‌ای.
+/// سرباز/بی‌بی/شاه: قابِ تزئینی با حرفِ بزرگ و نمادِ خال.
 class _CourtCenter extends StatelessWidget {
   const _CourtCenter({
     required this.card,
@@ -377,116 +370,67 @@ class _CourtCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: AspectRatio(
-        aspectRatio: 0.66,
+        aspectRatio: 0.72,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(width * 0.06),
+            borderRadius: BorderRadius.circular(width * 0.07),
             border: Border.all(
-              color: color.withValues(alpha: 0.55),
-              width: math.max(0.8, width * 0.015),
+              color: color.withValues(alpha: 0.5),
+              width: math.max(0.8, width * 0.013),
             ),
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: <Color>[
-                color.withValues(alpha: 0.10),
-                color.withValues(alpha: 0.02),
-                color.withValues(alpha: 0.10),
+                color.withValues(alpha: 0.13),
+                color.withValues(alpha: 0.03),
+                color.withValues(alpha: 0.13),
               ],
             ),
           ),
           child: Stack(
+            alignment: Alignment.center,
             children: <Widget>[
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _CourtPainter(color.withValues(alpha: 0.3)),
+                  painter: _CourtPainter(color.withValues(alpha: 0.33)),
                 ),
               ),
-              // نیمهٔ بالا
-              Align(
-                alignment: Alignment.topCenter,
-                child: FractionallySizedBox(
-                  heightFactor: 0.5,
-                  child: _CourtHalf(
-                    card: card,
-                    color: color,
-                    colorDeep: colorDeep,
-                    width: width,
-                  ),
-                ),
-              ),
-              // نیمهٔ پایین (وارونه، مثل ورق واقعی)
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: FractionallySizedBox(
-                  heightFactor: 0.5,
-                  child: Transform.rotate(
-                    angle: math.pi,
-                    child: _CourtHalf(
-                      card: card,
-                      color: color,
-                      colorDeep: colorDeep,
-                      width: width,
-                    ),
+              Padding(
+                padding: EdgeInsets.all(width * 0.05),
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      SuitIcon(suit: card.suit, size: width * 0.15, color: color),
+                      SizedBox(height: width * 0.02),
+                      Text(
+                        card.label,
+                        style: TextStyle(
+                          fontSize: width * 0.40,
+                          height: 1,
+                          fontFamily: 'Vazirmatn',
+                          fontWeight: FontWeight.w900,
+                          decoration: TextDecoration.none,
+                          color: color,
+                        ),
+                      ),
+                      SizedBox(height: width * 0.02),
+                      Transform.rotate(
+                        angle: math.pi,
+                        child: SuitIcon(
+                          suit: card.suit,
+                          size: width * 0.15,
+                          color: color,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CourtHalf extends StatelessWidget {
-  const _CourtHalf({
-    required this.card,
-    required this.color,
-    required this.colorDeep,
-    required this.width,
-  });
-
-  final PlayingCard card;
-  final Color color;
-  final Color colorDeep;
-  final double width;
-
-  IconData get _icon {
-    switch (card.rank) {
-      case 13:
-        return Icons.workspace_premium_rounded;
-      case 12:
-        return Icons.spa_rounded;
-      default:
-        return Icons.shield_moon_rounded;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(width * 0.03),
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(_icon, size: width * 0.2, color: colorDeep),
-            SizedBox(height: width * 0.015),
-            Text(
-              card.label,
-              style: TextStyle(
-                fontSize: width * 0.3,
-                height: 1,
-                fontFamily: 'Vazirmatn',
-                fontWeight: FontWeight.w900,
-                color: color,
-              ),
-            ),
-            SizedBox(height: width * 0.02),
-            SuitIcon(suit: card.suit, size: width * 0.15, color: color),
-          ],
         ),
       ),
     );
@@ -513,19 +457,16 @@ class _JokerCenter extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              Icons.auto_awesome_rounded,
-              size: width * 0.34,
-              color: colorDeep,
-            ),
-            SizedBox(height: width * 0.04),
+            SuitIcon(suit: Suit.joker, size: width * 0.42, color: color),
+            SizedBox(height: width * 0.05),
             Text(
               'جوکر',
               style: TextStyle(
                 fontSize: width * 0.17,
                 fontFamily: 'Vazirmatn',
                 fontWeight: FontWeight.w800,
-                color: color,
+                decoration: TextDecoration.none,
+                color: colorDeep.withValues(alpha: 0.85),
               ),
             ),
           ],
@@ -598,13 +539,7 @@ class _CourtPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.7;
-    // خطِ مورّبِ میانی مثل ورق‌های واقعی
-    canvas.drawLine(
-      Offset(0, size.height / 2),
-      Offset(size.width, size.height / 2),
-      p,
-    );
-    final double inset = size.width * 0.08;
+    final double inset = size.width * 0.1;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(
