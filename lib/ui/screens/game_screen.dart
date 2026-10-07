@@ -413,27 +413,70 @@ class _TableArea extends StatelessWidget {
             // میزِ نمدیِ بیضی وسط
             Center(
               child: Container(
-                width: box.maxWidth * 0.86,
-                height: box.maxHeight * 0.74,
+                width: box.maxWidth * 0.90,
+                height: box.maxHeight * 0.78,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.all(
-                    Radius.elliptical(box.maxWidth * 0.5, box.maxHeight * 0.4),
-                  ),
-                  gradient: const RadialGradient(
-                    colors: <Color>[Color(0xFF1E7A55), Color(0xFF0C3B28)],
-                    radius: 0.8,
-                  ),
-                  border: Border.all(
-                    color: AppColors.goldDeep.withValues(alpha: 0.55),
-                    width: 2.5,
-                  ),
+                  shape: BoxShape.circle,
                   boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      blurRadius: 26,
-                      spreadRadius: 2,
+                      color: Colors.black.withValues(alpha: 0.65),
+                      blurRadius: 34,
+                      spreadRadius: 4,
+                      offset: const Offset(0, 10),
                     ),
                   ],
+                ),
+                child: ClipOval(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            center: Alignment(-0.2, -0.35),
+                            radius: 1.0,
+                            colors: <Color>[
+                              Color(0xFF2E8C63),
+                              Color(0xFF17684A),
+                              Color(0xFF0A3524),
+                            ],
+                            stops: <double>[0, 0.55, 1],
+                          ),
+                        ),
+                      ),
+                      // لبهٔ چرمی/چوبیِ دورِ میز
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF4A2D16),
+                            width: 10,
+                          ),
+                        ),
+                      ),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.55),
+                            width: 1.6,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.gold.withValues(alpha: 0.18),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -668,7 +711,7 @@ class _TrickArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ShelemEngine e = controller.engine!;
-    final double cw = (size.width * 0.30).clamp(44.0, 74.0);
+    final double cw = (size.width * 0.28).clamp(42.0, 68.0);
     final List<Alignment> spots = <Alignment>[
       const Alignment(0, 0.86),
       const Alignment(0.86, 0.02),
@@ -1026,9 +1069,9 @@ class _HandArea extends StatelessWidget {
         if (n == 0) return const SizedBox(height: 96);
 
         // هرچه برگ‌ها بیشتر، هم‌پوشانی بیشتر؛ کارت‌ها بزرگ می‌مانند.
-        final double avail = box.maxWidth - 34;
+        final double avail = box.maxWidth - 72;
         double cw = avail / (1 + (n - 1) * 0.42);
-        cw = cw.clamp(40.0, 86.0);
+        cw = cw.clamp(38.0, 74.0);
         final double overlap = math.min(cw * 0.62, (avail - cw) / math.max(1, n - 1));
         final double total = cw + (n - 1) * overlap;
         final double start = (box.maxWidth - total) / 2;
@@ -1036,7 +1079,7 @@ class _HandArea extends StatelessWidget {
         final double spread = math.min(0.040, 0.34 / n);
         final double mid = (n - 1) / 2;
         final double arc = cw * 0.055;
-        final double h = ch + arc * mid * mid * 0.5 + 26;
+        final double h = ch + arc * mid * mid * 0.5 + 34;
 
         return SizedBox(
           height: h,
@@ -1114,7 +1157,7 @@ class _HandArea extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
       left: start + index * overlap,
-      bottom: 12 + lift + (selected ? 26 : 0),
+      bottom: 18 + lift + (selected ? 26 : 0),
       child: Opacity(
         opacity: eased,
         child: Transform.translate(
