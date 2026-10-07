@@ -84,6 +84,7 @@ class _SourceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTierOne = source.reliability == 'tier_1';
+    final sourceStatus = source.reviewStatus == 'reviewed' && isTierOne ? 'verified' : source.reviewStatus;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(17),
@@ -102,7 +103,7 @@ class _SourceCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            Wrap(spacing: 8, runSpacing: 8, children: [StatusBadge(status: isTierOne ? 'verified' : 'unverified'), _Tag(text: source.type), _Tag(text: source.reviewStatus), if (source.year != null) _Tag(text: '${source.year}')]),
+            Wrap(spacing: 8, runSpacing: 8, children: [StatusBadge(status: sourceStatus), _Tag(text: source.type), _Tag(text: source.reviewStatus), if (source.year != null) _Tag(text: '${source.year}')]),
             const SizedBox(height: 12),
             if (source.coverage.isNotEmpty) Text('پوشش: ${source.coverage}', style: const TextStyle(fontWeight: FontWeight.w700, height: 1.5)),
             if (source.license.isNotEmpty) ...[

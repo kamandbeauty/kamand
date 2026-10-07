@@ -14,8 +14,10 @@ class NameDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = ref.watch(nameRepositoryProvider).byId(nameId);
-    final claims = ref.watch(nameRepositoryProvider).claimsForName(nameId);
+    final repository = ref.watch(nameRepositoryProvider);
+    final name = repository.byId(nameId);
+    final claims = repository.claimsForName(nameId);
+    final pronunciations = repository.pronunciationsForName(nameId);
     if (name == null) {
       return const Scaffold(body: EmptyState(title: 'نام پیدا نشد', message: 'این رکورد در دیتابیس محلی موجود نیست.'));
     }
@@ -31,7 +33,14 @@ class NameDetailScreen extends ConsumerWidget {
           const SizedBox(height: 18),
           _InfoSection(title: 'معنی', icon: Icons.lightbulb_outline, child: Text(name.meaning, style: const TextStyle(height: 1.7))),
           _InfoSection(title: 'ریشه‌شناسی و مسیر تحول', icon: Icons.account_tree_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name.etymology, style: const TextStyle(height: 1.7)), const SizedBox(height: 10), const Text('ریشه‌شناسی با معنی امروزی یا ویژگی شخصیتی یکی نیست؛ اختلاف منابع در وضعیت رکورد حفظ می‌شود.', style: TextStyle(color: Colors.blueGrey, fontSize: 12, height: 1.6))])),
-          _InfoSection(title: 'ریشه و زبان', icon: Icons.translate_outlined, child: _InfoGrid(items: {'زبان': name.language, 'خاستگاه': name.origin, 'تلفظ': name.pronunciation, 'لاتین': name.transliteration})),
+          _InfoSection(title: 'ریشه و زبان', icon: Icons.translate_outlined, child: _InfoGrid(items: {'زبان': name.language, 'خاستگاه': name.origin, 'تلفظ ثبت‌شده': name.pronunciation, 'لاتین': name.transliteration})),
+          _InfoSection(
+            title: 'تلفظ و IPA',
+            icon: Icons.record_voice_over_outlined,
+            child: pronunciations.isEmpty
+                ? const Text('برای این نام هنوز IPA یا تلفظ منبع‌دار مستقلی ثبت نشده است.', style: TextStyle(color: Colors.blueGrey, height: 1.6))
+                : Column(crossAxisAlignment: CrossAxisAlignment.start, children: pronunciations.map((item) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${item.language}: ${item.ipa.isEmpty ? 'تلفظ آوانگاری‌شده ثبت نشده' : item.ipa} · ${item.sourceTitle}', style: const TextStyle(height: 1.6)))).toList()),
+          ),
 
           _InfoSection(title: 'سبک‌های ثبت‌شده', icon: Icons.style_outlined, child: Wrap(spacing: 8, runSpacing: 8, children: name.styles.map((style) => Chip(label: Text(style))).toList())),
           _InfoSection(title: 'وضعیت داده', icon: Icons.fact_check_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [StatusBadge(status: name.status), const SizedBox(height: 10), Text('سطح اطمینان: ${name.confidence}'), const SizedBox(height: 6), Text(name.sourceNote, style: const TextStyle(color: Colors.blueGrey, height: 1.6))])),

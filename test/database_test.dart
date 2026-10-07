@@ -15,7 +15,7 @@ void main() {
 
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
-    expect(metadata['schema_version'], '8');
+    expect(metadata['schema_version'], '9');
     expect(metadata['content_version'], 'knowledge-3');
     expect(database.getSources().length, greaterThan(15));
     expect(database.searchNames('آ'), isNotEmpty);
@@ -25,6 +25,19 @@ void main() {
     expect(database.getClaims('name', 'name-catalog-آرش'), isNotEmpty);
     expect(database.getClaims('name', 'name-داریوش'), isNotEmpty);
     expect(database.getName('name-کوروش')?.etymology, contains('Kuruš'));
+  });
+
+  test('reports content integrity without treating unknown meaning as an orphan', () {
+    final report = database.auditContent();
+    expect(report.isHealthy, isTrue);
+    expect(report.namesWithoutMeaning, greaterThan(0));
+    expect(report.claimsWithoutSource, 0);
+    expect(report.claimsWithoutSubject, 0);
+    expect(report.orphanVariants, 0);
+    expect(report.orphanMeanings, 0);
+    expect(report.orphanEtymologies, 0);
+    expect(report.orphanPronunciations, 0);
+    expect(database.getPronunciations('name-catalog-نیلوفر'), isEmpty);
   });
 
   test('loads sourced calculation systems and refuses unsupported letter guesses', () {

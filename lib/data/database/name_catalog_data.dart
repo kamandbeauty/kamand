@@ -159,7 +159,6 @@ final seedCatalogNames = <Map<String, Object?>>[
   _catalogName('نوشین', 'Naushin', 'مؤنث', 'شیرین و دلپذیر', styles: ['فارسی']),
   _catalogName('هما', 'Homa', 'مؤنث', 'پرنده اسطوره‌ای ایرانی', styles: ['ایرانی', 'باستانی']),
   _catalogName('هاله', 'Haleh', 'مؤنث', 'هاله نور', styles: ['فارسی']),
-  _catalogName('یاسمن', 'Yasamin', 'مؤنث', 'گل یاس', styles: ['فارسی']),
 ];
 
 final seedCatalogClaims = <Map<String, Object?>>[

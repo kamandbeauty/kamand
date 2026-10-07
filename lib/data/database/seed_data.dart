@@ -463,6 +463,13 @@ final seedNameKnowledgeUpdates = <Map<String, Object?>>[
     ['حماسی', 'کوتاه'], sourceId: 'source-iranica-personal-names', status: 'unverified', confidence: 'low',
     sourceNote: 'تا ثبت مدخل و شاهد مستقیم، معنی قطعی تولید نمی‌شود.',
   ),
+  _name(
+    'یاسمن', 'یاسمن', 'Yasamin', 'فارسی', 'ایرانی', 'مؤنث',
+    'گل یاس؛ معنی واژگانی ثبت‌شده در منبع فهرست نام‌ها.',
+    'ریشه‌شناسی مستقل برای کاربرد نام در این نسخه ادعا نشده است.', 'Yasamin',
+    ['فارسی'], sourceId: 'source-wiktionary-persian-given-names', status: 'unverified', confidence: 'medium',
+    sourceNote: 'رکورد قبلی حفظ و با معنی منبع‌دار اولیه تکمیل شده است؛ بازبینی مدخل‌به‌مدخل لازم است.',
+  ),
 ];
 
 Map<String, Object?> _name(
@@ -683,6 +690,20 @@ final seedClaims = <Map<String, Object?>>[
     'confidence': 'high',
     'evidence_note': 'مدخل PERSONAL NAMES, IRANIAN، Encyclopaedia Iranica.',
     'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-yasamin-meaning',
+    'claim_group_id': 'group-yasamin-meaning',
+    'source_id': 'source-wiktionary-persian-given-names',
+    'subject_type': 'name',
+    'subject_id': 'name-یاسمن',
+    'claim_type': 'meaning',
+    'claim_text': 'یاسمن به‌عنوان نام یک گل، یاس، در فهرست نام‌های فارسی ثبت شده است.',
+    'normalized_value': 'jasmine flower',
+    'status': 'unverified',
+    'confidence': 'medium',
+    'evidence_note': 'Appendix: Persian given names، رکورد گردآوری‌شده برای بازبینی مستقل.',
+    'review_status': 'pending',
   },
 ];
 

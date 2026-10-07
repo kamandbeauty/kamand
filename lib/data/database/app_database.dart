@@ -6,7 +6,9 @@ import '../../core/normalization/persian_normalizer.dart';
 import '../../domain/models/archive_entry.dart';
 import '../../domain/models/abjad_system.dart';
 import '../../domain/models/compatibility_rule.dart';
+import '../../domain/models/data_integrity_report.dart';
 import '../../domain/models/name.dart';
+import '../../domain/models/name_pronunciation.dart';
 import '../../domain/models/numerology_rule.dart';
 import '../../domain/models/profile.dart';
 import '../../domain/models/source.dart';
@@ -435,6 +437,18 @@ class AppDatabase {
       _setMetadata('schema_version', '8');
       _setMetadata('content_version', 'seed-8');
       version = 8;
+    }
+
+    if (version < 9) {
+      _db.execute("ALTER TABLE name_pronunciations ADD COLUMN language_code TEXT NOT NULL DEFAULT 'und'");
+      _db.execute("ALTER TABLE name_pronunciations ADD COLUMN language_title TEXT NOT NULL DEFAULT 'نامشخص'");
+      _db.execute("ALTER TABLE name_pronunciations ADD COLUMN source_id TEXT");
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_name_pronunciations_name ON name_pronunciations(name_id)');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_name_pronunciations_source ON name_pronunciations(source_id)');
+      _db.execute('PRAGMA user_version = 9');
+      _setMetadata('schema_version', '9');
+      _setMetadata('content_version', 'seed-9');
+      version = 9;
     }
   }
 
@@ -902,6 +916,18 @@ class AppDatabase {
     return rows.isEmpty ? null : CompatibilityRule.fromMap(Map<String, Object?>.from(rows.first));
   }
 
+  List<NamePronunciation> getPronunciations(String nameId) {
+    final rows = _db.select(
+      '''SELECT p.*, s.title AS source_title, s.url AS source_url
+         FROM name_pronunciations p
+         LEFT JOIN sources s ON s.id = p.source_id
+         WHERE p.name_id = ?
+         ORDER BY p.language_title, p.dialect''',
+      [nameId],
+    );
+    return rows.map((row) => NamePronunciation.fromMap(Map<String, Object?>.from(row))).toList(growable: false);
+  }
+
   List<Source> getSources() {
     final rows = _db.select('SELECT * FROM sources ORDER BY title');
     return rows.map((row) => Source.fromMap(Map<String, Object?>.from(row))).toList(growable: false);
@@ -940,6 +966,45 @@ class AppDatabase {
 
   void deleteProfile(String id) {
     _db.execute('DELETE FROM profiles WHERE id = ?', [id]);
+  }
+
+  DataIntegrityReport auditContent() {
+    int count(String sql) => (_db.select(sql).first['count'] as int?) ?? 0;
+
+    final claimsWithoutSubject = count('''
+      SELECT COUNT(*) AS count FROM source_claims c
+      WHERE (c.subject_type = 'name' AND NOT EXISTS (SELECT 1 FROM names n WHERE n.id = c.subject_id))
+         OR (c.subject_type = 'abjad_system' AND NOT EXISTS (SELECT 1 FROM abjad_systems a WHERE a.id = c.subject_id))
+    ''');
+    final duplicateNormalizedNames = count('''
+      SELECT COUNT(*) AS count FROM (
+        SELECT normalized_name FROM names
+        WHERE TRIM(normalized_name) <> ''
+        GROUP BY normalized_name
+        HAVING COUNT(*) > 1
+      )
+    ''');
+
+    return DataIntegrityReport(
+      nameCount: count('SELECT COUNT(*) AS count FROM names'),
+      sourceCount: count('SELECT COUNT(*) AS count FROM sources'),
+      claimCount: count('SELECT COUNT(*) AS count FROM source_claims'),
+      namesWithoutSource: count('''SELECT COUNT(*) AS count FROM names n
+        WHERE n.source_id IS NULL OR NOT EXISTS (SELECT 1 FROM sources s WHERE s.id = n.source_id)'''),
+      namesWithoutMeaning: count("SELECT COUNT(*) AS count FROM names WHERE TRIM(meaning) = '' OR meaning = 'نامشخص'"),
+      claimsWithoutSource: count('''SELECT COUNT(*) AS count FROM source_claims c
+        WHERE c.source_id IS NULL OR NOT EXISTS (SELECT 1 FROM sources s WHERE s.id = c.source_id)'''),
+      claimsWithoutSubject: claimsWithoutSubject,
+      orphanVariants: count('''SELECT COUNT(*) AS count FROM name_variants v
+        WHERE NOT EXISTS (SELECT 1 FROM names n WHERE n.id = v.name_id)'''),
+      orphanMeanings: count('''SELECT COUNT(*) AS count FROM name_meanings m
+        WHERE NOT EXISTS (SELECT 1 FROM names n WHERE n.id = m.name_id)'''),
+      orphanEtymologies: count('''SELECT COUNT(*) AS count FROM name_etymologies e
+        WHERE NOT EXISTS (SELECT 1 FROM names n WHERE n.id = e.name_id)'''),
+      orphanPronunciations: count('''SELECT COUNT(*) AS count FROM name_pronunciations p
+        WHERE NOT EXISTS (SELECT 1 FROM names n WHERE n.id = p.name_id)'''),
+      duplicateNormalizedNames: duplicateNormalizedNames,
+    );
   }
 
   Map<String, String> getMetadata() {

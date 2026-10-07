@@ -46,7 +46,7 @@ flutter build apk --release
 
 - Flutter / Dart
 - Riverpod برای State و ViewModel
-- SQLite محلی با Migration صریح، اکنون Schema Version 8
+- SQLite محلی با Migration صریح، اکنون Schema Version 9
 - Engineهای Pure Dart برای نرمال‌سازی، ابجد، عددشناسی، تاریخ و مقایسه
 - Feature-first + Clean Architecture
 - RTL و فارسی در نسخه اول

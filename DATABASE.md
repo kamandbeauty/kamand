@@ -12,11 +12,12 @@
 - Schema 6: تقویم تولد پروفایل‌ها (`birth_calendar`)
 - Schema 7: فرمول نسخه‌دار برای سیستم‌های ابجد (`abjad_systems.formula`)
 - Schema 8: فراداده بانک منابع شامل مجوز، تاریخ دسترسی، دامنه پوشش و وضعیت بازبینی (`sources.license`, `sources.accessed_at`, `sources.coverage`, `sources.review_status`)
+- Schema 9: زبان و منبع مستقل برای رکوردهای تلفظ (`name_pronunciations.language_code`, `name_pronunciations.language_title`, `name_pronunciations.source_id`)
 
 Metadata فعلی:
 
 ```text
-schema_version = 8
+schema_version = 9
 content_version = knowledge-3
 ```
 
