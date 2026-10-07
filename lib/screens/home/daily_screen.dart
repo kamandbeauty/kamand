@@ -11,6 +11,7 @@ import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
 import '../premium/premium_screen.dart';
+import 'sky_cards.dart';
 
 /// طالع کامل امروز — premium deep content with a rewarded-unlock path.
 class DailyScreen extends ConsumerWidget {
@@ -137,6 +138,9 @@ class _DailyBody extends ConsumerWidget {
             ],
           ),
         ),
+        const SizedBox(height: 18),
+
+        const SkyTodayCard(),
         const SizedBox(height: 18),
 
         const SectionHeader('پیام امروز'),

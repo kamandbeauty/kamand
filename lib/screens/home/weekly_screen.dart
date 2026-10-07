@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 
 import '../../core/date/app_date.dart';
 import '../../data/analytics/analytics_service.dart';
@@ -10,6 +11,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import 'sky_cards.dart';
 
 /// طالع هفتگی — شنبه تا جمعه با امتیاز روزانه + خلاصهٔ هفته.
 class WeeklyScreen extends ConsumerWidget {
@@ -40,6 +42,11 @@ class WeeklyScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+DateTime _weekStartUtc(Jalali weekStart) {
+  final g = weekStart.toDateTime();
+  return DateTime.utc(g.year, g.month, g.day, 12);
 }
 
 class _WeeklyBody extends StatelessWidget {
@@ -85,6 +92,7 @@ class _WeeklyBody extends StatelessWidget {
             ],
           ),
         ),
+        SkyWeekCard(weekStartUtc: _weekStartUtc(weekly.weekStart)),
         const SizedBox(height: 18),
         for (final day in weekly.days)
           Padding(

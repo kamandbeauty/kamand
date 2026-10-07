@@ -10,6 +10,7 @@ import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
 import '../premium/premium_screen.dart';
+import 'sky_cards.dart';
 
 /// طالع ماهانه — موضوع اصلی ماه + عشق/کار/مالی/انرژی/فرصت/هشدار.
 /// Advanced monthly report is premium (product spec §31).
@@ -108,6 +109,7 @@ class _MonthlyBody extends ConsumerWidget {
             ),
           ),
         ),
+        SkyMonthCard(jalaliMonth: monthly.month),
         const SizedBox(height: 18),
         if (entitlement.hasPremium) ...[
           _MonthCard(
