@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/calendar/date_engine.dart';
+import '../../domain/models/abjad_result.dart';
 import '../../domain/models/numerology_result.dart';
 import '../../domain/models/profile.dart';
 
@@ -21,9 +22,12 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
   CalendarKind calendar = CalendarKind.jalali;
   String? error;
   int? nameNumber;
+  int? nameAbjadTotal;
   int? birthNumber;
   int? lifePath;
   CalendarDate? normalizedDate;
+  DateTime? gregorianDate;
+  AbjadResult? nameAbjad;
   NumerologyResult? numerology;
   bool isAnalyzing = false;
 
@@ -51,9 +55,12 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
       isAnalyzing = true;
       error = null;
       nameNumber = null;
+      nameAbjadTotal = null;
       birthNumber = null;
       lifePath = null;
       normalizedDate = null;
+      gregorianDate = null;
+      nameAbjad = null;
       numerology = null;
     });
     await Future<void>.delayed(Duration.zero);
@@ -76,7 +83,10 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
       if (!nameNumerology.isAvailable) throw FormatException(nameNumerology.description);
       setState(() {
         normalizedDate = calendar == CalendarKind.jalali ? date : jalali;
+        gregorianDate = gregorian;
         nameNumber = nameNumerology.value;
+        nameAbjadTotal = abjad.total;
+        nameAbjad = abjad;
         birthNumber = DateEngine.birthNumber(normalizedDate!);
         lifePath = DateEngine.lifePath(birthDate: normalizedDate!);
         numerology = nameNumerology;
@@ -113,7 +123,9 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
           if (normalizedDate == null && error == null && !isAnalyzing) const Padding(padding: EdgeInsets.only(top: 24), child: Card(child: Padding(padding: EdgeInsets.all(17), child: Text('برای شروع، نام و تاریخ را وارد کنید. نتیجه فقط به‌عنوان تحلیل سنتی نمایش داده می‌شود.', style: TextStyle(color: Colors.blueGrey, height: 1.6))))),
           if (normalizedDate != null) ...[
             const SizedBox(height: 22),
-            _ResultGrid(nameNumber: nameNumber!, birthNumber: birthNumber!, lifePath: lifePath!),
+            _ResultGrid(nameNumber: nameNumber!, nameAbjadTotal: nameAbjadTotal!, birthNumber: birthNumber!, lifePath: lifePath!),
+            const SizedBox(height: 14),
+            _BirthDetailsCard(nameAbjad: nameAbjad!, normalizedDate: normalizedDate!, gregorianDate: gregorianDate!, numerology: numerology!),
             const SizedBox(height: 14),
             Card(color: const Color(0xFFF6EDDC), child: Padding(padding: const EdgeInsets.all(17), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('فرمول و وضعیت', style: TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 8), Text('Rule: ${numerology!.ruleKey} · نسخه: ${numerology!.ruleVersion}'), Text('وضعیت: ${numerology!.status} · منبع: ${numerology!.sourceTitle}'), const SizedBox(height: 5), Text('محاسبه: ${numerology!.calculation}'), const SizedBox(height: 8), Text('فرمول تاریخ: کاهش رقمی ${normalizedDate!.iso}'), const SizedBox(height: 8), Text(numerology!.disclaimer, style: const TextStyle(height: 1.7, fontWeight: FontWeight.w700))]))),
           ],
@@ -124,15 +136,59 @@ class _BirthAnalysisScreenState extends ConsumerState<BirthAnalysisScreen> {
 }
 
 class _ResultGrid extends StatelessWidget {
-  const _ResultGrid({required this.nameNumber, required this.birthNumber, required this.lifePath});
+  const _ResultGrid({required this.nameNumber, required this.nameAbjadTotal, required this.birthNumber, required this.lifePath});
 
   final int nameNumber;
+  final int nameAbjadTotal;
   final int birthNumber;
   final int lifePath;
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [_NumberCard(title: 'عدد نام', value: nameNumber), const SizedBox(width: 10), _NumberCard(title: 'عدد تولد', value: birthNumber), const SizedBox(width: 10), _NumberCard(title: 'مسیر زندگی', value: lifePath)]);
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: 1.8,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        _NumberCard(title: 'مجموع ابجد نام', value: nameAbjadTotal),
+        _NumberCard(title: 'کاهش رقمی نام', value: nameNumber),
+        _NumberCard(title: 'عدد تولد', value: birthNumber),
+        _NumberCard(title: 'مسیر زندگی', value: lifePath),
+      ],
+    );
+  }
+}
+
+class _BirthDetailsCard extends StatelessWidget {
+  const _BirthDetailsCard({required this.nameAbjad, required this.normalizedDate, required this.gregorianDate, required this.numerology});
+
+  final AbjadResult nameAbjad;
+  final CalendarDate normalizedDate;
+  final DateTime gregorianDate;
+  final NumerologyResult numerology;
+
+  @override
+  Widget build(BuildContext context) {
+    final gregorianIso = gregorianDate.toIso8601String().split('T').first;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('جزئیات و فرمول گزارش', style: TextStyle(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 10),
+          Text('تاریخ شمسی نرمال‌شده: ${normalizedDate.iso}'),
+          Text('معادل میلادی: $gregorianIso'),
+          const SizedBox(height: 8),
+          Text('ابجد نام: ${nameAbjad.steps.map((step) => '${step.letter}=${step.value ?? '؟'}').join(' + ')}', style: const TextStyle(height: 1.6)),
+          Text('مجموع نام: ${nameAbjad.total} · ${numerology.calculation}'),
+          const SizedBox(height: 8),
+          const Text('عدد تولد و مسیر زندگی با کاهش رقمی نویسه‌های تاریخ محاسبه شده‌اند؛ این‌ها توصیف علمی شخصیت یا پیش‌بینی آینده نیستند.', style: TextStyle(color: Colors.blueGrey, height: 1.6, fontSize: 12)),
+        ]),
+      ),
+    );
   }
 }
 

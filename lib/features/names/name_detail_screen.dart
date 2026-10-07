@@ -30,7 +30,9 @@ class NameDetailScreen extends ConsumerWidget {
           _Hero(name: name),
           const SizedBox(height: 18),
           _InfoSection(title: 'معنی', icon: Icons.lightbulb_outline, child: Text(name.meaning, style: const TextStyle(height: 1.7))),
-          _InfoSection(title: 'ریشه و زبان', icon: Icons.account_tree_outlined, child: _InfoGrid(items: {'زبان': name.language, 'ریشه': name.origin, 'تلفظ': name.pronunciation, 'لاتین': name.transliteration})),
+          _InfoSection(title: 'ریشه‌شناسی و مسیر تحول', icon: Icons.account_tree_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name.etymology, style: const TextStyle(height: 1.7)), const SizedBox(height: 10), const Text('ریشه‌شناسی با معنی امروزی یا ویژگی شخصیتی یکی نیست؛ اختلاف منابع در وضعیت رکورد حفظ می‌شود.', style: TextStyle(color: Colors.blueGrey, fontSize: 12, height: 1.6))])),
+          _InfoSection(title: 'ریشه و زبان', icon: Icons.translate_outlined, child: _InfoGrid(items: {'زبان': name.language, 'خاستگاه': name.origin, 'تلفظ': name.pronunciation, 'لاتین': name.transliteration})),
+
           _InfoSection(title: 'سبک‌های ثبت‌شده', icon: Icons.style_outlined, child: Wrap(spacing: 8, runSpacing: 8, children: name.styles.map((style) => Chip(label: Text(style))).toList())),
           _InfoSection(title: 'وضعیت داده', icon: Icons.fact_check_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [StatusBadge(status: name.status), const SizedBox(height: 10), Text('سطح اطمینان: ${name.confidence}'), const SizedBox(height: 6), Text(name.sourceNote, style: const TextStyle(color: Colors.blueGrey, height: 1.6))])),
           _InfoSection(title: 'منبع و روش', icon: Icons.menu_book_outlined, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name.sourceTitle, style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 6), const Text('این بخش برای اتصال هر ادعا به منبع طراحی شده است. تا زمان بررسی نهایی، وضعیت رکورد باید در UI حفظ شود.', style: TextStyle(color: Colors.blueGrey, height: 1.6))])),

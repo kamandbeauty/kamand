@@ -37,11 +37,13 @@ lib/
 
 ### Traditional Analysis Layer
 
-- Abjad
+- Abjad Archive: Kabir, Saghir, Wasit/Medium, Akbar, Wazee و گونه‌های معادل‌سازی فارسی
 - Numerology
 - Vibration
 - Compatibility
 - Daily Reading
+
+گزارش تحلیل نام اکنون یک گزارش قابل بازبینی است: ورودی، محاسبه حرف‌به‌حرف، مقایسه همه سیستم‌های ابجد، Formula، Version، Source، Status و Disclaimer را کنار هم نشان می‌دهد. گزارش تولد نیز تاریخ نرمال‌شده شمسی/میلادی، مجموع ابجد نام و فرمول کاهش رقمی را جدا می‌کند.
 
 این دو Layer در مدل داده، Engine و متن UI از هم جدا می‌مانند.
 

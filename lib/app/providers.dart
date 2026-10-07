@@ -9,6 +9,7 @@ import '../domain/engines/compatibility_engine.dart';
 import '../domain/engines/name_search_engine.dart';
 import '../domain/engines/numerology_engine.dart';
 import '../domain/engines/smart_search_engine.dart';
+import '../domain/models/abjad_system.dart';
 import '../domain/models/archive_entry.dart';
 import '../domain/models/name.dart';
 import '../domain/models/privacy_settings.dart';
@@ -49,16 +50,27 @@ final archiveEntriesProvider = Provider<List<ArchiveEntry>>((ref) {
   return ref.watch(archiveRepositoryProvider).all();
 });
 
-final abjadEngineProvider = Provider<AbjadEngine>((ref) {
+final abjadSystemsProvider = Provider<List<AbjadSystem>>((ref) {
+  return ref.watch(databaseProvider).getAbjadSystems();
+});
+
+final abjadEngineForSystemProvider = Provider.family<AbjadEngine, String>((ref, systemKey) {
   final database = ref.watch(databaseProvider);
-  final system = database.getAbjadSystem('kabir');
-  final mapping = database.getAbjadMapping('kabir');
+  final system = database.getAbjadSystem(systemKey);
+  final mapping = database.getAbjadMapping(systemKey);
   return AbjadEngine(
     mapping: mapping,
-    systemKey: system?.key ?? 'kabir',
-    systemTitle: system?.title ?? 'ابجد کبیر',
+    systemKey: system?.key ?? systemKey,
+    systemTitle: system?.title ?? 'سیستم ابجد نامشخص',
+    formula: system?.formula ?? 'نامشخص',
+    status: system?.status ?? 'unverified',
+    sourceTitle: system?.sourceTitle ?? 'بدون منبع نهایی',
     sourceNote: '${system?.description ?? 'توضیح سیستم ثبت نشده است'} نسخه: ${system?.version ?? 'نامشخص'} منبع: ${system?.sourceTitle ?? 'بدون منبع نهایی'} وضعیت: ${system?.status ?? 'unverified'}.',
   );
+});
+
+final abjadEngineProvider = Provider<AbjadEngine>((ref) {
+  return ref.watch(abjadEngineForSystemProvider('kabir'));
 });
 
 final numerologyEngineProvider = Provider<NumerologyEngine>((ref) {

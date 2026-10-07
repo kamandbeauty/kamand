@@ -15,20 +15,27 @@ void main() {
 
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
-    expect(metadata['schema_version'], '6');
-    expect(metadata['content_version'], 'knowledge-1');
-    expect(database.getSources().length, greaterThan(3));
+    expect(metadata['schema_version'], '7');
+    expect(metadata['content_version'], 'knowledge-2');
+    expect(database.getSources().length, greaterThan(8));
     expect(database.searchNames('آ'), isNotEmpty);
     expect(database.getClaims('name', 'name-داریوش'), isNotEmpty);
+    expect(database.getName('name-کوروش')?.etymology, contains('Kuruš'));
   });
 
   test('loads sourced calculation systems and refuses unsupported letter guesses', () {
     final system = database.getAbjadSystem('kabir');
     final mapping = database.getAbjadMapping('kabir');
+    final systems = database.getAbjadSystems();
+    final saghir = database.getAbjadMapping('saghir');
+    final persianMapping = database.getAbjadMapping('kabir-persian');
     final rule = database.getNumerologyRule('abjad-digital-root');
     expect(system?.status, 'supported');
     expect(mapping['ا'], 1);
     expect(mapping.containsKey('پ'), isFalse);
+    expect(systems.map((item) => item.key), containsAll(<String>['kabir', 'saghir', 'wasit', 'akbar']));
+    expect(saghir['ی'], 1);
+    expect(persianMapping['پ'], 2);
     expect(rule?.operation, 'digit_sum_reduce');
     expect(rule?.status, 'unverified');
     final compatibilityRule = database.getCompatibilityRule('written-form-similarity');

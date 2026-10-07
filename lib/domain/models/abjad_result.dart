@@ -18,6 +18,9 @@ class AbjadResult {
     required this.total,
     required this.unknownLetters,
     required this.sourceNote,
+    this.formula = '',
+    this.status = 'unverified',
+    this.sourceTitle = 'بدون منبع',
   });
 
   final String systemKey;
@@ -26,6 +29,9 @@ class AbjadResult {
   final int total;
   final List<String> unknownLetters;
   final String sourceNote;
+  final String formula;
+  final String status;
+  final String sourceTitle;
 
   bool get isComplete => unknownLetters.isEmpty;
 }

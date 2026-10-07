@@ -7,12 +7,18 @@ class AbjadEngine {
     required this.sourceNote,
     this.systemKey = 'kabir',
     this.systemTitle = 'ابجد کبیر',
+    this.formula = 'ارزش مستقیم هر حرف',
+    this.status = 'unverified',
+    this.sourceTitle = 'بدون منبع',
   });
 
   final Map<String, int> mapping;
   final String sourceNote;
   final String systemKey;
   final String systemTitle;
+  final String formula;
+  final String status;
+  final String sourceTitle;
 
   AbjadResult calculate(String input) {
     final normalized = PersianNormalizer.normalize(input);
@@ -39,6 +45,9 @@ class AbjadEngine {
       total: total,
       unknownLetters: unknown,
       sourceNote: sourceNote,
+      formula: formula,
+      status: status,
+      sourceTitle: sourceTitle,
     );
   }
 }

@@ -10,12 +10,13 @@
 - Schema 4: Abjad Mapping، Numerology Systems، Rules و Interpretation placeholders
 - Schema 5: Compatibility Systems و Rules
 - Schema 6: تقویم تولد پروفایل‌ها (`birth_calendar`)
+- Schema 7: فرمول نسخه‌دار برای سیستم‌های ابجد (`abjad_systems.formula`)
 
 Metadata فعلی:
 
 ```text
-schema_version = 6
-content_version = knowledge-1
+schema_version = 7
+content_version = knowledge-2
 ```
 
 ## جداول فعلی
@@ -48,7 +49,9 @@ compatibility_rules
 
 ## Calculation Layer
 
-- `abjad_systems` و `abjad_letters` نگاشت نسخه‌دار را نگه می‌دارند؛ Query نگاشت فقط وقتی مقدار می‌دهد که برای System یک Source Claim معتبر ثبت شده باشد.
+- `abjad_systems` و `abjad_letters` نگاشت و فرمول نسخه‌دار را نگه می‌دارند. آرشیو شامل کبیر، صغیر، وسیط/متوسط، اکبر، وضعی و گونه‌های معادل‌سازی‌شده فارسی است.
+- `kabir` فقط ۲۸ حرف استاندارد را می‌پذیرد؛ `*-persian` یک روش مشتق‌شده و جدا برای پ، چ، ژ و گ است و جایگزین ابجد استاندارد نیست.
+- `saghir` با باقی‌مانده بر ۹، `wasit` با باقی‌مانده بر ۱۲، `akbar` با مربع کبیر و `wazee` با شماره ترتیبی محاسبه می‌شوند؛ وضعیت derived/unverified و منبع ثانویه کنار آن‌ها نمایش داده می‌شود.
 - `numerology_systems` و `numerology_rules` عملیات قابل تنظیم را نگه می‌دارند و Rule فعلی `unverified` است.
 - `numerology_interpretations` فعلاً عمداً خالی است؛ بدون منبع معتبر هیچ تفسیر عددی Seed نمی‌شود.
 - `compatibility_systems` و `compatibility_rules` شاخص‌های مقایسه‌ای را نسخه‌دار نگه می‌دارند؛ Rule فعلی فقط شباهت نوشتاری است و `unverified` باقی می‌ماند.

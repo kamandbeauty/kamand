@@ -65,6 +65,66 @@ final seedSources = <Map<String, Object?>>[
     'notes': 'منبع تاریخی درباره ابجد، کاربرد عددی حروف و وضعیت حروف اضافه فارسی.',
   },
   {
+    'id': 'source-iranica-cyrus-name',
+    'title': 'CYRUS i. The Name',
+    'author': 'Rüdiger Schmitt',
+    'publisher': 'Encyclopaedia Iranica',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'encyclopedia_article',
+    'url': 'https://www.iranicaonline.org/articles/cyrus-i-name/',
+    'reliability_level': 'tier_1',
+    'notes': 'برای صورت فارسی باستان Kuruš؛ مقاله تأکید می‌کند ریشه‌شناسی نام مورد اختلاف است.',
+  },
+  {
+    'id': 'source-iranica-xerxes-name',
+    'title': 'XERXES i. The Name',
+    'author': 'Rüdiger Schmitt',
+    'publisher': 'Encyclopaedia Iranica',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'encyclopedia_article',
+    'url': 'https://www.iranicaonline.org/articles/xerxes-1-name/',
+    'reliability_level': 'tier_1',
+    'notes': 'تحلیل زبان‌شناختی صورت Xšaya-ṛšā و معنای پیشنهادی «حکمران بر مردان/قهرمانان».',
+  },
+  {
+    'id': 'source-iranica-ardashir',
+    'title': 'ARDAŠĪR I i. History',
+    'author': 'Encyclopaedia Iranica editorial record',
+    'publisher': 'Encyclopaedia Iranica',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'encyclopedia_article',
+    'url': 'https://www.iranicaonline.org/articles/ardasir-i/',
+    'reliability_level': 'tier_1',
+    'notes': 'صورت‌های تاریخی Ardašīr و پیوند آن با *Ṛtaxšira و نام‌های خویشاوند.',
+  },
+  {
+    'id': 'source-iranica-bahram',
+    'title': 'BAHRĀM',
+    'author': 'Rüdiger Schmitt',
+    'publisher': 'Encyclopaedia Iranica',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'encyclopedia_article',
+    'url': 'https://www.iranicaonline.org/articles/bahram-the-name-of-six-sasanian-kings/',
+    'reliability_level': 'tier_1',
+    'notes': 'ریشه نام بهرام از Vṛθragna و ایزد پیروزی در سنت ایرانی.',
+  },
+  {
+    'id': 'source-abjad-variants-secondary',
+    'title': 'انواع ابجد کبیر، صغیر و وسیط؛ منبع ثانویه برای فرمول‌ها',
+    'author': 'تحریریه ستاره',
+    'publisher': 'ستاره',
+    'publication_year': null,
+    'language': 'fa',
+    'source_type': 'secondary_web_reference',
+    'url': 'https://setare.com/fa/news/25780/',
+    'reliability_level': 'tier_3',
+    'notes': 'منبع ثانویه برای مقایسه فرمول‌های رایج؛ جایگزین منبع تاریخی/دانشگاهی نیست و سیستم‌ها در برنامه unverified یا derived می‌مانند.',
+  },
+  {
     'id': 'source-oxford-handbook-onomastics',
     'title': 'The Oxford Handbook of Names and Naming',
     'author': 'Carole Hough, editor; Daria Izdebska, contributor',
@@ -135,6 +195,70 @@ final seedNames = <Map<String, Object?>>[
     ['تاریخی', 'باستانی'],
     sourceId: 'source-iranica-ariyaramna', status: 'disputed', confidence: 'medium',
     sourceNote: 'منبع معتبر خودِ اختلاف و مشکل‌دار بودن بخشی از ریشه‌شناسی را گزارش می‌کند.',
+  ),
+];
+
+/// Source-backed additions for the historical name archive. Claims remain
+/// separate from the display record so disputed etymologies stay visible.
+final seedAdditionalNames = <Map<String, Object?>>[
+  _name(
+    'کوروش', 'کوروش', 'Kuruš', 'فارسی باستان', 'ایرانی', 'مذکر',
+    'ریشه‌شناسی نام مورد اختلاف؛ یک پیشنهاد آن را با تحقیر دشمن در گفتار مرتبط می‌داند.',
+    'صورت فارسی نو از نام فارسی باستان Kuruš؛ معنی «خورشید» در منابع کلاسیک قطعی دانسته نمی‌شود.', 'Kūruš',
+    ['تاریخی', 'باستانی'],
+    sourceId: 'source-iranica-cyrus-name', status: 'disputed', confidence: 'high',
+    sourceNote: 'مقاله ایرانیکا میان صورت تاریخی نام و چند ریشه‌شناسی پیشنهادی تمایز می‌گذارد و اختلاف را صریحاً ثبت می‌کند.',
+  ),
+  _name(
+    'خشایارشا', 'خشایارشا', 'Xšaya-ṛšā', 'فارسی باستان', 'ایرانی', 'مذکر',
+    'حکمران بر مردان/قهرمانان؛ ترجمه تحلیلی و نه ادعای قطعی درباره شخصیت.',
+    'نام مرکب فارسی باستان از xšaya «حکمرانی» و ṛšan «مرد/قهرمان».', 'Xšaya-ṛšā',
+    ['تاریخی', 'باستانی'],
+    sourceId: 'source-iranica-xerxes-name', status: 'verified', confidence: 'high',
+    sourceNote: 'تحلیل صرفی در مدخل XERXES i. The Name ثبت شده است.',
+  ),
+  _name(
+    'اردشیر', 'اردشیر', 'Ardašīr', 'پارسی میانه/فارسی', 'ایرانی', 'مذکر',
+    'ریشه به نام ایرانی باستان *Ṛtaxšira مربوط دانسته شده است؛ ترجمه ساده‌شده فارسی در این رکورد ارائه نشده.',
+    'صورت میانه و متأخر نام از *Ṛtaxšira و خانواده نام Artaxerxes.', 'Ardašīr',
+    ['تاریخی', 'باستانی'],
+    sourceId: 'source-iranica-ardashir', status: 'verified', confidence: 'high',
+    sourceNote: 'منبع، صورت‌های تاریخی و رابطه ریشه‌شناختی را گزارش می‌کند؛ نمایش فارسی صورت رایج امروزی است.',
+  ),
+  _name(
+    'بهرام', 'بهرام', 'Bahrām', 'پارسی میانه/فارسی', 'ایرانی', 'مذکر',
+    'نام برگرفته از Vṛθragna، ایزد پیروزی در سنت ایرانی.',
+    'از صورت‌های ایرانی باستان Vṛθragna و اوستایی Vərəθraγna، با تحول به Warahrān/Wahrām.', 'Bahrām',
+    ['تاریخی', 'ایرانی'],
+    sourceId: 'source-iranica-bahram', status: 'verified', confidence: 'high',
+    sourceNote: 'ریشه و تحول تاریخی در مدخل BAHRĀM ایرانیکا ثبت شده است.',
+  ),
+  _name(
+    'مهرداد', 'مهرداد', 'Miθra-dāta', 'ایرانی باستان/فارسی', 'ایرانی', 'مذکر',
+    'داده‌شده از سوی مهر/میترا؛ «مهر» در اینجا نام ایزد/عنصر دینی-فرهنگی است، نه ادعای شخصیتی.',
+    'ترکیب Miθra و dāta «داده‌شده»، با صورت‌های تاریخی Mithradates و Mehrdād.', 'Mehrdād',
+    ['تاریخی', 'ایرانی'],
+    sourceId: 'source-iranica-personal-names', status: 'verified', confidence: 'high',
+    sourceNote: 'نمونه و تحلیل Miθra-dāta در مدخل PERSONAL NAMES, IRANIAN آمده است.',
+  ),
+];
+
+/// Existing placeholder records are upgraded in-place when a better reviewed
+/// record becomes available; unknown records are intentionally left unknown.
+final seedNameKnowledgeUpdates = <Map<String, Object?>>[
+  _name(
+    'آریا', 'آریا', 'arya-', 'فارسی/ایرانی', 'ایرانی', 'نامشخص',
+    'وابسته به صورت ایرانی *arya-؛ معنی و کاربرد تاریخی بسته به دوره و زبان باید جداگانه بررسی شود.',
+    'از ریشه ایرانی *arya-؛ این رکورد ادعای یکتایی برای همه کاربردهای امروزی «آریا» ندارد.', 'Āryā',
+    ['ایرانی', 'کوتاه'], sourceId: 'source-iranica-personal-names', status: 'disputed', confidence: 'medium',
+    sourceNote: 'ارتباط زبانی در منبع عمومی نام‌های ایرانی گزارش می‌شود؛ برای هر کاربرد تاریخی Claim مستقل لازم است.',
+  ),
+  _name(
+    'سام', 'سام', 'Sām', 'فارسی', 'ایرانی/حماسی', 'مذکر',
+    'معنی و ریشه دقیق این صورت در این نسخه قطعی نشده است.',
+    'کاربرد حماسی و تاریخی ثبت شده، اما ریشه‌شناسی قطعی این صورت در آرشیو فعلی آماده نیست.', 'Sām',
+    ['حماسی', 'کوتاه'], sourceId: 'source-iranica-personal-names', status: 'unverified', confidence: 'low',
+    sourceNote: 'تا ثبت مدخل و شاهد مستقیم، معنی قطعی تولید نمی‌شود.',
   ),
 ];
 
@@ -231,6 +355,132 @@ final seedClaims = <Map<String, Object?>>[
     'evidence_note': 'مدخل ABJAD، Encyclopaedia Iranica.',
     'review_status': 'reviewed',
   },
+  {
+    'id': 'claim-abjad-saghir-formula',
+    'claim_group_id': 'group-abjad-saghir-formula',
+    'source_id': 'source-abjad-variants-secondary',
+    'subject_type': 'abjad_system',
+    'subject_id': 'abjad-saghir-v1',
+    'claim_type': 'formula',
+    'claim_text': 'در تعریف ثبت‌شده، باقی‌مانده ارزش کبیر بر ۹ به‌عنوان ابجد صغیر گزارش می‌شود؛ این فرمول در این برنامه derived است.',
+    'normalized_value': 'modulo-9',
+    'status': 'derived',
+    'confidence': 'medium',
+    'evidence_note': 'منبع ثانویه؛ برای استفاده پژوهشی باید با منبع تاریخی مستقل تطبیق داده شود.',
+    'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-abjad-wasit-formula',
+    'claim_group_id': 'group-abjad-wasit-formula',
+    'source_id': 'source-abjad-variants-secondary',
+    'subject_type': 'abjad_system',
+    'subject_id': 'abjad-wasit-v1',
+    'claim_type': 'formula',
+    'claim_text': 'در تعریف ثبت‌شده، باقی‌مانده ارزش کبیر بر ۱۲ به‌عنوان ابجد وسیط/متوسط گزارش می‌شود؛ این فرمول در این برنامه derived است.',
+    'normalized_value': 'modulo-12',
+    'status': 'derived',
+    'confidence': 'medium',
+    'evidence_note': 'منبع ثانویه؛ نام‌گذاری وسیط و متوسط ممکن است در سنت‌ها تفاوت داشته باشد.',
+    'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-abjad-akbar-formula',
+    'claim_group_id': 'group-abjad-akbar-formula',
+    'source_id': 'source-abjad-variants-secondary',
+    'subject_type': 'abjad_system',
+    'subject_id': 'abjad-akbar-v1',
+    'claim_type': 'formula',
+    'claim_text': 'ابجد اکبر در منبع ثانویه به‌صورت مربع ارزش هر حرف در ابجد کبیر معرفی شده است.',
+    'normalized_value': 'square-kabir',
+    'status': 'derived',
+    'confidence': 'low',
+    'evidence_note': 'این تعریف در برنامه به‌عنوان سنت ثانویه و نه واقعیت علمی ثبت شده است.',
+    'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-persian-equivalence-formula',
+    'claim_group_id': 'group-persian-equivalence-formula',
+    'source_id': 'source-abjad-variants-secondary',
+    'subject_type': 'abjad_system',
+    'subject_id': 'abjad-kabir-persian-v1',
+    'claim_type': 'formula',
+    'claim_text': 'در گونه معادل‌سازی فارسی، پ با ب، چ با ج، ژ با ز و گ با ک جایگزین می‌شوند؛ این روش از ابجد استاندارد جدا گزارش می‌شود.',
+    'normalized_value': 'peh-beh-cheh-jim-zheh-zay-gaf-kaf',
+    'status': 'derived',
+    'confidence': 'medium',
+    'evidence_note': 'منبع ثانویه؛ برنامه مقدار معادل‌سازی‌شده را هرگز به‌عنوان مقدار اصلی حروف عربی نمایش نمی‌دهد.',
+    'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-cyrus-etymology',
+    'claim_group_id': 'group-cyrus-etymology',
+    'source_id': 'source-iranica-cyrus-name',
+    'subject_type': 'name',
+    'subject_id': 'name-کوروش',
+    'claim_type': 'etymology',
+    'claim_text': 'The name Kuruš is Persian; its etymology remains disputed. The interpretation “sun” is reported as incorrect in the article.',
+    'normalized_value': 'disputed-kurush-etymology',
+    'status': 'disputed',
+    'confidence': 'high',
+    'evidence_note': 'مدخل CYRUS i. The Name، Encyclopaedia Iranica.',
+    'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-xerxes-etymology',
+    'claim_group_id': 'group-xerxes-etymology',
+    'source_id': 'source-iranica-xerxes-name',
+    'subject_type': 'name',
+    'subject_id': 'name-خشایارشا',
+    'claim_type': 'etymology',
+    'claim_text': 'Old Persian Xšaya-ṛšā is analyzed with xšaya “ruling” and ṛšan “hero, man,” with the primary meaning “ruling over heroes.”',
+    'normalized_value': 'ruling-over-heroes',
+    'status': 'supported',
+    'confidence': 'high',
+    'evidence_note': 'مدخل XERXES i. The Name، Encyclopaedia Iranica.',
+    'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-ardashir-etymology',
+    'claim_group_id': 'group-ardashir-etymology',
+    'source_id': 'source-iranica-ardashir',
+    'subject_type': 'name',
+    'subject_id': 'name-اردشیر',
+    'claim_type': 'etymology',
+    'claim_text': 'Ardašīr is derived from Old Iranian *Ṛtaxšira and is related to the name Artaxerxes.',
+    'normalized_value': 'ritaxshira-artaxerxes',
+    'status': 'supported',
+    'confidence': 'high',
+    'evidence_note': 'مدخل ARDAŠĪR I i. History، Encyclopaedia Iranica.',
+    'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-bahram-etymology',
+    'claim_group_id': 'group-bahram-etymology',
+    'source_id': 'source-iranica-bahram',
+    'subject_type': 'name',
+    'subject_id': 'name-بهرام',
+    'claim_type': 'etymology',
+    'claim_text': 'Bahrām derives from Old Iranian Vṛθragna and Avestan Vərəθraγna, the god of victory.',
+    'normalized_value': 'vrthragna-victory',
+    'status': 'supported',
+    'confidence': 'high',
+    'evidence_note': 'مدخل BAHRĀM، Encyclopaedia Iranica.',
+    'review_status': 'reviewed',
+  },
+  {
+    'id': 'claim-mehrdad-etymology',
+    'claim_group_id': 'group-mehrdad-etymology',
+    'source_id': 'source-iranica-personal-names',
+    'subject_type': 'name',
+    'subject_id': 'name-مهرداد',
+    'claim_type': 'etymology',
+    'claim_text': 'Miθra-dāta is interpreted as “given by Mithra.”',
+    'normalized_value': 'given-by-mithra',
+    'status': 'supported',
+    'confidence': 'high',
+    'evidence_note': 'مدخل PERSONAL NAMES, IRANIAN، Encyclopaedia Iranica.',
+    'review_status': 'reviewed',
+  },
 ];
 
 const abjadKabirLetters = <String, int>{
@@ -262,6 +512,111 @@ const abjadKabirLetters = <String, int>{
   'ض': 800,
   'ظ': 900,
   'غ': 1000,
+};
+
+Map<String, int> _mapAbjadValues(int Function(int value) transform, {bool includePersianEquivalents = false}) {
+  final values = <String, int>{
+    for (final entry in abjadKabirLetters.entries) entry.key: transform(entry.value),
+  };
+  if (includePersianEquivalents) {
+    values['پ'] = transform(abjadKabirLetters['ب']!);
+    values['چ'] = transform(abjadKabirLetters['ج']!);
+    values['ژ'] = transform(abjadKabirLetters['ز']!);
+    values['گ'] = transform(abjadKabirLetters['ک']!);
+  }
+  return values;
+}
+
+final abjadSaghirLetters = _mapAbjadValues((value) => value % 9);
+final abjadWasitLetters = _mapAbjadValues((value) => value % 12);
+final abjadAkbarLetters = _mapAbjadValues((value) => value * value);
+
+Map<String, int> _mapAbjadPositions({bool includePersianEquivalents = false}) {
+  final values = <String, int>{};
+  var position = 0;
+  for (final letter in abjadKabirLetters.keys) {
+    values[letter] = ++position;
+  }
+  if (includePersianEquivalents) {
+    values['پ'] = values['ب']!;
+    values['چ'] = values['ج']!;
+    values['ژ'] = values['ز']!;
+    values['گ'] = values['ک']!;
+  }
+  return values;
+}
+
+final abjadWazeeLetters = _mapAbjadPositions();
+final abjadKabirPersianLetters = _mapAbjadValues((value) => value, includePersianEquivalents: true);
+final abjadSaghirPersianLetters = _mapAbjadValues((value) => value % 9, includePersianEquivalents: true);
+final abjadWasitPersianLetters = _mapAbjadValues((value) => value % 12, includePersianEquivalents: true);
+final abjadAkbarPersianLetters = _mapAbjadValues((value) => value * value, includePersianEquivalents: true);
+final abjadWazeePersianLetters = _mapAbjadPositions(includePersianEquivalents: true);
+
+final abjadSystemDefinitions = <Map<String, Object?>>[
+  {
+    'id': 'abjad-kabir-v1', 'system_key': 'kabir', 'title': 'ابجد کبیر',
+    'description': 'نگاشت استاندارد ۲۸ حرف عربی از ۱ تا ۱۰۰۰؛ حروف فارسیِ پ، چ، ژ و گ در این حالت ناشناخته می‌مانند.',
+    'formula': 'ارزش مستقیم هر حرف در ترتیب ابجد', 'source_id': 'source-iranica-abjad', 'version': '1', 'status': 'supported',
+  },
+  {
+    'id': 'abjad-saghir-v1', 'system_key': 'saghir', 'title': 'ابجد صغیر',
+    'description': 'باقی‌مانده ارزش ابجد کبیر بر ۹؛ صفر برای مضرب‌های ۹ حفظ می‌شود.',
+    'formula': 'value % 9', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'derived',
+  },
+  {
+    'id': 'abjad-wasit-v1', 'system_key': 'wasit', 'title': 'ابجد وسیط / متوسط',
+    'description': 'باقی‌مانده ارزش ابجد کبیر بر ۱۲؛ این تعریف در منابع ثانویه رایج است و در این نسخه تاریخی قطعی تلقی نمی‌شود.',
+    'formula': 'value % 12', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'derived',
+  },
+  {
+    'id': 'abjad-akbar-v1', 'system_key': 'akbar', 'title': 'ابجد اکبر',
+    'description': 'مربع ارزش ابجد کبیر؛ برای مقایسه سنتی نگه‌داری می‌شود و تفسیر عددی ارائه نمی‌کند.',
+    'formula': 'value × value', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'derived',
+  },
+  {
+    'id': 'abjad-wazee-v1', 'system_key': 'wazee', 'title': 'ابجد وضعی',
+    'description': 'شماره‌گذاری ترتیبی ۲۸ حرف ابجد؛ منبع آن ثانویه است و برای ادعای تاریخی قطعی استفاده نمی‌شود.',
+    'formula': 'position in the 28-letter sequence', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'unverified',
+  },
+  {
+    'id': 'abjad-kabir-persian-v1', 'system_key': 'kabir-persian', 'title': 'ابجد کبیر با معادل‌سازی فارسی',
+    'description': 'گونه مشتق‌شده برای ورودی فارسی: پ=ب، چ=ج، ژ=ز و گ=ک. این جایگزینی باید جدا از ابجد استاندارد گزارش شود.',
+    'formula': 'kabir + Persian letter equivalence', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'derived',
+  },
+  {
+    'id': 'abjad-saghir-persian-v1', 'system_key': 'saghir-persian', 'title': 'ابجد صغیر با معادل‌سازی فارسی',
+    'description': 'ابجد صغیر پس از معادل‌سازی صریح حروف فارسی با حروف عربی نزدیک؛ مقدار ناشناخته حدس زده نمی‌شود.',
+    'formula': '(kabir Persian equivalent) % 9', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'derived',
+  },
+  {
+    'id': 'abjad-wasit-persian-v1', 'system_key': 'wasit-persian', 'title': 'ابجد وسیط با معادل‌سازی فارسی',
+    'description': 'ابجد وسیط پس از معادل‌سازی صریح حروف فارسی؛ وضعیت فرمول derived باقی می‌ماند.',
+    'formula': '(kabir Persian equivalent) % 12', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'derived',
+  },
+  {
+    'id': 'abjad-akbar-persian-v1', 'system_key': 'akbar-persian', 'title': 'ابجد اکبر با معادل‌سازی فارسی',
+    'description': 'مربع ارزش ابجد کبیر پس از معادل‌سازی حروف فارسی؛ نتیجه تفسیری یا پیش‌بینی نیست.',
+    'formula': '(kabir Persian equivalent)²', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'derived',
+  },
+  {
+    'id': 'abjad-wazee-persian-v1', 'system_key': 'wazee-persian', 'title': 'ابجد وضعی با معادل‌سازی فارسی',
+    'description': 'شماره ترتیبی حرف معادل در توالی ۲۸ حرفی؛ تنها برای مقایسه شفاف ثبت شده است.',
+    'formula': 'position of Persian equivalent', 'source_id': 'source-abjad-variants-secondary', 'version': '1', 'status': 'unverified',
+  },
+];
+
+final abjadMappingsBySystem = <String, Map<String, int>>{
+  'kabir': abjadKabirLetters,
+  'saghir': abjadSaghirLetters,
+  'wasit': abjadWasitLetters,
+  'akbar': abjadAkbarLetters,
+  'wazee': abjadWazeeLetters,
+  'kabir-persian': abjadKabirPersianLetters,
+  'saghir-persian': abjadSaghirPersianLetters,
+  'wasit-persian': abjadWasitPersianLetters,
+  'akbar-persian': abjadAkbarPersianLetters,
+  'wazee-persian': abjadWazeePersianLetters,
 };
 
 final seedArchiveEntries = <Map<String, Object?>>[

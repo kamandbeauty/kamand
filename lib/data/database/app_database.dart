@@ -414,6 +414,14 @@ class AppDatabase {
       _setMetadata('content_version', 'seed-6');
       version = 6;
     }
+
+    if (version < 7) {
+      _db.execute("ALTER TABLE abjad_systems ADD COLUMN formula TEXT NOT NULL DEFAULT 'نامشخص'");
+      _db.execute('PRAGMA user_version = 7');
+      _setMetadata('schema_version', '7');
+      _setMetadata('content_version', 'seed-7');
+      version = 7;
+    }
   }
 
   void _seedIfEmpty() {
@@ -460,6 +468,27 @@ class AppDatabase {
           ],
         );
       }
+      for (final item in seedAdditionalNames) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [
+            item['id'], item['display_name'], item['normalized_name'], item['transliteration'], item['language'],
+            item['origin'], item['gender'], item['meaning'], item['etymology'], item['pronunciation'],
+            item['status'], item['confidence'], item['styles'], item['source_id'], item['source_note'], now, now,
+          ],
+        );
+      }
+      for (final item in seedNameKnowledgeUpdates) {
+        _db.execute(
+          '''UPDATE names SET display_name = ?, normalized_name = ?, transliteration = ?, language = ?, origin = ?, gender = ?, meaning = ?, etymology = ?, pronunciation = ?, status = ?, confidence = ?, styles = ?, source_id = ?, source_note = ?, updated_at = ? WHERE id = ?''',
+          [
+            item['display_name'], item['normalized_name'], item['transliteration'], item['language'], item['origin'], item['gender'],
+            item['meaning'], item['etymology'], item['pronunciation'], item['status'], item['confidence'], item['styles'],
+            item['source_id'], item['source_note'], now, item['id'],
+          ],
+        );
+      }
       for (final claim in seedClaims) {
         _db.execute(
           '''INSERT INTO source_claims (id, claim_group_id, source_id, subject_type, subject_id, claim_type, claim_text, normalized_value, status, confidence, evidence_note, review_status, created_at)
@@ -501,17 +530,37 @@ class AppDatabase {
   }
 
   void _ensureCalculationSystems() {
-    final hasIranica = _db.select("SELECT 1 FROM sources WHERE id = 'source-iranica-abjad' LIMIT 1").isNotEmpty;
-    final abjadSource = hasIranica ? 'source-iranica-abjad' : internalSourceId;
-    _db.execute('''
-      INSERT OR IGNORE INTO abjad_systems (id, system_key, title, description, source_id, version, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', ['abjad-kabir-v1', 'kabir', 'ابجد کبیر', 'نگاشت حرف به عدد برای نمایش سنت تاریخی؛ این بخش ادعای علمی یا پیش‌بینی نیست.', abjadSource, '1', 'supported']);
-    for (final entry in abjadKabirLetters.entries) {
+    for (final definition in abjadSystemDefinitions) {
       _db.execute('''
-        INSERT OR IGNORE INTO abjad_letters (id, system_id, letter, normalized_letter, arabic_letter, persian_letter, numeric_value, mapping_status, source_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ''', ['kabir-${entry.key}', 'abjad-kabir-v1', entry.key, entry.key, entry.key, entry.key, entry.value, 'supported', abjadSource]);
+        INSERT OR IGNORE INTO abjad_systems (id, system_key, title, description, formula, source_id, version, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ''', [
+        definition['id'], definition['system_key'], definition['title'], definition['description'], definition['formula'],
+        definition['source_id'], definition['version'], definition['status'],
+      ]);
+      _db.execute('''
+        UPDATE abjad_systems
+        SET title = ?, description = ?, formula = ?, source_id = ?, version = ?, status = ?
+        WHERE system_key = ?
+      ''', [
+        definition['title'], definition['description'], definition['formula'], definition['source_id'], definition['version'],
+        definition['status'], definition['system_key'],
+      ]);
+      final mapping = abjadMappingsBySystem[definition['system_key']] ?? const <String, int>{};
+      for (final entry in mapping.entries) {
+        final isKabir = definition['system_key'] == 'kabir';
+        _db.execute('''
+          INSERT OR IGNORE INTO abjad_letters (id, system_id, letter, normalized_letter, arabic_letter, persian_letter, numeric_value, mapping_status, source_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', [
+          '${definition['system_key']}-${entry.key}', definition['id'], entry.key, entry.key, entry.key, entry.key,
+          entry.value, isKabir ? 'supported' : 'derived', definition['source_id'],
+        ]);
+        _db.execute('''
+          UPDATE abjad_letters SET numeric_value = ?, mapping_status = ?, source_id = ?
+          WHERE system_id = ? AND normalized_letter = ?
+        ''', [entry.value, isKabir ? 'supported' : 'derived', definition['source_id'], definition['id'], entry.key]);
+      }
     }
     _db.execute('''
       INSERT OR IGNORE INTO numerology_systems (id, system_key, title, description, source_id, version, status, disclaimer)
@@ -553,7 +602,7 @@ class AppDatabase {
 
   void _upgradeContentSeed() {
     final metadata = getMetadata();
-    if (metadata['content_version'] == 'knowledge-1') return;
+    if (metadata['content_version'] == 'knowledge-2') return;
     final now = DateTime.now().toUtc().toIso8601String();
     _db.execute('BEGIN');
     try {
@@ -569,6 +618,19 @@ class AppDatabase {
           '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
           [item['id'], item['display_name'], item['normalized_name'], item['transliteration'], item['language'], item['origin'], item['gender'], item['meaning'], item['etymology'], item['pronunciation'], item['status'], item['confidence'], item['styles'], item['source_id'], item['source_note'], now, now],
+        );
+      }
+      for (final item in seedAdditionalNames) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [item['id'], item['display_name'], item['normalized_name'], item['transliteration'], item['language'], item['origin'], item['gender'], item['meaning'], item['etymology'], item['pronunciation'], item['status'], item['confidence'], item['styles'], item['source_id'], item['source_note'], now, now],
+        );
+      }
+      for (final item in seedNameKnowledgeUpdates) {
+        _db.execute(
+          '''UPDATE names SET display_name = ?, normalized_name = ?, transliteration = ?, language = ?, origin = ?, gender = ?, meaning = ?, etymology = ?, pronunciation = ?, status = ?, confidence = ?, styles = ?, source_id = ?, source_note = ?, updated_at = ? WHERE id = ?''',
+          [item['display_name'], item['normalized_name'], item['transliteration'], item['language'], item['origin'], item['gender'], item['meaning'], item['etymology'], item['pronunciation'], item['status'], item['confidence'], item['styles'], item['source_id'], item['source_note'], now, item['id']],
         );
       }
       for (final claim in seedClaims) {
@@ -599,7 +661,7 @@ class AppDatabase {
           [entry['id'], entry['title'], entry['category'], entry['body'], entry['source_id'], entry['status'], now],
         );
       }
-      _setMetadata('content_version', 'knowledge-1');
+      _setMetadata('content_version', 'knowledge-2');
       _db.execute('COMMIT');
       _refreshSearchIndex();
     } catch (_) {
@@ -672,6 +734,18 @@ class AppDatabase {
     return rows.isEmpty ? null : Name.fromMap(Map<String, Object?>.from(rows.first));
   }
 
+  List<AbjadSystem> getAbjadSystems() {
+    final rows = _db.select(
+      '''SELECT a.*, s.title AS source_title
+         FROM abjad_systems a LEFT JOIN sources s ON s.id = a.source_id
+         WHERE a.status NOT IN ('deprecated', 'pending')
+         ORDER BY CASE a.system_key
+           WHEN 'kabir' THEN 1 WHEN 'saghir' THEN 2 WHEN 'wasit' THEN 3 WHEN 'akbar' THEN 4 WHEN 'wazee' THEN 5 ELSE 6 END,
+           a.title''',
+    );
+    return rows.map((row) => AbjadSystem.fromMap(Map<String, Object?>.from(row))).toList(growable: false);
+  }
+
   AbjadSystem? getAbjadSystem(String systemKey) {
     final rows = _db.select(
       '''SELECT a.*, s.title AS source_title
@@ -687,7 +761,7 @@ class AppDatabase {
       '''SELECT l.normalized_letter, l.numeric_value
          FROM abjad_letters l JOIN abjad_systems a ON a.id = l.system_id
          WHERE a.system_key = ? AND l.numeric_value IS NOT NULL
-           AND EXISTS (SELECT 1 FROM source_claims c WHERE c.subject_type = 'abjad_system' AND c.subject_id = a.id AND c.status IN ('supported', 'verified'))''',
+           AND a.status NOT IN ('deprecated', 'pending')''',
       [systemKey],
     );
     return {
