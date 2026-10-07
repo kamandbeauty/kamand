@@ -88,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => _apply(() => s.difficulty = d),
             ),
 
-          _section('زمین بازی'),
+          _section('محیط بازی'),
           GridView.count(
             crossAxisCount: 3,
             shrinkWrap: true,
@@ -104,6 +104,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _apply(() => s.surface = t),
                 ),
             ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            child: Text(
+              s.surface.faHint,
+              style: const TextStyle(fontSize: 11.5, color: Color(0xFFB7AA92)),
+            ),
           ),
 
           _section('طرح پشت کارت'),
@@ -366,10 +373,31 @@ class _SurfaceTile extends StatelessWidget {
                 child: Text(
                   surface.fa,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 10),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                    color: selected ? AppColors.gold : Colors.white,
+                  ),
                 ),
               ),
             ),
+            if (selected)
+              Align(
+                alignment: Alignment.topLeft,
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: AppColors.gold,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 12,
+                    color: Color(0xFF1C2B22),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

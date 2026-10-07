@@ -266,13 +266,13 @@ class ScoreboardSheet extends StatelessWidget {
                   headingRowHeight: 34,
                   dataRowMinHeight: 32,
                   dataRowMaxHeight: 42,
-                  columns: const <DataColumn>[
-                    DataColumn(label: Text('راند')),
-                    DataColumn(label: Text('حاکم')),
-                    DataColumn(label: Text('قرارداد')),
-                    DataColumn(label: Text('ما')),
-                    DataColumn(label: Text('حریف')),
-                    DataColumn(label: Text('مجموع')),
+                  columns: <DataColumn>[
+                    const DataColumn(label: Text('راند')),
+                    const DataColumn(label: Text('حاکم')),
+                    const DataColumn(label: Text('قرارداد')),
+                    DataColumn(label: Text(controller.teamName(0))),
+                    DataColumn(label: Text(controller.teamName(1))),
+                    const DataColumn(label: Text('مجموع')),
                   ],
                   rows: <DataRow>[
                     for (final RoundRecord r in e.history)

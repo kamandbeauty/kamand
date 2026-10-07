@@ -59,11 +59,11 @@ void main() {
     expect(find.text('سطح حریف‌ها'), findsOneWidget);
     expect(find.text('استاد'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('زمین بازی'),
+      find.text('محیط بازی'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('زمین بازی'), findsOneWidget);
+    expect(find.text('محیط بازی'), findsOneWidget);
   });
 
   testWidgets('کارت با نماد و برچسب درست رسم می‌شود',

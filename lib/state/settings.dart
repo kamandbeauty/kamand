@@ -9,12 +9,42 @@ import '../game/engine.dart';
 import '../game/scoring.dart';
 import '../model/enums.dart';
 
+/// نام‌های قدیمیِ زمینِ بازی (نسخه‌های پیش از ۱.۴) به معادلِ تازه.
+const Map<String, TableSurface> _legacySurfaces = <String, TableSurface>{
+  'carpetRed': TableSurface.carpetAntique,
+  'carpetBlue': TableSurface.carpetSilk,
+  'carpetCream': TableSurface.carpetBoteh,
+  'carpetGreen': TableSurface.carpetMiniature,
+};
+
+/// خواندنِ امنِ enum از تنظیماتِ ذخیره‌شده.
+///
+/// هم نامِ تازه (رشته) و هم شمارهٔ نسخه‌های قدیمی را می‌پذیرد و اگر مقدار
+/// نامعتبر بود به پیش‌فرض برمی‌گردد (به‌جای خطا دادن و پاک شدنِ همهٔ تنظیمات).
+T _parseEnum<T extends Enum>(
+  List<T> values,
+  Object? raw,
+  T fallback, {
+  Map<String, T> legacy = const <String, Never>{},
+}) {
+  if (raw is String) {
+    for (final T v in values) {
+      if (v.name == raw) return v;
+    }
+    final T? old = legacy[raw];
+    if (old != null) return old;
+    return fallback;
+  }
+  if (raw is int && raw >= 0 && raw < values.length) return values[raw];
+  return fallback;
+}
+
 class AppSettings {
   AppSettings({
     this.playerName = 'شما',
     this.difficulty = Difficulty.hard,
     this.speed = GameSpeed.normal,
-    this.surface = TableSurface.carpetRed,
+    this.surface = TableSurface.teahouse,
     this.cardBack = CardBack.crimson,
     this.sound = true,
     this.haptics = true,
@@ -62,10 +92,10 @@ class AppSettings {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'name': playerName,
-        'difficulty': difficulty.index,
-        'speed': speed.index,
-        'surface': surface.index,
-        'back': cardBack.index,
+        'difficulty': difficulty.name,
+        'speed': speed.name,
+        'surface': surface.name,
+        'back': cardBack.name,
         'sound': sound,
         'haptics': haptics,
         'highlight': highlightLegal,
@@ -77,10 +107,19 @@ class AppSettings {
 
   static AppSettings fromJson(Map<String, dynamic> j) => AppSettings(
         playerName: (j['name'] as String?) ?? 'شما',
-        difficulty: Difficulty.values[(j['difficulty'] as int?) ?? 2],
-        speed: GameSpeed.values[(j['speed'] as int?) ?? 1],
-        surface: TableSurface.values[(j['surface'] as int?) ?? 0],
-        cardBack: CardBack.values[(j['back'] as int?) ?? 0],
+        difficulty: _parseEnum(
+          Difficulty.values,
+          j['difficulty'],
+          Difficulty.hard,
+        ),
+        speed: _parseEnum(GameSpeed.values, j['speed'], GameSpeed.normal),
+        surface: _parseEnum(
+          TableSurface.values,
+          j['surface'],
+          TableSurface.teahouse,
+          legacy: _legacySurfaces,
+        ),
+        cardBack: _parseEnum(CardBack.values, j['back'], CardBack.crimson),
         sound: (j['sound'] as bool?) ?? true,
         haptics: (j['haptics'] as bool?) ?? true,
         highlightLegal: (j['highlight'] as bool?) ?? true,
