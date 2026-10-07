@@ -387,7 +387,7 @@ class _CourtCenter extends StatelessWidget {
     );
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: width * 0.105),
+      padding: EdgeInsets.symmetric(horizontal: width * 0.055),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(width * 0.05),
@@ -418,27 +418,6 @@ class _CourtCenter extends StatelessWidget {
                 child: Container(
                   height: math.max(0.7, width * 0.009),
                   color: color.withValues(alpha: 0.5),
-                ),
-              ),
-              Positioned(
-                top: width * 0.03,
-                left: width * 0.03,
-                child: SuitIcon(
-                  suit: card.suit,
-                  size: width * 0.135,
-                  color: color,
-                ),
-              ),
-              Positioned(
-                bottom: width * 0.03,
-                right: width * 0.03,
-                child: Transform.rotate(
-                  angle: math.pi,
-                  child: SuitIcon(
-                    suit: card.suit,
-                    size: width * 0.135,
-                    color: color,
-                  ),
                 ),
               ),
             ],
