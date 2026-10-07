@@ -9,6 +9,8 @@
 - Jafr uses only the standard 28-letter Abjad sum; Persian letters without a standard value remain Unknown.
 - Added a derived digital-root display without presenting it as canonical Jafr interpretation.
 - Added explicit disclaimer against divination, personality, relationship, destiny or future claims.
+- Hardened Rule configuration handling: unsupported reduction modes return Unknown instead of guessing.
+- Added a letter-by-letter Jafr table to the analysis UI and fixed empty-input completeness state.
 
 ### Verification
 

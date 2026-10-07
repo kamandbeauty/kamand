@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../core/normalization/persian_normalizer.dart';
 import '../models/abjad_result.dart';
 import '../models/jafr_result.dart';
@@ -8,6 +10,28 @@ class JafrEngine {
 
   final Map<String, int> mapping;
   final NumerologyRule? rule;
+
+  static String baseSystemKey(NumerologyRule? rule) {
+    final configuration = _configuration(rule);
+    final value = configuration['base_system'];
+    return value is String && value.trim().isNotEmpty ? value : 'kabir';
+  }
+
+  static String reductionMode(NumerologyRule? rule) {
+    final configuration = _configuration(rule);
+    final value = configuration['reduction'];
+    return value is String && value.trim().isNotEmpty ? value : 'display_only';
+  }
+
+  static Map<String, Object?> _configuration(NumerologyRule? rule) {
+    if (rule == null || rule.configurationJson.trim().isEmpty) return const <String, Object?>{};
+    try {
+      final decoded = jsonDecode(rule.configurationJson);
+      return decoded is Map ? Map<String, Object?>.from(decoded) : const <String, Object?>{};
+    } on FormatException {
+      return const <String, Object?>{};
+    }
+  }
 
   JafrResult calculate(String input) {
     final activeRule = rule ?? const NumerologyRule(
@@ -75,7 +99,27 @@ class JafrEngine {
       );
     }
 
-    final reduced = _digitalRoot(total);
+    final reduction = reductionMode(activeRule);
+    if (reduction != 'display_only' && reduction != 'none') {
+      return JafrResult(
+        systemTitle: activeRule.systemTitle,
+        ruleKey: activeRule.ruleKey,
+        ruleVersion: activeRule.version,
+        steps: steps,
+        total: total,
+        reducedValue: 0,
+        unknownLetters: const [],
+        formula: activeRule.operation,
+        description: 'نوع کاهش رقمی این Rule پشتیبانی نمی‌شود؛ مقدار حدس زده نشد.',
+        disclaimer: activeRule.disclaimer,
+        status: 'unknown',
+        sourceTitle: activeRule.sourceTitle,
+        calculation: 'نامشخص؛ reduction=$reduction پشتیبانی نمی‌شود',
+        isAvailable: false,
+      );
+    }
+
+    final reduced = reduction == 'display_only' ? _digitalRoot(total) : 0;
     return JafrResult(
       systemTitle: activeRule.systemTitle,
       ruleKey: activeRule.ruleKey,
@@ -85,11 +129,13 @@ class JafrEngine {
       reducedValue: reduced,
       unknownLetters: const [],
       formula: activeRule.operation,
-      description: 'در این نسخه فقط جمع ارزش عددی حروف محاسبه می‌شود. کاهش رقمی یک مقدار مشتق‌شده برای نمایش است و تفسیر جفری یا پیش‌بینی آینده تولید نمی‌کند.',
+      description: reduction == 'display_only'
+          ? 'در این نسخه فقط جمع ارزش عددی حروف محاسبه می‌شود. کاهش رقمی یک مقدار مشتق‌شده برای نمایش است و تفسیر جفری یا پیش‌بینی آینده تولید نمی‌کند.'
+          : 'در این Rule فقط جمع ارزش عددی حروف محاسبه می‌شود و کاهش رقمی فعال نیست.',
       disclaimer: activeRule.disclaimer,
       status: activeRule.status,
       sourceTitle: activeRule.sourceTitle,
-      calculation: '$total → کاهش رقمی مشتق‌شده: $reduced',
+      calculation: reduction == 'display_only' ? '$total → کاهش رقمی مشتق‌شده: $reduced' : '$total',
       isAvailable: true,
     );
   }

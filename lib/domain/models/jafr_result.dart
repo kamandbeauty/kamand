@@ -33,5 +33,5 @@ class JafrResult {
   final String calculation;
   final bool isAvailable;
 
-  bool get isComplete => unknownLetters.isEmpty;
+  bool get isComplete => isAvailable && unknownLetters.isEmpty;
 }

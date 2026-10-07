@@ -80,9 +80,10 @@ final numerologyEngineProvider = Provider<NumerologyEngine>((ref) {
 
 final jafrEngineProvider = Provider<JafrEngine>((ref) {
   final database = ref.watch(databaseProvider);
+  final rule = database.getNumerologyRule('jafr-abjad');
   return JafrEngine(
-    mapping: database.getAbjadMapping('kabir'),
-    rule: database.getNumerologyRule('jafr-abjad'),
+    mapping: database.getAbjadMapping(JafrEngine.baseSystemKey(rule)),
+    rule: rule,
   );
 });
 final compatibilityEngineProvider = Provider<CompatibilityEngine>((ref) {

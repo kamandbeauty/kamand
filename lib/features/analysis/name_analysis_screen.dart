@@ -114,6 +114,8 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
             const SizedBox(height: 14),
             _JafrCard(result: jafr!),
             const SizedBox(height: 14),
+            _JafrStepsCard(result: jafr!),
+            const SizedBox(height: 14),
             _SystemsReportCard(results: reports),
             const SizedBox(height: 14),
             _StepsCard(result: result!),
@@ -229,6 +231,36 @@ class _JafrCard extends StatelessWidget {
           ],
           const Divider(height: 24),
           Text(result.disclaimer, style: const TextStyle(fontWeight: FontWeight.w700, height: 1.6)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _JafrStepsCard extends StatelessWidget {
+  const _JafrStepsCard({required this.result});
+
+  final JafrResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('جدول حرف‌به‌حرف جفر', style: TextStyle(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 6),
+          const Text('هر مقدار مستقیماً از نگاشت استاندارد Rule خوانده شده است؛ حروف ناشناخته مقداردهی نمی‌شوند.', style: TextStyle(color: Colors.blueGrey, height: 1.6)),
+          const SizedBox(height: 10),
+          ...result.steps.map((step) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(children: [
+                  Expanded(child: Text(step.letter)),
+                  Text(step.value?.toString() ?? 'Unknown', style: TextStyle(fontWeight: FontWeight.w800, color: step.value == null ? Colors.red.shade700 : null)),
+                ]),
+              )),
+          const Divider(),
+          Row(children: [const Expanded(child: Text('جمع جفر', style: TextStyle(fontWeight: FontWeight.w900))), Text(result.isAvailable ? '${result.total}' : 'Unknown', style: const TextStyle(fontWeight: FontWeight.w900))]),
         ]),
       ),
     );
