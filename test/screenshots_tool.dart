@@ -52,6 +52,29 @@ Future<void> _loadFonts() async {
   }
 }
 
+
+/// تصویرهای طرحِ ورق و زمینه باید پیش از عکس‌برداری در حافظه باشند.
+Future<void> _precache(WidgetTester tester) async {
+  const List<String> assets = <String>[
+    'assets/cards/jack_red.png',
+    'assets/cards/queen_red.png',
+    'assets/cards/king_red.png',
+    'assets/cards/jack_black.png',
+    'assets/cards/queen_black.png',
+    'assets/cards/king_black.png',
+    'assets/cards/joker_fig.png',
+    'assets/images/surfaces/carpet-red.jpg',
+  ];
+  final BuildContext context = tester.element(find.byType(MaterialApp).first);
+  await tester.runAsync(() async {
+    for (final String a in assets) {
+      await precacheImage(AssetImage(a), context);
+    }
+  });
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 200));
+}
+
 Widget _wrap(Widget child) => MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
@@ -146,6 +169,8 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 400));
+    await _precache(tester);
+    await tester.pump(const Duration(milliseconds: 400));
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('golden/cards.png'),
@@ -181,11 +206,10 @@ void main() {
     }
 
     await tester.pumpWidget(_wrap(GameScreen(controller: controller)));
+    await _precache(tester);
     await tester.pump(const Duration(milliseconds: 900));
-    await tester.runAsync(() async {
-      await Future<void>.delayed(const Duration(milliseconds: 60));
-    });
-    await tester.pump(const Duration(milliseconds: 60));
+    await _precache(tester);
+    await tester.pump(const Duration(milliseconds: 900));
 
     await expectLater(
       find.byType(MaterialApp),
