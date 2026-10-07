@@ -302,3 +302,4 @@ jobs:
           label_asset "taalebin-v1.3.1-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
           label_asset "taalebin-v1.3.1-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
           label_asset "taalebin-v1.3.1.aab"                        "فقط Google Play — نصب مستقیم ندارد"
+          label_asset "CHECKSUMS.txt"                               "چک‌سام فایل‌ها (برای اطمینان از دانلود سالم)"
