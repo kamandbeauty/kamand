@@ -186,6 +186,9 @@ class ShelemEngine {
   // ── وضعیت کلی بازی ───────────────────────────────────────────────────
   int round = 0;
   int dealer = 3;
+
+  /// چند بار در این راند به‌خاطر «همه پاس» دوباره پخش شده است.
+  int redeals = 0;
   List<int> scores = <int>[0, 0];
   List<RoundRecord> history = <RoundRecord>[];
   int? winnerTeam;
@@ -235,6 +238,7 @@ class ShelemEngine {
   void startRound() {
     round += 1;
     dealer = nextPlayer(dealer);
+    if (phase != GamePhase.bidding) redeals = 0;
     phase = GamePhase.dealing;
     hands = List<List<PlayingCard>>.generate(4, (_) => <PlayingCard>[]);
     kitty = <PlayingCard>[];
@@ -297,6 +301,10 @@ class ShelemEngine {
 
   bool canBid(int value) => availableBids().contains(value);
 
+  /// آیا بازیکنِ نوبت‌دار می‌تواند پاس بدهد؟
+  /// بالاترین خواننده دیگر حق پاس ندارد (قراردادش روی زمین است).
+  bool get canPass => !(highBid > 0 && bidder == hakem);
+
   /// خواندنِ یک عدد توسط بازیکنِ نوبت‌دار.
   void placeBid(int value) {
     assert(phase == GamePhase.bidding);
@@ -312,6 +320,9 @@ class ShelemEngine {
   /// پاس دادنِ بازیکنِ نوبت‌دار.
   void passBid() {
     assert(phase == GamePhase.bidding);
+    if (!canPass) {
+      throw StateError('بالاترین خواننده نمی‌تواند پاس بدهد');
+    }
     passed[bidder] = true;
     _advanceBidding();
   }
@@ -330,17 +341,17 @@ class ShelemEngine {
         // کارت‌ها دوباره پخش می‌شود (همان صاحب‌دست حفظ می‌شود)
         round -= 1;
         dealer = (dealer + 3) % 4;
+        redeals += 1;
         startRound();
       }
       return;
     }
 
     if (remaining == 1 && highBid > 0) {
-      final int only = passed.indexWhere((bool p) => !p);
-      if (only == hakem) {
-        _startKittyPhase();
-        return;
-      }
+      // تنها بازمانده همیشه بالاترین خواننده است (پاسِ او ممنوع است).
+      hakem = passed.indexWhere((bool p) => !p);
+      _startKittyPhase();
+      return;
     }
 
     // نوبت به نفر بعدی که پاس نداده است

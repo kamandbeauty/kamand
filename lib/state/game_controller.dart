@@ -122,10 +122,25 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// قوانینی که وسطِ راند تغییر کرده‌اند و باید از راند بعد اعمال شوند.
+  GameConfig? _pendingRules;
+
   void applySettings(AppSettings next) {
     settings = next;
-    engine?.config = next.rules;
+    final ShelemEngine? e = engine;
+    if (e == null) {
+      _pendingRules = null;
+    } else if (e.phase == GamePhase.roundComplete ||
+        e.phase == GamePhase.gameOver ||
+        e.phase == GamePhase.dealing) {
+      e.config = next.rules;
+      _pendingRules = null;
+    } else {
+      // تغییرِ تعدادِ گل/جوکر وسطِ راند بازی را خراب می‌کند؛ از راند بعد.
+      _pendingRules = next.rules;
+    }
     next.save();
+    _schedule();
     notifyListeners();
   }
 
@@ -141,6 +156,11 @@ class GameController extends ChangeNotifier {
   void humanPass() {
     final ShelemEngine e = engine!;
     if (e.phase != GamePhase.bidding || e.bidder != 0) return;
+    if (!e.canPass) {
+      toast = 'شما بالاترین خواننده‌اید و نمی‌توانید پاس بدهید';
+      notifyListeners();
+      return;
+    }
     _click();
     e.passBid();
     _after();
@@ -231,6 +251,10 @@ class GameController extends ChangeNotifier {
     final ShelemEngine e = engine!;
     if (e.phase != GamePhase.roundComplete) return;
     _click();
+    if (_pendingRules != null) {
+      e.config = _pendingRules!;
+      _pendingRules = null;
+    }
     e.startRound();
     _after();
   }
@@ -286,10 +310,58 @@ class GameController extends ChangeNotifier {
   }
 
   void _run(void Function() action) {
-    action();
+    final ShelemEngine? e = engine;
+    if (e == null) return;
+    try {
+      action();
+    } catch (err) {
+      // هیچ خطایی نباید بازی را قفل کند: یک حرکتِ مجازِ ساده انجام می‌دهیم.
+      debugPrint('خطا در نوبت ربات: $err');
+      _recover(e);
+    }
     _save();
     notifyListeners();
     _schedule();
+  }
+
+  /// خروج از بن‌بست: ساده‌ترین حرکتِ مجاز را انجام می‌دهد.
+  void _recover(ShelemEngine e) {
+    try {
+      switch (e.phase) {
+        case GamePhase.bidding:
+          if (e.canPass) {
+            e.passBid();
+          } else {
+            final List<int> bids = e.availableBids();
+            if (bids.isNotEmpty) e.placeBid(bids.first);
+          }
+        case GamePhase.kitty:
+          e.takeKitty();
+        case GamePhase.discarding:
+          e.discardCards(
+            e.hands[e.hakem!].take(e.config.kittySize).toList(),
+          );
+        case GamePhase.declaringTrump:
+        case GamePhase.playing:
+          final List<PlayingCard> legal = e.legalFor(e.turn);
+          if (legal.isNotEmpty) {
+            final PlayingCard c = legal.first;
+            e.playCard(
+              e.turn,
+              c,
+              declaredTrump: c.isJoker ? Suit.spades : null,
+            );
+          }
+        case GamePhase.trickComplete:
+          e.collectTrick();
+        case GamePhase.dealing:
+        case GamePhase.roundComplete:
+        case GamePhase.gameOver:
+          break;
+      }
+    } catch (err) {
+      debugPrint('بازیابی هم شکست خورد: $err');
+    }
   }
 
   void _botBid(ShelemEngine e) {
@@ -300,7 +372,13 @@ class GameController extends ChangeNotifier {
       rng: _random,
     );
     if (value == null || !e.canBid(value)) {
-      e.passBid();
+      if (e.canPass) {
+        e.passBid();
+      } else {
+        // بالاترین خواننده است و همه هنوز پاس نداده‌اند: نوبت باید بچرخد.
+        final List<int> bids = e.availableBids();
+        if (bids.isNotEmpty) e.placeBid(bids.first);
+      }
     } else {
       e.placeBid(value);
     }

@@ -118,6 +118,9 @@ class CardView extends StatelessWidget {
   final VoidCallback? onTap;
   final double elevation;
 
+  /// ورق‌های عددی (۲ تا ۱۰) که نمادِ خال روی آن‌ها چیده می‌شود.
+  bool get _pips => !card.isJoker && card.rank >= 2 && card.rank <= 10;
+
   @override
   Widget build(BuildContext context) {
     final double h = width * kCardAspect;
@@ -169,15 +172,18 @@ class CardView extends StatelessWidget {
                 painter: _PaperPainter(color.withValues(alpha: 0.05)),
               ),
             ),
-            // ناحیهٔ میانی
+            // ناحیهٔ میانی (برای نقش‌ها و آس بزرگ‌تر از ورق‌های عددی)
             Positioned.fill(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  width * 0.25,
-                  width * 0.17,
-                  width * 0.25,
-                  width * 0.17,
-                ),
+                padding: _pips
+                    ? EdgeInsets.symmetric(
+                        horizontal: width * 0.25,
+                        vertical: width * 0.17,
+                      )
+                    : EdgeInsets.symmetric(
+                        horizontal: width * 0.13,
+                        vertical: width * 0.13,
+                      ),
                 child: _center(color, colorDeep),
               ),
             ),
@@ -352,7 +358,17 @@ class _AceCenter extends StatelessWidget {
   }
 }
 
-/// سرباز/بی‌بی/شاه: قابِ تزئینی با حرفِ بزرگ و نمادِ خال.
+/// نامِ فایلِ طرحِ نقش برای [rank] (۱۱ تا ۱۳) و رنگِ خال.
+String courtAsset(int rank, bool red) {
+  final String who = switch (rank) {
+    11 => 'jack',
+    12 => 'queen',
+    _ => 'king',
+  };
+  return 'assets/cards/${who}_${red ? 'red' : 'black'}.png';
+}
+
+/// سرباز/بی‌بی/شاه: نگارهٔ تزئینی داخلِ قابِ طلایی.
 class _CourtCenter extends StatelessWidget {
   const _CourtCenter({
     required this.card,
@@ -375,63 +391,88 @@ class _CourtCenter extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(width * 0.07),
             border: Border.all(
-              color: color.withValues(alpha: 0.5),
-              width: math.max(0.8, width * 0.013),
+              color: color.withValues(alpha: 0.45),
+              width: math.max(0.8, width * 0.012),
             ),
             gradient: LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: <Color>[
-                color.withValues(alpha: 0.13),
-                color.withValues(alpha: 0.03),
-                color.withValues(alpha: 0.13),
+                color.withValues(alpha: 0.10),
+                color.withValues(alpha: 0.02),
+                color.withValues(alpha: 0.10),
               ],
             ),
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: <Widget>[
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _CourtPainter(color.withValues(alpha: 0.33)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(width * 0.06),
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                CustomPaint(
+                  painter: _CourtPainter(color.withValues(alpha: 0.28)),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(width * 0.05),
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SuitIcon(suit: card.suit, size: width * 0.15, color: color),
-                      SizedBox(height: width * 0.02),
-                      Text(
-                        card.label,
-                        style: TextStyle(
-                          fontSize: width * 0.40,
-                          height: 1,
-                          fontFamily: 'Vazirmatn',
-                          fontWeight: FontWeight.w900,
-                          decoration: TextDecoration.none,
-                          color: color,
-                        ),
-                      ),
-                      SizedBox(height: width * 0.02),
-                      Transform.rotate(
-                        angle: math.pi,
-                        child: SuitIcon(
-                          suit: card.suit,
-                          size: width * 0.15,
-                          color: color,
-                        ),
-                      ),
-                    ],
+                Padding(
+                  padding: EdgeInsets.all(width * 0.03),
+                  child: Image.asset(
+                    courtAsset(card.rank, card.suit.isRed),
+                    fit: BoxFit.contain,
+                    alignment: Alignment.bottomCenter,
+                    filterQuality: FilterQuality.medium,
+                    errorBuilder: (_, __, ___) => _CourtFallback(
+                      card: card,
+                      color: color,
+                      width: width,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// اگر طرح در دسترس نبود: حرفِ بزرگ با نمادِ خال.
+class _CourtFallback extends StatelessWidget {
+  const _CourtFallback({
+    required this.card,
+    required this.color,
+    required this.width,
+  });
+
+  final PlayingCard card;
+  final Color color;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.contain,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          SuitIcon(suit: card.suit, size: width * 0.15, color: color),
+          SizedBox(height: width * 0.02),
+          Text(
+            card.label,
+            style: TextStyle(
+              fontSize: width * 0.40,
+              height: 1,
+              fontFamily: 'Vazirmatn',
+              fontWeight: FontWeight.w900,
+              decoration: TextDecoration.none,
+              color: color,
+            ),
+          ),
+          SizedBox(height: width * 0.02),
+          Transform.rotate(
+            angle: math.pi,
+            child: SuitIcon(suit: card.suit, size: width * 0.15, color: color),
+          ),
+        ],
       ),
     );
   }
@@ -452,24 +493,33 @@ class _JokerCenter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            SuitIcon(suit: Suit.joker, size: width * 0.42, color: color),
-            SizedBox(height: width * 0.05),
-            Text(
-              'جوکر',
-              style: TextStyle(
-                fontSize: width * 0.17,
-                fontFamily: 'Vazirmatn',
-                fontWeight: FontWeight.w800,
-                decoration: TextDecoration.none,
-                color: colorDeep.withValues(alpha: 0.85),
-              ),
+      child: AspectRatio(
+        aspectRatio: 0.72,
+        child: Image.asset(
+          'assets/cards/joker_fig.png',
+          fit: BoxFit.contain,
+          alignment: Alignment.bottomCenter,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (_, __, ___) => FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                SuitIcon(suit: Suit.joker, size: width * 0.42, color: color),
+                SizedBox(height: width * 0.05),
+                Text(
+                  'جوکر',
+                  style: TextStyle(
+                    fontSize: width * 0.17,
+                    fontFamily: 'Vazirmatn',
+                    fontWeight: FontWeight.w800,
+                    decoration: TextDecoration.none,
+                    color: colorDeep.withValues(alpha: 0.85),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

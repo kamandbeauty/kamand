@@ -1070,7 +1070,7 @@ class _BidBar extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
                 child: OutlinedButton(
-                  onPressed: controller.humanPass,
+                  onPressed: e.canPass ? controller.humanPass : null,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     side: const BorderSide(color: AppColors.teamThem),
@@ -1079,7 +1079,7 @@ class _BidBar extends StatelessWidget {
                   child: const Text('پاس'),
                 ),
               ),
-              for (int bi = 0; bi < options.length && bi < 14; bi++)
+              for (int bi = 0; bi < options.length; bi++)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
                   child: PopIn(
