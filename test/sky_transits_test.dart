@@ -9,10 +9,10 @@ import 'package:taalebin/domain/horoscope/sky_transits.dart';
 /// own worked examples to ±0.01°).
 void main() {
   group('SkyTransits — golden dates (UTC noon)', () {
-    test('2026-10-07: Moon in Leo, last-quarter phase', () {
+    test('2026-10-07: Moon in Virgo, waning crescent', () {
       final t = DateTime.utc(2026, 10, 7, 12);
-      expect(SkyTransits.moonSignIndex(t), 4); // Leo
-      expect(SkyTransits.moonPhase(t), 6); // waning → last quarter
+      expect(SkyTransits.moonSignIndex(t), 5); // Virgo
+      expect(SkyTransits.moonPhase(t), 7); // waning crescent
       expect(SkyTransits.sunSignIndex(t), 6); // Libra
     });
 

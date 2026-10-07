@@ -118,7 +118,7 @@ class SkyWeekCard extends StatelessWidget {
         const SectionHeader(
           'آسمانِ هفته',
           subtitle: 'تمِ قمر در آغازِ هفته',
-          icon: Icons.wb_sunny_outlined,
+          icon: Icons.wb_sunny,
           iconColor: AppTheme.sky,
         ),
         GlassCard(
