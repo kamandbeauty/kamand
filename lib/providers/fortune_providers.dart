@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/fortunes/fortune_engines.dart';
-import '../domain/zodiac/zodiac_repository.dart';
+import '../domain/zodiac/zodiac_sign.dart';
 import 'app_providers.dart';
 import 'tradition_providers.dart' show birthUtcProvider;
 

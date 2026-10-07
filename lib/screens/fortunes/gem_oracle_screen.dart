@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/date/app_date.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/persian_numbers.dart';
 import '../../data/content/fortunes_content.dart';
 import '../../domain/fortunes/fortune_engines.dart';
 import '../../providers/fortune_providers.dart';

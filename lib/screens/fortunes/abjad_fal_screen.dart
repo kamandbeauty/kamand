@@ -63,8 +63,6 @@ class _AbjadFalScreenState extends ConsumerState<AbjadFalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(title: const Text('فال ابجد')),
       body: ListView(
