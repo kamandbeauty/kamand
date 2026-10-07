@@ -211,6 +211,18 @@ final seedSources = <Map<String, Object?>>[
     'notes': 'فهرست گسترده و قابل ردیابی برای کشف نام‌ها و معانی اولیه است؛ همه رکوردهای این بسته تا بازبینی مدخل‌به‌مدخل unverified می‌مانند.',
   },
   {
+    'id': 'source-nabidam-persian-names',
+    'title': 'Persian Names dataset',
+    'author': 'nabidam',
+    'publisher': 'GitHub',
+    'publication_year': 2024,
+    'language': 'fa',
+    'source_type': 'open_dataset',
+    'url': 'https://github.com/nabidam/persian-names/tree/68f5cb39a25c19ecaf6f60f3181aea200f8206f',
+    'reliability_level': 'tier_3',
+    'notes': 'مجموعه MIT شامل ۸۸۱۶ صورت نام و برچسب جنسیت؛ منبع README دو فایل اینترنتی را ادغام و حروف عربی/اعراب را پاک‌سازی کرده است. این برنامه فقط صورت نام و جنسیت را وارد می‌کند و معنی، ریشه و تلفظ را از این مجموعه استخراج نمی‌کند.',
+  },
+  {
     'id': 'source-behind-the-name-persian',
     'title': 'Persian Names',
     'author': 'Mike Campbell and contributors',
@@ -313,6 +325,11 @@ final seedSourceMetadata = <String, Map<String, String>>{
     'license': 'CC BY-SA 4.0؛ الزام انتساب و اشتراک مشابه برای متن مشتق',
     'coverage': 'فهرست بزرگ نام‌های فارسی و معانی اولیه',
     'review_status': 'editorial_pending',
+  },
+  'source-nabidam-persian-names': {
+    'license': 'MIT؛ حفظ attribution و متن مجوز در third_party/persian_names/LICENSE',
+    'coverage': '۸۸۱۶ صورت نام فارسی و برچسب جنسیت در نسخه upstream مشخص‌شده',
+    'review_status': 'pending',
   },
   'source-behind-the-name-persian': {
     'license': 'Copyright؛ فقط لینک و فراداده، بدون بازنشر متن',

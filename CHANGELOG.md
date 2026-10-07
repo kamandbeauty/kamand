@@ -1,18 +1,33 @@
 # Changelog
 
+## 0.1.0-alpha.4 — 2026-10-07
+
+### Added
+
+- Schema 9 provenance fields for sourced pronunciation records.
+- Integrity audit for orphan relations, missing sources, invalid subjects and normalized duplicates.
+- Imported 8,816 name forms and source gender labels from the MIT-licensed `nabidam/persian-names` dataset at commit `68f5cb39a25c19ecaf6f60f3181aea200f8206f`.
+- Dataset imports keep meaning, etymology, transliteration and pronunciation as Unknown until independently sourced.
+- Upstream MIT license and attribution are preserved in `third_party/persian_names`.
+
+### Verification
+
+- Dataset provenance and duplicate normalization are recorded in SQLite Source Claims.
+- Flutter Analyze, 26 tests and Android APK Build pass in CI.
+
 ## 0.1.0-alpha.3 — 2026-10-07
 
 ### Added
 
 - Schema 8 source registry with license, coverage, access date and editorial review status.
 - Expanded source bank with Iranica Parthian/Sasanian/Anahid records, Wiktionary, Wikidata, Dehkhoda, Oxford and auxiliary references.
-- Knowledge content pack `knowledge-3` with 120+ traceable Persian/Iranian names, meanings, Latin variants, language/culture metadata and independent pending Claims.
+- Knowledge content pack `knowledge-3` with 120+ traceable Persian/Iranian names, meanings, Latin variants, language/culture metadata and independent pending Claims. (Superseded by `knowledge-4` dataset expansion.)
 - Source catalog overview with name, meaning and source coverage metrics.
 - Community-sourced meanings remain `unverified`/`pending`; no community list is presented as a verified etymological authority.
 
 ### Verification
 
-- Database migration and content seed tests updated for Schema 8 and `knowledge-3`.
+- Database migration and content seed tests updated for Schema 8/9 and `knowledge-3`/`knowledge-4`.
 - Flutter Analyze/Test/Android Build run in CI after push.
 
 ## 0.1.0-alpha.2 — 2026-10-07

@@ -16,8 +16,8 @@ void main() {
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
     expect(metadata['schema_version'], '9');
-    expect(metadata['content_version'], 'knowledge-3');
-    expect(database.getSources().length, greaterThan(15));
+    expect(metadata['content_version'], 'knowledge-4');
+    expect(database.getSources().length, greaterThan(20));
     expect(database.searchNames('آ'), isNotEmpty);
     expect(database.searchNames('نیلوفر').single.meaning, contains('گل'));
     expect(database.getName('name-catalog-نیلوفر')?.status, 'unverified');
@@ -25,6 +25,12 @@ void main() {
     expect(database.getClaims('name', 'name-catalog-آرش'), isNotEmpty);
     expect(database.getClaims('name', 'name-داریوش'), isNotEmpty);
     expect(database.getName('name-کوروش')?.etymology, contains('Kuruš'));
+    final importedNames = database.searchNames('');
+    expect(importedNames.length, greaterThan(8500));
+    expect(database.getName('name-nabidam-فاطمه')?.gender, 'مؤنث');
+    expect(database.getName('name-nabidam-فاطمه')?.meaning, 'نامشخص');
+    expect(database.getClaims('name', 'name-nabidam-فاطمه').single.sourceTitle, 'Persian Names dataset');
+    expect(database.getSources().singleWhere((source) => source.id == 'source-nabidam-persian-names').license, contains('MIT'));
   });
 
   test('reports content integrity without treating unknown meaning as an orphan', () {

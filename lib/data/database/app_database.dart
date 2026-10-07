@@ -14,6 +14,7 @@ import '../../domain/models/profile.dart';
 import '../../domain/models/source.dart';
 import '../../domain/models/source_claim.dart';
 import 'name_catalog_data.dart';
+import 'persian_names_dataset.dart';
 import 'seed_data.dart';
 
 class AppDatabase {
@@ -604,6 +605,88 @@ class AppDatabase {
     }
   }
 
+  String _datasetGenderTitle(String value) {
+    if (value == 'MALE') return 'مذکر';
+    if (value == 'FEMALE') return 'مؤنث';
+    return 'نامشخص';
+  }
+
+  void _seedPersianNamesDataset(String now) {
+    final source = seedSources.firstWhere((item) => item['id'] == persianNamesDatasetSourceId);
+    _db.execute(
+      '''INSERT OR IGNORE INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes, license, accessed_at, coverage, review_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+      [
+        source['id'], source['title'], source['author'], source['publisher'], source['publication_year'], source['language'],
+        source['source_type'], source['url'], source['isbn'], source['doi'], source['reliability_level'], source['notes'],
+        source['license'] ?? '', source['accessed_at'] ?? '', source['coverage'] ?? '', source['review_status'] ?? 'pending',
+      ],
+    );
+    final metadata = seedSourceMetadata[persianNamesDatasetSourceId];
+    if (metadata != null) {
+      _db.execute(
+        'UPDATE sources SET license = ?, accessed_at = ?, coverage = ?, review_status = ? WHERE id = ?',
+        [metadata['license'] ?? '', now, metadata['coverage'] ?? '', metadata['review_status'] ?? 'pending', persianNamesDatasetSourceId],
+      );
+    }
+
+    final existingByNormalized = <String, String>{};
+    final existingDisplayByNormalized = <String, String>{};
+    for (final row in _db.select('SELECT id, display_name, normalized_name FROM names')) {
+      final normalized = row['normalized_name'] as String;
+      existingByNormalized[normalized] = row['id'] as String;
+      existingDisplayByNormalized[normalized] = row['display_name'] as String;
+    }
+
+    for (final indexed in persianNamesDataset.asMap().entries) {
+      final sourceName = indexed.value['name']!;
+      final normalized = PersianNormalizer.normalizeForSearch(sourceName);
+      if (normalized.isEmpty) continue;
+      final gender = _datasetGenderTitle(indexed.value['gender'] ?? 'UNKNOWN');
+      var nameId = existingByNormalized[normalized];
+      if (nameId == null) {
+        nameId = 'name-nabidam-${normalized.replaceAll(' ', '-')}';
+        _db.execute(
+          '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [
+            nameId, sourceName, normalized, '', 'فارسی', 'نامشخص', gender, 'نامشخص',
+            'اطلاعات ریشه‌شناختی در این مجموعه ثبت نشده است.', 'نامشخص', 'unverified', 'low',
+            'dataset|منبع‌محور', persianNamesDatasetSourceId,
+            'صورت نام و برچسب جنسیت از مجموعه nabidam/persian-names؛ معنی، ریشه و تلفظ باید جداگانه بررسی شوند.', now, now,
+          ],
+        );
+        existingByNormalized[normalized] = nameId;
+        existingDisplayByNormalized[normalized] = sourceName;
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_languages (id, name_id, language_code, language_title, status, confidence, claim_group_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)''',
+          ['language-nabidam-${indexed.key}', nameId, 'fa', 'فارسی', 'unverified', 'low', 'group-nabidam-${indexed.key}'],
+        );
+      }
+
+      final canonicalDisplay = existingDisplayByNormalized[normalized] ?? sourceName;
+      if (sourceName != canonicalDisplay) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_variants (id, name_id, variant_text, normalized_text, script, variant_type)
+             VALUES (?, ?, ?, ?, ?, ?)''',
+          ['variant-nabidam-${indexed.key}', nameId, sourceName, normalized, 'Arab', 'dataset_variant'],
+        );
+      }
+      _db.execute(
+        '''INSERT OR IGNORE INTO source_claims (id, claim_group_id, source_id, subject_type, subject_id, claim_type, claim_text, normalized_value, status, confidence, evidence_note, review_status, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        [
+          'claim-nabidam-${indexed.key}', 'group-nabidam-${indexed.key}', persianNamesDatasetSourceId, 'name', nameId,
+          'dataset_record', 'صورت «$sourceName» در مجموعه Persian Names ثبت شده است؛ برچسب جنسیت منبع: $gender.',
+          '$sourceName|$gender', 'unverified', 'low',
+          'نسخه upstream: $persianNamesDatasetSourceCommit؛ رکورد برای کشف و جست‌وجوست و Claim مستقل علمی محسوب نمی‌شود.',
+          'pending', now,
+        ],
+      );
+    }
+  }
+
   void _ensureCalculationSystems() {
     for (final definition in abjadSystemDefinitions) {
       _db.execute('''
@@ -677,8 +760,22 @@ class AppDatabase {
 
   void _upgradeContentSeed() {
     final metadata = getMetadata();
-    if (metadata['content_version'] == 'knowledge-3') return;
+    final contentVersion = metadata['content_version'];
+    if (contentVersion == 'knowledge-4') return;
     final now = DateTime.now().toUtc().toIso8601String();
+    if (contentVersion == 'knowledge-3') {
+      _db.execute('BEGIN');
+      try {
+        _seedPersianNamesDataset(now);
+        _setMetadata('content_version', 'knowledge-4');
+        _db.execute('COMMIT');
+        _refreshSearchIndex();
+      } catch (_) {
+        _db.execute('ROLLBACK');
+        rethrow;
+      }
+      return;
+    }
     _db.execute('BEGIN');
     try {
       for (final source in seedSources) {
@@ -782,7 +879,8 @@ class AppDatabase {
           [entry['id'], entry['title'], entry['category'], entry['body'], entry['source_id'], entry['status'], now],
         );
       }
-      _setMetadata('content_version', 'knowledge-3');
+      _seedPersianNamesDataset(now);
+      _setMetadata('content_version', 'knowledge-4');
       _db.execute('COMMIT');
       _refreshSearchIndex();
     } catch (_) {
