@@ -1,5 +1,4 @@
 import '../../core/normalization/persian_normalizer.dart';
-import 'name_catalog_data.dart';
 
 const internalSourceId = 'source-internal-review';
 
