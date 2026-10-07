@@ -92,9 +92,48 @@ jobs:
           exit 1
 
       # ── تصاویر رابط کاربری (برای بازبینی طراحی) ────────────────────────
-      - name: Render UI screenshots
+      - name: Render UI screenshots and commit them
+        id: shots
         continue-on-error: true
-        run: flutter test --update-goldens test/screenshots_tool.dart
+        run: |
+          set +e
+          {
+            echo "== flutter test --update-goldens =="
+            flutter test --update-goldens test/screenshots_tool.dart 2>&1
+            echo "== exit: $? =="
+            echo "== files =="
+            ls -l test/golden/ 2>&1
+            if ls test/golden/*.png >/dev/null 2>&1; then
+              mkdir -p docs/ui
+              cp test/golden/*.png docs/ui/
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add -f docs/ui
+              if git diff --cached --quiet; then
+                echo "== screenshots unchanged =="
+              else
+                git commit -m "تصاویر رابط کاربری [skip ci]" 2>&1
+                git fetch origin "$GITHUB_REF_NAME" 2>&1
+                git rebase "origin/$GITHUB_REF_NAME" 2>&1
+                git push origin "HEAD:$GITHUB_REF_NAME" 2>&1
+                echo "== push exit: $? =="
+              fi
+            else
+              echo "== no screenshots produced =="
+            fi
+          } 2>&1 | tee "$RUNNER_TEMP/shots.log"
+          exit 0
+
+      - name: Publish screenshot log as check run
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOG_PATH: ${{ runner.temp }}/shots.log
+          TITLE: Screenshot log
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: python3 .github/scripts/publish_check_run.py
 
       - name: Upload UI screenshots
         if: always()
@@ -104,26 +143,6 @@ jobs:
           path: test/golden/
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Commit UI screenshots back to the branch
-        if: always() && github.event_name == 'push'
-        continue-on-error: true
-        run: |
-          set -e
-          if ! ls test/golden/*.png >/dev/null 2>&1; then
-            echo "no screenshots produced"; exit 0
-          fi
-          mkdir -p docs/ui
-          cp test/golden/*.png docs/ui/
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/ui
-          if git diff --cached --quiet; then
-            echo "screenshots unchanged"; exit 0
-          fi
-          git commit -m "تصاویر رابط کاربری [skip ci]"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
 
   build-apk:
     name: Build release APK
