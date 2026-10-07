@@ -89,8 +89,8 @@ void main() {
 
   group('Tarot', () {
     test('birth card: digit-sum method', () {
-      // 1+9+9+2+1+1+2+9 = 33 -> 3+3 = 6 (The Lovers).
-      expect(Tarot.birthCard(DateTime(1992, 11, 29)), 6);
+      // year 21 + month 2 + day 11 = 34 -> 3+4 = 7 (The Chariot).
+      expect(Tarot.birthCard(DateTime(1992, 11, 29)), 7);
       // 2+0+0+0+0+1+0+1 = 4 (The Emperor).
       expect(Tarot.birthCard(DateTime(2000, 1, 1)), 4);
       // 1+9+8+4+0+2+0+2 = 26 -> 8 (Strength).
