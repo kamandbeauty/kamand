@@ -7,7 +7,9 @@ plugins {
 android {
     namespace "com.kamand.nameology"
     compileSdk 34
-    ndkVersion flutter.ndkVersion
+    // Keep CI and local Android SDK builds reproducible without downloading Flutter's
+    // latest NDK on every build. This version is supported by sqlite3_flutter_libs.
+    ndkVersion "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
