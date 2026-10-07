@@ -131,6 +131,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           LOG_PATH: ${{ runner.temp }}/shots.log
           TITLE: Screenshot log
+          CONCLUSION: neutral
           SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
         run: python3 .github/scripts/publish_check_run.py

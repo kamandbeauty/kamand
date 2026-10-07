@@ -286,7 +286,9 @@ class GameController extends ChangeNotifier {
         }
       case GamePhase.kitty:
         if (e.hakem != 0) {
-          _timer = Timer(d, () => _run(e.takeKitty));
+          _timer = Timer(d, () => _run(() {
+                if (e.phase == GamePhase.kitty) e.takeKitty();
+              }));
         }
       case GamePhase.discarding:
         if (e.hakem != 0) {
@@ -365,6 +367,8 @@ class GameController extends ChangeNotifier {
   }
 
   void _botBid(ShelemEngine e) {
+    // وضعیت ممکن است بین زمان‌بندی و اجرای تایمر عوض شده باشد.
+    if (e.phase != GamePhase.bidding || e.bidder == 0) return;
     final int? value = ShelemBot.chooseBid(
       e,
       e.bidder,
@@ -385,6 +389,9 @@ class GameController extends ChangeNotifier {
   }
 
   void _botDiscard(ShelemEngine e) {
+    if (e.phase != GamePhase.discarding || e.hakem == null || e.hakem == 0) {
+      return;
+    }
     final int hakem = e.hakem!;
     final Suit trump = ShelemBot.bestTrump(e.hands[hakem]);
     final List<PlayingCard> cards = ShelemBot.chooseDiscards(
@@ -396,6 +403,7 @@ class GameController extends ChangeNotifier {
   }
 
   void _botLeadFirst(ShelemEngine e) {
+    if (e.phase != GamePhase.declaringTrump || e.turn == 0) return;
     final int p = e.turn;
     final Suit trump = ShelemBot.bestTrump(e.hands[p]);
     final List<PlayingCard> trumps = e.hands[p]
@@ -416,6 +424,7 @@ class GameController extends ChangeNotifier {
   }
 
   void _botPlay(ShelemEngine e) {
+    if (e.phase != GamePhase.playing || e.turn == 0) return;
     final int p = e.turn;
     final PlayingCard card = ShelemBot.chooseCard(
       e,
@@ -428,6 +437,7 @@ class GameController extends ChangeNotifier {
   }
 
   void _collect(ShelemEngine e) {
+    if (e.phase != GamePhase.trickComplete) return;
     final int winner = trickWinner(e.trick, e.trump);
     e.collectTrick();
     if (settings.haptics && teamOf(winner) == 0) {

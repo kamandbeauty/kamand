@@ -64,7 +64,7 @@ def main() -> int:
         "name": f"CI output — {title}",
         "head_sha": sha,
         "status": "completed",
-        "conclusion": "failure",
+        "conclusion": os.environ.get("CONCLUSION", "failure"),
         "output": {
             "title": title,
             "summary": f"```\n{summary}\n```",
