@@ -75,8 +75,15 @@ class AppDate {
     }
   }
 
-  static Jalali addDays(Jalali date, int days) =>
-      Jalali.fromDateTime(date.toDateTime().add(Duration(days: days)));
+  /// Calendar-day arithmetic. Uses the DateTime constructor (civil-day
+  /// normalization) instead of adding a 24h Duration: on a 25-hour DST
+  /// fall-back day — Iran has no DST since 2022, but users abroad do —
+  /// `midnight + 24h` lands at 23:00 of the *same* civil date and would
+  /// duplicate a day in the weekly view.
+  static Jalali addDays(Jalali date, int days) {
+    final g = date.toDateTime();
+    return Jalali.fromDateTime(DateTime(g.year, g.month, g.day + days));
+  }
 
   /// Persian weekday index, 0 = Saturday … 6 = Friday.
   static int weekDayIndex(Jalali date) {

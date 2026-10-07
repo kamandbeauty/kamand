@@ -112,13 +112,14 @@ class NumerologyTraditionScreen extends ConsumerWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             NatureChip(
                               'جمع ابجد نام: ${PersianNumbers.format(abjad)}',
                               color: AppTheme.violet,
                             ),
-                            const SizedBox(width: 8),
                             NatureChip(
                               'عدد تفسیری: ${PersianNumbers.toPersianNum(reduced)}',
                               color: AppTheme.sky,

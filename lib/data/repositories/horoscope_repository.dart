@@ -1,4 +1,5 @@
 import 'package:shamsi_date/shamsi_date.dart';
+import '../../core/date/app_date.dart';
 
 import '../../domain/horoscope/horoscope_engine.dart';
 import '../../domain/horoscope/horoscope_models.dart';
@@ -54,9 +55,7 @@ class LocalHoroscopeRepository implements HoroscopeRepository {
       String zodiacId, Jalali weekStart) async {
     final result = <DailyHoroscope>[];
     for (var i = 0; i < 7; i++) {
-      final date = Jalali.fromDateTime(
-        weekStart.toDateTime().add(Duration(days: i)),
-      );
+      final date = AppDate.addDays(weekStart, i);
       result.add(await dailyFor(zodiacId, date));
     }
     return result;

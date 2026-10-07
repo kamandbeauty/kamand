@@ -87,7 +87,10 @@ class IranianTraditionScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       today['name']! as String,
@@ -98,7 +101,6 @@ class IranianTraditionScreen extends ConsumerWidget {
                         fontFamily: 'Vazirmatn',
                       ),
                     ),
-                    const SizedBox(width: 8),
                     NatureChip(
                       today['nature']! as String,
                       color: _natureColor(today['nature']! as String),

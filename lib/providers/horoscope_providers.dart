@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shamsi_date/shamsi_date.dart';
 
 import '../core/date/app_date.dart';
 import '../domain/compatibility/compatibility_engine.dart';
@@ -32,9 +31,7 @@ final weeklyHoroscopeProvider =
   final days = <WeeklyDay>[
     for (var i = 0; i < dailies.length; i++)
       WeeklyDay(
-        date: Jalali.fromDateTime(
-          weekStart.toDateTime().add(Duration(days: i)),
-        ),
+        date: AppDate.addDays(weekStart, i),
         scores: dailies[i].scores,
       ),
   ];

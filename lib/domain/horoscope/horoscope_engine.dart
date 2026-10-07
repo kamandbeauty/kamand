@@ -1,4 +1,5 @@
 import 'package:shamsi_date/shamsi_date.dart';
+import '../../core/date/app_date.dart';
 
 import '../zodiac/zodiac_repository.dart';
 import '../zodiac/zodiac_sign.dart';
@@ -100,9 +101,7 @@ class HoroscopeEngine {
   WeeklyHoroscope generateWeekly(ZodiacSign sign, Jalali weekStart) {
     final days = <WeeklyDay>[];
     for (var i = 0; i < 7; i++) {
-      final date = Jalali.fromDateTime(
-        weekStart.toDateTime().add(Duration(days: i)),
-      );
+      final date = AppDate.addDays(weekStart, i);
       final daily = generateDaily(sign, date);
       days.add(WeeklyDay(date: date, scores: daily.scores));
     }

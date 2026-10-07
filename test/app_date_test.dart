@@ -140,4 +140,36 @@ void main() {
       expect(AppDate.isLeapYear(1404), isFalse);
     });
   });
+
+  group('addDays (DST-safe calendar arithmetic)', () {
+    test('crosses Jalali year boundaries in both directions', () {
+      expect(AppDate.addDays(Jalali(1404, 12, 29), 1), Jalali(1405, 1, 1));
+      expect(AppDate.addDays(Jalali(1405, 1, 1), -1), Jalali(1404, 12, 29));
+      // Leap-year Esfand (1403): 30 days.
+      expect(AppDate.addDays(Jalali(1403, 12, 30), 1), Jalali(1404, 1, 1));
+      expect(AppDate.addDays(Jalali(1404, 1, 1), -1), Jalali(1403, 12, 30));
+    });
+
+    test('seven consecutive +1 steps give seven distinct days', () {
+      // Regression guard for the old 24h-Duration implementation, which
+      // could repeat a civil date on 25-hour DST fall-back days outside
+      // Iran (midnight + 24h lands at 23:00 of the same date).
+      var d = Jalali(1405, 7, 1);
+      final seen = <Jalali>{d};
+      for (var i = 1; i <= 7; i++) {
+        d = AppDate.addDays(d, 1);
+        expect(seen.add(d), isTrue, reason: 'day $i repeated a date');
+      }
+      expect(d, Jalali(1405, 7, 8));
+    });
+
+    test('weekly loop via addDays matches weekStart + 0..6', () {
+      final start = AppDate.weekStart(Jalali(1405, 7, 15));
+      expect(AppDate.weekDayIndex(start), 0); // Saturday
+      for (var i = 0; i < 7; i++) {
+        final d = AppDate.addDays(start, i);
+        expect(AppDate.weekDayIndex(d), i);
+      }
+    });
+  });
 }

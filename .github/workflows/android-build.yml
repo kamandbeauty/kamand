@@ -221,46 +221,47 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="taalebin-v1.3.0"
+          tag="taalebin-v1.3.1"
 
           # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
           rm -rf "$dist"; mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.3.0-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.3.0-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.3.0-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.3.0-universal.apk"
-          cp "$aab"                                 "$dist/taalebin-v1.3.0.aab"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.3.1-new-phones-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.3.1-old-phones-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.3.1-emulator-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.3.1-universal.apk"
+          cp "$aab"                                 "$dist/taalebin-v1.3.1.aab"
 
           # Integrity manifest: exact size + SHA-256 of every file, so a
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in taalebin-v1.3.0-*; do
+            for f in taalebin-v1.3.1-*; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
 
-          notes="نسخهٔ ۱.۳.۰ «طالع بین» — ماژول «طالع‌بینی در سنت‌های جهان».
+          notes="نسخهٔ ۱.۳.۱ «طالع بین» — نسخه‌های جدا برای گوشی قدیمی و جدید + رفع باگ‌ها.
 
-          🌏 جدید در این نسخه: طالع‌بینی در پنج سنت کهن جهان، همهٔ آن‌ها آفلاین و از روی همان تاریخ تولد تو:
-          • طالع‌بینی چینی — حیوان سال، عنصر و یین/یانگ با مرز دقیق سال نو چینی (جدول رسمی ۱۹۰۰–۲۱۰۰) + هم‌نوازی با شریک زندگی
-          • فراشماره — عدد مسیر زندگی (پیتاگوراسی)، سال شخصی و حساب ابجدِ نام
-          • سنت ایرانی-اسلامی — منازل ۲۸گانهٔ ماه در هنگام تولد و منزل ماهِ امروز (میراث احکام نجوم)
-          • طالع‌بینی ودیک — برج قمری و تولدستاره (ناکشاترا) بر پایهٔ جیوتیشا
-          • تقویم مقدس مایا — امضای کیهانی تو در چرخهٔ ۲۶۰روزهٔ تزولکین
+          📱 کدام فایل را دانلود کنم؟ (نسخه‌ها از هم جدا شدند)
+          • گوشیِ نسبتاً جدید (اکثر گوشی‌های چند سال اخیر) → فایل «گوشی‌های جدید»
+          • گوشیِ قدیمی یا ارزان‌قیمت → فایل «گوشی‌های قدیمی»
+          • مطمئن نیستی → فایل universal (روی هر گوشی نصب می‌شود، حجم بیشتر)
+          • دو فایل دیگر مخصوص شبیه‌ساز روی کامپیوتر و Google Play است — برای نصب روی گوشی دانلودشان نکن.
 
-          این نسخه شناسهٔ پکیج اختصاصی خودش را دارد و با هیچ برنامهٔ قدیمی روی گوشی تداخل نمی‌کند.
-
-          کدام فایل را دانلود کنم؟ نسخهٔ مخصوص گوشیِ خودت:
+          🛠 در این نسخه:
+          • جداسازی کامل نسخهٔ گوشی قدیمی و جدید؛ هر فایل اسم و توضیح فارسی خودش را دارد
+          • رفع باگ روزِ تکراری در پیش‌نمایش هفته برای کاربران خارج از ایران (هفتهٔ تغییر ساعت تابستانی)
+          • بهبود چیدمان صفحه‌های «سنت‌های جهان» روی نمایشگرهای باریک
+          • از نسخهٔ ۱.۳.۰: ماژول طالع‌بینی در سنت‌های جهان (چینی، فراشماره و ابجد، منازل قمر، ودیک، مایا)
 
           | فایل | مخصوص |
           |---|---|
-          | taalebin-v1.3.0-arm64-v8a.apk | گوشی‌های مدرن (اکثر گوشی‌ها) |
-          | taalebin-v1.3.0-armeabi-v7a.apk | گوشی‌های قدیمی‌تر ۳۲ بیتی |
-          | taalebin-v1.3.0-x86_64.apk | شبیه‌ساز اندروید |
-          | taalebin-v1.3.0-universal.apk | همهٔ گوشی‌ها (حجم بیشتر) |
-          | taalebin-v1.3.0.aab | فقط Google Play — نصب مستقیم ندارد |
+          | taalebin-v1.3.1-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
+          | taalebin-v1.3.1-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
+          | taalebin-v1.3.1-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید روی کامپیوتر |
+          | taalebin-v1.3.1-universal.apk | 📱 همهٔ گوشی‌ها (حجم بیشتر) |
+          | taalebin-v1.3.1.aab | 🏪 فقط Google Play — نصب مستقیم ندارد |
 
           حداقل سیستم لازم: اندروید ۶.۰ (به بالا).
 
@@ -269,7 +270,7 @@ jobs:
           ۲. فایل را دوباره دانلود کن و حجمش را با CHECKSUMS.txt مقایسه کن — اگر کمتر بود، دانلود ناقص است.
           ۳. از برنامهٔ «فایل‌ها» روی فایل apk بزن (نه از داخل مرورگر) و اجازهٔ «نصب از منابع ناشناس» را همان‌جا بده.
           ۴. اگر Play Protect هشدار داد: «جزئیات بیشتر» ← «نصب در هر صورت».
-          ۵. فایل aab را نصب نکن — فقط apk نصب می‌شود."
+          ۵. فایل aab و فایل emulator را روی گوشی نصب نکن — فقط فایل‌های apkِ گوشی نصب می‌شوند."
 
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             for old_asset in $(gh release view "$tag" --json assets --jq ".assets[].name"); do
@@ -279,7 +280,25 @@ jobs:
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" "$dist"/* \
-              --title "طالع بین — نسخهٔ ۱.۳.۰" \
+              --title "طالع بین — نسخهٔ ۱.۳.۱" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
+
+          # Persian display labels on the assets so the old/new phone choice
+          # is readable without parsing filenames.
+          rel_id="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq .id)"
+          label_asset() {
+            local name="$1" label="$2" aid
+            aid="$(gh api "repos/$GITHUB_REPOSITORY/releases/$rel_id/assets" \
+              --jq ".[] | select(.name == \"$name\") | .id")"
+            if [ -n "$aid" ]; then
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/assets/$aid" \
+                -f label="$label" >/dev/null || true
+            fi
+          }
+          label_asset "taalebin-v1.3.1-new-phones-arm64-v8a.apk"  "📱 گوشی‌های جدید (اکثر گوشی‌ها)"
+          label_asset "taalebin-v1.3.1-old-phones-armeabi-v7a.apk" "📱 گوشی‌های قدیمی / ۳۲ بیتی"
+          label_asset "taalebin-v1.3.1-emulator-x86_64.apk"        "💻 شبیه‌ساز اندروید (کامپیوتر)"
+          label_asset "taalebin-v1.3.1-universal.apk"              "📱 همهٔ گوشی‌ها (حجم بیشتر)"
+          label_asset "taalebin-v1.3.1.aab"                        "🏪 فقط Google Play"

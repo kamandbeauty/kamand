@@ -64,12 +64,13 @@ class ChineseTraditionScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
                   children: [
                     NatureChip(element['nameFa']! as String,
                         color: AppTheme.sky),
-                    const SizedBox(width: 8),
                     NatureChip(
                       sign.yang
                           ? TraditionsContent.chinesePolarity['yang']!
