@@ -239,21 +239,28 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="shelem-v1.2.1"
+          tag="shelem-v1.3.0"
           out="$RUNNER_TEMP/release"
           mkdir -p "$out"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$out/shelem-v1.2.1-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$out/shelem-v1.2.1-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$out/shelem-v1.2.1-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$out/shelem-v1.2.1-universal.apk"
-          cp "$aab"                                "$out/shelem-v1.2.1.aab"
-          notes="بازی «شلم» — نسخهٔ ۱.۲.۱
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$out/shelem-v1.3.0-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$out/shelem-v1.3.0-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$out/shelem-v1.3.0-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$out/shelem-v1.3.0-universal.apk"
+          cp "$aab"                                "$out/shelem-v1.3.0.aab"
+          notes="بازی «شلم» — نسخهٔ ۱.۳.۰
 
-          بازی کلاسیک ورق ایرانی: شما به‌همراه یک یارِ هوشمند در برابر دو حریف.
+          بازی کلاسیک ورق ایرانی: چهار نفره (با یارِ هوشمند در برابر دو حریف)
+          یا دو نفره، رو در رو با یک حریفِ هوشمند.
           خواندن (حراج)، گلِ وسط، اعلام حکم با اولین برگ، یاسا، شلم و سرشلم،
           چهار سطح سختی، هفت زمین بازی و ذخیرهٔ خودکار.
 
-          تازه در ۱.۲.۱: نقش‌های ورق «دوسر» شدند (مثل پاسورِ واقعی: نیمهٔ
+          تازه در ۱.۳.۰: حالتِ بازیِ دو نفره. هر نفر ۱۲ برگ می‌گیرد، ۴ برگ گلِ
+          وسط می‌شود و ۲۴ برگِ باقی‌مانده روی هم می‌ماند؛ بعد از هر دست اول
+          برنده و بعد حریف یک برگ برمی‌دارد، پس در مجموع ۲۴ دست و ۲۲۵ امتیاز
+          (با جوکر ۲۶۰) بازی می‌شود و حداقلِ خواندن ۱۳۵ است. انتخابِ تعداد
+          بازیکنان هم در صفحهٔ اصلی و هم در تنظیمات.
+
+          پیش‌تر در ۱.۲.۱: نقش‌های ورق «دوسر» شدند (مثل پاسورِ واقعی: نیمهٔ
           بالا ایستاده و نیمهٔ پایین وارونه) با نگاره‌های بزرگ‌تر و تمیزتر،
           رفعِ باگِ شروعِ دست با جوکر (تا اعلام نشدنِ حکم هیچ برگی بازی
           نمی‌شود)، حفظِ همان خالی که ربات هنگام چیدنِ دستش برای حکم در نظر
@@ -285,21 +292,21 @@ jobs:
               gh release delete-asset "$tag" "$stale" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
             done
             gh release upload "$tag" \
-              "$out/shelem-v1.2.1-arm64-v8a.apk" \
-              "$out/shelem-v1.2.1-armeabi-v7a.apk" \
-              "$out/shelem-v1.2.1-x86_64.apk" \
-              "$out/shelem-v1.2.1-universal.apk" \
-              "$out/shelem-v1.2.1.aab" \
+              "$out/shelem-v1.3.0-arm64-v8a.apk" \
+              "$out/shelem-v1.3.0-armeabi-v7a.apk" \
+              "$out/shelem-v1.3.0-x86_64.apk" \
+              "$out/shelem-v1.3.0-universal.apk" \
+              "$out/shelem-v1.3.0.aab" \
               --clobber --repo "$GITHUB_REPOSITORY"
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" \
-              "$out/shelem-v1.2.1-arm64-v8a.apk" \
-              "$out/shelem-v1.2.1-armeabi-v7a.apk" \
-              "$out/shelem-v1.2.1-x86_64.apk" \
-              "$out/shelem-v1.2.1-universal.apk" \
-              "$out/shelem-v1.2.1.aab" \
-              --title "شلم — نسخهٔ ۱.۲.۱" \
+              "$out/shelem-v1.3.0-arm64-v8a.apk" \
+              "$out/shelem-v1.3.0-armeabi-v7a.apk" \
+              "$out/shelem-v1.3.0-x86_64.apk" \
+              "$out/shelem-v1.3.0-universal.apk" \
+              "$out/shelem-v1.3.0.aab" \
+              --title "شلم — نسخهٔ ۱.۳.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi

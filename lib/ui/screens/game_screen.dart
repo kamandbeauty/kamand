@@ -698,7 +698,8 @@ class _Seat extends StatelessWidget {
       highlight: isTurn || isBidding,
     );
 
-    final bool vertical = player == 1 || player == 3;
+    // در بازی دو نفره حریف بالای میز می‌نشیند، پس برگ‌هایش افقی است.
+    final bool vertical = e.seats == 4 && (player == 1 || player == 3);
     return Padding(
       padding: const EdgeInsets.all(4),
       child: vertical
