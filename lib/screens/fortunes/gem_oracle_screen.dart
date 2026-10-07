@@ -94,6 +94,8 @@ class _GemOracleScreenState extends ConsumerState<GemOracleScreen> {
           // ── Daily 3-stone draw ───────────────────────────────────
           SectionHeader(
             'فال سنگ‌های امروز',
+            icon: Icons.diamond_outlined,
+            iconColor: AppTheme.violet,
             subtitle: 'سه سنگ برای ${fields.join('، ')}',
           ),
           if (!_revealed)

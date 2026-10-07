@@ -89,7 +89,8 @@ class TarotFortuneScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── Card of the day ──────────────────────────────────────
-          const SectionHeader('کارتِ امروز تو', subtitle: 'هر روز تازه'),
+          const SectionHeader('کارتِ امروز تو', subtitle: 'هر روز تازه',
+            icon: Icons.style, iconColor: AppTheme.gold),
           GlassCard(
             accent: AppTheme.gold,
             child: Column(

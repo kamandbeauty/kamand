@@ -6,11 +6,23 @@ import 'glass_card.dart';
 
 /// Section header used across screens.
 class SectionHeader extends StatelessWidget {
-  const SectionHeader(this.title, {super.key, this.action, this.subtitle});
+  const SectionHeader(
+    this.title, {
+    super.key,
+    this.action,
+    this.subtitle,
+    this.icon,
+    this.iconColor,
+  });
 
   final String title;
   final String? subtitle;
   final Widget? action;
+
+  /// Optional small leading icon rendered in a tinted circle.
+  final IconData? icon;
+
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +31,27 @@ class SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
+          if (icon != null) ...[
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: (iconColor ?? theme.colorScheme.primary)
+                    .withValues(alpha: 0.14),
+                border: Border.all(
+                  color: (iconColor ?? theme.colorScheme.primary)
+                      .withValues(alpha: 0.45),
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 16,
+                color: iconColor ?? theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

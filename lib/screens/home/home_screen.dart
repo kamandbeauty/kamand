@@ -10,6 +10,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
 import '../settings/settings_screen.dart';
 import '../traditions/traditions_hub_screen.dart';
 import 'daily_screen.dart';
@@ -247,7 +248,11 @@ class _HomeContent extends ConsumerWidget {
         const SizedBox(height: 20),
 
         // ── پیام امروز ───────────────────────────────────────────
-        const SectionHeader('پیام امروز'),
+        const SectionHeader(
+          'پیام امروز',
+          icon: Icons.auto_awesome_outlined,
+          iconColor: AppTheme.gold,
+        ),
         GlassCard(
           accent: AppTheme.gold,
           child: Text(
@@ -263,7 +268,11 @@ class _HomeContent extends ConsumerWidget {
         const SizedBox(height: 20),
 
         // ── Lucky row ─────────────────────────────────────────────
-        const SectionHeader('نشانه‌های شانس امروز'),
+        const SectionHeader(
+          'نشانه‌های شانس امروز',
+          icon: Icons.diamond_outlined,
+          iconColor: AppTheme.sky,
+        ),
         Row(
           children: [
             Expanded(
@@ -299,23 +308,27 @@ class _HomeContent extends ConsumerWidget {
         SectionHeader(
           'طالع‌بینی در سنت‌های جهان',
           subtitle: '۱۲ سنت و فالِ جهان، همه آفلاین',
+          icon: Icons.auto_awesome,
+          iconColor: AppTheme.violet,
           action: TextButton(
             onPressed: () => _openTraditions(context),
             child: const Text('مشاهده'),
           ),
         ),
         GlassCard(
-          padding: const EdgeInsets.all(14),
+          accent: AppTheme.violet,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           onTap: () => _openTraditions(context),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _TraditionDot(icon: Icons.temple_buddhist, color: AppTheme.rose),
-              _TraditionDot(icon: Icons.calculate_outlined, color: AppTheme.sky),
-              _TraditionDot(icon: Icons.nightlight_round, color: AppTheme.gold),
-              _TraditionDot(icon: Icons.self_improvement, color: AppTheme.violet),
-              _TraditionDot(icon: Icons.account_balance, color: Color(0xFF4CD97B)),
-            ],
+          child: SizedBox(
+            height: 46,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              itemCount: MysticEmblems.all.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (context, i) =>
+                  MysticEmblems.all[i].badge(size: 42, showStar: false),
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -324,6 +337,8 @@ class _HomeContent extends ConsumerWidget {
         SectionHeader(
           'هفتهٔ من',
           subtitle: 'شنبه تا جمعه',
+          icon: Icons.date_range,
+          iconColor: AppTheme.rose,
           action: TextButton(
             onPressed: () => _openWeekly(context),
             child: const Text('مشاهدهٔ هفته'),
@@ -409,27 +424,6 @@ class _HomeContent extends ConsumerWidget {
   }
 }
 
-/// Small circular icon badge for the traditions row on the home screen.
-class _TraditionDot extends StatelessWidget {
-  const _TraditionDot({required this.icon, required this.color});
-
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-      ),
-      child: Icon(icon, size: 20, color: color),
-    );
-  }
-}
 
 class _LuckyTile extends StatelessWidget {
   const _LuckyTile({

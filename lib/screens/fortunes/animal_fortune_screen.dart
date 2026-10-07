@@ -70,7 +70,8 @@ class AnimalFortuneScreen extends ConsumerWidget {
           GlassCard(child: BodyText(FortunesContent.animalIntro)),
           const SizedBox(height: 20),
 
-          const SectionHeader('دوازده روحِ حیوانی'),
+          const SectionHeader('دوازده روحِ حیوانی',
+            icon: Icons.pets, iconColor: Color(0xFF4CD97B)),
           GlassCard(
             padding: const EdgeInsets.all(14),
             child: Wrap(

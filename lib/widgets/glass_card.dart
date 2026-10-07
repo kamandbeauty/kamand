@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
 
-/// The signature "glass" card: translucent layered surface with a soft
-/// gradient, hairline border and rounded corners. No blur filters —
-/// GPU-cheap and battery friendly (product spec §29/§38).
-class GlassCard extends StatelessWidget {
+/// The signature "glass" card, generation 2: translucent layered surface
+/// with a hand-painted gradient frame, a top "shine" highlight and a
+/// gentle press animation. No blur filters — GPU-cheap and battery
+/// friendly (product spec §29/§38).
+class GlassCard extends StatefulWidget {
   const GlassCard({
     super.key,
     this.child,
@@ -24,7 +25,7 @@ class GlassCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final double radius;
 
-  /// Optional accent color tinting the card border/gradient.
+  /// Optional accent color tinting the frame/gradient/glow.
   final Color? accent;
   final VoidCallback? onTap;
 
@@ -32,66 +33,150 @@ class GlassCard extends StatelessWidget {
   final bool highlight;
 
   @override
+  State<GlassCard> createState() => _GlassCardState();
+}
+
+class _GlassCardState extends State<GlassCard> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final base = highlight
+    final base = widget.highlight
         ? (isDark ? AppTheme.darkCardHigh : Colors.white)
         : (isDark ? AppTheme.darkCard : Colors.white);
-    final border = accent?.withValues(alpha: 0.55) ??
-        (isDark ? AppTheme.darkBorder : AppTheme.lightBorder);
-    final glow = accent ?? theme.colorScheme.primary;
+    final glow = widget.accent ?? theme.colorScheme.primary;
+    final radius = widget.radius;
 
-    return Padding(
-      padding: margin ?? EdgeInsets.zero,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(radius),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              color: base.withValues(alpha: isDark ? 0.92 : 0.96),
-              borderRadius: BorderRadius.circular(radius),
-              border: Border.all(color: border, width: 1),
-              gradient: LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [
-                  glow.withValues(alpha: highlight ? 0.10 : 0.05),
-                  base.withValues(alpha: 0.0),
-                ],
+    return AnimatedScale(
+      scale: _pressed ? 0.98 : 1.0,
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      child: Padding(
+        padding: widget.margin ?? EdgeInsets.zero,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(radius),
+            onHighlightChanged: widget.onTap == null
+                ? null
+                : (v) => setState(() => _pressed = v),
+            child: Container(
+              padding: widget.padding,
+              decoration: BoxDecoration(
+                color: base.withValues(alpha: isDark ? 0.92 : 0.96),
+                borderRadius: BorderRadius.circular(radius),
+                gradient: LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [
+                    glow.withValues(alpha: widget.highlight ? 0.12 : 0.05),
+                    base.withValues(alpha: 0.0),
+                  ],
+                ),
+                boxShadow: isDark
+                    ? [
+                        BoxShadow(
+                          color: glow
+                              .withValues(alpha: widget.highlight ? 0.20 : 0.10),
+                          blurRadius: widget.highlight ? 30 : 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: const Color(0x1A1B1F4B).withValues(alpha: 0.10),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
               ),
-              boxShadow: isDark
-                  ? [
-                      BoxShadow(
-                        color: glow.withValues(alpha: highlight ? 0.16 : 0.08),
-                        blurRadius: highlight ? 26 : 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: const Color(0x141B1F4B).withValues(alpha: 0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-            ),
-            // A transparent Material above the decoration lets ListTiles /
-            // SwitchListTiles hosted in glass cards paint their own
-            // background & ink splashes correctly (instead of the
-            // decoration hiding them).
-            child: Material(
-              type: MaterialType.transparency,
-              child: child,
+              child: CustomPaint(
+                foregroundPainter: _GlassFramePainter(
+                  radius: radius,
+                  accent: widget.accent,
+                  isDark: isDark,
+                ),
+                // A transparent Material above the decoration lets
+                // ListTiles / SwitchListTiles hosted in glass cards paint
+                // their own background & ink splashes correctly.
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: widget.child,
+                ),
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Paints the gradient hairline frame + the top glass shine of a card.
+class _GlassFramePainter extends CustomPainter {
+  _GlassFramePainter({
+    required this.radius,
+    required this.accent,
+    required this.isDark,
+  });
+
+  final double radius;
+  final Color? accent;
+  final bool isDark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(radius),
+    );
+    canvas.clipRRect(rrect);
+
+    // ── Gradient hairline frame ─────────────────────────────────────
+    final base = accent ??
+        (isDark ? AppTheme.darkBorder : AppTheme.lightBorder);
+    final frame = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1
+      ..shader = LinearGradient(
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+        colors: accent == null
+            ? [base, base] // keep the neutral border solid
+            : [
+                base.withValues(alpha: 0.85),
+                AppTheme.gold.withValues(alpha: 0.55),
+                base.withValues(alpha: 0.9),
+              ],
+      ).createShader(rect);
+    canvas.drawRRect(rrect.deflate(0.55), frame);
+
+    // ── Top "glass shine" ───────────────────────────────────────────
+    final shine = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round
+      ..shader = LinearGradient(
+        colors: [
+          Colors.white.withValues(alpha: 0.0),
+          Colors.white.withValues(alpha: isDark ? 0.16 : 0.35),
+          Colors.white.withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, 4));
+    canvas.drawLine(
+      Offset(size.width * 0.14, 2.2),
+      Offset(size.width * 0.86, 2.2),
+      shine,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_GlassFramePainter old) =>
+      old.accent != accent || old.isDark != isDark || old.radius != radius;
 }
 
 /// Zodiac symbol glyph with the symbols fallback font baked in.

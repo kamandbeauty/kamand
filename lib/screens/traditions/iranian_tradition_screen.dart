@@ -115,7 +115,8 @@ class IranianTraditionScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── The 28 mansions ─────────────────────────────────────
-          const SectionHeader('چرخهٔ ۲۸ منزل قمر'),
+          const SectionHeader('چرخهٔ ۲۸ منزل قمر',
+            icon: Icons.nightlight_round, iconColor: AppTheme.gold),
           GlassCard(
             padding: const EdgeInsets.all(14),
             child: Wrap(

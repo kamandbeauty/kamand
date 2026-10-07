@@ -7,6 +7,13 @@ import '../../domain/traditions/manazil.dart';
 import '../../providers/tradition_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
+import 'chinese_tradition_screen.dart';
+import 'iranian_tradition_screen.dart';
+import 'mayan_tradition_screen.dart';
+import 'numerology_tradition_screen.dart';
+import 'tradition_widgets.dart';
+import 'vedic_tradition_screen.dart';
 import '../fortunes/abjad_fal_screen.dart';
 import '../fortunes/animal_fortune_screen.dart';
 import '../fortunes/gem_oracle_screen.dart';
@@ -14,14 +21,9 @@ import '../fortunes/greek_fortune_screen.dart';
 import '../fortunes/marriage_fortune_screen.dart';
 import '../fortunes/month_traits_screen.dart';
 import '../fortunes/tarot_fortune_screen.dart';
-import 'chinese_tradition_screen.dart';
-import 'iranian_tradition_screen.dart';
-import 'mayan_tradition_screen.dart';
-import 'numerology_tradition_screen.dart';
-import 'tradition_widgets.dart';
-import 'vedic_tradition_screen.dart';
 
-/// «طالع‌بینی در سنت‌های جهان» — hub listing the five traditions.
+/// «طالع‌بینی در سنت‌های جهان» — hub listing the five world traditions
+/// and the seven fortune modules, each with its own mystic emblem.
 ///
 /// Everything is computed offline from the birth date the user already
 /// entered; no new data is collected.
@@ -42,19 +44,56 @@ class TraditionsHubScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         children: [
-          Text(
-            'تولدت در پنج سنت کهنِ طالع‌بینی جهان چه می‌گوید؟ همهٔ این‌ها با همان تاریخ تولدی که وارد کرده‌ای، همین‌جا روی گوشی محاسبه می‌شود.',
-            style: TextStyle(
-              fontSize: 12.5,
-              height: 2.0,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              fontFamily: 'Vazirmatn',
+          // ── Hero strip: all twelve emblems ──────────────────────
+          GlassCard(
+            highlight: true,
+            accent: AppTheme.violet,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            child: Column(
+              children: [
+                Text(
+                  'تولدت در پنج سنت کهنِ جهان چه می‌گوید؟',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'همه با همان تاریخ تولدت، همین‌جا و آفلاین محاسبه می‌شود.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.9,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    for (final spec in MysticEmblems.all)
+                      spec.badge(size: 38, showStar: false),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          _TraditionCard(
-            accent: AppTheme.rose,
-            icon: Icons.temple_buddhist,
+          const SizedBox(height: 20),
+
+          // ── Section 1: the five world traditions ────────────────
+          const SectionHeader(
+            'پنج سنت کهنِ جهان',
+            subtitle: 'چینی · فراشماره · ایرانی · ودیک · مایا',
+            icon: Icons.public,
+            iconColor: AppTheme.sky,
+          ),
+          _ModuleCard(
+            spec: MysticEmblems.chinese,
             title: 'طالع‌بینی چینی',
             subtitle: chinese == null
                 ? 'حیوان، عنصر و یین/یانگ سال تولد'
@@ -64,9 +103,8 @@ class TraditionsHubScreen extends ConsumerWidget {
             onTap: () => _push(context, const ChineseTraditionScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: AppTheme.sky,
-            icon: Icons.calculate_outlined,
+          _ModuleCard(
+            spec: MysticEmblems.numerology,
             title: 'فراشماره و ابجد',
             subtitle: lifePath == null
                 ? 'عدد مسیر زندگی از تاریخ تولد + ابجدِ نام'
@@ -74,9 +112,8 @@ class TraditionsHubScreen extends ConsumerWidget {
             onTap: () => _push(context, const NumerologyTraditionScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: AppTheme.gold,
-            icon: Icons.nightlight_round,
+          _ModuleCard(
+            spec: MysticEmblems.iranian,
             title: 'سنت ایرانی-اسلامی',
             subtitle: manzil == null
                 ? 'منازل ۲۸گانهٔ ماه و میراث احکام نجوم'
@@ -84,9 +121,8 @@ class TraditionsHubScreen extends ConsumerWidget {
             onTap: () => _push(context, const IranianTraditionScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: AppTheme.violet,
-            icon: Icons.self_improvement,
+          _ModuleCard(
+            spec: MysticEmblems.vedic,
             title: 'طالع‌بینی ودیک (هند)',
             subtitle: vedic == null
                 ? 'برج قمری و تولدستاره بر پایهٔ جیوتیشا'
@@ -95,9 +131,8 @@ class TraditionsHubScreen extends ConsumerWidget {
             onTap: () => _push(context, const VedicTraditionScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: const Color(0xFF4CD97B),
-            icon: Icons.account_balance,
+          _ModuleCard(
+            spec: MysticEmblems.maya,
             title: 'تقویم مقدس مایا',
             subtitle: tzolkin == null
                 ? 'تزولکین ۲۶۰روزه و امضای کیهانی تو'
@@ -106,61 +141,58 @@ class TraditionsHubScreen extends ConsumerWidget {
             onTap: () => _push(context, const MayanTraditionScreen()),
           ),
           const SizedBox(height: 24),
-          SectionHeader('فال و طالع‌های بیشتر',
-              subtitle: 'هفت درِ تازه به دنیای فال'),
 
-          // ── Fortune modules ───────────────────────────────────────
-          _TraditionCard(
-            accent: AppTheme.gold,
-            icon: Icons.diamond_outlined,
+          // ── Section 2: fortunes ─────────────────────────────────
+          const SectionHeader(
+            'فال و طالع‌های بیشتر',
+            subtitle: 'هفت درِ تازه به دنیای فال',
+            icon: Icons.auto_fix_high,
+            iconColor: AppTheme.gold,
+          ),
+          _ModuleCard(
+            spec: MysticEmblems.gem,
             title: 'فال جم‌اوراکل',
             subtitle: 'سنگِ ماهِ تولدت و فالِ سه‌سنگیِ امروز',
             onTap: () => _push(context, const GemOracleScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: AppTheme.violet,
-            icon: Icons.auto_fix_high,
+          _ModuleCard(
+            spec: MysticEmblems.abjad,
             title: 'فال ابجد',
             subtitle: 'ابجدِ نام و نامِ مادرت، با نیتِ دل',
             onTap: () => _push(context, const AbjadFalScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: AppTheme.sky,
-            icon: Icons.account_balance_outlined,
+          _ModuleCard(
+            spec: MysticEmblems.greek,
             title: 'طالع‌بینی یونانی',
             subtitle: 'عنصر، کیفیت، مزاج و اسطورهٔ برجِ تو',
             onTap: () => _push(context, const GreekFortuneScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: AppTheme.rose,
-            icon: Icons.favorite,
+          _ModuleCard(
+            spec: MysticEmblems.marriage,
             title: 'طالع ازدواج',
             subtitle: 'سبکِ برجِ تو در پیمانِ زندگی',
             onTap: () => _push(context, const MarriageFortuneScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: AppTheme.gold,
-            icon: Icons.calendar_month,
+          _ModuleCard(
+            spec: MysticEmblems.months,
             title: 'متولدین ماه‌های سال',
             subtitle: 'روایتِ ماهِ تولدت در تقویم خورشیدی',
             onTap: () => _push(context, const MonthTraitsScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: AppTheme.violet,
-            icon: Icons.style,
+          _ModuleCard(
+            spec: MysticEmblems.tarot,
             title: 'طالع بینی تاروت',
             subtitle: 'کارتِ تولد و کارتِ امروزِ تو',
             onTap: () => _push(context, const TarotFortuneScreen()),
           ),
           const SizedBox(height: 12),
-          _TraditionCard(
-            accent: const Color(0xFF4CD97B),
-            icon: Icons.pets,
+          _ModuleCard(
+            spec: MysticEmblems.animal,
             title: 'حیوان درون',
             subtitle: 'روحِ حیوانیِ برجِ تو و پیامش',
             onTap: () => _push(context, const AnimalFortuneScreen()),
@@ -179,17 +211,16 @@ class TraditionsHubScreen extends ConsumerWidget {
   }
 }
 
-class _TraditionCard extends StatelessWidget {
-  const _TraditionCard({
-    required this.accent,
-    required this.icon,
+/// A hub card: mystic emblem + title + live subtitle + chevron.
+class _ModuleCard extends StatelessWidget {
+  const _ModuleCard({
+    required this.spec,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
 
-  final Color accent;
-  final IconData icon;
+  final MysticSpec spec;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -198,21 +229,12 @@ class _TraditionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return GlassCard(
-      accent: accent,
+      accent: spec.a,
       padding: const EdgeInsets.all(14),
       onTap: onTap,
       child: Row(
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: accent.withValues(alpha: 0.14),
-              border: Border.all(color: accent.withValues(alpha: 0.45)),
-            ),
-            child: Icon(icon, size: 22, color: accent),
-          ),
+          spec.badge(size: 48),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -232,6 +254,7 @@ class _TraditionCard extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 11.5,
+                    height: 1.7,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                     fontFamily: 'Vazirmatn',
                   ),
@@ -240,7 +263,8 @@ class _TraditionCard extends StatelessWidget {
             ),
           ),
           Icon(Icons.chevron_left,
-              size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
+              size: 20,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
         ],
       ),
     );

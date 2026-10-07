@@ -93,7 +93,8 @@ class ChineseTraditionScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
 
-          SectionHeader('روایت سنت', subtitle: 'شنگ‌شیائو 生肖'),
+          SectionHeader('روایت سنت', subtitle: 'شنگ‌شیائو 生肖',
+            icon: Icons.public, iconColor: AppTheme.rose),
           GlassCard(
             accent: AppTheme.rose,
             child: BodyText(TraditionsContent.chineseIntro),
