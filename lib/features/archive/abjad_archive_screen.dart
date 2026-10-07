@@ -35,7 +35,7 @@ class _AbjadArchiveScreenState extends ConsumerState<AbjadArchiveScreen> {
           const Text('هر سیستم، فرمول و وضعیت جداگانه دارد. حروف فارسیِ اضافه فقط در گونه معادل‌سازی‌شده مقدار می‌گیرند.', style: TextStyle(color: Colors.blueGrey, height: 1.6)),
           const SizedBox(height: 18),
           DropdownButtonFormField<String>(
-            value: activeKey,
+            initialValue: activeKey,
             decoration: const InputDecoration(labelText: 'سیستم محاسبه', prefixIcon: Icon(Icons.tune_outlined)),
             items: systems.map((item) => DropdownMenuItem(value: item.key, child: Text(item.title))).toList(),
             onChanged: (value) => setState(() => selectedKey = value),

@@ -45,9 +45,9 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
     setState(() => isAnalyzing = true);
     await Future<void>.delayed(Duration.zero);
     final systems = ref.read(abjadSystemsProvider);
-    final calculated = systems
-        .map((system) => ref.read(abjadEngineForSystemProvider(system.key)).calculate(value))
-        .toList(growable: false);
+    final calculated = systems.map((system) {
+      return ref.read(abjadEngineForSystemProvider(system.key)).calculate(value);
+    }).toList(growable: false);
     final matching = calculated.where((item) => item.systemKey == selectedSystem);
     final selected = matching.isEmpty ? (calculated.isEmpty ? null : calculated.first) : matching.first;
     if (!mounted) return;
@@ -75,6 +75,7 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     final systems = ref.watch(abjadSystemsProvider);
+    final activeSystem = systems.any((item) => item.key == selectedSystem) ? selectedSystem : (systems.isEmpty ? 'kabir' : systems.first.key);
     return Scaffold(
       appBar: AppBar(title: const Text('گزارش کامل تحلیل نام')),
       body: ListView(
@@ -88,7 +89,7 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
           const SizedBox(height: 12),
           if (systems.isNotEmpty)
             DropdownButtonFormField<String>(
-              value: systems.any((item) => item.key == selectedSystem) ? selectedSystem : systems.first.key,
+              initialValue: activeSystem,
               decoration: const InputDecoration(labelText: 'سیستم اصلی گزارش', prefixIcon: Icon(Icons.calculate_outlined)),
               items: systems.map((system) => DropdownMenuItem(value: system.key, child: Text(system.title))).toList(),
               onChanged: selectSystem,
@@ -153,16 +154,35 @@ class _TotalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: const Color(0xFF253238), borderRadius: BorderRadius.circular(24)),
-      child: Row(children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(result.systemTitle, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(height: 4),
-          Text('${result.total}', style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 6),
-          Text(result.isComplete ? 'همه حروف در این سیستم نگاشت دارند' : 'حروف ناشناخته: ${result.unknownLetters.join('، ')}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-        ])),
-        Container(width: 76, height: 76, alignment: Alignment.center, decoration: const BoxDecoration(color: Color(0xFFF6EDDC), shape: BoxShape.circle), child: Text(numerology.isAvailable ? '${numerology.value}' : '?', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF253238))),
-      ]),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(result.systemTitle, style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 4),
+                Text('${result.total}', style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                Text(
+                  result.isComplete ? 'همه حروف در این سیستم نگاشت دارند' : 'حروف ناشناخته: ${result.unknownLetters.join('، ')}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 76,
+            height: 76,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(color: Color(0xFFF6EDDC), shape: BoxShape.circle),
+            child: Text(
+              numerology.isAvailable ? '${numerology.value}' : '?',
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF253238)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -240,7 +260,7 @@ class _MethodCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text('فرمول: ${result.formula}'),
           const SizedBox(height: 4),
-          Text('وضعیت: ${result.status} · نسخه منبع: ${result.sourceTitle}'),
+          Text('وضعیت: ${result.status} · منبع: ${result.sourceTitle}'),
           const SizedBox(height: 8),
           Text(result.sourceNote, style: const TextStyle(height: 1.6)),
           const Divider(height: 24),
