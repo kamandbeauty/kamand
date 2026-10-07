@@ -297,8 +297,8 @@ jobs:
                 -f label="$label" >/dev/null || true
             fi
           }
-          label_asset "taalebin-v1.3.1-new-phones-arm64-v8a.apk"  "📱 گوشی‌های جدید (اکثر گوشی‌ها)"
-          label_asset "taalebin-v1.3.1-old-phones-armeabi-v7a.apk" "📱 گوشی‌های قدیمی / ۳۲ بیتی"
-          label_asset "taalebin-v1.3.1-emulator-x86_64.apk"        "💻 شبیه‌ساز اندروید (کامپیوتر)"
-          label_asset "taalebin-v1.3.1-universal.apk"              "📱 همهٔ گوشی‌ها (حجم بیشتر)"
-          label_asset "taalebin-v1.3.1.aab"                        "🏪 فقط Google Play"
+          label_asset "taalebin-v1.3.1-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
+          label_asset "taalebin-v1.3.1-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
+          label_asset "taalebin-v1.3.1-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
+          label_asset "taalebin-v1.3.1-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
+          label_asset "taalebin-v1.3.1.aab"                        "فقط Google Play — نصب مستقیم ندارد"
