@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.0-alpha.5 — 2026-10-07
+
+### Added
+
+- Imported 2,861 name headings from the supplied `بانک جامع نام‌ها و اسامی دختران و پسران ایرانی` HTML artifact.
+- Preserved parenthetical name forms as source-backed Variants.
+- Recorded the book metadata attributed to مرکز تحقیقات رایانه‌ای قائمیه اصفهان and its stated connection to ثبت احوال as unverified source metadata.
+- Deliberately did not copy the book's descriptive paragraphs into the app database; meaning and etymology remain Unknown pending rights and claim review.
+
+### Verification
+
+- Normalized duplicates are merged and retain independent Source Claims.
+- Content seed version is now `knowledge-5`.
+
 ## 0.1.0-alpha.4 — 2026-10-07
 
 ### Added
@@ -22,7 +36,7 @@
 
 - Schema 8 source registry with license, coverage, access date and editorial review status.
 - Expanded source bank with Iranica Parthian/Sasanian/Anahid records, Wiktionary, Wikidata, Dehkhoda, Oxford and auxiliary references.
-- Knowledge content pack `knowledge-3` with 120+ traceable Persian/Iranian names, meanings, Latin variants, language/culture metadata and independent pending Claims. (Superseded by `knowledge-4` dataset expansion.)
+- Knowledge content pack `knowledge-3` with 120+ traceable Persian/Iranian names, meanings, Latin variants, language/culture metadata and independent pending Claims. (Superseded by `knowledge-5` dataset expansion.)
 - Source catalog overview with name, meaning and source coverage metrics.
 - Community-sourced meanings remain `unverified`/`pending`; no community list is presented as a verified etymological authority.
 

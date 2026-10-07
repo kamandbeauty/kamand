@@ -13,6 +13,7 @@ import '../../domain/models/numerology_rule.dart';
 import '../../domain/models/profile.dart';
 import '../../domain/models/source.dart';
 import '../../domain/models/source_claim.dart';
+import 'iranian_names_bank_dataset.dart';
 import 'name_catalog_data.dart';
 import 'persian_names_dataset.dart';
 import 'seed_data.dart';
@@ -689,6 +690,66 @@ class AppDatabase {
     }
   }
 
+  void _seedIranianNamesBankDataset(String now) {
+    final existingByNormalized = <String, String>{};
+    final existingDisplayByNormalized = <String, String>{};
+    for (final row in _db.select('SELECT id, display_name, normalized_name FROM names')) {
+      final normalized = row['normalized_name'] as String;
+      existingByNormalized[normalized] = row['id'] as String;
+      existingDisplayByNormalized[normalized] = row['display_name'] as String;
+    }
+
+    for (final indexed in iranianNamesBankDataset.asMap().entries) {
+      final sourceName = indexed.value['name']!;
+      final normalized = PersianNormalizer.normalizeForSearch(sourceName);
+      if (normalized.isEmpty) continue;
+      var nameId = existingByNormalized[normalized];
+      if (nameId == null) {
+        nameId = 'name-qaemiyeh-${normalized.replaceAll(' ', '-')}';
+        _db.execute(
+          '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [
+            nameId, sourceName, normalized, '', 'نامشخص', 'نامشخص', 'نامشخص', 'نامشخص',
+            'اطلاعات ریشه‌شناختی مستقل در این بانک ثبت نشده است.', 'نامشخص', 'unverified', 'low',
+            'dataset|کتاب دیجیتال', iranianNamesBankSourceId,
+            'عنوان نام از بانک جامع نام‌ها؛ معنی، ریشه و تلفظ تا بررسی مستقل Unknown باقی می‌مانند.', now, now,
+          ],
+        );
+        existingByNormalized[normalized] = nameId;
+        existingDisplayByNormalized[normalized] = sourceName;
+      }
+
+      final canonicalDisplay = existingDisplayByNormalized[normalized] ?? sourceName;
+      final variant = indexed.value['variant'] ?? '';
+      if (sourceName != canonicalDisplay) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_variants (id, name_id, variant_text, normalized_text, script, variant_type)
+             VALUES (?, ?, ?, ?, ?, ?)''',
+          ['variant-qaemiyeh-${indexed.key}-heading', nameId, sourceName, normalized, 'Arab', 'book_heading'],
+        );
+      }
+      if (variant.isNotEmpty) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_variants (id, name_id, variant_text, normalized_text, script, variant_type)
+             VALUES (?, ?, ?, ?, ?, ?)''',
+          ['variant-qaemiyeh-${indexed.key}-parenthetical', nameId, variant, PersianNormalizer.normalizeForSearch(variant), 'Arab', 'book_parenthetical'],
+        );
+      }
+      _db.execute(
+        '''INSERT OR IGNORE INTO source_claims (id, claim_group_id, source_id, subject_type, subject_id, claim_type, claim_text, normalized_value, status, confidence, evidence_note, review_status, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        [
+          'claim-qaemiyeh-${indexed.key}', 'group-qaemiyeh-${indexed.key}', iranianNamesBankSourceId, 'name', nameId,
+          'dataset_record', 'عنوان «$sourceName» در بانک جامع نام‌ها و اسامی دختران و پسران ایرانی ثبت شده است.',
+          sourceName, 'unverified', 'low',
+          'فقط عنوان نام وارد شده است؛ متن شرح HTML در Seed کپی نشده و ادعای معنی یا ریشه‌شناسی مستقل ایجاد نمی‌کند.',
+          'pending', now,
+        ],
+      );
+    }
+  }
+
   void _ensureCalculationSystems() {
     for (final definition in abjadSystemDefinitions) {
       _db.execute('''
@@ -763,13 +824,14 @@ class AppDatabase {
   void _upgradeContentSeed() {
     final metadata = getMetadata();
     final contentVersion = metadata['content_version'];
-    if (contentVersion == 'knowledge-4') return;
+    if (contentVersion == 'knowledge-5') return;
     final now = DateTime.now().toUtc().toIso8601String();
-    if (contentVersion == 'knowledge-3') {
+    if (contentVersion == 'knowledge-4' || contentVersion == 'knowledge-3') {
       _db.execute('BEGIN');
       try {
         _seedPersianNamesDataset(now);
-        _setMetadata('content_version', 'knowledge-4');
+        _seedIranianNamesBankDataset(now);
+        _setMetadata('content_version', 'knowledge-5');
         _db.execute('COMMIT');
         _refreshSearchIndex();
       } catch (_) {
@@ -882,7 +944,8 @@ class AppDatabase {
         );
       }
       _seedPersianNamesDataset(now);
-      _setMetadata('content_version', 'knowledge-4');
+      _seedIranianNamesBankDataset(now);
+      _setMetadata('content_version', 'knowledge-5');
       _db.execute('COMMIT');
       _refreshSearchIndex();
     } catch (_) {

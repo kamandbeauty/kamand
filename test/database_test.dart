@@ -16,7 +16,7 @@ void main() {
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
     expect(metadata['schema_version'], '9');
-    expect(metadata['content_version'], 'knowledge-4');
+    expect(metadata['content_version'], 'knowledge-5');
     expect(database.getSources().length, greaterThan(20));
     expect(database.searchNames('آ'), isNotEmpty);
     expect(database.getName('name-catalog-نیلوفر')?.meaning, contains('گل'));
@@ -26,12 +26,14 @@ void main() {
     expect(database.getClaims('name', 'name-داریوش'), isNotEmpty);
     expect(database.getName('name-کوروش')?.etymology, contains('Kuruš'));
     final importedNames = database.searchNames('');
-    expect(importedNames.length, greaterThan(8500));
+    expect(importedNames.length, greaterThan(9000));
     expect(database.getName('name-nabidam-فاطمه')?.gender, 'مؤنث');
     expect(database.getName('name-nabidam-فاطمه')?.meaning, 'نامشخص');
     expect(database.getClaims('name', 'name-nabidam-فاطمه').single.sourceTitle, 'Persian Names dataset');
     expect(database.getSources().singleWhere((source) => source.id == 'source-nabidam-persian-names').license, contains('MIT'));
     expect(database.getSources().singleWhere((source) => source.id == 'source-vajehyab-api').reviewStatus, 'catalogued');
+    expect(database.getSources().singleWhere((source) => source.id == 'source-qaemiyeh-iranian-name-bank').reviewStatus, 'pending');
+    expect(database.getClaims('name', 'name-nabidam-اباذر').any((claim) => claim.sourceTitle.contains('بانک جامع')), isTrue);
   });
 
   test('reports content integrity without treating unknown meaning as an orphan', () {

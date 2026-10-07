@@ -223,6 +223,18 @@ final seedSources = <Map<String, Object?>>[
     'notes': 'مجموعه MIT شامل ۸۸۱۶ صورت نام و برچسب جنسیت؛ منبع README دو فایل اینترنتی را ادغام و حروف عربی/اعراب را پاک‌سازی کرده است. این برنامه فقط صورت نام و جنسیت را وارد می‌کند و معنی، ریشه و تلفظ را از این مجموعه استخراج نمی‌کند.',
   },
   {
+    'id': 'source-qaemiyeh-iranian-name-bank',
+    'title': 'بانک جامع نام‌ها و اسامی دختران و پسران ایرانی',
+    'author': 'واحد تحقیقات مرکز تحقیقات رایانه‌ای قائمیه اصفهان',
+    'publisher': 'مرکز تحقیقات رایانه‌ای قائمیه اصفهان',
+    'publication_year': 1390,
+    'language': 'fa',
+    'source_type': 'digital_book',
+    'url': 'https://github.com/kamandbeauty/kamand/blob/3c356c48c7d82f8d9bd07931cdc2ab450f90e178/3269-f-13900805-bank-jame-asami-dokhtaran-va-pesaran-irani.htm',
+    'reliability_level': 'tier_3',
+    'notes': 'فایل HTML ارائه‌شده در مخزن پروژه؛ فراداده آن کتاب را محصول مرکز تحقیقات رایانه‌ای قائمیه اصفهان در سال ۱۳۹۰ معرفی می‌کند و گردآوری مطالب را به سایت سازمان ثبت احوال نسبت می‌دهد. در این مرحله فقط عنوان نام‌ها وارد می‌شود؛ معنی و متن توضیحات بدون بررسی حقوقی و منبعی وارد Seed نمی‌شوند.',
+  },
+  {
     'id': 'source-vajehyab-api',
     'title': 'واژه‌یاب API v3 و مستندات فرهنگ نام‌ها',
     'author': 'واژه‌یاب',
@@ -341,6 +353,11 @@ final seedSourceMetadata = <String, Map<String, String>>{
   'source-nabidam-persian-names': {
     'license': 'MIT؛ حفظ attribution و متن مجوز در third_party/persian_names/LICENSE',
     'coverage': '۸۸۱۶ صورت نام فارسی و برچسب جنسیت در نسخه upstream مشخص‌شده',
+    'review_status': 'pending',
+  },
+  'source-qaemiyeh-iranian-name-bank': {
+    'license': 'وضعیت مجوز فایل HTML نامشخص؛ حفظ attribution و عدم بازنشر متن توضیحات تا بررسی حقوقی',
+    'coverage': 'عنوان‌های نام در بانک جامع نام‌ها؛ منبع artifact شامل بخش‌های دختران و پسران ایرانی است',
     'review_status': 'pending',
   },
   'source-vajehyab-api': {
