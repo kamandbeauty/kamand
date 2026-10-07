@@ -23,8 +23,15 @@
 - Unverified and disputed data remain visibly labeled.
 - The Android application ID is temporary development identity: `com.kamand.nameology.dev`.
 
+### Release status
+
+- This APK is for testing and preview only; it is not store-ready.
+- The final brand and application package have not been decided. The current application ID is the temporary development ID `com.kamand.nameology.dev`.
+- A real store-release keystore is not configured; the pre-release workflow uses the repository's current development signing setup.
+- Abjad, numerology and compatibility outputs are traditional, interpretive and experimental; they are not scientific or deterministic claims about a person, relationship, destiny or future.
+
 ### Verification
 
 - `git diff --check`: passed.
 - Flutter Analyze/Test/Build require Flutter SDK and are executed by GitHub Actions.
-- APK release signing is not configured for store distribution; the pre-release workflow uses the repository's current development signing setup.
+- CI verifies Flutter Analyze, 22 tests and the Android APK build.
