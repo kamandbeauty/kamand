@@ -238,25 +238,28 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="shelem-v1.1.1"
+          tag="shelem-v1.2.0"
           out="$RUNNER_TEMP/release"
           mkdir -p "$out"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$out/shelem-v1.1.1-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$out/shelem-v1.1.1-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$out/shelem-v1.1.1-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$out/shelem-v1.1.1-universal.apk"
-          cp "$aab"                                "$out/shelem-v1.1.1.aab"
-          notes="بازی «شلم» — نسخهٔ ۱.۱.۱
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$out/shelem-v1.2.0-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$out/shelem-v1.2.0-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$out/shelem-v1.2.0-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$out/shelem-v1.2.0-universal.apk"
+          cp "$aab"                                "$out/shelem-v1.2.0.aab"
+          notes="بازی «شلم» — نسخهٔ ۱.۲.۰
 
           بازی کلاسیک ورق ایرانی: شما به‌همراه یک یارِ هوشمند در برابر دو حریف.
           خواندن (حراج)، گلِ وسط، اعلام حکم با اولین برگ، یاسا، شلم و سرشلم،
           چهار سطح سختی، هفت زمین بازی و ذخیرهٔ خودکار.
 
-          تازه در ۱.۱.۱: میزِ نمدیِ بیضی با قابِ چوبی و نشانِ خال‌ها، طراحی
-          کاملاً تازه و حرفه‌ایِ ورق‌ها (چیدمان استاندارد نمادها، نقش‌های
-          تزئینیِ J/Q/K، پشتِ کارتِ طرح‌دار)، چیدمانِ متعادل‌ترِ میز و دست، و
-          انیمیشن‌های روان برای پخش ورق، بازی کردن کارت، بردن دست و شمارش
-          امتیاز.
+          تازه در ۱.۲.۰: نگاره‌های تازه و دست‌ساز برای سرباز، بی‌بی، شاه و
+          جوکر (طرحِ ایرانی با قلم‌گیریِ تمیز)، میزِ نمدیِ بیضی با قابِ چوبی و
+          نشانِ خال‌ها، چیدمانِ استانداردِ نمادها روی ورق‌های عددی، و
+          انیمیشن‌های روان. رفعِ باگ‌ها: دکمهٔ «شلم» در نوار حراج دیده می‌شود،
+          بالاترین خواننده دیگر نمی‌تواند پاس بدهد، تغییرِ قوانین وسطِ راند
+          بازی را خراب نمی‌کند، قلمِ فارسی روی همهٔ دکمه‌ها درست است و هیچ
+          خطایی بازی را قفل نمی‌کند. افزونِ بر این، تستِ فازی با بیش از هزار
+          راندِ کامل روی همهٔ حالت‌های قانونی اجرا می‌شود.
 
           کدام فایل را دانلود کنم؟
 
@@ -275,21 +278,21 @@ jobs:
               gh release delete-asset "$tag" "$stale" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
             done
             gh release upload "$tag" \
-              "$out/shelem-v1.1.1-arm64-v8a.apk" \
-              "$out/shelem-v1.1.1-armeabi-v7a.apk" \
-              "$out/shelem-v1.1.1-x86_64.apk" \
-              "$out/shelem-v1.1.1-universal.apk" \
-              "$out/shelem-v1.1.1.aab" \
+              "$out/shelem-v1.2.0-arm64-v8a.apk" \
+              "$out/shelem-v1.2.0-armeabi-v7a.apk" \
+              "$out/shelem-v1.2.0-x86_64.apk" \
+              "$out/shelem-v1.2.0-universal.apk" \
+              "$out/shelem-v1.2.0.aab" \
               --clobber --repo "$GITHUB_REPOSITORY"
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" \
-              "$out/shelem-v1.1.1-arm64-v8a.apk" \
-              "$out/shelem-v1.1.1-armeabi-v7a.apk" \
-              "$out/shelem-v1.1.1-x86_64.apk" \
-              "$out/shelem-v1.1.1-universal.apk" \
-              "$out/shelem-v1.1.1.aab" \
-              --title "شلم — نسخهٔ ۱.۱.۱" \
+              "$out/shelem-v1.2.0-arm64-v8a.apk" \
+              "$out/shelem-v1.2.0-armeabi-v7a.apk" \
+              "$out/shelem-v1.2.0-x86_64.apk" \
+              "$out/shelem-v1.2.0-universal.apk" \
+              "$out/shelem-v1.2.0.aab" \
+              --title "شلم — نسخهٔ ۱.۲.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
