@@ -279,7 +279,7 @@ jobs:
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" "$dist"/* \
-              --title "طالع بین — نسخهٔ ۱.۲.۰" \
+              --title "طالع بین — نسخهٔ ۱.۳.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
