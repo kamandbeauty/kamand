@@ -137,14 +137,15 @@ void main() {
       expect(day.nawalIndex, 0); // Imix
     });
 
-    test('python-twin reference values', () {
+    test('reference values (true Julian Day Numbers)', () {
+      // Derived from the 4-Ajaw anchor by exact modular arithmetic.
       final a = TzolkinCalculator.forDate(DateTime.utc(1984, 2, 2));
-      expect(a.tone, 9);
-      expect(a.nawalIndex, 8); // Muluk
+      expect(a.tone, 10);
+      expect(a.nawalIndex, 9); // Lamat
 
       final b = TzolkinCalculator.forDate(DateTime.utc(2026, 2, 17));
-      expect(b.tone, 12);
-      expect(b.nawalIndex, 4); // Chikchan
+      expect(b.tone, 13);
+      expect(b.nawalIndex, 5); // Manik'
     });
   });
 

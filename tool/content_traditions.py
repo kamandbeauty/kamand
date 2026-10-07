@@ -521,7 +521,7 @@ def main():
         ("1992-11-29", (1992, 11, 29)),
     ]:
         jd = gregorian_to_jd(y, m, d) + 0.5  # noon
-        jdn = int(round(gregorian_to_jd(y, m, d)))
+        jdn = int(math.floor(gregorian_to_jd(y, m, d) + 0.5))
         sid = (moon_longitude(jd) - 23.853 - (jd - 2451545.0) / 365.25
                * (50.29 / 3600)) % 360
         tone = ((jdn - 2456280) % 13) + 1

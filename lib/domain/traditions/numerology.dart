@@ -21,9 +21,11 @@ class NumerologyCalculator {
     return sum;
   }
 
-  /// Reduce to a single digit, preserving the master numbers 11/22/33.
+  /// Reduce to a single digit, preserving the master numbers 11/22/33
+  /// (both as input values and as intermediate digit sums).
   static int reduce(int n) {
     if (n <= 0) return 0;
+    if (_masterNumbers.contains(n)) return n;
     final s = _digitSum(n);
     if (s < 10 || _masterNumbers.contains(s)) return s;
     return reduce(s);
