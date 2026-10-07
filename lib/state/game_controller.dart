@@ -38,6 +38,9 @@ class GameController extends ChangeNotifier {
   /// آخرین اخطار به کاربر (مثلاً بازی کردن کارت غیرمجاز).
   String? toast;
 
+  /// خالی که ربات هنگام چیدن دستش برای حکم در نظر گرفته است.
+  Suit? _plannedTrump;
+
   static const String _saveKey = 'shelem_save_v1';
 
   bool get hasGame => engine != null;
@@ -66,6 +69,7 @@ class GameController extends ChangeNotifier {
     )..startRound();
     engine = e;
     message = null;
+    _plannedTrump = null;
     selectedDiscards.clear();
     _save();
     notifyListeners();
@@ -399,13 +403,20 @@ class GameController extends ChangeNotifier {
       e.config.kittySize,
       trump,
     );
+    // همان خالی که بر اساسش برگ‌ها کنار گذاشته شد باید حکمِ راند شود.
+    _plannedTrump = trump;
     e.discardCards(cards);
   }
 
   void _botLeadFirst(ShelemEngine e) {
     if (e.phase != GamePhase.declaringTrump || e.turn == 0) return;
     final int p = e.turn;
-    final Suit trump = ShelemBot.bestTrump(e.hands[p]);
+    final Suit planned = _plannedTrump ?? ShelemBot.bestTrump(e.hands[p]);
+    _plannedTrump = null;
+    final bool usable = e.hands[p].any(
+      (PlayingCard c) => c.suit == planned || c.isJoker,
+    );
+    final Suit trump = usable ? planned : ShelemBot.bestTrump(e.hands[p]);
     final List<PlayingCard> trumps = e.hands[p]
         .where((PlayingCard c) => c.suit == trump)
         .toList();
@@ -416,6 +427,7 @@ class GameController extends ChangeNotifier {
         orElse: () => e.hands[p].first,
       );
       e.playCard(p, joker, declaredTrump: trump);
+      message = 'حکم: ${trump.fa}';
       return;
     }
     trumps.sort((PlayingCard a, PlayingCard b) => b.rank.compareTo(a.rank));

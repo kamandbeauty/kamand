@@ -236,6 +236,7 @@ class ShelemEngine {
 
   // ── شروع راند ────────────────────────────────────────────────────────
   void startRound() {
+    if (phase == GamePhase.gameOver) return;
     round += 1;
     dealer = nextPlayer(dealer);
     if (phase != GamePhase.bidding) redeals = 0;
@@ -435,6 +436,8 @@ class ShelemEngine {
     if (phase != GamePhase.playing && phase != GamePhase.declaringTrump) {
       return false;
     }
+    // تا وقتی حکمِ جوکر اعلام نشده، هیچ برگِ دیگری نباید روی زمین برود.
+    if (awaitingJokerTrump) return false;
     if (turn != player) return false;
     return legalFor(player).contains(card);
   }
@@ -453,6 +456,7 @@ class ShelemEngine {
           // حکم باید جداگانه اعلام شود؛ کارت روی زمین می‌ماند.
           hands[player].remove(card);
           trick.add(PlayedCard(player, card));
+          mustLeadTrumpFirst = false;
           return;
         }
         trump = declaredTrump;

@@ -222,12 +222,7 @@ class CardView extends StatelessWidget {
       return _JokerCenter(width: width, color: color, colorDeep: colorDeep);
     }
     if (card.rank >= 11 && card.rank <= 13) {
-      return _CourtCenter(
-        card: card,
-        color: color,
-        colorDeep: colorDeep,
-        width: width,
-      );
+      return _CourtCenter(card: card, color: color, width: width);
     }
     if (card.rank == 14) {
       return _AceCenter(suit: card.suit, color: color, width: width);
@@ -358,14 +353,14 @@ class _AceCenter extends StatelessWidget {
   }
 }
 
-/// نامِ فایلِ طرحِ نقش برای [rank] (۱۱ تا ۱۳) و رنگِ خال.
+/// نامِ فایلِ نگارهٔ نقش برای [rank] (۱۱ تا ۱۳).
 String courtAsset(int rank, bool red) {
   final String who = switch (rank) {
     11 => 'jack',
     12 => 'queen',
     _ => 'king',
   };
-  return 'assets/cards/${who}_${red ? 'red' : 'black'}.png';
+  return 'assets/cards/court_$who.png';
 }
 
 /// سرباز/بی‌بی/شاه: نگارهٔ تزئینی داخلِ قابِ طلایی.
@@ -373,41 +368,80 @@ class _CourtCenter extends StatelessWidget {
   const _CourtCenter({
     required this.card,
     required this.color,
-    required this.colorDeep,
     required this.width,
   });
 
   final PlayingCard card;
   final Color color;
-  final Color colorDeep;
   final double width;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: AspectRatio(
-        aspectRatio: 0.72,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(width * 0.055),
-            border: Border.all(
-              color: color.withValues(alpha: 0.28),
-              width: math.max(0.6, width * 0.008),
-            ),
+    final Widget art = Image.asset(
+      courtAsset(card.rank, card.suit.isRed),
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (_, __, ___) =>
+          _CourtFallback(card: card, color: color, width: width),
+    );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: width * 0.105),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(width * 0.05),
+          color: const Color(0xFFFCF8EC),
+          border: Border.all(
+            color: color.withValues(alpha: 0.6),
+            width: math.max(0.8, width * 0.011),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(width * 0.045),
-            child: Image.asset(
-              courtAsset(card.rank, card.suit.isRed),
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-              filterQuality: FilterQuality.medium,
-              errorBuilder: (_, __, ___) => _CourtFallback(
-                card: card,
-                color: color,
-                width: width,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(width * 0.042),
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              // نگارهٔ دوسر: بالا ایستاده، پایین وارونه (مثل ورقِ واقعی)
+              Column(
+                children: <Widget>[
+                  Expanded(child: ClipRect(child: art)),
+                  Expanded(
+                    child: RotatedBox(
+                      quarterTurns: 2,
+                      child: ClipRect(child: art),
+                    ),
+                  ),
+                ],
               ),
-            ),
+              Center(
+                child: Container(
+                  height: math.max(0.7, width * 0.009),
+                  color: color.withValues(alpha: 0.5),
+                ),
+              ),
+              Positioned(
+                top: width * 0.03,
+                left: width * 0.03,
+                child: SuitIcon(
+                  suit: card.suit,
+                  size: width * 0.135,
+                  color: color,
+                ),
+              ),
+              Positioned(
+                bottom: width * 0.03,
+                right: width * 0.03,
+                child: Transform.rotate(
+                  angle: math.pi,
+                  child: SuitIcon(
+                    suit: card.suit,
+                    size: width * 0.135,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -474,11 +508,11 @@ class _JokerCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: AspectRatio(
-        aspectRatio: 0.74,
+        aspectRatio: 0.66,
         child: Image.asset(
-          'assets/cards/joker_fig.png',
+          'assets/cards/court_joker.png',
           fit: BoxFit.contain,
-          alignment: Alignment.bottomCenter,
+          alignment: Alignment.center,
           filterQuality: FilterQuality.medium,
           errorBuilder: (_, __, ___) => FittedBox(
             fit: BoxFit.scaleDown,
