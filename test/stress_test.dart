@@ -6,7 +6,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shelem/ai/bot.dart';
 import 'package:shelem/game/engine.dart';
 import 'package:shelem/game/scoring.dart';
 import 'package:shelem/model/card.dart';

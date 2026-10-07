@@ -447,7 +447,7 @@ class _TableArea extends StatelessWidget {
                         ),
                       ),
                       // نشانِ محوِ وسطِ میز
-                      Center(
+                      const Center(
                         child: Opacity(
                           opacity: 0.075,
                           child: Column(
@@ -455,7 +455,7 @@ class _TableArea extends StatelessWidget {
                             children: <Widget>[
                               Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: const <Widget>[
+                                children: <Widget>[
                                   SuitIcon(
                                     suit: Suit.spades,
                                     size: 46,
@@ -469,10 +469,10 @@ class _TableArea extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              SizedBox(height: 6),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: const <Widget>[
+                                children: <Widget>[
                                   SuitIcon(
                                     suit: Suit.diamonds,
                                     size: 46,
