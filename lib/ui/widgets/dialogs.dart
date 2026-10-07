@@ -76,13 +76,13 @@ class RoundSummaryDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 _PointsBox(
-                  title: 'تیم ما',
+                  title: controller.teamName(0),
                   points: pts[0],
                   delta: o.deltaFor(0),
                   color: AppColors.teamUs,
                 ),
                 _PointsBox(
-                  title: 'تیم حریف',
+                  title: controller.teamName(1),
                   points: pts[1],
                   delta: o.deltaFor(1),
                   color: AppColors.teamThem,
@@ -92,7 +92,8 @@ class RoundSummaryDialog extends StatelessWidget {
             const Divider(height: 22),
             _Line(
               label: 'مجموع',
-              value: 'ما ${fa(e.scores[0])}  —  حریف ${fa(e.scores[1])}',
+              value: '${controller.teamName(0)} ${fa(e.scores[0])}'
+                  '  —  ${controller.teamName(1)} ${fa(e.scores[1])}',
             ),
             _Line(
               label: 'دست‌ها',
@@ -198,7 +199,8 @@ class GameOverDialog extends StatelessWidget {
         ),
       ),
       content: Text(
-        'تیم ما ${fa(e.scores[0])}  —  تیم حریف ${fa(e.scores[1])}',
+        '${controller.teamName(0)} ${fa(e.scores[0])}'
+        '  —  ${controller.teamName(1)} ${fa(e.scores[1])}',
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 16),
       ),
@@ -241,7 +243,7 @@ class ScoreboardSheet extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: _TotalBox(
-                    title: 'تیم ما',
+                    title: controller.teamName(0),
                     value: e.scores[0],
                     color: AppColors.teamUs,
                   ),
@@ -249,7 +251,7 @@ class ScoreboardSheet extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _TotalBox(
-                    title: 'تیم حریف',
+                    title: controller.teamName(1),
                     value: e.scores[1],
                     color: AppColors.teamThem,
                   ),

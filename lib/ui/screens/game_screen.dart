@@ -498,18 +498,35 @@ class _TableArea extends StatelessWidget {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.topCenter,
-              child: _Seat(controller: controller, player: 2, cardWidth: cw),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: _Seat(controller: controller, player: 1, cardWidth: cw),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: _Seat(controller: controller, player: 3, cardWidth: cw),
-            ),
+            if (e.seats == 2)
+              Align(
+                alignment: Alignment.topCenter,
+                child: _Seat(controller: controller, player: 1, cardWidth: cw),
+              )
+            else ...<Widget>[
+              Align(
+                alignment: Alignment.topCenter,
+                child: _Seat(controller: controller, player: 2, cardWidth: cw),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: _Seat(controller: controller, player: 1, cardWidth: cw),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _Seat(controller: controller, player: 3, cardWidth: cw),
+              ),
+            ],
+            // برگ‌های روی هم در بازی دونفره
+            if (e.stock.isNotEmpty)
+              Align(
+                alignment: const Alignment(-0.92, -0.55),
+                child: _StockPile(
+                  count: e.stock.length,
+                  width: cw * 1.15,
+                  back: controller.settings.cardBack,
+                ),
+              ),
             Center(
               child: _TrickArea(
                 controller: controller,
@@ -566,6 +583,63 @@ class _TableRimPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TableRimPainter oldDelegate) => false;
+}
+
+/// برگ‌های روی هم در بازی دونفره (با شمارندهٔ باقی‌مانده).
+class _StockPile extends StatelessWidget {
+  const _StockPile({
+    required this.count,
+    required this.width,
+    required this.back,
+  });
+
+  final int count;
+  final double width;
+  final CardBack back;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        SizedBox(
+          width: width + 6,
+          height: width * kCardAspect + 6,
+          child: Stack(
+            children: <Widget>[
+              for (int i = 0; i < 3; i++)
+                Positioned(
+                  left: i * 3.0,
+                  top: i * 3.0,
+                  child: CardBackView(
+                    width: width,
+                    back: back,
+                    elevation: 3,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+          ),
+          child: Text(
+            fa(count),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.gold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _Seat extends StatelessWidget {
@@ -770,15 +844,23 @@ class _TrickArea extends StatelessWidget {
   Widget build(BuildContext context) {
     final ShelemEngine e = controller.engine!;
     final double cw = (size.width * 0.28).clamp(42.0, 68.0);
-    final List<Alignment> spots = <Alignment>[
-      const Alignment(0, 0.86),
-      const Alignment(0.86, 0.02),
-      const Alignment(0, -0.86),
-      const Alignment(-0.86, 0.02),
-    ];
-    final int? winner = e.phase == GamePhase.trickComplete && e.trick.length == 4
-        ? trickWinner(e.trick, e.trump)
-        : null;
+    final List<Alignment> spots = e.seats == 2
+        ? <Alignment>[const Alignment(0, 0.72), const Alignment(0, -0.72)]
+        : <Alignment>[
+            const Alignment(0, 0.86),
+            const Alignment(0.86, 0.02),
+            const Alignment(0, -0.86),
+            const Alignment(-0.86, 0.02),
+          ];
+    final List<Offset> from = e.seats == 2
+        ? <Offset>[const Offset(0, 1), const Offset(0, -1)]
+        : _from;
+    final List<double> tilt =
+        e.seats == 2 ? <double>[0.02, 0.03] : _tilt;
+    final int? winner =
+        e.phase == GamePhase.trickComplete && e.trick.length == e.seats
+            ? trickWinner(e.trick, e.trump)
+            : null;
 
     return SizedBox(
       width: size.width,
@@ -807,9 +889,9 @@ class _TrickArea extends StatelessWidget {
               alignment: spots[p.player],
               child: FlyIn(
                 key: ValueKey<String>('trick-${p.card.id}'),
-                from: _from[p.player],
+                from: from[p.player],
                 distance: cw * 2.1,
-                tilt: _tilt[p.player],
+                tilt: tilt[p.player],
                 child: AnimatedScale(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutBack,

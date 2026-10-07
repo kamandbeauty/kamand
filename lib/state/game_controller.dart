@@ -50,6 +50,13 @@ class GameController extends ChangeNotifier {
           engine!.phase == GamePhase.declaringTrump) &&
       engine!.turn == 0;
 
+  /// نامِ تیم (در بازی دونفره: «شما» و «حریف»).
+  String teamName(int team) {
+    final bool duel = (engine?.seats ?? settings.rules.players) == 2;
+    if (duel) return team == 0 ? 'شما' : 'حریف';
+    return team == 0 ? 'تیم ما' : 'تیم حریف';
+  }
+
   String nameOf(int player) =>
       player == 0 ? (settings.playerName.isEmpty ? 'شما' : settings.playerName)
                   : kBotNames[player];

@@ -63,6 +63,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
+          _section('تعداد بازیکنان'),
+          _SelectTile(
+            title: 'چهار نفره (دو تیم دو نفره)',
+            subtitle: 'بازی کلاسیکِ شلم: شما و یارتان در برابر دو حریف. '
+                'هر نفر ۱۲ برگ، ۱۲ دست، ۱۶۵ امتیاز.',
+            selected: s.rules.players == 4,
+            onTap: () => _apply(() => s.rules = s.rulesWith(players: 4)),
+          ),
+          _SelectTile(
+            title: 'دو نفره (نفر به نفر)',
+            subtitle: 'شما در برابر یک حریف. هر نفر ۱۲ برگ و بعد از هر دست '
+                'یک برگ از روی هم برمی‌دارید؛ ۲۴ دست و ۲۲۵ امتیاز.',
+            selected: s.rules.players == 2,
+            onTap: () => _apply(() => s.rules = s.rulesWith(players: 2)),
+          ),
+
           _section('سطح حریف‌ها'),
           for (final Difficulty d in Difficulty.values)
             _SelectTile(

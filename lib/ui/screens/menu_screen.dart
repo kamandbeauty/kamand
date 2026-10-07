@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../model/card.dart';
 import '../../model/enums.dart';
 import '../../state/game_controller.dart';
+import '../../state/settings.dart';
 import '../../util/persian.dart';
 import '../theme.dart';
 import '../widgets/suit_icon.dart';
@@ -136,11 +137,22 @@ class _MenuScreenState extends State<MenuScreen> {
                         ),
                         const SizedBox(height: 6),
                         const Text(
-                          'بازی کلاسیک ورق ایرانی — چهار نفره، دو تیمی',
+                          'بازی کلاسیک ورق ایرانی — دو نفره یا چهار نفره',
                           style: TextStyle(fontSize: 12.5),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 18),
+                        // انتخاب سریعِ تعداد بازیکنان
+                        _PlayerCountPicker(
+                          players: c.settings.rules.players,
+                          onChanged: (int n) {
+                            final AppSettings next = c.settings.copy();
+                            next.rules = next.rulesWith(players: n);
+                            c.applySettings(next);
+                            setState(() {});
+                          },
+                        ),
+                        const SizedBox(height: 16),
                         if (_hasSave)
                           _MenuButton(
                             label: 'ادامهٔ بازی قبلی',
@@ -186,7 +198,8 @@ class _MenuScreenState extends State<MenuScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'حریف‌ها: ${c.settings.difficulty.fa}   •   '
+                          '${c.settings.rules.players == 2 ? 'دو نفره' : 'چهار نفره'}'
+                          '   •   حریف‌ها: ${c.settings.difficulty.fa}   •   '
                           'بازی تا ${fa(c.settings.rules.targetScore)} امتیاز',
                           style: const TextStyle(
                             fontSize: 11,
@@ -202,6 +215,70 @@ class _MenuScreenState extends State<MenuScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// انتخاب دو نفره / چهار نفره در صفحهٔ اصلی.
+class _PlayerCountPicker extends StatelessWidget {
+  const _PlayerCountPicker({required this.players, required this.onChanged});
+
+  final int players;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget tab(int n, String label, IconData icon) {
+      final bool on = players == n;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => onChanged(n),
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: on
+                  ? AppColors.gold.withValues(alpha: 0.22)
+                  : Colors.transparent,
+              border: Border.all(
+                color: on
+                    ? AppColors.gold
+                    : AppColors.gold.withValues(alpha: 0.25),
+                width: on ? 1.6 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(
+                  icon,
+                  size: 17,
+                  color: on ? AppColors.gold : const Color(0xFFB7AA92),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: on ? FontWeight.w800 : FontWeight.w500,
+                    color: on ? AppColors.gold : const Color(0xFFB7AA92),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: <Widget>[
+        tab(2, 'دو نفره', Icons.person_rounded),
+        const SizedBox(width: 10),
+        tab(4, 'چهار نفره', Icons.groups_rounded),
+      ],
     );
   }
 }

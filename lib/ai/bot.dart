@@ -82,9 +82,21 @@ class ShelemBot {
   }
 
   /// تخمین امتیازی که تیمِ این بازیکن می‌تواند در صورت حاکم شدن بگیرد.
-  static double estimatePoints(List<PlayingCard> hand, {required bool withKitty}) {
+  static double estimatePoints(
+    List<PlayingCard> hand, {
+    required bool withKitty,
+    int players = 4,
+    int totalPoints = 165,
+  }) {
     final Suit s = bestTrump(hand);
     final double tricks = expectedTricks(hand, s);
+    if (players == 2) {
+      // بازی دونفره: یار نداریم، ولی فقط یک حریف هم روبه‌روی ماست.
+      final double share = min(0.95, (tricks / 12) * 1.15);
+      double duel = share * totalPoints * 0.92;
+      if (withKitty) duel += totalPoints * 0.12;
+      return min(duel, totalPoints.toDouble());
+    }
     // هر دست به‌طور میانگین حدود ۱۲٫۷ امتیاز دارد (۱۶۵ ÷ ۱۳)؛ دست‌های حاکم
     // معمولاً پرامتیازترها هستند، پس کمی بالاتر گرفته می‌شود.
     double pts = tricks * 15.0;
@@ -92,7 +104,7 @@ class ShelemBot {
     pts += max(12.0, 36.0 - tricks * 1.5);
     // گلِ وسط: ۵ امتیازِ دست + امتیاز برگ‌های کنارگذاشته + بهبود دست
     if (withKitty) pts += 26;
-    return min(pts, 165);
+    return min(pts, totalPoints.toDouble());
   }
 
   // ── مرحلهٔ خواندن ────────────────────────────────────────────────────
@@ -106,11 +118,17 @@ class ShelemBot {
   }) {
     final Random r = rng ?? Random();
     final List<PlayingCard> hand = e.hands[player];
-    double estimate = estimatePoints(hand, withKitty: true);
+    double estimate = estimatePoints(
+      hand,
+      withKitty: true,
+      players: e.config.players,
+      totalPoints: e.config.totalPoints,
+    );
 
     // خطای انسانی در سطوح پایین
     if (difficulty.noise > 0) {
-      estimate += (r.nextDouble() - 0.5) * 2 * (difficulty.noise * 40);
+      final double spread = difficulty.noise * 40 * e.config.totalPoints / 165;
+      estimate += (r.nextDouble() - 0.5) * 2 * spread;
     }
     estimate *= difficulty.bidFactor;
 
@@ -201,8 +219,11 @@ class ShelemBot {
   }
 
   static List<Set<Suit>> _voids(ShelemEngine e) {
-    final List<Set<Suit>> voids =
-        List<Set<Suit>>.generate(4, (_) => <Suit>{}, growable: false);
+    final List<Set<Suit>> voids = List<Set<Suit>>.generate(
+      e.config.players,
+      (_) => <Suit>{},
+      growable: false,
+    );
     void scan(List<PlayedCard> cards) {
       if (cards.isEmpty) return;
       final Suit lead = effectiveSuit(cards.first.card, e.trump);
@@ -257,9 +278,12 @@ class ShelemBot {
 
     final List<PlayingCard> unseen =
         _unseen(e, player, memory: difficulty.countsCards);
-    final List<Set<Suit>> voids = difficulty.countsCards
+    // در بازی دونفره تا وقتی برگ‌های روی هم تمام نشده، «نداشتنِ خال» دائمی
+    // نیست؛ بازیکن ممکن است دوباره از همان خال بکشد.
+    final bool trustVoids = difficulty.countsCards && e.stock.isEmpty;
+    final List<Set<Suit>> voids = trustVoids
         ? _voids(e)
-        : List<Set<Suit>>.generate(4, (_) => <Suit>{});
+        : List<Set<Suit>>.generate(e.config.players, (_) => <Suit>{});
 
     if (e.trick.isEmpty) {
       return _lead(e, player, legal, unseen, voids);
@@ -283,7 +307,11 @@ class ShelemBot {
     final List<PlayingCard> side = hand
         .where((PlayingCard c) => !isTrumpCard(c, trump))
         .toList();
-    final List<int> opponents = <int>[(player + 1) % 4, (player + 3) % 4];
+    final int seats = e.config.players;
+    final List<int> opponents = <int>[
+      for (int i = 1; i < seats; i++)
+        if (teamOf((player + i) % seats) != teamOf(player)) (player + i) % seats,
+    ];
     final int trumpsOut = unseen
         .where((PlayingCard c) => isTrumpCard(c, trump))
         .length;
@@ -374,7 +402,7 @@ class ShelemBot {
     final int wi = trickWinnerIndex(e.trick, trump);
     final PlayedCard best = e.trick[wi];
     final bool partnerWinning = teamOf(best.player) == teamOf(player);
-    final bool isLast = e.trick.length == 3;
+    final bool isLast = e.trick.length == e.config.players - 1;
     final int trickPoints =
         cardPointsOf(e.trick.map((PlayedCard p) => p.card));
 
@@ -449,9 +477,10 @@ class ShelemBot {
       final List<PlayingCard> over = trumps.where(beatsBest).toList();
       if (over.isNotEmpty) {
         if (isLast) return _lowest(over);
+        final int seats = e.config.players;
         final List<int> after = <int>[];
-        for (int k = 1; k <= 3 - e.trick.length; k++) {
-          after.add((player + k) % 4);
+        for (int k = 1; k <= seats - 1 - e.trick.length; k++) {
+          after.add((player + k) % seats);
         }
         final bool oppCanOverTrump = after.any((int p) =>
             teamOf(p) != teamOf(player) &&

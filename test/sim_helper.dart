@@ -15,10 +15,11 @@ void botStep(ShelemEngine e, Difficulty d, Random r) {
       e.startRound();
     case GamePhase.bidding:
       final int? bid = ShelemBot.chooseBid(e, e.bidder, d, rng: r);
-      if (bid == null) {
+      if (bid == null && e.canPass) {
         e.passBid();
       } else {
-        e.placeBid(bid);
+        final List<int> options = e.availableBids();
+        e.placeBid(bid ?? options.first);
       }
     case GamePhase.kitty:
       e.takeKitty();
@@ -70,8 +71,8 @@ void assertRoundInvariants(ShelemEngine e, void Function(bool, String) check) {
     'مجموع امتیاز راند باید ${e.config.totalPoints} باشد ولی ${pts[0] + pts[1]} شد',
   );
   check(
-    e.tricksWon[0] + e.tricksWon[1] == e.config.handSize,
-    'تعداد دست‌ها باید ${e.config.handSize} باشد',
+    e.tricksWon[0] + e.tricksWon[1] == e.config.totalTricks,
+    'تعداد دست‌ها باید ${e.config.totalTricks} باشد',
   );
   check(
     e.hands.every((List<PlayingCard> h) => h.isEmpty),

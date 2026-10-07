@@ -118,6 +118,7 @@ class AppSettings {
 
   /// ساخت تنظیمات قانونی جدید با تغییر یک گزینه.
   GameConfig rulesWith({
+    int? players,
     bool? withJokers,
     bool? allowShelemBid,
     bool? allowSarShelemBid,
@@ -129,6 +130,7 @@ class AppSettings {
     bool? opponentAlwaysScores,
   }) =>
       GameConfig(
+        players: players ?? rules.players,
         withJokers: withJokers ?? rules.withJokers,
         allowShelemBid: allowShelemBid ?? rules.allowShelemBid,
         allowSarShelemBid: allowSarShelemBid ?? rules.allowSarShelemBid,

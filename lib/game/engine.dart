@@ -50,6 +50,7 @@ int nextPlayer(int player) => (player + 1) % 4;
 /// تنظیمات قانونیِ یک بازی.
 class GameConfig {
   const GameConfig({
+    this.players = 4,
     this.withJokers = false,
     this.allowShelemBid = true,
     this.allowSarShelemBid = false,
@@ -57,6 +58,9 @@ class GameConfig {
     this.targetScore = 1165,
     this.scoring = const ScoringRules(),
   });
+
+  /// تعداد بازیکنان: ۴ (دو تیم دونفره) یا ۲ (نفر به نفر).
+  final int players;
 
   /// بازی با دو جوکر (۲۰۰ امتیازی) به‌جای ۱۶۵ امتیازی.
   final bool withJokers;
@@ -76,15 +80,36 @@ class GameConfig {
 
   final ScoringRules scoring;
 
+  /// تعداد برگ‌های دستِ هر بازیکن در شروع راند.
   int get handSize => 12;
-  int get kittySize => withJokers ? 6 : 4;
-  int get minBid => withJokers ? 120 : 100;
-  int get maxNumericBid => withJokers ? 200 : 165;
 
-  /// مجموع امتیاز قابل کسب در هر راند (۱۶۵ یا ۲۰۰).
-  int get totalPoints => withJokers ? 200 : 165;
+  /// تعداد برگ‌های «گل» وسط زمین.
+  int get kittySize => withJokers ? 6 : 4;
+
+  /// تعداد کلِ برگ‌های دسته.
+  int get deckSize => withJokers ? 54 : 52;
+
+  /// برگ‌هایی که در بازی دونفره روی هم می‌مانند و بعد از هر دست کشیده می‌شوند.
+  int get stockSize => deckSize - players * handSize - kittySize;
+
+  /// تعداد دست‌های یک راند (۱۲ در بازی چهارنفره، ۲۴ در بازی دونفره).
+  int get totalTricks => (players * handSize + stockSize) ~/ players;
+
+  /// مجموع امتیاز قابل کسب در هر راند.
+  /// ۵ امتیاز برای هر دست + ۵ امتیاز برای برگ‌های کنارگذاشتهٔ حاکم + امتیاز برگ‌ها.
+  int get totalPoints =>
+      kTrickBonus * (totalTricks + 1) + (withJokers ? 135 : 100);
+
+  /// کمینهٔ خواندن: حدود ۶۰٪ کلِ امتیازِ راند، گرد شده به مضربِ ۵.
+  int get minBid => ((totalPoints * 0.6) / 5).round() * 5;
+
+  int get maxNumericBid => totalPoints;
+
+  /// آیا این بازی دونفره است؟
+  bool get isDuel => players == 2;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
+        'players': players,
         'jokers': withJokers,
         'shelem': allowShelemBid,
         'sar': allowSarShelemBid,
@@ -94,6 +119,7 @@ class GameConfig {
       };
 
   static GameConfig fromJson(Map<String, dynamic> j) => GameConfig(
+        players: (j['players'] as int?) ?? 4,
         withJokers: (j['jokers'] as bool?) ?? false,
         allowShelemBid: (j['shelem'] as bool?) ?? true,
         allowSarShelemBid: (j['sar'] as bool?) ?? false,
@@ -204,6 +230,9 @@ class ShelemEngine {
   List<PlayingCard> kitty = <PlayingCard>[];
   List<PlayingCard> discards = <PlayingCard>[];
 
+  /// برگ‌های روی هم در بازی دونفره؛ بعد از هر دست یک برگ کشیده می‌شود.
+  List<PlayingCard> stock = <PlayingCard>[];
+
   /// آخرین عددی که هر بازیکن خوانده است (null یعنی هنوز نخوانده).
   List<int?> bids = <int?>[null, null, null, null];
   List<bool> passed = <bool>[false, false, false, false];
@@ -230,6 +259,12 @@ class ShelemEngine {
 
   RoundOutcome? outcome;
 
+  /// تعداد بازیکنانِ این بازی (۲ یا ۴).
+  int get seats => config.players;
+
+  /// نفرِ بعدی با توجه به تعدادِ بازیکنان.
+  int nextSeat(int player) => (player + 1) % config.players;
+
   /// وقتی حاکم جوکر را به‌عنوان اولین برگ بازی کند باید خال حکم را اعلام کند.
   bool get awaitingJokerTrump =>
       phase == GamePhase.declaringTrump && trick.isNotEmpty && trump == null;
@@ -238,14 +273,15 @@ class ShelemEngine {
   void startRound() {
     if (phase == GamePhase.gameOver) return;
     round += 1;
-    dealer = nextPlayer(dealer);
+    dealer = nextSeat(dealer);
     if (phase != GamePhase.bidding) redeals = 0;
     phase = GamePhase.dealing;
-    hands = List<List<PlayingCard>>.generate(4, (_) => <PlayingCard>[]);
+    hands = List<List<PlayingCard>>.generate(seats, (_) => <PlayingCard>[]);
     kitty = <PlayingCard>[];
     discards = <PlayingCard>[];
-    bids = <int?>[null, null, null, null];
-    passed = <bool>[false, false, false, false];
+    stock = <PlayingCard>[];
+    bids = List<int?>.filled(seats, null);
+    passed = List<bool>.filled(seats, false);
     highBid = 0;
     hakem = null;
     contract = 0;
@@ -261,26 +297,32 @@ class ShelemEngine {
     final List<PlayingCard> deck = buildDeck(withJokers: config.withJokers)
       ..shuffle(_random);
 
-    // پخش در سه دور چهارتایی، شروع از دستِ راستِ صاحب‌دست
-    int p = nextPlayer(dealer);
+    // پخش در سه دورِ چهارتایی، شروع از دستِ راستِ صاحب‌دست
+    int p = nextSeat(dealer);
     for (int round3 = 0; round3 < 3; round3++) {
-      for (int k = 0; k < 4; k++) {
+      for (int k = 0; k < seats; k++) {
         for (int i = 0; i < 4; i++) {
           hands[p].add(deck.removeLast());
         }
-        p = nextPlayer(p);
+        p = nextSeat(p);
       }
     }
-    // باقیِ کارت‌ها «گل» وسط زمین
+    // «گل» وسط زمین
     kitty = <PlayingCard>[
       for (int i = 0; i < config.kittySize; i++) deck.removeLast(),
     ];
-    assert(deck.isEmpty, 'تمام کارت‌ها باید پخش شوند');
+    // در بازی دونفره، باقیِ برگ‌ها روی هم می‌مانند.
+    stock = List<PlayingCard>.of(deck);
+    deck.clear();
+    assert(
+      stock.length == config.stockSize,
+      'تعداد برگ‌های روی هم باید ${config.stockSize} باشد',
+    );
     for (final List<PlayingCard> h in hands) {
       h.sort();
     }
 
-    bidder = nextPlayer(dealer);
+    bidder = nextSeat(dealer);
     phase = GamePhase.bidding;
   }
 
@@ -341,7 +383,7 @@ class ShelemEngine {
       } else {
         // کارت‌ها دوباره پخش می‌شود (همان صاحب‌دست حفظ می‌شود)
         round -= 1;
-        dealer = (dealer + 3) % 4;
+        dealer = (dealer + seats - 1) % seats;
         redeals += 1;
         startRound();
       }
@@ -356,10 +398,10 @@ class ShelemEngine {
     }
 
     // نوبت به نفر بعدی که پاس نداده است
-    int next = nextPlayer(bidder);
+    int next = nextSeat(bidder);
     int guard = 0;
-    while (passed[next] && guard < 8) {
-      next = nextPlayer(next);
+    while (passed[next] && guard < 2 * seats) {
+      next = nextSeat(next);
       guard++;
     }
     bidder = next;
@@ -466,7 +508,7 @@ class ShelemEngine {
       phase = GamePhase.playing;
       if (trick.isNotEmpty) {
         // جوکر قبلاً روی زمین رفته و حالا حکم اعلام شد
-        turn = nextPlayer(player);
+        turn = nextSeat(player);
         return;
       }
     }
@@ -475,10 +517,10 @@ class ShelemEngine {
     trick.add(PlayedCard(player, card));
     mustLeadTrumpFirst = false;
 
-    if (trick.length == 4) {
+    if (trick.length == seats) {
       phase = GamePhase.trickComplete;
     } else {
-      turn = nextPlayer(player);
+      turn = nextSeat(player);
     }
   }
 
@@ -496,7 +538,7 @@ class ShelemEngine {
     assert(awaitingJokerTrump);
     trump = suit;
     phase = GamePhase.playing;
-    turn = nextPlayer(trick.first.player);
+    turn = nextSeat(trick.first.player);
   }
 
   /// جمع کردن دست و تعیین برنده.
@@ -517,11 +559,24 @@ class ShelemEngine {
     trick = <PlayedCard>[];
     leader = winner;
     turn = winner;
+    _drawFromStock(winner);
 
     if (hands.every((List<PlayingCard> h) => h.isEmpty)) {
       _finishRound();
     } else {
       phase = GamePhase.playing;
+    }
+  }
+
+  /// در بازی دونفره، برندهٔ دست اول و سپس نفرِ بعدی یک برگ برمی‌دارند.
+  void _drawFromStock(int winner) {
+    if (stock.isEmpty) return;
+    int p = winner;
+    for (int i = 0; i < seats; i++) {
+      if (stock.isEmpty) break;
+      hands[p].add(stock.removeLast());
+      hands[p].sort();
+      p = nextSeat(p);
     }
   }
 
@@ -545,7 +600,7 @@ class ShelemEngine {
       contract: contract,
       hakemPoints: pts[ht],
       opponentPoints: pts[1 - ht],
-      hakemWonAllTricks: tricksWon[ht] == config.handSize,
+      hakemWonAllTricks: tricksWon[ht] == config.totalTricks,
       rules: config.scoring,
     );
     outcome = o;
@@ -583,6 +638,7 @@ class ShelemEngine {
                 h.map((PlayingCard c) => c.toJson()).toList())
             .toList(),
         'kitty': kitty.map((PlayingCard c) => c.toJson()).toList(),
+        'stock': stock.map((PlayingCard c) => c.toJson()).toList(),
         'discards': discards.map((PlayingCard c) => c.toJson()).toList(),
         'bids': bids,
         'passed': passed,
@@ -629,6 +685,7 @@ class ShelemEngine {
         .map<List<PlayingCard>>((dynamic h) => _cards(h))
         .toList();
     e.kitty = _cards(j['kitty']);
+    e.stock = j['stock'] == null ? <PlayingCard>[] : _cards(j['stock']);
     e.discards = _cards(j['discards']);
     e.bids = (j['bids'] as List<dynamic>).map((dynamic b) => b as int?).toList();
     e.passed = (j['passed'] as List<dynamic>).map((dynamic b) => b as bool).toList();
