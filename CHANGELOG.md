@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.0-alpha.3 — 2026-10-07
+
+### Added
+
+- Schema 8 source registry with license, coverage, access date and editorial review status.
+- Expanded source bank with Iranica Parthian/Sasanian/Anahid records, Wiktionary, Wikidata, Dehkhoda, Oxford and auxiliary references.
+- Knowledge content pack `knowledge-3` with 120+ traceable Persian/Iranian names, meanings, Latin variants, language/culture metadata and independent pending Claims.
+- Source catalog overview with name, meaning and source coverage metrics.
+- Community-sourced meanings remain `unverified`/`pending`; no community list is presented as a verified etymological authority.
+
+### Verification
+
+- Database migration and content seed tests updated for Schema 8 and `knowledge-3`.
+- Flutter Analyze/Test/Android Build run in CI after push.
+
 ## 0.1.0-alpha.2 — 2026-10-07
 
 ### Added

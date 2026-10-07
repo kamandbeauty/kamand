@@ -15,10 +15,14 @@ void main() {
 
   test('creates the current schema and seed metadata', () {
     final metadata = database.getMetadata();
-    expect(metadata['schema_version'], '7');
-    expect(metadata['content_version'], 'knowledge-2');
-    expect(database.getSources().length, greaterThan(8));
+    expect(metadata['schema_version'], '8');
+    expect(metadata['content_version'], 'knowledge-3');
+    expect(database.getSources().length, greaterThan(15));
     expect(database.searchNames('آ'), isNotEmpty);
+    expect(database.searchNames('نیلوفر').single.meaning, contains('گل'));
+    expect(database.getName('name-catalog-نیلوفر')?.status, 'unverified');
+    expect(database.getSources().singleWhere((source) => source.id == 'source-wiktionary-persian-given-names').license, contains('CC BY-SA'));
+    expect(database.getClaims('name', 'name-catalog-آرش'), isNotEmpty);
     expect(database.getClaims('name', 'name-داریوش'), isNotEmpty);
     expect(database.getName('name-کوروش')?.etymology, contains('Kuruš'));
   });

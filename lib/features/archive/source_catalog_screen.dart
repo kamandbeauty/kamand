@@ -12,6 +12,8 @@ class SourceCatalogScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sources = ref.watch(sourcesProvider);
+    final names = ref.watch(allNamesProvider);
+    final sourcedMeanings = names.where((name) => name.meaning.isNotEmpty && name.meaning != 'نامشخص').length;
     return Scaffold(
       appBar: AppBar(title: const Text('فهرست منابع')),
       body: sources.isEmpty
@@ -19,10 +21,57 @@ class SourceCatalogScreen extends ConsumerWidget {
           : ListView.separated(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
-              itemCount: sources.length,
+              itemCount: sources.length + 1,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _SourceCard(source: sources[index]),
+              itemBuilder: (context, index) => index == 0
+                  ? _CatalogSummary(nameCount: names.length, meaningCount: sourcedMeanings, sourceCount: sources.length)
+                  : _SourceCard(source: sources[index - 1]),
             ),
+    );
+  }
+}
+
+class _CatalogSummary extends StatelessWidget {
+  const _CatalogSummary({required this.nameCount, required this.meaningCount, required this.sourceCount});
+
+  final int nameCount;
+  final int meaningCount;
+  final int sourceCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: const Color(0xFFEAF4F1),
+      child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('نمای کلی بانک دانش', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+          const SizedBox(height: 6),
+          const Text('هر رکورد باید مسیر منبع، وضعیت بازبینی و محدودیت استفاده را حفظ کند.', style: TextStyle(color: Colors.blueGrey, height: 1.5, fontSize: 12)),
+          const SizedBox(height: 14),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _Metric(label: 'نام', value: '$nameCount'),
+            _Metric(label: 'معنی ثبت‌شده', value: '$meaningCount'),
+            _Metric(label: 'منبع', value: '$sourceCount'),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(13)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), Text(label, style: const TextStyle(color: Colors.blueGrey, fontSize: 11))]),
     );
   }
 }
@@ -53,8 +102,13 @@ class _SourceCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            Wrap(spacing: 8, runSpacing: 8, children: [StatusBadge(status: isTierOne ? 'verified' : 'unverified'), _Tag(text: source.type), if (source.year != null) _Tag(text: '${source.year}')]),
+            Wrap(spacing: 8, runSpacing: 8, children: [StatusBadge(status: isTierOne ? 'verified' : 'unverified'), _Tag(text: source.type), _Tag(text: source.reviewStatus), if (source.year != null) _Tag(text: '${source.year}')]),
             const SizedBox(height: 12),
+            if (source.coverage.isNotEmpty) Text('پوشش: ${source.coverage}', style: const TextStyle(fontWeight: FontWeight.w700, height: 1.5)),
+            if (source.license.isNotEmpty) ...[
+              const SizedBox(height: 5),
+              Text('مجوز: ${source.license}', style: const TextStyle(color: Colors.blueGrey, fontSize: 11, height: 1.5)),
+            ],
             Text('نویسنده: ${source.author}', style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
             Text('ناشر: ${source.publisher}', style: const TextStyle(color: Colors.blueGrey)),

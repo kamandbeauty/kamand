@@ -422,6 +422,19 @@ class AppDatabase {
       _setMetadata('content_version', 'seed-7');
       version = 7;
     }
+
+    if (version < 8) {
+      _db.execute("ALTER TABLE sources ADD COLUMN license TEXT NOT NULL DEFAULT ''");
+      _db.execute("ALTER TABLE sources ADD COLUMN accessed_at TEXT NOT NULL DEFAULT ''");
+      _db.execute("ALTER TABLE sources ADD COLUMN coverage TEXT NOT NULL DEFAULT ''");
+      _db.execute("ALTER TABLE sources ADD COLUMN review_status TEXT NOT NULL DEFAULT 'pending'");
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_sources_reliability ON sources(reliability_level)');
+      _db.execute('CREATE INDEX IF NOT EXISTS idx_sources_review_status ON sources(review_status)');
+      _db.execute('PRAGMA user_version = 8');
+      _setMetadata('schema_version', '8');
+      _setMetadata('content_version', 'seed-8');
+      version = 8;
+    }
   }
 
   void _seedIfEmpty() {
@@ -436,14 +449,27 @@ class AppDatabase {
     try {
       for (final source in seedSources) {
         _db.execute(
-          '''INSERT INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          '''INSERT INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes, license, accessed_at, coverage, review_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
           [
             source['id'], source['title'], source['author'], source['publisher'], source['publication_year'],
             source['language'], source['source_type'], source['url'], source['isbn'], source['doi'],
-            source['reliability_level'], source['notes'],
+            source['reliability_level'], source['notes'], source['license'] ?? '', source['accessed_at'] ?? '',
+            source['coverage'] ?? '', source['review_status'] ?? 'pending',
           ],
         );
+      }
+      for (final entry in seedSourceMetadata.entries) {
+        _db.execute(
+          'UPDATE sources SET license = ?, accessed_at = ?, coverage = ?, review_status = ? WHERE id = ?',
+          [entry.value['license'] ?? '', now, entry.value['coverage'] ?? '', entry.value['review_status'] ?? 'pending', entry.key],
+        );
+      }
+      for (final author in seedSourceAuthors) {
+        _db.execute('INSERT OR IGNORE INTO source_authors (id, name, affiliation, notes) VALUES (?, ?, ?, ?)', [author['id'], author['name'], author['affiliation'], author['notes']]);
+      }
+      for (final category in seedSourceCategories) {
+        _db.execute('INSERT OR IGNORE INTO source_categories (id, category_key, title) VALUES (?, ?, ?)', [category['id'], category['category_key'], category['title']]);
       }
       _db.execute(
         '''INSERT INTO abjad_systems (id, system_key, title, description, source_id, version, status)
@@ -489,6 +515,28 @@ class AppDatabase {
           ],
         );
       }
+      for (final item in seedCatalogNames) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [item['id'], item['display_name'], item['normalized_name'], item['transliteration'], item['language'], item['origin'], item['gender'], item['meaning'], item['etymology'], item['pronunciation'], item['status'], item['confidence'], item['styles'], item['source_id'], item['source_note'], now, now],
+        );
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_variants (id, name_id, variant_text, normalized_text, script, variant_type)
+             VALUES (?, ?, ?, ?, ?, ?)''',
+          ['variant-${item['id']}-latin', item['id'], item['transliteration'], item['transliteration'].toString().toLowerCase(), 'Latn', 'transliteration'],
+        );
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_languages (id, name_id, language_code, language_title, status, confidence, claim_group_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)''',
+          ['language-${item['id']}', item['id'], item['language'].toString() == 'چندزبانه' ? 'mul' : 'fa', item['language'], item['status'], item['confidence'], null],
+        );
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_cultures (id, name_id, culture_key, culture_title, status, confidence, claim_group_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)''',
+          ['culture-${item['id']}', item['id'], 'iranian', item['origin'], item['status'], item['confidence'], null],
+        );
+      }
       for (final claim in seedClaims) {
         _db.execute(
           '''INSERT INTO source_claims (id, claim_group_id, source_id, subject_type, subject_id, claim_type, claim_text, normalized_value, status, confidence, evidence_note, review_status, created_at)
@@ -513,6 +561,18 @@ class AppDatabase {
             ["etymology-${claim['subject_id']}", claim['subject_id'], claim['claim_text'], '', 'Old Persian / Iranian', claim['status'], claim['confidence'], claim['claim_group_id']],
           );
         }
+      }
+      for (final claim in seedCatalogClaims) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO source_claims (id, claim_group_id, source_id, subject_type, subject_id, claim_type, claim_text, normalized_value, status, confidence, evidence_note, review_status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [claim['id'], claim['claim_group_id'], claim['source_id'], claim['subject_type'], claim['subject_id'], claim['claim_type'], claim['claim_text'], claim['normalized_value'], claim['status'], claim['confidence'], claim['evidence_note'], claim['review_status'], now],
+        );
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_meanings (id, name_id, meaning_text, context, status, confidence, claim_group_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)''',
+          ['meaning-${claim['subject_id']}', claim['subject_id'], claim['claim_text'], 'معنی اولیه از فهرست نام‌ها؛ نیازمند بازبینی مستقل', claim['status'], claim['confidence'], claim['claim_group_id']],
+        );
       }
       for (final entry in seedArchiveEntries) {
         _db.execute(
@@ -602,16 +662,28 @@ class AppDatabase {
 
   void _upgradeContentSeed() {
     final metadata = getMetadata();
-    if (metadata['content_version'] == 'knowledge-2') return;
+    if (metadata['content_version'] == 'knowledge-3') return;
     final now = DateTime.now().toUtc().toIso8601String();
     _db.execute('BEGIN');
     try {
       for (final source in seedSources) {
         _db.execute(
-          '''INSERT OR IGNORE INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-          [source['id'], source['title'], source['author'], source['publisher'], source['publication_year'], source['language'], source['source_type'], source['url'], source['isbn'], source['doi'], source['reliability_level'], source['notes']],
+          '''INSERT OR IGNORE INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes, license, accessed_at, coverage, review_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [source['id'], source['title'], source['author'], source['publisher'], source['publication_year'], source['language'], source['source_type'], source['url'], source['isbn'], source['doi'], source['reliability_level'], source['notes'], source['license'] ?? '', source['accessed_at'] ?? '', source['coverage'] ?? '', source['review_status'] ?? 'pending'],
         );
+      }
+      for (final entry in seedSourceMetadata.entries) {
+        _db.execute(
+          'UPDATE sources SET license = ?, accessed_at = ?, coverage = ?, review_status = ? WHERE id = ?',
+          [entry.value['license'] ?? '', now, entry.value['coverage'] ?? '', entry.value['review_status'] ?? 'pending', entry.key],
+        );
+      }
+      for (final author in seedSourceAuthors) {
+        _db.execute('INSERT OR IGNORE INTO source_authors (id, name, affiliation, notes) VALUES (?, ?, ?, ?)', [author['id'], author['name'], author['affiliation'], author['notes']]);
+      }
+      for (final category in seedSourceCategories) {
+        _db.execute('INSERT OR IGNORE INTO source_categories (id, category_key, title) VALUES (?, ?, ?)', [category['id'], category['category_key'], category['title']]);
       }
       for (final item in seedNames) {
         _db.execute(
@@ -625,6 +697,28 @@ class AppDatabase {
           '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
           [item['id'], item['display_name'], item['normalized_name'], item['transliteration'], item['language'], item['origin'], item['gender'], item['meaning'], item['etymology'], item['pronunciation'], item['status'], item['confidence'], item['styles'], item['source_id'], item['source_note'], now, now],
+        );
+      }
+      for (final item in seedCatalogNames) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO names (id, display_name, normalized_name, transliteration, language, origin, gender, meaning, etymology, pronunciation, status, confidence, styles, source_id, source_note, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [item['id'], item['display_name'], item['normalized_name'], item['transliteration'], item['language'], item['origin'], item['gender'], item['meaning'], item['etymology'], item['pronunciation'], item['status'], item['confidence'], item['styles'], item['source_id'], item['source_note'], now, now],
+        );
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_variants (id, name_id, variant_text, normalized_text, script, variant_type)
+             VALUES (?, ?, ?, ?, ?, ?)''',
+          ['variant-${item['id']}-latin', item['id'], item['transliteration'], item['transliteration'].toString().toLowerCase(), 'Latn', 'transliteration'],
+        );
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_languages (id, name_id, language_code, language_title, status, confidence, claim_group_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)''',
+          ['language-${item['id']}', item['id'], item['language'].toString() == 'چندزبانه' ? 'mul' : 'fa', item['language'], item['status'], item['confidence'], null],
+        );
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_cultures (id, name_id, culture_key, culture_title, status, confidence, claim_group_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)''',
+          ['culture-${item['id']}', item['id'], 'iranian', item['origin'], item['status'], item['confidence'], null],
         );
       }
       for (final item in seedNameKnowledgeUpdates) {
@@ -654,6 +748,18 @@ class AppDatabase {
           );
         }
       }
+      for (final claim in seedCatalogClaims) {
+        _db.execute(
+          '''INSERT OR IGNORE INTO source_claims (id, claim_group_id, source_id, subject_type, subject_id, claim_type, claim_text, normalized_value, status, confidence, evidence_note, review_status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+          [claim['id'], claim['claim_group_id'], claim['source_id'], claim['subject_type'], claim['subject_id'], claim['claim_type'], claim['claim_text'], claim['normalized_value'], claim['status'], claim['confidence'], claim['evidence_note'], claim['review_status'], now],
+        );
+        _db.execute(
+          '''INSERT OR IGNORE INTO name_meanings (id, name_id, meaning_text, context, status, confidence, claim_group_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)''',
+          ['meaning-${claim['subject_id']}', claim['subject_id'], claim['claim_text'], 'معنی اولیه از فهرست نام‌ها؛ نیازمند بازبینی مستقل', claim['status'], claim['confidence'], claim['claim_group_id']],
+        );
+      }
       for (final entry in seedArchiveEntries) {
         _db.execute(
           '''INSERT OR IGNORE INTO archive_entries (id, title, category, body, source_id, status, created_at)
@@ -661,7 +767,7 @@ class AppDatabase {
           [entry['id'], entry['title'], entry['category'], entry['body'], entry['source_id'], entry['status'], now],
         );
       }
-      _setMetadata('content_version', 'knowledge-2');
+      _setMetadata('content_version', 'knowledge-3');
       _db.execute('COMMIT');
       _refreshSearchIndex();
     } catch (_) {

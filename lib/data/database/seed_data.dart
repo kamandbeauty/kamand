@@ -1,4 +1,5 @@
 import '../../core/normalization/persian_normalizer.dart';
+import 'name_catalog_data.dart';
 
 const internalSourceId = 'source-internal-review';
 
@@ -20,7 +21,7 @@ final seedSources = <Map<String, Object?>>[
     'title': 'PERSONAL NAMES, IRANIAN',
     'author': 'Rüdiger Schmitt',
     'publisher': 'Encyclopaedia Iranica',
-    'publication_year': 2021,
+    'publication_year': null,
     'language': 'en',
     'source_type': 'encyclopedia_article',
     'url': 'https://www.iranicaonline.org/articles/personal-names-iranian/',
@@ -162,6 +163,209 @@ final seedSources = <Map<String, Object?>>[
     'reliability_level': 'tier_2',
     'notes': 'برای ریشه‌شناسی فارسی؛ ادعاها باید با شماره جلد/مدخل و نسخه در مرحله ورود محتوا ثبت شوند.',
   },
+  {
+    'id': 'source-iranica-parthian-names',
+    'title': 'PERSONAL NAMES, IRANIAN iv. PARTHIAN PERIOD',
+    'author': 'Rüdiger Schmitt',
+    'publisher': 'Encyclopaedia Iranica',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'encyclopedia_article',
+    'url': 'https://www.iranicaonline.org/articles/personal-names-iranian-iv-parthian/',
+    'reliability_level': 'tier_1',
+    'notes': 'نام‌های پارتی، شواهد کتیبه‌ای و تحلیل ترکیب‌های ایرانی؛ ادعاها به‌صورت مستقل ثبت می‌شوند.',
+  },
+  {
+    'id': 'source-iranica-sasanian-names',
+    'title': 'PERSONAL NAMES, IRANIAN v. SASANIAN PERIOD',
+    'author': 'Rüdiger Schmitt',
+    'publisher': 'Encyclopaedia Iranica',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'encyclopedia_article',
+    'url': 'https://www.iranicaonline.org/articles/personal-names-iranian-v-sasanian/',
+    'reliability_level': 'tier_1',
+    'notes': 'نام‌های ساسانی و صورت‌های پارسی میانه؛ برای کنترل ریشه و تحول تاریخی استفاده می‌شود.',
+  },
+  {
+    'id': 'source-iranica-anahid',
+    'title': 'ANĀHĪD i. Ardwīsūr Anāhīd',
+    'author': 'Mary Boyce',
+    'publisher': 'Encyclopaedia Iranica',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'encyclopedia_article',
+    'url': 'https://www.iranicaonline.org/articles/anahid/anahid-i-ardwisur-anahid/',
+    'reliability_level': 'tier_1',
+    'notes': 'برای صورت‌های آناهیتا/آناهید و تمایز میان نام ایزدبانوی تاریخی و کاربرد امروزی نام.',
+  },
+  {
+    'id': 'source-wiktionary-persian-given-names',
+    'title': 'Appendix: Persian given names',
+    'author': 'Wiktionary contributors',
+    'publisher': 'Wikimedia Foundation',
+    'publication_year': null,
+    'language': 'en/fa',
+    'source_type': 'community_lexicon',
+    'url': 'https://en.wiktionary.org/wiki/Appendix:Persian_given_names',
+    'reliability_level': 'tier_2',
+    'notes': 'فهرست گسترده و قابل ردیابی برای کشف نام‌ها و معانی اولیه است؛ همه رکوردهای این بسته تا بازبینی مدخل‌به‌مدخل unverified می‌مانند.',
+  },
+  {
+    'id': 'source-behind-the-name-persian',
+    'title': 'Persian Names',
+    'author': 'Mike Campbell and contributors',
+    'publisher': 'Behind the Name',
+    'publication_year': null,
+    'language': 'en/fa',
+    'source_type': 'name_reference',
+    'url': 'https://www.behindthename.com/names/usage/persian',
+    'reliability_level': 'tier_2',
+    'notes': 'منبع کمکی برای صورت‌های نوشتاری و کاربرد نام‌ها؛ متن آن به‌صورت کپی‌شده در برنامه ذخیره نمی‌شود و هر Claim باید جداگانه بررسی شود.',
+  },
+  {
+    'id': 'source-wikidata',
+    'title': 'Wikidata human-readable knowledge graph',
+    'author': 'Wikidata contributors',
+    'publisher': 'Wikimedia Foundation',
+    'publication_year': null,
+    'language': 'multi',
+    'source_type': 'open_knowledge_graph',
+    'url': 'https://www.wikidata.org/',
+    'reliability_level': 'tier_2',
+    'notes': 'برای شناسه‌های پایدار، صورت‌های زبانی و اتصال منابع استفاده می‌شود؛ description به‌تنهایی معنی ریشه‌شناختی قطعی نیست.',
+  },
+  {
+    'id': 'source-avesta-zoroastrian-names',
+    'title': 'Zoroastrian Names',
+    'author': 'Avesta.org archive',
+    'publisher': 'Avesta.org',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'reference_archive',
+    'url': 'https://www.avesta.org/znames.htm',
+    'reliability_level': 'tier_3',
+    'notes': 'آرشیو کمکی نام‌های زرتشتی؛ برای کشف رکورد مفید است اما تا بررسی تطبیقی منبع قطعی تلقی نمی‌شود.',
+  },
+];
+
+final seedSourceMetadata = <String, Map<String, String>>{
+  internalSourceId: {
+    'license': 'داخلی؛ قابل استفاده فقط برای تست',
+    'coverage': 'روش‌شناسی و داده آزمایشی',
+    'review_status': 'internal_only',
+  },
+  'source-iranica-personal-names': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'نام‌های ایرانی پیشااسلامی و تاریخی',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-achaemenid-names': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'نام‌های دوره هخامنشی و فارسی باستان',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-ariyaramna': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'نام آریارمن و ریشه‌شناسی اختلافی',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-abjad': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'تاریخ ابجد و ارزش عددی حروف',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-cyrus-name': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'نام کوروش و اختلاف ریشه‌شناختی',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-xerxes-name': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'نام خشایارشا و تحلیل فارسی باستان',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-ardashir': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'صورت‌های اردشیر و Artaxerxes',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-bahram': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'بهرام، Vṛθragna و تحول تاریخی',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-parthian-names': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'نام‌های پارتی و شواهد کتیبه‌ای',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-sasanian-names': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'نام‌های ساسانی و پارسی میانه',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-anahid': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'آناهیتا، آناهید و واژگان اوستایی',
+    'review_status': 'reviewed',
+  },
+  'source-wiktionary-persian-given-names': {
+    'license': 'CC BY-SA 4.0؛ الزام انتساب و اشتراک مشابه برای متن مشتق',
+    'coverage': 'فهرست بزرگ نام‌های فارسی و معانی اولیه',
+    'review_status': 'editorial_pending',
+  },
+  'source-behind-the-name-persian': {
+    'license': 'Copyright؛ فقط لینک و فراداده، بدون بازنشر متن',
+    'coverage': 'کاربرد و صورت‌های نام‌های فارسی',
+    'review_status': 'catalogued',
+  },
+  'source-wikidata': {
+    'license': 'CC0 برای داده ساختاری Wikidata؛ رعایت مجوز منابع ارجاع‌شده',
+    'coverage': 'شناسه‌ها، صورت‌های چندزبانه و پیوند منابع',
+    'review_status': 'catalogued',
+  },
+  'source-avesta-zoroastrian-names': {
+    'license': 'طبق شرایط وبگاه؛ فقط فراداده و لینک',
+    'coverage': 'نام‌های زرتشتی برای مقایسه و کشف اولیه',
+    'review_status': 'editorial_pending',
+  },
+  'source-abjad-variants-secondary': {
+    'license': 'لینک و فراداده؛ عدم بازنشر متن بدون اجازه',
+    'coverage': 'فرمول‌های ثانویه صغیر، وسیط، اکبر و معادل‌سازی فارسی',
+    'review_status': 'reviewed',
+  },
+  'source-oxford-handbook-onomastics': {
+    'license': 'حق نشر ناشر؛ استناد کتابشناختی و نقل‌قول کوتاه',
+    'coverage': 'روش‌شناسی نام‌شناسی و نام‌گذاری',
+    'review_status': 'catalogued',
+  },
+  'source-dehkhoda-university-tehran': {
+    'license': 'طبق مجوز دانشگاه تهران؛ لینک و ارجاع مدخل',
+    'coverage': 'واژگان و شواهد زبان فارسی',
+    'review_status': 'catalogued',
+  },
+  'source-hassandoust-etymological-dictionary': {
+    'license': 'حق نشر ناشر؛ استناد به جلد و مدخل',
+    'coverage': 'ریشه‌شناسی زبان فارسی',
+    'review_status': 'catalogued',
+  },
+};
+
+final seedSourceAuthors = <Map<String, String>>[
+  {'id': 'author-rudiger-schmitt', 'name': 'Rüdiger Schmitt', 'affiliation': 'Encyclopaedia Iranica', 'notes': 'پژوهشگر نام‌های ایرانی و زبان‌های ایرانی؛ اتصال هر ادعا به مدخل مستقل حفظ می‌شود.'},
+  {'id': 'author-alireza-shapur-shahbazi', 'name': 'Alireza Shapur Shahbazi', 'affiliation': 'Encyclopaedia Iranica', 'notes': 'نویسنده مدخل آریارمن در آرشیو منبع.'},
+  {'id': 'author-mary-boyce', 'name': 'Mary Boyce', 'affiliation': 'Encyclopaedia Iranica', 'notes': 'نویسنده مدخل آناهید؛ ادعاهای تاریخی باید با متن مدخل بررسی شوند.'},
+  {'id': 'author-mohammad-hassandoust', 'name': 'محمد حسن‌دوست', 'affiliation': 'فرهنگستان زبان و ادب فارسی', 'notes': 'نویسنده فرهنگ ریشه‌شناختی زبان فارسی.'},
+  {'id': 'author-wiktionary-community', 'name': 'مشارکت‌کنندگان ویکی‌واژه', 'affiliation': 'Wikimedia Foundation', 'notes': 'منبع جامعه‌محور برای کشف اولیه؛ رکوردهای واردشده تا بازبینی مستقل verified نیستند.'},
+];
+
+final seedSourceCategories = <Map<String, String>>[
+  {'id': 'category-academic', 'category_key': 'academic', 'title': 'دانشگاهی و دانشنامه‌ای'},
+  {'id': 'category-etymology', 'category_key': 'etymology', 'title': 'فرهنگ و ریشه‌شناسی'},
+  {'id': 'category-community', 'category_key': 'community', 'title': 'جامعه‌محور و باز'},
+  {'id': 'category-open-data', 'category_key': 'open_data', 'title': 'داده باز و گراف دانش'},
+  {'id': 'category-secondary', 'category_key': 'secondary', 'title': 'منبع ثانویه و کمکی'},
 ];
 
 final seedNames = <Map<String, Object?>>[

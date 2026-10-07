@@ -10,6 +10,10 @@ class Source {
     required this.url,
     required this.reliability,
     required this.notes,
+    required this.license,
+    required this.accessedAt,
+    required this.coverage,
+    required this.reviewStatus,
   });
 
   final String id;
@@ -22,6 +26,10 @@ class Source {
   final String url;
   final String reliability;
   final String notes;
+  final String license;
+  final String accessedAt;
+  final String coverage;
+  final String reviewStatus;
 
   factory Source.fromMap(Map<String, Object?> map) {
     return Source(
@@ -35,6 +43,10 @@ class Source {
       url: map['url'] as String? ?? '',
       reliability: map['reliability_level'] as String? ?? 'low',
       notes: map['notes'] as String? ?? '',
+      license: map['license'] as String? ?? '',
+      accessedAt: map['accessed_at'] as String? ?? '',
+      coverage: map['coverage'] as String? ?? '',
+      reviewStatus: map['review_status'] as String? ?? 'pending',
     );
   }
 }
