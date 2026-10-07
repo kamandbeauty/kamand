@@ -1,0 +1,211 @@
+/// ابزار گرفتنِ تصویر از رابط کاربری (برای بازبینی طراحی).
+///
+/// این فایل عمداً به `_test.dart` ختم نمی‌شود تا در اجرای معمولیِ
+/// `flutter test` شرکت نکند. در CI این‌طور اجرا می‌شود:
+///
+/// ```sh
+/// flutter test --update-goldens test/screenshots_tool.dart
+/// ```
+library;
+
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shelem/ai/bot.dart';
+import 'package:shelem/game/engine.dart';
+import 'package:shelem/model/card.dart';
+import 'package:shelem/model/enums.dart';
+import 'package:shelem/state/game_controller.dart';
+import 'package:shelem/state/settings.dart';
+import 'package:shelem/ui/screens/game_screen.dart';
+import 'package:shelem/ui/theme.dart';
+import 'package:shelem/ui/widgets/card_view.dart';
+
+import 'sim_helper.dart';
+
+Future<void> _loadFonts() async {
+  for (final String family in <String>['Vazirmatn']) {
+    final FontLoader loader = FontLoader(family);
+    for (final String f in <String>[
+      'assets/fonts/Vazirmatn-Regular.ttf',
+      'assets/fonts/Vazirmatn-Medium.ttf',
+      'assets/fonts/Vazirmatn-SemiBold.ttf',
+      'assets/fonts/Vazirmatn-Bold.ttf',
+    ]) {
+      loader.addFont(rootBundle.load(f));
+    }
+    await loader.load();
+  }
+}
+
+Widget _wrap(Widget child) => MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(),
+      locale: const Locale('fa'),
+      supportedLocales: const <Locale>[Locale('fa'), Locale('en')],
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      builder: (BuildContext context, Widget? c) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: c ?? const SizedBox.shrink(),
+      ),
+      home: child,
+    );
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(_loadFonts);
+  setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
+
+  testWidgets('گالری ورق‌ها', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1000, 1180);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final List<PlayingCard> cards = <PlayingCard>[
+      const PlayingCard(Suit.spades, 14),
+      const PlayingCard(Suit.spades, 13),
+      const PlayingCard(Suit.hearts, 12),
+      const PlayingCard(Suit.hearts, 11),
+      const PlayingCard(Suit.diamonds, 10),
+      const PlayingCard(Suit.diamonds, 9),
+      const PlayingCard(Suit.clubs, 8),
+      const PlayingCard(Suit.clubs, 7),
+      const PlayingCard(Suit.spades, 6),
+      const PlayingCard(Suit.hearts, 5),
+      const PlayingCard(Suit.diamonds, 4),
+      const PlayingCard(Suit.clubs, 3),
+      const PlayingCard(Suit.spades, 2),
+      const PlayingCard(Suit.joker, kRedJokerRank),
+    ];
+
+    await tester.pumpWidget(
+      _wrap(
+        ColoredBox(
+          color: const Color(0xFF123F2C),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 10,
+                  alignment: WrapAlignment.center,
+                  children: <Widget>[
+                    for (final PlayingCard c in cards)
+                      CardView(card: c, width: 108),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 10,
+                  alignment: WrapAlignment.center,
+                  children: <Widget>[
+                    for (final CardBack b in CardBack.values)
+                      CardBackView(width: 108, back: b),
+                    const CardView(
+                      card: PlayingCard(Suit.hearts, 14),
+                      width: 108,
+                      selected: true,
+                    ),
+                    const CardView(
+                      card: PlayingCard(Suit.clubs, 14),
+                      width: 108,
+                      playable: true,
+                      isTrump: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('golden/cards.png'),
+    );
+  });
+
+  testWidgets('میز بازی', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(420, 860);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final AppSettings settings = AppSettings()..speed = GameSpeed.slow;
+    final GameController controller =
+        GameController(settings: settings, random: Random(12))..newGame();
+
+    // وضعیتی واقعی بساز: حراج تمام شود، حکم اعلام شود و دو برگ روی میز باشد.
+    final ShelemEngine e = controller.engine!;
+    final Random r = Random(7);
+    int guard = 0;
+    while (guard < 400) {
+      if (e.phase == GamePhase.playing &&
+          e.trick.length >= 2 &&
+          e.completedTricks.length >= 2) {
+        break;
+      }
+      if (e.phase == GamePhase.playing && e.turn == 0) {
+        e.playCard(0, ShelemBot.chooseCard(e, 0, Difficulty.hard, rng: r));
+      } else {
+        botStep(e, Difficulty.hard, r);
+      }
+      guard++;
+    }
+
+    await tester.pumpWidget(_wrap(GameScreen(controller: controller)));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('golden/table.png'),
+    );
+
+    controller.quitToMenu();
+    await tester.pump();
+    controller.dispose();
+  });
+
+  testWidgets('دستِ بازیکن در مرحلهٔ حراج', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(420, 860);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final AppSettings settings = AppSettings()..speed = GameSpeed.slow;
+    final GameController controller =
+        GameController(settings: settings, random: Random(4))..newGame();
+    final ShelemEngine e = controller.engine!;
+    int guard = 0;
+    while (e.phase == GamePhase.bidding && e.bidder != 0 && guard < 20) {
+      botStep(e, Difficulty.hard, Random(9));
+      guard++;
+    }
+
+    await tester.pumpWidget(_wrap(GameScreen(controller: controller)));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('golden/bidding.png'),
+    );
+
+    controller.quitToMenu();
+    await tester.pump();
+    controller.dispose();
+  });
+}
