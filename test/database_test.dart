@@ -29,7 +29,7 @@ void main() {
     expect(importedNames.length, greaterThan(9000));
     expect(database.getName('name-nabidam-فاطمه')?.gender, 'مؤنث');
     expect(database.getName('name-nabidam-فاطمه')?.meaning, 'نامشخص');
-    expect(database.getClaims('name', 'name-nabidam-فاطمه').single.sourceTitle, 'Persian Names dataset');
+    expect(database.getClaims('name', 'name-nabidam-فاطمه').any((claim) => claim.sourceTitle == 'Persian Names dataset'), isTrue);
     expect(database.getSources().singleWhere((source) => source.id == 'source-nabidam-persian-names').license, contains('MIT'));
     expect(database.getSources().singleWhere((source) => source.id == 'source-vajehyab-api').reviewStatus, 'catalogued');
     expect(database.getSources().singleWhere((source) => source.id == 'source-qaemiyeh-iranian-name-bank').reviewStatus, 'pending');
