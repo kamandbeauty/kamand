@@ -181,8 +181,8 @@ class CardView extends StatelessWidget {
                         vertical: width * 0.17,
                       )
                     : EdgeInsets.symmetric(
-                        horizontal: width * 0.13,
-                        vertical: width * 0.13,
+                        horizontal: width * 0.115,
+                        vertical: width * 0.10,
                       ),
                 child: _center(color, colorDeep),
               ),
@@ -341,16 +341,16 @@ class _AceCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SizedBox(
-        width: width * 0.62,
-        height: width * 0.62,
+        width: width * 0.68,
+        height: width * 0.68,
         child: Stack(
           alignment: Alignment.center,
           children: <Widget>[
             CustomPaint(
-              size: Size.square(width * 0.62),
+              size: Size.square(width * 0.68),
               painter: _RingPainter(color.withValues(alpha: 0.3)),
             ),
-            SuitIcon(suit: suit, size: width * 0.44, color: color),
+            SuitIcon(suit: suit, size: width * 0.48, color: color),
           ],
         ),
       ),
@@ -389,44 +389,24 @@ class _CourtCenter extends StatelessWidget {
         aspectRatio: 0.72,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(width * 0.07),
+            borderRadius: BorderRadius.circular(width * 0.055),
             border: Border.all(
-              color: color.withValues(alpha: 0.45),
-              width: math.max(0.8, width * 0.012),
-            ),
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: <Color>[
-                color.withValues(alpha: 0.10),
-                color.withValues(alpha: 0.02),
-                color.withValues(alpha: 0.10),
-              ],
+              color: color.withValues(alpha: 0.28),
+              width: math.max(0.6, width * 0.008),
             ),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(width * 0.06),
-            child: Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                CustomPaint(
-                  painter: _CourtPainter(color.withValues(alpha: 0.28)),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(width * 0.03),
-                  child: Image.asset(
-                    courtAsset(card.rank, card.suit.isRed),
-                    fit: BoxFit.contain,
-                    alignment: Alignment.bottomCenter,
-                    filterQuality: FilterQuality.medium,
-                    errorBuilder: (_, __, ___) => _CourtFallback(
-                      card: card,
-                      color: color,
-                      width: width,
-                    ),
-                  ),
-                ),
-              ],
+            borderRadius: BorderRadius.circular(width * 0.045),
+            child: Image.asset(
+              courtAsset(card.rank, card.suit.isRed),
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (_, __, ___) => _CourtFallback(
+                card: card,
+                color: color,
+                width: width,
+              ),
             ),
           ),
         ),
@@ -494,7 +474,7 @@ class _JokerCenter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: AspectRatio(
-        aspectRatio: 0.72,
+        aspectRatio: 0.74,
         child: Image.asset(
           'assets/cards/joker_fig.png',
           fit: BoxFit.contain,
@@ -578,39 +558,6 @@ class _RingPainter extends CustomPainter {
   bool shouldRepaint(_RingPainter old) => old.color != color;
 }
 
-class _CourtPainter extends CustomPainter {
-  const _CourtPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint p = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.7;
-    final double inset = size.width * 0.1;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          inset,
-          inset,
-          size.width - inset * 2,
-          size.height - inset * 2,
-        ),
-        Radius.circular(size.width * 0.06),
-      ),
-      p,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_CourtPainter old) => old.color != color;
-}
-
-// ── پشتِ کارت ──────────────────────────────────────────────────────────
-
-/// پشتِ کارت با طرحِ انتخابیِ کاربر.
 class CardBackView extends StatelessWidget {
   const CardBackView({
     super.key,
