@@ -416,7 +416,9 @@ class _TableArea extends StatelessWidget {
                 width: box.maxWidth * 0.90,
                 height: box.maxHeight * 0.78,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.all(
+                    Radius.elliptical(box.maxWidth * 0.45, box.maxHeight * 0.39),
+                  ),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.65),
@@ -444,36 +446,8 @@ class _TableArea extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // لبهٔ چرمی/چوبیِ دورِ میز
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF4A2D16),
-                            width: 10,
-                          ),
-                        ),
-                      ),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.55),
-                            width: 1.6,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.gold.withValues(alpha: 0.18),
-                              width: 1,
-                            ),
-                          ),
-                        ),
+                      Positioned.fill(
+                        child: CustomPaint(painter: _TableRimPainter()),
                       ),
                     ],
                   ),
@@ -508,6 +482,46 @@ class _TableArea extends StatelessWidget {
       },
     );
   }
+}
+
+/// قابِ چوبی و حلقه‌های طلاییِ دورِ میز (بیضوی، هم‌شکل با خودِ میز).
+class _TableRimPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Rect r = Offset.zero & size;
+    final Paint wood = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: <Color>[Color(0xFF6B4423), Color(0xFF3A2210)],
+      ).createShader(r);
+    canvas.drawOval(r.deflate(7), wood);
+
+    final Paint gold = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..color = AppColors.gold.withValues(alpha: 0.55);
+    canvas.drawOval(r.deflate(15), gold);
+
+    final Paint faint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = AppColors.gold.withValues(alpha: 0.16);
+    canvas.drawOval(r.deflate(30), faint);
+
+    // سایهٔ داخلیِ ملایم برای حسِ گودیِ میز
+    final Paint inner = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 26
+      ..color = Colors.black.withValues(alpha: 0.16)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
+    canvas.drawOval(r.deflate(20), inner);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TableRimPainter oldDelegate) => false;
 }
 
 class _Seat extends StatelessWidget {
