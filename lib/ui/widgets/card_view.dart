@@ -173,10 +173,10 @@ class CardView extends StatelessWidget {
             Positioned.fill(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
+                  width * 0.25,
                   width * 0.17,
-                  width * 0.30,
+                  width * 0.25,
                   width * 0.17,
-                  width * 0.30,
                 ),
                 child: _center(color, colorDeep),
               ),
@@ -250,14 +250,14 @@ class _Corner extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         SizedBox(
-          width: width * (wide ? 0.27 : 0.2),
+          width: width * (wide ? 0.25 : 0.18),
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               card.label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: width * 0.3,
+                fontSize: width * 0.27,
                 height: 1,
                 letterSpacing: -0.5,
                 fontFamily: 'Vazirmatn',
@@ -271,7 +271,7 @@ class _Corner extends StatelessWidget {
         SizedBox(height: width * 0.025),
         SuitIcon(
           suit: card.isJoker ? Suit.joker : card.suit,
-          size: width * 0.17,
+          size: width * 0.15,
           color: color,
         ),
       ],
@@ -294,7 +294,7 @@ class _PipField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Offset> spots = _pipLayout[rank] ?? const <Offset>[Offset(0, 0)];
-    final double pip = width * 0.185;
+    final double pip = width * 0.17;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints box) {
         final double cx = box.maxWidth / 2;
