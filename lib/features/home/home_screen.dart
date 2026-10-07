@@ -6,6 +6,7 @@ import '../analysis/name_analysis_screen.dart';
 import '../archive/archive_screen.dart';
 import '../baby_names/baby_names_screen.dart';
 import '../compatibility/compatibility_screen.dart';
+import '../jafr/jafr_screen.dart';
 import '../names/name_detail_screen.dart';
 import '../names/name_search_screen.dart';
 import '../shared/brand_logo.dart';
@@ -75,7 +76,7 @@ class HomeScreen extends ConsumerWidget {
               childAspectRatio: 1.28,
               children: [
                 _QuickAction(icon: Icons.insights_rounded, title: 'تحلیل نام', caption: 'معنی و ریشه', color: const Color(0xFFE2F2EF), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameAnalysisScreen()))),
-                _QuickAction(icon: Icons.calculate_rounded, title: 'ابجد', caption: 'محاسبه مرحله‌ای', color: const Color(0xFFF6EDDC), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NameAnalysisScreen()))),
+                _QuickAction(icon: Icons.auto_awesome_rounded, title: 'جفر', caption: 'آزمایشگاه علم حروف', color: const Color(0xFFF2EAF7), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const JafrScreen()))),
                 _QuickAction(icon: Icons.favorite_rounded, title: 'سازگاری', caption: 'مقایسه دو نام', color: const Color(0xFFF8E9EC), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CompatibilityScreen()))),
                 _QuickAction(icon: Icons.child_friendly_rounded, title: 'نام نوزاد', caption: 'پیشنهاد توضیح‌پذیر', color: const Color(0xFFEAF0FA), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BabyNamesScreen()))),
               ],

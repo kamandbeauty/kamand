@@ -11,6 +11,7 @@
 - Added explicit disclaimer against divination, personality, relationship, destiny or future claims.
 - Hardened Rule configuration handling: unsupported reduction modes return Unknown instead of guessing.
 - Added a letter-by-letter Jafr table to the analysis UI and fixed empty-input completeness state.
+- Added a dedicated Jafr Laboratory screen with polished RTL hero UI, sample inputs, guide sheet, copyable report, Unknown/Error states and accessible metric labels.
 
 ### Verification
 

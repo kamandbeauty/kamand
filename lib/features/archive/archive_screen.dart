@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../shared/empty_state.dart';
+import '../jafr/jafr_screen.dart';
 import '../shared/status_badge.dart';
 import 'abjad_archive_screen.dart';
 import 'source_catalog_screen.dart';
@@ -15,6 +16,7 @@ class ArchiveScreen extends ConsumerWidget {
     final entries = ref.watch(archiveEntriesProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('آرشیو پژوهشی'), actions: [
+        IconButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const JafrScreen())), icon: const Icon(Icons.auto_awesome_outlined), tooltip: 'آزمایشگاه جفر'),
         IconButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AbjadArchiveScreen())), icon: const Icon(Icons.calculate_outlined), tooltip: 'آرشیو ابجد'),
         IconButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceCatalogScreen())), icon: const Icon(Icons.menu_book_outlined), tooltip: 'فهرست منابع'),
       ]),
