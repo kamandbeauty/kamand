@@ -5,7 +5,15 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_numbers.dart';
 import '../../domain/traditions/manazil.dart';
 import '../../providers/tradition_providers.dart';
+import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../fortunes/abjad_fal_screen.dart';
+import '../fortunes/animal_fortune_screen.dart';
+import '../fortunes/gem_oracle_screen.dart';
+import '../fortunes/greek_fortune_screen.dart';
+import '../fortunes/marriage_fortune_screen.dart';
+import '../fortunes/month_traits_screen.dart';
+import '../fortunes/tarot_fortune_screen.dart';
 import 'chinese_tradition_screen.dart';
 import 'iranian_tradition_screen.dart';
 import 'mayan_tradition_screen.dart';
@@ -96,6 +104,66 @@ class TraditionsHubScreen extends ConsumerWidget {
                 : 'امضای کیهانی: ${PersianNumbers.toPersianNum(tzolkin.tone)}'
                       ' ${tzolkin.nawal['nameFa']! as String}',
             onTap: () => _push(context, const MayanTraditionScreen()),
+          ),
+          const SizedBox(height: 24),
+          SectionHeader('فال و طالع‌های بیشتر',
+              subtitle: 'هفت درِ تازه به دنیای فال'),
+
+          // ── Fortune modules ───────────────────────────────────────
+          _TraditionCard(
+            accent: AppTheme.gold,
+            icon: Icons.diamond_outlined,
+            title: 'فال جم‌اوراکل',
+            subtitle: 'سنگِ ماهِ تولدت و فالِ سه‌سنگیِ امروز',
+            onTap: () => _push(context, const GemOracleScreen()),
+          ),
+          const SizedBox(height: 12),
+          _TraditionCard(
+            accent: AppTheme.violet,
+            icon: Icons.auto_fix_high,
+            title: 'فال ابجد',
+            subtitle: 'ابجدِ نام و نامِ مادرت، با نیتِ دل',
+            onTap: () => _push(context, const AbjadFalScreen()),
+          ),
+          const SizedBox(height: 12),
+          _TraditionCard(
+            accent: AppTheme.sky,
+            icon: Icons.account_balance_outlined,
+            title: 'طالع‌بینی یونانی',
+            subtitle: 'عنصر، کیفیت، مزاج و اسطورهٔ برجِ تو',
+            onTap: () => _push(context, const GreekFortuneScreen()),
+          ),
+          const SizedBox(height: 12),
+          _TraditionCard(
+            accent: AppTheme.rose,
+            icon: Icons.favorite,
+            title: 'طالع ازدواج',
+            subtitle: 'سبکِ برجِ تو در پیمانِ زندگی',
+            onTap: () => _push(context, const MarriageFortuneScreen()),
+          ),
+          const SizedBox(height: 12),
+          _TraditionCard(
+            accent: AppTheme.gold,
+            icon: Icons.calendar_month,
+            title: 'متولدین ماه‌های سال',
+            subtitle: 'روایتِ ماهِ تولدت در تقویم خورشیدی',
+            onTap: () => _push(context, const MonthTraitsScreen()),
+          ),
+          const SizedBox(height: 12),
+          _TraditionCard(
+            accent: AppTheme.violet,
+            icon: Icons.style,
+            title: 'طالع بینی تاروت',
+            subtitle: 'کارتِ تولد و کارتِ امروزِ تو',
+            onTap: () => _push(context, const TarotFortuneScreen()),
+          ),
+          const SizedBox(height: 12),
+          _TraditionCard(
+            accent: const Color(0xFF4CD97B),
+            icon: Icons.pets,
+            title: 'حیوان درون',
+            subtitle: 'روحِ حیوانیِ برجِ تو و پیامش',
+            onTap: () => _push(context, const AnimalFortuneScreen()),
           ),
           const DisclaimerCard(),
         ],

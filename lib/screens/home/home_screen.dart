@@ -298,7 +298,7 @@ class _HomeContent extends ConsumerWidget {
         // ── World traditions ──────────────────────────────────────
         SectionHeader(
           'طالع‌بینی در سنت‌های جهان',
-          subtitle: 'چینی · فراشماره · ایرانی · ودیک · مایا',
+          subtitle: '۱۲ سنت و فالِ جهان، همه آفلاین',
           action: TextButton(
             onPressed: () => _openTraditions(context),
             child: const Text('مشاهده'),
