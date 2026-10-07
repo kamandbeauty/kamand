@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.0-alpha.6 — 2026-10-07
+
+### Added
+
+- Added a source-backed traditional Jafr number calculation to the name analysis report.
+- Added `jafr-abjad` database system and versioned `jafr_abjad_sum` Rule.
+- Jafr uses only the standard 28-letter Abjad sum; Persian letters without a standard value remain Unknown.
+- Added a derived digital-root display without presenting it as canonical Jafr interpretation.
+- Added explicit disclaimer against divination, personality, relationship, destiny or future claims.
+
+### Verification
+
+- Added pure Dart tests for complete input, unknown Persian letters and non-predictive behavior.
+- Added database tests for Jafr Rule provenance.
+
 ## 0.1.0-alpha.5 — 2026-10-07
 
 ### Added

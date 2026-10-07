@@ -6,6 +6,7 @@ import '../data/repositories/name_repository.dart';
 import '../data/repositories/profile_repository.dart';
 import '../domain/engines/abjad_engine.dart';
 import '../domain/engines/compatibility_engine.dart';
+import '../domain/engines/jafr_engine.dart';
 import '../domain/engines/name_search_engine.dart';
 import '../domain/engines/numerology_engine.dart';
 import '../domain/engines/smart_search_engine.dart';
@@ -75,6 +76,14 @@ final abjadEngineProvider = Provider<AbjadEngine>((ref) {
 
 final numerologyEngineProvider = Provider<NumerologyEngine>((ref) {
   return NumerologyEngine(rule: ref.watch(databaseProvider).getNumerologyRule('abjad-digital-root'));
+});
+
+final jafrEngineProvider = Provider<JafrEngine>((ref) {
+  final database = ref.watch(databaseProvider);
+  return JafrEngine(
+    mapping: database.getAbjadMapping('kabir'),
+    rule: database.getNumerologyRule('jafr-abjad'),
+  );
 });
 final compatibilityEngineProvider = Provider<CompatibilityEngine>((ref) {
   return CompatibilityEngine(rule: ref.watch(databaseProvider).getCompatibilityRule('written-form-similarity'));

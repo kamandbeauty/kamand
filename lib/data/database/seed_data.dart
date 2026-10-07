@@ -65,6 +65,18 @@ final seedSources = <Map<String, Object?>>[
     'notes': 'منبع تاریخی درباره ابجد، کاربرد عددی حروف و وضعیت حروف اضافه فارسی.',
   },
   {
+    'id': 'source-iranica-jafr',
+    'title': 'JAFR',
+    'author': 'Encyclopaedia Iranica editorial record',
+    'publisher': 'Encyclopaedia Iranica',
+    'publication_year': null,
+    'language': 'en',
+    'source_type': 'encyclopedia_article',
+    'url': 'https://www.iranicaonline.org/articles/jafr/',
+    'reliability_level': 'tier_1',
+    'notes': 'منبع تاریخی جفر را به‌عنوان دانش حروف و عدد معرفی می‌کند و توضیح می‌دهد که ابزار پایه آن ارزش عددی ۲۸ حرف ابجد است. مقاله درباره کاربردهای تفسیری، ترکیب، جمع و تفریق و ماهیت غیرقطعی این سنت نیز بحث می‌کند.',
+  },
+  {
     'id': 'source-iranica-cyrus-name',
     'title': 'CYRUS i. The Name',
     'author': 'Rüdiger Schmitt',
@@ -308,6 +320,11 @@ final seedSourceMetadata = <String, Map<String, String>>{
   'source-iranica-abjad': {
     'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
     'coverage': 'تاریخ ابجد و ارزش عددی حروف',
+    'review_status': 'reviewed',
+  },
+  'source-iranica-jafr': {
+    'license': 'حق نشر ناشر؛ فقط فراداده و نقل‌قول کوتاه با ارجاع',
+    'coverage': 'جفر، علم حروف، ارزش عددی ابجد و کاربردهای تاریخی و تفسیری',
     'review_status': 'reviewed',
   },
   'source-iranica-cyrus-name': {

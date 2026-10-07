@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/models/abjad_result.dart';
+import '../../domain/models/jafr_result.dart';
 import '../../domain/models/numerology_result.dart';
 import '../shared/empty_state.dart';
 import '../shared/status_badge.dart';
@@ -19,6 +20,7 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
   final controller = TextEditingController();
   AbjadResult? result;
   NumerologyResult? numerology;
+  JafrResult? jafr;
   List<AbjadResult> reports = const [];
   String selectedSystem = 'kabir';
   bool submitted = false;
@@ -37,6 +39,7 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
       setState(() {
         result = null;
         numerology = null;
+        jafr = null;
         reports = const [];
         submitted = true;
       });
@@ -55,6 +58,7 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
       reports = calculated;
       result = selected;
       numerology = selected == null ? null : ref.read(numerologyEngineProvider).fromAbjadTotal(selected.total, inputComplete: selected.isComplete);
+      jafr = selected == null ? null : ref.read(jafrEngineProvider).calculate(value);
       submitted = true;
       isAnalyzing = false;
     });
@@ -68,6 +72,7 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
       result = matching.isEmpty ? result : matching.first;
       if (result != null) {
         numerology = ref.read(numerologyEngineProvider).fromAbjadTotal(result!.total, inputComplete: result!.isComplete);
+        jafr = ref.read(jafrEngineProvider).calculate(controller.text.trim());
       }
     });
   }
@@ -101,11 +106,13 @@ class _NameAnalysisScreenState extends ConsumerState<NameAnalysisScreen> {
           const SizedBox(height: 10),
           OutlinedButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BirthAnalysisScreen())), icon: const Icon(Icons.date_range_outlined), label: const Text('گزارش نام و تاریخ تولد')),
           if (result == null && submitted && controller.text.trim().isNotEmpty) const Padding(padding: EdgeInsets.only(top: 24), child: EmptyState(title: 'گزارشی ساخته نشد', message: 'ورودی یا سیستم محاسبه را بررسی و دوباره تلاش کنید.')),
-          if (result != null && numerology != null) ...[
+          if (result != null && numerology != null && jafr != null) ...[
             const SizedBox(height: 24),
             _ReportHeader(input: controller.text.trim(), result: result!),
             const SizedBox(height: 14),
             _TotalCard(result: result!, numerology: numerology!),
+            const SizedBox(height: 14),
+            _JafrCard(result: jafr!),
             const SizedBox(height: 14),
             _SystemsReportCard(results: reports),
             const SizedBox(height: 14),
@@ -182,6 +189,47 @@ class _TotalCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _JafrCard extends StatelessWidget {
+  const _JafrCard({required this.result});
+
+  final JafrResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: const Color(0xFFF2EAF7),
+      child: Padding(
+        padding: const EdgeInsets.all(17),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.auto_awesome_outlined, color: Color(0xFF6A3D7A)),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('محاسبه سنتی جفر', style: TextStyle(fontWeight: FontWeight.w900))),
+            StatusBadge(status: result.status),
+          ]),
+          const SizedBox(height: 10),
+          if (!result.isAvailable)
+            Text(result.description, style: const TextStyle(height: 1.6))
+          else ...[
+            Row(children: [
+              Expanded(child: Text('عدد حروف: ${result.total}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900))),
+              Text('کاهش رقمی مشتق‌شده: ${result.reducedValue}', style: const TextStyle(fontWeight: FontWeight.w800)),
+            ]),
+            const SizedBox(height: 8),
+            Text('فرمول: جمع ارزش عددی حروف در ترتیب ابجد استاندارد', style: const TextStyle(height: 1.5)),
+            const SizedBox(height: 4),
+            Text('Rule: ${result.ruleKey} · نسخه: ${result.ruleVersion} · منبع: ${result.sourceTitle}', style: const TextStyle(color: Colors.blueGrey, fontSize: 12)),
+            const SizedBox(height: 8),
+            Text(result.description, style: const TextStyle(height: 1.6)),
+          ],
+          const Divider(height: 24),
+          Text(result.disclaimer, style: const TextStyle(fontWeight: FontWeight.w700, height: 1.6)),
+        ]),
       ),
     );
   }

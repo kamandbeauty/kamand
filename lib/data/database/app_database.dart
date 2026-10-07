@@ -800,6 +800,32 @@ class AppDatabase {
       INSERT OR IGNORE INTO numerology_rules (id, system_id, rule_key, operation, configuration_json, source_id, version, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''', ['rule-digit-sum-reduce-v1', 'numerology-abjad-digital-root-v1', 'digit_sum_reduce', 'digit_sum_reduce', '{}', null, '1', 'unverified']);
+    _db.execute('''
+      INSERT OR IGNORE INTO numerology_systems (id, system_key, title, description, source_id, version, status, disclaimer)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', [
+      'numerology-jafr-abjad-v1',
+      'jafr-abjad',
+      'عدد جفر بر پایه علم حروف',
+      'در این نسخه، بخش قابل محاسبه و قابل بازبینی جفر به جمع ارزش عددی حروف در ترتیب استاندارد ابجد محدود شده است. کاهش رقمی فقط مقدار مشتق‌شده برای نمایش است.',
+      'source-iranica-jafr',
+      '1',
+      'unverified',
+      'این خروجی بخشی از سنت جفر و علم حروف است؛ تفسیر غیبی، پیش‌بینی شخصیت، رابطه، سرنوشت یا آینده تولید نمی‌شود.',
+    ]);
+    _db.execute('''
+      INSERT OR IGNORE INTO numerology_rules (id, system_id, rule_key, operation, configuration_json, source_id, version, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', [
+      'rule-jafr-abjad-sum-v1',
+      'numerology-jafr-abjad-v1',
+      'jafr_abjad_sum',
+      'jafr_abjad_sum',
+      '{"base_system":"kabir","reduction":"display_only"}',
+      'source-iranica-jafr',
+      '1',
+      'unverified',
+    ]);
     _db.execute("UPDATE abjad_systems SET source_id = 'source-iranica-abjad', status = 'supported' WHERE system_key = 'kabir' AND EXISTS (SELECT 1 FROM sources WHERE id = 'source-iranica-abjad')");
     _db.execute("UPDATE abjad_letters SET source_id = 'source-iranica-abjad', mapping_status = 'supported' WHERE system_id = (SELECT id FROM abjad_systems WHERE system_key = 'kabir') AND EXISTS (SELECT 1 FROM sources WHERE id = 'source-iranica-abjad')");
     _db.execute('''
@@ -824,14 +850,14 @@ class AppDatabase {
   void _upgradeContentSeed() {
     final metadata = getMetadata();
     final contentVersion = metadata['content_version'];
-    if (contentVersion == 'knowledge-5') return;
+    if (contentVersion == 'knowledge-6') return;
     final now = DateTime.now().toUtc().toIso8601String();
-    if (contentVersion == 'knowledge-4' || contentVersion == 'knowledge-3') {
+    if (contentVersion == 'knowledge-5' || contentVersion == 'knowledge-4' || contentVersion == 'knowledge-3') {
       _db.execute('BEGIN');
       try {
         _seedPersianNamesDataset(now);
         _seedIranianNamesBankDataset(now);
-        _setMetadata('content_version', 'knowledge-5');
+        _setMetadata('content_version', 'knowledge-6');
         _db.execute('COMMIT');
         _refreshSearchIndex();
       } catch (_) {
@@ -945,7 +971,7 @@ class AppDatabase {
       }
       _seedPersianNamesDataset(now);
       _seedIranianNamesBankDataset(now);
-      _setMetadata('content_version', 'knowledge-5');
+      _setMetadata('content_version', 'knowledge-6');
       _db.execute('COMMIT');
       _refreshSearchIndex();
     } catch (_) {
