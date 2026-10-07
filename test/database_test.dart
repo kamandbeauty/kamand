@@ -19,7 +19,7 @@ void main() {
     expect(metadata['content_version'], 'knowledge-4');
     expect(database.getSources().length, greaterThan(20));
     expect(database.searchNames('آ'), isNotEmpty);
-    expect(database.searchNames('نیلوفر').single.meaning, contains('گل'));
+    expect(database.getName('name-catalog-نیلوفر')?.meaning, contains('گل'));
     expect(database.getName('name-catalog-نیلوفر')?.status, 'unverified');
     expect(database.getSources().singleWhere((source) => source.id == 'source-wiktionary-persian-given-names').license, contains('CC BY-SA'));
     expect(database.getClaims('name', 'name-catalog-آرش'), isNotEmpty);
