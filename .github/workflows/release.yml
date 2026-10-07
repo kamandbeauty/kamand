@@ -41,7 +41,30 @@ jobs:
           gradle-version: '8.14.3'
 
       - name: Build pre-release APK
-        run: flutter build apk --release
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee release-build.log
+
+      - name: Upload release build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-build-log
+          path: release-build.log
+
+      - name: Publish release build diagnostics
+        if: always()
+        run: |
+          if [ -f release-build.log ]; then
+            message=$(tail -c 60000 release-build.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=Flutter Release Build::$message"
+          fi
+
+      - name: Fail if release build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
