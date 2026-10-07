@@ -56,13 +56,10 @@ Future<void> _loadFonts() async {
 /// تصویرهای طرحِ ورق و زمینه باید پیش از عکس‌برداری در حافظه باشند.
 Future<void> _precache(WidgetTester tester) async {
   const List<String> assets = <String>[
-    'assets/cards/jack_red.png',
-    'assets/cards/queen_red.png',
-    'assets/cards/king_red.png',
-    'assets/cards/jack_black.png',
-    'assets/cards/queen_black.png',
-    'assets/cards/king_black.png',
-    'assets/cards/joker_fig.png',
+    'assets/cards/court_jack.png',
+    'assets/cards/court_queen.png',
+    'assets/cards/court_king.png',
+    'assets/cards/court_joker.png',
     'assets/images/surfaces/carpet-red.jpg',
   ];
   final BuildContext context = tester.element(find.byType(MaterialApp).first);
@@ -214,6 +211,50 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('golden/table.png'),
+    );
+
+    controller.quitToMenu();
+    await tester.pump();
+    controller.dispose();
+  });
+
+  testWidgets('میزِ دو نفره', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(420, 860);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final AppSettings settings = AppSettings()..speed = GameSpeed.slow;
+    settings.rules = settings.rulesWith(players: 2);
+    final GameController controller =
+        GameController(settings: settings, random: Random(31))..newGame();
+
+    final ShelemEngine e = controller.engine!;
+    final Random r = Random(17);
+    int guard = 0;
+    while (guard < 400) {
+      if (e.phase == GamePhase.playing &&
+          e.trick.length == 1 &&
+          e.completedTricks.length >= 2) {
+        break;
+      }
+      if (e.phase == GamePhase.playing && e.turn == 0) {
+        e.playCard(0, ShelemBot.chooseCard(e, 0, Difficulty.hard, rng: r));
+      } else {
+        botStep(e, Difficulty.hard, r);
+      }
+      guard++;
+    }
+
+    await tester.pumpWidget(_wrap(GameScreen(controller: controller)));
+    await _precache(tester);
+    await tester.pump(const Duration(milliseconds: 900));
+    await _precache(tester);
+    await tester.pump(const Duration(milliseconds: 900));
+
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('golden/duel.png'),
     );
 
     controller.quitToMenu();
