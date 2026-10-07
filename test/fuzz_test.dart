@@ -202,14 +202,20 @@ void main() {
     // عددِ خارج از محدوده
     expect(() => e.placeBid(97), throwsArgumentError);
     expect(() => e.placeBid(1000), throwsArgumentError);
+    final int first = e.bidder;
     e.placeBid(e.config.minBid);
-    // خوانندهٔ برتر حق پاس ندارد
-    expect(e.canPass, isFalse);
-    expect(e.passBid, throwsStateError);
+    expect(e.hakem, first);
+    // نوبت هرگز به خودِ خوانندهٔ برتر برنمی‌گردد و او حق پاس ندارد
+    expect(e.bidder == e.hakem, isFalse);
     // عددِ کوچک‌تر یا مساوی مجاز نیست
     expect(() => e.placeBid(e.config.minBid), throwsArgumentError);
 
     while (e.phase == GamePhase.bidding) {
+      expect(
+        e.canPass,
+        e.hakem == null || e.bidder != e.hakem,
+        reason: 'حقِ پاسِ خوانندهٔ برتر',
+      );
       if (e.canPass) {
         e.passBid();
       } else {
