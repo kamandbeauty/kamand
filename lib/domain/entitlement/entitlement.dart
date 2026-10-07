@@ -39,7 +39,7 @@ extension PremiumPlanX on PremiumPlan {
 }
 
 /// How the premium state was obtained.
-enum EntitlementSource { none, rewardedAd, purchased }
+enum EntitlementSource { none, rewardedAd, purchased, promo }
 
 /// Premium entitlement. Never a bare boolean (product spec §33): the state
 /// is owned by [EntitlementService] and persists independently of UI.

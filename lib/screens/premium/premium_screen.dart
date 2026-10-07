@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/analytics/analytics_service.dart';
 import '../../core/utils/persian_numbers.dart';
+import '../../data/premium/promo_codes.dart';
 import '../../domain/entitlement/entitlement.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/glass_card.dart';
@@ -18,6 +19,35 @@ class PremiumScreen extends ConsumerStatefulWidget {
 
 class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   PremiumPlan _selected = PremiumPlan.yearly;
+  final TextEditingController _promoController = TextEditingController();
+  String? _promoError;
+  bool _redeeming = false;
+
+  @override
+  void dispose() {
+    _promoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _redeemPromo() async {
+    if (_redeeming) return;
+    setState(() => _redeeming = true);
+    final granted = await ref
+        .read(entitlementProvider.notifier)
+        .redeemPromo(_promoController.text);
+    if (!mounted) return;
+    setState(() => _redeeming = false);
+    if (granted) {
+      setState(() => _promoError = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('پرمیوم همیشگی با کدِ کمپین فعال شد — لذت ببر! 🎉'),
+        ),
+      );
+    } else {
+      setState(() => _promoError = 'این کد معتبر نیست یا قبلاً استفاده شده است.');
+    }
+  }
 
   @override
   void initState() {
@@ -186,6 +216,106 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             ),
           ),
           const SizedBox(height: 18),
+
+          // ── Launch campaign (promo code) ────────────────────────
+          if (!entitlement.hasPremium) ...[
+            GlassCard(
+              highlight: true,
+              accent: AppTheme.gold,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.local_offer, color: AppTheme.gold, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${PromoCodes.launch.campaignFa} — '
+                        '${PersianNumbers.toPersianNum(PromoCodes.launch.percentOff)}٪ تخفیف',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: theme.colorScheme.onSurface,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'تا پایانِ کمپین، پرمیومِ همیشگی با کدِ تخفیف رایگان فعال می‌شود. '
+                    'کد را این‌جا وارد کن:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.9,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _promoController,
+                          enabled: !_redeeming,
+                          textDirection: TextDirection.ltr,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            letterSpacing: 2,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                          decoration: InputDecoration(
+                            hintText: PromoCodes.launch.code,
+                            hintStyle: TextStyle(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.35),
+                            ),
+                            isDense: true,
+                            errorText: _promoError,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onSubmitted: (_) => _redeemPromo(),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      FilledButton.tonal(
+                        onPressed: _redeeming ? null : _redeemPromo,
+                        child: _redeeming
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2),
+                              )
+                            : const Text('فعال‌سازی'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+          ] else if (entitlement.source == EntitlementSource.promo) ...[
+            GlassCard(
+              accent: AppTheme.gold,
+              child: Row(
+                children: [
+                  const Icon(Icons.local_offer, color: AppTheme.gold, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'پرمیوم تو با کدِ «${PromoCodes.launch.campaignFa}» فعال شده است.',
+                      style: const TextStyle(fontFamily: 'Vazirmatn'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+          ],
 
           // ── Plans ───────────────────────────────────────────────
           if (!entitlement.hasPremium) ...[

@@ -1,4 +1,5 @@
 import '../../domain/entitlement/entitlement.dart';
+import 'promo_codes.dart';
 import '../settings/settings_service.dart';
 
 /// Billing abstraction (product spec §33): a real store (Play Billing,
@@ -67,6 +68,22 @@ class EntitlementService {
       _current = entitlement;
       await _persist();
     }
+    return _current;
+  }
+
+  /// Redeems a built-in campaign code (offline validation). Returns the
+  /// entitlement unchanged when the code is unknown or already premium.
+  Future<Entitlement> redeemPromoCode(String code) async {
+    final promo = PromoCodes.lookup(code);
+    if (promo == null) return _current;
+    if (_current.hasPremium) return _current;
+    _current = Entitlement(
+      source: EntitlementSource.promo,
+      plan: promo.plan,
+      validUntil: null, // lifetime campaign
+      rewardedUnlockDay: _current.rewardedUnlockDay,
+    );
+    await _persist();
     return _current;
   }
 

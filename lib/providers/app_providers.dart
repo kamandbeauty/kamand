@@ -248,6 +248,13 @@ class EntitlementNotifier extends StateNotifier<Entitlement> {
     return state.hasPremium;
   }
 
+  /// Redeems a campaign promo code; true when it granted premium.
+  Future<bool> redeemPromo(String code) async {
+    final before = state.hasPremium;
+    state = await _service.redeemPromoCode(code);
+    return state.hasPremium && !before;
+  }
+
   Future<void> earnRewardedUnlock(String dayKey) async {
     state = await _service.earnRewardedUnlock(dayKey);
   }
