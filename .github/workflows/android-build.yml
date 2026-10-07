@@ -105,6 +105,26 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Commit UI screenshots back to the branch
+        if: always() && github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          set -e
+          if ! ls test/golden/*.png >/dev/null 2>&1; then
+            echo "no screenshots produced"; exit 0
+          fi
+          mkdir -p docs/ui
+          cp test/golden/*.png docs/ui/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ui
+          if git diff --cached --quiet; then
+            echo "screenshots unchanged"; exit 0
+          fi
+          git commit -m "تصاویر رابط کاربری [skip ci]"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
   build-apk:
     name: Build release APK
     needs: test

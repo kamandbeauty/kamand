@@ -22,3 +22,4 @@ capture*.png
 *.apk
 *.aab
 release/
+test/golden/
