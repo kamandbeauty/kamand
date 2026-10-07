@@ -246,7 +246,33 @@ class _JafrGuideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(color: const Color(0xFF253238), child: InkWell(borderRadius: BorderRadius.circular(22), onTap: onTap, child: const Padding(padding: EdgeInsets.all(18), child: Row(children: [Icon(Icons.menu_book_outlined, color: Color(0xFFF5D99C)), SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('قبل از تفسیر، روش را بشناس', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)), SizedBox(height: 5), Text('جفر سنتی است؛ این عدد پیش‌بینی شخصیت یا آینده نیست.', style: TextStyle(color: Colors.white70, height: 1.5))])), Icon(Icons.chevron_left, color: Colors.white70)])));
+    return Card(
+      color: const Color(0xFF253238),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: const Padding(
+          padding: EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Icon(Icons.menu_book_outlined, color: Color(0xFFF5D99C)),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('قبل از تفسیر، روش را بشناس', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                    SizedBox(height: 5),
+                    Text('جفر سنتی است؛ این عدد پیش‌بینی شخصیت یا آینده نیست.', style: TextStyle(color: Colors.white70, height: 1.5)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_left, color: Colors.white70),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
