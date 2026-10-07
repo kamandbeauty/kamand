@@ -446,6 +446,50 @@ class _TableArea extends StatelessWidget {
                           ),
                         ),
                       ),
+                      // نشانِ محوِ وسطِ میز
+                      Center(
+                        child: Opacity(
+                          opacity: 0.075,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const <Widget>[
+                                  SuitIcon(
+                                    suit: Suit.spades,
+                                    size: 46,
+                                    color: Color(0xFFF6E7C1),
+                                  ),
+                                  SizedBox(width: 10),
+                                  SuitIcon(
+                                    suit: Suit.hearts,
+                                    size: 46,
+                                    color: Color(0xFFF6E7C1),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const <Widget>[
+                                  SuitIcon(
+                                    suit: Suit.diamonds,
+                                    size: 46,
+                                    color: Color(0xFFF6E7C1),
+                                  ),
+                                  SizedBox(width: 10),
+                                  SuitIcon(
+                                    suit: Suit.clubs,
+                                    size: 46,
+                                    color: Color(0xFFF6E7C1),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       Positioned.fill(
                         child: CustomPaint(painter: _TableRimPainter()),
                       ),
