@@ -9,6 +9,7 @@
 - Imported 8,816 name forms and source gender labels from the MIT-licensed `nabidam/persian-names` dataset at commit `68f5cb39a25c19ecaf6f60f3181aea200f8206f`.
 - Dataset imports keep meaning, etymology, transliteration and pronunciation as Unknown until independently sourced.
 - Upstream MIT license and attribution are preserved in `third_party/persian_names`.
+- Vajehyab API documentation is registered as a dictionary source for a future token-based, optional and cache-backed meaning/pronunciation enrichment flow; no token or live claim is seeded.
 
 ### Verification
 

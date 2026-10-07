@@ -31,6 +31,7 @@ void main() {
     expect(database.getName('name-nabidam-فاطمه')?.meaning, 'نامشخص');
     expect(database.getClaims('name', 'name-nabidam-فاطمه').single.sourceTitle, 'Persian Names dataset');
     expect(database.getSources().singleWhere((source) => source.id == 'source-nabidam-persian-names').license, contains('MIT'));
+    expect(database.getSources().singleWhere((source) => source.id == 'source-vajehyab-api').reviewStatus, 'catalogued');
   });
 
   test('reports content integrity without treating unknown meaning as an orphan', () {

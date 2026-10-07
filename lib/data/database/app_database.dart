@@ -612,22 +612,24 @@ class AppDatabase {
   }
 
   void _seedPersianNamesDataset(String now) {
-    final source = seedSources.firstWhere((item) => item['id'] == persianNamesDatasetSourceId);
-    _db.execute(
-      '''INSERT OR IGNORE INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes, license, accessed_at, coverage, review_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-      [
-        source['id'], source['title'], source['author'], source['publisher'], source['publication_year'], source['language'],
-        source['source_type'], source['url'], source['isbn'], source['doi'], source['reliability_level'], source['notes'],
-        source['license'] ?? '', source['accessed_at'] ?? '', source['coverage'] ?? '', source['review_status'] ?? 'pending',
-      ],
-    );
-    final metadata = seedSourceMetadata[persianNamesDatasetSourceId];
-    if (metadata != null) {
+    for (final source in seedSources) {
+      final sourceId = source['id'] as String;
       _db.execute(
-        'UPDATE sources SET license = ?, accessed_at = ?, coverage = ?, review_status = ? WHERE id = ?',
-        [metadata['license'] ?? '', now, metadata['coverage'] ?? '', metadata['review_status'] ?? 'pending', persianNamesDatasetSourceId],
+        '''INSERT OR IGNORE INTO sources (id, title, author, publisher, publication_year, language, source_type, url, isbn, doi, reliability_level, notes, license, accessed_at, coverage, review_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        [
+          source['id'], source['title'], source['author'], source['publisher'], source['publication_year'], source['language'],
+          source['source_type'], source['url'], source['isbn'], source['doi'], source['reliability_level'], source['notes'],
+          source['license'] ?? '', source['accessed_at'] ?? '', source['coverage'] ?? '', source['review_status'] ?? 'pending',
+        ],
       );
+      final metadata = seedSourceMetadata[sourceId];
+      if (metadata != null) {
+        _db.execute(
+          'UPDATE sources SET license = ?, accessed_at = ?, coverage = ?, review_status = ? WHERE id = ?',
+          [metadata['license'] ?? '', now, metadata['coverage'] ?? '', metadata['review_status'] ?? 'pending', sourceId],
+        );
+      }
     }
 
     final existingByNormalized = <String, String>{};

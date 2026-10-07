@@ -48,6 +48,7 @@ flutter build apk --release
 - Riverpod برای State و ViewModel
 - SQLite محلی با Migration صریح، اکنون Schema Version 9
 - بانک نام شامل بسته منبع‌دار ۸۸۱۶ نام فارسی از `nabidam/persian-names` است؛ معنی و ریشه برای این بسته به‌صورت خودکار ساخته نمی‌شود.
+- واژه‌یاب API به‌عنوان منبع کمکی معنی و تلفظ ثبت شده است؛ اتصال آن به توکن توسعه‌دهنده نیاز دارد و تا پیاده‌سازی امن، اختیاری و cache‌شونده فعال نمی‌شود.
 - Engineهای Pure Dart برای نرمال‌سازی، ابجد، عددشناسی، تاریخ و مقایسه
 - Feature-first + Clean Architecture
 - RTL و فارسی در نسخه اول

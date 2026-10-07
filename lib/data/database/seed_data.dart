@@ -223,6 +223,18 @@ final seedSources = <Map<String, Object?>>[
     'notes': 'مجموعه MIT شامل ۸۸۱۶ صورت نام و برچسب جنسیت؛ منبع README دو فایل اینترنتی را ادغام و حروف عربی/اعراب را پاک‌سازی کرده است. این برنامه فقط صورت نام و جنسیت را وارد می‌کند و معنی، ریشه و تلفظ را از این مجموعه استخراج نمی‌کند.',
   },
   {
+    'id': 'source-vajehyab-api',
+    'title': 'واژه‌یاب API v3 و مستندات فرهنگ نام‌ها',
+    'author': 'واژه‌یاب',
+    'publisher': 'Vajehyab',
+    'publication_year': null,
+    'language': 'fa',
+    'source_type': 'dictionary_api',
+    'url': 'https://api.vajehyab.com/api/documentation',
+    'reliability_level': 'tier_2',
+    'notes': 'API رسمی برای جست‌وجو و دریافت معنی کامل واژه، تلفظ و فرهنگ منبع. دیتابیس name برای نام‌ها و فرهنگ‌های دهخدا، معین، عمید و منابع دیگر دارد؛ استفاده عملی نیازمند توکن توسعه‌دهنده و رعایت شرایط سرویس است.',
+  },
+  {
     'id': 'source-behind-the-name-persian',
     'title': 'Persian Names',
     'author': 'Mike Campbell and contributors',
@@ -330,6 +342,11 @@ final seedSourceMetadata = <String, Map<String, String>>{
     'license': 'MIT؛ حفظ attribution و متن مجوز در third_party/persian_names/LICENSE',
     'coverage': '۸۸۱۶ صورت نام فارسی و برچسب جنسیت در نسخه upstream مشخص‌شده',
     'review_status': 'pending',
+  },
+  'source-vajehyab-api': {
+    'license': 'طبق شرایط استفاده و حساب توسعه‌دهنده واژه‌یاب؛ کلید API در مخزن ذخیره نمی‌شود',
+    'coverage': 'جست‌وجو، معنی، تلفظ و فرهنگ‌های واژه‌یاب؛ شامل دیتابیس name برای نام‌ها',
+    'review_status': 'catalogued',
   },
   'source-behind-the-name-persian': {
     'license': 'Copyright؛ فقط لینک و فراداده، بدون بازنشر متن',
