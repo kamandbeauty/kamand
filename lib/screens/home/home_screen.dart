@@ -11,6 +11,7 @@ import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
 import '../settings/settings_screen.dart';
+import '../traditions/traditions_hub_screen.dart';
 import 'daily_screen.dart';
 import 'monthly_screen.dart';
 import 'weekly_screen.dart';
@@ -294,6 +295,31 @@ class _HomeContent extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
 
+        // ── World traditions ──────────────────────────────────────
+        SectionHeader(
+          'طالع‌بینی در سنت‌های جهان',
+          subtitle: 'چینی · فراشماره · ایرانی · ودیک · مایا',
+          action: TextButton(
+            onPressed: () => _openTraditions(context),
+            child: const Text('مشاهده'),
+          ),
+        ),
+        GlassCard(
+          padding: const EdgeInsets.all(14),
+          onTap: () => _openTraditions(context),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _TraditionDot(icon: Icons.temple_buddhist, color: AppTheme.rose),
+              _TraditionDot(icon: Icons.calculate_outlined, color: AppTheme.sky),
+              _TraditionDot(icon: Icons.nightlight_round, color: AppTheme.gold),
+              _TraditionDot(icon: Icons.self_improvement, color: AppTheme.violet),
+              _TraditionDot(icon: Icons.account_balance, color: Color(0xFF4CD97B)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
         // ── Weekly preview ────────────────────────────────────────
         SectionHeader(
           'هفتهٔ من',
@@ -373,6 +399,34 @@ class _HomeContent extends ConsumerWidget {
   void _openSettings(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
+  }
+
+  void _openTraditions(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TraditionsHubScreen()),
+    );
+  }
+}
+
+/// Small circular icon badge for the traditions row on the home screen.
+class _TraditionDot extends StatelessWidget {
+  const _TraditionDot({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Icon(icon, size: 20, color: color),
     );
   }
 }

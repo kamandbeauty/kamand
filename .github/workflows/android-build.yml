@@ -40,8 +40,9 @@ jobs:
       - name: Regenerate content (verify it is in sync)
         run: |
           python3 tool/build_content.py
-          git diff --exit-code -- lib/data/content/app_content.dart content/app_content.json \
-            || (echo "::error::Generated content is out of sync — run python3 tool/build_content.py and commit"; exit 1)
+          python3 tool/content_traditions.py
+          git diff --exit-code -- lib/data/content/ content/ \
+            || (echo "::error::Generated content is out of sync — run the tools in tool/ and commit"; exit 1)
 
       - name: Resolve dependencies
         run: flutter pub get
@@ -220,27 +221,34 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="taalebin-v1.2.0"
+          tag="taalebin-v1.3.0"
 
           # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
           rm -rf "$dist"; mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.2.0-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.2.0-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.2.0-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.2.0-universal.apk"
-          cp "$aab"                                 "$dist/taalebin-v1.2.0.aab"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.3.0-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.3.0-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.3.0-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.3.0-universal.apk"
+          cp "$aab"                                 "$dist/taalebin-v1.3.0.aab"
 
           # Integrity manifest: exact size + SHA-256 of every file, so a
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in taalebin-v1.2.0-*; do
+            for f in taalebin-v1.3.0-*; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
 
-          notes="نسخهٔ ۱.۲.۰ «طالع بین» — هویت جدید و مستقل (com.studiojavid.taalebin).
+          notes="نسخهٔ ۱.۳.۰ «طالع بین» — ماژول «طالع‌بینی در سنت‌های جهان».
+
+          🌏 جدید در این نسخه: طالع‌بینی در پنج سنت کهن جهان، همهٔ آن‌ها آفلاین و از روی همان تاریخ تولد تو:
+          • طالع‌بینی چینی — حیوان سال، عنصر و یین/یانگ با مرز دقیق سال نو چینی (جدول رسمی ۱۹۰۰–۲۱۰۰) + هم‌نوازی با شریک زندگی
+          • فراشماره — عدد مسیر زندگی (پیتاگوراسی)، سال شخصی و حساب ابجدِ نام
+          • سنت ایرانی-اسلامی — منازل ۲۸گانهٔ ماه در هنگام تولد و منزل ماهِ امروز (میراث احکام نجوم)
+          • طالع‌بینی ودیک — برج قمری و تولدستاره (ناکشاترا) بر پایهٔ جیوتیشا
+          • تقویم مقدس مایا — امضای کیهانی تو در چرخهٔ ۲۶۰روزهٔ تزولکین
 
           این نسخه شناسهٔ پکیج اختصاصی خودش را دارد و با هیچ برنامهٔ قدیمی روی گوشی تداخل نمی‌کند.
 
@@ -248,11 +256,11 @@ jobs:
 
           | فایل | مخصوص |
           |---|---|
-          | taalebin-v1.2.0-arm64-v8a.apk | گوشی‌های مدرن (اکثر گوشی‌ها) |
-          | taalebin-v1.2.0-armeabi-v7a.apk | گوشی‌های قدیمی‌تر ۳۲ بیتی |
-          | taalebin-v1.2.0-x86_64.apk | شبیه‌ساز اندروید |
-          | taalebin-v1.2.0-universal.apk | همهٔ گوشی‌ها (حجم بیشتر) |
-          | taalebin-v1.2.0.aab | فقط Google Play — نصب مستقیم ندارد |
+          | taalebin-v1.3.0-arm64-v8a.apk | گوشی‌های مدرن (اکثر گوشی‌ها) |
+          | taalebin-v1.3.0-armeabi-v7a.apk | گوشی‌های قدیمی‌تر ۳۲ بیتی |
+          | taalebin-v1.3.0-x86_64.apk | شبیه‌ساز اندروید |
+          | taalebin-v1.3.0-universal.apk | همهٔ گوشی‌ها (حجم بیشتر) |
+          | taalebin-v1.3.0.aab | فقط Google Play — نصب مستقیم ندارد |
 
           حداقل سیستم لازم: اندروید ۶.۰ (به بالا).
 
