@@ -395,13 +395,11 @@ class _FeatureRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.detail,
-    this.soon = false,
   });
 
   final IconData icon;
   final String title;
   final String detail;
-  final bool soon;
 
   @override
   Widget build(BuildContext context) {
@@ -435,27 +433,6 @@ class _FeatureRow extends StatelessWidget {
                         fontFamily: 'Vazirmatn',
                       ),
                     ),
-                    if (soon) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          'به‌زودی',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.55),
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 2),

@@ -7,7 +7,6 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
-import '../premium/premium_screen.dart';
 import 'natal_chart_screen.dart';
 
 /// Asset path for a sign's element artwork.
