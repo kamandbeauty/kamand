@@ -227,16 +227,16 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="taalebin-v1.10.1"
+          tag="taalebin-v1.10.2"
 
           # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
           rm -rf "$dist"; mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.10.1-new-phones-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.10.1-old-phones-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.10.1-emulator-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.10.1-universal.apk"
-          cp "$aab"                                 "$dist/taalebin-v1.10.1.aab"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.10.2-new-phones-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.10.2-old-phones-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.10.2-emulator-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.10.2-universal.apk"
+          cp "$aab"                                 "$dist/taalebin-v1.10.2.aab"
 
           # gh calls get 3 attempts — release creation occasionally hits a
           # transient 5xx / secondary rate limit on busy days.
@@ -256,22 +256,20 @@ jobs:
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in taalebin-v1.10.1-* taalebin-v1.10.1.aab; do
+            for f in taalebin-v1.10.2-* taalebin-v1.10.2.aab; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
 
-          notes="نسخهٔ ۱.۱۰.۱ «طالع بین» — تکمیل و صیقلِ نسخهٔ ۱.۱۰.۰ ✨
+          notes="نسخهٔ ۱.۱۰.۲ «طالع بین» — چهرهٔ تازه: شیشهٔ سفید، بدونِ قاب 💎
 
-          🐛 اصلاحِ بازهٔ تاریخِ برج‌ها: برای برج‌های پیچیده در گذرِ سال (مثل جدی که از دی شروع می‌شود)، بازهٔ درستِ «همین روزها» نشان داده می‌شود، نه بازهٔ آینده یا گذشته.
+          💎 کارت‌ها حالا شیشهٔ سفیدِ شفاف‌اند: بدونِ هیچ قاب و خطی، فقط یک برقِ نرمِ شیشه‌ای که از بالا روشن‌تر است و به‌سمتِ پایین در پس‌زمینهٔ آسمانِ شب حل می‌شود — و زیرِ هر کارت، هالهٔ ملایمِ رنگی همان بخش.
 
-          🌙 خطِ آسمانِ امروز کامل‌تر شد: کنارِ جایگاهِ خورشید و ماه، نامِ گامِ ماه (ماهِ نو، هلالِ افزاینده، تربیع، بدرِ کامل و…) هم آمده است.
+          🖼️ قابِ تزئینیِ دورِ صفحه‌ها برداشته شد؛ حالا اثرِ هنریِ آسمانِ نیمه‌شب، تمامِ صفحه و بدونِ حاشیه است و کارت‌ها مثلِ شیشه‌های مه‌گرفته روی آن شناورند.
 
-          📊 توضیحِ درصد‌ها: زیرِ «روزهای پیشِ رو» و «آسمانِ امروزِ برج‌ها» حالا نوشته‌ شده که هر عدد یعنی چه — و با لمسِ هر برج، جزئیاتِ کاملِ همان روز باز می‌شود.
+          ✨ تمیزتر، سبک‌تر، نفس‌دارتر — همان حسِ مخملی، با پوستی جدید.
 
-          🌟 مرورِ امکاناتِ ۱.۱۰.۰: سه‌گانهٔ بزرگ، گریدِ موقعیتِ سیاره‌ها تا نپتون، ترانزیت‌های امروز (آسمانِ حالا روی نقشهٔ تولدت)، روزهای پیشِ رو و نوارِ آسمانِ امروزِ برج‌ها.
-
-          🖼️ تمِ «شبِ مخملی» — تمِ اصلیِ برنامه، درست مثل دو تصویرِ مرجع.
+          🌟 از نسخه‌های قبل: سه‌گانهٔ بزرگ، گریدِ موقعیتِ سیاره‌ها تا نپتون، ترانزیت‌های امروز (آسمانِ حالا روی نقشهٔ تولدت)، روزهای پیشِ رو و نوارِ آسمانِ امروزِ برج‌ها، خطِ آسمانِ امروز با گامِ ماه.
 
           📱 کدام فایل را دانلود کنم؟
           • گوشیِ نسبتاً جدید (اکثر گوشی‌های چند سال اخیر) → فایل «گوشی‌های جدید»
@@ -280,11 +278,11 @@ jobs:
 
           | فایل | مخصوص |
           |---|---|
-          | taalebin-v1.10.1-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
-          | taalebin-v1.10.1-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
-          | taalebin-v1.10.1-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید (فقط کامپیوتر) |
-          | taalebin-v1.10.1-universal.apk | 🌍 همهٔ گوشی‌ها (حجم بیشتر) |
-          | taalebin-v1.10.1.aab | 🏪 فقط Google Play |
+          | taalebin-v1.10.2-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
+          | taalebin-v1.10.2-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
+          | taalebin-v1.10.2-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید (فقط کامپیوتر) |
+          | taalebin-v1.10.2-universal.apk | 🌍 همهٔ گوشی‌ها (حجم بیشتر) |
+          | taalebin-v1.10.2.aab | 🏪 فقط Google Play |
           | CHECKSUMS.txt | 🔐 چک‌سام فایل‌ها |
 
           حداقل سیستم لازم: اندروید ۶.۰ (به بالا).
@@ -304,7 +302,7 @@ jobs:
             retry gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             retry gh release create "$tag" "$dist"/* \
-              --title "طالع بین — نسخهٔ ۱.۱۰.۱" \
+              --title "طالع بین — نسخهٔ ۱.۱۰.۲" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
@@ -321,9 +319,9 @@ jobs:
                 -f label="$label" >/dev/null || true
             fi
           }
-          label_asset "taalebin-v1.10.1-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
-          label_asset "taalebin-v1.10.1-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
-          label_asset "taalebin-v1.10.1-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
-          label_asset "taalebin-v1.10.1-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
-          label_asset "taalebin-v1.10.1.aab"                        "فقط Google Play — نصب مستقیم ندارد"
+          label_asset "taalebin-v1.10.2-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
+          label_asset "taalebin-v1.10.2-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
+          label_asset "taalebin-v1.10.2-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
+          label_asset "taalebin-v1.10.2-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
+          label_asset "taalebin-v1.10.2.aab"                        "فقط Google Play — نصب مستقیم ندارد"
           label_asset "CHECKSUMS.txt"                               "چک‌سام فایل‌ها (برای اطمینان از دانلود سالم)"

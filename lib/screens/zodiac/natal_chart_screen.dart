@@ -740,9 +740,14 @@ class _PlanetGridCell extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.07),
+        // Borderless white glass — matches the card surface above it.
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.11),
+            Colors.white.withValues(alpha: 0.05),
+          ],
         ),
       ),
       child: Row(

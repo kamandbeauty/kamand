@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
 
-/// The signature "glass" card, generation 2: translucent layered surface
-/// with a hand-painted gradient frame, a top "shine" highlight and a
-/// gentle press animation. No blur filters — GPU-cheap and battery
+/// The signature "glass" card, generation 3 (v1.10.2): borderless
+/// translucent *white* glass — a vertical sheen brighter at the top —
+/// with a soft accent-tinted glow beneath and a gentle press animation.
+/// No strokes, no frames, no blur filters — GPU-cheap and battery
 /// friendly (product spec §29/§38).
 class GlassCard extends StatefulWidget {
   const GlassCard({
@@ -43,11 +44,16 @@ class _GlassCardState extends State<GlassCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final base = widget.highlight
-        ? (isDark ? AppTheme.darkCardHigh : Colors.white)
-        : (isDark ? AppTheme.darkCard : Colors.white);
     final glow = widget.accent ?? theme.colorScheme.primary;
     final radius = widget.radius;
+
+    // Borderless white glass (v1.10.2 design): a vertical sheen —
+    // brighter at the top, melting toward the bottom — over the painted
+    // backdrop. No stroke, no frame; the accent survives only as a
+    // whisper of colored glow beneath the card.
+    final (topAlpha, bottomAlpha) = isDark
+        ? (widget.highlight ? 0.20 : 0.13, widget.highlight ? 0.09 : 0.05)
+        : (widget.highlight ? 0.94 : 0.86, widget.highlight ? 0.80 : 0.68);
 
     return AnimatedScale(
       scale: _pressed ? 0.98 : 1.0,
@@ -66,23 +72,22 @@ class _GlassCardState extends State<GlassCard> {
             child: Container(
               padding: widget.padding,
               decoration: BoxDecoration(
-                color: base.withValues(alpha: isDark ? 0.92 : 0.96),
                 borderRadius: BorderRadius.circular(radius),
                 gradient: LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    glow.withValues(alpha: widget.highlight ? 0.12 : 0.05),
-                    base.withValues(alpha: 0.0),
+                    Colors.white.withValues(alpha: topAlpha),
+                    Colors.white.withValues(alpha: bottomAlpha),
                   ],
                 ),
                 boxShadow: isDark
                     ? [
                         BoxShadow(
                           color: glow
-                              .withValues(alpha: widget.highlight ? 0.20 : 0.10),
-                          blurRadius: widget.highlight ? 30 : 16,
-                          offset: const Offset(0, 8),
+                              .withValues(alpha: widget.highlight ? 0.16 : 0.08),
+                          blurRadius: widget.highlight ? 30 : 18,
+                          offset: const Offset(0, 10),
                         ),
                       ]
                     : [
@@ -93,19 +98,12 @@ class _GlassCardState extends State<GlassCard> {
                         ),
                       ],
               ),
-              child: CustomPaint(
-                foregroundPainter: _GlassFramePainter(
-                  radius: radius,
-                  accent: widget.accent,
-                  isDark: isDark,
-                ),
-                // A transparent Material above the decoration lets
-                // ListTiles / SwitchListTiles hosted in glass cards paint
-                // their own background & ink splashes correctly.
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: widget.child,
-                ),
+              // A transparent Material above the decoration lets
+              // ListTiles / SwitchListTiles hosted in glass cards paint
+              // their own background & ink splashes correctly.
+              child: Material(
+                type: MaterialType.transparency,
+                child: widget.child,
               ),
             ),
           ),
@@ -113,70 +111,6 @@ class _GlassCardState extends State<GlassCard> {
       ),
     );
   }
-}
-
-/// Paints the gradient hairline frame + the top glass shine of a card.
-class _GlassFramePainter extends CustomPainter {
-  _GlassFramePainter({
-    required this.radius,
-    required this.accent,
-    required this.isDark,
-  });
-
-  final double radius;
-  final Color? accent;
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(
-      rect,
-      Radius.circular(radius),
-    );
-    canvas.clipRRect(rrect);
-
-    // ── Gradient hairline frame ─────────────────────────────────────
-    final base = accent ??
-        (isDark ? AppTheme.darkBorder : AppTheme.lightBorder);
-    final frame = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1
-      ..shader = LinearGradient(
-        begin: Alignment.topRight,
-        end: Alignment.bottomLeft,
-        colors: accent == null
-            ? [base, base] // keep the neutral border solid
-            : [
-                base.withValues(alpha: 0.85),
-                AppTheme.gold.withValues(alpha: 0.55),
-                base.withValues(alpha: 0.9),
-              ],
-      ).createShader(rect);
-    canvas.drawRRect(rrect.deflate(0.55), frame);
-
-    // ── Top "glass shine" ───────────────────────────────────────────
-    final shine = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
-      ..shader = LinearGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.0),
-          Colors.white.withValues(alpha: isDark ? 0.16 : 0.35),
-          Colors.white.withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, 4));
-    canvas.drawLine(
-      Offset(size.width * 0.14, 2.2),
-      Offset(size.width * 0.86, 2.2),
-      shine,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_GlassFramePainter old) =>
-      old.accent != accent || old.isDark != isDark || old.radius != radius;
 }
 
 /// Zodiac symbol glyph with the symbols fallback font baked in.

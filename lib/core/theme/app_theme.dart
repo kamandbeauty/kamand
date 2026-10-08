@@ -239,7 +239,6 @@ const _skinData = <AppThemeSkin, _SkinData>{
       nebulaA: Color(0x148B7CF6),
       nebulaB: Color(0x0FE0B060),
       backgroundAsset: 'assets/theme/velvet_night.webp',
-      ornateFrame: true,
     ),
   ),
 };
@@ -254,7 +253,6 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
     required this.nebulaA,
     required this.nebulaB,
     this.backgroundAsset,
-    this.ornateFrame = false,
   });
 
   final Color star;
@@ -267,10 +265,6 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
   /// [ThemedBackdrop] shows this asset full-bleed under the UI.
   final String? backgroundAsset;
 
-  /// Whether to draw the ornamental hairline frame (the tarot-card
-  /// signature of the velvet design reference) over the UI.
-  final bool ornateFrame;
-
   @override
   SkyPalette copyWith({
     Color? star,
@@ -278,7 +272,6 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
     Color? nebulaA,
     Color? nebulaB,
     String? backgroundAsset,
-    bool? ornateFrame,
   }) =>
       SkyPalette(
         star: star ?? this.star,
@@ -286,7 +279,6 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
         nebulaA: nebulaA ?? this.nebulaA,
         nebulaB: nebulaB ?? this.nebulaB,
         backgroundAsset: backgroundAsset ?? this.backgroundAsset,
-        ornateFrame: ornateFrame ?? this.ornateFrame,
       );
 
   @override
@@ -298,7 +290,6 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
       nebulaA: Color.lerp(nebulaA, other.nebulaA, t)!,
       nebulaB: Color.lerp(nebulaB, other.nebulaB, t)!,
       backgroundAsset: t < 0.5 ? backgroundAsset : other.backgroundAsset,
-      ornateFrame: t < 0.5 ? ornateFrame : other.ornateFrame,
     );
   }
 }
