@@ -16,7 +16,7 @@ class AppSettings {
     this.notificationHour = 8,
     this.notificationMinute = 0,
     this.themeMode = ThemeModeSetting.dark,
-    this.themeSkin = AppThemeSkin.midnight,
+    this.themeSkin = AppThemeSkin.velvet,
     this.entitlementJson,
   });
 
@@ -77,7 +77,11 @@ class SharedPreferencesSettingsService implements SettingsService {
     final themeIndex = _prefs.getInt(_kThemeMode) ?? 0;
     // The skin key is newer than the mode key; when absent, default to
     // the classic midnight palette (the look every previous version had).
-    final skinIndex = _prefs.getInt(_kThemeSkin) ?? 0;
+    // Main skin since v1.9.0: «شبِ مخملی». Users who explicitly picked a
+    // skin keep it (their index was saved); everyone else meets the new
+    // look. (Velvet is appended last in the enum → old indices stay valid.)
+    final skinIndex =
+        _prefs.getInt(_kThemeSkin) ?? AppThemeSkin.velvet.index;
     return AppSettings(
       onboardingCompleted: _prefs.getBool(_kOnboarding) ?? false,
       notificationsEnabled: _prefs.getBool(_kNotifEnabled) ?? false,

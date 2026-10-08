@@ -11,6 +11,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/natal_wheel.dart';
 import '../premium/premium_screen.dart';
 import '../traditions/tradition_widgets.dart';
 
@@ -145,6 +146,35 @@ class NatalChartScreen extends ConsumerWidget {
               ),
             )
           else ...[
+            const SectionHeader('چرخِ فلکیِ تولد',
+                icon: Icons.donut_large_rounded, iconColor: AppTheme.gold),
+            GlassCard(
+              highlight: true,
+              accent: AppTheme.gold,
+              child: Column(
+                children: [
+                  Center(
+                    child: NatalWheel(chart: chart),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    chart.ascendant != null
+                        ? 'نمای آسمانِ لحظهٔ تولدت — طالعِ دقیق در سمتِ چپ (پیکانِ طلایی) و سیاره‌ها در جایگاهِ واقعی‌شان'
+                        : 'نمای آسمانِ لحظهٔ تولدت — سیاره‌ها در جایگاهِ واقعی‌شان (برای چرخشِ چرخ بر پایهٔ طالعِ دقیق، ساعتِ تولد لازم است)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.9,
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
             const SectionHeader('جایگاهِ سیاره‌ها',
                 icon: Icons.blur_circular, iconColor: AppTheme.violet),
             GlassCard(

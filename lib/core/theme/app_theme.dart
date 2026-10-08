@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 /// "Premium Mystical Glass" design system for طالع بین.
 ///
 /// Dark skins are palette variants of the same midnight-glass language:
-///  * آسمانِ شب (midnight)  — deep navy, the classic look (default)
+///  * شبِ مخملی (velvet)    — midnight indigo, moonlit cream & antique
+///    gold (the main look, drawn from the v1.9.0 design reference)
+///  * آسمانِ شب (midnight)  — deep navy, the classic look
 ///  * شبِ ارغوانی (violet)  — deep violet night
 ///  * شفقِ قطبی (aurora)    — teal-green aurora
 ///  * اقیانوسِ عمیق (ocean) — deep-sea blue
@@ -40,6 +42,15 @@ class AppTheme {
   static const Color lightText = Color(0xFF1D2140);
   static const Color lightTextMuted = Color(0xFF5A608A);
 
+  /// Picker order for «تمِ آسمان» — the app's main skin leads.
+  static const List<AppThemeSkin> skinPickerOrder = [
+    AppThemeSkin.velvet,
+    AppThemeSkin.midnight,
+    AppThemeSkin.violet,
+    AppThemeSkin.aurora,
+    AppThemeSkin.ocean,
+  ];
+
   /// Selectable dark skins («تمِ آسمان»).
   static ThemeData themeFor(AppThemeSkin skin) =>
       _build(_skinData[skin] ?? _skinData[AppThemeSkin.midnight]!);
@@ -62,10 +73,11 @@ class AppTheme {
 }
 
 /// The four dark skins of «تمِ آسمان».
-enum AppThemeSkin { midnight, violet, aurora, ocean }
+enum AppThemeSkin { midnight, violet, aurora, ocean, velvet }
 
 extension AppThemeSkinX on AppThemeSkin {
   String get labelFa => switch (this) {
+        AppThemeSkin.velvet => 'شبِ مخملی',
         AppThemeSkin.midnight => 'آسمانِ شب',
         AppThemeSkin.violet => 'شبِ ارغوانی',
         AppThemeSkin.aurora => 'شفقِ قطبی',
@@ -74,6 +86,7 @@ extension AppThemeSkinX on AppThemeSkin {
 
   /// Short description shown under the skin name in the picker.
   String get descriptionFa => switch (this) {
+        AppThemeSkin.velvet => 'نیلیِ مخملی، کرمِ مهتابی و طلای کهنه — چهرهٔ اصلی',
         AppThemeSkin.midnight => 'سرمه‌ایِ آرام، همان چهرهٔ همیشگی',
         AppThemeSkin.violet => 'بنفشِ عمیق با نورِ مهتابی',
         AppThemeSkin.aurora => 'سبزِ فیروزه‌ایِ قطبی',
@@ -82,6 +95,11 @@ extension AppThemeSkinX on AppThemeSkin {
 
   /// Preview swatch (background → nebula tint → accent).
   List<Color> get swatch => switch (this) {
+        AppThemeSkin.velvet => const [
+            Color(0xFF14122B),
+            Color(0xFF292454),
+            Color(0xFFE0B060),
+          ],
         AppThemeSkin.midnight => const [
             Color(0xFF0B1026),
             Color(0xFF1B234C),
@@ -198,6 +216,26 @@ const _skinData = <AppThemeSkin, _SkinData>{
       starGold: Color(0x99E8C77B),
       nebulaA: Color(0x145AB8FF),
       nebulaB: Color(0x0F8B7CF6),
+    ),
+  ),
+  // «شبِ مخملی» — extracted from the v1.9.0 design reference images:
+  // midnight-indigo sky (#14122B), moonlit warm-cream text (#D6D1CE),
+  // antique-gold accent (#E0B060), violet nebula tints.
+  AppThemeSkin.velvet: _SkinData(
+    background: Color(0xFF14122B),
+    backgroundAlt: Color(0xFF1A1637),
+    card: Color(0xFF211D43),
+    cardHigh: Color(0xFF292454),
+    border: Color(0x3DD6D1CE),
+    text: Color(0xFFD6D1CE),
+    muted: Color(0xFF9C94A6),
+    primary: Color(0xFFE0B060),
+    secondary: Color(0xFF8B7CF6),
+    palette: SkyPalette(
+      star: Color(0x66D6D1CE),
+      starGold: Color(0x99E0B060),
+      nebulaA: Color(0x148B7CF6),
+      nebulaB: Color(0x0FE0B060),
     ),
   ),
 };

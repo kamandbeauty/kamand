@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:taalebin/core/theme/app_theme.dart';
 import 'package:taalebin/data/settings/settings_service.dart';
 
-/// Round-14 theme system: four dark skins + the SkyPalette extension that
+/// Theme system: five dark skins + the SkyPalette extension that
 /// drives the ambient background, plus persistence/migration of the pick.
 void main() {
   group('AppTheme skins', () {
@@ -19,8 +19,21 @@ void main() {
         expect(palette!.star.alpha, greaterThan(0));
         expect(palette.nebulaA.alpha, lessThanOrEqualTo(0x14)); // soft
       }
-      // Four distinct skins → four distinct backgrounds.
+      // Distinct skins → distinct backgrounds.
       expect(backgrounds.length, AppThemeSkin.values.length);
+    });
+
+    test('velvet (the main skin) matches the design reference', () {
+      final theme = AppTheme.themeFor(AppThemeSkin.velvet);
+      // Midnight-indigo background, warm moonlit-cream text, gold accent.
+      expect(theme.scaffoldBackgroundColor, const Color(0xFF14122B));
+      expect(
+          theme.textTheme.bodyLarge?.color, const Color(0xFFD6D1CE));
+      final palette = theme.extension<SkyPalette>()!;
+      expect(palette.starGold, const Color(0x99E0B060));
+      // Velvet must be the fallback skin in settings (main look)…
+      // (asserted here so a future enum reorder can't silently demote it)
+      expect(AppTheme.skinPickerOrder.first, AppThemeSkin.velvet);
     });
 
     test('light theme carries a dawn palette too', () {
@@ -36,7 +49,7 @@ void main() {
         expect(skin.swatch.length, 3);
         expect(skin.swatch[2].alpha, 255);
       }
-      expect(AppThemeSkin.values.length, 4);
+      expect(AppThemeSkin.values.length, 5);
     });
 
     test('SkyPalette lerp blends between skins', () {
@@ -65,7 +78,9 @@ void main() {
         await SharedPreferences.getInstance(),
       );
       final loaded = await service.load();
-      expect(loaded.themeSkin, AppThemeSkin.midnight); // migration default
+      // Since v1.9.0 the main skin («شبِ مخملی») is the fallback for
+      // anyone who never explicitly picked one.
+      expect(loaded.themeSkin, AppThemeSkin.velvet);
 
       await service.save(loaded.copyWith(themeSkin: AppThemeSkin.aurora));
       final reloaded = await service.load();
@@ -73,7 +88,7 @@ void main() {
       expect(reloaded.themeMode, loaded.themeMode); // untouched
     });
 
-    test('fresh install without any keys defaults to midnight dark',
+    test('fresh install without any keys: dark mode + velvet main skin',
         () async {
       SharedPreferences.setMockInitialValues({});
       final service = SharedPreferencesSettingsService(
@@ -81,7 +96,19 @@ void main() {
       );
       final s = await service.load();
       expect(s.themeMode, ThemeModeSetting.dark);
-      expect(s.themeSkin, AppThemeSkin.midnight);
+      expect(s.themeSkin, AppThemeSkin.velvet);
+    });
+
+    test('an explicit skin pick survives the new default (no demotion)',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'themeSkin': AppThemeSkin.ocean.index,
+      });
+      final service = SharedPreferencesSettingsService(
+        await SharedPreferences.getInstance(),
+      );
+      final s = await service.load();
+      expect(s.themeSkin, AppThemeSkin.ocean);
     });
   });
 }

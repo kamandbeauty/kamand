@@ -280,7 +280,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                       ),
-                      for (final skin in AppThemeSkin.values)
+                      for (final skin in AppTheme.skinPickerOrder)
                         _SkinTile(
                           title: skin.labelFa,
                           subtitle: skin.descriptionFa,
