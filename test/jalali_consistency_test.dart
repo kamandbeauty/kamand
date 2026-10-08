@@ -33,16 +33,20 @@ void main() {
     test('leap years agree with shamsi_date via Esfand 30', () {
       for (var jy = 1300; jy <= 1450; jy++) {
         final shamsiLeap = AppDate.isValid(jy, 12, 30);
-        // Engine: Esfand 30 → Farvardin 1 gap must match leap-ness.
+        // Engine: Esfand 29 → next Farvardin 1 gap must match leap-ness.
+        // Compare pure calendar dates (a raw Duration would be off by the
+        // DST hour at the Esfand/Farvardin boundary).
         final esfand29 = NatalEngine.jalaliBirthToUtc(jy, 12, 29, '12:00');
         final nextNowruz = NatalEngine.jalaliBirthToUtc(jy + 1, 1, 1, '12:00');
-        final dayGap =
-            nextNowruz.difference(esfand29).inHours.clamp(0, 96) / 24.0;
+        final a = DateTime.utc(esfand29.year, esfand29.month, esfand29.day);
+        final b =
+            DateTime.utc(nextNowruz.year, nextNowruz.month, nextNowruz.day);
+        final dayGap = b.difference(a).inDays;
         if (shamsiLeap) {
-          // 1399-12-29 → 1400-01-01 is 2 days (Esfand 30 exists).
-          expect(dayGap, 2.0, reason: '$jy should be leap');
+          // Esfand 30 exists → 1399-12-29 → 1400-01-01 spans 2 days.
+          expect(dayGap, 2, reason: '$jy should be leap');
         } else {
-          expect(dayGap, 1.0, reason: '$jy should NOT be leap');
+          expect(dayGap, 1, reason: '$jy should NOT be leap');
         }
       }
     });
@@ -51,8 +55,9 @@ void main() {
       // Unix epoch day + the golden-chart birth day.
       expect(NatalEngine.jalaliBirthToUtc(1348, 10, 11, '12:00'),
           DateTime.utc(1970, 1, 1, 8, 30));
+      // Summer 1991 → Iranian DST +4:30: noon local = 07:30 UTC.
       expect(NatalEngine.jalaliBirthToUtc(1370, 5, 12, '12:00'),
-          DateTime.utc(1991, 8, 3, 8, 30));
+          DateTime.utc(1991, 8, 3, 7, 30));
       // Esfand 30 of 1399 (leap) exists; of 1400 it does not.
       expect(AppDate.isValid(1399, 12, 30), isTrue);
       expect(AppDate.isValid(1400, 12, 30), isFalse);
