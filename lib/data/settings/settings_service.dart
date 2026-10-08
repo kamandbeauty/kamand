@@ -16,6 +16,7 @@ class AppSettings {
     this.notificationHour = 8,
     this.notificationMinute = 0,
     this.themeMode = ThemeModeSetting.dark,
+    this.themeSkin = AppThemeSkin.midnight,
     this.entitlementJson,
   });
 
