@@ -238,11 +238,25 @@ jobs:
           cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.9.2-universal.apk"
           cp "$aab"                                 "$dist/taalebin-v1.9.2.aab"
 
+          # gh calls get 3 attempts — release creation occasionally hits a
+          # transient 5xx / secondary rate limit on busy days.
+          retry() {
+            local n=0 rc=0
+            while [ "$n" -lt 3 ]; do
+              rc=0
+              "$@" && break || rc=$?
+              n=$((n+1))
+              echo "::warning::attempt $n of 3 failed (rc=$rc) — retrying in 20s"
+              sleep 20
+            done
+            return "$rc"
+          }
+
           # Integrity manifest: exact size + SHA-256 of every file, so a
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in taalebin-v1.9.2-*; do
+            for f in taalebin-v1.9.2-* taalebin-v1.9.2.aab; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
@@ -282,10 +296,10 @@ jobs:
             for old_asset in $(gh release view "$tag" --json assets --jq ".assets[].name"); do
               gh release delete-asset "$tag" "$old_asset" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
             done
-            gh release upload "$tag" "$dist"/* --repo "$GITHUB_REPOSITORY"
-            gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
+            retry gh release upload "$tag" "$dist"/* --repo "$GITHUB_REPOSITORY"
+            retry gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$tag" "$dist"/* \
+            retry gh release create "$tag" "$dist"/* \
               --title "طالع بین — نسخهٔ ۱.۹.۲" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
