@@ -68,7 +68,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'نسخهٔ ۱.۰.۰',
+                  'نسخهٔ ${PersianNumbers.toPersian(AppInfo.version)}',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
