@@ -346,8 +346,8 @@ class _SignHeaderBanner extends StatelessWidget {
               ),
             ),
           ),
-          // محتوا (غیر-Positioned تا Stack را سایز دهد؛ اسپنسرش
-          // تا ارتفاعِ اجباریِ ConstrainedBox باز می‌شود)
+          // محتوا — غیر-Positioned تا Stack را سایز دهد (بدونِ
+          // فلکس؛ فاصله‌ها ثابت‌اند و سرریز ممکن نیست)
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
             child: Column(
@@ -358,7 +358,7 @@ class _SignHeaderBanner extends StatelessWidget {
                   alignment: AlignmentDirectional.topStart,
                   child: _ElementPill(sign: sign),
                 ),
-                const Spacer(),
+                const SizedBox(height: 30),
                 Text(
                   sign.nameFa,
                   style: TextStyle(
