@@ -7,7 +7,7 @@ import 'deterministic_random.dart';
 import 'horoscope_models.dart';
 
 /// Bump when generation logic changes → cached rows regenerate.
-const int kHoroscopeGeneratedVersion = 1;
+const int kHoroscopeGeneratedVersion = 2;
 
 /// The deterministic horoscope generator.
 ///

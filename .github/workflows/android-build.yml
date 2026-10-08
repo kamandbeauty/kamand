@@ -22,7 +22,7 @@ permissions:
 jobs:
   test:
     name: Analyze & Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -106,7 +106,7 @@ jobs:
   build-apk:
     name: Build signed APK
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -223,38 +223,36 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="taalebin-v1.7.0"
+          tag="taalebin-v1.8.0"
 
           # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
           rm -rf "$dist"; mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.7.0-new-phones-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.7.0-old-phones-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.7.0-emulator-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.7.0-universal.apk"
-          cp "$aab"                                 "$dist/taalebin-v1.7.0.aab"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.8.0-new-phones-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.8.0-old-phones-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.8.0-emulator-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.8.0-universal.apk"
+          cp "$aab"                                 "$dist/taalebin-v1.8.0.aab"
 
           # Integrity manifest: exact size + SHA-256 of every file, so a
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in taalebin-v1.7.0-*; do
+            for f in taalebin-v1.8.0-*; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
 
-          notes="نسخهٔ ۱.۷.۰ «طالع بین» — طالع‌های روزانه با آسمانِ واقعی 🌙
+          notes="نسخهٔ ۱.۸.۰ «طالع بین» — تم‌های آسمانِ تازه، طالع‌های کامل‌تر و تحلیلِ عمیقِ زوجین 🌙
 
-          ✨ تازه‌ترین بخش: «آسمانِ امروز» — از این پس طالعِ روزانهٔ تو از موقعیتِ واقعیِ ماه و خورشید در همین لحظه خوانده می‌شود؛ همان روش کلاسیکِ ستون‌نویسانِ طالع:
-          • نشانهٔ قمر (هر ~۲.۵ روز جابه‌جا می‌شود) با روایتِ سنتیِ هر برج
-          • گامِ ماه — از هلالِ نو تا ماهِ کامل، پیامِ هر مرحله از چرخه
-          • بُعدِ قمر نسبت به خورشیدِ تولدِ تو: هم‌مقری، تسدید، تربیع، تثلیل یا مقابله — هر کدام تفسیر و توصیهٔ خودش
-          • فرمانروای سیاره‌ایِ روزِ هفته بر پایهٔ ترتیبِ کلدانی (شنبه زحل، یکشنبه خورشید، دوشنبه ماه…)
-          ترکیبِ این چهار لایه هر روز تازه است — چیدمانِ آسمان ماه‌ها تکرار نمی‌شود.
+          🎨 تمِ آسمان — چهار آسمانِ تیرهٔ تازه: «شبِ ارغوانی»، «شفقِ قطبی»، «اقیانوسِ عمیق» و همیشگیِ «آسمانِ شب»، به‌همراه «پرتوِ سپیده» و حالتِ هماهنگ با سیستم. هر تم، ستاره‌ها و رنگِ آسمانِ پس‌زمینه را عوض می‌کند.
+          ✨ آسمانِ زندهٔ تازه: سحابی‌های نرمِ شناور و شهاب‌سنگ‌های گذرا در پس‌زمینه — با همان سبکیِ همیشگی و بدونِ بارِ اضافه روی گوشی‌های ضعیف (بدونِ افکتِ بلور، همه‌چیز در یک لایهٔ سبکِ نقاشی‌شده).
 
-          📅 هفته و ماه هم پر محتوا شدند: «آسمانِ هفته» (تمِ قمرِ آغازِ هفته بر پایهٔ چهار عنصر) و «نقشهٔ آسمانِ ماه» (برجِ واقعیِ خورشید در هر ماهِ سالِ شمسی — از حملِ فروردین تا حوتِ اسفند).
+          📚 بانکِ طالع، کامل‌تر از همیشه: بیش از ۶۰۰ متنِ تازهٔ دست‌نویس به طالع‌های روزانه، هفتگی و ماهانهٔ هر برج اضافه شد — مجموعاً ۲,۴۱۲ متنِ اختصاصی، هر کدام با اتکا به فرمانروا، عنصر و کیفیتِ کلاسیکِ برجِ تو.
 
-          از نسخه‌های قبل: مد تخفیف (کد TALEBIN1405)، ۱۲ سنت و فالِ جهان، چهرهٔ تازهٔ کارت‌ها و نشان‌ها.
+          💞 بخشِ زوجین، تازه‌ متولد شد: تحلیلِ عمیقِ ریشهٔ هم‌خوانی شما — دینامیکِ بُعدِ بطلمیوسیِ برج‌هایتان (تثلیث، تربیع، مقابله و…)، سه نقطهٔ قوت و سه چالشِ اصلیِ این جفت، و توصیهٔ اختصاصیِ رابطه‌تان (ویژهٔ پرمیوم).
+
+          🔍 «این درصدها یعنی چه؟» — زیرِ همهٔ امتیازها (طالعِ روزانه، هفته، ماه، هم‌نواییِ زوجین و طالعِ ازدواج) راهنمای شفاف اضافه شد: هر بعد چه چیزی را می‌سنجد، وزنِ هر یک در امتیازِ نهایی چقدر است و مقیاسِ رنگ‌ها را چگونه بخوانی.
 
           📱 کدام فایل را دانلود کنم؟
           • گوشیِ نسبتاً جدید (اکثر گوشی‌های چند سال اخیر) → فایل «گوشی‌های جدید»
@@ -263,11 +261,11 @@ jobs:
 
           | فایل | مخصوص |
           |---|---|
-          | taalebin-v1.7.0-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
-          | taalebin-v1.7.0-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
-          | taalebin-v1.7.0-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید روی کامپیوتر |
-          | taalebin-v1.7.0-universal.apk | 📱 همهٔ گوشی‌ها (حجم بیشتر) |
-          | taalebin-v1.7.0.aab | 🏪 فقط Google Play — نصب مستقیم ندارد |
+          | taalebin-v1.8.0-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
+          | taalebin-v1.8.0-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
+          | taalebin-v1.8.0-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید روی کامپیوتر |
+          | taalebin-v1.8.0-universal.apk | 📱 همهٔ گوشی‌ها (حجم بیشتر) |
+          | taalebin-v1.8.0.aab | 🏪 فقط Google Play — نصب مستقیم ندارد |
 
           حداقل سیستم لازم: اندروید ۶.۰ (به بالا).
 
@@ -286,7 +284,7 @@ jobs:
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" "$dist"/* \
-              --title "طالع بین — نسخهٔ ۱.۷.۰" \
+              --title "طالع بین — نسخهٔ ۱.۸.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
@@ -303,9 +301,9 @@ jobs:
                 -f label="$label" >/dev/null || true
             fi
           }
-          label_asset "taalebin-v1.7.0-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
-          label_asset "taalebin-v1.7.0-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
-          label_asset "taalebin-v1.7.0-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
-          label_asset "taalebin-v1.7.0-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
-          label_asset "taalebin-v1.7.0.aab"                        "فقط Google Play — نصب مستقیم ندارد"
+          label_asset "taalebin-v1.8.0-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
+          label_asset "taalebin-v1.8.0-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
+          label_asset "taalebin-v1.8.0-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
+          label_asset "taalebin-v1.8.0-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
+          label_asset "taalebin-v1.8.0.aab"                        "فقط Google Play — نصب مستقیم ندارد"
           label_asset "CHECKSUMS.txt"                               "چک‌سام فایل‌ها (برای اطمینان از دانلود سالم)"

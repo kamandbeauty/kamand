@@ -10,6 +10,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/score_legend.dart';
 import '../premium/premium_screen.dart';
 import 'sky_cards.dart';
 
@@ -36,9 +37,9 @@ class DailyScreen extends ConsumerWidget {
               ShareService.share(
                 '✦ طالع بین — ${AppDate.formatFull(AppDate.now())}\n\n'
                 '${d.generalText}\n\n'
-                'عشق ${d.scores.love}٪ · کار ${d.scores.career}٪ · '
-                'مالی ${d.scores.finance}٪ · حال‌وهوا ${d.scores.mood}٪\n\n'
-                'رنگ شانس: ${d.lucky.color} · عدد شانس: ${d.lucky.number} · '
+                'عشق ${_fa(d.scores.love)}٪ · کار ${_fa(d.scores.career)}٪ · '
+                'مالی ${_fa(d.scores.finance)}٪ · حال‌وهوا ${_fa(d.scores.mood)}٪\n\n'
+                'رنگ شانس: ${d.lucky.color} · عدد شانس: ${_fa(d.lucky.number)} · '
                 'ساعت شانس: ${d.lucky.time}',
               );
             },
@@ -210,7 +211,14 @@ class _DailyBody extends ConsumerWidget {
           const SizedBox(height: 12),
           _RewardedUnlockCard(daily: daily),
         ],
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
+        ScoreLegend(
+          intro: 'پنج بعدِ امتیازِ روزانهٔ تو — هر کدام بخشِ دیگری از روزت را می‌سنجند.',
+          dimensions: ScoreLegendPresets.horoscopeDimensions,
+          bands: ScoreLegendPresets.bands,
+          methodNote: ScoreLegendPresets.horoscopeMethod,
+        ),
+        const SizedBox(height: 14),
         Text(
           'این محتوا جنبهٔ سرگرمی و تفسیری دارد و پیش‌بینی قطعی نیست.',
           textAlign: TextAlign.center,

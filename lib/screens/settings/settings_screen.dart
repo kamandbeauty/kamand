@@ -8,28 +8,21 @@ import '../../providers/app_providers.dart';
 import '../../widgets/glass_card.dart';
 import '../onboarding/onboarding_screen.dart';
 
-/// Selectable theme-mode row (avoids version-sensitive Radio APIs).
-class _ThemeModeTile extends StatelessWidget {
-  const _ThemeModeTile({
-    required this.mode,
+/// One selectable sky-theme row with a gradient preview swatch.
+class _SkinTile extends StatelessWidget {
+  const _SkinTile({
+    required this.title,
+    required this.subtitle,
+    required this.swatch,
     required this.selected,
     required this.onTap,
   });
 
-  final ThemeModeSetting mode;
+  final String title;
+  final String subtitle;
+  final List<Color> swatch;
   final bool selected;
   final VoidCallback onTap;
-
-  String get _label {
-    switch (mode) {
-      case ThemeModeSetting.dark:
-        return 'تیره (آسمان شب)';
-      case ThemeModeSetting.light:
-        return 'روشن';
-      case ThemeModeSetting.system:
-        return 'هماهنگ با سیستم';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,28 +31,55 @@ class _ThemeModeTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            Icon(
-              selected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_off,
-              size: 18,
-              color: selected
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.35),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                _label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: theme.colorScheme.onSurface,
-                  fontFamily: 'Vazirmatn',
+            Container(
+              width: 46,
+              height: 34,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                gradient: LinearGradient(
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                  colors: swatch,
                 ),
+                border: Border.all(
+                  color: selected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.12),
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: selected
+                  ? const Icon(Icons.check_rounded,
+                      size: 16, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -246,14 +266,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                       ),
-                      for (final mode in ThemeModeSetting.values)
-                        _ThemeModeTile(
-                          mode: mode,
-                          selected: settings.themeMode == mode,
-                          onTap: () => ref
-                              .read(settingsProvider.notifier)
-                              .setThemeMode(mode),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                        child: Text(
+                          'تمِ آسمان را انتخاب کن — ستاره‌ها و رنگِ آسمانِ پس‌زمینه با تو عوض می‌شوند.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.55),
+                            fontFamily: 'Vazirmatn',
+                          ),
                         ),
+                      ),
+                      for (final skin in AppThemeSkin.values)
+                        _SkinTile(
+                          title: skin.labelFa,
+                          subtitle: skin.descriptionFa,
+                          swatch: skin.swatch,
+                          selected: settings.themeMode ==
+                                  ThemeModeSetting.dark &&
+                              settings.themeSkin == skin,
+                          onTap: () async {
+                            final notifier =
+                                ref.read(settingsProvider.notifier);
+                            if (settings.themeMode != ThemeModeSetting.dark) {
+                              await notifier.setThemeMode(
+                                  ThemeModeSetting.dark);
+                            }
+                            await notifier.setThemeSkin(skin);
+                          },
+                        ),
+                      _SkinTile(
+                        title: 'پرتوِ سپیده',
+                        subtitle: 'روشن و دل‌آرام، برای روز',
+                        swatch: const [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFE7E4F8),
+                          Color(0xFF8B7CF6),
+                        ],
+                        selected: settings.themeMode == ThemeModeSetting.light,
+                        onTap: () => ref
+                            .read(settingsProvider.notifier)
+                            .setThemeMode(ThemeModeSetting.light),
+                      ),
+                      _SkinTile(
+                        title: 'هماهنگ با سیستم',
+                        subtitle: 'شب یا سپیده، به‌کارِ گوشیِ تو',
+                        swatch: const [
+                          Color(0xFF0B1026),
+                          Color(0xFF2A2F55),
+                          Color(0xFFF3F2FC),
+                        ],
+                        selected: settings.themeMode == ThemeModeSetting.system,
+                        onTap: () => ref
+                            .read(settingsProvider.notifier)
+                            .setThemeMode(ThemeModeSetting.system),
+                      ),
                     ],
                   ),
                 ),

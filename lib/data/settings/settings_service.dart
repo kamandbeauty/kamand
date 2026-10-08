@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../domain/entitlement/entitlement.dart';
 
 enum ThemeModeSetting { dark, light, system }
@@ -24,6 +25,9 @@ class AppSettings {
   final int notificationMinute; // 0..59
   final ThemeModeSetting themeMode;
 
+  /// Which dark palette («تمِ آسمان») to use when the mode resolves dark.
+  final AppThemeSkin themeSkin;
+
   /// Serialized entitlement (owned by [EntitlementService]).
   final String? entitlementJson;
 
@@ -33,6 +37,7 @@ class AppSettings {
     int? notificationHour,
     int? notificationMinute,
     ThemeModeSetting? themeMode,
+    AppThemeSkin? themeSkin,
     String? entitlementJson,
   }) =>
       AppSettings(
@@ -42,6 +47,7 @@ class AppSettings {
         notificationHour: notificationHour ?? this.notificationHour,
         notificationMinute: notificationMinute ?? this.notificationMinute,
         themeMode: themeMode ?? this.themeMode,
+        themeSkin: themeSkin ?? this.themeSkin,
         entitlementJson: entitlementJson ?? this.entitlementJson,
       );
 }
@@ -60,6 +66,7 @@ class SharedPreferencesSettingsService implements SettingsService {
   static const _kNotifHour = 'notificationHour';
   static const _kNotifMinute = 'notificationMinute';
   static const _kThemeMode = 'themeMode';
+  static const _kThemeSkin = 'themeSkin';
   static const _kEntitlement = 'premiumEntitlement';
 
   final SharedPreferences _prefs;
@@ -67,12 +74,17 @@ class SharedPreferencesSettingsService implements SettingsService {
   @override
   Future<AppSettings> load() async {
     final themeIndex = _prefs.getInt(_kThemeMode) ?? 0;
+    // The skin key is newer than the mode key; when absent, default to
+    // the classic midnight palette (the look every previous version had).
+    final skinIndex = _prefs.getInt(_kThemeSkin) ?? 0;
     return AppSettings(
       onboardingCompleted: _prefs.getBool(_kOnboarding) ?? false,
       notificationsEnabled: _prefs.getBool(_kNotifEnabled) ?? false,
       notificationHour: (_prefs.getInt(_kNotifHour) ?? 8).clamp(0, 23),
       notificationMinute: (_prefs.getInt(_kNotifMinute) ?? 0).clamp(0, 59),
       themeMode: ThemeModeSetting.values[themeIndex.clamp(0, 2)],
+      themeSkin:
+          AppThemeSkin.values[skinIndex.clamp(0, AppThemeSkin.values.length - 1)],
       entitlementJson: _prefs.getString(_kEntitlement),
     );
   }
@@ -84,6 +96,7 @@ class SharedPreferencesSettingsService implements SettingsService {
     await _prefs.setInt(_kNotifHour, settings.notificationHour);
     await _prefs.setInt(_kNotifMinute, settings.notificationMinute);
     await _prefs.setInt(_kThemeMode, settings.themeMode.index);
+    await _prefs.setInt(_kThemeSkin, settings.themeSkin.index);
     if (settings.entitlementJson != null) {
       await _prefs.setString(_kEntitlement, settings.entitlementJson!);
     } else {

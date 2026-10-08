@@ -148,12 +148,18 @@ void main() {
     // ── Theme switch to light via settings ────────────────────────
     await tester.tap(find.text('ظاهر برنامه'));
     await settle(tester);
-    await tester.tap(find.text('روشن'));
+    await tester.tap(find.text('پرتوِ سپیده'));
     await settle(tester);
     final settings = await services.settingsService.load();
     expect(settings.themeMode, ThemeModeSetting.light);
 
     // ── Delete all data → back to onboarding ──────────────────────
+    await tester.dragUntilVisible(
+      find.text('حذف تمام اطلاعات من'),
+      find.byType(Scrollable).first,
+      const Offset(0, -320),
+    );
+    await settle(tester);
     await tester.tap(find.text('حذف تمام اطلاعات من'));
     await settle(tester);
     await tester.tap(find.text('حذف کن'));

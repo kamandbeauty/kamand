@@ -11,6 +11,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/score_legend.dart';
 import 'sky_cards.dart';
 
 /// طالع هفتگی — شنبه تا جمعه با امتیاز روزانه + خلاصهٔ هفته.
@@ -102,6 +103,14 @@ class _WeeklyBody extends StatelessWidget {
               isToday: AppDate.dayKey(day.date) == todayKey,
             ),
           ),
+        const SizedBox(height: 6),
+        ScoreLegend(
+          intro:
+              'امتیازِ هر روز از همان پنج بعدِ طالعِ روزانه ساخته می‌شود و حلقهٔ هفته، میانگینِ آن‌هاست.',
+          dimensions: ScoreLegendPresets.horoscopeDimensions,
+          bands: ScoreLegendPresets.bands,
+          methodNote: ScoreLegendPresets.horoscopeMethod,
+        ),
       ],
     );
   }

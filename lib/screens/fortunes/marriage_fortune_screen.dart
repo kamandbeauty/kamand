@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/content/app_content.dart';
 import '../../data/content/fortunes_content.dart';
 import '../../providers/fortune_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
+import '../../widgets/score_legend.dart';
 import '../../widgets/glass_card.dart';
 import '../traditions/tradition_widgets.dart';
 
@@ -134,6 +136,8 @@ class MarriageFortuneScreen extends ConsumerWidget {
 
           const SectionHeader('روایت سنت'),
           GlassCard(child: BodyText(FortunesContent.marriageIntro)),
+          const SizedBox(height: 12),
+          const MarriageScoreLegend(),
           const DisclaimerCard(),
         ],
       ),
@@ -145,4 +149,55 @@ class MarriageFortuneScreen extends ConsumerWidget {
         color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
         fontFamily: 'Vazirmatn',
       );
+}
+
+/// «این درصدها یعنی چه؟» — the couple-compatibility legend shared with
+/// the love tab, shown here under the marriage reading.
+class MarriageScoreLegend extends StatelessWidget {
+  const MarriageScoreLegend({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final compat = AppContent.compatibility;
+    final guide = compat['dimensionGuide']! as Map<String, Object?>;
+    final bandsData =
+        (compat['scoreBands']! as List<Object?>).whereType<Map>().toList();
+
+    const labels = {
+      'love': 'عشق',
+      'communication': 'ارتباط',
+      'attraction': 'کشش',
+      'trust': 'اعتماد',
+      'longTerm': 'پایداری',
+    };
+    const weights = {
+      'love': 28,
+      'communication': 20,
+      'attraction': 20,
+      'trust': 16,
+      'longTerm': 16,
+    };
+
+    return ScoreLegend(
+      intro: 'امتیازِ هم‌نوایی با شریک زندگی‌ات از پنج بعد سنجیده می‌شود.',
+      accent: AppTheme.rose,
+      dimensions: [
+        for (final key in labels.keys)
+          LegendDimension(
+            labels[key]!,
+            guide[key]! as String,
+            weight: weights[key],
+          ),
+      ],
+      bands: [
+        for (final b in bandsData)
+          LegendBand(
+            b['min']! as int,
+            b['label']! as String,
+            b['meaning']! as String,
+          ),
+      ],
+      methodNote: compat['methodNote']! as String,
+    );
+  }
 }

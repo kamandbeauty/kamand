@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
+import '../core/theme/app_theme.dart';
+
 import '../data/analytics/analytics_service.dart';
 import '../data/database/app_database.dart';
 import '../data/notifications/notification_scheduler.dart';
@@ -214,6 +216,13 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   Future<void> setThemeMode(ThemeModeSetting mode) async {
     state = state.copyWith(themeMode: mode);
+    await _persist();
+  }
+
+  /// Picks the dark palette («تمِ آسمان») used whenever the effective
+  /// mode is dark. Light mode always renders «پرتوِ سپیده».
+  Future<void> setThemeSkin(AppThemeSkin skin) async {
+    state = state.copyWith(themeSkin: skin);
     await _persist();
   }
 

@@ -171,6 +171,11 @@ class AppContent {
         body += f"      '{aspect}': {{\n"
         body += f"        'title': {dart_string(entry['title'])},\n"
         body += f"        'why': {dart_list(entry['why'], indent='          ')},\n"
+        if "dynamics" in entry:
+            body += f"        'dynamics': {dart_string(entry['dynamics'])},\n"
+            body += f"        'strengths': {dart_list(entry['strengths'], indent='          ')},\n"
+            body += f"        'challenges': {dart_list(entry['challenges'], indent='          ')},\n"
+            body += f"        'advice': {dart_string(entry['advice'])},\n"
         body += "      },\n"
     body += "    },\n"
     body += "    'elementChemistry': {\n"
@@ -181,6 +186,22 @@ class AppContent {
     for k, v in compat["labels"].items():
         body += f"      {dart_string(k)}: {dart_string(v)},\n"
     body += "    },\n"
+    if "dimensionGuide" in compat:
+        body += "    'dimensionGuide': {\n"
+        for k, v in compat["dimensionGuide"].items():
+            body += f"      '{k}': {dart_string(v)},\n"
+        body += "    },\n"
+    if "scoreBands" in compat:
+        body += "    'scoreBands': [\n"
+        for band in compat["scoreBands"]:
+            body += "      {\n"
+            body += f"        'min': {band['min']},\n"
+            body += f"        'label': {dart_string(band['label'])},\n"
+            body += f"        'meaning': {dart_string(band['meaning'])},\n"
+            body += "      },\n"
+        body += "    ],\n"
+    if "methodNote" in compat:
+        body += f"    'methodNote': {dart_string(compat['methodNote'])},\n"
     body += "  };\n}\n"
     return body
 

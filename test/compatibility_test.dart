@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taalebin/domain/compatibility/compatibility_engine.dart';
 import 'package:taalebin/domain/horoscope/deterministic_random.dart';
 import 'package:taalebin/domain/zodiac/zodiac_repository.dart';
+import 'package:taalebin/data/content/app_content.dart';
 
 void main() {
   const repository = LocalZodiacRepository();
@@ -112,6 +113,57 @@ void main() {
           greaterThan(2),
         );
       }
+    });
+  });
+
+  group('Round-14 synastry deep bank', () {
+    test('every aspect carries dynamics, strengths, challenges and advice',
+        () {
+      final aspects = AppContent.compatibility['aspectTexts']!
+          as Map<String, Object?>;
+      const ids = [
+        'conjunction', 'semisextile', 'sextile', 'square',
+        'trine', 'quincunx', 'opposition',
+      ];
+      for (final id in ids) {
+        final a = aspects[id]! as Map<String, Object?>;
+        expect((a['dynamics']! as String).length, greaterThan(60),
+            reason: id);
+        expect((a['advice']! as String).length, greaterThan(40), reason: id);
+        expect((a['strengths']! as List).length, 3, reason: id);
+        expect((a['challenges']! as List).length, 3, reason: id);
+      }
+    });
+
+    test('dimension guide covers the five scored dimensions', () {
+      final guide =
+          AppContent.compatibility['dimensionGuide']! as Map<String, Object?>;
+      for (final key in [
+        'love', 'communication', 'attraction', 'trust', 'longTerm'
+      ]) {
+        expect(guide[key], isA<String>(), reason: key);
+        expect((guide[key]! as String).length, greaterThan(30));
+      }
+    });
+
+    test('score bands are five, ordered and labeled', () {
+      final bands = (AppContent.compatibility['scoreBands']! as List)
+          .whereType<Map>()
+          .toList();
+      expect(bands.length, 5);
+      final mins = bands.map((b) => b['min']! as int).toList();
+      expect(mins, [85, 72, 60, 48, 0]);
+      for (final b in bands) {
+        expect(b['label']! as String, isNotEmpty);
+        expect(b['meaning']! as String, isNotEmpty);
+      }
+    });
+
+    test('method note explains the weights transparently', () {
+      final note = AppContent.compatibility['methodNote']! as String;
+      expect(note.contains('۲۸'), isTrue); // love weight in Persian digits
+      expect(note.contains('بطلمیوسی'), isTrue);
+      expect(note.contains('قطعی'), isTrue); // entertainment framing kept
     });
   });
 

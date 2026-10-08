@@ -9,6 +9,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/score_legend.dart';
 import '../premium/premium_screen.dart';
 import 'sky_cards.dart';
 
@@ -162,6 +163,19 @@ class _MonthlyBody extends ConsumerWidget {
             ),
           ),
         ],
+        const SizedBox(height: 12),
+        ScoreLegend(
+          intro:
+              'چهار بعدِ امتیازِ ماهانه — نمایِ بلندمدتِ همان مقیاسی که در طالعِ روزانه می‌بینی.',
+          dimensions: [
+            LegendDimension('عشق', 'روندِ گرمای عاطفی و رابطه‌ها در طولِ این ماه.'),
+            LegendDimension('کار', 'پشتوانه، فرصت‌های حرفه‌ای و مسیرِ پیشرفت در این ماه.'),
+            LegendDimension('مالی', 'جریانِ پول، خرج‌ها و دریافتی‌های این ماه.'),
+            LegendDimension('انرژی', 'خستگی و نشاطِ کلیِ بدن و ذهن در این ماه.'),
+          ],
+          bands: ScoreLegendPresets.bands,
+          methodNote: ScoreLegendPresets.horoscopeMethod,
+        ),
       ],
     );
   }

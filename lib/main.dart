@@ -68,7 +68,7 @@ class TaalebinApp extends ConsumerWidget {
       title: 'طالع بین',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      darkTheme: AppTheme.themeFor(settings.themeSkin),
       themeMode: themeMode,
       locale: const Locale('fa', 'IR'),
       supportedLocales: const [Locale('fa', 'IR')],
