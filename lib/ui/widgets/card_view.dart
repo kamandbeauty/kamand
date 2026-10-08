@@ -181,8 +181,8 @@ class CardView extends StatelessWidget {
                         vertical: width * 0.17,
                       )
                     : EdgeInsets.symmetric(
-                        horizontal: width * 0.115,
-                        vertical: width * 0.10,
+                        horizontal: width * 0.045,
+                        vertical: width * 0.055,
                       ),
                 child: _center(color, colorDeep),
               ),
@@ -335,20 +335,7 @@ class _AceCenter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: SizedBox(
-        width: width * 0.68,
-        height: width * 0.68,
-        child: Stack(
-          alignment: Alignment.center,
-          children: <Widget>[
-            CustomPaint(
-              size: Size.square(width * 0.68),
-              painter: _RingPainter(color.withValues(alpha: 0.3)),
-            ),
-            SuitIcon(suit: suit, size: width * 0.48, color: color),
-          ],
-        ),
-      ),
+      child: SuitIcon(suit: suit, size: width * 0.78, color: color),
     );
   }
 }
@@ -386,43 +373,30 @@ class _CourtCenter extends StatelessWidget {
           _CourtFallback(card: card, color: color, width: width),
     );
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: width * 0.055),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(width * 0.05),
-          color: const Color(0xFFFCF8EC),
-          border: Border.all(
-            color: color.withValues(alpha: 0.6),
-            width: math.max(0.8, width * 0.011),
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(width * 0.042),
-          child: Stack(
-            fit: StackFit.expand,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(width * 0.03),
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          // نگارهٔ دوسر: بالا ایستاده، پایین وارونه (مثل ورقِ واقعی)
+          Column(
             children: <Widget>[
-              // نگارهٔ دوسر: بالا ایستاده، پایین وارونه (مثل ورقِ واقعی)
-              Column(
-                children: <Widget>[
-                  Expanded(child: ClipRect(child: art)),
-                  Expanded(
-                    child: RotatedBox(
-                      quarterTurns: 2,
-                      child: ClipRect(child: art),
-                    ),
-                  ),
-                ],
-              ),
-              Center(
-                child: Container(
-                  height: math.max(0.7, width * 0.009),
-                  color: color.withValues(alpha: 0.5),
+              Expanded(child: ClipRect(child: art)),
+              Expanded(
+                child: RotatedBox(
+                  quarterTurns: 2,
+                  child: ClipRect(child: art),
                 ),
               ),
             ],
           ),
-        ),
+          Center(
+            child: Container(
+              height: math.max(0.6, width * 0.006),
+              color: color.withValues(alpha: 0.28),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -540,36 +514,6 @@ class _PaperPainter extends CustomPainter {
   bool shouldRepaint(_PaperPainter old) => old.color != color;
 }
 
-class _RingPainter extends CustomPainter {
-  const _RingPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Offset c = size.center(Offset.zero);
-    final double r = size.width / 2;
-    final Paint p = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = math.max(0.7, size.width * 0.022);
-    canvas.drawCircle(c, r * 0.96, p);
-    canvas.drawCircle(c, r * 0.82, p..strokeWidth = math.max(0.5, r * 0.02));
-    // چهار نقطهٔ تزئینی
-    final Paint dot = Paint()..color = color;
-    for (int i = 0; i < 4; i++) {
-      final double a = math.pi / 4 + i * math.pi / 2;
-      canvas.drawCircle(
-        c + Offset(math.cos(a), math.sin(a)) * r * 0.89,
-        math.max(0.8, r * 0.05),
-        dot,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_RingPainter old) => old.color != color;
-}
 
 class CardBackView extends StatelessWidget {
   const CardBackView({

@@ -735,7 +735,7 @@ class _TrickArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ShelemEngine e = controller.engine!;
-    final double cw = (size.width * 0.34).clamp(52.0, 86.0);
+    final double cw = (size.width * 0.38).clamp(58.0, 96.0);
     final List<Alignment> spots = e.seats == 2
         ? <Alignment>[const Alignment(0, 0.72), const Alignment(0, -0.72)]
         : <Alignment>[
