@@ -9,6 +9,7 @@ import '../../domain/horoscope/horoscope_models.dart';
 import '../../domain/horoscope/sky_transits.dart';
 import '../../domain/traditions/sky_math.dart';
 import '../../domain/profile/profile.dart';
+import '../../domain/zodiac/sign_window.dart';
 import '../../domain/zodiac/zodiac_sign.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
@@ -476,18 +477,26 @@ class _HomeContent extends ConsumerWidget {
     final sun = signs[SkyTransits.sunSignIndex(noonUtc)];
     final moon = signs[SkyTransits.moonSignIndex(noonUtc)];
     final sunDeg = (SkyMath.sunLongitude(jd) % 30).round();
+    final phase = SkyTransits.moonPhaseInfo(SkyTransits.moonPhase(noonUtc));
     return 'خورشید در ${sun.nameFa} ${PersianNumbers.toPersianNum(sunDeg)}°'
-        ' · ماه در ${moon.nameFa}';
+        ' · ماه در ${moon.nameFa} · ${phase['nameFa']! as String}';
   }
 
   /// Persian-calendar date range of the sign, e.g. «۱ مرداد تا ۳۱ مرداد».
+  ///
+  /// Shows the window that *contains* today, or the next upcoming one —
+  /// wrapping signs (Capricorn) need last-year's window in January, and
+  /// past windows roll to next year.
   static String _signRangeFa(ZodiacSign sign, Jalali today) {
     final g = AppDate.toGregorian(today);
-    var start = DateTime(g.year, sign.startMonth, sign.startDay);
-    var end = DateTime(g.year, sign.endMonth, sign.endDay);
-    if (end.isBefore(start)) {
-      end = DateTime(g.year + 1, sign.endMonth, sign.endDay);
-    }
+    final (start, end) = signWindow(
+      startMonth: sign.startMonth,
+      startDay: sign.startDay,
+      endMonth: sign.endMonth,
+      endDay: sign.endDay,
+      today: g,
+    );
+
     final js = AppDate.fromGregorian(start);
     final je = AppDate.fromGregorian(end);
     String fa(int v) => PersianNumbers.toPersian(v.toString());
@@ -698,6 +707,16 @@ class _UpcomingDaysStrip extends ConsumerWidget {
           loading: () => const LoadingState(height: 90),
           error: (e, _) => const SizedBox.shrink(),
         ),
+        const SizedBox(height: 8),
+        Text(
+          'درصدِ هر روز، امتیازِ کلیِ همان روز است؛ روی کارت بزن تا طالعِ هفته را ببینی.',
+          style: TextStyle(
+            fontSize: 10.5,
+            height: 1.9,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            fontFamily: 'Vazirmatn',
+          ),
+        ),
       ],
     );
   }
@@ -780,6 +799,16 @@ class _ZodiacTodayStrip extends ConsumerWidget {
           ),
           loading: () => const LoadingState(height: 100),
           error: (e, _) => const SizedBox.shrink(),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'درصدِ هر برج، امتیازِ کلیِ امروزِ همان برج است؛ روی هر برج بزن تا جزئیاتش را ببینی. برجِ خودت با رنگِ طلایی مشخص است.',
+          style: TextStyle(
+            fontSize: 10.5,
+            height: 1.9,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            fontFamily: 'Vazirmatn',
+          ),
         ),
       ],
     );
