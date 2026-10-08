@@ -636,7 +636,7 @@ class _UpcomingDaysStrip extends ConsumerWidget {
       children: [
         const SectionHeader(
           'روزهای پیشِ رو',
-          icon: Icons.wb_twilight_outlined,
+          icon: Icons.calendar_today,
           iconColor: AppTheme.rose,
         ),
         async.when(
@@ -717,7 +717,7 @@ class _ZodiacTodayStrip extends ConsumerWidget {
       children: [
         const SectionHeader(
           'آسمانِ امروزِ برج‌ها',
-          icon: Icons.starry_outlined,
+          icon: Icons.auto_awesome_outlined,
           iconColor: AppTheme.gold,
         ),
         async.when(
@@ -735,7 +735,8 @@ class _ZodiacTodayStrip extends ConsumerWidget {
                 return GlassCard(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
-                  onTap: () => _openSignToday(context, d, mine),
+                  onTap: () =>
+                      _openSignToday(context, sign, d, mine),
                   accent: mine ? AppTheme.gold : null,
                   child: SizedBox(
                     width: 64,
@@ -782,7 +783,8 @@ class _ZodiacTodayStrip extends ConsumerWidget {
     );
   }
 
-  void _openSignToday(BuildContext context, DailyHoroscope d, bool mine) {
+  void _openSignToday(
+      BuildContext context, ZodiacSign? sign, DailyHoroscope d, bool mine) {
     final theme = Theme.of(context);
     showModalBottomSheet<void>(
       context: context,
@@ -791,7 +793,6 @@ class _ZodiacTodayStrip extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
-        final sign = ref.read(zodiacSignByIdProvider(d.zodiacId));
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),

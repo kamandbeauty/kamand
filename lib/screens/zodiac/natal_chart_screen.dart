@@ -432,7 +432,7 @@ class NatalChartScreen extends ConsumerWidget {
 
             // ── ترانزیت‌های امروز — آسمانِ حالا روی نقشهٔ تو ──────────
             const SectionHeader('ترانزیت‌های امروز',
-                icon: Icons.wb_twilight, iconColor: AppTheme.gold),
+                icon: Icons.today, iconColor: AppTheme.gold),
             GlassCard(
               highlight: true,
               accent: AppTheme.gold,
@@ -844,7 +844,7 @@ class _TransitRow extends ConsumerWidget {
     }
     if (transit.natalLink.startsWith('house:')) {
       final n = transit.natalLink.substring(6);
-      return 'در خانهٔ ${PersianNumbers.toPersianNum(n)}ِ تو';
+      return 'در خانهٔ ${PersianNumbers.toPersianNum(int.parse(n))}ِ تو';
     }
     return _linkLabels[transit.natalLink] ?? '';
   }
