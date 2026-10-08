@@ -65,10 +65,11 @@ class ScoreLegend extends StatelessWidget {
     final color = accent ?? theme.colorScheme.primary;
     return GlassCard(
       accent: color,
-      child: Theme(
-        // Neutral splash inside the card.
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
+      child: ExpansionTile(
+        // Material 3 draws a divider line under the header by default —
+        // remove it so nothing cuts through the card text.
+        shape: InputBorder.none,
+        collapsedShape: InputBorder.none,
           tilePadding: EdgeInsets.zero,
           childrenPadding: EdgeInsets.zero,
           initiallyExpanded: false,
@@ -211,9 +212,8 @@ class ScoreLegend extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 4),
-          ],
-        ),
+          const SizedBox(height: 4),
+        ],
       ),
     );
   }

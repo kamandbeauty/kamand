@@ -72,14 +72,7 @@ class TraditionsHubScreen extends ConsumerWidget {
                     fontFamily: 'Vazirmatn',
                   ),
                 ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    for (final spec in MysticEmblems.all)
-                      spec.badge(size: 38, showStar: false),
-                  ],
-                ),
+                const SizedBox(height: 2),
               ],
             ),
           ),

@@ -304,54 +304,93 @@ class _HomeContent extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
 
-        // ── World traditions ──────────────────────────────────────
-        SectionHeader(
-          'طالع‌بینی در سنت‌های جهان',
-          subtitle: '۱۲ سنت و فالِ جهان، همه آفلاین',
-          icon: Icons.auto_awesome,
-          iconColor: AppTheme.violet,
-          action: TextButton(
-            onPressed: () => _openTraditions(context),
-            child: const Text('مشاهده'),
-          ),
-        ),
+        // ── World traditions — one clean, beautiful entry ──────────
         GlassCard(
+          highlight: true,
           accent: AppTheme.violet,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: const EdgeInsets.all(14),
           onTap: () => _openTraditions(context),
-          child: SizedBox(
-            height: 46,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: MysticEmblems.all.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
-              itemBuilder: (context, i) =>
-                  MysticEmblems.all[i].badge(size: 42, showStar: false),
-            ),
+          child: Row(
+            children: [
+              MysticEmblems.maya.badge(size: 50, showStar: false),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'طالع‌بینی در سنت‌های جهان',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '۱۲ سنت و فالِ جهان، همه آفلاین',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.55),
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_back_ios_new,
+                size: 14,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 14),
 
-        // ── Weekly preview ────────────────────────────────────────
-        SectionHeader(
-          'هفتهٔ من',
-          subtitle: 'شنبه تا جمعه',
-          icon: Icons.date_range,
-          iconColor: AppTheme.rose,
-          action: TextButton(
-            onPressed: () => _openWeekly(context),
-            child: const Text('مشاهدهٔ هفته'),
-          ),
-        ),
+        // ── My week — one clean, beautiful entry ──────────────────
         GlassCard(
+          highlight: true,
+          accent: AppTheme.rose,
           padding: const EdgeInsets.all(14),
           onTap: () => _openWeekly(context),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              for (var i = 0; i < 7; i++)
-                _WeekDot(label: AppDate.weekDayNames[i][0]),
+              MysticEmblems.months.badge(size: 50, showStar: false),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'فالِ هفتهٔ من',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'طالع هفتگی — شنبه تا جمعه',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.55),
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_back_ios_new,
+                size: 14,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+              ),
             ],
           ),
         ),
@@ -466,38 +505,6 @@ class _LuckyTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _WeekDot extends StatelessWidget {
-  const _WeekDot({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10.5,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            fontFamily: 'Vazirmatn',
-          ),
-        ),
-        const SizedBox(height: 7),
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: theme.colorScheme.primary.withValues(alpha: 0.7),
-          ),
-        ),
-      ],
     );
   }
 }

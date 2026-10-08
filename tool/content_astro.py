@@ -63,7 +63,7 @@ def map_ssl(pairs, indent):
 
 
 def generate_dart():
-    moons = "\n".join(block(m, ["id", "signFa", "text"], "      ")
+    moons = "\n".join(block(m, ["id", "signFa", "signEn", "text"], "      ")
                       for m in MOON_IN_SIGNS)
     phases = "\n".join(block(p, ["id", "nameFa", "text"], "      ")
                        for p in MOON_PHASES)
@@ -74,7 +74,7 @@ def generate_dart():
         block(r, ["id", "dayFa", "rulerFa", "planetFa", "text"], "      ")
         for r in WEEKDAY_RULERS)
     months = "\n".join(
-        block(m, ["month", "sunSign", "text"], "      ")
+        block(m, ["month", "sunSign", "sunSignEn", "text"], "      ")
         for m in MONTH_SEASONS)
     themes = map_ssl(list(WEEK_THEMES.items()), "    ")
 

@@ -17,7 +17,7 @@ void main() {
         final palette = theme.extension<SkyPalette>();
         expect(palette, isNotNull, reason: skin.name);
         expect(palette!.star.alpha, greaterThan(0));
-        expect(palette.meteor.alpha, greaterThan(0));
+        expect(palette.nebulaA.alpha, lessThanOrEqualTo(0x14)); // soft
       }
       // Four distinct skins → four distinct backgrounds.
       expect(backgrounds.length, AppThemeSkin.values.length);
@@ -44,9 +44,9 @@ void main() {
       final b = AppTheme.themeFor(AppThemeSkin.aurora).extension<SkyPalette>()!;
       final mid = a.lerp(b, 0.5);
       expect(mid.nebulaA, Color.lerp(a.nebulaA, b.nebulaA, 0.5));
-      final copied = a.copyWith(meteor: b.meteor);
-      expect(copied.meteor, b.meteor);
-      expect(copied.star, a.star);
+      final copied = a.copyWith(star: b.star);
+      expect(copied.star, b.star);
+      expect(copied.nebulaB, a.nebulaB);
     });
 
     test('legacy darkTheme equals the midnight skin', () {

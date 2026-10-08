@@ -216,3 +216,20 @@ MONTH_SEASONS = [
      "پایانِ چرخه و رؤیای اسفند؛ دریایِ خلوتِ پیش از عید. بخشش، رؤیا و "
      "آماده‌شدن برای تولدِ دوباره، رسالتِ این ماه است."},
 ]
+
+# ── English zodiac names (round 15): shown in Persian (English) labels ──
+_SIGN_EN = {
+    "aries": "Aries", "taurus": "Taurus", "gemini": "Gemini",
+    "cancer": "Cancer", "leo": "Leo", "virgo": "Virgo",
+    "libra": "Libra", "scorpio": "Scorpio", "sagittarius": "Sagittarius",
+    "capricorn": "Capricorn", "aquarius": "Aquarius", "pisces": "Pisces",
+}
+_FA_TO_EN = {
+    "حمل": "Aries", "ثور": "Taurus", "جوزا": "Gemini", "سرطان": "Cancer",
+    "اسد": "Leo", "سنبله": "Virgo", "میزان": "Libra", "عقرب": "Scorpio",
+    "قوس": "Sagittarius", "جدی": "Capricorn", "دلو": "Aquarius", "حوت": "Pisces",
+}
+for _m in MOON_IN_SIGNS:
+    _m["signEn"] = _SIGN_EN[_m["id"]]
+for _s in MONTH_SEASONS:
+    _s["sunSignEn"] = _FA_TO_EN[_s["sunSign"]]

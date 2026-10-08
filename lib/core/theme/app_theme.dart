@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 /// Light = «پرتوِ سپیده», airy lavender-white.
 ///
 /// Each skin also carries a [SkyPalette] theme extension consumed by the
-/// ambient sky background (stars, nebula, meteor) so the whole atmosphere
+/// ambient sky background (stars, soft nebula tints) so the atmosphere
 /// changes with the theme — cheaply (no blur, one painter).
 class AppTheme {
   AppTheme._();
@@ -54,8 +54,7 @@ class AppTheme {
           star: Color(0x334756D7),
           starGold: Color(0x66C9A24B),
           nebulaA: Color(0x142F6BFF),
-          nebulaB: Color(0x14FF7D9C),
-          meteor: Color(0x998B7CF6),
+          nebulaB: Color(0x0FFF7D9C),
         ),
       ],
     );
@@ -146,9 +145,8 @@ const _skinData = <AppThemeSkin, _SkinData>{
     palette: SkyPalette(
       star: Color(0x66FFFFFF),
       starGold: Color(0x99E8C77B),
-      nebulaA: Color(0x2E8B7CF6),
-      nebulaB: Color(0x1F64D2FF),
-      meteor: Color(0xCCE8C77B),
+      nebulaA: Color(0x148B7CF6),
+      nebulaB: Color(0x0F64D2FF),
     ),
   ),
   AppThemeSkin.violet: _SkinData(
@@ -164,9 +162,8 @@ const _skinData = <AppThemeSkin, _SkinData>{
     palette: SkyPalette(
       star: Color(0x66F3EDFF),
       starGold: Color(0x99F0C987),
-      nebulaA: Color(0x33B388FF),
-      nebulaB: Color(0x26FF7D9C),
-      meteor: Color(0xCCF0C987),
+      nebulaA: Color(0x14B388FF),
+      nebulaB: Color(0x0FFF7D9C),
     ),
   ),
   AppThemeSkin.aurora: _SkinData(
@@ -182,9 +179,8 @@ const _skinData = <AppThemeSkin, _SkinData>{
     palette: SkyPalette(
       star: Color(0x66EAFFF7),
       starGold: Color(0x9964D2FF),
-      nebulaA: Color(0x334CD97B),
-      nebulaB: Color(0x2664D2FF),
-      meteor: Color(0xCC64D2FF),
+      nebulaA: Color(0x144CD97B),
+      nebulaB: Color(0x0F64D2FF),
     ),
   ),
   AppThemeSkin.ocean: _SkinData(
@@ -200,15 +196,14 @@ const _skinData = <AppThemeSkin, _SkinData>{
     palette: SkyPalette(
       star: Color(0x66EAF6FF),
       starGold: Color(0x99E8C77B),
-      nebulaA: Color(0x335AB8FF),
-      nebulaB: Color(0x268B7CF6),
-      meteor: Color(0xCC9BE8FF),
+      nebulaA: Color(0x145AB8FF),
+      nebulaB: Color(0x0F8B7CF6),
     ),
   ),
 };
 
-/// Per-skin colors for the ambient sky background (stars, nebula blobs,
-/// meteor trail) — attached to every [ThemeData] this system builds.
+/// Per-skin colors for the ambient sky background (stars and two soft
+/// nebula tints) — attached to every [ThemeData] this system builds.
 @immutable
 class SkyPalette extends ThemeExtension<SkyPalette> {
   const SkyPalette({
@@ -216,14 +211,12 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
     required this.starGold,
     required this.nebulaA,
     required this.nebulaB,
-    required this.meteor,
   });
 
   final Color star;
   final Color starGold;
   final Color nebulaA;
   final Color nebulaB;
-  final Color meteor;
 
   @override
   SkyPalette copyWith({
@@ -231,14 +224,12 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
     Color? starGold,
     Color? nebulaA,
     Color? nebulaB,
-    Color? meteor,
   }) =>
       SkyPalette(
         star: star ?? this.star,
         starGold: starGold ?? this.starGold,
         nebulaA: nebulaA ?? this.nebulaA,
         nebulaB: nebulaB ?? this.nebulaB,
-        meteor: meteor ?? this.meteor,
       );
 
   @override
@@ -249,7 +240,6 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
       starGold: Color.lerp(starGold, other.starGold, t)!,
       nebulaA: Color.lerp(nebulaA, other.nebulaA, t)!,
       nebulaB: Color.lerp(nebulaB, other.nebulaB, t)!,
-      meteor: Color.lerp(meteor, other.meteor, t)!,
     );
   }
 }
@@ -272,7 +262,7 @@ ThemeData _build(_SkinData d) {
     border: d.border,
     text: d.text,
     muted: d.muted,
-    navBar: d.backgroundAlt,
+    navBar: d.backgroundAlt.withValues(alpha: 0.92),
     primary: d.primary,
     scheme: scheme,
     extension: d.palette,
@@ -322,9 +312,8 @@ ThemeData _base(
           const SkyPalette(
             star: Color(0x66FFFFFF),
             starGold: Color(0x99E8C77B),
-            nebulaA: Color(0x2E8B7CF6),
-            nebulaB: Color(0x1F64D2FF),
-            meteor: Color(0xCCE8C77B),
+            nebulaA: Color(0x148B7CF6),
+            nebulaB: Color(0x0F64D2FF),
           ),
     ],
     appBarTheme: AppBarTheme(

@@ -54,7 +54,7 @@ class SkyTodayCard extends ConsumerWidget {
               _SkyRow(
                 icon: Icons.nightlight_round,
                 color: AppTheme.gold,
-                label: 'قمر در ${moon['signFa']! as String}',
+                label: 'قمر در ${moon['signFa']! as String} (${moon['signEn']! as String})',
                 text: moon['text']! as String,
               ),
               if (aspect != null) ...[
@@ -154,7 +154,7 @@ class SkyMonthCard extends StatelessWidget {
       children: [
         SectionHeader(
           'نقشهٔ آسمانِ ماه',
-          subtitle: 'خورشید در برجِ ${season['sunSign']! as String}',
+          subtitle: 'خورشید در برجِ ${season['sunSign']! as String} (${season['sunSignEn']! as String})',
           icon: Icons.explore,
           iconColor: AppTheme.gold,
         ),
