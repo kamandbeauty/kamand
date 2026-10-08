@@ -67,7 +67,8 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
         content: Text(
           ok
               ? 'پرمیوم ${_selected.titleFa} فعال شد. ممنون از حمایتت!'
-              : 'فعال‌سازی خرید در این نسخه در دسترس نیست — به‌زودی.',
+              : 'پرداخت همراه با انتشار در فروشگاه‌ها فعال می‌شود؛ '
+                  'فعلاً از کدِ کمپین استفاده کن.',
         ),
       ),
     );
@@ -357,8 +358,9 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'پرداخت درون‌برنامه‌ای در این نسخه فعال نیست؛ پس از اتصال درگاه پرداخت، '
-              'می‌توانی اشتراک را فعال کنی. هیچ مبلغی الان دریافت نمی‌شود.',
+              'پرداختِ درون‌برنامه‌ای همراه با انتشار در فروشگاه‌ها فعال می‌شود؛ '
+              'تا آن زمان، پرمیوم با کدِ کمپین فعال می‌شود. هیچ مبلغی الان '
+              'دریافت نمی‌شود.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 10.5,

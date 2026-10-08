@@ -7,6 +7,7 @@ import '../../data/repositories/profile_repository.dart';
 import '../../domain/astrology/natal_chart.dart';
 import '../../domain/astrology/natal_engine.dart';
 import '../../data/content/natal_content.dart';
+import '../../data/share/share_service.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
@@ -79,7 +80,26 @@ class NatalChartScreen extends ConsumerWidget {
     final moonSign = ref.watch(zodiacSignByIdProvider(moon.signId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('نقشهٔ تولد')),
+      appBar: AppBar(
+        title: const Text('نقشهٔ تولد'),
+        actions: [
+          IconButton(
+            tooltip: 'اشتراک‌گذاری',
+            icon: const Icon(Icons.share_rounded, size: 20),
+            onPressed: () {
+              final asc = chart.ascendant;
+              ShareService.share(
+                '✨ نقشهٔ تولدِ من\n'
+                'خورشید در ${sunSign?.nameFa ?? ''} · ماه در '
+                '${moonSign?.nameFa ?? ''}'
+                '${asc != null ? ' · طالعِ دقیق: ${ref.read(zodiacSignByIdProvider(asc.signId))?.nameFa ?? ''}' : ''}\n\n'
+                'با اپِ «طالع بین» نقشهٔ تولدت را ببین — کاملاً آفلاین',
+              );
+            },
+          ),
+          const SizedBox(width: 6),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
         children: [

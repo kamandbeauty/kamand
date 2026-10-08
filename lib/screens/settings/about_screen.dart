@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_info.dart';
 import '../../core/utils/persian_numbers.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 
@@ -96,6 +98,16 @@ class AboutScreen extends StatelessWidget {
             emphasized: true,
           ),
           const SizedBox(height: 12),
+          _LinkCard(
+            title: 'نسخهٔ آنلاینِ همین متن',
+            subtitle: 'سیاستِ حریمِ خصوصی روی وب — برای فروشگاه‌ها',
+            icon: Icons.open_in_new_rounded,
+            onTap: () => launchUrl(
+              Uri.parse('https://kamandbeauty.github.io/kamand/'),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+          const SizedBox(height: 12),
           const _TextCard(
             title: 'داده‌ها و حریم خصوصی',
             body:
@@ -188,6 +200,66 @@ class TermsScreen extends StatelessWidget {
             body:
                 'خروجی‌های برنامه را می‌توانی برای سرگرمی شخصی و اشتراک با دوستان استفاده کنی؛ '
                 'بازنشر تجاری محتوای برنامه مجاز نیست.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tappable card for external links (online privacy page).
+class _LinkCard extends StatelessWidget {
+  const _LinkCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GlassCard(
+      accent: AppTheme.sky,
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppTheme.sky),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.chevron_left_rounded,
+            size: 18,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
           ),
         ],
       ),
