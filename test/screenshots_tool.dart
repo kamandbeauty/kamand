@@ -218,6 +218,80 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('گالری محیط‌ها', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1000, 760);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      _wrap(
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: GridView.count(
+            crossAxisCount: 4,
+            childAspectRatio: 0.72,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            children: <Widget>[
+              for (final TableSurface t in TableSurface.values)
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFC8A24A)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      if (t.asset != null)
+                        Image.asset(t.asset!, fit: BoxFit.cover)
+                      else
+                        const ColoredBox(color: Color(0xFF156B4A)),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: ColoredBox(
+                          color: const Color(0xCC000000),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Text(
+                                t.fa,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFF6E7C1),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(() async {
+      final BuildContext context = tester.element(find.byType(MaterialApp));
+      for (final TableSurface t in TableSurface.values) {
+        if (t.asset != null) {
+          await precacheImage(AssetImage(t.asset!), context);
+        }
+      }
+    });
+    await tester.pump(const Duration(milliseconds: 500));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('golden/surfaces.png'),
+    );
+  });
+
   testWidgets('میزِ دو نفره', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(420, 860);
     tester.view.devicePixelRatio = 1.0;

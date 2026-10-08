@@ -203,10 +203,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _ToggleTile(
             value: s.rules.withJokers,
             onChanged: (bool v) => _apply(() => s.rules = s.rulesWith(withJokers: v)),
-            title: const Text('بازی با جوکر (۲۰۰ امتیازی)'),
-            subtitle: const Text(
-              'جوکر قرمز ۲۰ و سیاه ۱۵ امتیاز؛ گلِ وسط ۶ برگ و حداقل خواندن ۱۲۰',
-              style: TextStyle(fontSize: 11),
+            title: Text(
+              'بازی با جوکر '
+              '(${fa(s.rulesWith(withJokers: true).totalPoints)} امتیازی)',
+            ),
+            subtitle: Text(
+              'جوکر قرمز ۲۰ و سیاه ۱۵ امتیاز؛ گلِ وسط ۶ برگ و حداقل خواندن '
+              '${fa(s.rulesWith(withJokers: true).minBid)}',
+              style: const TextStyle(fontSize: 11),
             ),
           ),
           _ToggleTile(
