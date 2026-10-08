@@ -86,8 +86,9 @@ void main() {
       final ascLon = chart.ascendant!.longitudeDegrees;
       for (var k = 0; k < 12; k++) {
         expect(chart.houses[k].index, k + 1);
-        expect((chart.houses[k].cuspDegrees - ascLon - 30.0 * k).abs() < 1e-6,
-            isTrue);
+        // Cusps are wrapped into 0–360 (like the ascendant itself).
+        final expected = (ascLon + 30.0 * k) % 360.0;
+        expect((chart.houses[k].cuspDegrees - expected).abs() < 1e-6, isTrue);
       }
     });
 
