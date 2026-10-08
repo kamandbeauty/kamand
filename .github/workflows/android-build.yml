@@ -239,22 +239,28 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="shelem-v1.4.0"
+          tag="shelem-v1.5.0"
           out="$RUNNER_TEMP/release"
           mkdir -p "$out"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$out/shelem-v1.4.0-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$out/shelem-v1.4.0-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$out/shelem-v1.4.0-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$out/shelem-v1.4.0-universal.apk"
-          cp "$aab"                                "$out/shelem-v1.4.0.aab"
-          notes="بازی «شلم» — نسخهٔ ۱.۴.۰
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$out/shelem-v1.5.0-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$out/shelem-v1.5.0-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$out/shelem-v1.5.0-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$out/shelem-v1.5.0-universal.apk"
+          cp "$aab"                                "$out/shelem-v1.5.0.aab"
+          notes="بازی «شلم» — نسخهٔ ۱.۵.۰
 
           بازی کلاسیک ورق ایرانی: چهار نفره (با یارِ هوشمند در برابر دو حریف)
           یا دو نفره، رو در رو با یک حریفِ هوشمند.
           خواندن (حراج)، گلِ وسط، اعلام حکم با اولین برگ، یاسا، شلم و سرشلم،
           چهار سطح سختی، هفت زمین بازی و ذخیرهٔ خودکار.
 
-          تازه در ۱.۴.۰: شش محیطِ تازه و قابلِ انتخاب برای میزِ بازی —
+          تازه در ۱.۵.۰: «قالی مینیاتور» با نگارهٔ عمودی و درست (پیش‌تر
+          چرخیده دیده می‌شد)، متنِ پویای گزینهٔ جوکر (در بازیِ دو نفره ۲۶۰
+          امتیاز و حداقلِ خواندن ۱۵۵)، و دسته‌ای تستِ تازه: اجرای کاملِ بازی
+          از مسیرِ خودِ برنامه با زمان‌بندیِ ربات‌ها، ذخیره/ادامهٔ بازی،
+          تعویضِ تعدادِ بازیکنان و کالیبراسیونِ هوشِ مصنوعی در حالتِ دو نفره.
+
+          پیش‌تر در ۱.۴.۰: شش محیطِ تازه و قابلِ انتخاب برای میزِ بازی —
           چای‌خانه، میزِ چوبی، قالیِ قدیمی، قالیِ ابریشم، قالیِ بته‌جقه و
           قالیِ مینیاتور (به‌علاوهٔ پارکت و میزِ ماهوتی). همچنین ذخیرهٔ
           مقاومِ تنظیمات (دیگر با یک مقدارِ نامعتبر همهٔ تنظیمات پاک نمی‌شود)
@@ -298,21 +304,21 @@ jobs:
               gh release delete-asset "$tag" "$stale" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
             done
             gh release upload "$tag" \
-              "$out/shelem-v1.4.0-arm64-v8a.apk" \
-              "$out/shelem-v1.4.0-armeabi-v7a.apk" \
-              "$out/shelem-v1.4.0-x86_64.apk" \
-              "$out/shelem-v1.4.0-universal.apk" \
-              "$out/shelem-v1.4.0.aab" \
+              "$out/shelem-v1.5.0-arm64-v8a.apk" \
+              "$out/shelem-v1.5.0-armeabi-v7a.apk" \
+              "$out/shelem-v1.5.0-x86_64.apk" \
+              "$out/shelem-v1.5.0-universal.apk" \
+              "$out/shelem-v1.5.0.aab" \
               --clobber --repo "$GITHUB_REPOSITORY"
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" \
-              "$out/shelem-v1.4.0-arm64-v8a.apk" \
-              "$out/shelem-v1.4.0-armeabi-v7a.apk" \
-              "$out/shelem-v1.4.0-x86_64.apk" \
-              "$out/shelem-v1.4.0-universal.apk" \
-              "$out/shelem-v1.4.0.aab" \
-              --title "شلم — نسخهٔ ۱.۴.۰" \
+              "$out/shelem-v1.5.0-arm64-v8a.apk" \
+              "$out/shelem-v1.5.0-armeabi-v7a.apk" \
+              "$out/shelem-v1.5.0-x86_64.apk" \
+              "$out/shelem-v1.5.0-universal.apk" \
+              "$out/shelem-v1.5.0.aab" \
+              --title "شلم — نسخهٔ ۱.۵.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
