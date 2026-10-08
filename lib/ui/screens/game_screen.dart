@@ -410,90 +410,19 @@ class _TableArea extends StatelessWidget {
         final double cw = (box.maxWidth * 0.085).clamp(24.0, 38.0);
         return Stack(
           children: <Widget>[
-            // میزِ نمدیِ بیضی وسط
+            // بدون میز: فقط یک سایهٔ نرمِ مرکزی تا برگ‌ها روی فرش خوانا بمانند
             Center(
               child: Container(
-                width: box.maxWidth * 0.90,
-                height: box.maxHeight * 0.78,
+                width: box.maxWidth * 0.92,
+                height: box.maxHeight * 0.80,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.all(
-                    Radius.elliptical(box.maxWidth * 0.45, box.maxHeight * 0.39),
-                  ),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.65),
-                      blurRadius: 34,
-                      spreadRadius: 4,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: <Widget>[
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: Alignment(-0.2, -0.35),
-                            radius: 1.0,
-                            colors: <Color>[
-                              Color(0xFF2E8C63),
-                              Color(0xFF17684A),
-                              Color(0xFF0A3524),
-                            ],
-                            stops: <double>[0, 0.55, 1],
-                          ),
-                        ),
-                      ),
-                      // نشانِ محوِ وسطِ میز
-                      const Center(
-                        child: Opacity(
-                          opacity: 0.075,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  SuitIcon(
-                                    suit: Suit.spades,
-                                    size: 46,
-                                    color: Color(0xFFF6E7C1),
-                                  ),
-                                  SizedBox(width: 10),
-                                  SuitIcon(
-                                    suit: Suit.hearts,
-                                    size: 46,
-                                    color: Color(0xFFF6E7C1),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 6),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  SuitIcon(
-                                    suit: Suit.diamonds,
-                                    size: 46,
-                                    color: Color(0xFFF6E7C1),
-                                  ),
-                                  SizedBox(width: 10),
-                                  SuitIcon(
-                                    suit: Suit.clubs,
-                                    size: 46,
-                                    color: Color(0xFFF6E7C1),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: CustomPaint(painter: _TableRimPainter()),
-                      ),
+                  gradient: RadialGradient(
+                    colors: <Color>[
+                      Colors.black.withValues(alpha: 0.34),
+                      Colors.black.withValues(alpha: 0.18),
+                      Colors.transparent,
                     ],
+                    stops: const <double>[0, 0.55, 1],
                   ),
                 ),
               ),
@@ -530,7 +459,7 @@ class _TableArea extends StatelessWidget {
             Center(
               child: _TrickArea(
                 controller: controller,
-                size: Size(box.maxWidth * 0.60, box.maxHeight * 0.62),
+                size: Size(box.maxWidth * 0.66, box.maxHeight * 0.64),
               ),
             ),
             if (e.phase == GamePhase.kitty)
@@ -546,44 +475,6 @@ class _TableArea extends StatelessWidget {
 }
 
 /// قابِ چوبی و حلقه‌های طلاییِ دورِ میز (بیضوی، هم‌شکل با خودِ میز).
-class _TableRimPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Rect r = Offset.zero & size;
-    final Paint wood = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: <Color>[Color(0xFF6B4423), Color(0xFF3A2210)],
-      ).createShader(r);
-    canvas.drawOval(r.deflate(7), wood);
-
-    final Paint gold = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..color = AppColors.gold.withValues(alpha: 0.55);
-    canvas.drawOval(r.deflate(15), gold);
-
-    final Paint faint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..color = AppColors.gold.withValues(alpha: 0.16);
-    canvas.drawOval(r.deflate(30), faint);
-
-    // سایهٔ داخلیِ ملایم برای حسِ گودیِ میز
-    final Paint inner = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 26
-      ..color = Colors.black.withValues(alpha: 0.16)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
-    canvas.drawOval(r.deflate(20), inner);
-  }
-
-  @override
-  bool shouldRepaint(covariant _TableRimPainter oldDelegate) => false;
-}
 
 /// برگ‌های روی هم در بازی دونفره (با شمارندهٔ باقی‌مانده).
 class _StockPile extends StatelessWidget {
@@ -844,7 +735,7 @@ class _TrickArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ShelemEngine e = controller.engine!;
-    final double cw = (size.width * 0.28).clamp(42.0, 68.0);
+    final double cw = (size.width * 0.34).clamp(52.0, 86.0);
     final List<Alignment> spots = e.seats == 2
         ? <Alignment>[const Alignment(0, 0.72), const Alignment(0, -0.72)]
         : <Alignment>[
