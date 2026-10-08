@@ -29,13 +29,23 @@ void main() {
   testWidgets('renders the full wheel (ascendant + houses + aspects)',
       (tester) async {
     await pumpWheel(tester, true);
-    expect(find.byType(CustomPaint), findsOneWidget);
+    expect(
+      find.descendant(
+          of: find.byType(NatalWheel),
+          matching: find.byType(CustomPaint)),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('renders without a birth time (no ascendant)', (tester) async {
     await pumpWheel(tester, false);
-    expect(find.byType(CustomPaint), findsOneWidget);
+    expect(
+      find.descendant(
+          of: find.byType(NatalWheel),
+          matching: find.byType(CustomPaint)),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
