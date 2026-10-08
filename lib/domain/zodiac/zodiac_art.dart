@@ -1,4 +1,4 @@
-import 'domain/zodiac/zodiac_sign.dart';
+import 'zodiac_sign.dart';
 
 /// ASTRAL COSMOS artwork mapping (central, phase-7 of the design brief).
 ///

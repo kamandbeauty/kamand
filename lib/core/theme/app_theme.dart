@@ -444,7 +444,6 @@ ThemeData _base(
     dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: navBar,
-      surfaceTintColor: Colors.transparent,
       indicatorColor: AstralTokens.celestialGold.withValues(alpha: 0.16),
       height: 68,
       labelTextStyle: WidgetStatePropertyAll(
