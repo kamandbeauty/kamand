@@ -154,3 +154,20 @@ String shortScorePhrase(int score) {
   if (score >= 40) return 'نیازمند کمی حوصله';
   return 'روزِ مراقبت از خود';
 }
+
+/// Poetic per-category label for the home cards, in the voice of the
+/// reference mockup ("Confident / In Bloom / Rising"). Deterministic —
+/// the label depends only on the category and the score band.
+String poeticCategoryPhrase(String category, int score) {
+  const bands = [85, 70, 55, 40];
+  var b = bands.indexWhere((t) => score >= t);
+  if (b == -1) b = 3;
+  const labels = <String, List<String>>{
+    'love': ['درخشان و گرم', 'شکوفا', 'آرام و صادق', 'محتاط، نه بسته', 'روزِ مهربانی با خود'],
+    'career': ['در صعود', 'پرانرژی', 'رویِ ریل', 'قدم‌به‌قدم', 'روزِ جمع‌کردنِ میز'],
+    'finance': ['درِ فرصت باز است', 'روبه‌راه', 'متعادل', 'نگاهِ دقیق', 'خرید نکن، بساز'],
+    'mood': ['با اعتمادبه‌نفس', 'سرِحال', 'آرام و روشن', 'کمی ابری', 'روزِ مراقبت از خود'],
+  };
+  final list = labels[category] ?? const ['درخشان', 'خوب', 'متعادل', 'آرام', 'آرام'];
+  return list[b];
+}

@@ -25,8 +25,11 @@ class NatalEngine {
   static const _deg2rad = math.pi / 180.0;
 
   /// Classical bodies shown in the chart (in traditional order).
+  /// Uranus & Neptune joined in v1.10.0 — the reference mockups' planetary
+  /// grid includes Uranus, and both bring the chart to its modern form.
   static const List<String> bodies = [
     'sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn',
+    'uranus', 'neptune',
   ];
 
   static const Map<String, String> bodyNamesFa = {
@@ -37,6 +40,8 @@ class NatalEngine {
     'mars': 'مریخ',
     'jupiter': 'مشتری',
     'saturn': 'زحل',
+    'uranus': 'اورانوس',
+    'neptune': 'نپتون',
   };
 
   static const List<String> _signIds = [
@@ -57,7 +62,9 @@ class NatalEngine {
     final positions = <PlanetPosition>[
       _position('sun', SkyMath.sunLongitude(jd), jd),
       _position('moon', SkyMath.moonLongitude(jd), jd),
-      for (final b in ['mercury', 'venus', 'mars', 'jupiter', 'saturn'])
+      for (final b in [
+        'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'
+      ])
         _position(b, _geocentricLongitude(b, jd), jd),
     ];
 
@@ -138,12 +145,25 @@ class NatalEngine {
       [9.53667594, 0.05386179, 2.48599187, 49.95424423, 92.59887831, 113.66242448],
       [-0.00125060, -0.00050991, 0.00193609, 1222.49362201, -0.41897216, -0.28867794],
     ],
+    // Uranus/Neptune: JPL Table 2a (3000 BC–3000 AD elements), which per
+    // JPL *must* be paired with the Table 2b M-terms below. Verified against
+    // the live 2026-10-08 sky (Gemini 5°27′ / Aries 2°37′) to ~0.01°.
+    'uranus': [
+      [19.18797948, 0.04685740, 0.77298127, 314.20276625, 172.43404441, 73.96250215],
+      [-0.00020455, -0.00001550, -0.00180155, 428.49512595, 0.09266985, 0.05739699],
+    ],
+    'neptune': [
+      [30.06952752, 0.00895439, 1.77005520, 304.22289287, 46.68158724, 131.78635853],
+      [0.00006447, 0.00000818, 0.00022400, 218.46515314, 0.01009938, -0.00606302],
+    ],
   };
 
-  /// Extra M-terms for Jupiter/Saturn (JPL Table 2b): b, c, s, f.
+  /// Extra M-terms for Jupiter..Neptune (JPL Table 2b): b, c, s, f.
   static const Map<String, List<double>> _mTerms = {
     'jupiter': [-0.00012452, 0.06064060, -0.35635438, 38.35125000],
     'saturn': [0.00025899, -0.13434469, 0.87320147, 38.35125000],
+    'uranus': [0.00058331, -0.97731848, 0.17689245, 7.67025000],
+    'neptune': [-0.00041348, 0.68346318, -0.10162547, 7.67025000],
   };
 
   /// Heliocentric ecliptic x/y (AU) of a body at [jd] (J2000 frame).

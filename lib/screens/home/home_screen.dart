@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/date/app_date.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_numbers.dart';
 import '../../domain/horoscope/horoscope_models.dart';
+import '../../domain/horoscope/sky_transits.dart';
+import '../../domain/traditions/sky_math.dart';
 import '../../domain/profile/profile.dart';
+import '../../domain/zodiac/zodiac_sign.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
@@ -198,6 +202,27 @@ class _HomeContent extends ConsumerWidget {
                             fontFamily: 'Vazirmatn',
                           ),
                         ),
+                        const SizedBox(height: 7),
+                        Text(
+                          _skyLine(ref, today),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.gold.withValues(alpha: 0.9),
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        if (_signRangeFa(sign, today).isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            _signRangeFa(sign, today),
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.45),
+                              fontFamily: 'Vazirmatn',
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -217,14 +242,14 @@ class _HomeContent extends ConsumerWidget {
             icon: Icons.favorite,
             title: 'عشق',
             score: daily.scores.love,
-            description: shortScorePhrase(daily.scores.love),
+            description: poeticCategoryPhrase('love', daily.scores.love),
             color: AppTheme.rose,
           ),
           CategoryCard(
             icon: Icons.work_outline,
             title: 'کار',
             score: daily.scores.career,
-            description: shortScorePhrase(daily.scores.career),
+            description: poeticCategoryPhrase('career', daily.scores.career),
             color: AppTheme.sky,
           ),
         ),
@@ -234,14 +259,14 @@ class _HomeContent extends ConsumerWidget {
             icon: Icons.savings_outlined,
             title: 'مالی',
             score: daily.scores.finance,
-            description: shortScorePhrase(daily.scores.finance),
+            description: poeticCategoryPhrase('finance', daily.scores.finance),
             color: AppTheme.gold,
           ),
           CategoryCard(
             icon: Icons.psychology_outlined,
             title: 'روحیه',
             score: daily.scores.mood,
-            description: shortScorePhrase(daily.scores.mood),
+            description: poeticCategoryPhrase('mood', daily.scores.mood),
             color: AppTheme.violet,
           ),
         ),
@@ -265,6 +290,11 @@ class _HomeContent extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(height: 20),
+
+        // ── روزهای پیشِ رو (مثل طرح مرجع: Braver Days Ahead) ────────
+        const _UpcomingDaysStrip(),
+
         const SizedBox(height: 20),
 
         // ── Lucky row ─────────────────────────────────────────────
@@ -302,6 +332,11 @@ class _HomeContent extends ConsumerWidget {
             ),
           ],
         ),
+        const SizedBox(height: 20),
+
+        // ── آسمانِ امروزِ برج‌ها (نوارِ ۱۲ برج، مثل طرح مرجع) ─────────
+        const _ZodiacTodayStrip(),
+
         const SizedBox(height: 20),
 
         // ── World traditions — one clean, beautiful entry ──────────
@@ -432,6 +467,34 @@ class _HomeContent extends ConsumerWidget {
     );
   }
 
+  /// «خورشید در اسد ۱۴° · ماه در دلو» — today's real sky (offline).
+  static String _skyLine(WidgetRef ref, Jalali today) {
+    final g = AppDate.toGregorian(today);
+    final noonUtc = DateTime.utc(g.year, g.month, g.day, 12);
+    final jd = SkyMath.julianDay(noonUtc);
+    final signs = ref.read(zodiacRepositoryProvider).allSigns();
+    final sun = signs[SkyTransits.sunSignIndex(noonUtc)];
+    final moon = signs[SkyTransits.moonSignIndex(noonUtc)];
+    final sunDeg = (SkyMath.sunLongitude(jd) % 30).round();
+    return 'خورشید در ${sun.nameFa} ${PersianNumbers.toPersianNum(sunDeg)}°'
+        ' · ماه در ${moon.nameFa}';
+  }
+
+  /// Persian-calendar date range of the sign, e.g. «۱ مرداد تا ۳۱ مرداد».
+  static String _signRangeFa(ZodiacSign sign, Jalali today) {
+    final g = AppDate.toGregorian(today);
+    var start = DateTime(g.year, sign.startMonth, sign.startDay);
+    var end = DateTime(g.year, sign.endMonth, sign.endDay);
+    if (end.isBefore(start)) {
+      end = DateTime(g.year + 1, sign.endMonth, sign.endDay);
+    }
+    final js = AppDate.fromGregorian(start);
+    final je = AppDate.fromGregorian(end);
+    String fa(int v) => PersianNumbers.toPersian(v.toString());
+    return '${fa(js.day)} ${AppDate.monthNames[js.month - 1]}'
+        ' تا ${fa(je.day)} ${AppDate.monthNames[je.month - 1]}';
+  }
+
   void _openDaily(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const DailyScreen()),
@@ -527,6 +590,276 @@ class _ScoreCardRow extends StatelessWidget {
           Expanded(child: right),
         ],
       ),
+    );
+  }
+}
+
+Jalali _parseDayKey(String key) {
+  final p = key.split('-');
+  return AppDate.fromYMD(
+    int.parse(p[0]),
+    int.parse(p[1]),
+    int.parse(p[2]),
+  );
+}
+
+/// One-word theme for a day, from its strongest category.
+String _dayThemeWord(DailyHoroscope d) {
+  final scores = {
+    'عشق': d.scores.love,
+    'کار': d.scores.career,
+    'فرصتِ مالی': d.scores.finance,
+    'آرامشِ روح': d.scores.mood,
+  };
+  var best = 'آرامشِ روح';
+  var bestScore = -1;
+  scores.forEach((k, v) {
+    if (v > bestScore) {
+      best = k;
+      bestScore = v;
+    }
+  });
+  return 'روزِ $best';
+}
+
+/// «روزهای پیشِ رو» — the next three days as compact cards.
+class _UpcomingDaysStrip extends ConsumerWidget {
+  const _UpcomingDaysStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final async = ref.watch(upcomingDaysProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(
+          'روزهای پیشِ رو',
+          icon: Icons.wb_twilight_outlined,
+          iconColor: AppTheme.rose,
+        ),
+        async.when(
+          data: (days) => Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < days.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(
+                  child: GlassCard(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 12),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const WeeklyScreen()),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          AppDate.weekDayName(_parseDayKey(days[i].date)),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _dayThemeWord(days[i]),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            height: 1.6,
+                            color: AppTheme.rose,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${PersianNumbers.toPersianNum(days[i].scores.overall)}٪',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onSurface,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          loading: () => const LoadingState(height: 90),
+          error: (e, _) => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
+
+/// «آسمانِ امروزِ برج‌ها» — the twelve-sign strip with each sign's
+/// overall percentage for today (mockup: the scrollable zodiac row).
+class _ZodiacTodayStrip extends ConsumerWidget {
+  const _ZodiacTodayStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final profile = ref.watch(primaryProfileProvider).profile;
+    final async = ref.watch(allSignsTodayProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(
+          'آسمانِ امروزِ برج‌ها',
+          icon: Icons.starry_outlined,
+          iconColor: AppTheme.gold,
+        ),
+        async.when(
+          data: (days) => SizedBox(
+            height: 108,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: days.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, i) {
+                final d = days[i];
+                final sign =
+                    ref.watch(zodiacSignByIdProvider(d.zodiacId));
+                final mine = profile?.zodiacId == d.zodiacId;
+                return GlassCard(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  onTap: () => _openSignToday(context, d, mine),
+                  accent: mine ? AppTheme.gold : null,
+                  child: SizedBox(
+                    width: 64,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ZodiacSymbol(sign?.symbol ?? '', fontSize: 20),
+                        const SizedBox(height: 5),
+                        Text(
+                          sign?.nameFa ?? '',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight:
+                                mine ? FontWeight.w800 : FontWeight.w600,
+                            color: mine
+                                ? AppTheme.gold
+                                : theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.8),
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${PersianNumbers.toPersianNum(d.scores.overall)}٪',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          loading: () => const LoadingState(height: 100),
+          error: (e, _) => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  void _openSignToday(BuildContext context, DailyHoroscope d, bool mine) {
+    final theme = Theme.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        final sign = ref.read(zodiacSignByIdProvider(d.zodiacId));
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.gold.withValues(alpha: 0.12),
+                        border: Border.all(
+                          color: AppTheme.gold.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Center(
+                        child: ZodiacSymbol(sign?.symbol ?? '', fontSize: 22),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'امروزِ ${sign?.nameFa ?? ''}'
+                        '${mine ? ' — برجِ تو' : ''}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: theme.colorScheme.onSurface,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+                    ),
+                    ScoreRing(score: d.scores.overall, size: 52),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  d.generalText,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 2,
+                    color: theme.colorScheme.onSurface
+                        .withValues(alpha: 0.85),
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'امتیازها — عشق ${PersianNumbers.toPersianNum(d.scores.love)}'
+                  ' · کار ${PersianNumbers.toPersianNum(d.scores.career)}'
+                  ' · مالی ${PersianNumbers.toPersianNum(d.scores.finance)}'
+                  ' · روحیه ${PersianNumbers.toPersianNum(d.scores.mood)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface
+                        .withValues(alpha: 0.55),
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

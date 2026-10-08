@@ -6,6 +6,7 @@ import '../../core/utils/persian_numbers.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../domain/astrology/natal_chart.dart';
 import '../../domain/astrology/natal_engine.dart';
+import '../../domain/astrology/natal_transits.dart';
 import '../../data/content/natal_content.dart';
 import '../../data/share/share_service.dart';
 import '../../providers/app_providers.dart';
@@ -160,7 +161,7 @@ class NatalChartScreen extends ConsumerWidget {
             LockedSection(
               title: 'نقشهٔ کاملِ تولد',
               hint:
-                  'جایگاهِ همهٔ سیاره‌ها، پس‌روی‌ها، طالعِ دقیق، خانه‌ها، زاویه‌های میانِ سیاره‌ها و عنصرِ غالب — ویژهٔ پرمیوم',
+                  'سه‌گانهٔ بزرگ، جایگاهِ همهٔ سیاره‌ها تا نپتون، پس‌روی‌ها، طالعِ دقیق، خانه‌ها، زاویه‌ها، عنصرِ غالب و ترانزیت‌های امروز — ویژهٔ پرمیوم',
               onOpenPremium: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PremiumScreen()),
               ),
@@ -195,7 +196,92 @@ class NatalChartScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            const SectionHeader('جایگاهِ سیاره‌ها',
+            // ── سه‌گانهٔ بزرگ (مثل طرح مرجع: خورشید/ماه/طالع) ─────────
+            const SectionHeader('سه‌گانهٔ بزرگ',
+                icon: Icons.auto_awesome, iconColor: AppTheme.gold),
+            GlassCard(
+              highlight: true,
+              accent: AppTheme.gold,
+              child: Column(
+                children: [
+                  _BigThreeRow(
+                    symbol: sunSign?.symbol ?? '',
+                    label: 'خورشید در ${sunSign?.nameFa ?? ''}',
+                    degree: sun.longitudeDegrees,
+                    role: 'جوهرهٔ وجودِ تو',
+                    color: AppTheme.gold,
+                  ),
+                  const SizedBox(height: 12),
+                  _BigThreeRow(
+                    symbol: moonSign?.symbol ?? '',
+                    label: 'ماه در ${moonSign?.nameFa ?? ''}',
+                    degree: moon.longitudeDegrees,
+                    role: 'دنیای احساسِ تو',
+                    color: AppTheme.sky,
+                  ),
+                  if (chart.ascendant != null) ...[
+                    const SizedBox(height: 12),
+                    _BigThreeRow(
+                      symbol:
+                          ref.watch(zodiacSignByIdProvider(chart.ascendant!.signId))?.symbol ?? '',
+                      label:
+                          'طالعِ دقیق در ${ref.watch(zodiacSignByIdProvider(chart.ascendant!.signId))?.nameFa ?? ''}',
+                      degree: chart.ascendant!.longitudeDegrees,
+                      role: 'نقابِ روبه‌بیرونِ تو',
+                      color: AppTheme.rose,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── موقعیت سیاره‌ها — گریدِ فشرده مثل طرح مرجع ──────────
+            const SectionHeader('موقعیتِ سیاره‌ها',
+                icon: Icons.grid_view_rounded, iconColor: AppTheme.violet),
+            GlassCard(
+              accent: AppTheme.violet,
+              child: Column(
+                children: [
+                  for (var r = 0;
+                      r < (chart.planetPositions.length - 2 + 1) ~/ 2;
+                      r++)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: r == 0 ? 0 : 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _PlanetGridCell(
+                                position: chart.planetPositions[2 + r * 2]),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: 2 + r * 2 + 1 < chart.planetPositions.length
+                                ? _PlanetGridCell(
+                                    position:
+                                        chart.planetPositions[2 + r * 2 + 1])
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'خورشید و ماه بالاتر در «سه‌گانهٔ بزرگ» آمده‌اند؛ این جدول با موتورِ واقعیِ آسمان برای لحظهٔ تولدِ تو محاسبه شده است.',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      height: 1.9,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            const SectionHeader('تعبیرِ کاملِ سیاره‌ها',
                 icon: Icons.blur_circular, iconColor: AppTheme.violet),
             GlassCard(
               accent: AppTheme.violet,
@@ -342,6 +428,16 @@ class NatalChartScreen extends ConsumerWidget {
             ],
 
             _DominantElementCard(chart: chart),
+            const SizedBox(height: 16),
+
+            // ── ترانزیت‌های امروز — آسمانِ حالا روی نقشهٔ تو ──────────
+            const SectionHeader('ترانزیت‌های امروز',
+                icon: Icons.wb_twilight, iconColor: AppTheme.gold),
+            GlassCard(
+              highlight: true,
+              accent: AppTheme.gold,
+              child: _TransitsCard(chart: chart),
+            ),
             const SizedBox(height: 14),
             GlassCard(
               child: Text(
@@ -538,6 +634,273 @@ class _BodyRow extends StatelessWidget {
                   fontSize: 12.5,
                   height: 2,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One row of the "big three" summary (Sun / Moon / Rising), mirroring the
+/// reference mockup's BIG THREE block.
+class _BigThreeRow extends StatelessWidget {
+  const _BigThreeRow({
+    required this.symbol,
+    required this.label,
+    required this.degree,
+    required this.role,
+    required this.color,
+  });
+
+  final String symbol;
+  final String label;
+  final double degree;
+  final String role;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withValues(alpha: 0.12),
+            border: Border.all(color: color.withValues(alpha: 0.45)),
+          ),
+          child: Center(child: ZodiacSymbol(symbol, fontSize: 19)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                role,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: color.withValues(alpha: 0.10),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
+          ),
+          child: Text(
+            '${PersianNumbers.toPersianNum((degree % 30).round())}°',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              color: color,
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A single cell of the compact planetary-positions grid.
+class _PlanetGridCell extends ConsumerWidget {
+  const _PlanetGridCell({required this.position});
+
+  final PlanetPosition position;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final sign = ref.watch(zodiacSignByIdProvider(position.signId));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.07),
+        ),
+      ),
+      child: Row(
+        children: [
+          ZodiacSymbol(sign?.symbol ?? '', fontSize: 15),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  NatalEngine.bodyNamesFa[position.body] ?? position.body,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${PersianNumbers.toPersianNum((position.longitudeDegrees % 30).round())}° '
+                  '${sign?.nameFa ?? ''}'
+                  '${position.isRetrograde ? ' · پس‌روی' : ''}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: position.isRetrograde
+                        ? AppTheme.rose
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The "Transits of today" section — live sky vs. the birth chart.
+class _TransitsCard extends ConsumerWidget {
+  const _TransitsCard({required this.chart});
+
+  final NatalChart chart;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final transits =
+        NatalTransits.compute(chart, DateTime.now().toUtc());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        BodyText(NatalContent.transitsIntro),
+        const SizedBox(height: 14),
+        for (var i = 0; i < transits.length; i++) ...[
+          if (i > 0) ...[
+            const SizedBox(height: 11),
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
+            ),
+            const SizedBox(height: 11),
+          ],
+          _TransitRow(transit: transits[i]),
+        ],
+        const SizedBox(height: 14),
+        Text(
+          NatalContent.transitsMethodNote,
+          style: TextStyle(
+            fontSize: 10.5,
+            height: 1.9,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            fontFamily: 'Vazirmatn',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TransitRow extends ConsumerWidget {
+  const _TransitRow({required this.transit});
+
+  final TransitInfo transit;
+
+  static const Map<String, String> _linkLabels = {
+    'sun-sign': 'در برجِ خورشیدِ تو',
+  };
+
+  String get _linkText {
+    if (transit.natalLink.startsWith('conjunct:')) {
+      final body = transit.natalLink.substring(9);
+      return 'هم‌مقر با ${NatalEngine.bodyNamesFa[body] ?? body}ِ تولدت';
+    }
+    if (transit.natalLink.startsWith('house:')) {
+      final n = transit.natalLink.substring(6);
+      return 'در خانهٔ ${PersianNumbers.toPersianNum(n)}ِ تو';
+    }
+    return _linkLabels[transit.natalLink] ?? '';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final sign = ref.watch(zodiacSignByIdProvider(transit.signId));
+    final link = _linkText;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        ZodiacSymbol(sign?.symbol ?? '', fontSize: 16),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    '${NatalEngine.bodyNamesFa[transit.body] ?? transit.body} در '
+                    '${sign?.nameFa ?? ''} '
+                    '${PersianNumbers.toPersianNum(transit.degreeInSign.round())}°',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                  if (transit.isRetrograde)
+                    Text(
+                      'پس‌روی',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.rose,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${NatalContent.transitThemes[transit.body] ?? ''}'
+                '${link.isNotEmpty ? ' · $link' : ''}',
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.7,
+                  color: link.isNotEmpty
+                      ? AppTheme.gold.withValues(alpha: 0.95)
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   fontFamily: 'Vazirmatn',
                 ),
               ),

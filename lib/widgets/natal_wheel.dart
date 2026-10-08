@@ -30,6 +30,8 @@ class NatalWheel extends StatelessWidget {
     'mars': '♂',
     'jupiter': '♃',
     'saturn': '♄',
+    'uranus': '♅',
+    'neptune': '♆',
     // The sun glyph (☉) is missing from the bundled symbol font, so the
     // painter draws a little rayed disc instead.
   };

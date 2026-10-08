@@ -43,11 +43,25 @@ void main() {
           for (final p in chart.planetPositions) p.body: p
         };
 
-    test('seven classical bodies present', () {
-      expect(chart.planetPositions.length, 7);
+    test('nine bodies present (classical seven + Uranus/Neptune)', () {
+      expect(chart.planetPositions.length, 9);
       expect(byBody().keys.toSet(), {
-        'sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'
+        'sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn',
+        'uranus', 'neptune',
       });
+    });
+
+    test('Uranus in Capricorn ~280.68°, Neptune in Capricorn ~284.70°',
+        () {
+      // Python-twin golden values (JPL Table 2a + 2b M-terms); the twin
+      // matches the live 2026-10-08 sky to ~0.01° (Gemini 5°27′/Aries 2°37′).
+      final pos = byBody();
+      expect(pos['uranus']!.signId, 'capricorn');
+      expect((pos['uranus']!.longitudeDegrees - 280.68).abs() < 0.05,
+          isTrue);
+      expect(pos['neptune']!.signId, 'capricorn');
+      expect((pos['neptune']!.longitudeDegrees - 284.70).abs() < 0.05,
+          isTrue);
     });
 
     test('Sun in Leo ~130.35°, Moon in Taurus ~36.42°', () {
@@ -134,7 +148,7 @@ void main() {
           NatalEngine.compute(DateTime.utc(1991, 8, 3, 4), withHouses: false);
       expect(chart.ascendant, isNull);
       expect(chart.houses, isEmpty);
-      expect(chart.planetPositions.length, 7);
+      expect(chart.planetPositions.length, 9);
     });
   });
 }

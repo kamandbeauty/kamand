@@ -4,9 +4,25 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:taalebin/domain/horoscope/deterministic_random.dart';
 import 'package:taalebin/core/date/app_date.dart';
 import 'package:taalebin/domain/horoscope/horoscope_engine.dart';
+import 'package:taalebin/domain/horoscope/horoscope_models.dart';
 import 'package:taalebin/domain/zodiac/zodiac_repository.dart';
 
 void main() {
+  group('poeticCategoryPhrase (home cards, mockup voice)', () {
+    test('five bands per category, deterministic', () {
+      expect(poeticCategoryPhrase('love', 90), 'درخشان و گرم');
+      expect(poeticCategoryPhrase('love', 75), 'شکوفا');
+      expect(poeticCategoryPhrase('love', 60), 'آرام و صادق');
+      expect(poeticCategoryPhrase('love', 45), 'محتاط، نه بسته');
+      expect(poeticCategoryPhrase('love', 20), 'روزِ مهربانی با خود');
+      expect(poeticCategoryPhrase('career', 88), 'در صعود');
+      expect(poeticCategoryPhrase('mood', 88), 'با اعتمادبه‌نفس');
+      expect(poeticCategoryPhrase('finance', 88), 'درِ فرصت باز است');
+      // same input → same label
+      expect(poeticCategoryPhrase('mood', 72), poeticCategoryPhrase('mood', 72));
+    });
+  });
+
   const repository = LocalZodiacRepository();
   const engine = HoroscopeEngine(repository);
   final signs = repository.allSigns();

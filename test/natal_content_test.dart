@@ -8,7 +8,20 @@ void main() {
     'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
     'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
   ];
-  const planets = ['mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+  const planets = ['mercury', 'venus', 'mars', 'jupiter', 'saturn',
+    'uranus', 'neptune'];
+
+  test('transit content covers all nine bodies', () {
+    expect(NatalContent.transitThemes.keys.toSet(), {
+      'sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn',
+      'uranus', 'neptune',
+    });
+    for (final e in NatalContent.transitThemes.entries) {
+      expect(e.value.length, greaterThan(12), reason: e.key);
+    }
+    expect(NatalContent.transitsIntro.length, greaterThan(60));
+    expect(NatalContent.transitsMethodNote.length, greaterThan(60));
+  });
 
   test('every planet has a text for every sign', () {
     for (final planet in planets) {

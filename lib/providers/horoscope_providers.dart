@@ -130,3 +130,32 @@ final zodiacSignByIdProvider =
     Provider.autoDispose.family<ZodiacSign?, String>((ref, id) {
   return ref.watch(zodiacRepositoryProvider).byId(id);
 });
+
+/// The three days after today for the active profile's sign — the home
+/// screen's "روزهای پیشِ رو" strip (mockup: "Braver Days Ahead").
+final upcomingDaysProvider =
+    FutureProvider.autoDispose<List<DailyHoroscope>>((ref) async {
+  final profile = ref.watch(primaryProfileProvider);
+  if (!profile.ready || profile.profile == null) {
+    throw StateError('no profile');
+  }
+  final repo = ref.watch(horoscopeRepositoryProvider);
+  final today = AppDate.now();
+  return [
+    for (var k = 1; k <= 3; k++)
+      await repo.dailyFor(profile.profile!.zodiacId, AppDate.addDays(today, k)),
+  ];
+});
+
+/// Today's horoscope for *all twelve* signs — the home screen's zodiac
+/// strip (mockup: the 12-sign row with percentages).
+final allSignsTodayProvider =
+    FutureProvider.autoDispose<List<DailyHoroscope>>((ref) async {
+  final repo = ref.watch(horoscopeRepositoryProvider);
+  final zodiac = ref.watch(zodiacRepositoryProvider);
+  final today = AppDate.now();
+  return [
+    for (final sign in zodiac.allSigns())
+      await repo.dailyFor(sign.id, today),
+  ];
+});

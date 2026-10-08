@@ -58,6 +58,6 @@ void main() {
       ),
     );
     // Painter with an empty canvas (guard against divide-by-zero paths).
-    expect(chart.planetPositions.length, 7);
+    expect(chart.planetPositions.length, 9);
   });
 }
