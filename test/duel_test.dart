@@ -128,6 +128,48 @@ void main() {
     });
   });
 
+  group('کالیبراسیون دو نفره', () {
+    test('نرخ موفقیتِ قرارداد و توزیعِ خواندن منطقی است', () {
+      const int rounds = 150;
+      final ShelemEngine e = ShelemEngine(
+        config: const GameConfig(players: 2, targetScore: 100000000),
+        random: Random(2025),
+      );
+      int made = 0;
+      int yasa = 0;
+      int slams = 0;
+      double actualSum = 0;
+      final Map<int, int> contracts = <int, int>{};
+      for (int i = 0; i < rounds; i++) {
+        final Random r = Random(3000 + i);
+        playRound(e, Difficulty.hard, r);
+        final RoundRecord last = e.history.last;
+        contracts[last.outcome.contract] =
+            (contracts[last.outcome.contract] ?? 0) + 1;
+        actualSum += last.outcome.hakemPoints;
+        if (last.outcome.contractMade) made++;
+        if (last.outcome.yasa) yasa++;
+        if (last.outcome.slam) slams++;
+      }
+      final double rate = made / rounds;
+      final double avgContract = contracts.entries
+              .map((MapEntry<int, int> x) => x.key * x.value)
+              .fold<int>(0, (int a, int b) => a + b) /
+          rounds;
+      // ignore: avoid_print
+      print('کالیبراسیون دو نفره ($rounds راند): موفقیت = '
+          '${(rate * 100).toStringAsFixed(1)}٪ | یاسا = $yasa | شلم = $slams');
+      // ignore: avoid_print
+      print('میانگین قرارداد = ${avgContract.toStringAsFixed(1)} | '
+          'میانگین امتیاز حاکم = ${(actualSum / rounds).toStringAsFixed(1)}');
+      // ignore: avoid_print
+      print('توزیع قراردادها: $contracts');
+      expect(rate > 0.35 && rate < 0.95, isTrue,
+          reason: 'نرخ موفقیت غیرمنطقی: $rate');
+      expect(avgContract >= 135, isTrue);
+    });
+  });
+
   group('شبیه‌سازی دو نفره', () {
     test('۸۰ راندِ کامل بدون خطا و با امتیازِ درست', () {
       for (int seed = 0; seed < 80; seed++) {
