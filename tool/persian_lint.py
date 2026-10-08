@@ -23,6 +23,28 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STR_RE = re.compile(r"'((?:[^'\\]|\\.)*)'|\"((?:[^\"\\]|\\.)*)\"")
 
 ARABIC = {'ي': 'ی', 'ك': 'ک', 'ة': 'ه'}
+
+# Known-good exceptions (Arabic loan names kept deliberately):
+#  - Arabic lunar-mansion names & similar «ال…» proper nouns keep ة/ي/ك.
+#  - أستارا is a valid city spelling.
+ALLOW_TEXTS = {'أستارا'}
+
+
+def _is_allowed(text):
+    if text in ALLOW_TEXTS:
+        return True
+    # Arabic proper nouns: starts with ال and is a single short token
+    # (lunar mansions like النَّثرة، الجَبهة، الشَّولة).
+    stripped = text.strip()
+    if stripped.startswith('ال') and len(stripped) <= 14 and ' ' not in stripped:
+        return True
+    # Single/double-char table keys (abjad letter values like 'ك', 'ة').
+    if len(stripped) <= 2:
+        return True
+    # Manzil labels that pair an Arabic nature word with the mansion name.
+    if stripped.startswith('سعد ') or stripped.startswith('نحس '):
+        return True
+    return False
 MISSPELL = [
     (r'\bبصورت\b', 'به صورت'),
     (r'\bبیرون از ایران\b', 'خارج از ایران (سازگاری)'),
@@ -41,9 +63,11 @@ strings_seen = 0
 
 def check_text(text, path, lineno):
     # A. Arabic chars
-    for ch, fix in ARABIC.items():
-        if ch in text:
-            issues.append((path, lineno, f"حرفِ عربی '{ch}' (باید '{fix}')", text[:60]))
+    if not _is_allowed(text):
+        for ch, fix in ARABIC.items():
+            if ch in text:
+                issues.append((path, lineno,
+                               f"حرفِ عربی '{ch}' (باید '{fix}')", text[:60]))
     # B1. 'می ' prefix split (می کنید)
     for m in re.finditer(r'(?<![\u0600-\u06FF])می [\u0600-\u06FF]', text):
         issues.append((path, lineno, "'می' جدا از فعل (نیم‌فاصله لازم)", m.group(0)))
@@ -106,3 +130,5 @@ print(f"scanned {files_scanned} files, {strings_seen} Persian strings")
 print(f"issues: {len(issues)}\n")
 for path, lineno, kind, ctx in issues:
     print(f"{path}:{lineno}: {kind} | {ctx}")
+
+sys.exit(1 if issues else 0)

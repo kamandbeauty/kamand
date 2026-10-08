@@ -346,7 +346,7 @@ class _PositionBlock extends ConsumerWidget {
               child: Text(
                 '${sign?.nameFa ?? ''} ${sign?.symbol ?? ''} · '
                 '${PersianNumbers.toPersianNum((position.longitudeDegrees % 30).round())}°'
-                '${position.isRetrograde ? '  ℞' : ''}',
+                '${position.isRetrograde ? ' · پس‌روی' : ''}',
                 style: TextStyle(
                   fontSize: 12.5,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.65),

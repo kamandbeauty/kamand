@@ -250,7 +250,7 @@ class _AspectDeepDive extends ConsumerWidget {
             title: 'نقاط قوت این بُعد',
             items: strengths,
             color: const Color(0xFF4CD97B),
-            marker: '✓',
+            marker: '•',
           ),
           const SizedBox(height: 8),
           _BulletList(
@@ -268,7 +268,7 @@ class _AspectDeepDive extends ConsumerWidget {
               border: Border.all(color: AppTheme.gold.withValues(alpha: 0.3)),
             ),
             child: Text(
-              '✦ توصیهٔ ویژهٔ این رابطه: ${a['advice']! as String}',
+              '• توصیهٔ ویژهٔ این رابطه: ${a['advice']! as String}',
               style: TextStyle(
                 fontSize: 12,
                 height: 2,

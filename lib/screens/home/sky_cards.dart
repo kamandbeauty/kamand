@@ -233,7 +233,7 @@ class _SkyRow extends StatelessWidget {
               if (advice != null) ...[
                 const SizedBox(height: 5),
                 Text(
-                  '✦ $advice',
+                  '• $advice',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,

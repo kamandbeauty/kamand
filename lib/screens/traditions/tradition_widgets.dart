@@ -166,13 +166,10 @@ class TraditionEmblem extends StatelessWidget {
           Positioned(
             top: size * 0.02,
             right: size * 0.10,
-            child: Text(
-              '✦',
-              style: TextStyle(
-                fontSize: size * 0.17,
-                color: AppTheme.gold,
-                fontFamilyFallback: const ['NotoSansSymbols'],
-              ),
+            child: Icon(
+              Icons.star_rounded,
+              size: size * 0.17,
+              color: AppTheme.gold,
             ),
           ),
         ],

@@ -48,6 +48,7 @@ class GreekFortuneScreen extends ConsumerWidget {
                     sign.symbol,
                     style: TextStyle(
                       fontSize: 38,
+                      fontFamilyFallback: const ['NotoSansSymbols'],
                       color: theme.brightness == Brightness.dark
                           ? AppTheme.gold
                           : AppTheme.violetDeep,
