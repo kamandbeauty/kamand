@@ -122,20 +122,24 @@ class NatalChartScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          if (!hasTime || coords == null) ...[
+          if (!hasTime)
             GlassCard(
               accent: AppTheme.sky,
               child: BodyText(NatalContent.noTimeNote),
+            )
+          else if (coords == null)
+            GlassCard(
+              accent: AppTheme.sky,
+              child: BodyText(NatalContent.cityUnknownNote),
             ),
-            const SizedBox(height: 16),
-          ],
+          if (!hasTime || coords == null) const SizedBox(height: 16),
 
           // ── Premium: the full chart ─────────────────────────────
           if (!entitlement.hasPremium)
             LockedSection(
               title: 'نقشهٔ کاملِ تولد',
               hint:
-                  'جایگاهِ همهٔ سیاره‌ها، پس‌روی‌ها، طالعِ دقیق، خانه‌ها، ابعادِ میانِ سیاره‌ها و عنصرِ غالب — ویژهٔ پرمیوم',
+                  'جایگاهِ همهٔ سیاره‌ها، پس‌روی‌ها، طالعِ دقیق، خانه‌ها، زاویه‌های میانِ سیاره‌ها و عنصرِ غالب — ویژهٔ پرمیوم',
               onOpenPremium: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PremiumScreen()),
               ),
@@ -146,13 +150,22 @@ class NatalChartScreen extends ConsumerWidget {
             GlassCard(
               accent: AppTheme.violet,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final p in chart.planetPositions)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _PositionRow(position: p),
-                    ),
-                  const SizedBox(height: 2),
+                  for (var i = 0; i < chart.planetPositions.length; i++) ...[
+                    if (i > 0) ...[
+                      const SizedBox(height: 12),
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.06),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    _PositionBlock(position: chart.planetPositions[i]),
+                  ],
+                  const SizedBox(height: 14),
                   Text(
                     NatalContent.retrogradeNote,
                     style: TextStyle(
@@ -303,8 +316,8 @@ class NatalChartScreen extends ConsumerWidget {
       PersianNumbers.toPersianNum(deg.round());
 }
 
-class _PositionRow extends ConsumerWidget {
-  const _PositionRow({required this.position});
+class _PositionBlock extends ConsumerWidget {
+  const _PositionBlock({required this.position});
 
   final PlanetPosition position;
 
@@ -312,32 +325,49 @@ class _PositionRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final sign = ref.watch(zodiacSignByIdProvider(position.signId));
-    return Row(
+    final text =
+        NatalContent.planetInSign[position.body]?[position.signId] ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 58,
-          child: Text(
-            NatalEngine.bodyNamesFa[position.body] ?? position.body,
+        Row(
+          children: [
+            Text(
+              NatalEngine.bodyNamesFa[position.body] ?? position.body,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${sign?.nameFa ?? ''} ${sign?.symbol ?? ''} · '
+                '${PersianNumbers.toPersianNum((position.longitudeDegrees % 30).round())}°'
+                '${position.isRetrograde ? '  ℞' : ''}',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (text.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            text,
             style: TextStyle(
               fontSize: 12.5,
-              fontWeight: FontWeight.w800,
-              color: theme.colorScheme.onSurface,
+              height: 2,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
               fontFamily: 'Vazirmatn',
             ),
           ),
-        ),
-        Expanded(
-          child: Text(
-            '${sign?.nameFa ?? ''} ${sign?.symbol ?? ''} · '
-            '${PersianNumbers.toPersianNum((position.longitudeDegrees % 30).round())}°'
-            '${position.isRetrograde ? '  ℞' : ''}',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
-              fontFamily: 'Vazirmatn',
-            ),
-          ),
-        ),
+        ],
       ],
     );
   }

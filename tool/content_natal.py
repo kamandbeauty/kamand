@@ -13,9 +13,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from natal_data import (  # noqa: E402
-    ASCENDANT_IN_SIGN, ASPECT_TEXTS, CHART_INTRO, DOMINANT_ELEMENT,
-    HOUSE_TITLES, METHOD_NOTE, NATAL_MOON_IN_SIGN, NO_TIME_NOTE,
-    PLANET_IN_SIGN, RETROGRADE_NOTE,
+    ASCENDANT_IN_SIGN, ASPECT_TEXTS, CHART_INTRO, CITY_UNKNOWN_NOTE,
+    DOMINANT_ELEMENT, HOUSE_TITLES, METHOD_NOTE, NATAL_MOON_IN_SIGN,
+    NO_TIME_NOTE, PLANET_IN_SIGN, RETROGRADE_NOTE,
 )
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,7 +37,8 @@ def validate():
     assert len(HOUSE_TITLES) == 12
 
     texts = (
-        [CHART_INTRO, METHOD_NOTE, NO_TIME_NOTE, RETROGRADE_NOTE]
+        [CHART_INTRO, METHOD_NOTE, NO_TIME_NOTE, CITY_UNKNOWN_NOTE,
+         RETROGRADE_NOTE]
         + list(ASCENDANT_IN_SIGN.values())
         + list(NATAL_MOON_IN_SIGN.values())
         + [t for p in PLANET_IN_SIGN.values() for t in p.values()]
@@ -137,6 +138,9 @@ class NatalContent {{
 
   static const String noTimeNote = {dart_string(NO_TIME_NOTE)};
 
+  /// Shown when the time is known but the city is missing/non-Iranian.
+  static const String cityUnknownNote = {dart_string(CITY_UNKNOWN_NOTE)};
+
   static const String retrogradeNote = {dart_string(RETROGRADE_NOTE)};
 }}
 """
@@ -154,6 +158,7 @@ def main():
         "houseTitles": HOUSE_TITLES,
         "methodNote": METHOD_NOTE,
         "noTimeNote": NO_TIME_NOTE,
+        "cityUnknownNote": CITY_UNKNOWN_NOTE,
         "retrogradeNote": RETROGRADE_NOTE,
     }
     json_path = os.path.join(ROOT, "content", "natal_interpretations.json")

@@ -1,8 +1,9 @@
-/// Birth-chart domain models (product spec §46 — v2 feature).
+/// Birth-chart domain models.
 ///
-/// v1 stores the birth data (date/time/city) and renders a locked
-/// "coming soon" section; these models define the contract the future
-/// astronomy engine will fill. Pure data classes — no Flutter deps.
+/// Filled since v1.8.3 by the offline astronomy engine
+/// (natal_engine.dart): geocentric longitudes of the classical bodies,
+/// retrograde flags, ascendant/midheaven (when birth time + place are
+/// known), equal houses and Ptolemaic aspects. Pure data classes.
 
 /// A computed natal chart for a birth moment.
 class NatalChart {
