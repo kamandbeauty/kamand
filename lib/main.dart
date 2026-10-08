@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/theme/app_theme.dart';
+import 'widgets/themed_backdrop.dart';
 import 'data/analytics/analytics_service.dart';
 import 'data/settings/settings_service.dart';
 import 'providers/app_providers.dart';
@@ -79,7 +80,7 @@ class TaalebinApp extends ConsumerWidget {
       ],
       builder: (context, child) => Directionality(
         textDirection: TextDirection.rtl,
-        child: child!,
+        child: ThemedBackdrop(child: child!),
       ),
       home: const AppGate(),
     );

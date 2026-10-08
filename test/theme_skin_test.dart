@@ -25,14 +25,20 @@ void main() {
 
     test('velvet (the main skin) matches the design reference', () {
       final theme = AppTheme.themeFor(AppThemeSkin.velvet);
-      // Midnight-indigo background, warm moonlit-cream text, gold accent.
-      expect(theme.scaffoldBackgroundColor, const Color(0xFF14122B));
-      expect(
-          theme.textTheme.bodyLarge?.color, const Color(0xFFD6D1CE));
       final palette = theme.extension<SkyPalette>()!;
+      // Midnight-indigo base, warm moonlit-cream text, gold accent.
+      expect(theme.scaffoldBackgroundColor, const Color(0x0014122B));
+      expect(theme.colorScheme.onSurface, const Color(0xFFD6D1CE));
       expect(palette.starGold, const Color(0x99E0B060));
-      // Velvet must be the fallback skin in settings (main look)…
-      // (asserted here so a future enum reorder can't silently demote it)
+      // The velvet-only backdrop: generated artwork + ornate frame.
+      expect(palette.backgroundAsset, 'assets/theme/velvet_night.webp');
+      expect(palette.ornateFrame, isTrue);
+      // Other skins must not inherit the artwork or the frame.
+      final midnight = AppTheme.themeFor(AppThemeSkin.midnight);
+      expect(midnight.extension<SkyPalette>()!.backgroundAsset, isNull);
+      expect(midnight.extension<SkyPalette>()!.ornateFrame, isFalse);
+      // Velvet must lead the picker (asserted so a future enum reorder
+      // can't silently demote the app's main look).
       expect(AppTheme.skinPickerOrder.first, AppThemeSkin.velvet);
     });
 

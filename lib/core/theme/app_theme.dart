@@ -222,7 +222,9 @@ const _skinData = <AppThemeSkin, _SkinData>{
   // midnight-indigo sky (#14122B), moonlit warm-cream text (#D6D1CE),
   // antique-gold accent (#E0B060), violet nebula tints.
   AppThemeSkin.velvet: _SkinData(
-    background: Color(0xFF14122B),
+    // Transparent on purpose: the generated velvet-night artwork shows
+    // through from ThemedBackdrop behind every screen.
+    background: Color(0x0014122B),
     backgroundAlt: Color(0xFF1A1637),
     card: Color(0xFF211D43),
     cardHigh: Color(0xFF292454),
@@ -236,6 +238,8 @@ const _skinData = <AppThemeSkin, _SkinData>{
       starGold: Color(0x99E0B060),
       nebulaA: Color(0x148B7CF6),
       nebulaB: Color(0x0FE0B060),
+      backgroundAsset: 'assets/theme/velvet_night.webp',
+      ornateFrame: true,
     ),
   ),
 };
@@ -249,6 +253,8 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
     required this.starGold,
     required this.nebulaA,
     required this.nebulaB,
+    this.backgroundAsset,
+    this.ornateFrame = false,
   });
 
   final Color star;
@@ -256,18 +262,31 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
   final Color nebulaA;
   final Color nebulaB;
 
+  /// Optional painted-artwork backdrop behind every screen (the velvet
+  /// night skin). When set, that skin's scaffold goes transparent and
+  /// [ThemedBackdrop] shows this asset full-bleed under the UI.
+  final String? backgroundAsset;
+
+  /// Whether to draw the ornamental hairline frame (the tarot-card
+  /// signature of the velvet design reference) over the UI.
+  final bool ornateFrame;
+
   @override
   SkyPalette copyWith({
     Color? star,
     Color? starGold,
     Color? nebulaA,
     Color? nebulaB,
+    String? backgroundAsset,
+    bool? ornateFrame,
   }) =>
       SkyPalette(
         star: star ?? this.star,
         starGold: starGold ?? this.starGold,
         nebulaA: nebulaA ?? this.nebulaA,
         nebulaB: nebulaB ?? this.nebulaB,
+        backgroundAsset: backgroundAsset ?? this.backgroundAsset,
+        ornateFrame: ornateFrame ?? this.ornateFrame,
       );
 
   @override
@@ -278,6 +297,8 @@ class SkyPalette extends ThemeExtension<SkyPalette> {
       starGold: Color.lerp(starGold, other.starGold, t)!,
       nebulaA: Color.lerp(nebulaA, other.nebulaA, t)!,
       nebulaB: Color.lerp(nebulaB, other.nebulaB, t)!,
+      backgroundAsset: t < 0.5 ? backgroundAsset : other.backgroundAsset,
+      ornateFrame: t < 0.5 ? ornateFrame : other.ornateFrame,
     );
   }
 }

@@ -1,7 +1,7 @@
 name: taalebin
 description: "طالع بین — طالع‌بینی شخصی‌سازی‌شده بر اساس برج تولد (نسخهٔ آفلاین و فارسی)"
 publish_to: 'none'
-version: 1.9.0+18
+version: 1.9.1+19
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -43,6 +43,7 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/emblems/
+    - assets/theme/
 
   fonts:
     - family: Vazirmatn

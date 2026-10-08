@@ -227,31 +227,33 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="taalebin-v1.9.0"
+          tag="taalebin-v1.9.1"
 
           # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
           rm -rf "$dist"; mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.9.0-new-phones-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.9.0-old-phones-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.9.0-emulator-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.9.0-universal.apk"
-          cp "$aab"                                 "$dist/taalebin-v1.9.0.aab"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.9.1-new-phones-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.9.1-old-phones-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.9.1-emulator-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.9.1-universal.apk"
+          cp "$aab"                                 "$dist/taalebin-v1.9.1.aab"
 
           # Integrity manifest: exact size + SHA-256 of every file, so a
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in taalebin-v1.9.0-*; do
+            for f in taalebin-v1.9.1-*; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
 
-          notes="نسخهٔ ۱.۹.۰ «طالع بین» — چهرهٔ تازه: شبِ مخملی 🌌
+          notes="نسخهٔ ۱.۹.۱ «طالع بین» — شبِ مخملی، کامل‌تر از همیشه 🖼️
 
-          🌌 تمِ جدیدِ «شبِ مخملی» — چهرهٔ اصلیِ برنامه از این نسخه: آسمانِ نیلیِ نیمه‌شب، متن‌های کرمِ مهتابی و طلای کهنه؛ الهام‌گرفته از طرحِ مرجعِ همین پروژه. بقیهٔ تم‌ها سرِ جایشان هستند و در تنظیمات قابل انتخاب.
+          🖼️ قلبِ تازهٔ تمِ «شبِ مخملی»: یک اثرِ هنریِ تولیدشده — آسمانِ نیلیِ نیمه‌شب با سحابیِ بنفش و ردِ خطوطِ فلکیِ طلایی — حالا پس‌زمینهٔ همهٔ صفحه‌های برنامه است؛ فقط ۳۰ کیلوبایت و روان روی گوشی‌های ساده.
 
-          🎡 چرخِ فلکیِ تولد: نقشهٔ تولد حالا یک چرخِ دایره‌ایِ واقعی دارد — حلقهٔ برج‌ها با درجه‌بندی، نمادِ برج‌ها، سیاره‌ها در جایگاهِ واقعی‌شان، خطوطِ زاویه‌ها میانِ سیاره‌ها، ستیغ‌های خانه‌ها و پیکانِ طلاییِ طالعِ دقیق. همه با نقاشیِ زنده روی گوشیِ خودت رسم می‌شود — بدون تصویرِ سنگین، روان روی گوشی‌های ساده.
+          🏵️ قابِ تزئینی: خطِ نازکِ کرمِ مهتابی با لهجه‌های طلایی، دورِ همهٔ صفحه‌ها — امضای طرحِ مرجع، مثل قابِ یک کارتِ تاروت.
+
+          🎡 چرخِ فلکیِ تولد (از نسخهٔ قبل) حالا روی این پس‌زمینه می‌نشیند: نقشهٔ دایره‌ایِ واقعیِ آسمانِ تولدت با سیاره‌ها، زاویه‌ها و طالعِ دقیق.
 
           📱 کدام فایل را دانلود کنم؟
           • گوشیِ نسبتاً جدید (اکثر گوشی‌های چند سال اخیر) → فایل «گوشی‌های جدید»
@@ -260,11 +262,11 @@ jobs:
 
           | فایل | مخصوص |
           |---|---|
-          | taalebin-v1.9.0-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
-          | taalebin-v1.9.0-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
-          | taalebin-v1.9.0-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید (فقط کامپیوتر) |
-          | taalebin-v1.9.0-universal.apk | 🌍 همهٔ گوشی‌ها (حجم بیشتر) |
-          | taalebin-v1.9.0.aab | 🏪 فقط Google Play |
+          | taalebin-v1.9.1-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
+          | taalebin-v1.9.1-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
+          | taalebin-v1.9.1-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید (فقط کامپیوتر) |
+          | taalebin-v1.9.1-universal.apk | 🌍 همهٔ گوشی‌ها (حجم بیشتر) |
+          | taalebin-v1.9.1.aab | 🏪 فقط Google Play |
           | CHECKSUMS.txt | 🔐 چک‌سام فایل‌ها |
 
           حداقل سیستم لازم: اندروید ۶.۰ (به بالا).
@@ -284,7 +286,7 @@ jobs:
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" "$dist"/* \
-              --title "طالع بین — نسخهٔ ۱.۹.۰" \
+              --title "طالع بین — نسخهٔ ۱.۹.۱" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
@@ -301,9 +303,9 @@ jobs:
                 -f label="$label" >/dev/null || true
             fi
           }
-          label_asset "taalebin-v1.9.0-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
-          label_asset "taalebin-v1.9.0-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
-          label_asset "taalebin-v1.9.0-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
-          label_asset "taalebin-v1.9.0-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
-          label_asset "taalebin-v1.9.0.aab"                        "فقط Google Play — نصب مستقیم ندارد"
+          label_asset "taalebin-v1.9.1-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
+          label_asset "taalebin-v1.9.1-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
+          label_asset "taalebin-v1.9.1-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
+          label_asset "taalebin-v1.9.1-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
+          label_asset "taalebin-v1.9.1.aab"                        "فقط Google Play — نصب مستقیم ندارد"
           label_asset "CHECKSUMS.txt"                               "چک‌سام فایل‌ها (برای اطمینان از دانلود سالم)"
