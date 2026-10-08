@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
 
-/// The signature "glass" card, generation 3 (v1.10.2): borderless
-/// translucent *white* glass — a vertical sheen brighter at the top —
-/// with a soft accent-tinted glow beneath and a gentle press animation.
-/// No strokes, no frames, no blur filters — GPU-cheap and battery
-/// friendly (product spec §29/§38).
+// Design tokens for the ASTRAL COSMOS glass surface.
+
+/// The signature "glass" card, generation 4 — ASTRAL COSMOS: a
+/// translucent cosmic-indigo surface with a white sheen gradient
+/// (brighter at the top), the system's subtle silver hairline, and a
+/// soft accent-tinted glow beneath; gentle press animation. No blur
+/// filters — GPU-cheap and battery friendly (product spec §29/§38).
 class GlassCard extends StatefulWidget {
   const GlassCard({
     super.key,
@@ -47,13 +49,14 @@ class _GlassCardState extends State<GlassCard> {
     final glow = widget.accent ?? theme.colorScheme.primary;
     final radius = widget.radius;
 
-    // Borderless white glass (v1.10.2 design): a vertical sheen —
-    // brighter at the top, melting toward the bottom — over the painted
-    // backdrop. No stroke, no frame; the accent survives only as a
-    // whisper of colored glow beneath the card.
-    final (topAlpha, bottomAlpha) = isDark
-        ? (widget.highlight ? 0.20 : 0.13, widget.highlight ? 0.09 : 0.05)
-        : (widget.highlight ? 0.94 : 0.86, widget.highlight ? 0.80 : 0.68);
+    // ASTRAL COSMOS glass (v1.12.0): a translucent cosmic-indigo tint
+    // with a white sheen gradient (brighter at the top) and the system's
+    // subtle silver hairline — layered glass with visual hierarchy, the
+    // accent surviving as a whisper of colored glow beneath the card.
+    final (tintAlpha, sheenTop, sheenBottom) = isDark
+        ? (widget.highlight ? 0.50 : 0.38, widget.highlight ? 0.16 : 0.10,
+            widget.highlight ? 0.06 : 0.03)
+        : (0.0, widget.highlight ? 0.94 : 0.86, widget.highlight ? 0.80 : 0.68);
 
     return AnimatedScale(
       scale: _pressed ? 0.98 : 1.0,
@@ -73,13 +76,22 @@ class _GlassCardState extends State<GlassCard> {
               padding: widget.padding,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(radius),
+                color: isDark
+                    ? AstralTokens.surfaceGlass.withValues(alpha: tintAlpha)
+                    : null,
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withValues(alpha: topAlpha),
-                    Colors.white.withValues(alpha: bottomAlpha),
+                    Colors.white.withValues(alpha: sheenTop),
+                    Colors.white.withValues(alpha: sheenBottom),
                   ],
+                ),
+                border: Border.all(
+                  color: isDark
+                      ? AstralTokens.borderSubtle
+                      : const Color(0x14273254),
+                  width: 1,
                 ),
                 boxShadow: isDark
                     ? [

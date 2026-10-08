@@ -14,6 +14,59 @@ import 'package:flutter/material.dart';
 /// Each skin also carries a [SkyPalette] theme extension consumed by the
 /// ambient sky background (stars, soft nebula tints) so the atmosphere
 /// changes with the theme — cheaply (no blur, one painter).
+/// ASTRAL COSMOS — Premium Celestial Glass · design tokens.
+///
+/// The central palette of the app's main look (the velvet-night skin).
+/// Every value is named after its *role*; screens must reference these
+/// (or the theme) instead of hand-picking colors.
+abstract final class AstralTokens {
+  // ── backgrounds ─────────────────────────────────────────────────
+  /// Midnight Navy — primary background of the whole app.
+  static const Color backgroundPrimary = Color(0xFF14122B);
+
+  /// Deep Space — very dark surfaces (nav bar, scrims).
+  static const Color deepSpace = Color(0xFF0D0B1E);
+
+  /// Cosmic Indigo — secondary background / glass tint base.
+  static const Color cosmicIndigo = Color(0xFF1A1E4A);
+
+  // ── nebulas ─────────────────────────────────────────────────────
+  /// Nebula Violet.
+  static const Color nebulaViolet = Color(0xFF2A1D4F);
+
+  /// Mystic Plum.
+  static const Color mysticPlum = Color(0xFF3D2A5A);
+
+  // ── accents ─────────────────────────────────────────────────────
+  /// Celestial Gold — warm accent (emphasis only, never dominant).
+  static const Color celestialGold = Color(0xFFE0B060);
+
+  /// Moon Silver — secondary lines and quiet details.
+  static const Color moonSilver = Color(0xFFC9D2E8);
+
+  // ── text ────────────────────────────────────────────────────────
+  /// Starlight White — headings on artwork.
+  static const Color starlightWhite = Color(0xFFEDEDF7);
+
+  /// Muted Lavender — secondary text.
+  static const Color mutedLavender = Color(0xFFA7A3C9);
+
+  // ── semantic ────────────────────────────────────────────────────
+  static const Color success = Color(0xFF4CD97B);
+  static const Color warning = celestialGold;
+  static const Color error = Color(0xFFFF7D9C);
+
+  // ── surfaces & lines (used by the glass card) ───────────────────
+  /// Glass surface tint (apply with alpha).
+  static const Color surfaceGlass = cosmicIndigo;
+
+  /// Elevated glass (hero cards).
+  static const Color surfaceElevated = Color(0xFF232A5E);
+
+  /// The subtle hairline of glass cards.
+  static const Color borderSubtle = Color(0x1AC9D2E8); // silver @ 10%
+}
+
 class AppTheme {
   AppTheme._();
 
@@ -391,7 +444,8 @@ ThemeData _base(
     dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: navBar,
-      indicatorColor: primary.withValues(alpha: 0.22),
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: AstralTokens.celestialGold.withValues(alpha: 0.16),
       height: 68,
       labelTextStyle: WidgetStatePropertyAll(
         TextStyle(

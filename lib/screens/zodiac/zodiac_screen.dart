@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_numbers.dart';
+import '../../domain/zodiac/zodiac_art.dart';
+import '../../domain/zodiac/zodiac_sign.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
@@ -60,122 +62,15 @@ class ZodiacScreen extends ConsumerWidget {
     }
 
     final theme = Theme.of(context);
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
     return SafeArea(
       bottom: false,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
         children: [
-          // ── Hero ────────────────────────────────────────────────
-          Center(
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: reduceMotion ? 1 : 0.7, end: 1),
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeOutBack,
-              builder: (context, v, child) =>
-                  Transform.scale(scale: v, child: child),
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: AssetImage(elementAsset(sign.elementId)),
-                    fit: BoxFit.cover,
-                    opacity: 0.85,
-                  ),
-                ),
-                child: Container(
-                  width: 220,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        theme.colorScheme.surface.withValues(alpha: 0.0),
-                        theme.colorScheme.surface.withValues(alpha: 0.55),
-                      ],
-                      radius: 0.9,
-                    ),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 132,
-                      height: 132,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                    colors: [
-                      AppTheme.violet.withValues(alpha: 0.28),
-                      AppTheme.gold.withValues(alpha: 0.20),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.violet.withValues(alpha: 0.25),
-                      blurRadius: 42,
-                    ),
-                  ],
-                ),
-                      child: Center(
-                        child: ZodiacSymbol(sign.symbol, fontSize: 72),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              sign.nameFa,
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: theme.colorScheme.onSurface,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Center(
-            child: Text(
-              sign.nameEn,
-              style: TextStyle(
-                fontSize: 12,
-                letterSpacing: 2,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                InfoChip(
-                  label: 'عنصر: ${sign.element}',
-                  icon: Icons.local_fire_department_outlined,
-                ),
-                InfoChip(
-                  label: 'سیارهٔ حاکم: ${sign.rulingPlanet}',
-                  icon: Icons.public,
-                ),
-                InfoChip(
-                  label: PersianNumbers.toPersian(sign.dateRangeFa),
-                  icon: Icons.cake_outlined,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
+          // ── هدرِ برج — بنرِ تمام‌عرض با صورتِ فلکی ─────────────────
+          _SignHeaderBanner(sign: sign),
+          const SizedBox(height: 18),
 
           _Section(
             title: 'ویژگی کلی',
@@ -395,6 +290,237 @@ class _BulletRow extends StatelessWidget {
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
                 fontFamily: 'Vazirmatn',
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// بنرِ تمام‌عرضِ برج: اثرِ هنریِ سینماییِ اختصاصیِ همان برج (مثل
+/// عقربِ فلزی روی سحابی) روی آسمانِ کیهانیِ ابری — نه دایره، کلِ
+/// عرض. بالا: نشانِ عنصرِ شخصیتی؛ پایین: نامِ برج و پیل‌های
+/// شیشه‌ایِ سیارهٔ حاکم و بازهٔ تاریخ.
+class _SignHeaderBanner extends StatelessWidget {
+  const _SignHeaderBanner({required this.sign});
+
+  final ZodiacSign sign;
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 19 / 10,
+      child: ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: Stack(
+        children: [
+          // اثرِ هنریِ سینماییِ برج — تمام‌عرض
+          Positioned.fill(
+            child: Image.asset(
+              zodiacArtAsset(sign.id),
+              fit: BoxFit.cover,
+              excludeFromSemantics: true,
+            ),
+          ),
+          // اسکریمِ ملایم برای خواناییِ متن
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.30, 1],
+                  colors: [
+                    Colors.black.withValues(alpha: 0.10),
+                    Colors.black.withValues(alpha: 0.55),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // «پشتِ سر» — نشانِ عنصرِ شخصیتی
+                Align(
+                  alignment: AlignmentDirectional.topStart,
+                  child: _ElementPill(sign: sign),
+                ),
+                const SizedBox(height: 30),
+                Text(
+                  sign.nameFa,
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    fontFamily: 'Vazirmatn',
+                    shadows: const [
+                      Shadow(color: Colors.black45, blurRadius: 16),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  sign.nameEn.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    letterSpacing: 3,
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _HeaderPill(
+                      icon: Icons.public,
+                      label: 'سیارهٔ حاکم: ${sign.rulingPlanet}',
+                    ),
+                    _HeaderPill(
+                      icon: Icons.cake_outlined,
+                      label: PersianNumbers.toPersian(sign.dateRangeFa),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      ),
+    );
+  }
+}
+
+/// نشانِ عنصرِ شخصیتی — شیشهٔ سفید؛ با لمس، هنرِ کاملِ عنصر باز می‌شود.
+class _ElementPill extends StatelessWidget {
+  const _ElementPill({required this.sign});
+
+  final ZodiacSign sign;
+
+  IconData get _icon => switch (sign.elementId) {
+        'fire' => Icons.local_fire_department_outlined,
+        'earth' => Icons.terrain,
+        'air' => Icons.toys,
+        _ => Icons.waves,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(100),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(100),
+        onTap: () => _showElementArt(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_icon, size: 14, color: Colors.white.withValues(alpha: 0.95)),
+              const SizedBox(width: 6),
+              Text(
+                'عنصرِ تو: ${sign.element}',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white.withValues(alpha: 0.95),
+                  fontFamily: 'Vazirmatn',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showElementArt(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              Image.asset(
+                elementAsset(sign.elementId),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: 320,
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.45, 1],
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.60),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 18,
+                left: 18,
+                bottom: 16,
+                child: Text(
+                  'عنصرِ شخصیتیِ تو: ${sign.element}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// پیلِ شیشه‌ایِ کوچکِ هدر (بدونِ قاب).
+class _HeaderPill extends StatelessWidget {
+  const _HeaderPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: Colors.white.withValues(alpha: 0.9)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.95),
+              fontFamily: 'Vazirmatn',
             ),
           ),
         ],

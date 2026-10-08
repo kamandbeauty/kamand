@@ -48,13 +48,13 @@ class _MainShellState extends ConsumerState<MainShell> {
           NavigationDestination(
             icon: Icon(Icons.home_outlined,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            selectedIcon: const Icon(Icons.home, color: AppTheme.violet),
+            selectedIcon: const Icon(Icons.home, color: AstralTokens.celestialGold),
             label: 'خانه',
           ),
           NavigationDestination(
             icon: Icon(Icons.auto_awesome_outlined,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            selectedIcon: const Icon(Icons.auto_awesome, color: AppTheme.violet),
+            selectedIcon: const Icon(Icons.auto_awesome, color: AstralTokens.celestialGold),
             label: 'برج من',
           ),
           NavigationDestination(
@@ -66,7 +66,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           NavigationDestination(
             icon: Icon(Icons.person_outline,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            selectedIcon: const Icon(Icons.person, color: AppTheme.violet),
+            selectedIcon: const Icon(Icons.person, color: AstralTokens.celestialGold),
             label: 'پروفایل',
           ),
         ],
