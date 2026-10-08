@@ -398,6 +398,7 @@ class _SignHeaderBanner extends StatelessWidget {
               ],
             ),
           ),
+          ),
         ],
       ),
         ),
