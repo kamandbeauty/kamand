@@ -6,6 +6,7 @@ import '../../data/content/fortunes_content.dart';
 import '../../providers/fortune_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
 import '../traditions/tradition_widgets.dart';
 
 /// خصوصیات متولدین ماه‌های سال (تقویم خورشیدی).
@@ -38,6 +39,7 @@ class MonthTraitsScreen extends ConsumerWidget {
                 Text('ماهِ تولد تو', style: _kLabel(theme)),
                 const SizedBox(height: 8),
                 TraditionEmblem(
+                  asset: MysticEmblems.months.asset,
                   accent: AppTheme.gold,
                   child: const Icon(Icons.calendar_month,
                       size: 36, color: AppTheme.gold),

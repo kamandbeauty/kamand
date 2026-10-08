@@ -8,6 +8,7 @@ import '../../domain/traditions/chinese_zodiac.dart';
 import '../../providers/tradition_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
 import 'tradition_widgets.dart';
 
 /// سنت چینی — animal, element, yin/yang + partner compatibility.
@@ -47,6 +48,7 @@ class ChineseTraditionScreen extends ConsumerWidget {
             child: Column(
               children: [
                 TraditionEmblem(
+                  asset: MysticEmblems.chinese.asset,
                   accent: AppTheme.rose,
                   child: Text(
                     animal['emoji']! as String,

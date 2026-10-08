@@ -10,14 +10,20 @@ class MysticBadge extends StatelessWidget {
     super.key,
     this.symbol,
     this.icon,
+    this.asset,
     required this.colors,
     this.size = 46,
     this.showStar = true,
   });
 
-  /// Emoji/glyph symbol (preferred). Rendered with the symbols fallback
-  /// font so glyphs like ✦ always resolve.
+  /// Emoji/glyph symbol — used as the fallback when no [asset] image
+  /// exists. Rendered with the symbols fallback font so glyphs like ✦
+  /// always resolve.
   final String? symbol;
+
+  /// Generated emblem artwork (assets/emblems/<id>.png). When the file
+  /// is missing at runtime the badge gracefully falls back to [symbol].
+  final String? asset;
 
   /// Material icon fallback when no symbol fits.
   final IconData? icon;
@@ -29,6 +35,21 @@ class MysticBadge extends StatelessWidget {
 
   /// Tiny gold ✦ accent at the top edge.
   final bool showStar;
+
+  Widget _glyph(bool isDark, double size) {
+    if (symbol != null) {
+      return Text(
+        symbol!,
+        style: TextStyle(
+          fontSize: size * 0.44,
+          height: 1.15,
+          color: isDark ? Colors.white : AppTheme.violetDeep,
+          fontFamilyFallback: const ['NotoSansSymbols'],
+        ),
+      );
+    }
+    return Icon(icon, size: size * 0.44, color: colors.first);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,17 +97,19 @@ class MysticBadge extends StatelessWidget {
             ),
           ),
           Center(
-            child: symbol != null
-                ? Text(
-                    symbol!,
-                    style: TextStyle(
-                      fontSize: size * 0.44,
-                      height: 1.15,
-                      color: isDark ? Colors.white : AppTheme.violetDeep,
-                      fontFamilyFallback: const ['NotoSansSymbols'],
+            child: asset != null
+                ? ClipOval(
+                    child: Image.asset(
+                      asset!,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _glyph(
+                        isDark, size,
+                      ),
                     ),
                   )
-                : Icon(icon, size: size * 0.44, color: primary),
+                : _glyph(isDark, size),
           ),
           if (showStar)
             Positioned(
@@ -118,8 +141,13 @@ class MysticSpec {
   final Color a;
   final Color b;
 
+  /// Generated emblem artwork for this module (may not exist yet for a
+  /// few modules — the badge falls back to the glyph automatically).
+  String get asset => 'assets/emblems/$id.png';
+
   MysticBadge badge({double size = 46, bool showStar = true}) => MysticBadge(
         symbol: symbol,
+        asset: asset,
         colors: [a, b],
         size: size,
         showStar: showStar,

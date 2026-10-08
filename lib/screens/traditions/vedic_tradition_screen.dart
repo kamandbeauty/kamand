@@ -7,6 +7,7 @@ import '../../data/content/traditions_content.dart';
 import '../../providers/tradition_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
 import 'tradition_widgets.dart';
 
 /// سنت ودیک — برج قمری (راشی) و تولدستاره (ناکشاترا).
@@ -42,6 +43,7 @@ class VedicTraditionScreen extends ConsumerWidget {
                     style: _kLabelStyle(theme)),
                 const SizedBox(height: 8),
                 TraditionEmblem(
+                  asset: MysticEmblems.vedic.asset,
                   accent: AppTheme.violet,
                   child: Text(
                     chart.rashi['symbol']! as String,

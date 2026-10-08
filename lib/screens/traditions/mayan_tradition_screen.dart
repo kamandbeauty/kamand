@@ -7,6 +7,7 @@ import '../../data/content/traditions_content.dart';
 import '../../providers/tradition_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
 import 'tradition_widgets.dart';
 
 /// تقویم مقدس مایا — تزولکین ۲۶۰روزه و امضای کیهانی تولد.
@@ -47,6 +48,7 @@ class MayanTraditionScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     TraditionEmblem(
+                      asset: MysticEmblems.maya.asset,
                       accent: const Color(0xFF4CD97B),
                       size: 66,
                       child: Text(

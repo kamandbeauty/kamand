@@ -8,6 +8,7 @@ import '../../domain/fortunes/fortune_engines.dart';
 import '../../providers/fortune_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
 import '../traditions/tradition_widgets.dart';
 
 /// فال جم‌اوراکل — سنگِ ماهِ تولد + فال سه‌سنگیِ امروز.
@@ -58,6 +59,7 @@ class _GemOracleScreenState extends ConsumerState<GemOracleScreen> {
                 Text('سنگِ ماهِ تولد تو', style: _kLabel(theme)),
                 const SizedBox(height: 8),
                 TraditionEmblem(
+                  asset: MysticEmblems.gem.asset,
                   accent: AppTheme.gold,
                   child: const Icon(Icons.diamond,
                       size: 36, color: AppTheme.gold),

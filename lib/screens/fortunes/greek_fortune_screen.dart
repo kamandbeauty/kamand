@@ -43,7 +43,7 @@ class GreekFortuneScreen extends ConsumerWidget {
                 Text('برج تو در آسمانِ یونان', style: _kLabel(theme)),
                 const SizedBox(height: 8),
                 TraditionEmblem(
-                  accent: AppTheme.sky,
+                                    accent: AppTheme.sky,
                   child: Text(
                     sign.symbol,
                     style: TextStyle(

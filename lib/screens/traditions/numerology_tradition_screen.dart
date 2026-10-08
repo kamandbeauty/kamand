@@ -8,6 +8,7 @@ import '../../domain/traditions/numerology.dart';
 import '../../providers/tradition_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
 import 'tradition_widgets.dart';
 
 /// فراشماره (عدد مسیر زندگی + سال شخصی) و حساب ابجد نام.
@@ -49,6 +50,7 @@ class NumerologyTraditionScreen extends ConsumerWidget {
                 const Text('عدد مسیر زندگی', style: _kLabelStyle),
                 const SizedBox(height: 6),
                 TraditionEmblem(
+                  asset: MysticEmblems.numerology.asset,
                   accent: AppTheme.sky,
                   child: Text(
                     PersianNumbers.toPersianNum(lifePath),

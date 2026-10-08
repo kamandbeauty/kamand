@@ -39,7 +39,7 @@ class AnimalFortuneScreen extends ConsumerWidget {
                     style: _kLabel(theme)),
                 const SizedBox(height: 10),
                 TraditionEmblem(
-                  accent: const Color(0xFF4CD97B),
+                                    accent: const Color(0xFF4CD97B),
                   size: 100,
                   child: Text(
                     animal['emoji']! as String,

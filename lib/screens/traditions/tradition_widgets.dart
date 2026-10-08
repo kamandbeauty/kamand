@@ -96,11 +96,16 @@ class TraditionEmblem extends StatelessWidget {
   const TraditionEmblem({
     super.key,
     required this.child,
+    this.asset,
     this.accent = AppTheme.violet,
     this.size = 86,
   });
 
   final Widget child;
+
+  /// Generated emblem artwork; [child] is the fallback when missing.
+  final String? asset;
+
   final Color accent;
   final double size;
 
@@ -145,7 +150,19 @@ class TraditionEmblem extends StatelessWidget {
               ),
             ),
           ),
-          Center(child: child),
+          Center(
+            child: asset != null
+                ? ClipOval(
+                    child: Image.asset(
+                      asset!,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => child,
+                    ),
+                  )
+                : child,
+          ),
           Positioned(
             top: size * 0.02,
             right: size * 0.10,

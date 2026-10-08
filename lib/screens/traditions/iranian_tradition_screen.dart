@@ -8,6 +8,7 @@ import '../../domain/traditions/manazil.dart';
 import '../../providers/tradition_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/mystic_badge.dart';
 import 'tradition_widgets.dart';
 
 /// سنت ایرانی-اسلامی — احکام نجوم و منازل ۲۸گانهٔ قمر.
@@ -45,6 +46,7 @@ class IranianTraditionScreen extends ConsumerWidget {
             child: Column(
               children: [
                 TraditionEmblem(
+                  asset: MysticEmblems.iranian.asset,
                   accent: AppTheme.gold,
                   child: const Icon(Icons.nightlight_round,
                       size: 38, color: AppTheme.gold),

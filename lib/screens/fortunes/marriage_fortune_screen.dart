@@ -43,7 +43,7 @@ class MarriageFortuneScreen extends ConsumerWidget {
                 Text('تو در پیمانِ زندگی', style: _kLabel(theme)),
                 const SizedBox(height: 8),
                 TraditionEmblem(
-                  accent: AppTheme.rose,
+                                    accent: AppTheme.rose,
                   child: Text(
                     sign.symbol,
                     style: TextStyle(
