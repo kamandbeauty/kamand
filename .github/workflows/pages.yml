@@ -3,6 +3,10 @@ name: Privacy page (GitHub Pages)
 # Deploys docs/ (the online privacy policy) to GitHub Pages.
 # Runs on the session branch and on main so the site is live now and
 # stays live after the branch merges.
+#
+# ONE-TIME MANUAL STEP (repo admin, ~30s):
+#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# After that, every push of docs/ publishes automatically.
 on:
   push:
     branches:
@@ -31,16 +35,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure Pages (enables the site on first run)
+      - name: Configure Pages
+        id: config
+        continue-on-error: true
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload docs
+        if: steps.config.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
       - name: Deploy
+        if: steps.config.outcome == 'success'
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Pages not enabled yet — one-time manual step
+        if: steps.config.outcome == 'failure'
+        run: |
+          echo "::error::GitHub Pages is not enabled for this repository."
+          echo "One-time manual step (repo admin):"
+          echo "  Settings → Pages → Build and deployment → Source: GitHub Actions"
+          echo "Then re-run this workflow — the privacy page will go live at"
+          echo "  https://kamandbeauty.github.io/kamand/"
