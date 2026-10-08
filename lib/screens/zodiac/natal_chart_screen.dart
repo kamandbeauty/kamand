@@ -673,7 +673,6 @@ class _BigThreeRow extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: color.withValues(alpha: 0.12),
-            border: Border.all(color: color.withValues(alpha: 0.45)),
           ),
           child: Center(child: ZodiacSymbol(symbol, fontSize: 19)),
         ),
@@ -709,7 +708,6 @@ class _BigThreeRow extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: color.withValues(alpha: 0.10),
-            border: Border.all(color: color.withValues(alpha: 0.35)),
           ),
           child: Text(
             '${PersianNumbers.toPersianNum((degree % 30).round())}°',

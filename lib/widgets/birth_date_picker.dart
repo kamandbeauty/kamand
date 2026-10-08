@@ -131,9 +131,6 @@ class _Wheel extends StatelessWidget {
                 ? AppTheme.darkCardHigh
                 : const Color(0xFFEEEDF9),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
-            ),
           ),
           child: ListWheelScrollView.useDelegate(
             itemExtent: 42,

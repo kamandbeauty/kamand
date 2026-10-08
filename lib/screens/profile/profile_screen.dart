@@ -66,9 +66,6 @@ class ProfileScreen extends ConsumerWidget {
                         AppTheme.gold.withValues(alpha: 0.22),
                       ],
                     ),
-                    border: Border.all(
-                      color: AppTheme.gold.withValues(alpha: 0.4),
-                    ),
                   ),
                   child: Center(
                     child: ZodiacSymbol(sign?.symbol ?? '?', fontSize: 44),

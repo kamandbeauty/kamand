@@ -161,9 +161,6 @@ class _HomeContent extends ConsumerWidget {
                           AppTheme.gold.withValues(alpha: 0.22),
                         ],
                       ),
-                      border: Border.all(
-                        color: AppTheme.gold.withValues(alpha: 0.4),
-                      ),
                     ),
                     child: Center(
                       child: ZodiacSymbol(sign.symbol, fontSize: 44),
@@ -448,7 +445,7 @@ class _HomeContent extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
+              child: FilledButton.tonal.icon(
                 onPressed: () => _openWeekly(context),
                 icon: const Icon(Icons.date_range, size: 17),
                 label: const Text('طالع هفتگی'),
@@ -456,7 +453,7 @@ class _HomeContent extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: OutlinedButton.icon(
+              child: FilledButton.tonal.icon(
                 onPressed: () => _openMonthly(context),
                 icon: const Icon(Icons.calendar_month_outlined, size: 17),
                 label: const Text('طالع ماهانه'),
@@ -839,9 +836,6 @@ class _ZodiacTodayStrip extends ConsumerWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppTheme.gold.withValues(alpha: 0.12),
-                        border: Border.all(
-                          color: AppTheme.gold.withValues(alpha: 0.4),
-                        ),
                       ),
                       child: Center(
                         child: ZodiacSymbol(sign?.symbol ?? '', fontSize: 22),

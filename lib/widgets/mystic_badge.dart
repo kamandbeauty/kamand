@@ -70,7 +70,6 @@ class MysticBadge extends StatelessWidget {
             secondary.withValues(alpha: 0.10),
           ],
         ),
-        border: Border.all(color: primary.withValues(alpha: 0.55), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: primary.withValues(alpha: 0.26),
@@ -81,21 +80,6 @@ class MysticBadge extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Inner hairline ring — the "glass" depth.
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Container(
-                margin: EdgeInsets.all(size * 0.07),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.18),
-                    width: 0.8,
-                  ),
-                ),
-              ),
-            ),
-          ),
           Center(
             child: asset != null
                 ? ClipOval(

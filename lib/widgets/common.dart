@@ -39,10 +39,6 @@ class SectionHeader extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: (iconColor ?? theme.colorScheme.primary)
                     .withValues(alpha: 0.14),
-                border: Border.all(
-                  color: (iconColor ?? theme.colorScheme.primary)
-                      .withValues(alpha: 0.45),
-                ),
               ),
               child: Icon(
                 icon,
@@ -173,9 +169,6 @@ class InfoChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.28),
-        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -292,7 +285,7 @@ class ErrorState extends StatelessWidget {
           ),
           if (onRetry != null) ...[
             const SizedBox(height: 16),
-            OutlinedButton.icon(
+            FilledButton.tonal.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 17),
               label: const Text('تلاش دوباره'),

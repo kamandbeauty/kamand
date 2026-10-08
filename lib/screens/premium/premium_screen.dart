@@ -274,9 +274,6 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                             ),
                             isDense: true,
                             errorText: _promoError,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
                           ),
                           onSubmitted: (_) => _redeemPromo(),
                         ),

@@ -202,7 +202,6 @@ class _SkyRow extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: color.withValues(alpha: 0.14),
-            border: Border.all(color: color.withValues(alpha: 0.45)),
           ),
           child: Icon(icon, size: 16, color: color),
         ),

@@ -44,12 +44,16 @@ class _SkinTile extends StatelessWidget {
                   end: Alignment.centerLeft,
                   colors: swatch,
                 ),
-                border: Border.all(
-                  color: selected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.12),
-                  width: selected ? 2 : 1,
-                ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: theme.colorScheme.primary
+                              .withValues(alpha: 0.45),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
               ),
               child: selected
                   ? const Icon(Icons.check_rounded,

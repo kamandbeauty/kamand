@@ -199,10 +199,6 @@ class _CardFrame extends StatelessWidget {
             AppTheme.gold.withValues(alpha: 0.10),
           ],
         ),
-        border: Border.all(
-          color: AppTheme.gold.withValues(alpha: 0.5),
-          width: 1.2,
-        ),
       ),
       child: Center(child: child),
     );

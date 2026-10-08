@@ -208,7 +208,6 @@ class _SignBadge extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppTheme.violet.withValues(alpha: 0.10),
-            border: Border.all(color: AppTheme.gold.withValues(alpha: 0.35)),
           ),
           child: Center(child: ZodiacSymbol(symbol, fontSize: 32)),
         ),

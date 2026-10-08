@@ -451,7 +451,7 @@ ThemeData _base(
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: primary, width: 2),
+        borderSide: BorderSide.none,
       ),
       hintStyle: TextStyle(color: muted, fontFamily: 'Vazirmatn'),
       labelStyle: TextStyle(color: muted, fontFamily: 'Vazirmatn'),

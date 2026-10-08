@@ -841,7 +841,7 @@ class _NotificationStep extends StatelessWidget {
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
+            child: FilledButton.tonal(
               onPressed: onSkip,
               child: const Text('فعلاً نه'),
             ),

@@ -114,8 +114,6 @@ class ZodiacScreen extends ConsumerWidget {
                       AppTheme.gold.withValues(alpha: 0.20),
                     ],
                   ),
-                  border:
-                      Border.all(color: AppTheme.gold.withValues(alpha: 0.45)),
                   boxShadow: [
                     BoxShadow(
                       color: AppTheme.violet.withValues(alpha: 0.25),

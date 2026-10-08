@@ -150,9 +150,6 @@ class _Field extends StatelessWidget {
         labelText: label,
         prefixIcon: Icon(icon, size: 20),
         isDense: true,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
       ),
     );
   }

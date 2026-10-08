@@ -73,7 +73,6 @@ class NatureChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: c.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: c.withValues(alpha: 0.45)),
       ),
       child: Text(
         label,
@@ -111,7 +110,6 @@ class TraditionEmblem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: size,
       height: size,
@@ -125,7 +123,6 @@ class TraditionEmblem extends StatelessWidget {
             AppTheme.gold.withValues(alpha: 0.14),
           ],
         ),
-        border: Border.all(color: AppTheme.gold.withValues(alpha: 0.45), width: 1.3),
         boxShadow: [
           BoxShadow(
             color: accent.withValues(alpha: 0.30),
@@ -136,20 +133,6 @@ class TraditionEmblem extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Container(
-                margin: EdgeInsets.all(size * 0.07),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.2),
-                    width: 0.8,
-                  ),
-                ),
-              ),
-            ),
-          ),
           Center(
             child: asset != null
                 ? ClipOval(

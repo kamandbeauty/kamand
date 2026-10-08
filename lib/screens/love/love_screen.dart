@@ -151,9 +151,6 @@ class _CompatibilityTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.25),
-                  ),
                 ),
                 child: Center(
                   child: ZodiacSymbol(result.signB.symbol, fontSize: 24),

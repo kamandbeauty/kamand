@@ -265,7 +265,6 @@ class _AspectDeepDive extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppTheme.gold.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.gold.withValues(alpha: 0.3)),
             ),
             child: Text(
               '• توصیهٔ ویژهٔ این رابطه: ${a['advice']! as String}',
@@ -430,7 +429,6 @@ class _BigSign extends StatelessWidget {
                 AppTheme.rose.withValues(alpha: 0.16),
               ],
             ),
-            border: Border.all(color: AppTheme.gold.withValues(alpha: 0.4)),
           ),
           child: Center(child: ZodiacSymbol(symbol, fontSize: 40)),
         ),
