@@ -445,7 +445,7 @@ class _HomeContent extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: FilledButton.tonal.icon(
+              child: FilledButton.tonalIcon(
                 onPressed: () => _openWeekly(context),
                 icon: const Icon(Icons.date_range, size: 17),
                 label: const Text('طالع هفتگی'),
@@ -453,7 +453,7 @@ class _HomeContent extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: FilledButton.tonal.icon(
+              child: FilledButton.tonalIcon(
                 onPressed: () => _openMonthly(context),
                 icon: const Icon(Icons.calendar_month_outlined, size: 17),
                 label: const Text('طالع ماهانه'),

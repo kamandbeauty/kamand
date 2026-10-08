@@ -285,7 +285,7 @@ class ErrorState extends StatelessWidget {
           ),
           if (onRetry != null) ...[
             const SizedBox(height: 16),
-            FilledButton.tonal.icon(
+            FilledButton.tonalIcon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 17),
               label: const Text('تلاش دوباره'),

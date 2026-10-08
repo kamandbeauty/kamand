@@ -374,7 +374,7 @@ class _RewardedUnlockCard extends ConsumerWidget {
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            child: FilledButton.tonal.icon(
+            child: FilledButton.tonalIcon(
               onPressed: () async {
                 analytics.logEvent(AnalyticsEvent.rewardedAdStarted.id);
                 await ref
