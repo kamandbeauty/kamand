@@ -16,6 +16,7 @@ from natal_data import (  # noqa: E402
     ASCENDANT_IN_SIGN, ASPECT_TEXTS, CHART_INTRO, CITY_UNKNOWN_NOTE,
     DOMINANT_ELEMENT, HOUSE_TITLES, METHOD_NOTE, NATAL_MOON_IN_SIGN,
     NO_TIME_NOTE, PLANET_IN_SIGN, RETROGRADE_NOTE,
+    TRANSIT_THEMES, TRANSITS_INTRO, TRANSITS_METHOD_NOTE,
 )
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,7 +30,11 @@ ASPECT_ORDER = ['conjunction', 'sextile', 'square', 'trine', 'opposition']
 def validate():
     assert sorted(ASCENDANT_IN_SIGN) == sorted(SIGNS)
     assert sorted(NATAL_MOON_IN_SIGN) == sorted(SIGNS)
-    assert sorted(PLANET_IN_SIGN) == ['jupiter', 'mars', 'mercury', 'saturn', 'venus']
+    assert sorted(PLANET_IN_SIGN) == ['jupiter', 'mars', 'mercury',
+        'neptune', 'saturn', 'uranus', 'venus']
+    assert sorted(TRANSIT_THEMES) == sorted(
+        ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter',
+         'saturn', 'uranus', 'neptune'])
     for planet, signs in PLANET_IN_SIGN.items():
         assert sorted(signs) == sorted(SIGNS), planet
     assert sorted(ASPECT_TEXTS) == sorted(ASPECT_ORDER)
@@ -142,6 +147,14 @@ class NatalContent {{
   static const String cityUnknownNote = {dart_string(CITY_UNKNOWN_NOTE)};
 
   static const String retrogradeNote = {dart_string(RETROGRADE_NOTE)};
+
+  /// One-line essence of each transiting body.
+  static const Map<String, String> transitThemes =
+{map_block(TRANSIT_THEMES, '      ')};
+
+  static const String transitsIntro = {dart_string(TRANSITS_INTRO)};
+
+  static const String transitsMethodNote = {dart_string(TRANSITS_METHOD_NOTE)};
 }}
 """
 
@@ -160,6 +173,9 @@ def main():
         "noTimeNote": NO_TIME_NOTE,
         "cityUnknownNote": CITY_UNKNOWN_NOTE,
         "retrogradeNote": RETROGRADE_NOTE,
+        "transitThemes": TRANSIT_THEMES,
+        "transitsIntro": TRANSITS_INTRO,
+        "transitsMethodNote": TRANSITS_METHOD_NOTE,
     }
     json_path = os.path.join(ROOT, "content", "natal_interpretations.json")
     with open(json_path, "w", encoding="utf-8") as f:
