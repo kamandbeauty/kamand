@@ -640,13 +640,14 @@ class _UpcomingDaysStrip extends ConsumerWidget {
           iconColor: AppTheme.rose,
         ),
         async.when(
-          data: (days) => Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < days.length; i++) ...[
-                if (i > 0) const SizedBox(width: 10),
-                Expanded(
-                  child: GlassCard(
+          data: (days) => IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < days.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 10),
+                  Expanded(
+                    child: GlassCard(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 12),
                     onTap: () => Navigator.of(context).push(
@@ -689,9 +690,10 @@ class _UpcomingDaysStrip extends ConsumerWidget {
                       ],
                     ),
                   ),
-                ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
           loading: () => const LoadingState(height: 90),
           error: (e, _) => const SizedBox.shrink(),

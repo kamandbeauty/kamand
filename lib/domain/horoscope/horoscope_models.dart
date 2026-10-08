@@ -161,7 +161,7 @@ String shortScorePhrase(int score) {
 String poeticCategoryPhrase(String category, int score) {
   const bands = [85, 70, 55, 40];
   var b = bands.indexWhere((t) => score >= t);
-  if (b == -1) b = 3;
+  if (b == -1) b = bands.length; // below the lowest band
   const labels = <String, List<String>>{
     'love': ['درخشان و گرم', 'شکوفا', 'آرام و صادق', 'محتاط، نه بسته', 'روزِ مهربانی با خود'],
     'career': ['در صعود', 'پرانرژی', 'رویِ ریل', 'قدم‌به‌قدم', 'روزِ جمع‌کردنِ میز'],
