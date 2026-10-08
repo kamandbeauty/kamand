@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -309,11 +311,16 @@ class _SignHeaderBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 19 / 10,
-      child: ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: Stack(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // ارتفاعِ حداقلِ صحنه؛ اگر محتوا بلندتر باشد، بنر رشد می‌کند
+        // (هرگز سرریز نمی‌کند).
+        final minH = math.max(constraints.maxWidth * 10 / 19, 200.0);
+        return ConstrainedBox(
+        constraints: BoxConstraints(minHeight: minH),
+        child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: Stack(
         children: [
           // اثرِ هنریِ سینماییِ برج — تمام‌عرض
           Positioned.fill(
@@ -339,7 +346,8 @@ class _SignHeaderBanner extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
+          Positioned.fill(
+            child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +357,7 @@ class _SignHeaderBanner extends StatelessWidget {
                   alignment: AlignmentDirectional.topStart,
                   child: _ElementPill(sign: sign),
                 ),
-                const SizedBox(height: 30),
+                const Spacer(),
                 Text(
                   sign.nameFa,
                   style: TextStyle(
@@ -392,7 +400,10 @@ class _SignHeaderBanner extends StatelessWidget {
           ),
         ],
       ),
+        ),
       ),
+      );
+      },
     );
   }
 }
