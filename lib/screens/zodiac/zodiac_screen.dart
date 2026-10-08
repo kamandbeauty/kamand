@@ -346,8 +346,9 @@ class _SignHeaderBanner extends StatelessWidget {
               ),
             ),
           ),
-          Positioned.fill(
-            child: Padding(
+          // محتوا (غیر-Positioned تا Stack را سایز دهد؛ اسپنسرش
+          // تا ارتفاعِ اجباریِ ConstrainedBox باز می‌شود)
+          Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +398,6 @@ class _SignHeaderBanner extends StatelessWidget {
                 ),
               ],
             ),
-          ),
           ),
         ],
       ),
