@@ -3,6 +3,6 @@ class AppInfo {
   AppInfo._();
 
   static const String appName = 'طالع بین';
-  static const String version = '1.8.2';
+  static const String version = '1.8.3';
   static const int buildNumber = 13;
 }

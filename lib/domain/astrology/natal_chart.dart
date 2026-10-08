@@ -22,8 +22,9 @@ class NatalChart {
   /// Major aspects found between the positions.
   final List<Aspect> aspects;
 
-  /// The rising sign + degree.
-  final Ascendant ascendant;
+  /// The rising sign + degree — null when the birth time or place is
+  /// unknown (an ascendant needs both).
+  final Ascendant? ascendant;
 }
 
 /// Position of one body on the ecliptic (degrees, 0–360).
@@ -75,13 +76,22 @@ class Aspect {
   final double orbDegrees;
 }
 
-/// The ascendant (rising sign) — needs an accurate birth time.
+/// The ascendant (rising sign) — needs an accurate birth time + place.
 class Ascendant {
   const Ascendant({
     required this.signId,
-    required this.degreeInSign,
+    required this.longitudeDegrees,
+    required this.midheavenDegrees,
   });
 
   final String signId;
-  final double degreeInSign;
+
+  /// Full ecliptic longitude of the rising point (0–360).
+  final double longitudeDegrees;
+
+  /// Midheaven (MC) ecliptic longitude — the culminating point.
+  final double midheavenDegrees;
+
+  /// Degree within the rising sign (0–30).
+  double get degreeInSign => longitudeDegrees % 30.0;
 }

@@ -167,9 +167,9 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                 ),
                 _FeatureRow(
                   icon: Icons.brightness_3,
-                  title: 'چارت تولد',
-                  detail: 'نقشهٔ آسمانِ لحظهٔ تولد (به‌زودی)',
-                  soon: true,
+                  title: 'نقشهٔ تولد',
+                  detail:
+                      'جایگاهِ واقعیِ سیاره‌ها، طالعِ دقیق، خانه‌ها و زاویه‌های نقشه — محاسبهٔ آفلاین روی گوشیِ خودت',
                 ),
                 _FeatureRow(
                   icon: Icons.insights_outlined,

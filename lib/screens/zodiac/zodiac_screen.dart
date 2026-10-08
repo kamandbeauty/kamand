@@ -8,6 +8,7 @@ import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
 import '../premium/premium_screen.dart';
+import 'natal_chart_screen.dart';
 
 /// Asset path for a sign's element artwork.
 String elementAsset(String elementId) {
@@ -273,12 +274,50 @@ class ZodiacScreen extends ConsumerWidget {
           ),
           _Section(
             title: 'چارت تولد',
-            child: LockedSection(
-              title: 'چارت تولدِ تو',
-              hint:
-                  'موقعیت سیارات، خانه‌ها و طالعِ دقیقِ تو — به‌زودی در نسخهٔ ویژه.',
-              onOpenPremium: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PremiumScreen()),
+            child: GlassCard(
+              highlight: true,
+              accent: AppTheme.violet,
+              padding: const EdgeInsets.all(14),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const NatalChartScreen()),
+              ),
+              child: Row(
+                children: [
+                  ZodiacSymbol(sign.symbol,
+                      fontSize: 34, color: AppTheme.violet),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'نقشهٔ تولدِ تو',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onSurface,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'جایگاهِ واقعیِ سیاره‌ها، طالعِ دقیق و خانه‌ها',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.55),
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 14,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                  ),
+                ],
               ),
             ),
           ),
