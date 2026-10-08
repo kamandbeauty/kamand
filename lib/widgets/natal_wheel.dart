@@ -186,7 +186,7 @@ class _NatalWheelPainter extends CustomPainter {
     // ── House cusps (dotted) when the time is known ─────────────────
     if (chart.ascendant != null) {
       for (final house in chart.houses) {
-        for (var t = 0.0; t < 1. t += 0.12) {
+        for (var t = 0.0; t < 1.0; t += 0.12) {
           final p1 = _point(c, rAspect + (rSignIn - rAspect) * t,
               house.cuspDegrees);
           final p2 = _point(
