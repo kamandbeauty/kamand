@@ -227,16 +227,16 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="taalebin-v1.13.0"
+          tag="taalebin-v1.12.0"
 
           # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
           rm -rf "$dist"; mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.13.0-new-phones-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.13.0-old-phones-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.13.0-emulator-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.13.0-universal.apk"
-          cp "$aab"                                 "$dist/taalebin-v1.13.0.aab"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.12.0-new-phones-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.12.0-old-phones-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.12.0-emulator-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.12.0-universal.apk"
+          cp "$aab"                                 "$dist/taalebin-v1.12.0.aab"
 
           # gh calls get 3 attempts — release creation occasionally hits a
           # transient 5xx / secondary rate limit on busy days.
@@ -256,22 +256,24 @@ jobs:
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in taalebin-v1.13.0-* taalebin-v1.13.0.aab; do
+            for f in taalebin-v1.12.0-* taalebin-v1.12.0.aab; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
 
-          notes="نسخهٔ ۱.۱۳.۰ «طالع بین» — نشانِ پرمیوم، تبلیغات هوشمند و جایزهٔ تبلیغ 🌟
+          notes="نسخهٔ ۱.۱۲.۰ «طالع بین» — ASTRAL COSMOS: چهرهٔ پریمیومِ کیهانیِ کلِ برنامه ✨🌌
 
-          ✨ نشانِ همیشگیِ پرمیوم: از این نسخه، تمامِ قابلیت‌های ویژه — چه قبل از خریدِ اشتراک و چه بعد از آن — یک نشانِ طلاییِ «پرمیوم» کنارِ خود دارند؛ تا همیشه بدانید کدام بخش‌ها قابلیتِ ویژه‌اند و می‌توانید از آن‌ها استفاده کنید.
+          🦂 هر ۱۲ برج، یک اثرِ هنریِ سینماییِ اختصاصی گرفت: برای عقرب، عقربی فلزی و باشکوه با پوستهٔ مشکیِ نقره‌کاری‌شده، دُمِ خمیده و نیشِ درخشان، هالهٔ طلایی، مهِ آبیِ عنصرِ آب و صورتِ فلکیِ عقرب در پس‌زمینه — و همین کیفیت برای قوچِ شاخ‌طلایی، شیرِ یال‌نور، ثور، دوقلوها، خرچنگ، سنبله، ترازو، کمان‌دارِ سنتوری، دیوِ دریایی و… همه با همان زبانِ بصریِ واحد.
 
-          🎬 تبلیغِ جایزه‌ایِ تمام‌صفحه: «طالعِ کاملِ امروز» و «گزارشِ پیشرفتهٔ ماه» حالا بدونِ خرید و فقط با تماشای یک تبلیغِ کامل (چند ثانیه) باز می‌شوند — اختیاری و همیشه در دسترس.
+          🌌 صفحهٔ «برجِ من» از نو چیده شد: هدرِ تمام‌عرضِ هنری (نه دایره، نه کارتِ کوچک) — اثرِ اختصاصیِ برجِ شما، نشانِ عنصرِ شخصیتی در بالای سر (لمسش کنید تا هنرِ عنصر باز شود)، نامِ فارسی و لاتین، و پیل‌های شیشه‌ایِ سیارهٔ حاکم و بازهٔ تاریخ.
 
-          📺 بنرهای تبلیغاتی: چند بنرِ افقیِ ظریف در جاهای مناسبِ برنامه (گیفِ لینک‌دار با برچسبِ شفافِ «تبلیغ»). با خریدِ پرمیوم، همهٔ تبلیغات به‌کلی حذف می‌شوند.
+          💎 سیستمِ طراحیِ «ASTRAL COSMOS — Premium Celestial Glass» در کلِ برنامه فعال شد — تمِ اصلی و پیش‌فرض:
+          • پالتِ مرکزیِ توکن‌شده: سرمه‌ایِ نیمه‌شب، نیلیِ کیهانی، بنفشِ سحابی، ارغوانیِ عرفانی، طلاییِ آسمانی (فقط برای تأکید)، نقرهٔ ماه
+          • کارت‌های شیشه‌ایِ چندلایه: تینتِ نیلیِ شفاف + برقِ سفیدِ نرم + خطِ موییِ نقره‌ای + هالهٔ رنگی — با سلسله‌مراتبِ بصری
+          • ناوبریِ پایین: شیشهٔ تیره، آیتمِ انتخاب‌شده با طلاییِ آسمانی
+          • پس‌زمینهٔ آسمانِ نیمه‌شب (اثرِ هنریِ اختصاصی) پشتِ همهٔ صفحه‌ها
 
-          🦂 و دو اثرِ هنریِ سینماییِ تکمیلی: «دلو» (ساقیِ آسمانی که رودی از غبارِ ستاره می‌ریزد) و «حوت» (دو ماهیِ آسمانی در گردشِ جاودانه) — حالا هر ۱۲ برج اثرِ اختصاصیِ خودشان را با همان زبانِ بصریِ واحد دارند.
-
-          💎 و همهٔ امکاناتِ نسخهٔ ۱.۱۲.۰: سیستمِ طراحیِ ASTRAL COSMOS در کلِ برنامه، هدرِ هنریِ تمام‌عرضِ «برجِ من»، کارت‌های شیشه‌ایِ چندلایه و ناوبریِ طلایی.
+          🌟 همهٔ امکانات سرِ جایشان هستند: طالعِ روزانه/هفتگی/ماهانه، نقشهٔ تولد با موتورِ نجومیِ واقعی، ترانزیت‌های امروز، سازگاریِ عاطفی، ۱۲ سنتِ جهان، فال‌ها و پرمیوم.
 
           📱 کدام فایل را دانلود کنم؟
           • گوشیِ نسبتاً جدید (اکثر گوشی‌های چند سال اخیر) → فایل «گوشی‌های جدید»
@@ -280,11 +282,11 @@ jobs:
 
           | فایل | مخصوص |
           |---|---|
-          | taalebin-v1.13.0-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
-          | taalebin-v1.13.0-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
-          | taalebin-v1.13.0-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید (فقط کامپیوتر) |
-          | taalebin-v1.13.0-universal.apk | 🌍 همهٔ گوشی‌ها (حجم بیشتر) |
-          | taalebin-v1.13.0.aab | 🏪 فقط Google Play |
+          | taalebin-v1.12.0-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
+          | taalebin-v1.12.0-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
+          | taalebin-v1.12.0-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید (فقط کامپیوتر) |
+          | taalebin-v1.12.0-universal.apk | 🌍 همهٔ گوشی‌ها (حجم بیشتر) |
+          | taalebin-v1.12.0.aab | 🏪 فقط Google Play |
           | CHECKSUMS.txt | 🔐 چک‌سام فایل‌ها |
 
           حداقل سیستم لازم: اندروید ۶.۰ (به بالا).
@@ -304,7 +306,7 @@ jobs:
             retry gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             retry gh release create "$tag" "$dist"/* \
-              --title "طالع بین — نسخهٔ ۱.۱۳.۰" \
+              --title "طالع بین — نسخهٔ ۱.۱۲.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
@@ -321,9 +323,9 @@ jobs:
                 -f label="$label" >/dev/null || true
             fi
           }
-          label_asset "taalebin-v1.13.0-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
-          label_asset "taalebin-v1.13.0-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
-          label_asset "taalebin-v1.13.0-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
-          label_asset "taalebin-v1.13.0-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
-          label_asset "taalebin-v1.13.0.aab"                        "فقط Google Play — نصب مستقیم ندارد"
+          label_asset "taalebin-v1.12.0-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
+          label_asset "taalebin-v1.12.0-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
+          label_asset "taalebin-v1.12.0-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
+          label_asset "taalebin-v1.12.0-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
+          label_asset "taalebin-v1.12.0.aab"                        "فقط Google Play — نصب مستقیم ندارد"
           label_asset "CHECKSUMS.txt"                               "چک‌سام فایل‌ها (برای اطمینان از دانلود سالم)"

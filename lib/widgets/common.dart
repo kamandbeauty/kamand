@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/persian_numbers.dart';
 import 'glass_card.dart';
-import 'premium_badge.dart';
 
 /// Section header used across screens.
 class SectionHeader extends StatelessWidget {
@@ -375,22 +374,14 @@ class LockedSection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.onSurface,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const PremiumBadge(),
-                  ],
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
+                    fontFamily: 'Vazirmatn',
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(

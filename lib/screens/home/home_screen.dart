@@ -14,7 +14,6 @@ import '../../domain/zodiac/zodiac_sign.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
-import '../../widgets/ad_banner.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/mystic_badge.dart';
 import '../settings/settings_screen.dart';
@@ -335,11 +334,6 @@ class _HomeContent extends ConsumerWidget {
 
         // ── آسمانِ امروزِ برج‌ها (نوارِ ۱۲ برج، مثل طرح مرجع) ─────────
         const _ZodiacTodayStrip(),
-
-        const SizedBox(height: 20),
-
-        // ── تبلیغ — با پرمیوم حذف می‌شود ────────────────────────────
-        const AdBanner(slot: 0),
 
         const SizedBox(height: 20),
 

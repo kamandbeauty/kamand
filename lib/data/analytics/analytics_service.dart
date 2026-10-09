@@ -18,7 +18,6 @@ enum AnalyticsEvent {
   partnerCreated('partner_created'),
   premiumScreenOpened('premium_screen_opened'),
   rewardedAdStarted('rewarded_ad_started'),
-  rewardedAdCompleted('rewarded_ad_completed'),
   settingsChanged('settings_changed'),
   dailyShared('daily_shared');
 

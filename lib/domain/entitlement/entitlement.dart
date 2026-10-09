@@ -49,15 +49,13 @@ class Entitlement {
     this.plan,
     this.validUntil,
     this.rewardedUnlockDay,
-    this.rewardedUnlockMonth,
   });
 
   const Entitlement.none()
       : source = EntitlementSource.none,
         plan = null,
         validUntil = null,
-        rewardedUnlockDay = null,
-        rewardedUnlockMonth = null;
+        rewardedUnlockDay = null;
 
   final EntitlementSource source;
   final PremiumPlan? plan;
@@ -68,9 +66,6 @@ class Entitlement {
   /// Day key ("1405-07-14") for which a rewarded ad unlocked full daily.
   final String? rewardedUnlockDay;
 
-  /// Month key ("1405-07") for which a rewarded ad unlocked the monthly.
-  final String? rewardedUnlockMonth;
-
   bool get hasPremium =>
       plan == PremiumPlan.lifetime ||
       (validUntil != null && validUntil!.isAfter(DateTime.now()));
@@ -78,8 +73,4 @@ class Entitlement {
   /// Full daily horoscope unlocked for the given day?
   bool unlocksDailyFor(String dayKey) =>
       hasPremium || rewardedUnlockDay == dayKey;
-
-  /// Advanced monthly report unlocked for the given month?
-  bool unlocksMonthFor(String monthKey) =>
-      hasPremium || rewardedUnlockMonth == monthKey;
 }

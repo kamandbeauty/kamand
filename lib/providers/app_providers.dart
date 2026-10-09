@@ -268,10 +268,6 @@ class EntitlementNotifier extends StateNotifier<Entitlement> {
     state = await _service.earnRewardedUnlock(dayKey);
   }
 
-  Future<void> earnRewardedMonthlyUnlock(String monthKey) async {
-    state = await _service.earnRewardedMonthlyUnlock(monthKey);
-  }
-
   Future<void> reset() async {
     await _service.reset();
     state = const Entitlement.none();

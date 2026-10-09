@@ -82,7 +82,6 @@ class EntitlementService {
       plan: promo.plan,
       validUntil: null, // lifetime campaign
       rewardedUnlockDay: _current.rewardedUnlockDay,
-      rewardedUnlockMonth: _current.rewardedUnlockMonth,
     );
     await _persist();
     return _current;
@@ -94,22 +93,6 @@ class EntitlementService {
     _current = Entitlement(
       source: EntitlementSource.rewardedAd,
       rewardedUnlockDay: dayKey,
-      rewardedUnlockMonth: _current.rewardedUnlockMonth,
-      plan: _current.plan,
-      validUntil: _current.validUntil,
-    );
-    await _persist();
-    return _current;
-  }
-
-  /// Rewarded unlock: advanced monthly report for [monthKey] only —
-  /// one of the "simple" premium features opened by a rewarded ad.
-  Future<Entitlement> earnRewardedMonthlyUnlock(String monthKey) async {
-    if (!await _ads.isAvailable || !await _ads.show()) return _current;
-    _current = Entitlement(
-      source: EntitlementSource.rewardedAd,
-      rewardedUnlockMonth: monthKey,
-      rewardedUnlockDay: _current.rewardedUnlockDay,
       plan: _current.plan,
       validUntil: _current.validUntil,
     );

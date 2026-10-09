@@ -7,7 +7,6 @@ import '../../domain/compatibility/compatibility_engine.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
-import '../../widgets/premium_badge.dart';
 import '../premium/premium_screen.dart';
 
 /// جزئیات رابطه با یک برج (product spec §18).
@@ -150,8 +149,6 @@ class CompatibilityDetailScreen extends ConsumerWidget {
                           fontFamily: 'Vazirmatn',
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      const PremiumBadge(active: true),
                     ],
                   ),
                   const SizedBox(height: 10),
