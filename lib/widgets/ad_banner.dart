@@ -96,7 +96,7 @@ class AdBanner extends ConsumerWidget {
                             const SizedBox.shrink(),
                       ),
                     ),
-                    Positioned(
+                    PositionedDirectional(
                       top: 6,
                       start: 6,
                       child: Container(
