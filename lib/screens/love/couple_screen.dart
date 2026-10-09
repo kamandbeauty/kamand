@@ -8,8 +8,10 @@ import '../../core/utils/persian_numbers.dart';
 import '../../domain/compatibility/compatibility_engine.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
+import '../../widgets/ad_banner.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/premium_badge.dart';
 import '../../widgets/score_legend.dart';
 import '../premium/premium_screen.dart';
 
@@ -181,6 +183,10 @@ class _CoupleBody extends ConsumerWidget {
         _AspectDeepDive(aspectId: couple.aspectId),
         const SizedBox(height: 12),
         _CoupleScoreLegend(),
+
+        // ── تبلیغ — با پرمیوم حذف می‌شود ────────────────────────────
+        const SizedBox(height: 18),
+        const AdBanner(slot: 4),
       ],
     );
   }
@@ -233,6 +239,8 @@ class _AspectDeepDive extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+              const PremiumBadge(active: true),
             ],
           ),
           const SizedBox(height: 10),

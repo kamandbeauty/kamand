@@ -13,6 +13,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/premium_badge.dart';
 import '../../widgets/natal_wheel.dart';
 import '../premium/premium_screen.dart';
 import '../traditions/tradition_widgets.dart';
@@ -168,7 +169,9 @@ class NatalChartScreen extends ConsumerWidget {
             )
           else ...[
             const SectionHeader('چرخِ فلکیِ تولد',
-                icon: Icons.donut_large_rounded, iconColor: AppTheme.gold),
+                icon: Icons.donut_large_rounded,
+                iconColor: AppTheme.gold,
+                action: PremiumBadge(active: true)),
             GlassCard(
               highlight: true,
               accent: AppTheme.gold,

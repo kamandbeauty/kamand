@@ -8,7 +8,10 @@ import '../../domain/horoscope/horoscope_models.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
+import '../../widgets/ad_banner.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/premium_badge.dart';
+import '../../widgets/rewarded_ad_overlay.dart';
 import '../../widgets/score_legend.dart';
 import '../premium/premium_screen.dart';
 import 'sky_cards.dart';
@@ -54,6 +57,9 @@ class _MonthlyBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final entitlement = ref.watch(entitlementProvider);
+    final monthKey =
+        '${monthly.year}-${monthly.month.toString().padLeft(2, '0')}';
+    final unlocked = entitlement.unlocksMonthFor(monthKey);
 
     final monthTitle =
         '${AppDate.monthNames[monthly.month - 1]} ${monthly.year}';
@@ -112,7 +118,10 @@ class _MonthlyBody extends ConsumerWidget {
         ),
         SkyMonthCard(jalaliMonth: monthly.month),
         const SizedBox(height: 18),
-        if (entitlement.hasPremium) ...[
+        if (unlocked) ...[
+          PremiumSectionTitle('گزارش پیشرفتهٔ ماه',
+              active: entitlement.hasPremium),
+          const SizedBox(height: 12),
           _MonthCard(
             icon: Icons.favorite,
             color: AppTheme.rose,
@@ -162,6 +171,8 @@ class _MonthlyBody extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const PremiumScreen()),
             ),
           ),
+          const SizedBox(height: 12),
+          _RewardedMonthUnlockCard(monthKey: monthKey),
         ],
         const SizedBox(height: 12),
         ScoreLegend(
@@ -176,7 +187,80 @@ class _MonthlyBody extends ConsumerWidget {
           bands: ScoreLegendPresets.bands,
           methodNote: ScoreLegendPresets.horoscopeMethod,
         ),
+        const SizedBox(height: 14),
+        const AdBanner(slot: 3),
       ],
+    );
+  }
+}
+
+/// کارتِ بازکردنِ گزارشِ پیشرفتهٔ ماه با تبلیغِ جایزه‌ای — بدونِ خرید.
+class _RewardedMonthUnlockCard extends ConsumerWidget {
+  const _RewardedMonthUnlockCard({required this.monthKey});
+
+  final String monthKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final analytics = ref.watch(analyticsProvider);
+    return GlassCard(
+      accent: AppTheme.sky,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.play_circle_outline, size: 22, color: AppTheme.sky),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'مشاهدهٔ تبلیغ و دریافت گزارشِ کاملِ این ماه',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'اختیاری است — با تماشای یک تبلیغِ کامل، گزارشِ پیشرفتهٔ همین ماه باز می‌شود.',
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.8,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              fontFamily: 'Vazirmatn',
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: () async {
+                analytics.logEvent(AnalyticsEvent.rewardedAdStarted.id);
+                final earned = await showRewardedAdOverlay(context);
+                if (!earned) return;
+                analytics.logEvent(AnalyticsEvent.rewardedAdCompleted.id);
+                await ref
+                    .read(entitlementProvider.notifier)
+                    .earnRewardedMonthlyUnlock(monthKey);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('گزارش پیشرفتهٔ این ماه فعال شد'),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.smart_display_outlined, size: 17),
+              label: const Text('مشاهدهٔ تبلیغ'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

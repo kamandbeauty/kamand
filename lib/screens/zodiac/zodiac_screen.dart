@@ -10,6 +10,7 @@ import '../../domain/zodiac/zodiac_sign.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
+import '../../widgets/ad_banner.dart';
 import '../../widgets/glass_card.dart';
 import 'natal_chart_screen.dart';
 
@@ -90,6 +91,8 @@ class ZodiacScreen extends ConsumerWidget {
               child: Text(sign.personality, style: _bodyStyle(theme)),
             ),
           ),
+          const AdBanner(slot: 1),
+          const SizedBox(height: 18),
           _Section(
             title: 'نقاط قوت',
             child: GlassCard(

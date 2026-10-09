@@ -122,6 +122,7 @@ class EntitlementCodec {
         'plan': e.plan?.id,
         'validUntil': e.validUntil?.toIso8601String(),
         'rewardedUnlockDay': e.rewardedUnlockDay,
+        'rewardedUnlockMonth': e.rewardedUnlockMonth,
         'v': 1,
       });
 
@@ -142,6 +143,7 @@ class EntitlementCodec {
         plan: plan,
         validUntil: validUntil,
         rewardedUnlockDay: map['rewardedUnlockDay'] as String?,
+        rewardedUnlockMonth: map['rewardedUnlockMonth'] as String?,
       );
     } catch (_) {
       // Corrupted local data never crashes the app (spec §36).
