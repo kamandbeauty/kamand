@@ -8,6 +8,7 @@ import '../../data/premium/promo_codes.dart';
 import '../../domain/entitlement/entitlement.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/premium_badge.dart';
 
 /// Premium — honest pricing page, no dark patterns (product spec §45).
 class PremiumScreen extends ConsumerStatefulWidget {
@@ -127,14 +128,21 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                Text(
-                  'طالع بین پرمیوم',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.onSurface,
-                    fontFamily: 'Vazirmatn',
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'طالع بین پرمیوم',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    PremiumBadge(active: entitlement.hasPremium),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(

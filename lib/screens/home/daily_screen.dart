@@ -9,7 +9,10 @@ import '../../domain/horoscope/horoscope_models.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/horoscope_providers.dart';
 import '../../widgets/common.dart';
+import '../../widgets/ad_banner.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/premium_badge.dart';
+import '../../widgets/rewarded_ad_overlay.dart';
 import '../../widgets/score_legend.dart';
 import '../premium/premium_screen.dart';
 import 'sky_cards.dart';
@@ -161,6 +164,9 @@ class _DailyBody extends ConsumerWidget {
 
         // ── Premium deep sections ─────────────────────────────
         if (unlocked) ...[
+          PremiumSectionTitle('طالع کامل امروز',
+              active: entitlement.hasPremium),
+          const SizedBox(height: 12),
           _DeepCard(
             icon: Icons.favorite,
             color: AppTheme.rose,
@@ -218,6 +224,8 @@ class _DailyBody extends ConsumerWidget {
           bands: ScoreLegendPresets.bands,
           methodNote: ScoreLegendPresets.horoscopeMethod,
         ),
+        const SizedBox(height: 14),
+        const AdBanner(slot: 2),
         const SizedBox(height: 14),
         Text(
           'این محتوا جنبهٔ سرگرمی و تفسیری دارد و پیش‌بینی قطعی نیست.',
@@ -363,7 +371,7 @@ class _RewardedUnlockCard extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'اختیاری است — با یک تبلیغ (نسخهٔ نمایشی)، طالع کامل همین روز باز می‌شود.',
+            'اختیاری است — با تماشای یک تبلیغِ کامل، طالعِ کاملِ همین روز باز می‌شود.',
             style: TextStyle(
               fontSize: 11,
               height: 1.8,
@@ -377,6 +385,9 @@ class _RewardedUnlockCard extends ConsumerWidget {
             child: FilledButton.tonalIcon(
               onPressed: () async {
                 analytics.logEvent(AnalyticsEvent.rewardedAdStarted.id);
+                final earned = await showRewardedAdOverlay(context);
+                if (!earned) return;
+                analytics.logEvent(AnalyticsEvent.rewardedAdCompleted.id);
                 await ref
                     .read(entitlementProvider.notifier)
                     .earnRewardedUnlock(daily.date);

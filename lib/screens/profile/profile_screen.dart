@@ -156,7 +156,7 @@ class ProfileScreen extends ConsumerWidget {
             title: 'پرمیوم',
             subtitle: entitlement.hasPremium ? 'فعال است' : 'تحلیل عمیق‌تر، چارت تولد و بیشتر',
             accent: AppTheme.gold,
-            badge: entitlement.hasPremium ? 'فعال' : null,
+            badge: entitlement.hasPremium ? 'فعال' : 'پرمیوم',
             onTap: () => _push(context, const PremiumScreen()),
           ),
           _ActionTile(
