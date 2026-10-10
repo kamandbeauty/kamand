@@ -51,7 +51,7 @@ class _DealAnimationState extends State<DealAnimation>
   @override
   Widget build(BuildContext context) {
     final List<Alignment> targets = _targets;
-    final int perSeat = 3;
+    const int perSeat = 3;
     final int total = targets.length * perSeat + 1;
 
     return IgnorePointer(
@@ -79,7 +79,7 @@ class _DealAnimationState extends State<DealAnimation>
     // هر ورق با کمی تأخیر پرواز می‌کند.
     final double start = (i / total) * 0.72;
     final double t = ((_c.value - start) / 0.28).clamp(0.0, 1.0);
-    final Curve curve = Curves.easeOutCubic;
+    const Curve curve = Curves.easeOutCubic;
     final double p = curve.transform(t);
 
     final bool isKitty = i == total - 1;

@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../model/enums.dart';
 import '../../state/game_controller.dart';
 import '../../state/settings.dart';
 import '../../util/persian.dart';
