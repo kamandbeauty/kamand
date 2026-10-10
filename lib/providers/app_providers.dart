@@ -107,4 +107,29 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
     state = settings;
     await PrefsStore.saveSettings(settings);
   }
+
+  /// Updates only invoice visibility flags using the latest hydrated state.
+  /// This prevents a quick toggle during startup from overwriting unrelated
+  /// settings with the notifier's temporary defaults.
+  Future<void> updateInvoiceVisibility({
+    bool? showStamp,
+    bool? showCardNum,
+  }) async {
+    await _hydrated;
+    final previous = state;
+    final updated = previous.copyWith(
+      showStamp: showStamp,
+      showSignature: showStamp,
+      showCardNum: showCardNum,
+    );
+    state = updated;
+    try {
+      await PrefsStore.saveSettings(updated);
+    } catch (_) {
+      // Keep the visible checkbox consistent with persisted data when storage
+      // fails instead of showing a change that will disappear after restart.
+      state = previous;
+      rethrow;
+    }
+  }
 }

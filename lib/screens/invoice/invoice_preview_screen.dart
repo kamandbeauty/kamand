@@ -13,6 +13,7 @@ import 'package:gal/gal.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
 import '../../core/utils/thousand_separator_formatter.dart';
+import '../../models/business_profile_model.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/invoice_provider.dart';
@@ -50,6 +51,7 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
   }
 
   String get _typeTitle {
+    if (inv.isOfficial) return 'صورتحساب رسمی فروش کالا و خدمات';
     switch (inv.type) {
       case 'proforma':
         return 'پیش فاکتور';
@@ -361,12 +363,229 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
     );
   }
 
+  Widget _officialInfoBlock(BusinessProfileModel biz) {
+    Widget infoCell(String label, String value) {
+      return Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          child: Text(
+            '$label: ${value.trim().isEmpty ? '—' : value}',
+            style: const TextStyle(fontSize: 8.5, height: 1.5),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF334155), width: 0.8),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: const Color(0xFFE2E8F0),
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: const Text(
+              'مشخصات فروشنده',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900),
+            ),
+          ),
+          Row(
+            children: [
+              infoCell(
+                'نام / عنوان',
+                inv.sellerName.isNotEmpty ? inv.sellerName : biz.shopName,
+              ),
+              infoCell('شناسه ملی', inv.sellerNationalId),
+              infoCell('کد اقتصادی', inv.sellerEconomicCode),
+            ],
+          ),
+          Row(
+            children: [
+              infoCell('شماره ثبت', inv.sellerRegistrationNumber),
+              infoCell('کد پستی', inv.sellerPostalCode),
+              infoCell(
+                'تلفن',
+                inv.sellerPhone.isNotEmpty ? inv.sellerPhone : biz.phone,
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              infoCell('نشانی کامل', inv.sellerAddress),
+            ],
+          ),
+          Container(
+            width: double.infinity,
+            color: const Color(0xFFE2E8F0),
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: const Text(
+              'مشخصات خریدار',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900),
+            ),
+          ),
+          Row(
+            children: [
+              infoCell('نام / عنوان', inv.customerName),
+              infoCell('شناسه ملی', inv.buyerNationalId),
+              infoCell('کد اقتصادی', inv.buyerEconomicCode),
+            ],
+          ),
+          Row(
+            children: [
+              infoCell('کد پستی', inv.buyerPostalCode),
+              infoCell('شماره تماس', inv.customerPhone),
+            ],
+          ),
+          Row(
+            children: [
+              infoCell('نشانی کامل', inv.buyerAddress),
+            ],
+          ),
+          Container(
+            width: double.infinity,
+            color: const Color(0xFFF8FAFC),
+            child: Row(
+              children: [
+                infoCell(
+                  'نحوه پرداخت',
+                  inv.paymentType == 'cash' ? 'نقدی' : 'غیرنقدی',
+                ),
+                infoCell(
+                  'شماره سریال',
+                  PersianNumberFormatter.toPersian(inv.number),
+                ),
+                infoCell(
+                  'تاریخ',
+                  PersianNumberFormatter.toPersian(inv.date),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _officialItemsTable() {
+    Widget cell(
+      String text, {
+      int flex = 1,
+      bool header = false,
+      TextAlign align = TextAlign.center,
+    }) {
+      return Expanded(
+        flex: flex,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 31),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+          decoration: const BoxDecoration(
+            border: Border(left: BorderSide(color: Color(0xFF64748B), width: .5)),
+          ),
+          child: Text(
+            text,
+            textAlign: align,
+            style: TextStyle(
+              fontSize: header ? 7.5 : 7.2,
+              fontWeight: header ? FontWeight.w900 : FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final taxableSubtotal = (inv.subtotal - inv.discountAmount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF334155), width: .8),
+      ),
+      child: Column(
+        children: [
+          Container(
+            color: const Color(0xFFE2E8F0),
+            child: Row(
+              children: [
+                cell('ردیف', header: true),
+                cell('شرح کالا / خدمت', flex: 4, header: true),
+                cell('تعداد', header: true),
+                cell('واحد', header: true),
+                cell('فی', flex: 2, header: true),
+                cell('مبلغ', flex: 2, header: true),
+                cell('تخفیف', flex: 2, header: true),
+                cell('مالیات', flex: 2, header: true),
+                cell('جمع نهایی', flex: 2, header: true),
+              ],
+            ),
+          ),
+          ...List.generate(inv.items.length, (index) {
+            final item = inv.items[index];
+            final ratio = inv.subtotal > 0 ? item.totalPrice / inv.subtotal : 0.0;
+            final discount = inv.discountAmount * ratio;
+            final afterDiscount = (item.totalPrice - discount)
+                .clamp(0, double.infinity)
+                .toDouble();
+            final tax = taxableSubtotal > 0
+                ? inv.taxAmount * (afterDiscount / taxableSubtotal)
+                : 0.0;
+            final total = afterDiscount + tax;
+            String money(double value) => PersianNumberFormatter
+                .formatCurrency(value)
+                .replaceAll(' تومان', '');
+            return Container(
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: Color(0xFF94A3B8), width: .5)),
+              ),
+              child: Row(
+                children: [
+                  cell(PersianNumberFormatter.toPersian(index + 1)),
+                  cell(item.title, flex: 4, align: TextAlign.right),
+                  cell(PersianNumberFormatter.toPersian(item.quantity)),
+                  cell(item.unit),
+                  cell(money(item.unitPrice), flex: 2),
+                  cell(money(item.totalPrice), flex: 2),
+                  cell(money(discount), flex: 2),
+                  cell(money(tax), flex: 2),
+                  cell(money(total), flex: 2),
+                ],
+              ),
+            );
+          }),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(5),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFF94A3B8), width: .5)),
+            ),
+            child: const Text(
+              'اپلیکیشن فاکتور ساز روبی',
+              textAlign: TextAlign.left,
+              style: TextStyle(fontSize: 7.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(invoiceListProvider);
     final dark = Theme.of(context).brightness == Brightness.dark;
     final biz = ref.watch(businessProvider);
     final settingsWatch = ref.watch(settingsProvider);
+    final markPath = biz.stampPath.isNotEmpty
+        ? biz.stampPath
+        : biz.signaturePath;
+    final showMark = settingsWatch.showStamp &&
+        markPath.isNotEmpty &&
+        File(markPath).existsSync();
     final accent = Color(settingsWatch.accentColor);
 
     return Scaffold(
@@ -531,7 +750,10 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        Container(
+                        if (inv.isOfficial)
+                          _officialInfoBlock(biz)
+                        else
+                          Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: _cardGray,
@@ -555,8 +777,11 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // Items table header
-                        Container(
+                        // جدول رسمی ستون‌های مالیاتی کامل‌تری دارد.
+                        if (inv.isOfficial)
+                          _officialItemsTable()
+                        else
+                          Container(
                           decoration: BoxDecoration(
                             border: Border.all(color: const Color(0xFFE2E8F0)),
                             borderRadius: BorderRadius.circular(12),
@@ -638,6 +863,40 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                                   ),
                                 );
                               }),
+                              // برند روبی داخل بدنه فاکتور و زیر آخرین ردیف
+                              // کالا قرار می‌گیرد و وابسته به نمایش کارت نیست.
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    top: BorderSide(color: Colors.grey.shade200),
+                                  ),
+                                ),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'اپلیکیشن فاکتور ساز روبی',
+                                      textAlign: TextAlign.left,
+                                      textDirection: TextDirection.rtl,
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -652,6 +911,12 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             color: const Color(0xFF059669),
                           ),
                         if (inv.shippingFee > 0) _totalRow('هزینه ارسال', inv.shippingFee),
+                        if (inv.isOfficial && inv.taxAmount > 0)
+                          _totalRow(
+                            'مالیات و عوارض (${PersianNumberFormatter.toPersian(inv.taxRate)}٪)',
+                            inv.taxAmount,
+                            color: const Color(0xFFD97706),
+                          ),
                         if (inv.previousDebt > 0)
                           _totalRow('بدهی قبلی', inv.previousDebt, color: const Color(0xFFE11D48)),
                         if (inv.deposit > 0)
@@ -691,7 +956,8 @@ class _InvoicePreviewScreenState extends ConsumerState<InvoicePreviewScreen> {
                             style: const TextStyle(fontSize: 11, color: _slate500, height: 1.4),
                           ),
                         ],
-if (inv.cardNumber.isNotEmpty && settingsWatch.showCardNum) ...[
+                        if (inv.cardNumber.isNotEmpty &&
+                            settingsWatch.showCardNum) ...[
                           const SizedBox(height: 12),
                           Builder(builder: (_) {
                             final cards = ref.watch(bankCardListProvider);
@@ -724,51 +990,23 @@ if (inv.cardNumber.isNotEmpty && settingsWatch.showCardNum) ...[
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Row(
-                                    textDirection: TextDirection.ltr,
+                                  const Row(
+                                    textDirection: TextDirection.rtl,
                                     children: [
-                                      Expanded(
-                                        child: Transform.translate(
-                                          // به گوشهٔ چپ و بالای خود کادر می‌چسبد.
-                                          offset: const Offset(-12, -12),
-                                          child: Align(
-                                            alignment: Alignment.topLeft,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black,
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: const Text(
-                                                'اپلیکیشن فاکتور ساز روبی',
-                                                textAlign: TextAlign.left,
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
+                                      Icon(
+                                        Icons.credit_card,
+                                        color: Color(0xFF0284C7),
+                                        size: 20,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Row(
-                                        textDirection: TextDirection.rtl,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.credit_card, color: Color(0xFF0284C7), size: 20),
-                                          const SizedBox(width: 8),
-                                          const Text(
-                                            'شماره کارت جهت واریز',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Color(0xFF0284C7),
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                            textAlign: TextAlign.right,
-                                          ),
-                                        ],
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'شماره کارت جهت واریز',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Color(0xFF0284C7),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                        textAlign: TextAlign.right,
                                       ),
                                     ],
                                   ),
@@ -855,36 +1093,65 @@ if (inv.cardNumber.isNotEmpty && settingsWatch.showCardNum) ...[
                             );
                           }),
                         ],
-                        const SizedBox(height: 20),
-                        // مهر و امضا از یک تصویر واحد در پایین فاکتور نمایش داده می‌شود.
-                        Builder(builder: (_) {
-                          final settings = ref.watch(settingsProvider);
-                          final markPath = biz.stampPath.isNotEmpty
-                              ? biz.stampPath
-                              : biz.signaturePath;
-                          final showMark = settings.showStamp && markPath.isNotEmpty;
-                          return Align(
+                        if (inv.isOfficial) ...[
+                          const SizedBox(height: 22),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 68),
+                                    Container(height: 1, color: const Color(0xFFCBD5E1)),
+                                    const SizedBox(height: 5),
+                                    const Text(
+                                      'نام، مهر و امضای خریدار',
+                                      style: TextStyle(fontSize: 8, color: _slate500),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 32),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height: 68,
+                                      child: showMark
+                                          ? Image.file(
+                                              File(markPath),
+                                              height: 64,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const SizedBox.shrink(),
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                    Container(height: 1, color: const Color(0xFFCBD5E1)),
+                                    const SizedBox(height: 5),
+                                    const Text(
+                                      'نام، مهر و امضای فروشنده',
+                                      style: TextStyle(fontSize: 8, color: _slate500),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else if (showMark) ...[
+                          const SizedBox(height: 20),
+                          Align(
                             alignment: Alignment.centerLeft,
                             child: SizedBox(
                               width: 160,
                               child: Column(
                                 children: [
-                                  if (showMark)
-                                    Container(
-                                      height: 72,
-                                      width: 150,
-                                      alignment: Alignment.center,
-                                      color: Colors.transparent,
-                                      child: Image.file(
-                                        File(markPath),
-                                        height: 64,
-                                        fit: BoxFit.contain,
-                                        filterQuality: FilterQuality.high,
-                                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                      ),
-                                    )
-                                  else
-                                    const SizedBox(height: 56),
+                                  Image.file(
+                                    File(markPath),
+                                    height: 64,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
+                                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                  ),
                                   const SizedBox(height: 4),
                                   const Text(
                                     'مهر و امضا',
@@ -893,8 +1160,8 @@ if (inv.cardNumber.isNotEmpty && settingsWatch.showCardNum) ...[
                                 ],
                               ),
                             ),
-                          );
-                        }),
+                          ),
+                        ],
                         const SizedBox(height: 18),
                       ],
                     ),

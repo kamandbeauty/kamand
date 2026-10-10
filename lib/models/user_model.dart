@@ -7,6 +7,7 @@ class UserModel {
   final String city;
   final String usageType;
   final bool isOnboarded;
+  final bool isPremium;
 
   UserModel({
     required this.id,
@@ -17,6 +18,7 @@ class UserModel {
     required this.city,
     required this.usageType,
     required this.isOnboarded,
+    this.isPremium = false,
   });
 
   UserModel copyWith({
@@ -28,6 +30,7 @@ class UserModel {
     String? city,
     String? usageType,
     bool? isOnboarded,
+    bool? isPremium,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -38,6 +41,7 @@ class UserModel {
       city: city ?? this.city,
       usageType: usageType ?? this.usageType,
       isOnboarded: isOnboarded ?? this.isOnboarded,
+      isPremium: isPremium ?? this.isPremium,
     );
   }
 
@@ -50,6 +54,7 @@ class UserModel {
         'city': city,
         'usageType': usageType,
         'isOnboarded': isOnboarded,
+        'isPremium': isPremium,
       };
 
   factory UserModel.fromMap(Map<String, dynamic> map) => UserModel(
@@ -61,5 +66,6 @@ class UserModel {
         city: map['city'] ?? '',
         usageType: map['usageType'] ?? 'store',
         isOnboarded: map['isOnboarded'] ?? false,
+        isPremium: map['isPremium'] ?? false,
       );
 }

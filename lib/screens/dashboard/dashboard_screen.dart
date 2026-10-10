@@ -1361,9 +1361,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double get _prevDebtVal => _hasPrevDebt ? _prevDebtAmount : 0;
   double get _depositVal => _hasDeposit ? _depositAmount : 0;
 
-  /// جمع قبل از بیعانه = اقلام − تخفیف + ارسال + بدهی قبلی
+  bool get _officialInvoiceActive {
+    final settings = ref.read(settingsProvider);
+    return ref.read(userProvider).isPremium &&
+        settings.officialInvoiceEnabled &&
+        _invoiceType == 'sale';
+  }
+
+  double get _officialTaxAmount {
+    if (!_officialInvoiceActive) return 0;
+    final taxable = (_itemsTotal - _resolvedDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    final rate = ref.read(settingsProvider).defaultTaxRate.clamp(0, 100);
+    return taxable * rate / 100;
+  }
+
+  /// جمع قبل از بیعانه = اقلام − تخفیف + ارسال + مالیات + بدهی قبلی
   double get _grossTotal {
-    final t = _itemsTotal - _resolvedDiscount + _shippingVal + _prevDebtVal;
+    final t = _itemsTotal -
+        _resolvedDiscount +
+        _shippingVal +
+        _officialTaxAmount +
+        _prevDebtVal;
     return t < 0 ? 0 : t;
   }
 
@@ -1484,6 +1504,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // totalAmount = مبلغ قابل پرداخت نهایی (بعد از کسر بیعانه)
     // paidAmount: نقدی = کل؛ غیرنقدی = بیعانه (که از total کم شده)
     final depositAmt = _depositVal;
+    final official = _officialInvoiceActive;
+    final officialTaxRate = official
+        ? ref.read(settingsProvider).defaultTaxRate.clamp(0, 100).toDouble()
+        : 0.0;
+    final officialTaxAmount = official ? _officialTaxAmount : 0.0;
+    var buyerAddress = existing?.buyerAddress ?? '';
+    var buyerNationalId = existing?.buyerNationalId ?? '';
+    var buyerEconomicCode = existing?.buyerEconomicCode ?? '';
+    var buyerPostalCode = existing?.buyerPostalCode ?? '';
+    if (_customerId.isNotEmpty) {
+      for (final customer in ref.read(customerListProvider)) {
+        if (customer.id == _customerId) {
+          buyerAddress = customer.address;
+          buyerNationalId = customer.nationalId;
+          buyerEconomicCode = customer.economicCode;
+          buyerPostalCode = customer.postalCode;
+          break;
+        }
+      }
+    }
+    if (official) {
+      final missing = <String>[];
+      if (biz.shopName.trim().isEmpty) missing.add('نام فروشنده');
+      if (biz.nationalId.trim().isEmpty) missing.add('شناسه ملی فروشنده');
+      if (biz.economicCode.trim().isEmpty) missing.add('کد اقتصادی فروشنده');
+      if (biz.postalCode.trim().isEmpty) missing.add('کد پستی فروشنده');
+      if (biz.address.trim().isEmpty) missing.add('نشانی فروشنده');
+      if (_customerName.trim().isEmpty) missing.add('نام خریدار');
+      if (buyerNationalId.trim().isEmpty) missing.add('شناسه ملی خریدار');
+      if (buyerEconomicCode.trim().isEmpty) missing.add('کد اقتصادی خریدار');
+      if (buyerPostalCode.trim().isEmpty) missing.add('کد پستی خریدار');
+      if (buyerAddress.trim().isEmpty) missing.add('نشانی خریدار');
+      if (missing.isNotEmpty) {
+        throw FormatException(
+          'اطلاعات فاکتور رسمی کامل نیست: ${missing.join('، ')}',
+        );
+      }
+    }
     final payable = _finalTotal;
     // دریافت‌هایی که بعد از صدور فاکتور ثبت شده‌اند (paidAmount − بیعانهٔ قبلی)
     // هنگام ویرایش نباید از بین بروند.
@@ -1531,6 +1589,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       cardNumber: card.isNotEmpty ? card : (existing?.cardNumber ?? ''),
       cardBank: cardBank.isNotEmpty ? cardBank : (existing?.cardBank ?? ''),
       cardOwner: cardOwner.isNotEmpty ? cardOwner : (existing?.cardOwner ?? ''),
+      isOfficial: official,
+      taxRate: officialTaxRate,
+      taxAmount: officialTaxAmount,
+      sellerName: biz.shopName,
+      sellerPhone: biz.phone,
+      sellerTaxId: biz.taxId,
+      sellerNationalId: biz.nationalId,
+      sellerEconomicCode: biz.economicCode,
+      sellerRegistrationNumber: biz.registrationNumber,
+      sellerPostalCode: biz.postalCode,
+      sellerAddress: biz.address,
+      buyerNationalId: buyerNationalId,
+      buyerEconomicCode: buyerEconomicCode,
+      buyerPostalCode: buyerPostalCode,
+      buyerAddress: buyerAddress,
       createdAt: existing?.createdAt ?? jalaliFa,
     );
 
@@ -1603,6 +1676,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final business = ref.watch(businessProvider);
     final settings = ref.watch(settingsProvider);
+    final isPremium = ref.watch(userProvider.select((user) => user.isPremium));
     final accent = Color(settings.accentColor);
     final shopName = business.shopName.isNotEmpty ? business.shopName : 'فاکتور ساز روبی';
 
@@ -2269,6 +2343,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ]),
+                  if (_officialInvoiceActive && _officialTaxAmount > 0) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'مالیات و ارزش افزوده (${PersianNumberFormatter.toPersian(settings.defaultTaxRate)}٪)',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFD97706),
+                          ),
+                        ),
+                        Text(
+                          PersianNumberFormatter.formatCurrency(_officialTaxAmount),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFD97706),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
                   const SizedBox(height: 12),
@@ -2327,12 +2425,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
                     ],
                   ),
+                  if (settings.officialInvoiceEnabled && isPremium) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: Color(0xFFD97706),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _invoiceType == 'sale'
+                                  ? 'فاکتور فروش با قالب رسمی و مالیات ${PersianNumberFormatter.toPersian(settings.defaultTaxRate)}٪ صادر می‌شود'
+                                  : 'فاکتور رسمی فقط برای نوع «فاکتور فروش» اعمال می‌شود',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 12),
 
-            // تیک نمایش مهر و امضا روی فاکتور
+            // تنظیم نمایش مهر و امضا و شماره کارت روی فاکتور
             _grayCard(
               dark: dark,
               child: Builder(builder: (ctx) {
@@ -2349,12 +2480,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         try {
                           await ref
                               .read(settingsProvider.notifier)
-                              .updateSettings(
-                                st.copyWith(
-                                  showStamp: enabled,
-                                  showSignature: enabled,
-                                ),
-                              );
+                              .updateInvoiceVisibility(showStamp: enabled);
                         } catch (error) {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -2371,6 +2497,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               child: const Text('افزودن', style: TextStyle(fontSize: 11, color: _orange)),
                             )
                           : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Divider(
+                      color: dark ? _slate700 : _cardGrayBorder,
+                      height: 1,
+                    ),
+                    const SizedBox(height: 8),
+                    _checkRow(
+                      label: 'نمایش شماره کارت روی فاکتور',
+                      value: st.showCardNum,
+                      dark: dark,
+                      onChanged: (v) async {
+                        final enabled = v ?? false;
+                        try {
+                          await ref
+                              .read(settingsProvider.notifier)
+                              .updateInvoiceVisibility(showCardNum: enabled);
+                        } catch (error) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('ذخیره تنظیمات انجام نشد: $error'),
+                              ),
+                            );
+                          }
+                        }
+                      },
                     ),
                     const SizedBox(height: 4),
                   ],

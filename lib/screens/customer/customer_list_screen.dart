@@ -22,6 +22,9 @@ class CustomerListScreen extends ConsumerWidget {
           : (customer.mobile.isNotEmpty ? customer.mobile : customer.phone),
     );
     final addressCtrl = TextEditingController(text: customer?.address ?? '');
+    final nationalIdCtrl = TextEditingController(text: customer?.nationalId ?? '');
+    final economicCodeCtrl = TextEditingController(text: customer?.economicCode ?? '');
+    final postalCodeCtrl = TextEditingController(text: customer?.postalCode ?? '');
     final notesCtrl = TextEditingController(text: customer?.notes ?? '');
 
     final saved = await showModalBottomSheet<bool>(
@@ -80,6 +83,33 @@ class CustomerListScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               TextField(
+                controller: nationalIdCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'شناسه ملی / کد ملی (فاکتور رسمی)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: economicCodeCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'شماره / کد اقتصادی (فاکتور رسمی)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: postalCodeCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'کد پستی (فاکتور رسمی)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
                 controller: notesCtrl,
                 textAlign: TextAlign.right,
                 maxLines: 2,
@@ -129,6 +159,9 @@ class CustomerListScreen extends ConsumerWidget {
                   phone: '',
                   address: addressCtrl.text.trim(),
                   notes: notesCtrl.text.trim(),
+                  nationalId: nationalIdCtrl.text.trim(),
+                  economicCode: economicCodeCtrl.text.trim(),
+                  postalCode: postalCodeCtrl.text.trim(),
                   balance: 0,
                   createdAt: JalaliHelper.getTodayJalali(),
                 ),
@@ -144,6 +177,9 @@ class CustomerListScreen extends ConsumerWidget {
                   phone: customer.phone,
                   address: addressCtrl.text.trim(),
                   notes: notesCtrl.text.trim(),
+                  nationalId: nationalIdCtrl.text.trim(),
+                  economicCode: economicCodeCtrl.text.trim(),
+                  postalCode: postalCodeCtrl.text.trim(),
                   balance: customer.balance,
                   createdAt: customer.createdAt,
                 ),
@@ -164,6 +200,9 @@ class CustomerListScreen extends ConsumerWidget {
       nameCtrl.dispose();
       mobileCtrl.dispose();
       addressCtrl.dispose();
+      nationalIdCtrl.dispose();
+      economicCodeCtrl.dispose();
+      postalCodeCtrl.dispose();
       notesCtrl.dispose();
     });
   }

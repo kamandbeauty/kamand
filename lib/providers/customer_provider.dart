@@ -230,6 +230,9 @@ class CustomerListNotifier extends StateNotifier<List<CustomerModel>> {
         phone: item.phone,
         address: item.address,
         notes: item.notes,
+        nationalId: item.nationalId,
+        economicCode: item.economicCode,
+        postalCode: item.postalCode,
         balance: balance,
         createdAt: item.createdAt,
       );

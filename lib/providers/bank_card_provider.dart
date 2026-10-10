@@ -136,11 +136,9 @@ String detectBankName(String cardNumber){
     '639370': 'بانک مهر اقتصاد',
     '606256': 'موسسه ملل',
   };
-  if(map.containsKey(bin)) return map[bin]!;
-  final bin4 = digits.substring(0,4);
-  const map4 = {'6104':'بانک ملت','6037':'بانک ملی','5892':'بانک سپه'};
-  // BIN ناشناخته: نام ساختگی نساز تا انتخاب دستی کاربر خراب نشود.
-  return map4[bin4] ?? '';
+  // فقط BIN کامل شش‌رقمی معتبر است. تطبیق چهار رقم اول می‌توانست کارت‌های
+  // ناشناخته را اشتباهاً به بانک ملی، ملت یا سپه نسبت دهد.
+  return map[bin] ?? '';
 }
 
 String bankLogoAsset(String bankName){

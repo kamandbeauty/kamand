@@ -1,4 +1,10 @@
+import 'dart:convert';
+
+import 'package:factor_ruby/core/utils/prefs_store.dart';
+import 'package:factor_ruby/models/app_settings_model.dart';
 import 'package:factor_ruby/models/invoice_model.dart';
+import 'package:factor_ruby/models/user_model.dart';
+import 'package:factor_ruby/providers/app_providers.dart';
 import 'package:factor_ruby/providers/bank_card_provider.dart';
 import 'package:factor_ruby/providers/invoice_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -146,5 +152,125 @@ void main() {
     expect(detectBankName('5047061234567890'), 'بانک شهر');
     expect(detectBankName('6062561234567890'), 'موسسه ملل');
     expect(detectBankName('6063731234567890'), 'بانک قرض الحسنه مهر');
+    expect(detectBankName('6037981234567890'), isEmpty);
+  });
+
+  test('invoice visibility toggles preserve unrelated settings', () async {
+    SharedPreferences.setMockInitialValues({});
+    final notifier = SettingsNotifier();
+
+    await notifier.updateSettings(
+      notifier.state.copyWith(
+        startingInvoiceNum: 42,
+        accentColor: 0xFF123456,
+        showStamp: true,
+        showSignature: true,
+        showCardNum: true,
+      ),
+    );
+
+    await notifier.updateInvoiceVisibility(showStamp: false);
+    expect(notifier.state.showStamp, isFalse);
+    expect(notifier.state.showSignature, isFalse);
+    expect(notifier.state.showCardNum, isTrue);
+    expect(notifier.state.startingInvoiceNum, 42);
+    expect(notifier.state.accentColor, 0xFF123456);
+
+    await notifier.updateInvoiceVisibility(showCardNum: false);
+    expect(notifier.state.showStamp, isFalse);
+    expect(notifier.state.showCardNum, isFalse);
+    expect(notifier.state.startingInvoiceNum, 42);
+    notifier.dispose();
+  });
+
+  test('clearing a draft also clears its recovery shadow copy', () async {
+    SharedPreferences.setMockInitialValues({});
+    await PrefsStore.saveDraft(invoice());
+    expect(await PrefsStore.loadDraft(), isNotNull);
+
+    await PrefsStore.clearDraft();
+
+    expect(await PrefsStore.loadDraft(), isNull);
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.containsKey('ruby_invoice_draft_v1'), isFalse);
+    expect(
+      preferences.containsKey('ruby_invoice_draft_v1_last_good'),
+      isFalse,
+    );
+  });
+
+  test('ledger recovers when primary value is missing', () async {
+    final encoded = jsonEncode({
+      'inv-1': {
+        'customerId': 'c1',
+        'impact': 25.0,
+        'referenceImpact': 30.0,
+      },
+    });
+    SharedPreferences.setMockInitialValues({
+      'ruby_invoice_balance_ledger_v1_last_good': encoded,
+    });
+
+    final ledger = await PrefsStore.loadInvoiceBalanceLedger();
+
+    expect(ledger['inv-1']?['customerId'], 'c1');
+    expect(ledger['inv-1']?['impact'], 25.0);
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getString('ruby_invoice_balance_ledger_v1'),
+      encoded,
+    );
+  });
+
+  test('signature and stamp settings deserialize independently', () {
+    final settings = AppSettingsModel.fromMap({
+      'startingInvoiceNum': 1,
+      'templateStyle': 'modern',
+      'showLogo': true,
+      'showCardNum': true,
+      'showStamp': false,
+      'showSignature': true,
+      'officialInvoiceEnabled': true,
+      'defaultTaxRate': 10,
+      'themeMode': 'light',
+      'autoBackup': true,
+      'pinCode': '',
+      'pinEnabled': false,
+    });
+
+    expect(settings.showStamp, isFalse);
+    expect(settings.showSignature, isTrue);
+    expect(settings.officialInvoiceEnabled, isTrue);
+    expect(settings.defaultTaxRate, 10);
+  });
+
+  test('premium and official invoice fields survive persistence', () {
+    final user = UserModel.fromMap({
+      'id': 'u1',
+      'name': 'کاربر',
+      'country': 'ایران',
+      'province': '',
+      'city': 'تهران',
+      'usageType': 'store',
+      'isOnboarded': true,
+      'isPremium': true,
+    });
+    expect(user.isPremium, isTrue);
+    expect(UserModel.fromMap(user.toMap()).isPremium, isTrue);
+
+    final map = invoice().toMap()
+      ..addAll({
+        'isOfficial': true,
+        'taxRate': 10.0,
+        'taxAmount': 10.0,
+        'sellerNationalId': '123',
+        'buyerNationalId': '456',
+      });
+    final restored = InvoiceModel.fromMap(map);
+    expect(restored.isOfficial, isTrue);
+    expect(restored.taxRate, 10);
+    expect(restored.taxAmount, 10);
+    expect(restored.sellerNationalId, '123');
+    expect(restored.buyerNationalId, '456');
   });
 }

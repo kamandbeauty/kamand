@@ -122,7 +122,13 @@ class PrefsStore {
 
   static Future<void> clearDraft() async {
     final p = await _p;
-    await p.remove(_kDraft);
+    // Drafts use the same shadow-copy mechanism as the other JSON values.
+    // Removing only the primary key caused the supposedly cleared draft to be
+    // restored from `_last_good` on the next app launch.
+    await Future.wait([
+      p.remove(_kDraft),
+      p.remove(_backupKey(_kDraft)),
+    ]);
   }
 
   static Future<Map<String, dynamic>> exportAll() async {
@@ -338,20 +344,23 @@ class PrefsStore {
   static Future<dynamic> _loadDecoded(String key) async {
     final preferences = await _p;
     final primary = preferences.getString(key);
-    if (primary == null || primary.isEmpty) return null;
-    try {
-      return jsonDecode(primary);
-    } catch (_) {
-      final backup = preferences.getString(_backupKey(key));
-      if (backup == null || backup.isEmpty) return null;
+    final backup = preferences.getString(_backupKey(key));
+
+    // The primary key can be missing after an interrupted/partial platform
+    // write. In that case the shadow copy is still a valid recovery source.
+    for (final candidate in [primary, backup]) {
+      if (candidate == null || candidate.isEmpty) continue;
       try {
-        final recovered = jsonDecode(backup);
-        await preferences.setString(key, backup);
-        return recovered;
+        final decoded = jsonDecode(candidate);
+        if (candidate == backup) {
+          await preferences.setString(key, candidate);
+        }
+        return decoded;
       } catch (_) {
-        return null;
+        // Try the shadow copy before giving up.
       }
     }
+    return null;
   }
 
   static Future<T?> _loadModel<T>(

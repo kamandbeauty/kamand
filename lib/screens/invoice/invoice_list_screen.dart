@@ -45,15 +45,23 @@ class InvoiceListScreen extends ConsumerWidget {
   }
 
   Future<void> _copyInvoice(BuildContext context, WidgetRef ref, InvoiceModel inv) async {
-    final copied = await ref.read(invoiceListProvider.notifier).copyInvoice(inv);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'فاکتور کپی شد؛ شماره ${PersianNumberFormatter.toPersian(copied.number)}',
+    try {
+      final copied =
+          await ref.read(invoiceListProvider.notifier).copyInvoice(inv);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'فاکتور کپی شد؛ شماره ${PersianNumberFormatter.toPersian(copied.number)}',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('کپی فاکتور انجام نشد: $error')),
+      );
+    }
   }
 
   bool _canCollect(InvoiceModel inv) =>
@@ -113,17 +121,26 @@ class InvoiceListScreen extends ConsumerWidget {
     // کنترلر تا پایان انیمیشن بسته‌شدن دیالوگ باید زنده بماند.
     Future<void>.delayed(const Duration(milliseconds: 400), ctrl.dispose);
     if (amount == null || amount <= 0) return;
-    await ref.read(invoiceListProvider.notifier).recordPayment(inv.id, amount);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          amount > inv.remainingAmount
-              ? 'دریافت تا سقف باقی‌مانده ثبت شد'
-              : 'دریافت ثبت شد',
+    try {
+      await ref
+          .read(invoiceListProvider.notifier)
+          .recordPayment(inv.id, amount);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            amount > inv.remainingAmount
+                ? 'دریافت تا سقف باقی‌مانده ثبت شد'
+                : 'دریافت ثبت شد',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ثبت دریافت انجام نشد: $error')),
+      );
+    }
   }
 
   Future<void> _convertProforma(
@@ -211,11 +228,18 @@ class InvoiceListScreen extends ConsumerWidget {
     );
 
     if (confirmed != true) return;
-    await ref.read(invoiceListProvider.notifier).deleteInvoice(inv.id);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('فاکتور حذف شد')),
-    );
+    try {
+      await ref.read(invoiceListProvider.notifier).deleteInvoice(inv.id);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('فاکتور حذف شد')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حذف فاکتور انجام نشد: $error')),
+      );
+    }
   }
 
   @override
@@ -268,7 +292,7 @@ class InvoiceListScreen extends ConsumerWidget {
                           ),
                         ),
                         subtitle: Text(
-                          'فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
+                          '${inv.isOfficial ? 'فاکتور رسمی' : 'فاکتور'} #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
                           style: const TextStyle(fontSize: 11, color: _slate500),
                         ),
                         trailing: Column(

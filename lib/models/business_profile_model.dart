@@ -4,6 +4,10 @@ class BusinessProfileModel {
   final String phone;
   final String address;
   final String taxId;
+  final String nationalId;
+  final String economicCode;
+  final String registrationNumber;
+  final String postalCode;
   final String logoPath;
   final String stampPath;
   final String signaturePath;
@@ -15,6 +19,10 @@ class BusinessProfileModel {
     required this.phone,
     required this.address,
     required this.taxId,
+    this.nationalId = '',
+    this.economicCode = '',
+    this.registrationNumber = '',
+    this.postalCode = '',
     required this.logoPath,
     this.stampPath = '',
     this.signaturePath = '',
@@ -27,6 +35,10 @@ class BusinessProfileModel {
     String? phone,
     String? address,
     String? taxId,
+    String? nationalId,
+    String? economicCode,
+    String? registrationNumber,
+    String? postalCode,
     String? logoPath,
     String? stampPath,
     String? signaturePath,
@@ -38,6 +50,10 @@ class BusinessProfileModel {
       phone: phone ?? this.phone,
       address: address ?? this.address,
       taxId: taxId ?? this.taxId,
+      nationalId: nationalId ?? this.nationalId,
+      economicCode: economicCode ?? this.economicCode,
+      registrationNumber: registrationNumber ?? this.registrationNumber,
+      postalCode: postalCode ?? this.postalCode,
       logoPath: logoPath ?? this.logoPath,
       stampPath: stampPath ?? this.stampPath,
       signaturePath: signaturePath ?? this.signaturePath,
@@ -51,6 +67,10 @@ class BusinessProfileModel {
         'phone': phone,
         'address': address,
         'taxId': taxId,
+        'nationalId': nationalId,
+        'economicCode': economicCode,
+        'registrationNumber': registrationNumber,
+        'postalCode': postalCode,
         'logoPath': logoPath,
         'stampPath': stampPath,
         'signaturePath': signaturePath,
@@ -63,6 +83,10 @@ class BusinessProfileModel {
         phone: map['phone'] ?? '',
         address: map['address'] ?? '',
         taxId: map['taxId'] ?? '',
+        nationalId: map['nationalId'] ?? '',
+        economicCode: map['economicCode'] ?? map['taxId'] ?? '',
+        registrationNumber: map['registrationNumber'] ?? '',
+        postalCode: map['postalCode'] ?? '',
         logoPath: map['logoPath'] ?? '',
         stampPath: map['stampPath'] ?? '',
         signaturePath: map['signaturePath'] ?? '',

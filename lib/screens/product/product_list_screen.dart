@@ -413,7 +413,7 @@ class ProductListScreen extends ConsumerWidget {
                             ),
                           ),
                           subtitle: Text(
-                            'موجودی: ${PersianNumberFormatter.toPersian(product.stock.round())} ${product.unit}\nقیمت فروش: ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
+                            'موجودی: ${PersianNumberFormatter.toPersian(_decimalText(product.stock))} ${product.unit}\nقیمت فروش: ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
                             style: const TextStyle(fontSize: 11, color: _slate500),
                           ),
                         ),
