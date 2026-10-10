@@ -98,7 +98,7 @@ void main() {
       scrollable: dailyScrollable,
     );
     expect(find.text('تبلیغ'), findsWidgets);
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await settle(tester);
 
     // Home: thin banner after the 12-sign sky strip.
@@ -132,7 +132,7 @@ void main() {
     expect(find.text('مشاهدهٔ تبلیغ'), findsNothing);
     expect(find.text('طالع کامل امروز'), findsWidgets);
     await scrollAssertingNoAds(tester, dailyScrollable);
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await settle(tester);
 
     // Monthly: report unlocked, rewarded card + banner gone.
