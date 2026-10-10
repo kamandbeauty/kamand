@@ -67,6 +67,95 @@ abstract final class AstralTokens {
   static const Color borderSubtle = Color(0x1AC9D2E8); // silver @ 10%
 }
 
+/// سیستمِ تایپوگرافیِ مرکزی — ASTRAL COSMOS (فازِ ۲.۴ بریف).
+///
+/// همهٔ نقش‌های متنیِ اپ این‌جا تعریف می‌شوند؛ صفحه‌ها به‌جایِ
+/// نوشتنِ دستیِ fontSize/Weight، از همین توکن‌ها استفاده می‌کنند تا
+/// سلسله‌مراتبِ تایپوگرافی در کلِ برنامه یکی بماند.
+abstract final class AstralTextStyles {
+  static const String fontFamily = 'Vazirmatn';
+
+  /// تیترِ صحنهٔ هنری — نامِ برج رویِ بنرِ «برجِ من».
+  static TextStyle scene({Color? color}) => TextStyle(
+        fontSize: 30,
+        fontWeight: FontWeight.w800,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// تیترِ صفحه — سلامِ کاربر، عنوان‌های بزرگ.
+  static TextStyle titleLarge({Color? color}) => TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// تیترِ بخش‌ها — SectionHeader.
+  static TextStyle title({Color? color}) => TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// تیترِ کارت‌ها و بخش‌های داخلی.
+  static TextStyle titleSmall({Color? color}) => TextStyle(
+        fontSize: 13.5,
+        fontWeight: FontWeight.w800,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// متنِ توضیحیِ اصلی.
+  static TextStyle body({Color? color}) => TextStyle(
+        fontSize: 13.5,
+        height: 2.1,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// متنِ توضیحیِ فشرده.
+  static TextStyle bodySmall({Color? color}) => TextStyle(
+        fontSize: 12.5,
+        height: 2.05,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// کپشن و متنِ کمکی.
+  static TextStyle caption({Color? color}) => TextStyle(
+        fontSize: 11,
+        height: 1.8,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// برچسب‌ها — پیل‌ها و نشان‌ها.
+  static TextStyle label({Color? color}) => TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// نشانِ خیلی کوچک (مثلِ بجِ پرمیوم).
+  static TextStyle badge({Color? color}) => TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+        color: color,
+        fontFamily: fontFamily,
+      );
+
+  /// زیرنویسِ لاتینِ برج (نامِ انگلیسی رویِ بنر).
+  static TextStyle overlineEn({Color? color}) => TextStyle(
+        fontSize: 11.5,
+        letterSpacing: 3,
+        color: color,
+        fontFamily: fontFamily,
+      );
+}
+
 class AppTheme {
   AppTheme._();
 

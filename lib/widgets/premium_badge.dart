@@ -38,12 +38,8 @@ class PremiumBadge extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               active ? 'پرمیومِ فعال' : 'پرمیوم',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: AstralTokens.celestialGold,
-                fontFamily: 'Vazirmatn',
-              ),
+              style:
+                  AstralTextStyles.badge(color: AstralTokens.celestialGold),
             ),
           ],
         ),
@@ -71,12 +67,8 @@ class PremiumSectionTitle extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w800,
-              color: theme.colorScheme.onSurface,
-              fontFamily: 'Vazirmatn',
-            ),
+            style:
+                AstralTextStyles.titleSmall(color: theme.colorScheme.onSurface),
           ),
         ),
         PremiumBadge(active: active),

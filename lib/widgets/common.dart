@@ -55,12 +55,8 @@ class SectionHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.onSurface,
-                    fontFamily: 'Vazirmatn',
-                  ),
+                  style: AstralTextStyles.title(
+                      color: theme.colorScheme.onSurface),
                 ),
                 if (subtitle != null)
                   Padding(
@@ -380,12 +376,8 @@ class LockedSection extends StatelessWidget {
                     Flexible(
                       child: Text(
                         title,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.onSurface,
-                          fontFamily: 'Vazirmatn',
-                        ),
+                        style: AstralTextStyles.titleSmall(
+                            color: theme.colorScheme.onSurface),
                       ),
                     ),
                     const SizedBox(width: 8),

@@ -1,7 +1,7 @@
 name: taalebin
 description: "طالع بین — طالع‌بینی شخصی‌سازی‌شده بر اساس برج تولد (نسخهٔ آفلاین و فارسی)"
 publish_to: 'none'
-version: 1.13.1+27
+version: 1.13.2+28
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

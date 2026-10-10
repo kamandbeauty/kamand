@@ -364,11 +364,8 @@ class _SignHeaderBanner extends StatelessWidget {
                 const SizedBox(height: 30),
                 Text(
                   sign.nameFa,
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    fontFamily: 'Vazirmatn',
+                  style: AstralTextStyles.scene(color: Colors.white)
+                      .copyWith(
                     shadows: const [
                       Shadow(color: Colors.black45, blurRadius: 16),
                     ],
@@ -377,12 +374,8 @@ class _SignHeaderBanner extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   sign.nameEn.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    letterSpacing: 3,
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontFamily: 'Vazirmatn',
-                  ),
+                  style: AstralTextStyles.overlineEn(
+                      color: Colors.white.withValues(alpha: 0.85)),
                 ),
                 const SizedBox(height: 14),
                 Wrap(
