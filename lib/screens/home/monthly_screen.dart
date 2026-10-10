@@ -202,6 +202,11 @@ class _RewardedMonthUnlockCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // پرمیوم = هیچ تبلیغ و هیچ ریواردی؛ حتی اگر این کارت اشتباهاً در
+    // شاخهٔ دیداری قرار بگیرد، رندر نمی‌شود.
+    if (ref.watch(entitlementProvider).hasPremium) {
+      return const SizedBox.shrink();
+    }
     final theme = Theme.of(context);
     final analytics = ref.watch(analyticsProvider);
     return GlassCard(

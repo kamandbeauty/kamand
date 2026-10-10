@@ -227,16 +227,16 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="taalebin-v1.13.0"
+          tag="taalebin-v1.13.1"
 
           # Copy artifacts to their final, self-describing filenames.
           dist="$RUNNER_TEMP/dist"
           rm -rf "$dist"; mkdir -p "$dist"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.13.0-new-phones-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.13.0-old-phones-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.13.0-emulator-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.13.0-universal.apk"
-          cp "$aab"                                 "$dist/taalebin-v1.13.0.aab"
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$dist/taalebin-v1.13.1-new-phones-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$dist/taalebin-v1.13.1-old-phones-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$dist/taalebin-v1.13.1-emulator-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$dist/taalebin-v1.13.1-universal.apk"
+          cp "$aab"                                 "$dist/taalebin-v1.13.1.aab"
 
           # gh calls get 3 attempts — release creation occasionally hits a
           # transient 5xx / secondary rate limit on busy days.
@@ -256,22 +256,21 @@ jobs:
           # corrupted/truncated download can be detected before installing.
           (
             cd "$dist"
-            for f in taalebin-v1.13.0-* taalebin-v1.13.0.aab; do
+            for f in taalebin-v1.13.1-* taalebin-v1.13.1.aab; do
               printf "%s  %s bytes  sha256:%s\n" "$f" "$(stat -c%s "$f")" "$(sha256sum "$f" | cut -d" " -f1)"
             done
           ) > "$dist/CHECKSUMS.txt"
 
-          notes="نسخهٔ ۱.۱۳.۰ «طالع بین» — نشانِ پرمیوم، تبلیغات هوشمند و جایزهٔ تبلیغ 🌟
+          notes="نسخهٔ ۱.۱۳.۱ «طالع بین» — پرمیومِ کاملاً بدونِ تبلیغ 🌟
 
-          ✨ نشانِ همیشگیِ پرمیوم: از این نسخه، تمامِ قابلیت‌های ویژه — چه قبل از خریدِ اشتراک و چه بعد از آن — یک نشانِ طلاییِ «پرمیوم» کنارِ خود دارند؛ تا همیشه بدانید کدام بخش‌ها قابلیتِ ویژه‌اند و می‌توانید از آن‌ها استفاده کنید.
+          ✨ تضمینِ جدید: در نسخهٔ پرمیوم، هیچ تبلیغی و هیچ جایزهٔ تبلیغی وجود ندارد. به‌محضِ فعال‌شدنِ اشتراک:
+          • همهٔ بنرهای تبلیغاتی به‌کلی حذف می‌شوند
+          • کارت‌های «مشاهدهٔ تبلیغ» هرگز نمایش داده نمی‌شوند — محتوای پرمیوم مستقیم و بی‌واسطه باز می‌شود
+          • این قاعده در کد و در تست‌های خودکار تضمین شده است تا هرگز نشکند
 
-          🎬 تبلیغِ جایزه‌ایِ تمام‌صفحه: «طالعِ کاملِ امروز» و «گزارشِ پیشرفتهٔ ماه» حالا بدونِ خرید و فقط با تماشای یک تبلیغِ کامل (چند ثانیه) باز می‌شوند — اختیاری و همیشه در دسترس.
+          🎬 برای کاربرانِ رایگان همه‌چیز مثل قبل است: طالعِ کاملِ روزانه و گزارشِ پیشرفتهٔ ماهانه با تماشای یک تبلیغِ جایزه‌ایِ تمام‌صفحه (اختیاری) باز می‌شوند و بنرهای تبلیغاتی با برچسبِ شفافِ «تبلیغ» نمایش داده می‌شوند.
 
-          📺 بنرهای تبلیغاتی: چند بنرِ افقیِ ظریف در جاهای مناسبِ برنامه (گیفِ لینک‌دار با برچسبِ شفافِ «تبلیغ»). با خریدِ پرمیوم، همهٔ تبلیغات به‌کلی حذف می‌شوند.
-
-          🦂 و دو اثرِ هنریِ سینماییِ تکمیلی: «دلو» (ساقیِ آسمانی که رودی از غبارِ ستاره می‌ریزد) و «حوت» (دو ماهیِ آسمانی در گردشِ جاودانه) — حالا هر ۱۲ برج اثرِ اختصاصیِ خودشان را با همان زبانِ بصریِ واحد دارند.
-
-          💎 و همهٔ امکاناتِ نسخهٔ ۱.۱۲.۰: سیستمِ طراحیِ ASTRAL COSMOS در کلِ برنامه، هدرِ هنریِ تمام‌عرضِ «برجِ من»، کارت‌های شیشه‌ایِ چندلایه و ناوبریِ طلایی.
+          ✨ نشانِ همیشگیِ پرمیوم (از نسخهٔ قبل): همهٔ قابلیت‌های ویژه — چه قبل و چه بعد از خرید — نشانِ طلاییِ «پرمیوم» کنارِ خود دارند.
 
           📱 کدام فایل را دانلود کنم؟
           • گوشیِ نسبتاً جدید (اکثر گوشی‌های چند سال اخیر) → فایل «گوشی‌های جدید»
@@ -280,11 +279,11 @@ jobs:
 
           | فایل | مخصوص |
           |---|---|
-          | taalebin-v1.13.0-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
-          | taalebin-v1.13.0-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
-          | taalebin-v1.13.0-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید (فقط کامپیوتر) |
-          | taalebin-v1.13.0-universal.apk | 🌍 همهٔ گوشی‌ها (حجم بیشتر) |
-          | taalebin-v1.13.0.aab | 🏪 فقط Google Play |
+          | taalebin-v1.13.1-new-phones-arm64-v8a.apk | 📱 گوشی‌های جدید (اکثر گوشی‌ها) |
+          | taalebin-v1.13.1-old-phones-armeabi-v7a.apk | 📱 گوشی‌های قدیمی/۳۲ بیتی |
+          | taalebin-v1.13.1-emulator-x86_64.apk | 💻 شبیه‌ساز اندروید (فقط کامپیوتر) |
+          | taalebin-v1.13.1-universal.apk | 🌍 همهٔ گوشی‌ها (حجم بیشتر) |
+          | taalebin-v1.13.1.aab | 🏪 فقط Google Play |
           | CHECKSUMS.txt | 🔐 چک‌سام فایل‌ها |
 
           حداقل سیستم لازم: اندروید ۶.۰ (به بالا).
@@ -304,7 +303,7 @@ jobs:
             retry gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             retry gh release create "$tag" "$dist"/* \
-              --title "طالع بین — نسخهٔ ۱.۱۳.۰" \
+              --title "طالع بین — نسخهٔ ۱.۱۳.۱" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
@@ -321,9 +320,9 @@ jobs:
                 -f label="$label" >/dev/null || true
             fi
           }
-          label_asset "taalebin-v1.13.0-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
-          label_asset "taalebin-v1.13.0-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
-          label_asset "taalebin-v1.13.0-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
-          label_asset "taalebin-v1.13.0-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
-          label_asset "taalebin-v1.13.0.aab"                        "فقط Google Play — نصب مستقیم ندارد"
+          label_asset "taalebin-v1.13.1-new-phones-arm64-v8a.apk"  "گوشی‌های جدید — اکثر گوشی‌ها"
+          label_asset "taalebin-v1.13.1-old-phones-armeabi-v7a.apk" "گوشی‌های قدیمی / ۳۲ بیتی"
+          label_asset "taalebin-v1.13.1-emulator-x86_64.apk"        "شبیه‌ساز اندروید — فقط کامپیوتر"
+          label_asset "taalebin-v1.13.1-universal.apk"              "همهٔ گوشی‌ها (حجم بیشتر)"
+          label_asset "taalebin-v1.13.1.aab"                        "فقط Google Play — نصب مستقیم ندارد"
           label_asset "CHECKSUMS.txt"                               "چک‌سام فایل‌ها (برای اطمینان از دانلود سالم)"
