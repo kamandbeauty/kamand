@@ -130,13 +130,17 @@ class _MenuScreenState extends State<MenuScreen>
                     ),
                   ),
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(22, 4, 22, 20),
-                      child: Center(
+                    child: LayoutBuilder(
+                      builder: (BuildContext ctx, BoxConstraints box) =>
+                          SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(22, 4, 22, 16),
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 430),
+                          constraints: BoxConstraints(
+                            minHeight: box.maxHeight - 20,
+                            maxWidth: 430,
+                          ),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: <Widget>[
                               _Logo(glow: _glow),
                               const SizedBox(height: 18),
