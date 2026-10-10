@@ -60,12 +60,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         await ref.read(userProvider.notifier).updateUser(session.user);
         savedUser = session.user;
       } catch (_) {
-        // Allow offline use, but never keep an already expired entitlement.
-        if (cachedUser.isPremium && !cachedUser.hasActivePremium) {
-          savedUser = cachedUser.copyWith(isPremium: false);
+        // Entitlement is server-owned. A cached/local value must never grant
+        // premium when the backend cannot confirm the active subscription.
+        if (cachedUser.isPremium) {
+          savedUser = cachedUser.copyWith(
+            isPremium: false,
+            premiumExpiresAt: '',
+          );
           await ref.read(userProvider.notifier).updateUser(savedUser);
         }
       }
+    } else if (cachedUser?.isPremium == true) {
+      // Safely migrate away from the legacy local Premium switch.
+      savedUser = cachedUser!.copyWith(
+        isPremium: false,
+        premiumExpiresAt: '',
+      );
+      await ref.read(userProvider.notifier).updateUser(savedUser);
     }
     if (!mounted) return;
     final isOnboarded = savedUser?.isOnboarded ?? ref.read(userProvider).isOnboarded;
