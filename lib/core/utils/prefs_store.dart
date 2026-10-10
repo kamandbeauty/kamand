@@ -162,7 +162,16 @@ class PrefsStore {
     final businessMap = _mapOrNull(data['business']);
     final settingsMap = _mapOrNull(data['settings']);
     final draftMap = _mapOrNull(data['draft']);
-    final parsedUser = userMap == null ? null : UserModel.fromMap(userMap);
+    final currentUser = await loadUser();
+    final importedUser = userMap == null ? null : UserModel.fromMap(userMap);
+    // Authentication and premium entitlement are server-owned and must never
+    // be granted by importing an editable local backup file.
+    final parsedUser = importedUser?.copyWith(
+      email: currentUser?.email ?? '',
+      authProvider: currentUser?.authProvider ?? '',
+      isPremium: currentUser?.isPremium ?? false,
+      premiumExpiresAt: currentUser?.premiumExpiresAt ?? '',
+    );
     var parsedBusiness = businessMap == null
         ? null
         : BusinessProfileModel.fromMap(businessMap);

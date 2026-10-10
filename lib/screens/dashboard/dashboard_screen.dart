@@ -1363,7 +1363,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   bool get _officialInvoiceActive {
     final settings = ref.read(settingsProvider);
-    return ref.read(userProvider).isPremium &&
+    return ref.read(userProvider).hasActivePremium &&
         settings.officialInvoiceEnabled &&
         _invoiceType == 'sale';
   }
@@ -1676,7 +1676,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final business = ref.watch(businessProvider);
     final settings = ref.watch(settingsProvider);
-    final isPremium = ref.watch(userProvider.select((user) => user.isPremium));
+    final isPremium = ref.watch(userProvider.select((user) => user.hasActivePremium));
     final accent = Color(settings.accentColor);
     final shopName = business.shopName.isNotEmpty ? business.shopName : 'فاکتور ساز روبی';
 

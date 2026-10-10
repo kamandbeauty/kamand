@@ -19,6 +19,7 @@ import '../../core/utils/thousand_separator_formatter.dart';
 import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
+import '../account/account_screen.dart';
 
 const _orange = AppTheme.RubyPrimary;
 
@@ -48,7 +49,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: user.isPremium
+              gradient: user.hasActivePremium
                   ? const LinearGradient(
                       colors: [Color(0xFF7C3AED), Color(0xFFF59E0B)],
                     )
@@ -85,7 +86,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user.isPremium ? 'اکانت پریمیوم فعال' : 'اکانت رایگان',
+                        user.hasActivePremium ? 'اکانت پریمیوم فعال' : 'اکانت رایگان',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
@@ -94,7 +95,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        user.isPremium
+                        user.hasActivePremium
                             ? 'فاکتور رسمی و امکانات ویژه در دسترس است'
                             : 'اولین امکان پریمیوم: صدور فاکتور رسمی',
                         style: const TextStyle(
@@ -105,20 +106,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ],
                   ),
                 ),
-                Switch(
-                  value: user.isPremium,
-                  activeColor: const Color(0xFFFFD166),
-                  onChanged: (value) async {
-                    await ref
-                        .read(userProvider.notifier)
-                        .updateUser(user.copyWith(isPremium: value));
-                    if (!value) {
-                      final current = ref.read(settingsProvider);
-                      await ref.read(settingsProvider.notifier).updateSettings(
-                            current.copyWith(officialInvoiceEnabled: false),
-                          );
-                    }
-                  },
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white.withValues(alpha: 0.14),
+                  ),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AccountScreen()),
+                  ),
+                  child: Text(user.hasActivePremium ? 'مدیریت' : 'ورود / خرید'),
                 ),
               ],
             ),
@@ -849,7 +845,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         settings.defaultTaxRate == settings.defaultTaxRate.roundToDouble() ? 0 : 1,
       ),
     );
-    final isPremium = ref.read(userProvider).isPremium;
+    final isPremium = ref.read(userProvider).hasActivePremium;
     String template = settings.templateStyle;
     bool showLogo = settings.showLogo;
     bool showCard = settings.showCardNum;
