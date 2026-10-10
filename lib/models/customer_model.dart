@@ -5,6 +5,9 @@ class CustomerModel {
   final String phone;
   final String address;
   final String notes;
+  final String nationalId;
+  final String economicCode;
+  final String postalCode;
   final double balance;
   final String createdAt;
 
@@ -15,6 +18,9 @@ class CustomerModel {
     required this.phone,
     required this.address,
     required this.notes,
+    this.nationalId = '',
+    this.economicCode = '',
+    this.postalCode = '',
     required this.balance,
     required this.createdAt,
   });
@@ -26,6 +32,9 @@ class CustomerModel {
     'phone': phone,
     'address': address,
     'notes': notes,
+    'nationalId': nationalId,
+    'economicCode': economicCode,
+    'postalCode': postalCode,
     'balance': balance,
     'createdAt': createdAt,
   };
@@ -37,6 +46,9 @@ class CustomerModel {
     phone: map['phone'] ?? '',
     address: map['address'] ?? '',
     notes: map['notes'] ?? '',
+    nationalId: map['nationalId'] ?? '',
+    economicCode: map['economicCode'] ?? '',
+    postalCode: map['postalCode'] ?? '',
     balance: (map['balance'] ?? 0).toDouble(),
     createdAt: map['createdAt'] ?? '',
   );

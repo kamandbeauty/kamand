@@ -1,8 +1,52 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+
+/// CPU-heavy image work runs in a background isolate. This prevents large
+/// camera photos from blocking Flutter's UI thread or leaving a blank screen.
+Uint8List _processImageBytes(Map<String, Object> payload) {
+  final bytes = payload['bytes']! as Uint8List;
+  final kind = payload['kind']! as String;
+  final removeWhite = payload['removeWhite']! as bool;
+  final maxSide = payload['maxSide']! as int;
+
+  var decoded = img.decodeImage(bytes);
+  if (decoded == null || decoded.width < 1 || decoded.height < 1) {
+    throw const FormatException('تصویر قابل خواندن نیست');
+  }
+  // Camera JPEGs often store rotation in EXIF. Bake it before applying the
+  // normalized crop so preview coordinates and output coordinates agree.
+  decoded = img.bakeOrientation(decoded);
+
+  decoded = ImageProcessHelper.cropNormalized(
+    decoded,
+    left: payload['left']! as double,
+    top: payload['top']! as double,
+    right: payload['right']! as double,
+    bottom: payload['bottom']! as double,
+  );
+
+  // Resize before allocating an RGBA work buffer. A modern camera image can
+  // otherwise require hundreds of MB while background removal is in progress.
+  if (decoded.width > maxSide || decoded.height > maxSide) {
+    decoded = decoded.width >= decoded.height
+        ? img.copyResize(decoded, width: maxSide)
+        : img.copyResize(decoded, height: maxSide);
+  }
+
+  if (removeWhite && kind != 'logo') {
+    decoded = ImageProcessHelper.removeNearWhiteBackground(
+      decoded,
+      threshold: 220,
+      softness: 40,
+    );
+  }
+
+  return Uint8List.fromList(img.encodePng(decoded));
+}
 
 /// پردازش تصویر مهر/امضا: کراپ + حذف پس‌زمینه سفید/روشن
 class ImageProcessHelper {
@@ -12,7 +56,6 @@ class ImageProcessHelper {
     int threshold = 225,
     int softness = 35,
   }) {
-    // خروجی حتماً RGBA تا شفافیت ذخیره شود
     final out = img.Image(
       width: src.width,
       height: src.height,
@@ -26,28 +69,21 @@ class ImageProcessHelper {
         final g = px.g.toInt();
         final b = px.b.toInt();
         final aIn = px.a.toInt();
-
-        // روشنایی (luma تقریبی)
-        final luma = (0.299 * r + 0.587 * g + 0.114 * b);
-        // نزدیکی به خاکستری روشن (پس‌زمینه کاغذ/اسکن)
+        final luma = 0.299 * r + 0.587 * g + 0.114 * b;
         final maxC = r > g ? (r > b ? r : b) : (g > b ? g : b);
         final minC = r < g ? (r < b ? r : b) : (g < b ? g : b);
         final saturation = maxC - minC;
 
-        int aOut = aIn;
-
-        // سفید / نزدیک سفید / خاکستری خیلی روشن با اشباع کم → شفاف
-        final isBright = luma >= threshold || (minC >= threshold - 10);
-        final isPaleGray = luma >= (threshold - softness) && saturation < 28;
+        var aOut = aIn;
+        final isBright = luma >= threshold || minC >= threshold - 10;
+        final isPaleGray = luma >= threshold - softness && saturation < 28;
 
         if (isBright && saturation < 40) {
           aOut = 0;
         } else if (isPaleGray) {
-          // لبه نرم
-          final t = ((threshold - luma) / softness).clamp(0.0, 1.0);
-          aOut = (t * aIn).round().clamp(0, 255);
+          final opacity = ((threshold - luma) / softness).clamp(0.0, 1.0);
+          aOut = (opacity * aIn).round().clamp(0, 255);
         }
-
         out.setPixelRgba(x, y, r, g, b, aOut);
       }
     }
@@ -61,17 +97,25 @@ class ImageProcessHelper {
     required double right,
     required double bottom,
   }) {
-    final l = (left.clamp(0.0, 1.0) * src.width).round().clamp(0, src.width - 1);
-    final t = (top.clamp(0.0, 1.0) * src.height).round().clamp(0, src.height - 1);
-    final r = (right.clamp(0.0, 1.0) * src.width).round().clamp(l + 1, src.width);
-    final b = (bottom.clamp(0.0, 1.0) * src.height).round().clamp(t + 1, src.height);
+    final l = (left.clamp(0.0, 1.0) * src.width)
+        .round()
+        .clamp(0, src.width - 1);
+    final t = (top.clamp(0.0, 1.0) * src.height)
+        .round()
+        .clamp(0, src.height - 1);
+    final r = (right.clamp(0.0, 1.0) * src.width)
+        .round()
+        .clamp(l + 1, src.width);
+    final b = (bottom.clamp(0.0, 1.0) * src.height)
+        .round()
+        .clamp(t + 1, src.height);
     return img.copyCrop(src, x: l, y: t, width: r - l, height: b - t);
   }
 
   /// پردازش کامل و ذخیره دائمی PNG شفاف
   static Future<String> processAndSave({
     required Uint8List bytes,
-    required String kind, // stamp | signature | logo
+    required String kind,
     double left = 0,
     double top = 0,
     double right = 1,
@@ -79,62 +123,32 @@ class ImageProcessHelper {
     bool removeWhite = true,
     int maxSide = 900,
   }) async {
-    var decoded = img.decodeImage(bytes);
-    if (decoded == null) {
-      throw Exception('تصویر قابل خواندن نیست');
-    }
+    if (bytes.isEmpty) throw const FormatException('فایل تصویر خالی است');
 
-    // تبدیل به RGBA
-    if (decoded.numChannels < 4) {
-      final rgba = img.Image(
-        width: decoded.width,
-        height: decoded.height,
-        numChannels: 4,
-      );
-      for (var y = 0; y < decoded.height; y++) {
-        for (var x = 0; x < decoded.width; x++) {
-          final px = decoded.getPixel(x, y);
-          rgba.setPixelRgba(x, y, px.r.toInt(), px.g.toInt(), px.b.toInt(), 255);
-        }
-      }
-      decoded = rgba;
-    }
-
-    decoded = cropNormalized(
-      decoded,
-      left: left,
-      top: top,
-      right: right,
-      bottom: bottom,
-    );
-
-    // لوگو باید دقیقاً با پس‌زمینهٔ اصلی خودش ذخیره شود؛ حذف سفید فقط برای
-    // مهر و امضا انجام می‌شود تا رنگ‌ها و جزئیات سفید لوگو از بین نرود.
-    if (removeWhite && kind != 'logo') {
-      // آستانه پایین‌تر برای اسکن‌های خاکستری
-      decoded = removeNearWhiteBackground(decoded, threshold: 220, softness: 40);
-      // پاس دوم برای سفیدهای باقی‌مانده
-      decoded = removeNearWhiteBackground(decoded, threshold: 235, softness: 20);
-    }
-
-    if (decoded.width > maxSide || decoded.height > maxSide) {
-      if (decoded.width >= decoded.height) {
-        decoded = img.copyResize(decoded, width: maxSide);
-      } else {
-        decoded = img.copyResize(decoded, height: maxSide);
-      }
-    }
+    final encoded = await compute(_processImageBytes, <String, Object>{
+      'bytes': bytes,
+      'kind': kind,
+      'left': left,
+      'top': top,
+      'right': right,
+      'bottom': bottom,
+      'removeWhite': removeWhite,
+      'maxSide': maxSide,
+    });
 
     final dir = await getApplicationDocumentsDirectory();
     final folder = Directory(p.join(dir.path, 'branding'));
-    if (!await folder.exists()) {
-      await folder.create(recursive: true);
-    }
+    if (!await folder.exists()) await folder.create(recursive: true);
+
     final outPath = p.join(
       folder.path,
-      '${kind}_${DateTime.now().millisecondsSinceEpoch}.png',
+      '${kind}_${DateTime.now().microsecondsSinceEpoch}.png',
     );
-    await File(outPath).writeAsBytes(img.encodePng(decoded));
+    final output = File(outPath);
+    await output.writeAsBytes(encoded, flush: true);
+    if (!await output.exists() || await output.length() == 0) {
+      throw const FileSystemException('ذخیره فایل تصویر کامل نشد');
+    }
     return outPath;
   }
 }

@@ -6,15 +6,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/persian_number_formatter.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../providers/bank_card_provider.dart';
 import '../../core/utils/prefs_store.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
 import '../../models/app_settings_model.dart';
 import '../../models/user_model.dart';
 import '../../models/business_profile_model.dart';
+import '../account/account_screen.dart';
 
 const _orange = AppTheme.RubyPrimary;
 
@@ -40,6 +45,80 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: user.hasActivePremium
+                  ? const LinearGradient(
+                      colors: [Color(0xFF7C3AED), Color(0xFFF59E0B)],
+                    )
+                  : const LinearGradient(
+                      colors: [Color(0xFF1E293B), Color(0xFF475569)],
+                    ),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    color: Color(0xFFFFD166),
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.hasActivePremium ? 'اکانت پریمیوم فعال' : 'اکانت رایگان',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user.hasActivePremium
+                            ? 'فاکتور رسمی و امکانات ویژه در دسترس است'
+                            : 'اولین امکان پریمیوم: صدور فاکتور رسمی',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white.withValues(alpha: 0.14),
+                  ),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AccountScreen()),
+                  ),
+                  child: Text(user.hasActivePremium ? 'مدیریت' : 'ورود / خرید'),
+                ),
+              ],
+            ),
+          ),
 
           Card(
             child: Column(
@@ -60,12 +139,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => _editBusinessProfile(context, business),
                 ),
                 const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.receipt_long_outlined, color: _orange),
-                  title: const Text('تنظیمات فاکتور'),
-                  subtitle: Text('شماره شروع: ${settings.startingInvoiceNum}'),
-                  trailing: const Icon(Icons.chevron_left),
-                  onTap: () => _editInvoiceSettings(context, settings),
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Material(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => _editInvoiceSettings(context, settings),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.tune_rounded,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'تنظیمات فاکتور',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    settings.officialInvoiceEnabled
+                                        ? 'فاکتور رسمی فعال · مالیات ${PersianNumberFormatter.toPersian(settings.defaultTaxRate)}٪'
+                                        : 'شماره شروع: ${PersianNumberFormatter.toPersian(settings.startingInvoiceNum)}',
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_left_rounded, color: _orange),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -116,11 +249,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const SizedBox(height: 24),
 
-          const Center(
+          Center(
             child: Text(
-              'فاکتور ساز روبی نسخه ۱.۰.۴\nطراحی شده توسط استودیو جاوید',
+              '${AppConstants.appName} نسخه '
+              '${PersianNumberFormatter.toPersian(AppConstants.appVersion)}\n'
+              'طراحی شده توسط استودیو جاوید',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ),
           const SizedBox(height: 16),
@@ -189,6 +324,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               themeMode: 'light',
             ),
           );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('رنگ برنامه ذخیره شد')),
       );
@@ -243,8 +379,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _exportBackup() async {
     try {
       final payload = await PrefsStore.exportAll();
-      final directory = await getApplicationDocumentsDirectory();
-      final name = 'factor-ruby-backup-${DateTime.now().millisecondsSinceEpoch}.json';
+      final directory = await getTemporaryDirectory();
+      final name = 'factor-ruby-backup-${DateTime.now().microsecondsSinceEpoch}.json';
       final file = File('${directory.path}/$name');
       await file.writeAsString(
         JsonEncoder.withIndent('  ').convert(payload),
@@ -274,6 +410,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (result == null || result.files.single.path == null) return;
 
       final file = File(result.files.single.path!);
+      const maxBackupBytes = 20 * 1024 * 1024;
+      if (!await file.exists() || await file.length() > maxBackupBytes) {
+        throw const FormatException('فایل پشتیبان نامعتبر یا بزرگ‌تر از ۲۰ مگابایت است');
+      }
       final decoded = jsonDecode(await file.readAsString());
       if (decoded is! Map) {
         throw const FormatException('ساختار فایل پشتیبان معتبر نیست');
@@ -286,6 +426,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.invalidate(invoiceListProvider);
       ref.invalidate(customerListProvider);
       ref.invalidate(productListProvider);
+      ref.invalidate(selectedBankCardProvider);
+      ref.invalidate(bankCardListProvider);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -432,13 +574,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: usage,
+                      value: const {
+                        'store',
+                        'online_store',
+                        'services',
+                        'wholesale',
+                        'freelance',
+                        'personal',
+                        'simple_acc',
+                        'other',
+                      }.contains(usage)
+                          ? usage
+                          : 'other',
                       decoration: const InputDecoration(
                         labelText: 'نوع فعالیت',
                         border: OutlineInputBorder(),
                       ),
                       items: const [
                         DropdownMenuItem(value: 'store', child: Text('فروشگاه')),
+                        DropdownMenuItem(value: 'online_store', child: Text('فروشگاه اینترنتی')),
                         DropdownMenuItem(value: 'services', child: Text('خدمات')),
                         DropdownMenuItem(value: 'wholesale', child: Text('عمده‌فروشی')),
                         DropdownMenuItem(value: 'freelance', child: Text('فریلنسر')),
@@ -484,7 +638,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (saved == true && mounted) {
-      ref.read(userProvider.notifier).updateUser(
+      await ref.read(userProvider.notifier).updateUser(
             user.copyWith(
               name: nameCtrl.text.trim(),
               phone: phoneCtrl.text.trim(),
@@ -500,11 +654,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
 
-    nameCtrl.dispose();
-    phoneCtrl.dispose();
-    countryCtrl.dispose();
-    provinceCtrl.dispose();
-    cityCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      nameCtrl.dispose();
+      phoneCtrl.dispose();
+      countryCtrl.dispose();
+      provinceCtrl.dispose();
+      cityCtrl.dispose();
+    });
   }
 
   Future<void> _editBusinessProfile(
@@ -515,6 +671,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final phoneCtrl = TextEditingController(text: business.phone);
     final addressCtrl = TextEditingController(text: business.address);
     final taxCtrl = TextEditingController(text: business.taxId);
+    final nationalIdCtrl = TextEditingController(text: business.nationalId);
+    final economicCodeCtrl = TextEditingController(text: business.economicCode);
+    final registrationCtrl = TextEditingController(text: business.registrationNumber);
+    final postalCodeCtrl = TextEditingController(text: business.postalCode);
 
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -583,11 +743,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 TextField(
                   controller: taxCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'شناسه ملی / کد اقتصادی',
+                    labelText: 'شناسه مالیاتی قدیمی (اختیاری)',
                     border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
+                TextField(
+                  controller: nationalIdCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'شناسه ملی',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: economicCodeCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'شماره / کد اقتصادی',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: registrationCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'شماره ثبت',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: postalCodeCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'کد پستی',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 SizedBox(
                   height: 48,
@@ -611,12 +806,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (saved == true && mounted) {
-      ref.read(businessProvider.notifier).updateBusiness(
+      await ref.read(businessProvider.notifier).updateBusiness(
             business.copyWith(
               shopName: shopCtrl.text.trim().isEmpty ? 'فاکتور ساز روبی' : shopCtrl.text.trim(),
               phone: phoneCtrl.text.trim(),
               address: addressCtrl.text.trim(),
               taxId: taxCtrl.text.trim(),
+              nationalId: nationalIdCtrl.text.trim(),
+              economicCode: economicCodeCtrl.text.trim(),
+              registrationNumber: registrationCtrl.text.trim(),
+              postalCode: postalCodeCtrl.text.trim(),
             ),
           );
       ScaffoldMessenger.of(context).showSnackBar(
@@ -624,10 +823,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
 
-    shopCtrl.dispose();
-    phoneCtrl.dispose();
-    addressCtrl.dispose();
-    taxCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      shopCtrl.dispose();
+      phoneCtrl.dispose();
+      addressCtrl.dispose();
+      taxCtrl.dispose();
+      nationalIdCtrl.dispose();
+      economicCodeCtrl.dispose();
+      registrationCtrl.dispose();
+      postalCodeCtrl.dispose();
+    });
   }
 
   Future<void> _editInvoiceSettings(
@@ -635,9 +840,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     AppSettingsModel settings,
   ) async {
     final startCtrl = TextEditingController(text: settings.startingInvoiceNum.toString());
+    final taxCtrl = TextEditingController(
+      text: settings.defaultTaxRate.toStringAsFixed(
+        settings.defaultTaxRate == settings.defaultTaxRate.roundToDouble() ? 0 : 1,
+      ),
+    );
+    final isPremium = ref.read(userProvider).hasActivePremium;
     String template = settings.templateStyle;
     bool showLogo = settings.showLogo;
     bool showCard = settings.showCardNum;
+    bool officialEnabled = settings.officialInvoiceEnabled && isPremium;
 
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -692,6 +904,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         if (v != null) setModal(() => template = v);
                       },
                     ),
+                    Container(
+                      margin: const EdgeInsets.only(top: 14, bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        secondary: const Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Color(0xFFD97706),
+                        ),
+                        title: const Text(
+                          'فاکتور رسمی',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                        subtitle: Text(
+                          isPremium
+                              ? 'قالب رسمی، مالیات و ارزش افزوده'
+                              : 'ویژه کاربران پریمیوم',
+                        ),
+                        value: officialEnabled,
+                        activeColor: _orange,
+                        onChanged: isPremium
+                            ? (value) => setModal(
+                                  () => officialEnabled = value,
+                                )
+                            : null,
+                      ),
+                    ),
+                    if (officialEnabled) ...[
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: taxCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          ThousandSeparatorInputFormatter(allowDecimal: true),
+                        ],
+                        decoration: const InputDecoration(
+                          labelText: 'نرخ مالیات و ارزش افزوده (درصد)',
+                          prefixIcon: Icon(Icons.percent_rounded),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('نمایش لوگو روی فاکتور'),
@@ -731,18 +992,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (saved == true && mounted) {
-      ref.read(settingsProvider.notifier).updateSettings(
+      await ref.read(settingsProvider.notifier).updateSettings(
             settings.copyWith(
-              startingInvoiceNum: int.tryParse(startCtrl.text.trim()) ?? settings.startingInvoiceNum,
+              startingInvoiceNum: () {
+                final parsed = int.tryParse(
+                  ThousandSeparatorInputFormatter.faToEn(startCtrl.text.trim()),
+                );
+                return (parsed == null || parsed < 1)
+                    ? settings.startingInvoiceNum
+                    : parsed;
+              }(),
               templateStyle: template,
               showLogo: showLogo,
               showCardNum: showCard,
+              officialInvoiceEnabled: officialEnabled && isPremium,
+              defaultTaxRate: (ThousandSeparatorInputFormatter.parseToDouble(
+                        taxCtrl.text,
+                      ) ??
+                      settings.defaultTaxRate)
+                  .clamp(0, 100)
+                  .toDouble(),
             ),
           );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تنظیمات فاکتور ذخیره شد')),
       );
     }
-    startCtrl.dispose();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      startCtrl.dispose();
+      taxCtrl.dispose();
+    });
   }
 }

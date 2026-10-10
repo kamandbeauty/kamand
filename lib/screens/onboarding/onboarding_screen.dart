@@ -15,6 +15,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _step = 1;
+  bool _saving = false;
 
   final TextEditingController _nameController = TextEditingController();
   String _selectedCountry = 'ایران';
@@ -29,7 +30,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
-  void _nextStep() {
+  Future<void> _nextStep() async {
+    if (_saving) return;
     if (_step == 1 && _nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('لطفا نام خود را وارد کنید')),
@@ -51,11 +53,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         isOnboarded: true,
       );
 
-      ref.read(userProvider.notifier).updateUser(updatedUser);
-
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      );
+      setState(() => _saving = true);
+      try {
+        await ref.read(userProvider.notifier).updateUser(updatedUser);
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
+      } catch (error) {
+        if (!mounted) return;
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ذخیره اطلاعات انجام نشد: $error')),
+        );
+      }
     }
   }
 

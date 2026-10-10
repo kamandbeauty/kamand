@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/app_settings_model.dart';
+import '../../models/business_profile_model.dart';
 import '../../providers/app_providers.dart';
 import 'image_crop_screen.dart';
 
@@ -11,6 +13,16 @@ const _slate400 = Color(0xFF94A3B8);
 const _slate500 = Color(0xFF64748B);
 const _slate600 = Color(0xFF475569);
 const _cardBg = Color(0xFFF1F5F9);
+
+class HeaderCustomizeResult {
+  final BusinessProfileModel business;
+  final AppSettingsModel settings;
+
+  const HeaderCustomizeResult({
+    required this.business,
+    required this.settings,
+  });
+}
 
 class HeaderCustomizeScreen extends ConsumerStatefulWidget {
   const HeaderCustomizeScreen({super.key});
@@ -25,6 +37,8 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
   Color _selectedColor = _orange;
   String? _logoPath;
   String? _stampPath;
+  bool _saving = false;
+  bool _pickingImage = false;
   final _picker = ImagePicker();
 
   final List<Color> _paletteRow1 = const [
@@ -71,61 +85,96 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
   }
 
   Future<void> _pickAndCrop({required String kind, required String title}) async {
-    final x = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
-    if (x == null || !mounted) return;
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ImageCropScreen(
-          imagePath: x.path,
-          kind: kind,
-          title: title,
+    if (_pickingImage || _saving) return;
+    setState(() => _pickingImage = true);
+    try {
+      final selected = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 92,
+      );
+      if (selected == null || !mounted) return;
+      final result = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageCropScreen(
+            imagePath: selected.path,
+            kind: kind,
+            title: title,
+          ),
         ),
-      ),
-    );
-    if (result == null || !mounted) return;
-    setState(() {
-      if (kind == 'stamp') {
-        _stampPath = result;
-      } else {
-        _logoPath = result;
+      );
+      if (result == null || !mounted) return;
+      final resultFile = File(result);
+      if (!await resultFile.exists() || await resultFile.length() == 0) {
+        throw const FileSystemException('فایل پردازش‌شده قابل استفاده نیست');
       }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          kind == 'logo'
-              ? '$title ذخیره شد (بدون تغییر پس‌زمینه)'
-              : '$title ذخیره شد (کراپ + حذف پس‌زمینه سفید)',
+      if (!mounted) return;
+      setState(() {
+        if (kind == 'stamp') {
+          _stampPath = result;
+        } else {
+          _logoPath = result;
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            kind == 'logo'
+                ? '$title ذخیره شد (بدون تغییر پس‌زمینه)'
+                : '$title ذخیره شد (کراپ + حذف پس‌زمینه سفید)',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('انتخاب تصویر انجام نشد: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _pickingImage = false);
+    }
   }
 
   Future<void> _save() async {
+    if (_saving || _pickingImage) return;
+    setState(() => _saving = true);
     try {
       final biz = ref.read(businessProvider);
       final st = ref.read(settingsProvider);
+      final stampPath = _stampPath ??
+          (biz.stampPath.isNotEmpty ? biz.stampPath : biz.signaturePath);
+      if (stampPath.isNotEmpty && !await File(stampPath).exists()) {
+        throw const FileSystemException('فایل مهر و امضا پیدا نشد؛ لطفاً دوباره انتخاب کنید');
+      }
+
       final updated = biz.copyWith(
-        shopName: _nameCtrl.text.trim().isEmpty ? biz.shopName : _nameCtrl.text.trim(),
+        shopName: _nameCtrl.text.trim().isEmpty
+            ? biz.shopName
+            : _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
         address: _descCtrl.text.trim(),
         logoPath: _logoPath ?? biz.logoPath,
-        stampPath: _stampPath ?? '',
+        stampPath: stampPath,
         // یک تصویر واحد برای مهر و امضا استفاده می‌شود.
-        signaturePath: _stampPath ?? biz.signaturePath,
+        signaturePath: stampPath,
       );
-      await ref.read(businessProvider.notifier).updateBusiness(updated);
-      await ref.read(settingsProvider.notifier).updateSettings(
-            st.copyWith(accentColor: _selectedColor.value),
-          );
+      final updatedSettings = st.copyWith(
+        accentColor: _selectedColor.value,
+      );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تنظیمات فاکتور، رنگ و مهر و امضا ذخیره شد')),
+
+      // Return the changes first. Updating the root providers while this route
+      // is still active rebuilds MaterialApp's theme during a pop transition
+      // on some Android devices and can leave a grey error surface.
+      Navigator.of(context).pop(
+        HeaderCustomizeResult(
+          business: updated,
+          settings: updatedSettings,
+        ),
       );
-      Navigator.pop(context);
     } catch (error) {
       if (!mounted) return;
+      setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('ذخیره تنظیمات انجام نشد: $error')),
       );
@@ -228,7 +277,12 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
                   ]),
                   const SizedBox(height: 12),
                   InkWell(
-                    onTap: () => _pickAndCrop(kind: 'logo', title: 'کراپ لوگو'),
+                    onTap: _pickingImage || _saving
+                        ? null
+                        : () => _pickAndCrop(
+                              kind: 'logo',
+                              title: 'کراپ لوگو',
+                            ),
                     child: Row(children: [
                       const Icon(Icons.more_horiz, color: _slate500),
                       const Spacer(),
@@ -327,7 +381,12 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
                   ),
                   const SizedBox(height: 12),
                   InkWell(
-                    onTap: () => _pickAndCrop(kind: 'stamp', title: 'کراپ مهر و امضا'),
+                    onTap: _pickingImage || _saving
+                        ? null
+                        : () => _pickAndCrop(
+                              kind: 'stamp',
+                              title: 'کراپ مهر و امضا',
+                            ),
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       height: 150,
@@ -342,7 +401,16 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.all(8),
-                                  child: Image.file(File(_stampPath!), fit: BoxFit.contain),
+                                  child: Image.file(
+                                    File(_stampPath!),
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => const Center(
+                                      child: Icon(
+                                        Icons.broken_image_outlined,
+                                        color: Colors.redAccent,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                                 Positioned(
                                   left: 4,
@@ -385,9 +453,30 @@ class _HeaderCustomizeScreenState extends ConsumerState<HeaderCustomizeScreen> {
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: _save,
-              style: ElevatedButton.styleFrom(backgroundColor: _selectedColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-              child: const Text('ذخیره', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+              onPressed: _saving || _pickingImage ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _selectedColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _saving
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'ذخیره',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                      ),
+                    ),
             ),
           ),
         ),

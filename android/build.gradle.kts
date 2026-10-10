@@ -2,6 +2,8 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // Cafe Bazaar Poolakey Android SDK is distributed through JitPack.
+        maven(url = "https://jitpack.io")
     }
 }
 

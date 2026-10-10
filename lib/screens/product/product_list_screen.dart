@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
 import '../../models/product_model.dart';
 import '../../providers/product_provider.dart';
 
@@ -33,6 +34,13 @@ class ProductListScreen extends ConsumerWidget {
     return value.round().toString();
   }
 
+  /// عدد اعشاری بدون صفرهای زائد (۲٫۵ → «2.5» ، ۳ → «3»)
+  String _decimalText(double? value) {
+    if (value == null) return '';
+    if (value == value.roundToDouble()) return value.toInt().toString();
+    return value.toString();
+  }
+
   String _nextCode(List<ProductModel> products) {
     var max = 100;
     for (final product in products) {
@@ -52,7 +60,7 @@ class ProductListScreen extends ConsumerWidget {
     final unitCtrl = TextEditingController(text: product?.unit ?? 'عدد');
     final buyCtrl = TextEditingController(text: _integerText(product?.buyPrice));
     final sellCtrl = TextEditingController(text: _integerText(product?.sellPrice));
-    final stockCtrl = TextEditingController(text: product == null ? '0' : _integerText(product.stock));
+    final stockCtrl = TextEditingController(text: product == null ? '0' : _decimalText(product.stock));
     final notesCtrl = TextEditingController(text: product?.notes ?? '');
 
     final saved = await showModalBottomSheet<bool>(
@@ -165,9 +173,9 @@ class ProductListScreen extends ConsumerWidget {
                   const SizedBox(height: 10),
                   TextField(
                     controller: stockCtrl,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9۰-۹]')),
+                      ThousandSeparatorInputFormatter(allowDecimal: true),
                     ],
                     textAlign: TextAlign.right,
                     decoration: const InputDecoration(
@@ -189,7 +197,7 @@ class ProductListScreen extends ConsumerWidget {
                   SizedBox(
                     height: 48,
                     child: FilledButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
                         final name = nameCtrl.text.trim();
                         if (name.isEmpty) {
                           ScaffoldMessenger.of(sheetContext).showSnackBar(
@@ -201,21 +209,37 @@ class ProductListScreen extends ConsumerWidget {
                             ? _nextCode(ref.read(productListProvider))
                             : _englishDigits(codeCtrl.text.trim());
                         final item = ProductModel(
-                          id: product?.id ?? 'p-${DateTime.now().millisecondsSinceEpoch}',
+                          id: product?.id ?? 'p-${DateTime.now().microsecondsSinceEpoch}',
                           code: code,
                           name: name,
                           unit: unitCtrl.text.trim().isEmpty ? 'عدد' : unitCtrl.text.trim(),
                           buyPrice: _number(buyCtrl.text).roundToDouble(),
                           sellPrice: _number(sellCtrl.text).roundToDouble(),
-                          stock: _number(stockCtrl.text).roundToDouble(),
+                          stock: _number(stockCtrl.text),
                           notes: notesCtrl.text.trim(),
                         );
-                        if (product == null) {
-                          ref.read(productListProvider.notifier).addProduct(item);
-                        } else {
-                          ref.read(productListProvider.notifier).updateProduct(item);
+                        try {
+                          if (product == null) {
+                            await ref
+                                .read(productListProvider.notifier)
+                                .addProduct(item);
+                          } else {
+                            await ref
+                                .read(productListProvider.notifier)
+                                .updateProduct(item);
+                          }
+                          if (sheetContext.mounted) {
+                            Navigator.pop(sheetContext, true);
+                          }
+                        } catch (error) {
+                          if (sheetContext.mounted) {
+                            ScaffoldMessenger.of(sheetContext).showSnackBar(
+                              SnackBar(
+                                content: Text('ذخیره محصول انجام نشد: $error'),
+                              ),
+                            );
+                          }
                         }
-                        Navigator.pop(sheetContext, true);
                       },
                       icon: Icon(product == null ? Icons.add : Icons.check),
                       label: Text(product == null ? 'درج محصول' : 'ذخیره تغییرات'),
@@ -234,13 +258,16 @@ class ProductListScreen extends ConsumerWidget {
       ),
     );
 
-    nameCtrl.dispose();
-    codeCtrl.dispose();
-    unitCtrl.dispose();
-    buyCtrl.dispose();
-    sellCtrl.dispose();
-    stockCtrl.dispose();
-    notesCtrl.dispose();
+    // تا پایان انیمیشن بسته‌شدن شیت، فیلدها هنوز روی صفحه‌اند.
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      nameCtrl.dispose();
+      codeCtrl.dispose();
+      unitCtrl.dispose();
+      buyCtrl.dispose();
+      sellCtrl.dispose();
+      stockCtrl.dispose();
+      notesCtrl.dispose();
+    });
 
     if (saved == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -249,9 +276,13 @@ class ProductListScreen extends ConsumerWidget {
     }
   }
 
-  void _copyProduct(BuildContext context, WidgetRef ref, ProductModel product) {
+  Future<void> _copyProduct(
+    BuildContext context,
+    WidgetRef ref,
+    ProductModel product,
+  ) async {
     final copy = ProductModel(
-      id: 'p-${DateTime.now().millisecondsSinceEpoch}-copy',
+      id: 'p-${DateTime.now().microsecondsSinceEpoch}-copy',
       code: _nextCode(ref.read(productListProvider)),
       name: product.name,
       unit: product.unit,
@@ -260,10 +291,18 @@ class ProductListScreen extends ConsumerWidget {
       stock: product.stock,
       notes: product.notes,
     );
-    ref.read(productListProvider.notifier).addProduct(copy);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('محصول کپی شد')),
-    );
+    try {
+      await ref.read(productListProvider.notifier).addProduct(copy);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('محصول کپی شد')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('کپی محصول انجام نشد: $error')),
+      );
+    }
   }
 
   Future<void> _deleteProduct(BuildContext context, WidgetRef ref, ProductModel product) async {
@@ -286,7 +325,15 @@ class ProductListScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    ref.read(productListProvider.notifier).deleteProduct(product.id);
+    try {
+      await ref.read(productListProvider.notifier).deleteProduct(product.id);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حذف محصول انجام نشد: $error')),
+      );
+      return;
+    }
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('محصول حذف شد')),
@@ -366,7 +413,7 @@ class ProductListScreen extends ConsumerWidget {
                             ),
                           ),
                           subtitle: Text(
-                            'موجودی: ${PersianNumberFormatter.toPersian(product.stock.round())} ${product.unit}\nقیمت فروش: ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
+                            'موجودی: ${PersianNumberFormatter.toPersian(_decimalText(product.stock))} ${product.unit}\nقیمت فروش: ${PersianNumberFormatter.formatCurrency(product.sellPrice)}',
                             style: const TextStyle(fontSize: 11, color: _slate500),
                           ),
                         ),

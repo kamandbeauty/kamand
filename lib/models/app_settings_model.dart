@@ -5,6 +5,8 @@ class AppSettingsModel {
   final bool showCardNum;
   final bool showStamp;
   final bool showSignature;
+  final bool officialInvoiceEnabled;
+  final double defaultTaxRate;
   final String themeMode; // light, dark, system
   final bool autoBackup;
   final String pinCode;
@@ -19,6 +21,8 @@ class AppSettingsModel {
     required this.showCardNum,
     this.showStamp = true,
     this.showSignature = true,
+    this.officialInvoiceEnabled = false,
+    this.defaultTaxRate = 10,
     required this.themeMode,
     required this.autoBackup,
     required this.pinCode,
@@ -33,6 +37,8 @@ class AppSettingsModel {
     bool? showCardNum,
     bool? showStamp,
     bool? showSignature,
+    bool? officialInvoiceEnabled,
+    double? defaultTaxRate,
     String? themeMode,
     bool? autoBackup,
     String? pinCode,
@@ -46,6 +52,9 @@ class AppSettingsModel {
       showCardNum: showCardNum ?? this.showCardNum,
       showStamp: showStamp ?? this.showStamp,
       showSignature: showSignature ?? this.showSignature,
+      officialInvoiceEnabled:
+          officialInvoiceEnabled ?? this.officialInvoiceEnabled,
+      defaultTaxRate: defaultTaxRate ?? this.defaultTaxRate,
       themeMode: themeMode ?? this.themeMode,
       autoBackup: autoBackup ?? this.autoBackup,
       pinCode: pinCode ?? this.pinCode,
@@ -61,6 +70,8 @@ class AppSettingsModel {
         'showCardNum': showCardNum,
         'showStamp': showStamp,
         'showSignature': showSignature,
+        'officialInvoiceEnabled': officialInvoiceEnabled,
+        'defaultTaxRate': defaultTaxRate,
         'themeMode': themeMode,
         'autoBackup': autoBackup,
         'pinCode': pinCode,
@@ -73,8 +84,12 @@ class AppSettingsModel {
         templateStyle: map['templateStyle'] ?? 'modern',
         showLogo: map['showLogo'] ?? true,
         showCardNum: map['showCardNum'] ?? true,
-        showStamp: map['showStamp'] ?? true,
-        showSignature: map['showStamp'] ?? map['showSignature'] ?? true,
+        showStamp: map['showStamp'] ?? map['showSignature'] ?? true,
+        showSignature: map['showSignature'] ?? map['showStamp'] ?? true,
+        officialInvoiceEnabled: map['officialInvoiceEnabled'] ?? false,
+        defaultTaxRate: (map['defaultTaxRate'] is num)
+            ? (map['defaultTaxRate'] as num).toDouble()
+            : double.tryParse('${map['defaultTaxRate']}') ?? 10,
         themeMode: map['themeMode'] ?? 'light',
         autoBackup: map['autoBackup'] ?? true,
         pinCode: map['pinCode'] ?? '',

@@ -1,7 +1,7 @@
 name: factor_ruby
 description: "فاکتور ساز روبی - اپلیکیشن اندرویدی صدور فاکتور و مدیریت مالی کسب‌وکار"
 publish_to: 'none'
-version: 1.0.4+4
+version: 1.0.8+8
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -34,13 +34,17 @@ dependencies:
 
   # Local key-value persistence
   shared_preferences: ^2.3.3
+  flutter_secure_storage: ^9.2.4
+
+  # Account, API and Cafe Bazaar subscription
+  google_sign_in: ^6.2.2
+  http: ^1.2.2
+  flutter_poolakey: ^2.2.0+1.0.0
 
   # Persian Calendar & Date
   shamsi_date: ^1.0.2
   intl: ^0.20.2
 
-  # فونت فارسی زیبا
-  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -57,3 +61,19 @@ flutter:
     - assets/images/ruby_fox_mascot.png
     - assets/images/rubilogo.jpg
     - assets/images/banks/
+
+  fonts:
+    - family: Vazirmatn
+      fonts:
+        - asset: assets/fonts/Vazirmatn-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Vazirmatn-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Vazirmatn-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Vazirmatn-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Vazirmatn-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Vazirmatn-Black.ttf
+          weight: 900

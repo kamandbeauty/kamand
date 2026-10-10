@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/jalali_helper.dart';
 import '../../core/utils/persian_number_formatter.dart';
@@ -26,7 +27,6 @@ import '../../providers/bank_card_provider.dart';
 import '../../core/utils/replace_on_type_field.dart';
 import '../../core/utils/thousand_separator_formatter.dart';
 import '../../core/utils/prefs_store.dart';
-import '../../core/utils/prefs_store.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Home — فاکتور ساز روبی — چیدمان دقیقاً مطابق اسکرین‌شات فیدا
@@ -49,6 +49,7 @@ class _DraftTab {
   final String id;
   String title;
   String? editId;
+  String customerId;
   String customerName;
   String customerPhone;
   String invoiceNumber;
@@ -71,6 +72,7 @@ class _DraftTab {
     required this.id,
     required this.title,
     this.editId,
+    this.customerId = '',
     this.customerName = '',
     this.customerPhone = '',
     this.invoiceNumber = '۱',
@@ -124,6 +126,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   // Form state — متصل به دیتابیس واقعی (§29)
   String? _editId;
+  String _customerId = '';
   String _customerName = '';
   String _customerPhone = '';
   String _invoiceNumber = '۱';
@@ -141,10 +144,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _shippingFee = 0;
   double _depositAmount = 0;
   double _prevDebtAmount = 0;
+  bool _savingInvoice = false;
   int? _selectedRow;
   int? _typingRow;
   Timer? _suggestionTimer;
+  Timer? _draftTimer;
   OverlayEntry? _productPopup;
+  /// کنترلر پایدار عنوان هر ردیف؛ ساختن کنترلر جدید در هر build باعث
+  /// پریدن مکان‌نما و خراب شدن تایپ فارسی (IME) می‌شد.
+  final Map<String, TextEditingController> _titleCtrls = <String, TextEditingController>{};
   final Map<int, LayerLink> _productLinks = <int, LayerLink>{};
   /// با هر بار load ویرایش افزایش می‌یابد تا فیلدهای جدول دوباره ساخته شوند
   int _formGen = 0;
@@ -273,9 +281,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _discountCtrl.dispose();
     _prevDebtCtrl.dispose();
     _suggestionTimer?.cancel();
+    _draftTimer?.cancel();
+    for (final c in _titleCtrls.values) {
+      c.dispose();
+    }
+    _titleCtrls.clear();
     _productPopup?.remove();
     _productPopup = null;
     super.dispose();
+  }
+
+  TextEditingController _titleController(InvoiceItemModel it) {
+    final key = '${it.id}|$_formGen';
+    final c = _titleCtrls.putIfAbsent(
+      key,
+      () => TextEditingController(text: it.title),
+    );
+    // فقط وقتی متن مدل واقعاً فرق دارد (مثلاً حذف ردیف) همگام کن؛ هنگام تایپ
+    // این دو همیشه برابرند و ناحیهٔ composing دست‌نخورده می‌ماند.
+    if (c.text != it.title) {
+      c.value = TextEditingValue(
+        text: it.title,
+        selection: TextSelection.collapsed(offset: it.title.length),
+      );
+    }
+    return c;
+  }
+
+  void _disposeStaleTitleControllers() {
+    final live = _items.map((e) => '${e.id}|$_formGen').toSet();
+    final stale = _titleCtrls.keys.where((k) => !live.contains(k)).toList();
+    for (final key in stale) {
+      _titleCtrls.remove(key)?.dispose();
+    }
   }
 
   String _fmtAmt(double v) {
@@ -306,6 +344,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _loadInvoiceForEdit(InvoiceModel e, {bool asDraft = false}) {
     setState(() {
       _editId = asDraft ? null : e.id;
+      _customerId = e.customerId;
       _customerName = e.customerName == 'مشتری عمومی' ? '' : e.customerName;
       _customerPhone = e.customerPhone;
       _invoiceNumber = PersianNumberFormatter.toPersian(e.number);
@@ -349,6 +388,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _resetFormForNew({String? nextNumberFa}) {
     setState(() {
       _editId = null;
+      _customerId = '';
       _customerName = '';
       _customerPhone = '';
       if (nextNumberFa != null) _invoiceNumber = nextNumberFa;
@@ -400,7 +440,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final draft = InvoiceModel(
       id: 'draft-home',
       number: _faToEn(_invoiceNumber),
-      customerId: '',
+      customerId: _customerId,
       customerName: _customerName,
       customerPhone: _customerPhone,
       type: _invoiceType,
@@ -460,6 +500,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (i < 0) return;
     final t = _draftTabs[i];
     t.editId = _editId;
+    t.customerId = _customerId;
     t.customerName = _customerName;
     t.customerPhone = _customerPhone;
     t.invoiceNumber = _invoiceNumber;
@@ -491,6 +532,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _restoreTab(_DraftTab t) {
     _editId = t.editId;
+    _customerId = t.customerId;
     _customerName = t.customerName;
     _customerPhone = t.customerPhone;
     _invoiceNumber = t.invoiceNumber;
@@ -556,7 +598,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final base = currentNumber + 1;
     final numFa = PersianNumberFormatter.toPersian(base.toString());
     final tab = _DraftTab(
-      id: 'tab-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'tab-${DateTime.now().microsecondsSinceEpoch}',
       title: 'پیش فاکتور ${PersianNumberFormatter.toPersian(_tabSeq.toString())}',
       invoiceNumber: numFa,
       dateLabel: _todayLabel(),
@@ -880,12 +922,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
-  void _addCurrentProductToCatalog(int idx) {
+  Future<void> _addCurrentProductToCatalog(int idx) async {
     final it = _items[idx];
     final name = it.title.trim();
     if (name.isEmpty) return;
-    final products = ref.read(productListProvider);
-    final existingIndex = products.indexWhere((p) => p.name.trim() == name);
+    try {
+      final products = ref.read(productListProvider);
+      final existingIndex = products.indexWhere((p) => p.name.trim() == name);
     if (existingIndex >= 0) {
       final old = products[existingIndex];
       final updated = ProductModel(
@@ -898,7 +941,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         stock: old.stock,
         notes: old.notes,
       );
-      ref.read(productListProvider.notifier).updateProduct(updated);
+      await ref.read(productListProvider.notifier).updateProduct(updated);
+      if (!mounted) return;
       _hideSuggestions();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('قیمت آخر «$name» در کاتالوگ به‌روز شد')),
@@ -906,7 +950,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return;
     }
     final p = ProductModel(
-      id: 'p-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'p-${DateTime.now().microsecondsSinceEpoch}',
       code: '${100 + products.length + 1}',
       name: name,
       unit: it.unit.isEmpty ? 'عدد' : it.unit,
@@ -915,11 +959,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       stock: 0,
       notes: '',
     );
-    ref.read(productListProvider.notifier).addProduct(p);
+    await ref.read(productListProvider.notifier).addProduct(p);
+    if (!mounted) return;
     _hideSuggestions();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('«$name» به کاتالوگ اضافه شد')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('«$name» به کاتالوگ اضافه شد')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ذخیره کاتالوگ انجام نشد: $error')),
+      );
+    }
   }
 
   Future<void> _editInvoiceNumber() async {
@@ -1095,6 +1146,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (selected == null || !mounted) return;
     final phone = selected.mobile.isNotEmpty ? selected.mobile : selected.phone;
     setState(() {
+      _customerId = selected.id;
       _customerName = selected.name;
       _customerPhone = phone;
       _setCtrl(_nameCtrl, selected.name);
@@ -1309,9 +1361,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double get _prevDebtVal => _hasPrevDebt ? _prevDebtAmount : 0;
   double get _depositVal => _hasDeposit ? _depositAmount : 0;
 
-  /// جمع قبل از بیعانه = اقلام − تخفیف + ارسال + بدهی قبلی
+  bool get _officialInvoiceActive {
+    final settings = ref.read(settingsProvider);
+    return ref.read(userProvider).hasActivePremium &&
+        settings.officialInvoiceEnabled &&
+        _invoiceType == 'sale';
+  }
+
+  double get _officialTaxAmount {
+    if (!_officialInvoiceActive) return 0;
+    final taxable = (_itemsTotal - _resolvedDiscount)
+        .clamp(0, double.infinity)
+        .toDouble();
+    final rate = ref.read(settingsProvider).defaultTaxRate.clamp(0, 100);
+    return taxable * rate / 100;
+  }
+
+  /// جمع قبل از بیعانه = اقلام − تخفیف + ارسال + مالیات + بدهی قبلی
   double get _grossTotal {
-    final t = _itemsTotal - _resolvedDiscount + _shippingVal + _prevDebtVal;
+    final t = _itemsTotal -
+        _resolvedDiscount +
+        _shippingVal +
+        _officialTaxAmount +
+        _prevDebtVal;
     return t < 0 ? 0 : t;
   }
 
@@ -1324,7 +1396,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _addItem() {
     setState(() {
       _items.add(InvoiceItemModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
         title: '',
         quantity: 1,
         unit: 'عدد',
@@ -1366,6 +1438,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _saveInvoice() async {
+    if (_savingInvoice) return;
     final cleanItems = _items
         .where((e) => e.title.trim().isNotEmpty || e.unitPrice > 0 || e.totalPrice > 0)
         .toList();
@@ -1382,8 +1455,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return;
     }
 
-    final selectedCard = ref.read(selectedBankCardProvider);
-    final biz = ref.read(businessProvider);
+    setState(() => _savingInvoice = true);
+    try {
+      final selectedCard = ref.read(selectedBankCardProvider);
+      final biz = ref.read(businessProvider);
     final card = selectedCard?.cardNumber ??
         (biz.bankCards.isNotEmpty ? biz.bankCards.first : '');
     final cardBank = selectedCard?.bankName ??
@@ -1429,14 +1504,67 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // totalAmount = مبلغ قابل پرداخت نهایی (بعد از کسر بیعانه)
     // paidAmount: نقدی = کل؛ غیرنقدی = بیعانه (که از total کم شده)
     final depositAmt = _depositVal;
+    final official = _officialInvoiceActive;
+    final officialTaxRate = official
+        ? ref.read(settingsProvider).defaultTaxRate.clamp(0, 100).toDouble()
+        : 0.0;
+    final officialTaxAmount = official ? _officialTaxAmount : 0.0;
+    var buyerAddress = existing?.buyerAddress ?? '';
+    var buyerNationalId = existing?.buyerNationalId ?? '';
+    var buyerEconomicCode = existing?.buyerEconomicCode ?? '';
+    var buyerPostalCode = existing?.buyerPostalCode ?? '';
+    if (_customerId.isNotEmpty) {
+      for (final customer in ref.read(customerListProvider)) {
+        if (customer.id == _customerId) {
+          buyerAddress = customer.address;
+          buyerNationalId = customer.nationalId;
+          buyerEconomicCode = customer.economicCode;
+          buyerPostalCode = customer.postalCode;
+          break;
+        }
+      }
+    }
+    if (official) {
+      final missing = <String>[];
+      if (biz.shopName.trim().isEmpty) missing.add('نام فروشنده');
+      if (biz.nationalId.trim().isEmpty) missing.add('شناسه ملی فروشنده');
+      if (biz.economicCode.trim().isEmpty) missing.add('کد اقتصادی فروشنده');
+      if (biz.postalCode.trim().isEmpty) missing.add('کد پستی فروشنده');
+      if (biz.address.trim().isEmpty) missing.add('نشانی فروشنده');
+      if (_customerName.trim().isEmpty) missing.add('نام خریدار');
+      if (buyerNationalId.trim().isEmpty) missing.add('شناسه ملی خریدار');
+      if (buyerEconomicCode.trim().isEmpty) missing.add('کد اقتصادی خریدار');
+      if (buyerPostalCode.trim().isEmpty) missing.add('کد پستی خریدار');
+      if (buyerAddress.trim().isEmpty) missing.add('نشانی خریدار');
+      if (missing.isNotEmpty) {
+        throw FormatException(
+          'اطلاعات فاکتور رسمی کامل نیست: ${missing.join('، ')}',
+        );
+      }
+    }
     final payable = _finalTotal;
-    final finalRemaining = _paymentType == 'cash' ? 0.0 : payable;
-    final finalPaid = _paymentType == 'cash' ? payable : depositAmt;
+    // دریافت‌هایی که بعد از صدور فاکتور ثبت شده‌اند (paidAmount − بیعانهٔ قبلی)
+    // هنگام ویرایش نباید از بین بروند.
+    var laterPayments = 0.0;
+    if (existing != null &&
+        _paymentType != 'cash' &&
+        existing.paymentType != 'cash' &&
+        existing.type != 'proforma') {
+      laterPayments = (existing.paidAmount - existing.deposit)
+          .clamp(0, double.infinity)
+          .toDouble();
+      if (laterPayments > payable) laterPayments = payable;
+    }
+    final finalRemaining = _paymentType == 'cash' ? 0.0 : payable - laterPayments;
+    final finalPaid =
+        _paymentType == 'cash' ? payable : depositAmt + laterPayments;
 
     final inv = InvoiceModel(
-      id: _editId ?? 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      id: _editId ?? 'inv-${DateTime.now().microsecondsSinceEpoch}',
       number: numEn,
-      customerId: existing?.customerId ?? 'c-${DateTime.now().millisecondsSinceEpoch}',
+      customerId: _customerId.isNotEmpty
+          ? _customerId
+          : 'c-${DateTime.now().microsecondsSinceEpoch}',
       customerName: _customerName.trim().isEmpty ? 'مشتری عمومی' : _customerName.trim(),
       customerPhone: _customerPhone.trim(),
       type: _invoiceType == 'sale'
@@ -1461,6 +1589,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       cardNumber: card.isNotEmpty ? card : (existing?.cardNumber ?? ''),
       cardBank: cardBank.isNotEmpty ? cardBank : (existing?.cardBank ?? ''),
       cardOwner: cardOwner.isNotEmpty ? cardOwner : (existing?.cardOwner ?? ''),
+      isOfficial: official,
+      taxRate: officialTaxRate,
+      taxAmount: officialTaxAmount,
+      sellerName: biz.shopName,
+      sellerPhone: biz.phone,
+      sellerTaxId: biz.taxId,
+      sellerNationalId: biz.nationalId,
+      sellerEconomicCode: biz.economicCode,
+      sellerRegistrationNumber: biz.registrationNumber,
+      sellerPostalCode: biz.postalCode,
+      sellerAddress: biz.address,
+      buyerNationalId: buyerNationalId,
+      buyerEconomicCode: buyerEconomicCode,
+      buyerPostalCode: buyerPostalCode,
+      buyerAddress: buyerAddress,
       createdAt: existing?.createdAt ?? jalaliFa,
     );
 
@@ -1478,11 +1621,54 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _snapshotCurrentToActiveTab();
 
     // باز کردن صفحه نمایش فاکتور + اشتراک
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => InvoicePreviewScreen(invoice: inv),
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InvoicePreviewScreen(invoice: inv),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ذخیره فاکتور انجام نشد: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingInvoice = false);
+    }
+  }
+
+  Future<void> _openHeaderCustomize() async {
+    final result = await Navigator.of(context).push<HeaderCustomizeResult>(
+      PageRouteBuilder<HeaderCustomizeResult>(
+        pageBuilder: (_, __, ___) => const HeaderCustomizeScreen(),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
       ),
     );
+    if (result == null || !mounted) return;
+
+    try {
+      // The customization route is fully closed before these root-level
+      // providers rebuild MaterialApp and the dashboard.
+      await ref
+          .read(businessProvider.notifier)
+          .updateBusiness(result.business);
+      await ref
+          .read(settingsProvider.notifier)
+          .updateSettings(result.settings);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تنظیمات فاکتور، رنگ و مهر و امضا ذخیره شد'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ذخیره تنظیمات انجام نشد: $error')),
+      );
+    }
   }
 
   @override
@@ -1490,6 +1676,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final business = ref.watch(businessProvider);
     final settings = ref.watch(settingsProvider);
+    final isPremium = ref.watch(userProvider.select((user) => user.hasActivePremium));
     final accent = Color(settings.accentColor);
     final shopName = business.shopName.isNotEmpty ? business.shopName : 'فاکتور ساز روبی';
 
@@ -1503,7 +1690,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // هر تغییر فیلد/ردیف در فریم بعدی به‌عنوان پیش‌نویس ذخیره می‌شود.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _persistDraft();
+      if (!mounted) return;
+      _disposeStaleTitleControllers();
+      _draftTimer?.cancel();
+      _draftTimer = Timer(const Duration(milliseconds: 500), () {
+        if (mounted) _persistDraft();
+      });
     });
 
     return Scaffold(
@@ -1532,13 +1724,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: _isEditing
                       ? IconButton(
                           icon: Icon(Icons.close, color: dark ? Colors.white : _slate700),
-                          onPressed: () {
-                            final st = ref.read(settingsProvider);
+                          onPressed: () async {
+                            final next = await _nextInvoiceNumber();
+                            if (!mounted) return;
                             _resetFormForNew(
                               nextNumberFa: PersianNumberFormatter.toPersian(
-                                st.startingInvoiceNum.toString(),
+                                next.toString(),
                               ),
                             );
+                            _snapshotCurrentToActiveTab();
                           },
                         )
                       : Padding(
@@ -1574,9 +1768,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   alignment: Alignment.centerRight,
                   child: _isEditing
                       ? TextButton(
-                          onPressed: _saveInvoice,
+                          onPressed: _savingInvoice ? null : _saveInvoice,
                           child: Text(
-                            'ذخیره',
+                            _savingInvoice ? 'در حال ذخیره…' : 'ذخیره',
                             style: TextStyle(
                               color: accent,
                               fontWeight: FontWeight.w900,
@@ -1605,10 +1799,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             // 1) نوار نارنجی اصلی دقیقاً با نقش دکمهٔ سریع تصویر مرجع
             InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
-              ),
+              onTap: _openHeaderCustomize,
               borderRadius: BorderRadius.circular(34),
               child: Container(
                 height: 62,
@@ -1669,6 +1860,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     controller: _nameCtrl,
                     dark: dark,
                     onChanged: (v) {
+                      _customerId = '';
                       _customerName = v;
                       final i = _draftTabs.indexWhere((t) => t.id == _activeTabId);
                       if (i >= 0) {
@@ -1707,7 +1899,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     controller: _phoneCtrl,
                     dark: dark,
                     isPhone: true,
-                    onChanged: (v) => _customerPhone = v,
+                    onChanged: (v) {
+                      _customerId = '';
+                      _customerPhone = v;
+                    },
                   ),
                   const SizedBox(height: 14),
                   Divider(color: dark ? _slate700 : const Color(0xFFE8EBF2), height: 1),
@@ -1830,10 +2025,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                     child: CompositedTransformTarget(
                                                       link: _productLink(idx),
                                                       child: TextField(
-                                                        controller: (TextEditingController(text: it.title)
-                                                          ..selection = TextSelection.collapsed(
-                                                            offset: it.title.length,
-                                                          )),
+                                                        controller: _titleController(it),
                                                         onChanged: (v) {
                                                           _updateItem(idx, title: v);
                                                           _markTyping(idx);
@@ -1887,7 +2079,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       context: context,
                                       builder: (c) => SimpleDialog(
                                         title: const Text('انتخاب واحد'),
-                                        children: ['عدد', 'بسته', 'کیلو', 'متر', 'ساعت', 'دستگاه']
+                                        children: AppConstants.productUnits
                                             .map(
                                               (u) => SimpleDialogOption(
                                                 child: Text(u),
@@ -2151,6 +2343,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ]),
+                  if (_officialInvoiceActive && _officialTaxAmount > 0) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'مالیات و ارزش افزوده (${PersianNumberFormatter.toPersian(settings.defaultTaxRate)}٪)',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFD97706),
+                          ),
+                        ),
+                        Text(
+                          PersianNumberFormatter.formatCurrency(_officialTaxAmount),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFD97706),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Divider(color: dark ? _slate700 : _cardGrayBorder, height: 1),
                   const SizedBox(height: 12),
@@ -2209,12 +2425,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       _radio(label: 'فاکتور خرید', value: 'purchase', group: _invoiceType, onChanged: (v) => setState(() => _invoiceType = v!), dark: dark),
                     ],
                   ),
+                  if (settings.officialInvoiceEnabled && isPremium) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: Color(0xFFD97706),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _invoiceType == 'sale'
+                                  ? 'فاکتور فروش با قالب رسمی و مالیات ${PersianNumberFormatter.toPersian(settings.defaultTaxRate)}٪ صادر می‌شود'
+                                  : 'فاکتور رسمی فقط برای نوع «فاکتور فروش» اعمال می‌شود',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 12),
 
-            // تیک نمایش مهر و امضا روی فاکتور
+            // تنظیم نمایش مهر و امضا و شماره کارت روی فاکتور
             _grayCard(
               dark: dark,
               child: Builder(builder: (ctx) {
@@ -2226,23 +2475,55 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       label: 'نمایش مهر و امضا روی فاکتور',
                       value: st.showStamp,
                       dark: dark,
-                      onChanged: (v) {
+                      onChanged: (v) async {
                         final enabled = v ?? false;
-                        ref.read(settingsProvider.notifier).updateSettings(
-                              st.copyWith(showStamp: enabled, showSignature: enabled),
+                        try {
+                          await ref
+                              .read(settingsProvider.notifier)
+                              .updateInvoiceVisibility(showStamp: enabled);
+                        } catch (error) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('ذخیره تنظیمات انجام نشد: $error'),
+                              ),
                             );
+                          }
+                        }
                       },
                       trailing: (biz.stampPath.isEmpty && biz.signaturePath.isEmpty)
                           ? TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const HeaderCustomizeScreen()),
-                                );
-                              },
+                              onPressed: _openHeaderCustomize,
                               child: const Text('افزودن', style: TextStyle(fontSize: 11, color: _orange)),
                             )
                           : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Divider(
+                      color: dark ? _slate700 : _cardGrayBorder,
+                      height: 1,
+                    ),
+                    const SizedBox(height: 8),
+                    _checkRow(
+                      label: 'نمایش شماره کارت روی فاکتور',
+                      value: st.showCardNum,
+                      dark: dark,
+                      onChanged: (v) async {
+                        final enabled = v ?? false;
+                        try {
+                          await ref
+                              .read(settingsProvider.notifier)
+                              .updateInvoiceVisibility(showCardNum: enabled);
+                        } catch (error) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('ذخیره تنظیمات انجام نشد: $error'),
+                              ),
+                            );
+                          }
+                        }
+                      },
                     ),
                     const SizedBox(height: 4),
                   ],
@@ -2441,7 +2722,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             // 9) ذخیره و اشتراک‌گذاری / ذخیره تغییرات
             InkWell(
-              onTap: _saveInvoice,
+              onTap: _savingInvoice ? null : _saveInvoice,
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 height: 56,
@@ -2573,7 +2854,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   (e) => e.title.trim().isEmpty && e.unitPrice == 0,
                                 );
                                 final row = InvoiceItemModel(
-                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  id: DateTime.now().microsecondsSinceEpoch.toString(),
                                   title: product.name,
                                   quantity: 1,
                                   unit: product.unit,

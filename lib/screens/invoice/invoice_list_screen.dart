@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/persian_number_formatter.dart';
+import '../../core/utils/thousand_separator_formatter.dart';
 import '../../models/invoice_model.dart';
 import '../../providers/invoice_provider.dart';
 import 'invoice_preview_screen.dart';
@@ -44,15 +45,164 @@ class InvoiceListScreen extends ConsumerWidget {
   }
 
   Future<void> _copyInvoice(BuildContext context, WidgetRef ref, InvoiceModel inv) async {
-    final copied = await ref.read(invoiceListProvider.notifier).copyInvoice(inv);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'فاکتور کپی شد؛ شماره ${PersianNumberFormatter.toPersian(copied.number)}',
+    try {
+      final copied =
+          await ref.read(invoiceListProvider.notifier).copyInvoice(inv);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'فاکتور کپی شد؛ شماره ${PersianNumberFormatter.toPersian(copied.number)}',
+          ),
         ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('کپی فاکتور انجام نشد: $error')),
+      );
+    }
+  }
+
+  bool _canCollect(InvoiceModel inv) =>
+      inv.type == 'sale' &&
+      inv.paymentType != 'cash' &&
+      inv.remainingAmount > 0;
+
+  Future<void> _recordPayment(BuildContext context, WidgetRef ref, InvoiceModel inv) async {
+    final ctrl = TextEditingController(
+      text: ThousandSeparatorInputFormatter.formatDisplay(
+        inv.remainingAmount.round().toString(),
+        allowDecimal: false,
       ),
     );
+    final amount = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ثبت دریافت'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'باقی‌مانده: ${PersianNumberFormatter.formatCurrency(inv.remainingAmount)}',
+              style: const TextStyle(fontSize: 12, color: _slate500),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              textDirection: TextDirection.ltr,
+              textAlign: TextAlign.center,
+              inputFormatters: [ThousandSeparatorInputFormatter(allowDecimal: false)],
+              decoration: const InputDecoration(
+                labelText: 'مبلغ دریافتی',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              ThousandSeparatorInputFormatter.parseToDouble(ctrl.text),
+            ),
+            child: const Text('ثبت'),
+          ),
+        ],
+      ),
+    );
+    // کنترلر تا پایان انیمیشن بسته‌شدن دیالوگ باید زنده بماند.
+    Future<void>.delayed(const Duration(milliseconds: 400), ctrl.dispose);
+    if (amount == null || amount <= 0) return;
+    try {
+      await ref
+          .read(invoiceListProvider.notifier)
+          .recordPayment(inv.id, amount);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            amount > inv.remainingAmount
+                ? 'دریافت تا سقف باقی‌مانده ثبت شد'
+                : 'دریافت ثبت شد',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ثبت دریافت انجام نشد: $error')),
+      );
+    }
+  }
+
+  Future<void> _convertProforma(
+    BuildContext context,
+    WidgetRef ref,
+    InvoiceModel inv,
+  ) async {
+    final paymentType = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('نوع پرداخت فاکتور فروش'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('این پیش‌فاکتور به‌صورت نقدی یا غیرنقدی ثبت شود؟'),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.payments_outlined),
+              title: const Text('نقدی'),
+              subtitle: const Text('فاکتور تسویه‌شده ثبت می‌شود'),
+              onTap: () => Navigator.pop(dialogContext, 'cash'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: const Text('غیرنقدی'),
+              subtitle: const Text('مانده فاکتور در حساب مشتری ثبت می‌شود'),
+              onTap: () => Navigator.pop(dialogContext, 'non_cash'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('انصراف'),
+          ),
+        ],
+      ),
+    );
+
+    // بستن دیالوگ یا لمس «انصراف» نباید پیش‌فاکتور را تغییر دهد.
+    if (paymentType == null || !context.mounted) return;
+
+    try {
+      await ref.read(invoiceListProvider.notifier).convertProformaToInvoice(
+            inv.id,
+            paymentType: paymentType,
+          );
+      if (!context.mounted) return;
+      final paymentLabel = paymentType == 'cash' ? 'نقدی' : 'غیرنقدی';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'پیش‌فاکتور به فاکتور فروش $paymentLabel تبدیل شد',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تبدیل پیش‌فاکتور انجام نشد: $error')),
+      );
+    }
   }
 
   Future<void> _deleteInvoice(BuildContext context, WidgetRef ref, InvoiceModel inv) async {
@@ -78,11 +228,18 @@ class InvoiceListScreen extends ConsumerWidget {
     );
 
     if (confirmed != true) return;
-    await ref.read(invoiceListProvider.notifier).deleteInvoice(inv.id);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('فاکتور حذف شد')),
-    );
+    try {
+      await ref.read(invoiceListProvider.notifier).deleteInvoice(inv.id);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('فاکتور حذف شد')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حذف فاکتور انجام نشد: $error')),
+      );
+    }
   }
 
   @override
@@ -135,7 +292,7 @@ class InvoiceListScreen extends ConsumerWidget {
                           ),
                         ),
                         subtitle: Text(
-                          'فاکتور #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
+                          '${inv.isOfficial ? 'فاکتور رسمی' : 'فاکتور'} #${PersianNumberFormatter.toPersian(inv.number)} • ${PersianNumberFormatter.toPersian(inv.date)} • ${PersianNumberFormatter.toPersian(inv.items.length)} قلم',
                           style: const TextStyle(fontSize: 11, color: _slate500),
                         ),
                         trailing: Column(
@@ -169,6 +326,46 @@ class InvoiceListScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+                      if (inv.type == 'proforma' || _canCollect(inv))
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                          child: Row(
+                            children: [
+                              if (inv.type == 'proforma')
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _convertProforma(context, ref, inv),
+                                    icon: const Icon(Icons.swap_horiz, size: 17),
+                                    label: const Text('تبدیل به فاکتور فروش'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF059669),
+                                      minimumSize: const Size(0, 36),
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                                      side: const BorderSide(color: Color(0x80059669)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  ),
+                                ),
+                              if (_canCollect(inv))
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _recordPayment(context, ref, inv),
+                                    icon: const Icon(Icons.payments_outlined, size: 17),
+                                    label: const Text('ثبت دریافت'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF059669),
+                                      minimumSize: const Size(0, 36),
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                                      side: const BorderSide(color: Color(0x80059669)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
                         child: Row(

@@ -9,6 +9,8 @@ final userProvider = StateNotifierProvider<UserNotifier, UserModel>((ref) {
 });
 
 class UserNotifier extends StateNotifier<UserModel> {
+  late final Future<void> _hydrated;
+
   UserNotifier()
       : super(UserModel(
           id: 'u1',
@@ -20,7 +22,7 @@ class UserNotifier extends StateNotifier<UserModel> {
           usageType: '',
           isOnboarded: false,
         )) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
 
   Future<void> _hydrate() async {
@@ -29,6 +31,7 @@ class UserNotifier extends StateNotifier<UserModel> {
   }
 
   Future<void> updateUser(UserModel user) async {
+    await _hydrated;
     state = user;
     await PrefsStore.saveUser(user);
   }
@@ -40,6 +43,8 @@ final businessProvider =
 });
 
 class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
+  late final Future<void> _hydrated;
+
   BusinessNotifier()
       : super(BusinessProfileModel(
           id: 'b1',
@@ -52,7 +57,7 @@ class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
           signaturePath: '',
           bankCards: const [],
         )) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
 
   Future<void> _hydrate() async {
@@ -60,9 +65,10 @@ class BusinessNotifier extends StateNotifier<BusinessProfileModel> {
     if (saved != null) state = saved;
   }
 
-  Future<void> updateBusiness(BusinessProfileModel b) async {
-    state = b;
-    await PrefsStore.saveBusiness(b);
+  Future<void> updateBusiness(BusinessProfileModel business) async {
+    await _hydrated;
+    state = business;
+    await PrefsStore.saveBusiness(business);
   }
 }
 
@@ -72,6 +78,8 @@ final settingsProvider =
 });
 
 class SettingsNotifier extends StateNotifier<AppSettingsModel> {
+  late final Future<void> _hydrated;
+
   SettingsNotifier()
       : super(AppSettingsModel(
           startingInvoiceNum: 1,
@@ -86,7 +94,7 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
           pinEnabled: false,
           accentColor: 0xFFF97316,
         )) {
-    _hydrate();
+    _hydrated = _hydrate();
   }
 
   Future<void> _hydrate() async {
@@ -94,8 +102,34 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
     if (saved != null) state = saved;
   }
 
-  Future<void> updateSettings(AppSettingsModel s) async {
-    state = s;
-    await PrefsStore.saveSettings(s);
+  Future<void> updateSettings(AppSettingsModel settings) async {
+    await _hydrated;
+    state = settings;
+    await PrefsStore.saveSettings(settings);
+  }
+
+  /// Updates only invoice visibility flags using the latest hydrated state.
+  /// This prevents a quick toggle during startup from overwriting unrelated
+  /// settings with the notifier's temporary defaults.
+  Future<void> updateInvoiceVisibility({
+    bool? showStamp,
+    bool? showCardNum,
+  }) async {
+    await _hydrated;
+    final previous = state;
+    final updated = previous.copyWith(
+      showStamp: showStamp,
+      showSignature: showStamp,
+      showCardNum: showCardNum,
+    );
+    state = updated;
+    try {
+      await PrefsStore.saveSettings(updated);
+    } catch (_) {
+      // Keep the visible checkbox consistent with persisted data when storage
+      // fails instead of showing a change that will disappear after restart.
+      state = previous;
+      rethrow;
+    }
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
 import '../../core/utils/prefs_store.dart';
+import '../../services/account_service.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
@@ -48,7 +49,35 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _goNext() async {
     if (!mounted) return;
     // قبل از تصمیم‌گیری، کاربر ذخیره‌شده را بخوان تا آنبوردینگ فقط یک‌بار دیده شود.
-    final savedUser = await PrefsStore.loadUser();
+    var savedUser = await PrefsStore.loadUser();
+    final cachedUser = savedUser;
+    if (cachedUser != null && cachedUser.authProvider.isNotEmpty) {
+      try {
+        final session = await ref
+            .read(accountServiceProvider)
+            .refreshProfile()
+            .timeout(const Duration(seconds: 7));
+        await ref.read(userProvider.notifier).updateUser(session.user);
+        savedUser = session.user;
+      } catch (_) {
+        // Entitlement is server-owned. A cached/local value must never grant
+        // premium when the backend cannot confirm the active subscription.
+        if (cachedUser.isPremium) {
+          savedUser = cachedUser.copyWith(
+            isPremium: false,
+            premiumExpiresAt: '',
+          );
+          await ref.read(userProvider.notifier).updateUser(savedUser);
+        }
+      }
+    } else if (cachedUser?.isPremium == true) {
+      // Safely migrate away from the legacy local Premium switch.
+      savedUser = cachedUser!.copyWith(
+        isPremium: false,
+        premiumExpiresAt: '',
+      );
+      await ref.read(userProvider.notifier).updateUser(savedUser);
+    }
     if (!mounted) return;
     final isOnboarded = savedUser?.isOnboarded ?? ref.read(userProvider).isOnboarded;
     final next = isOnboarded

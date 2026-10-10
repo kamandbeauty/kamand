@@ -19,9 +19,15 @@ class FactorRubyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
+    // MaterialApp only depends on the accent color. Watching the complete
+    // settings object here used to rebuild the app root for invoice-only
+    // switches (stamp/card visibility), which could leave a grey surface on
+    // some Android devices while a route was active.
+    final accentValue = ref.watch(
+      settingsProvider.select((settings) => settings.accentColor),
+    );
 
-    final accent = Color(settings.accentColor);
+    final accent = Color(accentValue);
     return MaterialApp(
       title: 'فاکتور ساز روبی',
       debugShowCheckedModeBanner: false,
