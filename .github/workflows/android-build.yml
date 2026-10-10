@@ -239,22 +239,29 @@ jobs:
           set -euo pipefail
           apkdir="build/app/outputs/flutter-apk"
           aab="build/app/outputs/bundle/release/app-release.aab"
-          tag="shelem-v1.6.0"
+          tag="shelem-v1.7.0"
           out="$RUNNER_TEMP/release"
           mkdir -p "$out"
-          cp "$apkdir/app-arm64-v8a-release.apk"   "$out/shelem-v1.6.0-arm64-v8a.apk"
-          cp "$apkdir/app-armeabi-v7a-release.apk" "$out/shelem-v1.6.0-armeabi-v7a.apk"
-          cp "$apkdir/app-x86_64-release.apk"      "$out/shelem-v1.6.0-x86_64.apk"
-          cp "$apkdir/app-release.apk"             "$out/shelem-v1.6.0-universal.apk"
-          cp "$aab"                                "$out/shelem-v1.6.0.aab"
-          notes="بازی «شلم» — نسخهٔ ۱.۶.۰
+          cp "$apkdir/app-arm64-v8a-release.apk"   "$out/shelem-v1.7.0-arm64-v8a.apk"
+          cp "$apkdir/app-armeabi-v7a-release.apk" "$out/shelem-v1.7.0-armeabi-v7a.apk"
+          cp "$apkdir/app-x86_64-release.apk"      "$out/shelem-v1.7.0-x86_64.apk"
+          cp "$apkdir/app-release.apk"             "$out/shelem-v1.7.0-universal.apk"
+          cp "$aab"                                "$out/shelem-v1.7.0.aab"
+          notes="بازی «شلم» — نسخهٔ ۱.۷.۰
 
           بازی کلاسیک ورق ایرانی: چهار نفره (با یارِ هوشمند در برابر دو حریف)
           یا دو نفره، رو در رو با یک حریفِ هوشمند.
           خواندن (حراج)، گلِ وسط، اعلام حکم با اولین برگ، یاسا، شلم و سرشلم،
           چهار سطح سختی، هفت زمین بازی و ذخیرهٔ خودکار.
 
-          تازه در ۱.۶.۰: ظاهرِ تازهٔ میز — میزِ نمدیِ بیضی برداشته شد و حالا
+          تازه در ۱.۷.۰: صفحهٔ اصلیِ کاملاً تازه با نشانِ طلاییِ دست‌ساز،
+          پس‌زمینهٔ نگارین و دکمه‌های تازه؛ صدای واقعیِ پخش و انداختنِ ورق با
+          کلیدِ خاموش/روشن در منو؛ انیمیشنِ دیدنیِ پخشِ ورق در شروعِ هر راند؛
+          منویِ تازه و زیبا هنگامِ بازی؛ تصویرِ تازه و کاملاً از بالا برای
+          محیطِ چای‌خانه؛ نمادِ خالِ گوشه‌ها نزدیکِ عدد؛ و نقشِ طراحی‌شدهٔ
+          شمسه برای تک‌ها. برگ‌های روی زمین هم کمی کوچک‌تر و متعادل‌تر شدند.
+
+          پیش‌تر در ۱.۶.۰: ظاهرِ تازهٔ میز — میزِ نمدیِ بیضی برداشته شد و حالا
           همه روی خودِ زمین (فرش یا تختِ چای‌خانه) بازی می‌کنند؛ برگ‌های روی
           زمین درشت‌تر شدند؛ و قابِ دورِ سرباز، بی‌بی، شاه و تک حذف شد تا
           نگاره‌ها بزرگ‌تر و زیباتر دیده شوند.
@@ -309,21 +316,21 @@ jobs:
               gh release delete-asset "$tag" "$stale" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
             done
             gh release upload "$tag" \
-              "$out/shelem-v1.6.0-arm64-v8a.apk" \
-              "$out/shelem-v1.6.0-armeabi-v7a.apk" \
-              "$out/shelem-v1.6.0-x86_64.apk" \
-              "$out/shelem-v1.6.0-universal.apk" \
-              "$out/shelem-v1.6.0.aab" \
+              "$out/shelem-v1.7.0-arm64-v8a.apk" \
+              "$out/shelem-v1.7.0-armeabi-v7a.apk" \
+              "$out/shelem-v1.7.0-x86_64.apk" \
+              "$out/shelem-v1.7.0-universal.apk" \
+              "$out/shelem-v1.7.0.aab" \
               --clobber --repo "$GITHUB_REPOSITORY"
             gh release edit "$tag" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$tag" \
-              "$out/shelem-v1.6.0-arm64-v8a.apk" \
-              "$out/shelem-v1.6.0-armeabi-v7a.apk" \
-              "$out/shelem-v1.6.0-x86_64.apk" \
-              "$out/shelem-v1.6.0-universal.apk" \
-              "$out/shelem-v1.6.0.aab" \
-              --title "شلم — نسخهٔ ۱.۶.۰" \
+              "$out/shelem-v1.7.0-arm64-v8a.apk" \
+              "$out/shelem-v1.7.0-armeabi-v7a.apk" \
+              "$out/shelem-v1.7.0-x86_64.apk" \
+              "$out/shelem-v1.7.0-universal.apk" \
+              "$out/shelem-v1.7.0.aab" \
+              --title "شلم — نسخهٔ ۱.۷.۰" \
               --notes "$notes" \
               --target "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
           fi
