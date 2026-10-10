@@ -50,7 +50,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
     // قبل از تصمیم‌گیری، کاربر ذخیره‌شده را بخوان تا آنبوردینگ فقط یک‌بار دیده شود.
     var savedUser = await PrefsStore.loadUser();
-    if (savedUser != null && savedUser.authProvider.isNotEmpty) {
+    final cachedUser = savedUser;
+    if (cachedUser != null && cachedUser.authProvider.isNotEmpty) {
       try {
         final session = await ref
             .read(accountServiceProvider)
@@ -60,8 +61,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         savedUser = session.user;
       } catch (_) {
         // Allow offline use, but never keep an already expired entitlement.
-        if (savedUser.isPremium && !savedUser.hasActivePremium) {
-          savedUser = savedUser.copyWith(isPremium: false);
+        if (cachedUser.isPremium && !cachedUser.hasActivePremium) {
+          savedUser = cachedUser.copyWith(isPremium: false);
           await ref.read(userProvider.notifier).updateUser(savedUser);
         }
       }
