@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:taalebin/app.dart';
 import 'package:taalebin/domain/profile/profile.dart';
 import 'package:taalebin/main.dart';
 import 'package:taalebin/providers/app_providers.dart';
@@ -112,8 +111,9 @@ void main() {
 
     // ── PREMIUM: promo code grants lifetime premium ────────────────
     final element = tester.element(find.byType(Navigator).first);
+    final container = ProviderScope.containerOf(element);
     final granted =
-        await element.read(entitlementProvider.notifier).redeemPromo('TALEBIN1405');
+        await container.read(entitlementProvider.notifier).redeemPromo('TALEBIN1405');
     expect(granted, isTrue);
     await settle(tester);
 
