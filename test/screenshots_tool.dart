@@ -60,7 +60,7 @@ Future<void> _precache(WidgetTester tester) async {
     'assets/cards/court_queen.png',
     'assets/cards/court_king.png',
     'assets/cards/court_joker.png',
-    'assets/images/surfaces/teahouse.jpg',
+    'assets/images/surfaces/carpet-antique.jpg',
   ];
   final BuildContext context = tester.element(find.byType(MaterialApp).first);
   await tester.runAsync(() async {

@@ -142,7 +142,7 @@ void main() {
         'speed': -3,
         'back': <String, dynamic>{},
       });
-      expect(s.surface, TableSurface.teahouse);
+      expect(s.surface, TableSurface.carpetAntique);
       expect(s.difficulty, Difficulty.hard);
       expect(s.speed, GameSpeed.normal);
       expect(s.cardBack, CardBack.crimson);

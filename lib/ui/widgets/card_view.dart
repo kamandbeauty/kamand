@@ -181,8 +181,8 @@ class CardView extends StatelessWidget {
                         vertical: width * 0.17,
                       )
                     : EdgeInsets.symmetric(
-                        horizontal: width * 0.045,
-                        vertical: width * 0.055,
+                        horizontal: width * 0.02,
+                        vertical: width * 0.028,
                       ),
                 child: _center(color, colorDeep),
               ),
@@ -335,7 +335,7 @@ class _AceCenter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: SuitIcon(suit: suit, size: width * 0.78, color: color),
+      child: SuitIcon(suit: suit, size: width * 0.88, color: color),
     );
   }
 }
@@ -392,8 +392,8 @@ class _CourtCenter extends StatelessWidget {
           ),
           Center(
             child: Container(
-              height: math.max(0.6, width * 0.006),
-              color: color.withValues(alpha: 0.28),
+              height: math.max(0.5, width * 0.004),
+              color: color.withValues(alpha: 0.16),
             ),
           ),
         ],

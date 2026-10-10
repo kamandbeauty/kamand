@@ -418,8 +418,8 @@ class _TableArea extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     colors: <Color>[
-                      Colors.black.withValues(alpha: 0.34),
-                      Colors.black.withValues(alpha: 0.18),
+                      Colors.black.withValues(alpha: 0.22),
+                      Colors.black.withValues(alpha: 0.10),
                       Colors.transparent,
                     ],
                     stops: const <double>[0, 0.55, 1],
@@ -459,7 +459,7 @@ class _TableArea extends StatelessWidget {
             Center(
               child: _TrickArea(
                 controller: controller,
-                size: Size(box.maxWidth * 0.66, box.maxHeight * 0.64),
+                size: Size(box.maxWidth * 0.72, box.maxHeight * 0.68),
               ),
             ),
             if (e.phase == GamePhase.kitty)
@@ -735,7 +735,7 @@ class _TrickArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ShelemEngine e = controller.engine!;
-    final double cw = (size.width * 0.38).clamp(58.0, 96.0);
+    final double cw = (size.width * 0.46).clamp(68.0, 120.0);
     final List<Alignment> spots = e.seats == 2
         ? <Alignment>[const Alignment(0, 0.72), const Alignment(0, -0.72)]
         : <Alignment>[

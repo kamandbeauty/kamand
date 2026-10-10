@@ -44,7 +44,7 @@ class AppSettings {
     this.playerName = 'شما',
     this.difficulty = Difficulty.hard,
     this.speed = GameSpeed.normal,
-    this.surface = TableSurface.teahouse,
+    this.surface = TableSurface.carpetAntique,
     this.cardBack = CardBack.crimson,
     this.sound = true,
     this.haptics = true,
@@ -116,7 +116,7 @@ class AppSettings {
         surface: _parseEnum(
           TableSurface.values,
           j['surface'],
-          TableSurface.teahouse,
+          TableSurface.carpetAntique,
           legacy: _legacySurfaces,
         ),
         cardBack: _parseEnum(CardBack.values, j['back'], CardBack.crimson),
