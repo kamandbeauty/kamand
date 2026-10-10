@@ -246,7 +246,7 @@ class _PartnerFormScreenState extends ConsumerState<PartnerFormScreen> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.favorite, size: 18),
+                  : const Icon(Icons.favorite_border, size: 18),
               label: Text(_editing == null ? 'افزودن' : 'ذخیرهٔ تغییرات'),
             ),
           ),

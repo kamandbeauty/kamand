@@ -132,7 +132,7 @@ class ZodiacScreen extends ConsumerWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.favorite, size: 18, color: AppTheme.rose),
+                  const Icon(Icons.favorite_border, size: 18, color: AppTheme.rose),
                   const SizedBox(width: 10),
                   Expanded(child: Text(sign.loveStyle, style: _bodyStyle(theme))),
                 ],
@@ -383,7 +383,7 @@ class _SignHeaderBanner extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     _HeaderPill(
-                      icon: Icons.public,
+                      icon: Icons.public_outlined,
                       label: 'سیارهٔ حاکم: ${sign.rulingPlanet}',
                     ),
                     _HeaderPill(

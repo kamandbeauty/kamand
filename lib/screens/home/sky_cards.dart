@@ -52,7 +52,7 @@ class SkyTodayCard extends ConsumerWidget {
           child: Column(
             children: [
               _SkyRow(
-                icon: Icons.nightlight_round,
+                icon: Icons.nightlight_outlined,
                 color: AppTheme.gold,
                 label: 'قمر در ${moon['signFa']! as String} (${moon['signEn']! as String})',
                 text: moon['text']! as String,
@@ -60,7 +60,7 @@ class SkyTodayCard extends ConsumerWidget {
               if (aspect != null) ...[
                 const SizedBox(height: 14),
                 _SkyRow(
-                  icon: Icons.auto_awesome,
+                  icon: Icons.auto_awesome_outlined,
                   color: AppTheme.rose,
                   label: aspect['titleFa']! as String,
                   text: aspect['text']! as String,
@@ -76,7 +76,7 @@ class SkyTodayCard extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               _SkyRow(
-                icon: Icons.public,
+                icon: Icons.public_outlined,
                 color: const Color(0xFF4CD97B),
                 label:
                     'روزِ ${ruler['dayFa']! as String} — فرمانروا: ${ruler['rulerFa']! as String}',
@@ -118,7 +118,7 @@ class SkyWeekCard extends StatelessWidget {
         const SectionHeader(
           'آسمانِ هفته',
           subtitle: 'تمِ قمر در آغازِ هفته',
-          icon: Icons.wb_sunny,
+          icon: Icons.wb_sunny_outlined,
           iconColor: AppTheme.sky,
         ),
         GlassCard(

@@ -41,7 +41,7 @@ class MonthTraitsScreen extends ConsumerWidget {
                 TraditionEmblem(
                   asset: MysticEmblems.months.asset,
                   accent: AppTheme.gold,
-                  child: const Icon(Icons.calendar_month,
+                  child: const Icon(Icons.calendar_month_outlined,
                       size: 36, color: AppTheme.gold),
                 ),
                 const SizedBox(height: 10),

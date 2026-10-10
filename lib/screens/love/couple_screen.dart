@@ -96,7 +96,7 @@ class _CoupleBody extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                     child: Icon(
-                      Icons.favorite,
+                      Icons.favorite_border,
                       size: 30,
                       color: AppTheme.rose.withValues(alpha: 0.9),
                     ),
@@ -122,7 +122,7 @@ class _CoupleBody extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _DimTile(icon: Icons.favorite, label: 'عشق', value: s.love, color: AppTheme.rose),
+              child: _DimTile(icon: Icons.favorite_border, label: 'عشق', value: s.love, color: AppTheme.rose),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -226,7 +226,7 @@ class _AspectDeepDive extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, size: 16, color: AppTheme.rose),
+              const Icon(Icons.auto_awesome_outlined, size: 16, color: AppTheme.rose),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

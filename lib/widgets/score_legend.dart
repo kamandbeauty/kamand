@@ -78,7 +78,7 @@ class ScoreLegend extends StatelessWidget {
           collapsedIconColor: color,
           title: Row(
             children: [
-              Icon(Icons.help_outline_rounded, size: 17, color: color),
+              Icon(Icons.help_outline, size: 17, color: color),
               const SizedBox(width: 8),
               Text(
                 'این درصدها یعنی چه؟',

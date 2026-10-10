@@ -56,7 +56,7 @@ class _SkinTile extends StatelessWidget {
                     : null,
               ),
               child: selected
-                  ? const Icon(Icons.check_rounded,
+                  ? const Icon(Icons.check,
                       size: 16, color: Colors.white)
                   : null,
             ),

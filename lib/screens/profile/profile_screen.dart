@@ -134,7 +134,7 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => _push(context, const ProfileEditScreen()),
           ),
           _ActionTile(
-            icon: Icons.favorite_outline,
+            icon: Icons.favorite_border,
             title: 'شریک عاطفی',
             subtitle: 'افزودن یا ویرایش برای محاسبهٔ سازگاری زوج',
             onTap: () => _push(context, const PartnerFormScreen()),

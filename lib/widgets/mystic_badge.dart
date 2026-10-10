@@ -100,7 +100,7 @@ class MysticBadge extends StatelessWidget {
               top: size * 0.02,
               right: size * 0.10,
               child: Icon(
-                Icons.star_rounded,
+                Icons.star_outline,
                 size: size * 0.20,
                 color: AppTheme.gold,
               ),

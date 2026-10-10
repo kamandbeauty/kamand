@@ -87,7 +87,7 @@ class NatalChartScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'اشتراک‌گذاری',
-            icon: const Icon(Icons.share_rounded, size: 20),
+            icon: const Icon(Icons.share_outlined, size: 20),
             onPressed: () {
               final asc = chart.ascendant;
               ShareService.share(
@@ -122,7 +122,7 @@ class NatalChartScreen extends ConsumerWidget {
 
           // ── Free preview: Sun & Moon ─────────────────────────────
           const SectionHeader('خورشید و ماهِ تو',
-              icon: Icons.wb_sunny, iconColor: AppTheme.gold),
+              icon: Icons.wb_sunny_outlined, iconColor: AppTheme.gold),
           GlassCard(
             accent: AppTheme.gold,
             child: Column(
@@ -169,7 +169,7 @@ class NatalChartScreen extends ConsumerWidget {
             )
           else ...[
             const SectionHeader('چرخِ فلکیِ تولد',
-                icon: Icons.donut_large_rounded,
+                icon: Icons.donut_large_outlined,
                 iconColor: AppTheme.gold,
                 action: PremiumBadge(active: true)),
             GlassCard(
@@ -201,7 +201,7 @@ class NatalChartScreen extends ConsumerWidget {
 
             // ── سه‌گانهٔ بزرگ (مثل طرح مرجع: خورشید/ماه/طالع) ─────────
             const SectionHeader('سه‌گانهٔ بزرگ',
-                icon: Icons.auto_awesome, iconColor: AppTheme.gold),
+                icon: Icons.auto_awesome_outlined, iconColor: AppTheme.gold),
             GlassCard(
               highlight: true,
               accent: AppTheme.gold,
@@ -241,7 +241,7 @@ class NatalChartScreen extends ConsumerWidget {
 
             // ── موقعیت سیاره‌ها — گریدِ فشرده مثل طرح مرجع ──────────
             const SectionHeader('موقعیتِ سیاره‌ها',
-                icon: Icons.grid_view_rounded, iconColor: AppTheme.violet),
+                icon: Icons.grid_view_outlined, iconColor: AppTheme.violet),
             GlassCard(
               accent: AppTheme.violet,
               child: Column(
@@ -385,7 +385,7 @@ class NatalChartScreen extends ConsumerWidget {
 
             if (chart.aspects.isNotEmpty) ...[
               const SectionHeader('زاویه‌های مهمِ نقشه',
-                  icon: Icons.auto_awesome, iconColor: AppTheme.sky),
+                  icon: Icons.auto_awesome_outlined, iconColor: AppTheme.sky),
               for (final a in chart.aspects.take(6))
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -396,7 +396,7 @@ class NatalChartScreen extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.link_rounded,
+                            Icon(Icons.link,
                                 size: 14,
                                 color: _aspectColors[a.kind] ??
                                     AppTheme.violet),

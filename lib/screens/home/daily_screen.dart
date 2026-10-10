@@ -168,7 +168,7 @@ class _DailyBody extends ConsumerWidget {
               active: entitlement.hasPremium),
           const SizedBox(height: 12),
           _DeepCard(
-            icon: Icons.favorite,
+            icon: Icons.favorite_border,
             color: AppTheme.rose,
             title: 'عشق و رابطه',
             text: daily.loveText,
@@ -196,14 +196,14 @@ class _DailyBody extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _DeepCard(
-            icon: Icons.warning_amber_rounded,
+            icon: Icons.warning_amber_outlined,
             color: AppTheme.rose,
             title: 'هشدار امروز',
             text: daily.warningText,
           ),
           const SizedBox(height: 12),
           _DeepCard(
-            icon: Icons.auto_awesome,
+            icon: Icons.auto_awesome_outlined,
             color: const Color(0xFF4CD97B),
             title: 'فرصت امروز',
             text: daily.opportunityText,

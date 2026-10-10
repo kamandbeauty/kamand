@@ -61,7 +61,7 @@ class _GemOracleScreenState extends ConsumerState<GemOracleScreen> {
                 TraditionEmblem(
                   asset: MysticEmblems.gem.asset,
                   accent: AppTheme.gold,
-                  child: const Icon(Icons.diamond,
+                  child: const Icon(Icons.diamond_outlined,
                       size: 36, color: AppTheme.gold),
                 ),
                 const SizedBox(height: 10),
@@ -130,7 +130,7 @@ class _GemOracleScreenState extends ConsumerState<GemOracleScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.diamond,
+                          Icon(Icons.diamond_outlined,
                               size: 16, color: fieldColors[i]),
                           const SizedBox(width: 8),
                           NatureChip(fields[i], color: fieldColors[i]),

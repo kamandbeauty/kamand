@@ -122,7 +122,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                     ],
                   ),
                   child: const Icon(
-                    Icons.workspace_premium,
+                    Icons.workspace_premium_outlined,
                     size: 38,
                     color: Colors.white,
                   ),
@@ -165,12 +165,12 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             child: Column(
               children: const [
                 _FeatureRow(
-                  icon: Icons.auto_awesome,
+                  icon: Icons.auto_awesome_outlined,
                   title: 'تحلیل عمیق‌ترِ روزانه',
                   detail: 'متن کامل عشق، کار، مالی، روحیه + هشدار و فرصت',
                 ),
                 _FeatureRow(
-                  icon: Icons.favorite,
+                  icon: Icons.favorite_border,
                   title: 'تحلیل کامل رابطه',
                   detail: 'توصیه‌های اختصاصی برای تو و شریک عاطفی‌ات',
                 ),
@@ -379,7 +379,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
               accent: const Color(0xFF4CD97B),
               child: Row(
                 children: [
-                  const Icon(Icons.verified, color: Color(0xFF4CD97B)),
+                  const Icon(Icons.verified_outlined, color: Color(0xFF4CD97B)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(

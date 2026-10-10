@@ -90,7 +90,7 @@ class _SplashScreen extends StatelessWidget {
                     ],
                   ),
                   child: const Icon(
-                    Icons.auto_awesome,
+                    Icons.auto_awesome_outlined,
                     size: 44,
                     color: Colors.white,
                   ),

@@ -81,7 +81,7 @@ class MarriageFortuneScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           const SectionHeader('هم‌نوایی با شریک زندگی‌ات',
-            icon: Icons.favorite, iconColor: AppTheme.rose),
+            icon: Icons.favorite_border, iconColor: AppTheme.rose),
           coupleAsync.when(
             data: (couple) {
               if (couple == null) {

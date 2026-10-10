@@ -238,7 +238,7 @@ class _HomeContent extends ConsumerWidget {
         // overflow on narrow screens or at large text scales.
         _ScoreCardRow(
           CategoryCard(
-            icon: Icons.favorite,
+            icon: Icons.favorite_border,
             title: 'عشق',
             score: daily.scores.love,
             description: poeticCategoryPhrase('love', daily.scores.love),
@@ -442,7 +442,7 @@ class _HomeContent extends ConsumerWidget {
             minimumSize: const Size.fromHeight(54),
           ),
           icon: Icon(
-            dayUnlocked ? Icons.auto_awesome : Icons.lock_outline,
+            dayUnlocked ? Icons.auto_awesome_outlined : Icons.lock_outline,
             size: 18,
           ),
           label: Text(dayUnlocked ? 'طالع کامل امروز' : 'طالع کامل امروز (پرمیوم)'),

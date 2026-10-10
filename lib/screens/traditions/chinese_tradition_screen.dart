@@ -96,7 +96,7 @@ class ChineseTraditionScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           SectionHeader('روایت سنت', subtitle: 'شنگ‌شیائو 生肖',
-            icon: Icons.public, iconColor: AppTheme.rose),
+            icon: Icons.public_outlined, iconColor: AppTheme.rose),
           GlassCard(
             accent: AppTheme.rose,
             child: BodyText(TraditionsContent.chineseIntro),
@@ -211,7 +211,7 @@ class _PartnerCompatibility extends StatelessWidget {
               Text(sign.animal['emoji']! as String,
                   style: const TextStyle(fontSize: 30)),
               const SizedBox(width: 10),
-              Icon(Icons.favorite, size: 18, color: color),
+              Icon(Icons.favorite_border, size: 18, color: color),
               const SizedBox(width: 10),
               Text(partnerSign.animal['emoji']! as String,
                   style: const TextStyle(fontSize: 30)),

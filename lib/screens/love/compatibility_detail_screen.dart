@@ -40,7 +40,7 @@ class CompatibilityDetailScreen extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Icon(
-                        Icons.favorite,
+                        Icons.favorite_border,
                         size: 26,
                         color: AppTheme.rose.withValues(alpha: 0.85),
                       ),
@@ -68,7 +68,7 @@ class CompatibilityDetailScreen extends ConsumerWidget {
           const SizedBox(height: 18),
 
           // ── Five dimensions ─────────────────────────────────────
-          _ScoreBar(label: 'عشق', value: s.love, color: AppTheme.rose, icon: Icons.favorite),
+          _ScoreBar(label: 'عشق', value: s.love, color: AppTheme.rose, icon: Icons.favorite_border),
           const SizedBox(height: 10),
           _ScoreBar(label: 'کشش', value: s.attraction, color: const Color(0xFFFF9E6E), icon: Icons.local_fire_department_outlined),
           const SizedBox(height: 10),
@@ -139,7 +139,7 @@ class CompatibilityDetailScreen extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.auto_awesome, size: 16, color: AppTheme.rose),
+                      const Icon(Icons.auto_awesome_outlined, size: 16, color: AppTheme.rose),
                       const SizedBox(width: 8),
                       Text(
                         'تحلیل کامل رابطه',

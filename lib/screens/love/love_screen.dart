@@ -179,7 +179,7 @@ class _CompatibilityTile extends StatelessWidget {
                       level == CompatibilityLevel.challenging ||
                               level == CompatibilityLevel.hard
                           ? Icons.bolt_outlined
-                          : Icons.favorite,
+                          : Icons.favorite_border,
                       size: 12,
                       color: levelColor,
                     ),
@@ -311,7 +311,7 @@ class _PartnerCard extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     child: Icon(
-                      Icons.favorite,
+                      Icons.favorite_border,
                       color: AppTheme.rose.withValues(alpha: 0.85),
                       size: 22,
                     ),

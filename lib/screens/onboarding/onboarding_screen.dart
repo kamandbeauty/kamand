@@ -404,7 +404,7 @@ class _WelcomeStep extends StatelessWidget {
                 ],
               ),
               child: const Icon(
-                Icons.nightlight_round,
+                Icons.nightlight_outlined,
                 size: 62,
                 color: Colors.white,
               ),
@@ -423,7 +423,7 @@ class _WelcomeStep extends StatelessWidget {
                 const SizedBox(height: 12),
                 _featureRow(context, Icons.favorite_border, 'سازگاری عاطفی با ۱۲ برج'),
                 const SizedBox(height: 12),
-                _featureRow(context, Icons.auto_awesome, 'رنگ شانس، عدد شانس و پیام روز'),
+                _featureRow(context, Icons.auto_awesome_outlined, 'رنگ شانس، عدد شانس و پیام روز'),
                 const SizedBox(height: 12),
                 _featureRow(context, Icons.lock_outline, 'همه‌چیز آفلاین و روی گوشی خودت'),
               ],
@@ -739,7 +739,7 @@ class _ResultStep extends StatelessWidget {
                       InfoChip(label: 'سیارهٔ حاکم: ${sign.rulingPlanet}'),
                       InfoChip(
                         label: AppDate.formatMedium(calc.jalaliBirthDate),
-                        icon: Icons.cake,
+                        icon: Icons.cake_outlined,
                       ),
                     ],
                   ),
@@ -834,7 +834,7 @@ class _NotificationStep extends StatelessWidget {
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: done ? null : onAllow,
-              icon: const Icon(Icons.notifications_active, size: 18),
+              icon: const Icon(Icons.notifications_active_outlined, size: 18),
               label: const Text('آره، یادم بیاور'),
             ),
           ),

@@ -123,7 +123,7 @@ class _MonthlyBody extends ConsumerWidget {
               active: entitlement.hasPremium),
           const SizedBox(height: 12),
           _MonthCard(
-            icon: Icons.favorite,
+            icon: Icons.favorite_border,
             color: AppTheme.rose,
             title: 'عشق در این ماه',
             text: monthly.loveText,
@@ -151,14 +151,14 @@ class _MonthlyBody extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _MonthCard(
-            icon: Icons.auto_awesome,
+            icon: Icons.auto_awesome_outlined,
             color: AppTheme.violet,
             title: 'فرصت‌های ماه',
             text: monthly.opportunityText,
           ),
           const SizedBox(height: 12),
           _MonthCard(
-            icon: Icons.warning_amber_rounded,
+            icon: Icons.warning_amber_outlined,
             color: AppTheme.rose,
             title: 'هشدارهای ماه',
             text: monthly.warningText,

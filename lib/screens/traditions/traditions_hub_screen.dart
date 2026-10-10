@@ -82,7 +82,7 @@ class TraditionsHubScreen extends ConsumerWidget {
           const SectionHeader(
             'پنج سنت کهنِ جهان',
             subtitle: 'چینی · فراشماره · ایرانی · ودیک · مایا',
-            icon: Icons.public,
+            icon: Icons.public_outlined,
             iconColor: AppTheme.sky,
           ),
           _ModuleCard(

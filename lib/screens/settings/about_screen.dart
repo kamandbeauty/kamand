@@ -53,7 +53,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                   ),
                   child: const Icon(
-                    Icons.auto_awesome,
+                    Icons.auto_awesome_outlined,
                     size: 34,
                     color: Colors.white,
                   ),
@@ -101,7 +101,7 @@ class AboutScreen extends StatelessWidget {
           _LinkCard(
             title: 'نسخهٔ آنلاینِ همین متن',
             subtitle: 'سیاستِ حریمِ خصوصی روی وب — برای فروشگاه‌ها',
-            icon: Icons.open_in_new_rounded,
+            icon: Icons.open_in_new,
             onTap: () => launchUrl(
               Uri.parse('https://kamandbeauty.github.io/kamand/'),
               mode: LaunchMode.externalApplication,
@@ -257,7 +257,7 @@ class _LinkCard extends StatelessWidget {
             ),
           ),
           Icon(
-            Icons.chevron_left_rounded,
+            Icons.chevron_left,
             size: 18,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
           ),

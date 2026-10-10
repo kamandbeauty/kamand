@@ -48,7 +48,7 @@ class IranianTraditionScreen extends ConsumerWidget {
                 TraditionEmblem(
                   asset: MysticEmblems.iranian.asset,
                   accent: AppTheme.gold,
-                  child: const Icon(Icons.nightlight_round,
+                  child: const Icon(Icons.nightlight_outlined,
                       size: 38, color: AppTheme.gold),
                 ),
                 const SizedBox(height: 14),
@@ -118,7 +118,7 @@ class IranianTraditionScreen extends ConsumerWidget {
 
           // ── The 28 mansions ─────────────────────────────────────
           const SectionHeader('چرخهٔ ۲۸ منزل قمر',
-            icon: Icons.nightlight_round, iconColor: AppTheme.gold),
+            icon: Icons.nightlight_outlined, iconColor: AppTheme.gold),
           GlassCard(
             padding: const EdgeInsets.all(14),
             child: Wrap(
