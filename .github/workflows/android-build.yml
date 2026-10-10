@@ -40,9 +40,9 @@ jobs:
       - name: Report analyzer errors
         if: failure()
         run: |
-          while IFS= read -r line; do
+          grep -E "error •|Error:" analyze.log | while IFS= read -r line; do
             echo "::error::$line"
-          done < analyze.log
+          done
 
       - name: Run tests
         run: flutter test
