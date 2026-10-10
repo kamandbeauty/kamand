@@ -37,13 +37,12 @@ jobs:
           flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee analyze.log
           test ${PIPESTATUS[0]} -eq 0
 
-      - name: Upload analyzer report on failure
+      - name: Report analyzer errors
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dart-analyzer-report
-          path: analyze.log
-          retention-days: 1
+        run: |
+          while IFS= read -r line; do
+            echo "::error::$line"
+          done < analyze.log
 
       - name: Run tests
         run: flutter test
