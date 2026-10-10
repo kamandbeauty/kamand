@@ -15,6 +15,7 @@ import '../../util/persian.dart';
 import '../theme.dart';
 import '../widgets/animations.dart';
 import '../widgets/card_view.dart';
+import '../widgets/deal_animation.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/suit_icon.dart';
 import 'settings_screen.dart';
@@ -131,6 +132,23 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  Future<void> _openGameMenu() async {
+    final GameController c = widget.controller;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext ctx) => GameMenuSheet(
+        controller: c,
+        onQuit: () async {
+          Navigator.of(ctx).pop();
+          await _confirmQuit();
+        },
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
   Future<void> _confirmQuit() async {
     final bool? yes = await showDialog<bool>(
       context: context,
@@ -173,13 +191,21 @@ class _GameScreenState extends State<GameScreen> {
               SafeArea(
                 child: Column(
                   children: <Widget>[
-                    _TopBar(controller: c, onQuit: _confirmQuit),
+                    _TopBar(controller: c, onQuit: _openGameMenu),
                     Expanded(child: _TableArea(controller: c)),
                     _ActionArea(controller: c),
                     _HandArea(controller: c),
                   ],
                 ),
               ),
+              if (c.dealing)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: c.skipDealAnimation,
+                    child: DealAnimation(seats: c.engine!.seats,
+                        back: c.settings.cardBack),
+                  ),
+                ),
             ],
           ),
         );
@@ -735,7 +761,7 @@ class _TrickArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ShelemEngine e = controller.engine!;
-    final double cw = (size.width * 0.46).clamp(68.0, 120.0);
+    final double cw = (size.width * 0.428).clamp(63.0, 112.0);
     final List<Alignment> spots = e.seats == 2
         ? <Alignment>[const Alignment(0, 0.72), const Alignment(0, -0.72)]
         : <Alignment>[

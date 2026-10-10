@@ -8,11 +8,13 @@ import 'package:shelem/main.dart';
 import 'package:shelem/model/card.dart';
 import 'package:shelem/state/game_controller.dart';
 import 'package:shelem/state/settings.dart';
+import 'package:shelem/util/sfx.dart';
 import 'package:shelem/ui/screens/game_screen.dart';
 import 'package:shelem/ui/theme.dart';
 import 'package:shelem/ui/widgets/card_view.dart';
 
 void main() {
+  SoundPlayer.disabled = true;
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));

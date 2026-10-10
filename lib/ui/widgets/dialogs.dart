@@ -9,6 +9,7 @@ import '../../game/rules.dart';
 import '../../game/scoring.dart';
 import '../../model/card.dart';
 import '../../state/game_controller.dart';
+import '../../state/settings.dart';
 import '../../util/persian.dart';
 import '../theme.dart';
 import 'card_view.dart';
@@ -542,6 +543,258 @@ class TrumpPickerDialog extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// منوی زیبای هنگامِ بازی (از دکمهٔ منو در نوارِ بالا باز می‌شود).
+class GameMenuSheet extends StatefulWidget {
+  const GameMenuSheet({
+    super.key,
+    required this.controller,
+    required this.onQuit,
+  });
+
+  final GameController controller;
+  final Future<void> Function() onQuit;
+
+  @override
+  State<GameMenuSheet> createState() => _GameMenuSheetState();
+}
+
+class _GameMenuSheetState extends State<GameMenuSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final GameController c = widget.controller;
+    final ShelemEngine e = c.engine!;
+    return Container(
+      margin: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: <Color>[Color(0xFF241A13), Color(0xFF3B2B1D)],
+        ),
+        border: Border.all(color: AppColors.goldDeep),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.6),
+            blurRadius: 26,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.goldDeep.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // خلاصهٔ وضعیت
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _MiniStat(
+                    label: c.teamName(0),
+                    value: fa(e.scores[0]),
+                    color: AppColors.teamUs,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'راند ${fa(e.round)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFB7AA92),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _MiniStat(
+                    label: c.teamName(1),
+                    value: fa(e.scores[1]),
+                    color: AppColors.teamThem,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _MenuRow(
+                icon: Icons.play_arrow_rounded,
+                label: 'ادامهٔ بازی',
+                primary: true,
+                onTap: () => Navigator.of(context).pop(),
+              ),
+              _MenuRow(
+                icon: c.settings.sound
+                    ? Icons.volume_up_rounded
+                    : Icons.volume_off_rounded,
+                label: c.settings.sound ? 'صدا: روشن' : 'صدا: خاموش',
+                trailing: Switch(
+                  value: c.settings.sound,
+                  onChanged: (bool v) {
+                    final AppSettings next = c.settings.copy();
+                    next.sound = v;
+                    c.applySettings(next);
+                    setState(() {});
+                  },
+                ),
+                onTap: () {
+                  final AppSettings next = c.settings.copy();
+                  next.sound = !next.sound;
+                  c.applySettings(next);
+                  setState(() {});
+                },
+              ),
+              _MenuRow(
+                icon: Icons.table_chart_rounded,
+                label: 'جدول امتیازها',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  showModalBottomSheet<void>(
+                    context: context,
+                    backgroundColor: AppColors.panel,
+                    isScrollControlled: true,
+                    builder: (_) => ScoreboardSheet(controller: c),
+                  );
+                },
+              ),
+              _MenuRow(
+                icon: Icons.history_rounded,
+                label: 'دست‌های قبلی',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  showModalBottomSheet<void>(
+                    context: context,
+                    backgroundColor: AppColors.panel,
+                    builder: (_) => TrickViewerSheet(controller: c),
+                  );
+                },
+              ),
+              _MenuRow(
+                icon: Icons.exit_to_app_rounded,
+                label: 'خروج به منوی اصلی',
+                danger: true,
+                onTap: widget.onQuit,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(label, style: const TextStyle(fontSize: 10)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.primary = false,
+    this.danger = false,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool primary;
+  final bool danger;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color fg = danger
+        ? const Color(0xFFE2705A)
+        : (primary ? const Color(0xFF2A1D10) : AppColors.gold);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: primary
+                  ? const LinearGradient(
+                      colors: <Color>[Color(0xFFE2C070), Color(0xFFB4893C)],
+                    )
+                  : null,
+              color: primary ? null : Colors.black.withValues(alpha: 0.28),
+              border: Border.all(
+                color: (danger ? const Color(0xFFE2705A) : AppColors.gold)
+                    .withValues(alpha: primary ? 0.9 : 0.35),
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Icon(icon, size: 20, color: fg),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: fg,
+                    ),
+                  ),
+                ),
+                if (trailing != null) trailing!,
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

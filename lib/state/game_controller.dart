@@ -15,6 +15,7 @@ import '../game/engine.dart';
 import '../game/rules.dart';
 import '../model/card.dart';
 import '../model/enums.dart';
+import '../util/sfx.dart';
 import 'settings.dart';
 
 const List<String> kBotNames = <String>['شما', 'نسترن', 'کامران', 'بهرام'];
@@ -37,6 +38,11 @@ class GameController extends ChangeNotifier {
 
   /// آخرین اخطار به کاربر (مثلاً بازی کردن کارت غیرمجاز).
   String? toast;
+
+  /// در حالِ پخشِ ورق (برای انیمیشنِ شروعِ راند).
+  bool dealing = false;
+  Timer? _dealTimer;
+  Timer? _dealSoundTimer;
 
   /// خالی که ربات هنگام چیدن دستش برای حکم در نظر گرفته است.
   Suit? _plannedTrump;
@@ -64,6 +70,8 @@ class GameController extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _dealTimer?.cancel();
+    _dealSoundTimer?.cancel();
     super.dispose();
   }
 
@@ -78,6 +86,7 @@ class GameController extends ChangeNotifier {
     message = null;
     _plannedTrump = null;
     selectedDiscards.clear();
+    _startDealAnimation();
     _save();
     notifyListeners();
     _schedule();
@@ -249,11 +258,11 @@ class GameController extends ChangeNotifier {
     if (e.phase == GamePhase.declaringTrump && card.isJoker) {
       // حکم باید جداگانه اعلام شود؛ رابط کاربری منوی خال را نشان می‌دهد.
       e.playCard(0, card);
-      _click();
+      _cardSound();
       _after();
       return;
     }
-    _click();
+    _cardSound();
     e.playCard(0, card);
     _after();
   }
@@ -267,6 +276,7 @@ class GameController extends ChangeNotifier {
       _pendingRules = null;
     }
     e.startRound();
+    _startDealAnimation();
     _after();
   }
 
@@ -288,6 +298,7 @@ class GameController extends ChangeNotifier {
     _timer?.cancel();
     final ShelemEngine? e = engine;
     if (e == null) return;
+    if (dealing) return;
     final Duration d = settings.speed.botDelay;
 
     switch (e.phase) {
@@ -416,6 +427,7 @@ class GameController extends ChangeNotifier {
   }
 
   void _botLeadFirst(ShelemEngine e) {
+    // صدا در پایانِ همین تابع (بعد از بازی شدنِ برگ) پخش می‌شود.
     if (e.phase != GamePhase.declaringTrump || e.turn == 0) return;
     final int p = e.turn;
     final Suit planned = _plannedTrump ?? ShelemBot.bestTrump(e.hands[p]);
@@ -434,11 +446,13 @@ class GameController extends ChangeNotifier {
         orElse: () => e.hands[p].first,
       );
       e.playCard(p, joker, declaredTrump: trump);
+      if (settings.sound) SoundPlayer.play(Sfx.play);
       message = 'حکم: ${trump.fa}';
       return;
     }
     trumps.sort((PlayingCard a, PlayingCard b) => b.rank.compareTo(a.rank));
     e.playCard(p, trumps.first);
+    if (settings.sound) SoundPlayer.play(Sfx.play);
     message = 'حکم: ${trump.fa}';
   }
 
@@ -452,20 +466,66 @@ class GameController extends ChangeNotifier {
       rng: _random,
     );
     e.playCard(p, card);
-    if (settings.sound) SystemSound.play(SystemSoundType.click);
+    if (settings.sound) SoundPlayer.play(Sfx.play);
   }
 
   void _collect(ShelemEngine e) {
     if (e.phase != GamePhase.trickComplete) return;
     final int winner = trickWinner(e.trick, e.trump);
     e.collectTrick();
-    if (settings.haptics && teamOf(winner) == 0) {
-      HapticFeedback.lightImpact();
+    if (teamOf(winner) == 0) {
+      if (settings.haptics) HapticFeedback.lightImpact();
+      if (settings.sound) SoundPlayer.play(Sfx.win);
     }
   }
 
   void _click() {
-    if (settings.sound) SystemSound.play(SystemSoundType.click);
+    if (settings.sound) SoundPlayer.play(Sfx.click, enabled: true);
     if (settings.haptics) HapticFeedback.selectionClick();
+  }
+
+  /// صدای انداختنِ ورق روی زمین.
+  void _cardSound() {
+    if (settings.sound) SoundPlayer.play(Sfx.play);
+    if (settings.haptics) HapticFeedback.selectionClick();
+  }
+
+  /// انیمیشن و صدای پخشِ ورق در شروعِ هر راند.
+  void _startDealAnimation() {
+    _dealTimer?.cancel();
+    _dealSoundTimer?.cancel();
+    dealing = true;
+    final int cards = (engine?.seats ?? 4) * 3 + 1;
+    int i = 0;
+    if (settings.sound) {
+      SoundPlayer.play(Sfx.deal);
+      _dealSoundTimer = Timer.periodic(
+        const Duration(milliseconds: 135),
+        (Timer t) {
+          i++;
+          if (i >= cards || !dealing) {
+            t.cancel();
+            return;
+          }
+          SoundPlayer.play(Sfx.deal);
+        },
+      );
+    }
+    _dealTimer = Timer(const Duration(milliseconds: 1250), () {
+      dealing = false;
+      _dealSoundTimer?.cancel();
+      notifyListeners();
+      _schedule();
+    });
+  }
+
+  /// رد شدن از انیمیشنِ پخش با یک ضربه روی صفحه.
+  void skipDealAnimation() {
+    if (!dealing) return;
+    _dealTimer?.cancel();
+    _dealSoundTimer?.cancel();
+    dealing = false;
+    notifyListeners();
+    _schedule();
   }
 }

@@ -21,7 +21,9 @@ import 'package:shelem/model/card.dart';
 import 'package:shelem/model/enums.dart';
 import 'package:shelem/state/game_controller.dart';
 import 'package:shelem/state/settings.dart';
+import 'package:shelem/util/sfx.dart';
 import 'package:shelem/ui/screens/game_screen.dart';
+import 'package:shelem/ui/screens/menu_screen.dart';
 import 'package:shelem/ui/theme.dart';
 import 'package:shelem/ui/widgets/card_view.dart';
 
@@ -90,6 +92,7 @@ Widget _wrap(Widget child) => MaterialApp(
     );
 
 void main() {
+  SoundPlayer.disabled = true;
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
@@ -215,6 +218,36 @@ void main() {
 
     controller.quitToMenu();
     await tester.pump();
+    controller.dispose();
+  });
+
+  testWidgets('منوی اصلی', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(420, 860);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final AppSettings settings = AppSettings();
+    final GameController controller =
+        GameController(settings: settings, random: Random(3));
+    await tester.pumpWidget(
+      _wrap(MenuScreen(controller: controller)),
+    );
+    await tester.runAsync(() async {
+      final BuildContext context = tester.element(find.byType(MaterialApp));
+      for (final String a in <String>[
+        'assets/images/menu_bg.jpg',
+        'assets/images/logo_emblem.png',
+      ]) {
+        await precacheImage(AssetImage(a), context);
+      }
+    });
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('golden/menu.png'),
+    );
     controller.dispose();
   });
 

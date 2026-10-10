@@ -231,6 +231,66 @@ class CardView extends StatelessWidget {
   }
 }
 
+/// ترنجِ ظریفِ دورِ نمادِ آس (شمسهٔ دوازده‌پر).
+class _AceOrnamentPainter extends CustomPainter {
+  _AceOrnamentPainter({required this.line, required this.accent});
+
+  final Color line;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset c = size.center(Offset.zero);
+    final double r = size.width / 2;
+    final Paint stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = line
+      ..strokeWidth = math.max(0.6, size.width * 0.014);
+
+    // شمسهٔ دوازده‌پر
+    const int petals = 12;
+    final Path star = Path();
+    for (int i = 0; i <= petals * 2; i++) {
+      final double a = -math.pi / 2 + i * math.pi / petals;
+      final double rr = i.isEven ? r * 0.95 : r * 0.62;
+      final Offset p = c + Offset(math.cos(a), math.sin(a)) * rr;
+      if (i == 0) {
+        star.moveTo(p.dx, p.dy);
+      } else {
+        star.lineTo(p.dx, p.dy);
+      }
+    }
+    star.close();
+    canvas.drawPath(star, stroke);
+
+    // حلقه‌های داخلی
+    canvas.drawCircle(c, r * 0.58, stroke);
+    canvas.drawCircle(
+      c,
+      r * 0.52,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..color = accent
+        ..strokeWidth = math.max(0.5, size.width * 0.008),
+    );
+
+    // چهار گلِ ریزِ تزئینی روی محورها
+    final Paint dot = Paint()..color = line;
+    for (int i = 0; i < 4; i++) {
+      final double a = math.pi / 4 + i * math.pi / 2;
+      canvas.drawCircle(
+        c + Offset(math.cos(a), math.sin(a)) * r * 0.78,
+        math.max(0.8, r * 0.055),
+        dot,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AceOrnamentPainter old) =>
+      old.line != line || old.accent != accent;
+}
+
 /// گوشهٔ کارت: رتبه روی نماد خال.
 class _Corner extends StatelessWidget {
   const _Corner({
@@ -269,10 +329,10 @@ class _Corner extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: width * 0.025),
+        SizedBox(height: width * 0.004),
         SuitIcon(
           suit: card.isJoker ? Suit.joker : card.suit,
-          size: width * 0.15,
+          size: width * 0.155,
           color: color,
         ),
       ],
@@ -335,7 +395,23 @@ class _AceCenter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: SuitIcon(suit: suit, size: width * 0.88, color: color),
+      child: SizedBox(
+        width: width * 0.74,
+        height: width * 0.74,
+        child: Stack(
+          alignment: Alignment.center,
+          children: <Widget>[
+            CustomPaint(
+              size: Size.square(width * 0.74),
+              painter: _AceOrnamentPainter(
+                line: const Color(0xFFB4893C).withValues(alpha: 0.75),
+                accent: color.withValues(alpha: 0.30),
+              ),
+            ),
+            SuitIcon(suit: suit, size: width * 0.30, color: color),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -12,6 +12,7 @@ import 'package:shelem/model/card.dart';
 import 'package:shelem/model/enums.dart';
 import 'package:shelem/state/game_controller.dart';
 import 'package:shelem/state/settings.dart';
+import 'package:shelem/util/sfx.dart';
 
 /// بازیکنِ انسان را هم خودکار بازی می‌کند تا راند کامل جلو برود.
 void _playFullRound(
@@ -71,6 +72,7 @@ void _playFullRound(
 }
 
 void main() {
+  SoundPlayer.disabled = true;
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
 
