@@ -1,7 +1,7 @@
 name: shelem
 description: "شلم — بازی کلاسیک ورق ایرانی؛ یک بازیکن در برابر سه حریف هوشمند"
 publish_to: 'none'
-version: 1.7.0+10
+version: 1.7.1+11
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

@@ -485,7 +485,7 @@ class _TableArea extends StatelessWidget {
             Center(
               child: _TrickArea(
                 controller: controller,
-                size: Size(box.maxWidth * 0.72, box.maxHeight * 0.68),
+                size: Size(box.maxWidth * 0.80, box.maxHeight * 0.72),
               ),
             ),
             if (e.phase == GamePhase.kitty)
@@ -763,12 +763,12 @@ class _TrickArea extends StatelessWidget {
     final ShelemEngine e = controller.engine!;
     final double cw = (size.width * 0.428).clamp(63.0, 112.0);
     final List<Alignment> spots = e.seats == 2
-        ? <Alignment>[const Alignment(0, 0.72), const Alignment(0, -0.72)]
+        ? <Alignment>[const Alignment(0, 0.78), const Alignment(0, -0.78)]
         : <Alignment>[
-            const Alignment(0, 0.86),
-            const Alignment(0.86, 0.02),
-            const Alignment(0, -0.86),
-            const Alignment(-0.86, 0.02),
+            const Alignment(0, 0.94),
+            const Alignment(0.94, 0.02),
+            const Alignment(0, -0.94),
+            const Alignment(-0.94, 0.02),
           ];
     final List<Offset> from = e.seats == 2
         ? <Offset>[const Offset(0, 1), const Offset(0, -1)]
